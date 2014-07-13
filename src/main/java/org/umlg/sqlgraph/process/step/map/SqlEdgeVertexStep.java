@@ -23,9 +23,9 @@ public class SqlEdgeVertexStep extends EdgeVertexStep {
             SqlEdge sqlEdge = (SqlEdge) traverser.get();
             final List<Vertex> vertices = new ArrayList<>();
             if (direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
-                vertices.add(new SqlVertex(sqlEdge.getOutVertexId(), graph));
+                vertices.add(sqlEdge.getOutVertex());
             if (direction.equals(Direction.IN) || direction.equals(Direction.BOTH))
-                vertices.add(new SqlVertex(sqlEdge.getInVertexId(), graph));
+                vertices.add(sqlEdge.getInVertex());
             return vertices.iterator();
         });
     }

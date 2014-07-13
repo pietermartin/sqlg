@@ -7,6 +7,9 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.io.Serializable;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
@@ -15,15 +18,16 @@ import java.util.NoSuchElementException;
  */
 public class SqlProperty<V> implements Property<V>, Serializable {
 
-    private final Element element;
     private final String key;
-    private final SqlGraph graph;
     private V value;
+    private SqlElement element;
+    protected SqlGraph sqlGraph;
+    public static final String REMOVED = "___REMOVED___";
 
-    public SqlProperty(Element element, String key, SqlGraph graph, V value) {
+    public SqlProperty(SqlGraph sqlGraph, SqlElement element, String key, V value) {
+        this.sqlGraph = sqlGraph;
         this.element = element;
         this.key = key;
-        this.graph = graph;
         this.value = value;
     }
 
@@ -39,7 +43,7 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     @Override
     public boolean isPresent() {
-        return null != this.value;
+        return this.value != null && !this.value.equals(REMOVED);
     }
 
     @Override
@@ -54,7 +58,33 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     @Override
     public void remove() {
-        //Set to ___removed___
+        StringBuilder sql = new StringBuilder("UPDATE \"");
+        sql.append(this.element.label());
+        sql.append("\" SET \"");
+        sql.append(this.key);
+        sql.append("\" = ? WHERE ID = ?;");
+        Connection conn;
+        PreparedStatement preparedStatement = null;
+        try {
+            conn = this.sqlGraph.tx().getConnection();
+            preparedStatement = conn.prepareStatement(sql.toString());
+            preparedStatement.setString(1, REMOVED);
+            preparedStatement.setLong(2, (Long)this.element.id());
+            int numberOfRowsUpdated = preparedStatement.executeUpdate();
+            if (numberOfRowsUpdated != 1) {
+                throw new IllegalStateException("Remove property failed!");
+            }
+            preparedStatement.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (preparedStatement != null)
+                    preparedStatement.close();
+            } catch (SQLException se2) {
+            }
+        }
+        this.element.loaded = false;
     }
 
     public String toString() {

@@ -18,7 +18,7 @@ public class TestH2Database extends BaseTest {
     public void testH2Database() {
         Connection conn = null;
         try {
-            conn = SqlGraphDataSource.INSTANCE.get().getConnection();
+            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
             conn.close();
         } catch (Exception e) {
             fail(e.getMessage());
@@ -37,7 +37,7 @@ public class TestH2Database extends BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlGraphDataSource.INSTANCE.get().getConnection();
+            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
             stmt = conn.createStatement();
 
             StringBuilder sql = new StringBuilder("CREATE TABLE TEST(ID INT PRIMARY KEY, NAME VARCHAR(255));");

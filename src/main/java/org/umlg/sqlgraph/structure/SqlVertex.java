@@ -5,14 +5,18 @@ import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.map.StartStep;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.umlg.sqlgraph.process.step.map.SqlVertexStep;
+import org.umlg.sqlgraph.sql.impl.SchemaCreator;
 import org.umlg.sqlgraph.sql.impl.SchemaManager;
 import org.umlg.sqlgraph.sql.impl.SqlUtil;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -26,8 +30,8 @@ public class SqlVertex extends SqlElement implements Vertex {
         insertVertex();
     }
 
-    public SqlVertex(Long id, SqlGraph sqlGraph) {
-        super(id, sqlGraph);
+    public SqlVertex(SqlGraph sqlGraph, Long id, String label) {
+        super(sqlGraph, id, label);
     }
 
     @Override
@@ -35,8 +39,22 @@ public class SqlVertex extends SqlElement implements Vertex {
         if (label == null)
             throw Edge.Exceptions.edgeLabelCanNotBeNull();
         ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if (ElementHelper.getIdValue(keyValues).isPresent())
+            throw Edge.Exceptions.userSuppliedIdsNotSupported();
+
+        int i = 0;
+        String key = "";
+        Object value;
+        for (Object keyValue : keyValues) {
+            if (i++ % 2 == 0) {
+                key = (String)keyValue;
+            }  else {
+                value = keyValue;
+                ElementHelper.validateProperty(key, value);
+            }
+        }
         this.sqlGraph.tx().readWrite();
-        SchemaManager.INSTANCE.ensureEdgeTableExist(label, inVertex.label(), this.label, keyValues);
+        this.sqlGraph.getSchemaManager().ensureEdgeTableExist(label, inVertex.label(), this.label, keyValues);
         final SqlEdge edge = new SqlEdge(this.sqlGraph, label, (SqlVertex) inVertex, this, keyValues);
         return edge;
     }
@@ -59,17 +77,49 @@ public class SqlVertex extends SqlElement implements Vertex {
         return traversal;
     }
 
+    @Override
+    public void remove() {
+        this.sqlGraph.tx().readWrite();
+        StringBuilder sql = new StringBuilder("DELETE FROM \"");
+        sql.append(SchemaManager.VERTICES);
+        sql.append("\" WHERE ID = ?;");
+        Connection conn;
+        PreparedStatement preparedStatement = null;
+        try {
+            conn = this.sqlGraph.tx().getConnection();
+            preparedStatement = conn.prepareStatement(sql.toString());
+            preparedStatement.setLong(1, (Long) this.id());
+            int numberOfRowsUpdated = preparedStatement.executeUpdate();
+            if (numberOfRowsUpdated != 1) {
+                throw Element.Exceptions.elementHasAlreadyBeenRemovedOrDoesNotExist(Vertex.class, this.id());
+            }
+            preparedStatement.close();
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (preparedStatement != null)
+                    preparedStatement.close();
+            } catch (SQLException se2) {
+            }
+        }
+        super.remove();
+    }
+
+
     protected void insertVertex() {
 
         long vertexId = insertGlobalVertex();
 
-        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        StringBuilder sql = new StringBuilder("INSERT INTO \"");
         sql.append(this.label);
-        sql.append(" (ID, ");
+        sql.append("\" (ID, ");
         int i = 1;
         List<String> columns = SqlUtil.transformToInsertColumns(this.keyValues);
         for (String column : columns) {
-            sql.append(column);
+            sql.append("\"").append(column).append("\"");
             if (i++ < columns.size()) {
                 sql.append(", ");
             }
@@ -140,7 +190,7 @@ public class SqlVertex extends SqlElement implements Vertex {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(SchemaManager.VERTICES);
         sql.append("(VERTEX_TABLE) VALUES (?);");
-        Connection conn;
+        Connection conn = null;
         PreparedStatement preparedStatement = null;
         try {
             conn = this.sqlGraph.tx().getConnection();
@@ -164,6 +214,162 @@ public class SqlVertex extends SqlElement implements Vertex {
             }
         }
         return vertexId;
+    }
+
+    ///TODO make this lazy
+    public Iterator<SqlEdge> getEdges(Direction direction, String... labels) {
+        List<SqlEdge> edges = new ArrayList<>();
+        for (String label : labels) {
+            if (SchemaCreator.INSTANCE.tableExist(label)) {
+                StringBuilder sql = new StringBuilder("SELECT * FROM \"");
+                sql.append(label);
+                sql.append("\" WHERE ");
+                switch (direction) {
+                    case IN:
+                        sql.append(" \"");
+                        sql.append(this.label);
+                        sql.append(SqlElement.IN_VERTEX_COLUMN_END);
+                        sql.append("\" = ?");
+                        break;
+                    case OUT:
+                        sql.append(" \"");
+                        sql.append(this.label);
+                        sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
+                        sql.append("\" = ?");
+                        break;
+                    case BOTH:
+                        sql.append(" \"");
+                        sql.append(this.label);
+                        sql.append(SqlElement.IN_VERTEX_COLUMN_END);
+                        sql.append("\" = ? OR \"");
+                        sql.append(this.label);
+                        sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
+                        sql.append("\" = ?");
+                        break;
+                }
+                sql.append(";");
+                Connection conn;
+                PreparedStatement preparedStatement = null;
+                try {
+                    conn = this.sqlGraph.tx().getConnection();
+                    preparedStatement = conn.prepareStatement(sql.toString());
+
+                    switch (direction) {
+                        case IN:
+                            preparedStatement.setLong(1, this.primaryKey);
+                            break;
+                        case OUT:
+                            preparedStatement.setLong(1, this.primaryKey);
+                            break;
+                        case BOTH:
+                            preparedStatement.setLong(1, this.primaryKey);
+                            preparedStatement.setLong(2, this.primaryKey);
+                            break;
+                    }
+
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    while (resultSet.next()) {
+                        String inVertexColumnName = null;
+                        String outVertexColumnName = null;
+                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                            String columnName = resultSetMetaData.getColumnName(i);
+                            if (columnName.endsWith(SqlElement.IN_VERTEX_COLUMN_END)) {
+                                inVertexColumnName = columnName;
+                            } else if (columnName.endsWith(SqlElement.OUT_VERTEX_COLUMN_END)) {
+                                outVertexColumnName = columnName;
+                            }
+                        }
+                        if (inVertexColumnName == null || outVertexColumnName == null) {
+                            throw new IllegalStateException("in or out vertex id not set!!!!");
+                        }
+
+
+                        Long edgeId = resultSet.getLong("ID");
+                        Long inId = resultSet.getLong(inVertexColumnName);
+                        Long outId = resultSet.getLong(outVertexColumnName);
+
+                        List<Object> keyValues = new ArrayList<>();
+                        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                            String columnName = resultSetMetaData.getColumnName(i);
+                            if (!((columnName.equals("ID") || columnName.equals(inVertexColumnName) || columnName.equals(outVertexColumnName)))) {
+                                keyValues.add(columnName);
+                                keyValues.add(resultSet.getObject(columnName));
+                            }
+                        }
+                        SqlEdge sqlEdge = null;
+                        switch (direction) {
+                            case IN:
+                                sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
+                                break;
+                            case OUT:
+                                sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
+                                break;
+                            case BOTH:
+                                if (inId == this.primaryKey && outId != this.primaryKey) {
+                                    sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
+                                } else if (inId != this.primaryKey && outId == this.primaryKey) {
+                                    sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
+                                } else if (inId == this.primaryKey && outId == this.primaryKey) {
+                                    sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, this, keyValues.toArray());
+                                } else {
+                                    throw new IllegalStateException("inId or outId must match!");
+                                }
+                                break;
+                        }
+                        edges.add(sqlEdge);
+                    }
+                    preparedStatement.close();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    try {
+                        if (preparedStatement != null)
+                            preparedStatement.close();
+                    } catch (SQLException se2) {
+                    }
+                }
+            }
+        }
+        return edges.iterator();
+
+    }
+
+    @Override
+    protected void load() {
+        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
+        sql.append(this.label);
+        sql.append("\" WHERE ID = ?;");
+        Connection conn;
+        PreparedStatement preparedStatement = null;
+        try {
+            conn = this.sqlGraph.tx().getConnection();
+            preparedStatement = conn.prepareStatement(sql.toString());
+            preparedStatement.setLong(1, this.primaryKey);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                List<Object> keyValues = new ArrayList<>();
+                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                    String columnName = resultSetMetaData.getColumnName(i);
+                    if (!columnName.equals("ID")) {
+                        keyValues.add(columnName);
+                        keyValues.add(resultSet.getObject(columnName));
+                    }
+                }
+                this.keyValues = keyValues.toArray();
+                break;
+            }
+            preparedStatement.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (preparedStatement != null)
+                    preparedStatement.close();
+            } catch (SQLException se2) {
+            }
+        }
     }
 
 }

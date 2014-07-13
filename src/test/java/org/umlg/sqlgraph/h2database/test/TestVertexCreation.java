@@ -21,16 +21,15 @@ public class TestVertexCreation extends BaseTest {
 
     @Test
     public void testCreateEmptyVertex() {
-        SqlGraph sqlGraph = new SqlGraph();
         sqlGraph.addVertex();
         sqlGraph.tx().commit();
 
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlGraphDataSource.INSTANCE.get().getConnection();
+            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
             stmt = conn.createStatement();
-            StringBuilder sql = new StringBuilder("SELECT * FROM VERTEX;");
+            StringBuilder sql = new StringBuilder("SELECT * FROM \"vertex\";");
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
             while (rs.next()) {
@@ -48,18 +47,11 @@ public class TestVertexCreation extends BaseTest {
                     stmt.close();
             } catch (SQLException se2) {
             }
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException se) {
-                fail(se.getMessage());
-            }
         }
     }
 
     @Test
     public void testCreateVertexWithProperties() {
-        SqlGraph sqlGraph = new SqlGraph();
         sqlGraph.addVertex(Element.LABEL, "Person",
                 "boolean1", true,
                 "byte1", (byte) 1,
@@ -85,9 +77,9 @@ public class TestVertexCreation extends BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlGraphDataSource.INSTANCE.get().getConnection();
+            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
             stmt = conn.createStatement();
-            StringBuilder sql = new StringBuilder("SELECT * FROM PERSON;");
+            StringBuilder sql = new StringBuilder("SELECT * FROM \"Person\";");
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
 
@@ -130,18 +122,11 @@ public class TestVertexCreation extends BaseTest {
                     stmt.close();
             } catch (SQLException se2) {
             }
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException se) {
-                fail(se.getMessage());
-            }
         }
     }
 
 //    @Test
     public void testVertexCreationPerformance() {
-        SqlGraph sqlGraph = new SqlGraph();
         for (int i = 0; i < 100000; i++) {
             sqlGraph.addVertex(Element.LABEL, "Person",
                     "boolean1", true,
@@ -159,9 +144,9 @@ public class TestVertexCreation extends BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlGraphDataSource.INSTANCE.get().getConnection();
+            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
             stmt = conn.createStatement();
-            StringBuilder sql = new StringBuilder("SELECT * FROM PERSON;");
+            StringBuilder sql = new StringBuilder("SELECT * FROM \"Person\";");
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
             boolean boolean1 = false;
@@ -202,12 +187,6 @@ public class TestVertexCreation extends BaseTest {
                 if (stmt != null)
                     stmt.close();
             } catch (SQLException se2) {
-            }
-            try {
-                if (conn != null)
-                    conn.close();
-            } catch (SQLException se) {
-                fail(se.getMessage());
             }
         }
 

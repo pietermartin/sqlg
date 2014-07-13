@@ -44,29 +44,36 @@ public class SqlVertexStep <E extends Element> extends VertexStep<E> {
 
 
     private class SqlVertexVertexIterable<T extends Vertex> implements Iterable<SqlVertex> {
-        private final SqlGraph graph;
+        private final SqlGraph sqlGraph;
         private final SqlVertex sqlVertex;
         private final Direction direction;
         private final String[] labels;
 
-        public SqlVertexVertexIterable(final SqlGraph graph, final SqlVertex sqlVertex, final Direction direction, final String... labels) {
-            this.graph = graph;
+        public SqlVertexVertexIterable(final SqlGraph sqlGraph, final SqlVertex sqlVertex, final Direction direction, final String... labels) {
+            this.sqlGraph = sqlGraph;
             this.sqlVertex = sqlVertex;
             this.direction = direction;
             this.labels = labels;
         }
 
         public Iterator<SqlVertex> iterator() {
-            graph.tx().readWrite();
+            this.sqlGraph.tx().readWrite();
             final Iterator<SqlEdge> itty;
             if (labels.length > 0)
-                itty = sqlVertex.getRelationships(direction, labels).iterator();
+                itty = sqlVertex.getEdges(direction, labels);
             else
-                itty = sqlVertex.getRelationships(direction).iterator();
+                itty = sqlVertex.getEdges(direction);
 
             return new Iterator<SqlVertex>() {
                 public SqlVertex next() {
-                    return new SqlVertex(itty.next().getOtherNode(sqlVertex), graph);
+                    SqlEdge sqlEdge = itty.next();
+                    SqlVertex inVertex = sqlEdge.getInVertex();
+                    SqlVertex outVertex = sqlEdge.getInVertex();
+                    if (sqlVertex.id().equals(inVertex.id())) {
+                        return outVertex;
+                    } else {
+                        return inVertex;
+                    }
                 }
 
                 public boolean hasNext() {
@@ -98,9 +105,9 @@ public class SqlVertexStep <E extends Element> extends VertexStep<E> {
             graph.tx().readWrite();
             final Iterator<SqlEdge> itty;
             if (labels.length > 0)
-                itty = sqlVertex.getRelationships(direction, labels).iterator();
+                itty = sqlVertex.getEdges(direction, labels);
             else
-                itty = sqlVertex.getRelationships(direction).iterator();
+                itty = sqlVertex.getEdges(direction);
 
             return new Iterator<SqlEdge>() {
                 public SqlEdge next() {

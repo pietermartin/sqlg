@@ -46,7 +46,7 @@ public class SqlGraphTransaction implements Transaction {
             throw Transaction.Exceptions.transactionAlreadyOpen();
         else {
             try {
-                Connection connection = SqlGraphDataSource.INSTANCE.get().getConnection();
+                Connection connection = SqlGraphDataSource.INSTANCE.get(this.sqlGraph.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
                 threadLocalTx.set(connection);
             } catch (SQLException e) {

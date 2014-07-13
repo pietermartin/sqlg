@@ -15,7 +15,58 @@ public class SchemaManager {
 
     public static final String VERTICES = "VERTICES";
     public static final String EDGES = "EDGES";
-    public static final SchemaManager INSTANCE = new SchemaManager();
+    private Map<String, List<ImmutablePair<String, PropertyType>>> schema = new ConcurrentHashMap<>();
+
+    public SchemaManager() {
+    }
+
+    /**
+     * This table holds a reference to every vertex.
+     * This is to help implement g.v(id) and g.V()
+     */
+    public void ensureGlobalVerticesTableExist() {
+        if (!SchemaCreator.INSTANCE.vericesExist()) {
+            SchemaCreator.INSTANCE.createVerticesTable();
+        }
+    }
+
+    /**
+     * This table holds a reference to every edge.
+     * This is to help implement g.e(id) and g.E()
+     */
+    public void ensureGlobalEdgesTableExist() {
+        if (!SchemaCreator.INSTANCE.edgesExist()) {
+            SchemaCreator.INSTANCE.createEdgesTable();
+        }
+    }
+
+    public void ensureVertexTableExist(String table, Object... keyValues) {
+        //TODO getOrCreate concurrent code here
+        List<ImmutablePair<String, SchemaManager.PropertyType>> columns = this.schema.get(table);
+        if (columns != null) {
+            //Table exist, check columns exist
+        } else {
+            columns = SqlUtil.transformToColumnDefinition(keyValues);
+            SchemaCreator.INSTANCE.createVertexTable(table, columns);
+            this.schema.put(table, columns);
+        }
+    }
+
+    public void ensureEdgeTableExist(String table, String inTable, String outTable, Object... keyValues) {
+        //TODO getOrCreate concurrent code here
+        List<ImmutablePair<String, SchemaManager.PropertyType>> columns = this.schema.get(table);
+        if (columns != null) {
+            //Table exist, check columns exist
+        } else {
+            columns = SqlUtil.transformToColumnDefinition(keyValues);
+            SchemaCreator.INSTANCE.createEdgeTable(table, inTable, outTable, columns);
+            this.schema.put(table, columns);
+        }
+    }
+
+    public void close() {
+        this.schema.clear();
+    }
 
     public enum PropertyType {
         BOOLEAN("BOOLEAN", Boolean.class.getName()),
@@ -47,68 +98,13 @@ public class SchemaManager {
         }
 
         public static PropertyType from(Object o) {
-            return javaClassNameToEnum.get(o.getClass().getName());
+            PropertyType propertyType = javaClassNameToEnum.get(o.getClass().getName());
+            if (propertyType == null) {
+                throw new UnsupportedOperationException("Unsupported type " + o.getClass().getName());
+            }
+            return propertyType;
         }
 
-    }
-
-    private Map<String, List<ImmutablePair<String, PropertyType>>> schema = new ConcurrentHashMap<>();
-    private boolean createdGlobalVertices = false;
-    private boolean createdGlobalEdges = false;
-
-    private SchemaManager() {
-    }
-
-    /**
-     * This table holds a reference to every vertex.
-     * This is to help implement g.v(id) and g.V()
-     */
-    public void ensureGlobalVerticesTableExist() {
-        //TODO getOrCreate concurrent code here
-        if (this.createdGlobalVertices) {
-            //Table exist, check columns exist
-        } else {
-            SchemaCreator.INSTANCE.createVerticesTable();
-            this.createdGlobalVertices = true;
-        }
-    }
-
-    /**
-     * This table holds a reference to every edge.
-     * This is to help implement g.e(id) and g.E()
-     */
-    public void ensureGlobalEdgesTableExist() {
-        //TODO getOrCreate concurrent code here
-        if (this.createdGlobalEdges) {
-            //Table exist, check columns exist
-        } else {
-            SchemaCreator.INSTANCE.createEdgesTable();
-            this.createdGlobalEdges = true;
-        }
-    }
-
-    public void ensureVertexTableExist(String table, Object... keyValues) {
-        //TODO getOrCreate concurrent code here
-        List<ImmutablePair<String, SchemaManager.PropertyType>> columns = this.schema.get(table);
-        if (columns != null) {
-            //Table exist, check columns exist
-        } else {
-            columns = SqlUtil.transformToColumnDefinition(keyValues);
-            SchemaCreator.INSTANCE.createVertexTable(table, columns);
-            this.schema.put(table, columns);
-        }
-    }
-
-    public void ensureEdgeTableExist(String table, String inTable, String outTable, Object... keyValues) {
-        //TODO getOrCreate concurrent code here
-        List<ImmutablePair<String, SchemaManager.PropertyType>> columns = this.schema.get(table);
-        if (columns != null) {
-            //Table exist, check columns exist
-        } else {
-            columns = SqlUtil.transformToColumnDefinition(keyValues);
-            SchemaCreator.INSTANCE.createEdgeTable(table, inTable, outTable, columns);
-            this.schema.put(table, columns);
-        }
     }
 
 }
