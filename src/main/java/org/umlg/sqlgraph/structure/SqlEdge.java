@@ -8,7 +8,6 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.umlg.sqlgraph.process.step.map.SqlEdgeVertexStep;
-import org.umlg.sqlgraph.sql.impl.SchemaManager;
 import org.umlg.sqlgraph.sql.impl.SqlUtil;
 
 import java.sql.*;
@@ -37,7 +36,11 @@ public class SqlEdge extends SqlElement implements Edge {
         super(sqlGraph, label, keyValues);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
-        insertEdge();
+        try {
+            insertEdge();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public SqlEdge(SqlGraph sqlGraph, Long id, String label, SqlVertex inVertex, SqlVertex outVertex, Object... keyValues) {
@@ -64,36 +67,35 @@ public class SqlEdge extends SqlElement implements Edge {
         StringBuilder sql = new StringBuilder("DELETE FROM \"");
         sql.append(SchemaManager.EDGES);
         sql.append("\" WHERE ID = ?;");
-        Connection conn;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
+        Connection conn = this.sqlGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
             if (numberOfRowsUpdated != 1) {
                 throw Element.Exceptions.elementHasAlreadyBeenRemovedOrDoesNotExist(Edge.class, this.id());
             }
-            preparedStatement.close();
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
         }
         super.remove();
+    }
+
+    public SqlVertex getInVertex() {
+        if (!this.loaded) {
+            load();
+        }
+        return inVertex;
+    }
+
+    public SqlVertex getOutVertex() {
+        return outVertex;
     }
 
     public String toString() {
         return StringFactory.edgeString(this);
     }
 
-    protected void insertEdge() {
+    protected void insertEdge() throws SQLException {
 
         long edgeId = insertGlobalEdge();
 
@@ -131,14 +133,11 @@ public class SqlEdge extends SqlElement implements Edge {
         }
         sql.append("?, ?");
         sql.append(");");
-        Connection conn = null;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
+        Connection conn  = this.sqlGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             i = 1;
             preparedStatement.setLong(i++, edgeId);
-            for (ImmutablePair<SchemaManager.PropertyType, Object> pair : SqlUtil.transformToTypeAndValue(this.keyValues)) {
+            for (ImmutablePair<PropertyType, Object> pair : SqlUtil.transformToTypeAndValue(this.keyValues)) {
                 switch (pair.left) {
                     case BOOLEAN:
                         preparedStatement.setBoolean(i++, (Boolean) pair.right);
@@ -172,28 +171,16 @@ public class SqlEdge extends SqlElement implements Edge {
             preparedStatement.setLong(i++, this.outVertex.primaryKey);
             preparedStatement.executeUpdate();
             this.primaryKey = edgeId;
-            preparedStatement.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
         }
     }
 
-    private long insertGlobalEdge() {
+    private long insertGlobalEdge() throws SQLException {
         long vertexId;
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(SchemaManager.EDGES);
         sql.append("(EDGE_TABLE) VALUES (?);");
-        Connection conn = null;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
+        Connection conn = this.sqlGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setString(1, this.label);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
@@ -202,25 +189,8 @@ public class SqlEdge extends SqlElement implements Edge {
             } else {
                 throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.EDGES);
             }
-            preparedStatement.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
         }
         return vertexId;
-    }
-
-    public SqlVertex getInVertex() {
-        return inVertex;
-    }
-
-    public SqlVertex getOutVertex() {
-        return outVertex;
     }
 
     @Override
@@ -228,14 +198,13 @@ public class SqlEdge extends SqlElement implements Edge {
         StringBuilder sql = new StringBuilder("SELECT * FROM \"");
         sql.append(this.label);
         sql.append("\" WHERE ID = ?;");
-        Connection conn;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
+        Connection conn = this.sqlGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);
             ResultSet resultSet = preparedStatement.executeQuery();
             while(resultSet.next()) {
+                String inVertexColumnName = null;
+                String outVertexColumnName = null;
                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                 List<Object> keyValues = new ArrayList<>();
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
@@ -244,19 +213,25 @@ public class SqlEdge extends SqlElement implements Edge {
                         keyValues.add(columnName);
                         keyValues.add(resultSet.getObject(columnName));
                     }
+                    if (columnName.endsWith(SqlElement.IN_VERTEX_COLUMN_END)) {
+                        inVertexColumnName = columnName;
+                    } else if (columnName.endsWith(SqlElement.OUT_VERTEX_COLUMN_END)) {
+                        outVertexColumnName = columnName;
+                    }
                 }
+                if (inVertexColumnName == null || outVertexColumnName == null) {
+                    throw new IllegalStateException("in or out vertex id not set!!!!");
+                }
+                Long inId = resultSet.getLong(inVertexColumnName);
+                Long outId = resultSet.getLong(outVertexColumnName);
+
                 this.keyValues = keyValues.toArray();
+                this.inVertex = new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, ""));
+                this.outVertex = new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, ""));
                 break;
             }
-            preparedStatement.close();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
         }
     }
 }

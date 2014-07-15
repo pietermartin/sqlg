@@ -28,7 +28,7 @@ public abstract class BaseTest {
 
     protected static Path testDir = Paths.get("src/test/h2database");
     protected static final String JDBC_DRIVER = "org.h2.Driver";
-    protected static final String DB_URL = "jdbc:h2:" + testDir.toAbsolutePath().toString() + "/test";
+    protected static final String DB_URL = "jdbc:h2:" + testDir.toAbsolutePath().toString() + "/test;MVCC=TRUE";
     protected SqlGraph sqlGraph;
 
     @BeforeClass
@@ -67,7 +67,7 @@ public abstract class BaseTest {
             } catch (SQLException se2) {
             }
         }
-        this.sqlGraph = new SqlGraph(config);
+        this.sqlGraph = SqlGraph.open(config);
     }
 
     @After

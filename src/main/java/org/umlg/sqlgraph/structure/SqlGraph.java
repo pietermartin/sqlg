@@ -4,14 +4,13 @@ import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
-import org.umlg.sqlgraph.sql.impl.SchemaCreator;
-import org.umlg.sqlgraph.sql.impl.SchemaManager;
 import org.umlg.sqlgraph.sql.impl.SqlGraphDataSource;
 import org.umlg.sqlgraph.sql.impl.SqlGraphTransaction;
 import org.umlg.sqlgraph.strategy.SqlGraphStepTraversalStrategy;
@@ -52,17 +51,16 @@ public class SqlGraph implements Graph {
         return (G) new SqlGraph(configuration);
     }
 
-    public SqlGraph(final Configuration configuration) {
+    private SqlGraph(final Configuration configuration) {
         try {
             this.jdbcUrl = configuration.getString("jdbc.url");
             SqlGraphDataSource.INSTANCE.setupDataSource(configuration.getString("jdbc.driver"), configuration.getString("jdbc.url"));
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
-        SchemaCreator.INSTANCE.setSqlGraph(this);
         this.sqlGraphTransaction = new SqlGraphTransaction(this);
         this.tx().readWrite();
-        this.schemaManager = new SchemaManager();
+        this.schemaManager = new SchemaManager(this);
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
@@ -82,7 +80,8 @@ public class SqlGraph implements Graph {
                 key = (String)keyValue;
             }  else {
                 value = keyValue;
-                ElementHelper.validateProperty(key, value);
+                if (!key.equals(Element.LABEL))
+                    ElementHelper.validateProperty(key, value);
             }
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);

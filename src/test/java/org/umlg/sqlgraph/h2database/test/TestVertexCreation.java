@@ -1,6 +1,7 @@
 package org.umlg.sqlgraph.h2database.test;
 
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlgraph.sql.impl.SqlGraphDataSource;
 import org.umlg.sqlgraph.structure.SqlGraph;
@@ -20,15 +21,11 @@ import static org.junit.Assert.fail;
 public class TestVertexCreation extends BaseTest {
 
     @Test
-    public void testCreateEmptyVertex() {
+    public void testCreateEmptyVertex() throws SQLException {
         sqlGraph.addVertex();
         sqlGraph.tx().commit();
-
-        Connection conn = null;
-        Statement stmt = null;
-        try {
-            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
-            stmt = conn.createStatement();
+        Connection conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
+        try (Statement stmt = conn.createStatement()) {
             StringBuilder sql = new StringBuilder("SELECT * FROM \"vertex\";");
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
@@ -37,21 +34,11 @@ public class TestVertexCreation extends BaseTest {
             }
             assertEquals(1, countRows);
             rs.close();
-            stmt.close();
-            conn.close();
-        } catch (Exception e) {
-            fail(e.getMessage());
-        } finally {
-            try {
-                if (stmt != null)
-                    stmt.close();
-            } catch (SQLException se2) {
-            }
         }
     }
 
     @Test
-    public void testCreateVertexWithProperties() {
+    public void testCreateVertexWithProperties() throws SQLException {
         sqlGraph.addVertex(Element.LABEL, "Person",
                 "boolean1", true,
                 "byte1", (byte) 1,
@@ -74,15 +61,11 @@ public class TestVertexCreation extends BaseTest {
         );
         sqlGraph.tx().commit();
 
-        Connection conn = null;
-        Statement stmt = null;
-        try {
-            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
-            stmt = conn.createStatement();
+        Connection conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();;
+        try (Statement stmt = conn.createStatement()) {
             StringBuilder sql = new StringBuilder("SELECT * FROM \"Person\";");
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
-
             boolean boolean1 = false;
             byte byte1 = (byte)-1;
             short short1 = (short)-1;
@@ -112,84 +95,22 @@ public class TestVertexCreation extends BaseTest {
             assertEquals(double1, 1D, 0);
             assertEquals("marko", name);
             rs.close();
-            stmt.close();
-            conn.close();
-        } catch (Exception e) {
-            fail(e.getMessage());
-        } finally {
-            try {
-                if (stmt != null)
-                    stmt.close();
-            } catch (SQLException se2) {
-            }
         }
     }
 
-//    @Test
-    public void testVertexCreationPerformance() {
-        for (int i = 0; i < 100000; i++) {
-            sqlGraph.addVertex(Element.LABEL, "Person",
-                    "boolean1", true,
-                    "byte1", (byte) 1,
-                    "short1", (short) 1,
-                    "integer1", 1,
-                    "long1", 1L,
-                    "float1", 1F,
-                    "double1", 1D,
-                    "name", "marko"
-            );
-        }
-        sqlGraph.tx().commit();
-
-        Connection conn = null;
-        Statement stmt = null;
-        try {
-            conn = SqlGraphDataSource.INSTANCE.get(DB_URL).getConnection();
-            stmt = conn.createStatement();
-            StringBuilder sql = new StringBuilder("SELECT * FROM \"Person\";");
-            ResultSet rs = stmt.executeQuery(sql.toString());
-            int countRows = 0;
-            boolean boolean1 = false;
-            byte byte1 = (byte)-1;
-            short short1 = (short)-1;
-            int integer1 = -1;
-            long long1 = -1L;
-            float float1 = -1F;
-            double double1 = -1D;
-            String name = "";
-            while (rs.next()) {
-                boolean1 = rs.getBoolean("boolean1");
-                byte1 = rs.getByte("byte1");
-                short1 = rs.getShort("short1");
-                integer1 = rs.getInt("integer1");
-                long1 = rs.getLong("long1");
-                float1 = rs.getFloat("float1");
-                double1 = rs.getDouble("double1");
-                name = rs.getString("name");
-                countRows++;
-            }
-            assertEquals(100000, countRows);
-            assertEquals(boolean1, true);
-            assertEquals(byte1, (byte)1);
-            assertEquals(short1, (short)1);
-            assertEquals(integer1, 1);
-            assertEquals(long1, 1L);
-            assertEquals(float1, 1F, 0);
-            assertEquals(double1, 1D, 0);
-            assertEquals("marko", name);
-            rs.close();
-            stmt.close();
-            conn.close();
-        } catch (Exception e) {
-            fail(e.getMessage());
-        } finally {
-            try {
-                if (stmt != null)
-                    stmt.close();
-            } catch (SQLException se2) {
-            }
-        }
-
+    @Test
+    public void testAndColumns() {
+        Vertex v1 = this.sqlGraph.addVertex(Element.LABEL, "Person", "name1", "marko");
+        this.sqlGraph.tx().commit();
+        assertEquals(1, this.sqlGraph.V().count().next(), 0);
+        assertEquals(v1, this.sqlGraph.v(v1.id()));
+        //label and name
+        assertEquals(2, v1.properties().size());
+        Vertex v2 = this.sqlGraph.addVertex(Element.LABEL, "Person", "name2", "john");
+        assertEquals(2, this.sqlGraph.V().count().next(), 0);
+        assertEquals(v2, this.sqlGraph.v(v2.id()));
+        //label and name
+        assertEquals(2, v2.properties().size());
     }
 
 }

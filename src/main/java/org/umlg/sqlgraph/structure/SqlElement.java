@@ -4,13 +4,13 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.javatuples.Pair;
-import org.umlg.sqlgraph.sql.impl.SchemaManager;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Date: 2014/07/12
@@ -94,7 +94,7 @@ public abstract class SqlElement implements Element {
                 key = (String) o;
             } else {
                 value = o;
-                if (!value.equals(SqlProperty.REMOVED)) {
+                if (value  == null || !value.equals(SqlProperty.REMOVED)) {
                     properties.put(key, new SqlProperty<>(this.sqlGraph, this, key, value));
                 }
             }
@@ -131,64 +131,12 @@ public abstract class SqlElement implements Element {
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         //Validate the property
-        SchemaManager.PropertyType.from(value);
+        PropertyType.from(value);
         //Check if column exist
-        if (!columnExist(key)) {
-            addColumn(key, value);
-        }
+        this.sqlGraph.getSchemaManager().ensureColumnExist(this.label, ImmutablePair.of(key, PropertyType.from(value)));
         updateRow(key, value);
         this.loaded = false;
         return new SqlProperty<>(this.sqlGraph, this, key, value);
-    }
-
-    private boolean columnExist(String key) {
-        Connection conn;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            DatabaseMetaData metadata = conn.getMetaData();
-            String catalog = null;
-            String schemaPattern = null;
-            String tableNamePattern = this.label;
-            String columnNamePattern = null;
-            ResultSet result = metadata.getColumns(catalog, schemaPattern, tableNamePattern, columnNamePattern);
-            while (result.next()) {
-                String columnName = result.getString(4);
-                if (key.equals(columnName)) {
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-        }
-        return false;
-    }
-
-    private void addColumn(String key, Object value) {
-        StringBuilder sql = new StringBuilder("ALTER TABLE \"");
-        sql.append(this.label);
-        sql.append("\" ADD ");
-        sql.append("\"");
-        sql.append(key);
-        sql.append("\" ");
-        sql.append(SchemaManager.PropertyType.from(value).getDbName());
-        sql.append(";");
-        Connection conn;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
-            preparedStatement.executeUpdate();
-            preparedStatement.close();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
-        }
     }
 
     private void updateRow(String key, Object value) {
@@ -204,7 +152,7 @@ public abstract class SqlElement implements Element {
         try {
             conn = this.sqlGraph.tx().getConnection();
             preparedStatement = conn.prepareStatement(sql.toString());
-            SchemaManager.PropertyType propertyType = SchemaManager.PropertyType.from(value);
+            PropertyType propertyType = PropertyType.from(value);
             switch (propertyType) {
                 case BOOLEAN:
                     preparedStatement.setBoolean(1, (Boolean) value);

@@ -8,9 +8,7 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.umlg.sqlgraph.sql.impl.SchemaManager;
-import org.umlg.sqlgraph.sql.impl.SqlUtil;
+import org.umlg.sqlgraph.structure.SchemaManager;
 import org.umlg.sqlgraph.structure.SqlEdge;
 import org.umlg.sqlgraph.structure.SqlGraph;
 import org.umlg.sqlgraph.structure.SqlVertex;
@@ -81,17 +79,12 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _vertices() {
-
         List<SqlVertex> sqlVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(SchemaManager.VERTICES);
         sql.append(";");
-
-        Connection conn;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
+        Connection conn = this.sqlGraph.tx().getConnection();;
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
@@ -99,31 +92,19 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
                 SqlVertex sqlVertex = new SqlVertex(this.sqlGraph, id, tableName);
                 sqlVertexes.add(sqlVertex);
             }
-            preparedStatement.close();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
         }
         return sqlVertexes;
     }
 
     private Iterable<? extends Edge> _edges() {
-
         List<SqlEdge> sqlEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(SchemaManager.EDGES);
         sql.append(";");
-
-        Connection conn;
-        PreparedStatement preparedStatement = null;
-        try {
-            conn = this.sqlGraph.tx().getConnection();
-            preparedStatement = conn.prepareStatement(sql.toString());
+        Connection conn = this.sqlGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
@@ -131,15 +112,8 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
                 SqlEdge sqlEdge = new SqlEdge(this.sqlGraph, id, tableName);
                 sqlEdges.add(sqlEdge);
             }
-            preparedStatement.close();
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            try {
-                if (preparedStatement != null)
-                    preparedStatement.close();
-            } catch (SQLException se2) {
-            }
         }
         return sqlEdges;
     }

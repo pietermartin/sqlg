@@ -2,9 +2,13 @@ package org.umlg.sqlgraph.sql.impl;
 
 import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.umlg.sqlgraph.structure.PropertyType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Date: 2014/07/12
@@ -12,8 +16,8 @@ import java.util.List;
  */
 public class SqlUtil {
 
-    public static List<ImmutablePair<String, SchemaManager.PropertyType>> transformToColumnDefinition(Object ... keyValues) {
-        List<ImmutablePair<String, SchemaManager.PropertyType>> result = new ArrayList<>();
+    public static ConcurrentHashMap<String, PropertyType> transformToColumnDefinitionMap(Object ... keyValues) {
+        ConcurrentHashMap<String, PropertyType> result = new ConcurrentHashMap<>();
         int i = 1;
         String key = "";
         for (Object keyValue : keyValues) {
@@ -27,7 +31,28 @@ public class SqlUtil {
                 if (key.equals(Element.LABEL)) {
                     continue;
                 }
-                result.add(ImmutablePair.of(key, SchemaManager.PropertyType.from(keyValue)));
+                result.put(key, PropertyType.from(keyValue));
+            }
+        }
+        return result;
+    }
+
+    public static List<ImmutablePair<String, PropertyType>> transformToColumnDefinition(Object ... keyValues) {
+        List<ImmutablePair<String, PropertyType>> result = new ArrayList<>();
+        int i = 1;
+        String key = "";
+        for (Object keyValue : keyValues) {
+            if (i++ % 2 != 0) {
+                //key
+                key = (String)keyValue;
+            } else {
+                //value
+                //key
+                //skip the label as that is not a property but the table
+                if (key.equals(Element.LABEL)) {
+                    continue;
+                }
+                result.add(ImmutablePair.of(key, PropertyType.from(keyValue)));
             }
         }
         return result;
@@ -71,8 +96,8 @@ public class SqlUtil {
         return result;
     }
 
-    public static List<ImmutablePair<SchemaManager.PropertyType, Object>> transformToTypeAndValue(Object ... keyValues) {
-        List<ImmutablePair<SchemaManager.PropertyType, Object>> result = new ArrayList<>();
+    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Object ... keyValues) {
+        List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
         int i = 1;
         String key = "";
         for (Object keyValue : keyValues) {
@@ -85,7 +110,7 @@ public class SqlUtil {
                 if (key.equals(Element.LABEL)) {
                     continue;
                 }
-                result.add(ImmutablePair.of(SchemaManager.PropertyType.from(keyValue), keyValue));
+                result.add(ImmutablePair.of(PropertyType.from(keyValue), keyValue));
             }
         }
         return result;

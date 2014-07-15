@@ -2,10 +2,14 @@ package org.umlg.tinkerpop3.test;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.strategy.StrategyWrappedGraph;
+import groovy.sql.Sql;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.FileUtils;
 import org.umlg.sqlgraph.sql.impl.SqlGraphDataSource;
 import org.umlg.sqlgraph.structure.SqlGraph;
 
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -23,7 +27,7 @@ public class SqlGraphProvider extends AbstractGraphProvider {
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlGraph.class.getName());
             put("jdbc.driver", "org.h2.Driver");
-            put("jdbc.url", "jdbc:h2:/home/pieter/Downloads/sqlgraph/src/test/h2database/" + graphName);
+            put("jdbc.url", "jdbc:h2:/home/pieter/Downloads/sqlgraph/src/test/h2database/" + graphName + ";MULTI_THREADED=TRUE;LOCK_TIMEOUT=10000");
         }};
     }
 
@@ -38,7 +42,13 @@ public class SqlGraphProvider extends AbstractGraphProvider {
             Connection conn = null;
             PreparedStatement preparedStatement = null;
             try {
-                conn = SqlGraphDataSource.INSTANCE.get(((SqlGraph)g).getJdbcUrl()).getConnection();
+                SqlGraph sqlGraph;
+                if (g instanceof StrategyWrappedGraph) {
+                    sqlGraph = (SqlGraph)((StrategyWrappedGraph)g).getBaseGraph();
+                } else {
+                    sqlGraph = (SqlGraph)g;
+                }
+                conn = SqlGraphDataSource.INSTANCE.get(sqlGraph.getJdbcUrl()).getConnection();
                 preparedStatement = conn.prepareStatement(sql.toString());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
@@ -53,6 +63,8 @@ public class SqlGraphProvider extends AbstractGraphProvider {
                 } catch (SQLException se2) {
                 }
             }
+        } else {
+            FileUtils.cleanDirectory(Paths.get("src/test/h2database").toFile());
         }
     }
 
