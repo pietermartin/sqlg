@@ -7,6 +7,7 @@
     <groupId>org.umlg</groupId>
     <artifactId>sqlgraph</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
     <build>
         <plugins>
             <plugin>
@@ -31,45 +32,10 @@
             </plugin>
         </plugins>
     </build>
-    <dependencies>
-        <dependency>
-            <groupId>com.tinkerpop</groupId>
-            <artifactId>gremlin-core</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.tinkerpop</groupId>
-            <artifactId>gremlin-groovy</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.mchange</groupId>
-            <artifactId>c3p0</artifactId>
-            <version>0.9.5-pre8</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.4</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.11</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>1.4.179</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.tinkerpop</groupId>
-            <artifactId>gremlin-test</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <modules>
+        <module>sqlgraph-core</module>
+        <module>sqlgraph-test</module>
+        <module>sqlgraph-hsqldb</module>
+        <module>sqlgraph-postgres</module>
+    </modules>
 </project>
