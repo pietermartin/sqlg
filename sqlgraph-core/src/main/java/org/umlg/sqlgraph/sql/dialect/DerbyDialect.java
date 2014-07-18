@@ -8,21 +8,31 @@ import java.sql.Types;
  * Date: 2014/07/16
  * Time: 1:42 PM
  */
-public class MariaDbDialect implements SqlDialect {
+public class DerbyDialect implements SqlDialect {
+
+    @Override
+    public boolean needsSemicolon() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsCascade() {
+        return false;
+    }
 
     @Override
     public String getColumnEscapeKey() {
-        return "`";
+        return "\"";
     }
 
     @Override
     public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL";
+        return "BIGINT";
     }
 
     @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
-        return "AUTO_INCREMENT PRIMARY KEY";
+        return "GENERATED ALWAYS AS IDENTITY";
     }
 
     @Override
@@ -30,21 +40,21 @@ public class MariaDbDialect implements SqlDialect {
 
         switch (propertyType) {
             case BOOLEAN:
-                return "BOOLEAN";
+                return "BOOLEAN" ;
             case BYTE:
-                return "SMALLINT";
+                return "SMALLINT" ;
             case SHORT:
-                return "SMALLINT";
+                return "SMALLINT" ;
             case INTEGER:
-                return "INTEGER";
+                return "INTEGER" ;
             case LONG:
-                return "BIGINT";
+                return "BIGINT" ;
             case FLOAT:
-                return "FLOAT";
+                return "REAL" ;
             case DOUBLE:
-                return "DOUBLE PRECISION";
+                return "DOUBLE PRECISION" ;
             case STRING:
-                return "TEXT";
+                return "LONG VARCHAR" ;
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -54,7 +64,7 @@ public class MariaDbDialect implements SqlDialect {
     public int propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return Types.BOOLEAN;
+                return Types.BOOLEAN ;
             case BYTE:
                 return Types.TINYINT;
             case SHORT:
@@ -64,7 +74,7 @@ public class MariaDbDialect implements SqlDialect {
             case LONG:
                 return Types.BIGINT;
             case FLOAT:
-                return Types.FLOAT;
+                return Types.REAL;
             case DOUBLE:
                 return Types.DOUBLE;
             case STRING:
@@ -83,45 +93,4 @@ public class MariaDbDialect implements SqlDialect {
     public boolean supportsFloatValues() {
         return true;
     }
-
-    @Override
-    public boolean supportsTransactionalSchema() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsBooleanArrayValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsByteArrayValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsDoubleArrayValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsFloatArrayValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsIntegerArrayValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsLongArrayValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsStringArrayValues() {
-        return false;
-    }
-
 }

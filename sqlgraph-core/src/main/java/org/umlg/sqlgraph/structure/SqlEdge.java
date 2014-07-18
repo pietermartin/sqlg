@@ -68,7 +68,10 @@ public class SqlEdge extends SqlElement implements Edge {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
@@ -129,7 +132,10 @@ public class SqlEdge extends SqlElement implements Edge {
             sql.append(", ");
         }
         sql.append("?, ?");
-        sql.append(");");
+        sql.append(")");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             i = 1;
@@ -177,7 +183,10 @@ public class SqlEdge extends SqlElement implements Edge {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" (");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_TABLE"));
-        sql.append(") VALUES (?);");
+        sql.append(") VALUES (?)");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, this.label);
@@ -199,7 +208,10 @@ public class SqlEdge extends SqlElement implements Edge {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);

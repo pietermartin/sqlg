@@ -52,7 +52,10 @@ public abstract class SqlElement implements Element {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label()));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
@@ -128,7 +131,10 @@ public abstract class SqlElement implements Element {
         sql.append(" = ?");
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             PropertyType propertyType = PropertyType.from(value);

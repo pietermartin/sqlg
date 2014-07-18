@@ -38,5 +38,6 @@
         <module>sqlgraph-hsqldb</module>
         <module>sqlgraph-postgres</module>
         <module>sqlgraph-mariadb</module>
+        <module>sqlgraph-derby</module>
     </modules>
 </project>

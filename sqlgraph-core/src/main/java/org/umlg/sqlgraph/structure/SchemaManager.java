@@ -155,7 +155,8 @@ public class SchemaManager {
     }
 
     private void createVerticesTable() throws SQLException {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+//        IF NOT EXISTS
+        StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -171,8 +172,10 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
         sql.append(" ");
         sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
-        sql.append(");");
-
+        sql.append(")");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -184,7 +187,8 @@ public class SchemaManager {
     }
 
     private void createEdgesTable() throws SQLException {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+        //IF NOT EXISTS
+        StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -194,7 +198,10 @@ public class SchemaManager {
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         sql.append(", ");
         sql.append(this.sqlDialect.maybeWrapInQoutes("EDGE_TABLE"));
-        sql.append(" VARCHAR(255));");
+        sql.append(" VARCHAR(255))");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -221,7 +228,8 @@ public class SchemaManager {
     }
 
     private void createVertexTable(String tableName, Map<String, PropertyType> columns) {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+//        IF NOT EXISTS
+        StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -241,7 +249,10 @@ public class SchemaManager {
                 sql.append(", ");
             }
         }
-        sql.append(");");
+        sql.append(")");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -251,7 +262,8 @@ public class SchemaManager {
     }
 
     private void createEdgeTable(String tableName, String inTable, String outTable, Map<String, PropertyType> columns) {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+//        IF NOT EXISTS
+        StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -293,8 +305,10 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(outTable));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append("));");
-
+        sql.append("))");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -313,7 +327,10 @@ public class SchemaManager {
         sql.append(" = ?");
         sql.append(" WHERE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             //varchar here must be lowercase
@@ -345,7 +362,9 @@ public class SchemaManager {
         sql.append(" WHERE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" = ?");
-        sql.append(";");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, id);
@@ -372,7 +391,9 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(keyValue.left));
         sql.append(" ");
         sql.append(this.sqlDialect.propertyTypeToSqlDefinition(keyValue.right));
-        sql.append(";");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.executeUpdate();

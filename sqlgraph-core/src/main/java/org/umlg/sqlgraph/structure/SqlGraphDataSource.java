@@ -1,6 +1,7 @@
 package org.umlg.sqlgraph.structure;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
@@ -31,8 +32,12 @@ public class SqlGraphDataSource {
         ComboPooledDataSource cpds = new ComboPooledDataSource();
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);
-        cpds.setUser(username);
-        cpds.setPassword(password);
+        if (!StringUtils.isEmpty(username)) {
+            cpds.setUser(username);
+        }
+        if (!StringUtils.isEmpty(username)) {
+            cpds.setPassword(password);
+        }
         this.cpdss.put(connectURI, cpds);
     }
 

@@ -63,7 +63,10 @@ public class SqlProperty<V> implements Property<V>, Serializable {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
         sql.append(" = ? WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             PropertyType propertyType = PropertyType.from(value);

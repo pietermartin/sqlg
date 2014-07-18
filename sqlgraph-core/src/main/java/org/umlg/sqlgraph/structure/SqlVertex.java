@@ -98,7 +98,10 @@ public class SqlVertex extends SqlElement implements Vertex {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
@@ -145,7 +148,10 @@ public class SqlVertex extends SqlElement implements Vertex {
                 sql.append(", ");
             }
         }
-        sql.append(");");
+        sql.append(")");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+        }
         i = 1;
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -191,7 +197,10 @@ public class SqlVertex extends SqlElement implements Vertex {
         long vertexId;
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-        sql.append(" (VERTEX_TABLE) VALUES (?);");
+        sql.append(" (VERTEX_TABLE) VALUES (?)");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, this.label);
@@ -259,7 +268,9 @@ public class SqlVertex extends SqlElement implements Vertex {
                             sql.append(" = ?");
                             break;
                     }
-                    sql.append(";");
+                    if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
                     Connection conn = this.sqlGraph.tx().getConnection();
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         switch (d) {
@@ -344,7 +355,10 @@ public class SqlVertex extends SqlElement implements Vertex {
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);

@@ -82,7 +82,9 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
         List<SqlVertex> sqlVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-        sql.append(";");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -102,7 +104,9 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
         List<SqlEdge> sqlEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-        sql.append(";");
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();

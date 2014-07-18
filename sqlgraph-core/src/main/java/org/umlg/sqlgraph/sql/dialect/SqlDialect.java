@@ -7,6 +7,14 @@ import org.umlg.sqlgraph.structure.PropertyType;
  */
 public interface SqlDialect {
 
+    public default boolean needsSemicolon() {
+        return true;
+    }
+
+    public default boolean supportsCascade() {
+        return true;
+    }
+
     String getColumnEscapeKey();
 
     String getPrimaryKeyType();

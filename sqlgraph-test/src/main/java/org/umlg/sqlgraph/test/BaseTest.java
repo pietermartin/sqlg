@@ -10,7 +10,6 @@ import org.junit.BeforeClass;
 import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
 import org.umlg.sqlgraph.structure.SqlGraph;
-import org.umlg.sqlgraph.structure.SqlUtil;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -57,6 +56,11 @@ public abstract class BaseTest {
             sqlGraphDialect = SqlGraphDialect.MARIADBDB;
         } catch (ClassNotFoundException e) {
         }
+        try {
+            Class.forName(SqlGraphDialect.DERBYDB.getJdbcDriver());
+            sqlGraphDialect = SqlGraphDialect.DERBYDB;
+        } catch (ClassNotFoundException e) {
+        }
         if (sqlGraphDialect == null) {
             throw new IllegalStateException("Postgres driver " + SqlGraphDialect.POSTGRES.getJdbcDriver() + " or Hsqldb driver " + SqlGraphDialect.HSQLDB.getJdbcDriver() + " must be on the classpath!");
         }
@@ -79,7 +83,12 @@ public abstract class BaseTest {
             while (result.next()) {
                 StringBuilder sql = new StringBuilder("DROP TABLE ");
                 sql.append(sqlGraphDialect.getSqlDialect().maybeWrapInQoutes(result.getString(3)));
-                sql.append(" CASCADE;");
+                if (sqlGraphDialect.getSqlDialect().supportsCascade()) {
+                    sql.append(" CASCADE");
+                    if (sqlGraphDialect.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
+                }
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                     preparedStatement.executeUpdate();
                 }

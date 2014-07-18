@@ -12,6 +12,7 @@ import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
+import org.umlg.sqlgraph.sql.dialect.SqlDialect;
 import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.strategy.SqlGraphStepTraversalStrategy;
 
@@ -29,6 +30,7 @@ public class SqlGraph implements Graph {
 
     private final SqlGraphTransaction sqlGraphTransaction;
     private SchemaManager schemaManager;
+    private SqlDialect sqlDialect;
     private String jdbcUrl;
 
     public String getJdbcUrl() {
@@ -37,6 +39,10 @@ public class SqlGraph implements Graph {
 
     public SchemaManager getSchemaManager() {
         return schemaManager;
+    }
+
+    public SqlDialect getSqlDialect() {
+        return sqlDialect;
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {
@@ -68,6 +74,11 @@ public class SqlGraph implements Graph {
             sqlGraphDialect = SqlGraphDialect.MARIADBDB;
         } catch (ClassNotFoundException e) {
         }
+        try {
+            Class.forName(SqlGraphDialect.DERBYDB.getJdbcDriver());
+            sqlGraphDialect = SqlGraphDialect.DERBYDB;
+        } catch (ClassNotFoundException e) {
+        }
         if (sqlGraphDialect == null) {
             throw new IllegalStateException("Postgres driver " + SqlGraphDialect.POSTGRES.getJdbcDriver() + " or Hsqldb driver " + SqlGraphDialect.HSQLDB.getJdbcDriver() + " must be on the classpath!");
         }
@@ -84,6 +95,7 @@ public class SqlGraph implements Graph {
         this.sqlGraphTransaction = new SqlGraphTransaction(this);
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlGraphDialect.getSqlDialect());
+        this.sqlDialect = sqlGraphDialect.getSqlDialect();
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
@@ -142,7 +154,10 @@ public class SqlGraph implements Graph {
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) id);
@@ -170,7 +185,10 @@ public class SqlGraph implements Graph {
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" WHERE ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?;");
+        sql.append(" = ?");
+        if (this.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) id);
