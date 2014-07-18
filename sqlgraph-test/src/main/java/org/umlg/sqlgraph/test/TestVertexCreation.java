@@ -25,7 +25,9 @@ public class TestVertexCreation extends BaseTest {
         sqlGraph.tx().commit();
         try (Connection conn = SqlGraphDataSource.INSTANCE.get(this.sqlGraph.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
-                StringBuilder sql = new StringBuilder("SELECT * FROM \"vertex\";");
+                StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("vertex"));
+                sql.append(";");
                 ResultSet rs = stmt.executeQuery(sql.toString());
                 int countRows = 0;
                 while (rs.next()) {
@@ -63,7 +65,9 @@ public class TestVertexCreation extends BaseTest {
 
         try (Connection conn = SqlGraphDataSource.INSTANCE.get(this.sqlGraph.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
-                StringBuilder sql = new StringBuilder("SELECT * FROM \"Person\";");
+                StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("Person"));
+                sql.append(";");
                 ResultSet rs = stmt.executeQuery(sql.toString());
                 int countRows = 0;
                 boolean boolean1 = false;

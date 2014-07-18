@@ -8,6 +8,7 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
+import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
@@ -60,6 +61,11 @@ public class SqlGraph implements Graph {
         try {
             Class.forName(SqlGraphDialect.POSTGRES.getJdbcDriver());
             sqlGraphDialect = SqlGraphDialect.POSTGRES;
+        } catch (ClassNotFoundException e) {
+        }
+        try {
+            Class.forName(SqlGraphDialect.MARIADBDB.getJdbcDriver());
+            sqlGraphDialect = SqlGraphDialect.MARIADBDB;
         } catch (ClassNotFoundException e) {
         }
         if (sqlGraphDialect == null) {
@@ -132,9 +138,11 @@ public class SqlGraph implements Graph {
         if (null == id) throw Graph.Exceptions.elementNotFound();
 
         SqlVertex sqlVertex = null;
-        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" WHERE ");
+        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) id);
@@ -158,9 +166,11 @@ public class SqlGraph implements Graph {
         if (null == id) throw Graph.Exceptions.elementNotFound();
 
         SqlEdge sqlEdge = null;
-        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-        sql.append(SchemaManager.EDGES);
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(" WHERE ");
+        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) id);
@@ -211,7 +221,7 @@ public class SqlGraph implements Graph {
         return new SqlGraphFeatures();
     }
 
-    public static class SqlGraphFeatures implements Features {
+    public class SqlGraphFeatures implements Features {
         @Override
         public GraphFeatures graph() {
             return new GraphFeatures() {
@@ -230,11 +240,6 @@ public class SqlGraph implements Graph {
                     return false;
                 }
 
-                /**
-                 * Neo4j does not support transaction consistency across threads when iterating over {@code g.V/E}
-                 * in the sense that a vertex added in one thread will appear in the iteration of vertices in a
-                 * different thread even prior to transaction commit in the first thread.
-                 */
                 @Override
                 public boolean supportsFullyIsolatedTransactions() {
                     return true;
@@ -257,7 +262,7 @@ public class SqlGraph implements Graph {
             return StringFactory.featureString(this);
         }
 
-        public static class SqlVertexFeatures implements VertexFeatures {
+        public class SqlVertexFeatures implements VertexFeatures {
             @Override
             public VertexAnnotationFeatures annotations() {
                 return new SqlGraphVertexAnnotationFeatures();
@@ -274,7 +279,7 @@ public class SqlGraph implements Graph {
             }
         }
 
-        public static class SqlEdgeFeatures implements EdgeFeatures {
+        public class SqlEdgeFeatures implements EdgeFeatures {
             @Override
             public boolean supportsUserSuppliedIds() {
                 return false;
@@ -286,7 +291,7 @@ public class SqlGraph implements Graph {
             }
         }
 
-        public static class SqlGraphVertexPropertyFeatures implements VertexPropertyFeatures {
+        public class SqlGraphVertexPropertyFeatures implements VertexPropertyFeatures {
             @Override
             public boolean supportsMapValues() {
                 return false;
@@ -306,9 +311,50 @@ public class SqlGraph implements Graph {
             public boolean supportsUniformListValues() {
                 return false;
             }
+
+            @Override
+            public boolean supportsFloatValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
+            }
+
+            @Override
+            public boolean supportsBooleanArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
+            }
+
+            @Override
+            public boolean supportsByteArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
+            }
+
+            @Override
+            public boolean supportsDoubleArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
+            }
+
+            @Override
+            public boolean supportsFloatArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
+            }
+
+            @Override
+            public boolean supportsIntegerArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
+            }
+
+            @Override
+            public boolean supportsLongArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
+            }
+
+            @Override
+            public boolean supportsStringArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+            }
+
         }
 
-        public static class SqlEdgePropertyFeatures implements EdgePropertyFeatures {
+        public class SqlEdgePropertyFeatures implements EdgePropertyFeatures {
             @Override
             public boolean supportsMapValues() {
                 return false;
@@ -328,9 +374,49 @@ public class SqlGraph implements Graph {
             public boolean supportsUniformListValues() {
                 return false;
             }
+
+            @Override
+            public boolean supportsFloatValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
+            }
+
+            @Override
+            public boolean supportsBooleanArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
+            }
+
+            @Override
+            public boolean supportsByteArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
+            }
+
+            @Override
+            public boolean supportsDoubleArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
+            }
+
+            @Override
+            public boolean supportsFloatArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
+            }
+
+            @Override
+            public boolean supportsIntegerArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
+            }
+
+            @Override
+            public boolean supportsLongArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
+            }
+
+            @Override
+            public boolean supportsStringArrayValues() {
+                return SqlGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+            }
         }
 
-        public static class SqlVariableFeatures implements VariableFeatures {
+        public class SqlVariableFeatures implements VariableFeatures {
             @Override
             public boolean supportsBooleanValues() {
                 return false;
@@ -422,7 +508,7 @@ public class SqlGraph implements Graph {
             }
         }
 
-        public static class SqlGraphVertexAnnotationFeatures implements VertexAnnotationFeatures {
+        public class SqlGraphVertexAnnotationFeatures implements VertexAnnotationFeatures {
             @Override
             public boolean supportsBooleanValues() {
                 return false;

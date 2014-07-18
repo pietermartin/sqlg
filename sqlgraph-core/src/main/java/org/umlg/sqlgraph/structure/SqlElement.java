@@ -48,13 +48,15 @@ public abstract class SqlElement implements Element {
 
     @Override
     public void remove() {
-        StringBuilder sql = new StringBuilder("DELETE FROM \"");
-        sql.append(this.label());
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("DELETE FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label()));
+        sql.append(" WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
-            int numberOfRowsUpdated = preparedStatement.executeUpdate();
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -119,13 +121,14 @@ public abstract class SqlElement implements Element {
     }
 
     private void updateRow(String key, Object value) {
-        StringBuilder sql = new StringBuilder("UPDATE \"");
-        sql.append(this.label);
-        sql.append("\" SET ");
-        sql.append("\"");
-        sql.append(key);
-        sql.append("\" = ?");
-        sql.append(" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(" SET ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+        sql.append(" = ?");
+        sql.append(" WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             PropertyType propertyType = PropertyType.from(value);

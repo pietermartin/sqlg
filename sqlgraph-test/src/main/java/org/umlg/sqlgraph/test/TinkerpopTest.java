@@ -1,15 +1,8 @@
 package org.umlg.sqlgraph.test;
 
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
-import com.tinkerpop.gremlin.structure.strategy.GraphStrategy;
-import com.tinkerpop.gremlin.structure.strategy.SequenceGraphStrategy;
-import com.tinkerpop.gremlin.structure.strategy.Strategy;
-import com.tinkerpop.gremlin.structure.strategy.StrategyWrappedGraph;
 import org.junit.Test;
 import org.umlg.sqlgraph.structure.SqlGraph;
 
@@ -17,14 +10,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/07/13
@@ -32,59 +24,73 @@ import static org.junit.Assert.*;
  */
 public class TinkerpopTest extends BaseTest {
 
-//    @Test
-    public void shouldAppendPropertyValuesInOrderToVertex() {
-        Graph g = this.sqlGraph;
-        final StrategyWrappedGraph swg = new StrategyWrappedGraph(g);
-        swg.strategy().setGraphStrategy(new SequenceGraphStrategy(
-                new GraphStrategy() {
-                    @Override
-                    public UnaryOperator<Function<Object[], Vertex>> getAddVertexStrategy(final Strategy.Context ctx) {
-                        return (f) -> (args) -> {
-                            final List<Object> o = new ArrayList<>(Arrays.asList(args));
-                            o.addAll(Arrays.asList("anonymous", "working1"));
-                            return f.apply(o.toArray());
-                        };
-                    }
-                },
-                new GraphStrategy() {
-                    @Override
-                    public UnaryOperator<Function<Object[], Vertex>> getAddVertexStrategy(final Strategy.Context ctx) {
-                        return (f) -> (args) -> {
-                            final List<Object> o = new ArrayList<>(Arrays.asList(args));
-                            o.addAll(Arrays.asList("anonymous", "working2"));
-                            o.addAll(Arrays.asList("try", "anything"));
-                            return f.apply(o.toArray());
-                        };
-                    }
-                },
-                new GraphStrategy() {
-                    @Override
-                    public UnaryOperator<Function<Object[], Vertex>> getAddVertexStrategy(final Strategy.Context ctx) {
-                        return UnaryOperator.identity();
-                    }
-                },
-                new GraphStrategy() {
-                    @Override
-                    public UnaryOperator<Function<Object[], Vertex>> getAddVertexStrategy(final Strategy.Context ctx) {
-                        return (f) -> (args) -> {
-                            final List<Object> o = new ArrayList<>(Arrays.asList(args));
-                            o.addAll(Arrays.asList("anonymous", "working3"));
-                            return f.apply(o.toArray());
-                        };
-                    }
+    @Test
+    public void shouldSupportTransactionIsolationWithSeparateThreads() throws Exception {
+        // one thread modifies the graph and a separate thread reads before the transaction is committed.
+        // the expectation is that the changes in the transaction are isolated to the thread that made the change
+        // and the second thread should not see the change until commit() in the first thread.
+        final Graph graph = this.sqlGraph;
+
+        final CountDownLatch latchCommit = new CountDownLatch(1);
+        final CountDownLatch latchFirstRead = new CountDownLatch(1);
+        final CountDownLatch latchSecondRead = new CountDownLatch(1);
+
+        final Thread threadMod = new Thread() {
+            public void run() {
+                graph.addVertex();
+
+                latchFirstRead.countDown();
+
+                try {
+                    latchCommit.await();
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
                 }
-        ));
 
-        final Vertex v = swg.addVertex("any", "thing");
+                graph.tx().commit();
 
-        assertNotNull(v);
-        assertEquals("thing", v.property("any").value());
-        assertEquals("working3", v.property("anonymous").value());
-        assertEquals("anything", v.property("try").value());
+                latchSecondRead.countDown();
+            }
+        };
+
+        threadMod.start();
+
+        final AtomicLong beforeCommitInOtherThread = new AtomicLong(0);
+        final AtomicLong afterCommitInOtherThread = new AtomicLong(0);
+        final Thread threadRead = new Thread() {
+            public void run() {
+                try {
+                    latchFirstRead.await();
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+
+                // reading vertex before tx from other thread is committed...should have zero vertices
+                beforeCommitInOtherThread.set(graph.V().count().next());
+
+                latchCommit.countDown();
+
+                try {
+                    latchSecondRead.await();
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+
+                // tx in other thread is committed...should have one vertex
+                afterCommitInOtherThread.set(graph.V().count().next());
+            }
+        };
+
+        threadRead.start();
+
+        threadMod.join();
+        threadRead.join();
+
+        assertEquals(0l, beforeCommitInOtherThread.get());
+        assertEquals(1l, afterCommitInOtherThread.get());
     }
 
-//    @Test
+    //    @Test
     public void shouldReadGraphML() throws IOException {
         readGraphMLIntoGraph(this.sqlGraph);
         assertClassicGraph(this.sqlGraph, true, true);

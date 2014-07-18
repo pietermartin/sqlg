@@ -80,9 +80,9 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterable<? extends Vertex> _vertices() {
         List<SqlVertex> sqlVertexes = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\";");
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(";");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -100,9 +100,9 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterable<? extends Edge> _edges() {
         List<SqlEdge> sqlEdges = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-        sql.append(SchemaManager.EDGES);
-        sql.append("\";");
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(";");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();

@@ -24,4 +24,11 @@ public class TestSetProperty extends BaseTest {
         Vertex v = this.sqlGraph.addVertex("age", 1, "name", "marko", "name", "john");
         this.sqlGraph.tx().commit();
     }
+
+    @Test
+    public void testFloat() {
+        Vertex v = this.sqlGraph.addVertex(Element.LABEL, "Person", "age", 1f);
+        this.sqlGraph.tx().commit();
+        Assert.assertEquals(1f, v.property("age").value());
+    }
 }

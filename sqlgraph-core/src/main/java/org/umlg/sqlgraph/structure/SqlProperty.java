@@ -22,7 +22,6 @@ public class SqlProperty<V> implements Property<V>, Serializable {
     private V value;
     private SqlElement element;
     protected SqlGraph sqlGraph;
-    public static final String REMOVED = "___REMOVED___";
 
     public SqlProperty(SqlGraph sqlGraph, SqlElement element, String key, V value) {
         this.sqlGraph = sqlGraph;
@@ -58,11 +57,13 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     @Override
     public void remove() {
-        StringBuilder sql = new StringBuilder("UPDATE \"");
-        sql.append(this.element.label());
-        sql.append("\" SET \"");
-        sql.append(this.key);
-        sql.append("\" = ? WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.label()));
+        sql.append(" SET ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
+        sql.append(" = ? WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             PropertyType propertyType = PropertyType.from(value);

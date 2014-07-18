@@ -94,13 +94,15 @@ public class SqlVertex extends SqlElement implements Vertex {
         while (edges.hasNext()) {
             edges.next().remove();
         }
-        StringBuilder sql = new StringBuilder("DELETE FROM \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("DELETE FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
-            int numberOfRowsUpdated = preparedStatement.executeUpdate();
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -112,9 +114,10 @@ public class SqlVertex extends SqlElement implements Vertex {
 
         long vertexId = insertGlobalVertex();
 
-        StringBuilder sql = new StringBuilder("INSERT INTO \"");
-        sql.append(this.label);
-        sql.append("\" (\"ID\"");
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(" (");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         int i = 1;
         List<String> columns = SqlUtil.transformToInsertColumns(keyValues);
         if (columns.size() > 0) {
@@ -123,7 +126,7 @@ public class SqlVertex extends SqlElement implements Vertex {
             sql.append(" ");
         }
         for (String column : columns) {
-            sql.append("\"").append(column).append("\"");
+            sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(column));
             if (i++ < columns.size()) {
                 sql.append(", ");
             }
@@ -186,9 +189,9 @@ public class SqlVertex extends SqlElement implements Vertex {
 
     private long insertGlobalVertex() {
         long vertexId;
-        StringBuilder sql = new StringBuilder("INSERT INTO \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\"(VERTEX_TABLE) VALUES (?);");
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" (VERTEX_TABLE) VALUES (?);");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, this.label);
@@ -234,30 +237,26 @@ public class SqlVertex extends SqlElement implements Vertex {
         for (Direction d : directions) {
             for (String label : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
                 if (this.sqlGraph.getSchemaManager().tableExist(label)) {
-                    StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-                    sql.append(label);
-                    sql.append("\" WHERE ");
+                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                    sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(label));
+                    sql.append(" WHERE ");
                     switch (d) {
                         case IN:
-                            sql.append(" \"");
-                            sql.append(this.label);
-                            sql.append(SqlElement.IN_VERTEX_COLUMN_END);
-                            sql.append("\" = ?");
+                            sql.append(" ");
+                            sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.IN_VERTEX_COLUMN_END));
+                            sql.append(" = ?");
                             break;
                         case OUT:
-                            sql.append(" \"");
-                            sql.append(this.label);
-                            sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
-                            sql.append("\" = ?");
+                            sql.append(" ");
+                            sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.OUT_VERTEX_COLUMN_END));
+                            sql.append(" = ?");
                             break;
                         case BOTH:
-                            sql.append(" \"");
-                            sql.append(this.label);
-                            sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
-                            sql.append("\" = ? OR \"");
-                            sql.append(this.label);
-                            sql.append(SqlElement.IN_VERTEX_COLUMN_END);
-                            sql.append("\" = ?");
+                            sql.append(" ");
+                            sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.OUT_VERTEX_COLUMN_END));
+                            sql.append(" = ? OR ");
+                            sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.IN_VERTEX_COLUMN_END));
+                            sql.append(" = ?");
                             break;
                     }
                     sql.append(";");
@@ -341,9 +340,11 @@ public class SqlVertex extends SqlElement implements Vertex {
     @Override
     protected Object[] load() {
         List<Object> keyValues = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-        sql.append(this.label);
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(" WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);

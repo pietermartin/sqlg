@@ -2,7 +2,8 @@ package org.umlg.sqlgraph.sql.dialect;
 
 public enum SqlGraphDialect {
     POSTGRES("org.postgresql.xa.PGXADataSource", new PostgresDialect()),
-    HSQLDB("org.hsqldb.jdbc.JDBCDriver", new HsqldbDialect());
+    HSQLDB("org.hsqldb.jdbc.JDBCDriver", new HsqldbDialect()),
+    MARIADBDB("org.mariadb.jdbc.Driver", new MariaDbDialect());
     private String jdbcDriver;
     private SqlDialect sqlDialect;
 

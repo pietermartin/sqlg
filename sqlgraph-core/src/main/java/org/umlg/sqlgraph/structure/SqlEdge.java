@@ -64,13 +64,15 @@ public class SqlEdge extends SqlElement implements Edge {
     @Override
     public void remove() {
         this.sqlGraph.tx().readWrite();
-        StringBuilder sql = new StringBuilder("DELETE FROM \"");
-        sql.append(SchemaManager.EDGES);
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("DELETE FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(" WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
-            int numberOfRowsUpdated = preparedStatement.executeUpdate();
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -95,13 +97,15 @@ public class SqlEdge extends SqlElement implements Edge {
 
         long edgeId = insertGlobalEdge();
 
-        StringBuilder sql = new StringBuilder("INSERT INTO \"");
-        sql.append(this.label);
-        sql.append("\" (\"ID\", ");
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(" (");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(", ");
         int i = 1;
         List<String> columns = SqlUtil.transformToInsertColumns(keyValues);
         for (String column : columns) {
-            sql.append("\"").append(column).append("\"");
+            sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(column));
             if (i++ < columns.size()) {
                 sql.append(", ");
             }
@@ -109,13 +113,10 @@ public class SqlEdge extends SqlElement implements Edge {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        sql.append("\"");
-        sql.append(this.inVertex.label());
-        sql.append(SqlElement.IN_VERTEX_COLUMN_END);
-        sql.append("\", \"");
-        sql.append(this.outVertex.label());
-        sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
-        sql.append("\") VALUES (?, ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.inVertex.label() + SqlElement.IN_VERTEX_COLUMN_END));
+        sql.append(", ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.outVertex.label() + SqlElement.OUT_VERTEX_COLUMN_END));
+        sql.append(") VALUES (?, ");
         i = 1;
         List<String> values = SqlUtil.transformToInsertValues(keyValues);
         for (String value : values) {
@@ -172,9 +173,11 @@ public class SqlEdge extends SqlElement implements Edge {
 
     private long insertGlobalEdge() throws SQLException {
         long vertexId;
-        StringBuilder sql = new StringBuilder("INSERT INTO \"");
-        sql.append(SchemaManager.EDGES);
-        sql.append("\" (\"EDGE_TABLE\") VALUES (?);");
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(" (");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_TABLE"));
+        sql.append(") VALUES (?);");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, this.label);
@@ -192,9 +195,11 @@ public class SqlEdge extends SqlElement implements Edge {
     @Override
     protected Object[] load() {
         List<Object> keyValues = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM \"");
-        sql.append(this.label);
-        sql.append("\" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(" WHERE ");
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);

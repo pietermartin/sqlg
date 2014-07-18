@@ -37,5 +37,6 @@
         <module>sqlgraph-test</module>
         <module>sqlgraph-hsqldb</module>
         <module>sqlgraph-postgres</module>
+        <module>sqlgraph-mariadb</module>
     </modules>
 </project>

@@ -1,5 +1,7 @@
 package org.umlg.sqlgraph.structure;
 
+import com.tinkerpop.gremlin.structure.Property;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,7 +35,7 @@ public enum PropertyType {
     public static PropertyType from(Object o) {
         PropertyType propertyType = javaClassNameToEnum.get(o.getClass().getName());
         if (propertyType == null) {
-            throw new UnsupportedOperationException("Unsupported type " + o.getClass().getName());
+            throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(o);
         }
         return propertyType;
     }

@@ -38,7 +38,13 @@ public class SchemaManager {
         });
         this.sqlGraph.tx().afterRollback(() -> {
             if (this.schemaLock.isHeldByCurrentThread()) {
-                this.uncommittedSchema.clear();
+                if (this.getSqlDialect().supportsTransactionalSchema()) {
+                    this.uncommittedSchema.clear();
+                } else {
+                    for (String t : this.uncommittedSchema.keySet()) {
+                        this.schema.put(t, this.uncommittedSchema.get(t));
+                    }
+                }
                 this.schemaLock.unlock();
             }
         });
@@ -149,20 +155,22 @@ public class SchemaManager {
     }
 
     private void createVerticesTable() throws SQLException {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\"(\"ID\" ");
+        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
-        sql.append(", VERTEX_TABLE VARCHAR(255) NOT NULL, \"");
-        sql.append(SchemaManager.VERTEX_IN_LABELS);
-        sql.append("\" ");
-        sql.append(this.sqlDialect.getVarcharArray());
-        sql.append(", \"");
-        sql.append(SchemaManager.VERTEX_OUT_LABELS);
-        sql.append("\" ");
-        sql.append(this.sqlDialect.getVarcharArray());
+        sql.append(", VERTEX_TABLE VARCHAR(255) NOT NULL, ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
+        sql.append(" ");
+        sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
+        sql.append(", ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
+        sql.append(" ");
+        sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
         sql.append(");");
 
         Connection conn = this.sqlGraph.tx().getConnection();
@@ -176,13 +184,17 @@ public class SchemaManager {
     }
 
     private void createEdgesTable() throws SQLException {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS \"");
-        sql.append(SchemaManager.EDGES);
-        sql.append("\"(\"ID\" ");
+        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append("(");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
-        sql.append(", \"EDGE_TABLE\" VARCHAR(255));");
+        sql.append(", ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("EDGE_TABLE"));
+        sql.append(" VARCHAR(255));");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -191,7 +203,7 @@ public class SchemaManager {
 
     public boolean tableExist(String table)  {
         Connection conn = this.sqlGraph.tx().getConnection();
-        DatabaseMetaData metadata = null;
+        DatabaseMetaData metadata;
         try {
             metadata = conn.getMetaData();
             String catalog = null;
@@ -209,9 +221,11 @@ public class SchemaManager {
     }
 
     private void createVertexTable(String tableName, Map<String, PropertyType> columns) {
-        StringBuilder sql = new StringBuilder("CREATE TABLE \"");
-        sql.append(tableName);
-        sql.append("\" (\"ID\" ");
+        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+        sql.append(" (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
@@ -222,7 +236,7 @@ public class SchemaManager {
         for (String column : columns.keySet()) {
             PropertyType propertyType = columns.get(column);
             //Columns map 1 to 1 to property keys and are case sensitive
-            sql.append("\"").append(column).append("\" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
+            sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
             if (i++ < columns.size()) {
                 sql.append(", ");
             }
@@ -237,9 +251,11 @@ public class SchemaManager {
     }
 
     private void createEdgeTable(String tableName, String inTable, String outTable, Map<String, PropertyType> columns) {
-        StringBuilder sql = new StringBuilder("CREATE TABLE \"");
-        sql.append(tableName);
-        sql.append("\"(\"ID\" ");
+        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+        sql.append("(");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
@@ -250,34 +266,34 @@ public class SchemaManager {
         for (String column : columns.keySet()) {
             PropertyType propertyType = columns.get(column);
             //Columns map 1 to 1 to property keys and are case sensitive
-            sql.append("\"").append(column).append("\" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
+            sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
             if (i++ < columns.size()) {
                 sql.append(", ");
             }
         }
-        sql.append(", \"");
-        sql.append(inTable);
-        sql.append(SqlElement.IN_VERTEX_COLUMN_END);
-        sql.append("\" ");
-        sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
-        sql.append(", \"");
-        sql.append(outTable);
-        sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
-        sql.append("\" ");
+        sql.append(", ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable + SqlElement.IN_VERTEX_COLUMN_END));
+        sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
         sql.append(", ");
-        sql.append("FOREIGN KEY (\"");
-        sql.append(inTable);
-        sql.append(SqlElement.IN_VERTEX_COLUMN_END);
-        sql.append("\") REFERENCES \"");
-        sql.append(inTable);
-        sql.append("\" (\"ID\"), ");
-        sql.append(" FOREIGN KEY (\"");
-        sql.append(outTable);
-        sql.append(SqlElement.OUT_VERTEX_COLUMN_END);
-        sql.append("\") REFERENCES \"");
-        sql.append(outTable);
-        sql.append("\" (\"ID\"));");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable + SqlElement.OUT_VERTEX_COLUMN_END));
+        sql.append(" ");
+        sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
+        sql.append(", ");
+        sql.append("FOREIGN KEY (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable + SqlElement.IN_VERTEX_COLUMN_END));
+        sql.append(") REFERENCES ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable));
+        sql.append(" (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append("), ");
+        sql.append(" FOREIGN KEY (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable + SqlElement.OUT_VERTEX_COLUMN_END));
+        sql.append(") REFERENCES ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable));
+        sql.append(" (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append("));");
 
         Connection conn = this.sqlGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -290,18 +306,26 @@ public class SchemaManager {
     public void addEdgeLabelToVerticesTable(Long id, String label, boolean inDirection) {
         Set<String> labelSet = getLabelsForVertex(id, inDirection);
         labelSet.add(label);
-        StringBuilder sql = new StringBuilder("UPDATE \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\" SET ");
-        sql.append("\"");
-        sql.append(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
-        sql.append("\" = ?");
-        sql.append(" WHERE \"ID\" = ?;");
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" SET ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
+        sql.append(" = ?");
+        sql.append(" WHERE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             //varchar here must be lowercase
-            Array labelArray = conn.createArrayOf("varchar", labelSet.toArray());
-            preparedStatement.setArray(1, labelArray);
+            int count = 1;
+            StringBuilder sb = new StringBuilder();
+            for (String l : labelSet) {
+                sb.append(l);
+                if (count++ < labelSet.size()) {
+                    sb.append(":::");
+                }
+            }
+            preparedStatement.setString(1, sb.toString());
             preparedStatement.setLong(2, id);
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
             if (numberOfRowsUpdated != 1) {
@@ -314,26 +338,25 @@ public class SchemaManager {
 
     public Set<String> getLabelsForVertex(Long id, boolean inDirection) {
         Set<String> labels = new HashSet<>();
-        StringBuilder sql = new StringBuilder("SELECT \"");
-        sql.append(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
-        sql.append("\" FROM \"");
-        sql.append(SchemaManager.VERTICES);
-        sql.append("\" WHERE \"ID\" = ?");
+        StringBuilder sql = new StringBuilder("SELECT ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
+        sql.append(" FROM ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" WHERE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" = ?");
         sql.append(";");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
-                Array array = resultSet.getArray(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
-                if (array != null) {
-                    Object[] labelsAsObject = (Object[]) array.getArray();
-                    for (Object o : labelsAsObject) {
-                        labels.add((String) o);
+                String commaSeparatedLabels = resultSet.getString(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
+                if (commaSeparatedLabels != null) {
+                    labels.addAll(Arrays.asList(commaSeparatedLabels.split(":::")));
+                    if (resultSet.next()) {
+                        throw new IllegalStateException("!!!!!");
                     }
-                }
-                if (resultSet.next()) {
-                    throw new IllegalStateException("!!!!!");
                 }
             }
         } catch (SQLException e) {
@@ -343,12 +366,11 @@ public class SchemaManager {
     }
 
     private void addColumn(String table, ImmutablePair<String, PropertyType> keyValue) {
-        StringBuilder sql = new StringBuilder("ALTER TABLE \"");
-        sql.append(table);
-        sql.append("\" ADD ");
-        sql.append("\"");
-        sql.append(keyValue.left);
-        sql.append("\" ");
+        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+        sql.append(" ADD ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(keyValue.left));
+        sql.append(" ");
         sql.append(this.sqlDialect.propertyTypeToSqlDefinition(keyValue.right));
         sql.append(";");
         Connection conn = this.sqlGraph.tx().getConnection();

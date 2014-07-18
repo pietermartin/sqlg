@@ -6,7 +6,8 @@ import org.umlg.sqlgraph.structure.PropertyType;
  * Created by pieter on 2014/07/16.
  */
 public interface SqlDialect {
-    String getVarcharArray();
+
+    String getColumnEscapeKey();
 
     String getPrimaryKeyType();
 
@@ -17,4 +18,45 @@ public interface SqlDialect {
     int propertyTypeToJavaSqlType(PropertyType propertyType);
 
     String getForeignKeyTypeDefinition();
+
+    boolean supportsFloatValues();
+
+    public default String maybeWrapInQoutes(String field) {
+        StringBuilder sb = new StringBuilder(getColumnEscapeKey());
+        sb.append(field);
+        sb.append(getColumnEscapeKey());
+        return sb.toString();
+    }
+
+    public default boolean supportsTransactionalSchema() {
+        return true;
+    }
+
+    public default boolean supportsBooleanArrayValues() {
+        return true;
+    }
+
+    public default boolean supportsByteArrayValues() {
+        return true;
+    }
+
+    public default boolean supportsDoubleArrayValues() {
+        return true;
+    }
+
+    public default boolean supportsFloatArrayValues() {
+        return true;
+    }
+
+    public default boolean supportsIntegerArrayValues() {
+        return true;
+    }
+
+    public default boolean supportsLongArrayValues() {
+        return true;
+    }
+
+    public default boolean supportsStringArrayValues() {
+        return true;
+    }
 }

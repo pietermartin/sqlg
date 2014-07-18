@@ -2,6 +2,7 @@ package org.umlg.sqlgraph.structure;
 
 import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.umlg.sqlgraph.sql.dialect.SqlDialect;
 import org.umlg.sqlgraph.structure.PropertyType;
 
 import java.util.*;

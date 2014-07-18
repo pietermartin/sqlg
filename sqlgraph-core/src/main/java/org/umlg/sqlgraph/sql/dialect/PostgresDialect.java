@@ -11,8 +11,8 @@ import java.sql.Types;
 public class PostgresDialect implements SqlDialect {
 
     @Override
-    public String getVarcharArray() {
-        return "VARCHAR(255) ARRAY";
+    public String getColumnEscapeKey() {
+        return "\"";
     }
 
     @Override
@@ -66,7 +66,7 @@ public class PostgresDialect implements SqlDialect {
             case FLOAT:
                 return Types.REAL;
             case DOUBLE:
-                return Types.BOOLEAN;
+                return Types.DOUBLE;
             case STRING:
                 return Types.CLOB;
             default:
@@ -77,5 +77,10 @@ public class PostgresDialect implements SqlDialect {
     @Override
     public String getForeignKeyTypeDefinition() {
         return "BIGINT NOT NULL";
+    }
+
+    @Override
+    public boolean supportsFloatValues() {
+        return true;
     }
 }

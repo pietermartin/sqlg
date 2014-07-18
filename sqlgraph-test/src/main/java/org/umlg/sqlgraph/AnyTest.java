@@ -10,7 +10,7 @@ import org.umlg.sqlgraph.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSetProperty.class
+        TinkerpopTest.class
 })
 public class AnyTest {
 }
