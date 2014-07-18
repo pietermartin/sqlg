@@ -43,7 +43,7 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     @Override
     public boolean isPresent() {
-        return this.value != null && !this.value.equals(REMOVED);
+        return this.value != null;
     }
 
     @Override
@@ -65,7 +65,8 @@ public class SqlProperty<V> implements Property<V>, Serializable {
         sql.append("\" = ? WHERE \"ID\" = ?;");
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setString(1, REMOVED);
+            PropertyType propertyType = PropertyType.from(value);
+            preparedStatement.setNull(1, this.sqlGraph.getSchemaManager().getSqlDialect().propertyTypeToJavaSqlType(propertyType));
             preparedStatement.setLong(2, (Long) this.element.id());
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
             if (numberOfRowsUpdated != 1) {

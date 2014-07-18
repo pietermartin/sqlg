@@ -71,9 +71,6 @@ public class SqlEdge extends SqlElement implements Edge {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
-            if (numberOfRowsUpdated != 1) {
-                throw Element.Exceptions.elementHasAlreadyBeenRemovedOrDoesNotExist(Edge.class, this.id());
-            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -89,6 +86,7 @@ public class SqlEdge extends SqlElement implements Edge {
         return outVertex;
     }
 
+    @Override
     public String toString() {
         return StringFactory.edgeString(this);
     }

@@ -67,7 +67,11 @@ public class SqlGraph implements Graph {
         }
         try {
             this.jdbcUrl = configuration.getString("jdbc.url");
-            SqlGraphDataSource.INSTANCE.setupDataSource(sqlGraphDialect.getJdbcDriver(), configuration.getString("jdbc.url"));
+            SqlGraphDataSource.INSTANCE.setupDataSource(
+                    sqlGraphDialect.getJdbcDriver(),
+                    configuration.getString("jdbc.url"),
+                    configuration.getString("jdbc.username"),
+                    configuration.getString("jdbc.password"));
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
@@ -196,6 +200,7 @@ public class SqlGraph implements Graph {
         if (this.tx().isOpen())
             this.tx().close();
         this.schemaManager.close();
+        SqlGraphDataSource.INSTANCE.close(this.getJdbcUrl());
     }
 
     public String toString() {
@@ -232,7 +237,7 @@ public class SqlGraph implements Graph {
                  */
                 @Override
                 public boolean supportsFullyIsolatedTransactions() {
-                    return false;
+                    return true;
                 }
             };
         }
@@ -255,7 +260,7 @@ public class SqlGraph implements Graph {
         public static class SqlVertexFeatures implements VertexFeatures {
             @Override
             public VertexAnnotationFeatures annotations() {
-                return new Neo4jVertexAnnotationFeatures();
+                return new SqlGraphVertexAnnotationFeatures();
             }
 
             @Override
@@ -265,7 +270,7 @@ public class SqlGraph implements Graph {
 
             @Override
             public VertexPropertyFeatures properties() {
-                return new Neo4jVertexPropertyFeatures();
+                return new SqlGraphVertexPropertyFeatures();
             }
         }
 
@@ -281,7 +286,7 @@ public class SqlGraph implements Graph {
             }
         }
 
-        public static class Neo4jVertexPropertyFeatures implements VertexPropertyFeatures {
+        public static class SqlGraphVertexPropertyFeatures implements VertexPropertyFeatures {
             @Override
             public boolean supportsMapValues() {
                 return false;
@@ -417,7 +422,7 @@ public class SqlGraph implements Graph {
             }
         }
 
-        public static class Neo4jVertexAnnotationFeatures implements VertexAnnotationFeatures {
+        public static class SqlGraphVertexAnnotationFeatures implements VertexAnnotationFeatures {
             @Override
             public boolean supportsBooleanValues() {
                 return false;

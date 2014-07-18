@@ -22,7 +22,11 @@ public class TestPool {
     public void testPool() throws ConfigurationException, SQLException, PropertyVetoException {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlgraph.properties");
         Configuration config = new PropertiesConfiguration(sqlProperties);
-        SqlGraphDataSource.INSTANCE.setupDataSource(config.getString("jdbc.driver"), config.getString("jdbc.url"));
+        SqlGraphDataSource.INSTANCE.setupDataSource(
+                config.getString("jdbc.driver"),
+                config.getString("jdbc.url"),
+                config.getString("jdbc.username"),
+                config.getString("jdbc.password"));
         for (int i = 0; i < 100; i++) {
             Connection conn = SqlGraphDataSource.INSTANCE.get(config.getString("jdbc.url")).getConnection();
             Statement st = conn.createStatement();

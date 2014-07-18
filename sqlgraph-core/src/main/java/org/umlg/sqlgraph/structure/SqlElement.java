@@ -55,9 +55,6 @@ public abstract class SqlElement implements Element {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
-            if (numberOfRowsUpdated != 1) {
-                throw new IllegalStateException("Remove element failed!");
-            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -77,7 +74,7 @@ public abstract class SqlElement implements Element {
                 key = (String) o;
             } else {
                 value = o;
-                if (!key.equals("ID") && value != null && !value.equals(SqlProperty.REMOVED)) {
+                if (!key.equals("ID") && value != null) {
                     properties.put(key, new SqlProperty<>(this.sqlGraph, this, key, value));
                 }
             }

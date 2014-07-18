@@ -83,14 +83,6 @@ public class SqlGraphTransaction implements Transaction {
         }
     }
 
-    public void afterCommit(AfterCommit afterCommitFunction) {
-        this.afterCommitFunction = afterCommitFunction;
-    }
-
-    public void afterRollback(AfterRollback afterRollbackFunction) {
-        this.afterRollbackFunction = afterRollbackFunction;
-    }
-
     @Override
     public void rollback() {
         if (!isOpen())
@@ -111,6 +103,14 @@ public class SqlGraphTransaction implements Transaction {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public void afterCommit(AfterCommit afterCommitFunction) {
+        this.afterCommitFunction = afterCommitFunction;
+    }
+
+    public void afterRollback(AfterRollback afterCommitFunction) {
+        this.afterRollbackFunction = afterCommitFunction;
     }
 
     @Override

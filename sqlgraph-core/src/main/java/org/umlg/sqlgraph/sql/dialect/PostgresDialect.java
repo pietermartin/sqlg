@@ -2,6 +2,8 @@ package org.umlg.sqlgraph.sql.dialect;
 
 import org.umlg.sqlgraph.structure.PropertyType;
 
+import java.sql.Types;
+
 /**
  * Date: 2014/07/16
  * Time: 1:42 PM
@@ -38,14 +40,38 @@ public class PostgresDialect implements SqlDialect {
             case LONG:
                 return "BIGINT" ;
             case FLOAT:
-                return "FLOAT" ;
-            case DOUBLE:
                 return "REAL" ;
+            case DOUBLE:
+                return "DOUBLE PRECISION" ;
             case STRING:
                 return "TEXT" ;
+            default:
+                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
+    }
 
-        return null;
+    @Override
+    public int propertyTypeToJavaSqlType(PropertyType propertyType) {
+        switch (propertyType) {
+            case BOOLEAN:
+                return Types.BOOLEAN ;
+            case BYTE:
+                return Types.TINYINT;
+            case SHORT:
+                return Types.TINYINT;
+            case INTEGER:
+                return Types.INTEGER;
+            case LONG:
+                return Types.BIGINT;
+            case FLOAT:
+                return Types.REAL;
+            case DOUBLE:
+                return Types.BOOLEAN;
+            case STRING:
+                return Types.CLOB;
+            default:
+                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+        }
     }
 
     @Override

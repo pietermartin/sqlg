@@ -19,13 +19,33 @@ public class SchemaManager {
     public static final String VERTEX_OUT_LABELS = "OUT_LABELS";
     public static final String EDGES = "EDGES";
     private Map<String, Map<String, PropertyType>> schema = new ConcurrentHashMap<>();
-    private Map<String, ReentrantLock> schemaLocks = new ConcurrentHashMap<>();
+    private Map<String, Map<String, PropertyType>> uncommittedSchema = new ConcurrentHashMap<>();
+    private ReentrantLock schemaLock = new ReentrantLock();
     private SqlGraph sqlGraph;
     private SqlDialect sqlDialect;
 
     SchemaManager(SqlGraph sqlGraph, SqlDialect sqlDialect) {
         this.sqlGraph = sqlGraph;
         this.sqlDialect = sqlDialect;
+        this.sqlGraph.tx().afterCommit(() -> {
+            if (this.schemaLock.isHeldByCurrentThread()) {
+                for (String t : this.uncommittedSchema.keySet()) {
+                    this.schema.put(t, this.uncommittedSchema.get(t));
+                }
+                this.uncommittedSchema.clear();
+                this.schemaLock.unlock();
+            }
+        });
+        this.sqlGraph.tx().afterRollback(() -> {
+            if (this.schemaLock.isHeldByCurrentThread()) {
+                this.uncommittedSchema.clear();
+                this.schemaLock.unlock();
+            }
+        });
+    }
+
+    public SqlDialect getSqlDialect() {
+        return sqlDialect;
     }
 
     /**
@@ -60,27 +80,17 @@ public class SchemaManager {
 
     public void ensureVertexTableExist(String table, Object... keyValues) {
         Objects.requireNonNull(table, "Given table must not be null");
-        ConcurrentHashMap<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
+        final ConcurrentHashMap<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.schema.containsKey(table)) {
-            ReentrantLock reentrantLock = this.schemaLocks.computeIfAbsent(table,
-                    (key) -> new ReentrantLock()
-            );
-            reentrantLock.lock();
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
             if (!this.schema.containsKey(table)) {
-                createVertexTable(table, columns);
-                this.sqlGraph.tx().afterCommit(() -> {
-                    if (reentrantLock.isHeldByCurrentThread()) {
-                        this.schema.put(table, columns);
-                        reentrantLock.unlock();
-                    }
-                });
-                this.sqlGraph.tx().afterRollback(() -> {
-                    if (reentrantLock.isHeldByCurrentThread()) {
-                        reentrantLock.unlock();
-                    }
-                });
-            } else {
-                reentrantLock.unlock();
+                if (!this.uncommittedSchema.containsKey(table)) {
+                    this.uncommittedSchema.put(table, columns);
+                    createVertexTable(table, columns);
+                }
             }
         }
         //ensure columns exist
@@ -91,27 +101,17 @@ public class SchemaManager {
         Objects.requireNonNull(table, "Given table must not be null");
         Objects.requireNonNull(table, "Given inTable must not be null");
         Objects.requireNonNull(table, "Given outTable must not be null");
-        Map<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
+        final ConcurrentHashMap<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.schema.containsKey(table)) {
-            ReentrantLock reentrantLock = this.schemaLocks.computeIfAbsent(table,
-                    (key) -> new ReentrantLock()
-            );
-            reentrantLock.lock();
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
             if (!this.schema.containsKey(table)) {
-                createEdgeTable(table, inTable, outTable, columns);
-                this.sqlGraph.tx().afterCommit(() -> {
-                    if (reentrantLock.isHeldByCurrentThread()) {
-                        this.schema.put(table, columns);
-                        reentrantLock.unlock();
-                    }
-                });
-                this.sqlGraph.tx().afterRollback(() -> {
-                    if (reentrantLock.isHeldByCurrentThread()) {
-                        reentrantLock.unlock();
-                    }
-                });
-            } else {
-                reentrantLock.unlock();
+                if (!this.uncommittedSchema.containsKey(table)) {
+                    this.uncommittedSchema.put(table, columns);
+                    createEdgeTable(table, inTable, outTable, columns);
+                }
             }
         }
         //ensure columns exist
@@ -119,23 +119,23 @@ public class SchemaManager {
     }
 
     public void ensureColumnExist(String table, ImmutablePair<String, PropertyType> keyValue) {
-        Map<String, PropertyType> cachedColumns = this.schema.get(table);
-        Objects.requireNonNull(cachedColumns, "Table must already be present in the cache!");
-        if (!cachedColumns.containsKey(keyValue.left)) {
-            ReentrantLock reentrantLock = this.schemaLocks.computeIfAbsent(table,
-                    (key) -> new ReentrantLock()
-            );
-            reentrantLock.lock();
-            if (!cachedColumns.containsKey(keyValue.left)) {
+        final Map<String, PropertyType> cachedColumns = this.schema.get(table);
+        final Map<String, PropertyType> uncommitedColumns;
+        if (cachedColumns == null) {
+            uncommitedColumns = this.uncommittedSchema.get(table);
+        } else {
+            uncommitedColumns = cachedColumns;
+        }
+        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
+        if (!uncommitedColumns.containsKey(keyValue.left)) {
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
+            if (!uncommitedColumns.containsKey(keyValue.left)) {
                 addColumn(table, keyValue);
-                this.sqlGraph.tx().afterCommit(() -> {
-                    if (reentrantLock.isHeldByCurrentThread()) {
-                        reentrantLock.unlock();
-                        cachedColumns.put(keyValue.left, keyValue.right);
-                    }
-                });
-            } else {
-                reentrantLock.unlock();
+                uncommitedColumns.put(keyValue.left, keyValue.right);
+                this.uncommittedSchema.put(table, uncommitedColumns);
             }
         }
     }
@@ -189,10 +189,11 @@ public class SchemaManager {
         }
     }
 
-    public boolean tableExist(String table) {
+    public boolean tableExist(String table)  {
+        Connection conn = this.sqlGraph.tx().getConnection();
+        DatabaseMetaData metadata = null;
         try {
-            Connection conn = this.sqlGraph.tx().getConnection();
-            DatabaseMetaData metadata = conn.getMetaData();
+            metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
             String tableNamePattern = table;
@@ -201,16 +202,16 @@ public class SchemaManager {
             while (result.next()) {
                 return true;
             }
-            return false;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return false;
     }
 
     private void createVertexTable(String tableName, Map<String, PropertyType> columns) {
-        StringBuilder sql = new StringBuilder("CREATE TABLE IF NOT EXISTS \"");
+        StringBuilder sql = new StringBuilder("CREATE TABLE \"");
         sql.append(tableName);
-        sql.append("\"(\"ID\" ");
+        sql.append("\" (\"ID\" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());

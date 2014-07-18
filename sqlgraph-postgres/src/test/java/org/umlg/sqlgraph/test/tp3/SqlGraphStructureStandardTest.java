@@ -1,8 +1,7 @@
-package org.umlg.tinkerpop3.test.structure;
+package org.umlg.sqlgraph.test.tp3;
 
 import com.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.runner.RunWith;
-import org.umlg.tinkerpop3.test.SqlGraphProvider;
 
 
 /**

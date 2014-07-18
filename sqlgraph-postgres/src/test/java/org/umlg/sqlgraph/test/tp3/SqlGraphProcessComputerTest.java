@@ -1,9 +1,8 @@
-package org.umlg.tinkerpop3.test.process;
+package org.umlg.sqlgraph.test.tp3;
 
 import com.tinkerpop.gremlin.process.ProcessComputerSuite;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
-import org.umlg.tinkerpop3.test.SqlGraphProvider;
 
 
 /**

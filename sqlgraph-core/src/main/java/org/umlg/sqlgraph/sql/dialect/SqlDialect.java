@@ -14,5 +14,7 @@ public interface SqlDialect {
 
     String propertyTypeToSqlDefinition(PropertyType propertyType);
 
+    int propertyTypeToJavaSqlType(PropertyType propertyType);
+
     String getForeignKeyTypeDefinition();
 }

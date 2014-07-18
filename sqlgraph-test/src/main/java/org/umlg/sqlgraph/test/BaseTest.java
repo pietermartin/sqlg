@@ -41,7 +41,11 @@ public abstract class BaseTest {
     @Before
     public void before() throws IOException {
         try {
-            SqlGraphDataSource.INSTANCE.setupDataSource(config.getString("jdbc.driver"), config.getString("jdbc.url"));
+            SqlGraphDataSource.INSTANCE.setupDataSource(
+                    config.getString("jdbc.driver"),
+                    config.getString("jdbc.url"),
+                    config.getString("jdbc.username"),
+                    config.getString("jdbc.password"));
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }

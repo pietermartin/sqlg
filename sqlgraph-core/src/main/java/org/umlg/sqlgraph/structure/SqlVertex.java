@@ -5,6 +5,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
+import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
@@ -100,9 +101,6 @@ public class SqlVertex extends SqlElement implements Vertex {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
-            if (numberOfRowsUpdated != 1) {
-                throw Element.Exceptions.elementHasAlreadyBeenRemovedOrDoesNotExist(Vertex.class, this.id());
-            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -366,6 +364,11 @@ public class SqlVertex extends SqlElement implements Vertex {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public String toString() {
+        return StringFactory.vertexString(this);
     }
 
 }

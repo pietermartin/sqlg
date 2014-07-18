@@ -17,6 +17,11 @@ public class TestSetProperty extends BaseTest {
         marko.property("surname", "xxxx");
         this.sqlGraph.tx().commit();
         Assert.assertEquals("xxxx", marko.property("surname").value());
+    }
 
+    @Test
+    public void testPropertyManyTimes() {
+        Vertex v = this.sqlGraph.addVertex("age", 1, "name", "marko", "name", "john");
+        this.sqlGraph.tx().commit();
     }
 }
