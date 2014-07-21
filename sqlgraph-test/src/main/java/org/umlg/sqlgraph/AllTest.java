@@ -20,8 +20,7 @@ import org.umlg.sqlgraph.test.*;
         TestRemoveProperty.class,
         TestSetProperty.class,
         TestVertexCreation.class,
-        TestVertexNavToEdges.class,
-        TinkerpopTest.class
+        TestVertexNavToEdges.class
 })
 public class AllTest {
 }

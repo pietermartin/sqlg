@@ -1,5 +1,6 @@
 package org.umlg.sqlgraph.sql.dialect;
 
+import com.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlgraph.structure.PropertyType;
 
 import java.sql.Types;
@@ -11,18 +12,51 @@ import java.sql.Types;
 public class MariaDbDialect implements SqlDialect {
 
     @Override
+    public void validateProperty(Object key, Object value) {
+        if (value instanceof String) {
+            return;
+        }
+        if (value instanceof Character) {
+            return;
+        }
+        if (value instanceof Boolean) {
+            return;
+        }
+        if (value instanceof Byte) {
+            return;
+        }
+        if (value instanceof Short) {
+            return;
+        }
+        if (value instanceof Integer) {
+            return;
+        }
+        if (value instanceof Long) {
+            return;
+        }
+        if (value instanceof Float) {
+            return;
+        }
+        if (value instanceof Double) {
+            return;
+        }
+        throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+    }
+
+
+    @Override
     public String getColumnEscapeKey() {
         return "`";
     }
 
     @Override
     public String getPrimaryKeyType() {
-        return "BIGINT NOT NULL";
+        return "BIGINT NOT NULL PRIMARY KEY";
     }
 
     @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
-        return "AUTO_INCREMENT PRIMARY KEY";
+        return "BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY";
     }
 
     @Override
@@ -32,7 +66,7 @@ public class MariaDbDialect implements SqlDialect {
             case BOOLEAN:
                 return "BOOLEAN";
             case BYTE:
-                return "SMALLINT";
+                return "TINYINT";
             case SHORT:
                 return "SMALLINT";
             case INTEGER:
@@ -46,7 +80,7 @@ public class MariaDbDialect implements SqlDialect {
             case STRING:
                 return "TEXT";
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(propertyType);
         }
     }
 
@@ -58,7 +92,7 @@ public class MariaDbDialect implements SqlDialect {
             case BYTE:
                 return Types.TINYINT;
             case SHORT:
-                return Types.TINYINT;
+                return Types.SMALLINT;
             case INTEGER:
                 return Types.INTEGER;
             case LONG:
@@ -70,18 +104,13 @@ public class MariaDbDialect implements SqlDialect {
             case STRING:
                 return Types.CLOB;
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(propertyType);
         }
     }
 
     @Override
     public String getForeignKeyTypeDefinition() {
         return "BIGINT NOT NULL";
-    }
-
-    @Override
-    public boolean supportsFloatValues() {
-        return true;
     }
 
     @Override

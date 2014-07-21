@@ -15,6 +15,8 @@ import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -75,23 +77,27 @@ public abstract class BaseTest {
         }
         try (Connection conn = SqlGraphDataSource.INSTANCE.get(config.getString("jdbc.url")).getConnection()) {
             DatabaseMetaData metadata = conn.getMetaData();
-            String catalog = "sqlgraphdb";
-            String schemaPattern = null;
-            String tableNamePattern = "%";
-            String[] types = {"TABLE"};
-            ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-            while (result.next()) {
-                StringBuilder sql = new StringBuilder("DROP TABLE ");
-                sql.append(sqlGraphDialect.getSqlDialect().maybeWrapInQoutes(result.getString(3)));
-                if (sqlGraphDialect.getSqlDialect().supportsCascade()) {
+            if (sqlGraphDialect.getSqlDialect().supportsCascade()) {
+                String catalog = "sqlgraphdb";
+                String schemaPattern = null;
+                String tableNamePattern = "%";
+                String[] types = {"TABLE"};
+                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (result.next()) {
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlGraphDialect.getSqlDialect().maybeWrapInQoutes(result.getString(3)));
                     sql.append(" CASCADE");
                     if (sqlGraphDialect.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
                     }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    }
                 }
-                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                    preparedStatement.executeUpdate();
-                }
+            } else {
+                conn.setAutoCommit(false);
+                JDBC.dropSchema(metadata, "APP");
+                conn.commit();
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -114,7 +120,9 @@ public abstract class BaseTest {
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(table));
-            sql.append(";");
+            if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
 

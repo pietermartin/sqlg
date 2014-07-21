@@ -146,6 +146,28 @@ public class SchemaManager {
         }
     }
 
+//    public void ensureEdgeTableInOutForeignKeysExist(String table, String inTable, String outTable) {
+//        final Map<String, PropertyType> cachedColumns = this.schema.get(table);
+//        final Map<String, PropertyType> uncommitedColumns;
+//        if (cachedColumns == null) {
+//            uncommitedColumns = this.uncommittedSchema.get(table);
+//        } else {
+//            uncommitedColumns = cachedColumns;
+//        }
+//        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
+//        if (!uncommitedColumns.containsKey(keyValue.left)) {
+//            //Make sure the current thread/transaction owns the lock
+//            if (!this.schemaLock.isHeldByCurrentThread()) {
+//                this.schemaLock.lock();
+//            }
+//            if (!uncommitedColumns.containsKey(keyValue.left)) {
+//                addEdgeTableInOutForeignKey(table, inTable, outTable);
+//                uncommitedColumns.put(keyValue.left, keyValue.right);
+//                this.uncommittedSchema.put(table, uncommitedColumns);
+//            }
+//        }
+//    }
+
     public void close() {
         this.schema.clear();
     }
@@ -160,8 +182,6 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append(" ");
-        sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         sql.append(", VERTEX_TABLE VARCHAR(255) NOT NULL, ");
@@ -187,13 +207,10 @@ public class SchemaManager {
     }
 
     private void createEdgesTable() throws SQLException {
-        //IF NOT EXISTS
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append(" ");
-        sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         sql.append(", ");
@@ -228,15 +245,12 @@ public class SchemaManager {
     }
 
     private void createVertexTable(String tableName, Map<String, PropertyType> columns) {
-//        IF NOT EXISTS
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
-        sql.append(" ");
-        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         if (columns.size() > 0) {
             sql.append(", ");
         }
@@ -262,15 +276,12 @@ public class SchemaManager {
     }
 
     private void createEdgeTable(String tableName, String inTable, String outTable, Map<String, PropertyType> columns) {
-//        IF NOT EXISTS
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
-        sql.append(" ");
-        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         if (columns.size() > 0) {
             sql.append(", ");
         }
@@ -402,5 +413,26 @@ public class SchemaManager {
         }
     }
 
+    private void addEdgeTableInOutForeignKey(String table, String inTable, String outTable) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("FOREIGN KEY (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable + SqlElement.IN_VERTEX_COLUMN_END));
+        sql.append(") REFERENCES ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable));
+        sql.append(" (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append("), ");
+        sql.append(" FOREIGN KEY (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable + SqlElement.OUT_VERTEX_COLUMN_END));
+        sql.append(") REFERENCES ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable));
+        sql.append(" (");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append("))");
+    }
 
+
+    public void createIndex(String label, String propertyKey) {
+
+    }
 }

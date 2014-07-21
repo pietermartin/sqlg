@@ -6,9 +6,11 @@ import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
+import java.lang.reflect.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,6 +117,7 @@ public abstract class SqlElement implements Element {
     @Override
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
+        this.sqlGraph.getSqlDialect().validateProperty(key, value);
         //Validate the property
         PropertyType.from(value);
         //Check if column exist
@@ -137,35 +140,7 @@ public abstract class SqlElement implements Element {
         }
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            PropertyType propertyType = PropertyType.from(value);
-            switch (propertyType) {
-                case BOOLEAN:
-                    preparedStatement.setBoolean(1, (Boolean) value);
-                    break;
-                case BYTE:
-                    preparedStatement.setByte(1, (Byte) value);
-                    break;
-                case SHORT:
-                    preparedStatement.setShort(1, (Short) value);
-                    break;
-                case INTEGER:
-                    preparedStatement.setInt(1, (Integer) value);
-                    break;
-                case LONG:
-                    preparedStatement.setLong(1, (Long) value);
-                    break;
-                case FLOAT:
-                    preparedStatement.setFloat(1, (Float) value);
-                    break;
-                case DOUBLE:
-                    preparedStatement.setDouble(1, (Double) value);
-                    break;
-                case STRING:
-                    preparedStatement.setString(1, (String) value);
-                    break;
-                default:
-                    throw new IllegalStateException("Unhandled type " + propertyType.name());
-            }
+            setKeyValuesAsParameter(1, conn, preparedStatement, new Object[]{key, value});
             preparedStatement.setLong(2, (Long) this.id());
             preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -182,6 +157,140 @@ public abstract class SqlElement implements Element {
     @Override
     public int hashCode() {
         return this.id().hashCode();
+    }
+
+    protected Object convertObjectArrayToPrimitiveArray(Object[] value, int baseType) {
+        if (value instanceof String[]) {
+            return value;
+        }
+        if (value instanceof Integer[]) {
+            switch (baseType) {
+                case Types.TINYINT:
+                    return copyToTinyInt((Integer[]) value, new byte[value.length]);
+                case Types.SMALLINT:
+                    return copyToSmallInt((Integer[]) value, new short[value.length]);
+                default:
+                    return copy(value, new int[value.length]);
+            }
+        }
+        if (value instanceof Long[]) {
+            return copy(value, new long[value.length]);
+        }
+        if (value instanceof Double[]) {
+            return copy(value, new double[value.length]);
+        }
+        if (value instanceof Float[]) {
+            return copy(value, new float[value.length]);
+        }
+        if (value instanceof Boolean[]) {
+            return copy(value, new boolean[value.length]);
+        }
+        if (value instanceof Character[]) {
+            return copy(value, new char[value.length]);
+        }
+        throw new IllegalArgumentException(
+                String.format("%s[] is not a supported property value type",
+                        value.getClass().getComponentType().getName()));
+
+    }
+
+    private <T> T copy(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i]);
+        }
+        return target;
+    }
+
+    private <T> T copyToTinyInt(Integer[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].byteValue());
+        }
+        return target;
+    }
+
+    private <T> T copyToSmallInt(Integer[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].shortValue());
+        }
+        return target;
+    }
+
+    protected int setKeyValuesAsParameter(int i, Connection conn, PreparedStatement preparedStatement, Object[] keyValues) throws SQLException {
+        for (ImmutablePair<PropertyType, Object> pair : SqlUtil.transformToTypeAndValue(keyValues)) {
+            switch (pair.left) {
+                case BOOLEAN:
+                    preparedStatement.setBoolean(i++, (Boolean) pair.right);
+                    break;
+                case BYTE:
+                    preparedStatement.setByte(i++, (Byte) pair.right);
+                    break;
+                case SHORT:
+                    preparedStatement.setShort(i++, (Short) pair.right);
+                    break;
+                case INTEGER:
+                    preparedStatement.setInt(i++, (Integer) pair.right);
+                    break;
+                case LONG:
+                    preparedStatement.setLong(i++, (Long) pair.right);
+                    break;
+                case FLOAT:
+                    preparedStatement.setFloat(i++, (Float) pair.right);
+                    break;
+                case DOUBLE:
+                    preparedStatement.setDouble(i++, (Double) pair.right);
+                    break;
+                case STRING:
+                    preparedStatement.setString(i++, (String) pair.right);
+                    break;
+
+                //TODO the array properties are hardcoded according to postgres's jdbc driver
+                case BOOLEAN_ARRAY:
+                    java.sql.Array booleanArray = conn.createArrayOf("bool", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, booleanArray);
+                    break;
+                case BYTE_ARRAY:
+                    preparedStatement.setByte(i++, (Byte) pair.right);
+                    break;
+                case SHORT_ARRAY:
+                    java.sql.Array shortArray = conn.createArrayOf("smallint", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, shortArray);
+                    break;
+                case INTEGER_ARRAY:
+                    java.sql.Array intArray = conn.createArrayOf("integer", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, intArray);
+                    break;
+                case LONG_ARRAY:
+                    java.sql.Array longArray = conn.createArrayOf("bigint", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, longArray);
+                    break;
+                case FLOAT_ARRAY:
+                    java.sql.Array floatArray = conn.createArrayOf("float", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, floatArray);
+                    break;
+                case DOUBLE_ARRAY:
+                    java.sql.Array doubleArray = conn.createArrayOf("float", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, doubleArray);
+                    break;
+                case STRING_ARRAY:
+                    java.sql.Array stringArray = conn.createArrayOf("varchar", SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(i++, stringArray);
+                    break;
+
+
+                default:
+                    throw new IllegalStateException("Unhandled type " + pair.left.name());
+            }
+        }
+        return i;
     }
 
 }

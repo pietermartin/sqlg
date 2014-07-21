@@ -2,12 +2,10 @@ package org.umlg.sqlgraph.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.sql.*;
 import java.util.*;
@@ -44,6 +42,7 @@ public class SqlVertex extends SqlElement implements Vertex {
             } else {
                 value = keyValue;
                 ElementHelper.validateProperty(key, value);
+                this.sqlGraph.getSqlDialect().validateProperty(key, value);
             }
         }
         this.sqlGraph.tx().readWrite();
@@ -67,9 +66,9 @@ public class SqlVertex extends SqlElement implements Vertex {
             public SqlVertex next() {
                 SqlEdge sqlEdge = itty.next();
                 SqlVertex inVertex = sqlEdge.getInVertex();
-                SqlVertex outVertex = sqlEdge.getInVertex();
-                if (direction == Direction.IN) {
-                    return outVertex;
+                SqlVertex outVertex = sqlEdge.getOutVertex();
+                if (inVertex.id().equals(SqlVertex.this.id())) {
+                     return outVertex;
                 } else {
                     return inVertex;
                 }
@@ -156,36 +155,7 @@ public class SqlVertex extends SqlElement implements Vertex {
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(i++, vertexId);
-            for (ImmutablePair<PropertyType, Object> pair : SqlUtil.transformToTypeAndValue(keyValues)) {
-                switch (pair.left) {
-                    case BOOLEAN:
-                        preparedStatement.setBoolean(i++, (Boolean) pair.right);
-                        break;
-                    case BYTE:
-                        preparedStatement.setByte(i++, (Byte) pair.right);
-                        break;
-                    case SHORT:
-                        preparedStatement.setShort(i++, (Short) pair.right);
-                        break;
-                    case INTEGER:
-                        preparedStatement.setInt(i++, (Integer) pair.right);
-                        break;
-                    case LONG:
-                        preparedStatement.setLong(i++, (Long) pair.right);
-                        break;
-                    case FLOAT:
-                        preparedStatement.setFloat(i++, (Float) pair.right);
-                        break;
-                    case DOUBLE:
-                        preparedStatement.setDouble(i++, (Double) pair.right);
-                        break;
-                    case STRING:
-                        preparedStatement.setString(i++, (String) pair.right);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unhandled type " + pair.left.name());
-                }
-            }
+            setKeyValuesAsParameter(i, conn, preparedStatement, keyValues);
             preparedStatement.executeUpdate();
             this.primaryKey = vertexId;
         } catch (SQLException e) {
@@ -316,7 +286,7 @@ public class SqlVertex extends SqlElement implements Vertex {
                                 }
                             }
                             SqlEdge sqlEdge = null;
-                            switch (direction) {
+                            switch (d) {
                                 case IN:
                                     sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
                                     break;
@@ -324,16 +294,17 @@ public class SqlVertex extends SqlElement implements Vertex {
                                     sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
                                     break;
                                 case BOTH:
-                                    if (inId == this.primaryKey && outId != this.primaryKey) {
-                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
-                                    } else if (inId != this.primaryKey && outId == this.primaryKey) {
-                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
-                                    } else if (inId == this.primaryKey && outId == this.primaryKey) {
-                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, this, keyValues.toArray());
-                                    } else {
-                                        throw new IllegalStateException("inId or outId must match!");
-                                    }
-                                    break;
+                                    throw new IllegalStateException("This should not be possible!");
+//                                    if (inId == this.primaryKey && outId != this.primaryKey) {
+//                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
+//                                    } else if (inId != this.primaryKey && outId == this.primaryKey) {
+//                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
+//                                    } else if (inId == this.primaryKey && outId == this.primaryKey) {
+//                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, this, keyValues.toArray());
+//                                    } else {
+//                                        throw new IllegalStateException("inId or outId must match!");
+//                                    }
+//                                    break;
                             }
                             edges.add(sqlEdge);
                         }
@@ -370,7 +341,23 @@ public class SqlVertex extends SqlElement implements Vertex {
                     Object o = resultSet.getObject(columnName);
                     if (!columnName.equals("ID") && !Objects.isNull(o)) {
                         keyValues.add(columnName);
-                        keyValues.add(o);
+                        int type = resultSetMetaData.getColumnType(i);
+                        switch (type) {
+                            case Types.SMALLINT:
+                                keyValues.add(((Integer)o).shortValue());
+                                break;
+                            case Types.TINYINT:
+                                keyValues.add(((Integer)o).byteValue());
+                                break;
+                            case Types.ARRAY:
+                                Array array = (Array) o;
+                                int baseType = array.getBaseType();
+                                Object[] objectArray = (Object[]) array.getArray();
+                                keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                                break;
+                            default:
+                                keyValues.add(o);
+                        }
                     }
                 }
                 break;

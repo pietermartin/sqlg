@@ -1,16 +1,12 @@
-package org.umlg.sqlgraph.test.tp3;
+package org.umlg.sqlgraph.test;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.strategy.StrategyWrappedGraph;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.io.FileUtils;
-import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.structure.SqlGraph;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
 
 import java.beans.PropertyVetoException;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

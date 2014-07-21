@@ -1,5 +1,6 @@
 package org.umlg.sqlgraph.sql.dialect;
 
+import com.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlgraph.structure.PropertyType;
 
 import java.sql.Types;
@@ -9,6 +10,38 @@ import java.sql.Types;
  * Time: 1:42 PM
  */
 public class DerbyDialect implements SqlDialect {
+
+    @Override
+    public void validateProperty(Object key, Object value) {
+        if (value instanceof String) {
+            return;
+        }
+        if (value instanceof Character) {
+            return;
+        }
+        if (value instanceof Boolean) {
+            return;
+        }
+        if (value instanceof Byte) {
+            return;
+        }
+        if (value instanceof Short) {
+            return;
+        }
+        if (value instanceof Integer) {
+            return;
+        }
+        if (value instanceof Long) {
+            return;
+        }
+        if (value instanceof Float) {
+            return;
+        }
+        if (value instanceof Double) {
+            return;
+        }
+        throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+    }
 
     @Override
     public boolean needsSemicolon() {
@@ -27,12 +60,12 @@ public class DerbyDialect implements SqlDialect {
 
     @Override
     public String getPrimaryKeyType() {
-        return "BIGINT";
+        return "BIGINT NOT NULL PRIMARY KEY";
     }
 
     @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
-        return "GENERATED ALWAYS AS IDENTITY";
+        return "BIGINT GENERATED ALWAYS AS IDENTITY";
     }
 
     @Override
@@ -78,7 +111,7 @@ public class DerbyDialect implements SqlDialect {
             case DOUBLE:
                 return Types.DOUBLE;
             case STRING:
-                return Types.CLOB;
+                return Types.LONGVARCHAR;
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -90,7 +123,42 @@ public class DerbyDialect implements SqlDialect {
     }
 
     @Override
-    public boolean supportsFloatValues() {
+    public boolean supportsTransactionalSchema() {
         return true;
+    }
+
+    @Override
+    public boolean supportsBooleanArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsByteArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsDoubleArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsFloatArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsIntegerArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLongArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsStringArrayValues() {
+        return false;
     }
 }

@@ -2,15 +2,14 @@ package org.umlg.sqlgraph.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Date: 2014/07/12
@@ -83,16 +82,24 @@ public class SqlEdge extends SqlElement implements Edge {
     }
 
     public SqlVertex getInVertex() {
-        load();
+        if (this.inVertex == null) {
+            load();
+        }
         return inVertex;
     }
 
     public SqlVertex getOutVertex() {
+        if (this.outVertex == null) {
+            load();
+        }
         return outVertex;
     }
 
     @Override
     public String toString() {
+        if (this.inVertex == null) {
+            load();
+        }
         return StringFactory.edgeString(this);
     }
 
@@ -136,40 +143,11 @@ public class SqlEdge extends SqlElement implements Edge {
         if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        i = 1;
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            i = 1;
             preparedStatement.setLong(i++, edgeId);
-            for (ImmutablePair<PropertyType, Object> pair : SqlUtil.transformToTypeAndValue(keyValues)) {
-                switch (pair.left) {
-                    case BOOLEAN:
-                        preparedStatement.setBoolean(i++, (Boolean) pair.right);
-                        break;
-                    case BYTE:
-                        preparedStatement.setByte(i++, (Byte) pair.right);
-                        break;
-                    case SHORT:
-                        preparedStatement.setShort(i++, (Short) pair.right);
-                        break;
-                    case INTEGER:
-                        preparedStatement.setInt(i++, (Integer) pair.right);
-                        break;
-                    case LONG:
-                        preparedStatement.setLong(i++, (Long) pair.right);
-                        break;
-                    case FLOAT:
-                        preparedStatement.setFloat(i++, (Float) pair.right);
-                        break;
-                    case DOUBLE:
-                        preparedStatement.setDouble(i++, (Double) pair.right);
-                        break;
-                    case STRING:
-                        preparedStatement.setString(i++, (String) pair.right);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unhandled type " + pair.left.name());
-                }
-            }
+            i = setKeyValuesAsParameter(i, conn, preparedStatement, keyValues);
             preparedStatement.setLong(i++, this.inVertex.primaryKey);
             preparedStatement.setLong(i++, this.outVertex.primaryKey);
             preparedStatement.executeUpdate();
@@ -222,9 +200,32 @@ public class SqlEdge extends SqlElement implements Edge {
                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                     String columnName = resultSetMetaData.getColumnName(i);
-                    if (!columnName.equals("ID") && !columnName.endsWith(SqlElement.OUT_VERTEX_COLUMN_END) && !columnName.endsWith(SqlElement.IN_VERTEX_COLUMN_END)) {
+                    Object o = resultSet.getObject(columnName);
+                    if (!columnName.equals("ID") &&
+                            !Objects.isNull(o) &&
+                            !columnName.endsWith(SqlElement.OUT_VERTEX_COLUMN_END) &&
+                            !columnName.endsWith(SqlElement.IN_VERTEX_COLUMN_END)) {
+
                         keyValues.add(columnName);
-                        keyValues.add(resultSet.getObject(columnName));
+
+                        int type = resultSetMetaData.getColumnType(i);
+                        switch (type) {
+                            case Types.SMALLINT:
+                                keyValues.add(((Integer)o).shortValue());
+                                break;
+                            case Types.TINYINT:
+                                keyValues.add(((Integer)o).byteValue());
+                                break;
+                            case Types.ARRAY:
+                                Array array = (Array) o;
+                                int baseType = array.getBaseType();
+                                Object[] objectArray = (Object[]) array.getArray();
+                                keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                                break;
+                            default:
+                                keyValues.add(o);
+                        }
+
                     }
                     if (columnName.endsWith(SqlElement.IN_VERTEX_COLUMN_END)) {
                         inVertexColumnName = columnName;

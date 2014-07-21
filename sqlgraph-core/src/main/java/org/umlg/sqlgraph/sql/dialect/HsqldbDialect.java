@@ -1,5 +1,6 @@
 package org.umlg.sqlgraph.sql.dialect;
 
+import com.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlgraph.structure.PropertyType;
 
 import java.sql.Types;
@@ -9,6 +10,38 @@ import java.sql.Types;
  * Time: 3:09 PM
  */
 public class HsqldbDialect implements SqlDialect {
+
+    @Override
+    public void validateProperty(Object key, Object value) {
+        if (value instanceof String) {
+            return;
+        }
+        if (value instanceof Character) {
+            return;
+        }
+        if (value instanceof Boolean) {
+            return;
+        }
+        if (value instanceof Byte) {
+            return;
+        }
+        if (value instanceof Short) {
+            return;
+        }
+        if (value instanceof Integer) {
+            return;
+        }
+        if (value instanceof Long) {
+            return;
+        }
+        if (value instanceof Float) {
+            return;
+        }
+        if (value instanceof Double) {
+            return;
+        }
+        throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+    }
 
     @Override
     public String getColumnEscapeKey() {

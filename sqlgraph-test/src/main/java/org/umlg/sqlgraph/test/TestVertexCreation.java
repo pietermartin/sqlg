@@ -27,7 +27,9 @@ public class TestVertexCreation extends BaseTest {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("vertex"));
-                sql.append(";");
+                if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
                 ResultSet rs = stmt.executeQuery(sql.toString());
                 int countRows = 0;
                 while (rs.next()) {
@@ -43,7 +45,6 @@ public class TestVertexCreation extends BaseTest {
     public void testCreateVertexWithProperties() throws SQLException {
         sqlGraph.addVertex(Element.LABEL, "Person",
                 "boolean1", true,
-                "byte1", (byte) 1,
                 "short1", (short) 1,
                 "integer1", 1,
                 "long1", 1L,
@@ -53,7 +54,6 @@ public class TestVertexCreation extends BaseTest {
         );
         sqlGraph.addVertex(Element.LABEL, "Person",
                 "boolean1", true,
-                "byte1", (byte) 1,
                 "short1", (short) 1,
                 "integer1", 1,
                 "long1", 1L,
@@ -67,11 +67,12 @@ public class TestVertexCreation extends BaseTest {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("Person"));
-                sql.append(";");
+                if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
                 ResultSet rs = stmt.executeQuery(sql.toString());
                 int countRows = 0;
                 boolean boolean1 = false;
-                byte byte1 = (byte) -1;
                 short short1 = (short) -1;
                 int integer1 = -1;
                 long long1 = -1L;
@@ -80,7 +81,6 @@ public class TestVertexCreation extends BaseTest {
                 String name = "";
                 while (rs.next()) {
                     boolean1 = rs.getBoolean("boolean1");
-                    byte1 = rs.getByte("byte1");
                     short1 = rs.getShort("short1");
                     integer1 = rs.getInt("integer1");
                     long1 = rs.getLong("long1");
@@ -91,7 +91,6 @@ public class TestVertexCreation extends BaseTest {
                 }
                 assertEquals(2, countRows);
                 assertEquals(boolean1, true);
-                assertEquals(byte1, (byte) 1);
                 assertEquals(short1, (short) 1);
                 assertEquals(integer1, 1);
                 assertEquals(long1, 1L);

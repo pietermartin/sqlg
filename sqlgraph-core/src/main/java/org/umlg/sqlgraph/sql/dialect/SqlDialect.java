@@ -7,6 +7,8 @@ import org.umlg.sqlgraph.structure.PropertyType;
  */
 public interface SqlDialect {
 
+    public void validateProperty(Object key, Object value);
+
     public default boolean needsSemicolon() {
         return true;
     }
@@ -27,13 +29,15 @@ public interface SqlDialect {
 
     String getForeignKeyTypeDefinition();
 
-    boolean supportsFloatValues();
-
     public default String maybeWrapInQoutes(String field) {
         StringBuilder sb = new StringBuilder(getColumnEscapeKey());
         sb.append(field);
         sb.append(getColumnEscapeKey());
         return sb.toString();
+    }
+
+    public default boolean supportsFloatValues() {
+        return true;
     }
 
     public default boolean supportsTransactionalSchema() {

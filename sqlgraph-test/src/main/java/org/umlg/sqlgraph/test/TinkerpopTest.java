@@ -1,8 +1,14 @@
 package org.umlg.sqlgraph.test;
 
+import com.tinkerpop.gremlin.AbstractGremlinSuite;
+import com.tinkerpop.gremlin.LoadGraphWith;
+import com.tinkerpop.gremlin.process.Path;
+import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
+import com.tinkerpop.gremlin.util.function.FunctionUtils;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.umlg.sqlgraph.structure.SqlGraph;
 
@@ -10,13 +16,15 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.CLASSIC;
+import static com.tinkerpop.gremlin.structure.Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/07/13
@@ -25,6 +33,135 @@ import static org.junit.Assert.fail;
 public class TinkerpopTest extends BaseTest {
 
     @Test
+    @FeatureRequirement(featureClass = Graph.Features.GraphFeatures.class, feature = Graph.Features.GraphFeatures.FEATURE_TRANSACTIONS)
+    public void shouldSupportTransactionOneAndDone() {
+        final Graph graph = this.sqlGraph;
+
+        // first fail the tx
+        try {
+            this.sqlGraph.tx().submit(FunctionUtils.wrapFunction(grx -> {
+                grx.addVertex();
+                throw new Exception("fail");
+            })).oneAndDone();
+        } catch (Exception ex) {
+            assertEquals("fail", ex.getCause().getCause().getMessage());
+        }
+
+        AbstractGremlinSuite.assertVertexEdgeCounts(0, 0);
+
+        // this tx will work
+        this.sqlGraph.tx().submit(grx -> graph.addVertex()).oneAndDone();
+        AbstractGremlinSuite.assertVertexEdgeCounts(1, 0);
+
+        // make sure a commit happened and a new tx started
+        this.sqlGraph.tx().rollback();
+        AbstractGremlinSuite.assertVertexEdgeCounts(1, 0);
+    }
+
+    public Traversal<Vertex, String> get_g_E_subgraphXcreatedX(final Graph subgraph) {
+        return this.sqlGraph.V().inE().subgraph(subgraph, e -> e.label().equals("created")).value("name");
+    }
+
+    public Traversal<Vertex, Path> get_g_V_asXxX_both_simplePath_jumpXx_loops_lt_3X_path() {
+        return this.sqlGraph.V().as("x").both().simplePath().jump("x", t -> t.getLoops() < 3).path();
+    }
+
+//    @Test
+//    @LoadGraphWith(CLASSIC)
+//    public void g_e7_hasXlabelXknowsX() throws IOException {
+//        readGraphMLIntoGraph(this.sqlGraph);
+//        //System.out.println(convertToEdgeId("marko", "knows", "vadas"));
+//        Iterator<Edge> traversal = get_g_e7_hasXlabelXknowsX(convertToEdgeId("marko", "knows", "vadas"));
+//        System.out.println("Testing: " + traversal);
+//        int counter = 0;
+//        while (traversal.hasNext()) {
+//            counter++;
+//            assertEquals("knows", traversal.next().label());
+//        }
+//        assertEquals(1, counter);
+//    }
+
+    public Traversal<Edge, Edge> get_g_e7_hasXlabelXknowsX(final Object e7Id) {
+        return this.sqlGraph.e(e7Id).has("label", "knows");
+    }
+
+    protected Object convertToEdgeId(final String identifier1, String edgeLabel, final String identifier2) {
+        return convertToEdgeId(this.sqlGraph, identifier1, edgeLabel, identifier2);
+    }
+
+    protected Object convertToEdgeId(final Graph g, final String identifier1, String edgeLabel, final String identifier2) {
+        return ((Edge) g.V().has("name", identifier1).outE(edgeLabel).as("e").inV().has("name", identifier2).back("e").next()).id();
+    }
+
+
+//        @Test
+    public void g_v1_outXcreatedX_inXcreatedX_rangeX1_2X() throws IOException {
+        readGraphMLIntoGraph(this.sqlGraph);
+
+        Object id = convertToVertexId("josh");
+//        Traversal<Vertex, Vertex> t = this.sqlGraph.v(id).out("created").in("created");
+        Traversal<Vertex, Vertex> t = this.sqlGraph.v(id).both("knows");
+        while (t.hasNext()) {
+            System.out.println(t.next().property("name").value());
+        }
+
+//        final Iterator<Vertex> traversal = get_g_v1_outXcreatedX_inXcreatedX_rangeX1_2X(convertToVertexId("marko"));
+//        System.out.println("Testing: " + traversal);
+//        int counter = 0;
+//        while (traversal.hasNext()) {
+//            counter++;
+//            final String name = traversal.next().value("name");
+//            assertTrue(name.equals("marko") || name.equals("josh") || name.equals("peter"));
+//        }
+//        assertEquals(2, counter);
+    }
+
+    public Traversal<Vertex, Vertex> get_g_v1_outXcreatedX_inXcreatedX_rangeX1_2X(final Object v1Id) {
+        return this.sqlGraph.v(v1Id).out("created").in("created").range(1, 2);
+    }
+
+    //    @Test
+    public void g_v1_outXcreatedX_inXcreatedX_cyclicPath_path() throws IOException {
+        readGraphMLIntoGraph(this.sqlGraph);
+        final Traversal<Vertex, Path> traversal = get_g_v1_outXcreatedX_inXcreatedX_cyclicPath_path(convertToVertexId("marko"));
+        System.out.println("Testing: " + traversal);
+        int counter = 0;
+        while (traversal.hasNext()) {
+            counter++;
+            Path path = traversal.next();
+            assertFalse(path.isSimple());
+        }
+        assertEquals(1, counter);
+        assertFalse(traversal.hasNext());
+    }
+
+    public Traversal<Vertex, Path> get_g_v1_outXcreatedX_inXcreatedX_cyclicPath_path(final Object v1Id) {
+        return this.sqlGraph.v(v1Id).out("created").in("created").cyclicPath().path();
+    }
+
+    /**
+     * Looks up the identifier as generated by the current source graph being tested.
+     *
+     * @param identifier a unique string that will identify a graph element within a graph
+     * @return the id as generated by the graph
+     */
+    protected Object convertToVertexId(final String identifier) {
+        return convertToVertexId(this.sqlGraph, identifier);
+    }
+
+    /**
+     * Looks up the identifier as generated by the current source graph being tested.
+     *
+     * @param g          the graph to get the element id from
+     * @param identifier a unique string that will identify a graph element within a graph
+     * @return the id as generated by the graph
+     */
+    protected Object convertToVertexId(final Graph g, final String identifier) {
+        // all test graphs have "name" as a unique id which makes it easy to hardcode this...works for now
+        return ((Vertex) g.V().has("name", identifier).next()).id();
+    }
+
+    //    @Test
     public void shouldSupportTransactionIsolationWithSeparateThreads() throws Exception {
         // one thread modifies the graph and a separate thread reads before the transaction is committed.
         // the expectation is that the changes in the transaction are isolated to the thread that made the change

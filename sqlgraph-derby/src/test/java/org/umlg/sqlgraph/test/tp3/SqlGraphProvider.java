@@ -2,18 +2,14 @@ package org.umlg.sqlgraph.test.tp3;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.strategy.StrategyWrappedGraph;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.io.FileUtils;
 import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.structure.SqlGraph;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
+import org.umlg.sqlgraph.test.JDBC;
 
 import java.beans.PropertyVetoException;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,10 +23,10 @@ public class SqlGraphProvider extends AbstractGraphProvider {
     public Map<String, Object> getBaseConfiguration(final String graphName) {
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlGraph.class.getName());
-            put("jdbc.driver", "org.postgresql.xa.PGXADataSource");
-            put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
-            put("jdbc.username", "postgres");
-            put("jdbc.password", "postgres");
+            put("jdbc.driver", "org.apache.derby.jdbc.EmbeddedDriver");
+            put("jdbc.url", "jdbc:derby:sqlgraph-derby/src/test/resources/derby/" + graphName + "; create = true");
+            put("jdbc.username", "");
+            put("jdbc.password", "");
         }};
     }
 
@@ -50,27 +46,15 @@ public class SqlGraphProvider extends AbstractGraphProvider {
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
-        StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS PUBLIC CASCADE;");
         try (Connection conn = SqlGraphDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
+            DatabaseMetaData metadata = conn.getMetaData();
             conn.setAutoCommit(false);
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.executeUpdate();
-            }
+            JDBC.dropSchema(metadata, "APP");
             conn.commit();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        sql = new StringBuilder("CREATE SCHEMA PUBLIC;");
-        // CREATE SCHEMA PUBLIC
-        try (Connection conn = SqlGraphDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.executeUpdate();
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+
     }
 
 

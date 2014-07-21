@@ -17,8 +17,17 @@ public enum PropertyType {
     LONG(Long.class.getName()),
     FLOAT(Float.class.getName()),
     DOUBLE(Double.class.getName()),
-    STRING(String.class.getName());
-    //TODO this should go through a dialect alla hibernate
+    STRING(String.class.getName()),
+
+    BOOLEAN_ARRAY(boolean[].class.getName()),
+    BYTE_ARRAY(byte[].class.getName()),
+    SHORT_ARRAY(short[].class.getName()),
+    INTEGER_ARRAY(int[].class.getName()),
+    LONG_ARRAY(long[].class.getName()),
+    FLOAT_ARRAY(float[].class.getName()),
+    DOUBLE_ARRAY(double[].class.getName()),
+    STRING_ARRAY(String[].class.getName());
+
     private String javaClassName;
     private static final Map<String, PropertyType> javaClassNameToEnum = new HashMap<>();
 

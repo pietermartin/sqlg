@@ -70,7 +70,7 @@ public class SqlProperty<V> implements Property<V>, Serializable {
         Connection conn = this.sqlGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             PropertyType propertyType = PropertyType.from(value);
-            preparedStatement.setNull(1, this.sqlGraph.getSchemaManager().getSqlDialect().propertyTypeToJavaSqlType(propertyType));
+            preparedStatement.setNull(1, this.sqlGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
             preparedStatement.setLong(2, (Long) this.element.id());
             int numberOfRowsUpdated = preparedStatement.executeUpdate();
             if (numberOfRowsUpdated != 1) {

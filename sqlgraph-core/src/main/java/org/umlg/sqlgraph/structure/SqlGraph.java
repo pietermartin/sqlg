@@ -8,7 +8,6 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
@@ -115,8 +114,11 @@ public class SqlGraph implements Graph {
                 key = (String) keyValue;
             } else {
                 value = keyValue;
-                if (!key.equals(Element.LABEL))
+                if (!key.equals(Element.LABEL)) {
                     ElementHelper.validateProperty(key, value);
+                    this.sqlDialect.validateProperty(key, value);
+                }
+
             }
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
@@ -619,5 +621,23 @@ public class SqlGraph implements Graph {
         }
     }
 
+    //indexing
+    public void createUniqueConstraint(String label, String propertyKey) {
+        this.tx().readWrite();
+//        this.getSchemaManager().createUniqueConstraint(label, propertyKey);
+    }
+
+    public void createLabeledIndex(String label, String propertyKey) {
+        this.tx().readWrite();
+        this.getSchemaManager().createIndex(label, propertyKey);
+    }
+
+    public long countVertices() {
+        return -1;
+    }
+
+    public long countEdges() {
+        return -1;
+    }
 
 }
