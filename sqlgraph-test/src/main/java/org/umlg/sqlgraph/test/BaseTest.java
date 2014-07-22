@@ -26,7 +26,7 @@ import static org.junit.Assert.fail;
 public abstract class BaseTest {
 
     protected SqlGraph sqlGraph;
-    private static Configuration configuration;
+    protected static Configuration configuration;
 
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {

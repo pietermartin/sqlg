@@ -153,6 +153,33 @@ public class PostgresDialect implements SqlDialect {
     }
 
     @Override
+    public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
+        switch (sqlType) {
+            case Types.BIT:
+                return PropertyType.BOOLEAN;
+            case Types.SMALLINT:
+                return PropertyType.SHORT;
+            case Types.INTEGER:
+                return PropertyType.INTEGER;
+            case Types.BIGINT:
+                return PropertyType.LONG;
+            case Types.REAL:
+                return PropertyType.FLOAT;
+            case Types.DOUBLE:
+                return PropertyType.DOUBLE;
+            case Types.VARCHAR:
+                return PropertyType.STRING;
+            case Types.ARRAY:
+                throw new RuntimeException("//TODO array type support!");
+//                if (typeName.equals("_int4")) {
+//                    return PropertyType.BOOLEAN_ARRAY;
+//                }
+            default:
+                throw new IllegalStateException("Unknown sqlType " + sqlType);
+        }
+    }
+
+    @Override
     public int propertyTypeToJavaSqlType(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:

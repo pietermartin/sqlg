@@ -7,6 +7,8 @@ import org.umlg.sqlgraph.structure.PropertyType;
  */
 public interface SqlDialect {
 
+    PropertyType sqlTypeToPropertyType(int sqlType, String typeName);
+
     String getJdbcDriver();
 
     void validateProperty(Object key, Object value);

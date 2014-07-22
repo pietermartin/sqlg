@@ -177,7 +177,6 @@ public class SchemaManager {
     }
 
     private void createVerticesTable() throws SQLException {
-//        IF NOT EXISTS
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" (");
@@ -225,7 +224,7 @@ public class SchemaManager {
         }
     }
 
-    public boolean tableExist(String table)  {
+    public boolean tableExist(String table) {
         Connection conn = this.sqlGraph.tx().getConnection();
         DatabaseMetaData metadata;
         try {
@@ -431,8 +430,36 @@ public class SchemaManager {
         sql.append("))");
     }
 
-
     public void createIndex(String label, String propertyKey) {
 
+    }
+
+    void loadSchema() {
+        Connection conn = this.sqlGraph.tx().getConnection();
+        DatabaseMetaData metadata;
+        try {
+            metadata = conn.getMetaData();
+            String catalog = null;
+            String schemaPattern = null;
+            String tableNamePattern = null;
+            String[] types = new String[]{"TABLE"};
+            ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+            while (tablesRs.next()) {
+                String table = tablesRs.getString(3);
+                final Map<String, PropertyType> uncommitedColumns = new ConcurrentHashMap<>();
+                //get the columns
+                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                while (columnsRs.next()) {
+                    String column = columnsRs.getString(4);
+                    int columnType = columnsRs.getInt(5);
+                    String typeName = columnsRs.getString("TYPE_NAME");
+                    PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                    uncommitedColumns.put(column, propertyType);
+                    this.uncommittedSchema.put(table, uncommitedColumns);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

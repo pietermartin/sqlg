@@ -65,4 +65,5 @@ public class TestSetProperty extends BaseTest {
         Assert.assertEquals(new Float(1f), v.property("age5").value());
         Assert.assertEquals(new Double(1d), v.property("age6").value());
     }
+
 }

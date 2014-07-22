@@ -76,6 +76,7 @@ public class SqlGraph implements Graph {
         this.sqlGraphTransaction = new SqlGraphTransaction(this);
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect);
+        this.schemaManager.loadSchema();
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
@@ -148,7 +149,7 @@ public class SqlGraph implements Graph {
         }
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, (Long) id);
+            preparedStatement.setLong(1, evaluateToLong(id));
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 String label = resultSet.getString("VERTEX_TABLE");
@@ -179,7 +180,7 @@ public class SqlGraph implements Graph {
         }
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, (Long) id);
+            preparedStatement.setLong(1, evaluateToLong(id));
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 String label = resultSet.getString("EDGE_TABLE");
@@ -646,4 +647,14 @@ public class SqlGraph implements Graph {
         }
     }
 
+    private static Long evaluateToLong(final Object id) throws NumberFormatException {
+        Long longId;
+        if (id instanceof Long)
+            longId = (Long) id;
+        else if (id instanceof Number)
+            longId = ((Number) id).longValue();
+        else
+            longId = Double.valueOf(id.toString()).longValue();
+        return longId;
+    }
 }
