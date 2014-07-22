@@ -3,7 +3,6 @@ package org.umlg.sqlgraph.test.tp3;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
-import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.structure.SqlGraph;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
 

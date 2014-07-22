@@ -7,16 +7,14 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
-import org.umlg.sqlgraph.structure.SqlGraphDataSource;
+import org.umlg.sqlgraph.sql.dialect.SqlDialect;
 import org.umlg.sqlgraph.structure.SqlGraph;
+import org.umlg.sqlgraph.structure.SqlGraphDataSource;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -28,13 +26,20 @@ import static org.junit.Assert.fail;
 public abstract class BaseTest {
 
     protected SqlGraph sqlGraph;
-    private static Configuration config;
+    private static Configuration configuration;
 
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlgraph.properties");
         try {
-            config = new PropertiesConfiguration(sqlProperties);
+            configuration = new PropertiesConfiguration(sqlProperties);
+
+            if (!configuration.containsKey("jdbc.url"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+            if (!configuration.containsKey("sql.dialect"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "sql.dialect"));
+
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -42,42 +47,25 @@ public abstract class BaseTest {
 
     @Before
     public void before() throws IOException {
-        SqlGraphDialect sqlGraphDialect = null;
+        SqlDialect sqlDialect;
         try {
-            Class.forName(SqlGraphDialect.HSQLDB.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.HSQLDB;
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName(SqlGraphDialect.POSTGRES.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.POSTGRES;
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName(SqlGraphDialect.MARIADBDB.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.MARIADBDB;
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName(SqlGraphDialect.DERBYDB.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.DERBYDB;
-        } catch (ClassNotFoundException e) {
-        }
-        if (sqlGraphDialect == null) {
-            throw new IllegalStateException("Postgres driver " + SqlGraphDialect.POSTGRES.getJdbcDriver() + " or Hsqldb driver " + SqlGraphDialect.HSQLDB.getJdbcDriver() + " must be on the classpath!");
+            Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
+            sqlDialect = (SqlDialect)sqlDialectClass.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         try {
             SqlGraphDataSource.INSTANCE.setupDataSource(
-                    sqlGraphDialect.getJdbcDriver(),
-                    config.getString("jdbc.url"),
-                    config.getString("jdbc.username"),
-                    config.getString("jdbc.password"));
+                    sqlDialect.getJdbcDriver(),
+                    configuration.getString("jdbc.url"),
+                    configuration.getString("jdbc.username"),
+                    configuration.getString("jdbc.password"));
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
-        try (Connection conn = SqlGraphDataSource.INSTANCE.get(config.getString("jdbc.url")).getConnection()) {
+        try (Connection conn = SqlGraphDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
             DatabaseMetaData metadata = conn.getMetaData();
-            if (sqlGraphDialect.getSqlDialect().supportsCascade()) {
+            if (sqlDialect.supportsCascade()) {
                 String catalog = "sqlgraphdb";
                 String schemaPattern = null;
                 String tableNamePattern = "%";
@@ -85,9 +73,9 @@ public abstract class BaseTest {
                 ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (result.next()) {
                     StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlGraphDialect.getSqlDialect().maybeWrapInQoutes(result.getString(3)));
+                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
                     sql.append(" CASCADE");
-                    if (sqlGraphDialect.getSqlDialect().needsSemicolon()) {
+                    if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -103,7 +91,7 @@ public abstract class BaseTest {
             throw new RuntimeException(e);
         }
 
-        this.sqlGraph = SqlGraph.open(config);
+        this.sqlGraph = SqlGraph.open(configuration);
     }
 
     @After

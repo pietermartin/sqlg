@@ -10,7 +10,7 @@ import org.umlg.sqlgraph.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAllVertices.class
+        TestAddVertexViaMap.class
 })
 public class AnyTest {
 }

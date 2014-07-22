@@ -12,6 +12,11 @@ import java.sql.Types;
 public class PostgresDialect implements SqlDialect {
 
     @Override
+    public String getJdbcDriver() {
+        return "org.postgresql.xa.PGXADataSource";
+    }
+
+    @Override
     public void validateProperty(Object key, Object value) {
         if (value instanceof String) {
             return;

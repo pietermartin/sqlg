@@ -7,7 +7,9 @@ import org.umlg.sqlgraph.structure.PropertyType;
  */
 public interface SqlDialect {
 
-    public void validateProperty(Object key, Object value);
+    String getJdbcDriver();
+
+    void validateProperty(Object key, Object value);
 
     public default boolean needsSemicolon() {
         return true;

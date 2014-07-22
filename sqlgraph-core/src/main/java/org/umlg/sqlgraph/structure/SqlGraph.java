@@ -12,7 +12,6 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
 import org.umlg.sqlgraph.sql.dialect.SqlDialect;
-import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.strategy.SqlGraphStepTraversalStrategy;
 
 import java.beans.PropertyVetoException;
@@ -20,6 +19,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * Date: 2014/07/12
@@ -47,44 +47,26 @@ public class SqlGraph implements Graph {
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
-        if (!configuration.containsKey("jdbc.driver"))
-            throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.driver"));
-
         if (!configuration.containsKey("jdbc.url"))
             throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+        if (!configuration.containsKey("sql.dialect"))
+            throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "sql.dialect"));
 
         return (G) new SqlGraph(configuration);
     }
 
     private SqlGraph(final Configuration configuration) {
-        SqlGraphDialect sqlGraphDialect = null;
         try {
-            Class.forName(SqlGraphDialect.HSQLDB.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.HSQLDB;
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName(SqlGraphDialect.POSTGRES.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.POSTGRES;
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName(SqlGraphDialect.MARIADBDB.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.MARIADBDB;
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            Class.forName(SqlGraphDialect.DERBYDB.getJdbcDriver());
-            sqlGraphDialect = SqlGraphDialect.DERBYDB;
-        } catch (ClassNotFoundException e) {
-        }
-        if (sqlGraphDialect == null) {
-            throw new IllegalStateException("Postgres driver " + SqlGraphDialect.POSTGRES.getJdbcDriver() + " or Hsqldb driver " + SqlGraphDialect.HSQLDB.getJdbcDriver() + " must be on the classpath!");
+            Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
+            this.sqlDialect = (SqlDialect)sqlDialectClass.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         try {
             this.jdbcUrl = configuration.getString("jdbc.url");
             SqlGraphDataSource.INSTANCE.setupDataSource(
-                    sqlGraphDialect.getJdbcDriver(),
+                    sqlDialect.getJdbcDriver(),
                     configuration.getString("jdbc.url"),
                     configuration.getString("jdbc.username"),
                     configuration.getString("jdbc.password"));
@@ -93,11 +75,25 @@ public class SqlGraph implements Graph {
         }
         this.sqlGraphTransaction = new SqlGraphTransaction(this);
         this.tx().readWrite();
-        this.schemaManager = new SchemaManager(this, sqlGraphDialect.getSqlDialect());
-        this.sqlDialect = sqlGraphDialect.getSqlDialect();
+        this.schemaManager = new SchemaManager(this, sqlDialect);
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
+    }
+
+    public Vertex addVertex(String label, Map<String, Object> keyValues) {
+        keyValues.put(Element.LABEL, label);
+        return addVertex(mapTokeyValues(keyValues));
+    }
+
+    private Object[] mapTokeyValues(Map<String, Object> keyValues) {
+        Object[] result = new Object[keyValues.size() * 2];
+        int i = 0;
+        for (String key : keyValues.keySet()) {
+            result[i++] = key;
+            result[i++] = keyValues.get(key);
+        }
+        return result;
     }
 
     @Override
@@ -633,11 +629,31 @@ public class SqlGraph implements Graph {
     }
 
     public long countVertices() {
-        return -1;
+        this.tx().readWrite();
+        Connection conn = this.tx().getConnection();
+        StringBuilder sql = new StringBuilder("select count(1) from ");
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet rs = preparedStatement.executeQuery();
+            rs.next();
+            return rs.getLong(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public long countEdges() {
-        return -1;
+        this.tx().readWrite();
+        Connection conn = this.tx().getConnection();
+        StringBuilder sql = new StringBuilder("select count(1) from ");
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet rs = preparedStatement.executeQuery();
+            rs.next();
+            return rs.getLong(1);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

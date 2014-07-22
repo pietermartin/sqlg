@@ -12,6 +12,11 @@ import java.sql.Types;
 public class DerbyDialect implements SqlDialect {
 
     @Override
+    public String getJdbcDriver() {
+        return "org.apache.derby.jdbc.EmbeddedDriver";
+    }
+
+    @Override
     public void validateProperty(Object key, Object value) {
         if (value instanceof String) {
             return;

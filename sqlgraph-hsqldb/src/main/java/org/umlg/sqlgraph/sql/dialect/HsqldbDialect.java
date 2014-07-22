@@ -12,6 +12,11 @@ import java.sql.Types;
 public class HsqldbDialect implements SqlDialect {
 
     @Override
+    public String getJdbcDriver() {
+        return "org.hsqldb.jdbc.JDBCDriver";
+    }
+
+    @Override
     public void validateProperty(Object key, Object value) {
         if (value instanceof String) {
             return;

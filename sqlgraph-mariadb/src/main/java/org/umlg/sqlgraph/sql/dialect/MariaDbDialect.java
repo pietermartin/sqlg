@@ -12,6 +12,11 @@ import java.sql.Types;
 public class MariaDbDialect implements SqlDialect {
 
     @Override
+    public String getJdbcDriver() {
+        return "org.mariadb.jdbc.Driver";
+    }
+
+    @Override
     public void validateProperty(Object key, Object value) {
         if (value instanceof String) {
             return;
