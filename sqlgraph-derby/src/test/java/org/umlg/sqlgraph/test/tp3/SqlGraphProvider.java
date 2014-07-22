@@ -3,13 +3,14 @@ package org.umlg.sqlgraph.test.tp3;
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
-import org.umlg.sqlgraph.sql.dialect.SqlGraphDialect;
 import org.umlg.sqlgraph.structure.SqlGraph;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
 import org.umlg.sqlgraph.test.JDBC;
 
 import java.beans.PropertyVetoException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.umlg.sqlgraph.structure.SqlVertex;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,6 +41,21 @@ public class TestAddVertexViaMap extends BaseTest {
         Assert.assertEquals("p1", e1.property("name1").value());
         Assert.assertEquals("p2", e1.property("name2").value());
         Assert.assertEquals("p3", e1.property("name3").value());
+    }
+
+    @Test
+    public void howToUpdateManyRows() {
+        this.sqlGraph.addVertex(Element.LABEL, "Person", "name", "marko");
+        this.sqlGraph.addVertex(Element.LABEL, "Person", "name", "joe");
+        this.sqlGraph.addVertex(Element.LABEL, "Person", "name", "john");
+        this.sqlGraph.addVertex(Element.LABEL, "Person", "name", "peter");
+        this.sqlGraph.tx().commit();
+
+        List<Vertex> markos = this.sqlGraph.V().has(Element.LABEL, "Person").<Vertex>has("name", "marko").toList();
+        if (markos.isEmpty()) {
+            markos.get(0).property("name", "marko2");
+        }
+        this.sqlGraph.tx().commit();
 
     }
 

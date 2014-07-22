@@ -6,7 +6,6 @@ import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.sql.dialect.SqlDialect;
 import org.umlg.sqlgraph.structure.SqlGraph;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
-import org.umlg.sqlgraph.test.JDBC;
 
 import java.beans.PropertyVetoException;
 import java.sql.*;
