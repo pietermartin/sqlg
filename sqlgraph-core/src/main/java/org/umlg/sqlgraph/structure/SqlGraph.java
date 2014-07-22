@@ -83,17 +83,7 @@ public class SqlGraph implements Graph {
 
     public Vertex addVertex(String label, Map<String, Object> keyValues) {
         keyValues.put(Element.LABEL, label);
-        return addVertex(mapTokeyValues(keyValues));
-    }
-
-    private Object[] mapTokeyValues(Map<String, Object> keyValues) {
-        Object[] result = new Object[keyValues.size() * 2];
-        int i = 0;
-        for (String key : keyValues.keySet()) {
-            result[i++] = key;
-            result[i++] = keyValues.get(key);
-        }
-        return result;
+        return addVertex(SqlUtil.mapTokeyValues(keyValues));
     }
 
     @Override

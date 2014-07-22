@@ -13,6 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SqlUtil {
 
+    public static Object[] mapTokeyValues(Map<String, Object> keyValues) {
+        Object[] result = new Object[keyValues.size() * 2];
+        int i = 0;
+        for (String key : keyValues.keySet()) {
+            result[i++] = key;
+            result[i++] = keyValues.get(key);
+        }
+        return result;
+    }
+
     public static ConcurrentHashMap<String, PropertyType> transformToColumnDefinitionMap(Object... keyValues) {
         //This is to ensure the keys are unique
         Set<String> keys = new HashSet<>();

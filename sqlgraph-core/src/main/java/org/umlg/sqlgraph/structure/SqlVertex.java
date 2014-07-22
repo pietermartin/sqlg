@@ -25,6 +25,11 @@ public class SqlVertex extends SqlElement implements Vertex {
         super(sqlGraph, id, label);
     }
 
+    public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
+        Object[] parameters = SqlUtil.mapTokeyValues(keyValues);
+        return addEdge(label, inVertex, parameters);
+    }
+
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
         if (label == null)
