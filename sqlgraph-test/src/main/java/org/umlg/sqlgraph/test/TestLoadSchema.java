@@ -19,9 +19,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlGraph.addVertex(Element.LABEL, "Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aFloat", 1F, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         this.sqlGraph.tx().commit();
-
         this.sqlGraph.close();
-
         this.sqlGraph = SqlGraph.open(configuration);
         Iterator<Vertex> iter = this.sqlGraph.V().has(Element.LABEL, "Person");
         Assert.assertTrue(iter.hasNext());
@@ -33,6 +31,5 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(1F, v.property("aFloat").value());
         Assert.assertEquals(1D, v.property("aDouble").value());
         Assert.assertEquals("aaaaaaaaaaaaa", v.property("aString").value());
-
     }
 }

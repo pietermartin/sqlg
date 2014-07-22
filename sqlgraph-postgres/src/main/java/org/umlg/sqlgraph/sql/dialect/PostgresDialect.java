@@ -170,10 +170,24 @@ public class PostgresDialect implements SqlDialect {
             case Types.VARCHAR:
                 return PropertyType.STRING;
             case Types.ARRAY:
-                throw new RuntimeException("//TODO array type support!");
-//                if (typeName.equals("_int4")) {
-//                    return PropertyType.BOOLEAN_ARRAY;
-//                }
+                switch (typeName) {
+                    case "_bool":
+                        return PropertyType.BOOLEAN_ARRAY;
+                    case "_int2":
+                        return PropertyType.SHORT_ARRAY;
+                    case "_int4":
+                        return PropertyType.INTEGER_ARRAY;
+                    case "_int8":
+                        return PropertyType.LONG_ARRAY;
+                    case "_float4":
+                        return PropertyType.FLOAT_ARRAY;
+                    case "_float8":
+                        return PropertyType.DOUBLE_ARRAY;
+                    case "_text":
+                        return PropertyType.STRING_ARRAY;
+                    default:
+                        throw new RuntimeException("Array type not supported " + typeName);
+                }
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
         }
