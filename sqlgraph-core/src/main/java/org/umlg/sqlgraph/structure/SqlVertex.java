@@ -6,6 +6,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.sql.*;
 import java.util.*;
@@ -51,7 +52,13 @@ public class SqlVertex extends SqlElement implements Vertex {
             }
         }
         this.sqlGraph.tx().readWrite();
-        this.sqlGraph.getSchemaManager().ensureEdgeTableExist(label, inVertex.label(), this.label, keyValues);
+        this.sqlGraph.getSchemaManager().ensureEdgeTableExist(
+                label,
+                ImmutablePair.of(
+                        inVertex.label() + SqlElement.IN_VERTEX_COLUMN_END,
+                        this.label + SqlElement.OUT_VERTEX_COLUMN_END
+                ),
+                keyValues);
         this.sqlGraph.getSchemaManager().addEdgeLabelToVerticesTable((Long) this.id(), label, false);
         this.sqlGraph.getSchemaManager().addEdgeLabelToVerticesTable((Long) inVertex.id(), label, true);
         final SqlEdge edge = new SqlEdge(this.sqlGraph, label, (SqlVertex) inVertex, this, keyValues);
@@ -66,28 +73,42 @@ public class SqlVertex extends SqlElement implements Vertex {
 
     @Override
     public Iterator<Vertex> vertices(Direction direction, int branchFactor, String... labels) {
+        this.sqlGraph.tx().readWrite();
         Iterator<SqlEdge> itty = getEdges(direction, labels);
-        Iterator<Vertex> vertexIterator = new Iterator<Vertex>() {
-            public SqlVertex next() {
-                SqlEdge sqlEdge = itty.next();
-                SqlVertex inVertex = sqlEdge.getInVertex();
-                SqlVertex outVertex = sqlEdge.getOutVertex();
-                if (inVertex.id().equals(SqlVertex.this.id())) {
-                     return outVertex;
-                } else {
-                    return inVertex;
-                }
+        List<Vertex> vertices = new ArrayList();
+        while (itty.hasNext()) {
+            SqlEdge sqlEdge = itty.next();
+            SqlVertex inVertex = sqlEdge.getInVertex();
+            SqlVertex outVertex = sqlEdge.getOutVertex();
+            if (inVertex.id().equals(SqlVertex.this.id())) {
+                vertices.add(outVertex);
+            } else {
+                vertices.add(inVertex);
             }
+        }
+        return (Iterator) StreamFactory.stream(vertices.iterator()).limit(branchFactor).iterator();
 
-            public boolean hasNext() {
-                return itty.hasNext();
-            }
-
-            public void remove() {
-                itty.remove();
-            }
-        };
-        return (Iterator) StreamFactory.stream(vertexIterator).limit(branchFactor).iterator();
+//        Iterator<Vertex> vertexIterator = new Iterator<Vertex>() {
+//            public SqlVertex next() {
+//                SqlEdge sqlEdge = itty.next();
+//                SqlVertex inVertex = sqlEdge.getInVertex();
+//                SqlVertex outVertex = sqlEdge.getOutVertex();
+//                if (inVertex.id().equals(SqlVertex.this.id())) {
+//                     return outVertex;
+//                } else {
+//                    return inVertex;
+//                }
+//            }
+//
+//            public boolean hasNext() {
+//                return itty.hasNext();
+//            }
+//
+//            public void remove() {
+//                itty.remove();
+//            }
+//        };
+//        return (Iterator) StreamFactory.stream(vertexIterator).limit(branchFactor).iterator();
     }
 
     @Override
@@ -122,7 +143,7 @@ public class SqlVertex extends SqlElement implements Vertex {
         long vertexId = insertGlobalVertex();
 
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.label));
         sql.append(" (");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         int i = 1;
@@ -220,9 +241,9 @@ public class SqlVertex extends SqlElement implements Vertex {
         }
         for (Direction d : directions) {
             for (String label : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
-                if (this.sqlGraph.getSchemaManager().tableExist(label)) {
+                if (this.sqlGraph.getSchemaManager().tableExist(SchemaManager.EDGE_PREFIX + label)) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(label));
+                    sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + label));
                     sql.append(" WHERE ");
                     switch (d) {
                         case IN:
@@ -263,29 +284,64 @@ public class SqlVertex extends SqlElement implements Vertex {
 
                         ResultSet resultSet = preparedStatement.executeQuery();
                         while (resultSet.next()) {
-                            String inVertexColumnName = null;
-                            String outVertexColumnName = null;
+                            Set<String> inVertexColumnNames = new HashSet<>();
+                            Set<String> outVertexColumnNames = new HashSet<>();
+                            String inVertexColumnName = "";
+                            String outVertexColumnName = "";
                             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                 String columnName = resultSetMetaData.getColumnName(i);
                                 if (columnName.endsWith(SqlElement.IN_VERTEX_COLUMN_END)) {
-                                    inVertexColumnName = columnName;
+                                    inVertexColumnNames.add(columnName);
                                 } else if (columnName.endsWith(SqlElement.OUT_VERTEX_COLUMN_END)) {
-                                    outVertexColumnName = columnName;
+                                    outVertexColumnNames.add(columnName);
                                 }
                             }
-                            if (inVertexColumnName == null || outVertexColumnName == null) {
+                            if (inVertexColumnNames.isEmpty() || outVertexColumnNames.isEmpty()) {
                                 throw new IllegalStateException("in or out vertex id not set!!!!");
                             }
 
                             Long edgeId = resultSet.getLong("ID");
-                            Long inId = resultSet.getLong(inVertexColumnName);
-                            Long outId = resultSet.getLong(outVertexColumnName);
+                            Long inId = null;
+                            Long outId = null;
+
+                            //Only one in out pair should ever be set per row
+                            for (String inColumnName : inVertexColumnNames) {
+                                if (inId != null) {
+                                    Long tempInId = resultSet.getLong(inColumnName);
+                                    if (tempInId.longValue() != 0l) {
+                                        throw new IllegalStateException("Multiple in columns are set in vertex row!");
+                                    }
+                                } else {
+                                    Long tempInId = resultSet.getLong(inColumnName);
+                                    if (tempInId.longValue() != 0l) {
+                                        inId = tempInId;
+                                        inVertexColumnName = inColumnName;
+                                    }
+                                }
+                            }
+                            for (String outColumnName : outVertexColumnNames) {
+                                if (outId != null) {
+                                    Long tempOutId = resultSet.getLong(outColumnName);
+                                    if (tempOutId.longValue() != 0l) {
+                                        throw new IllegalStateException("Multiple out columns are set in vertex row!");
+                                    }
+                                } else {
+                                    Long tempOutId = resultSet.getLong(outColumnName);
+                                    if (tempOutId.longValue() != 0l) {
+                                        outId = tempOutId;
+                                        outVertexColumnName = outColumnName;
+                                    }
+                                }
+                            }
+                            if (inVertexColumnName.isEmpty() || outVertexColumnName.isEmpty()) {
+                                throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
+                            }
 
                             List<Object> keyValues = new ArrayList<>();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                 String columnName = resultSetMetaData.getColumnName(i);
-                                if (!((columnName.equals("ID") || columnName.equals(inVertexColumnName) || columnName.equals(outVertexColumnName)))) {
+                                if (!((columnName.equals("ID") || columnName.equals(inVertexColumnNames) || columnName.equals(outVertexColumnNames)))) {
                                     keyValues.add(columnName);
                                     keyValues.add(resultSet.getObject(columnName));
                                 }
@@ -300,16 +356,6 @@ public class SqlVertex extends SqlElement implements Vertex {
                                     break;
                                 case BOTH:
                                     throw new IllegalStateException("This should not be possible!");
-//                                    if (inId == this.primaryKey && outId != this.primaryKey) {
-//                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, new SqlVertex(this.sqlGraph, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
-//                                    } else if (inId != this.primaryKey && outId == this.primaryKey) {
-//                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, new SqlVertex(this.sqlGraph, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
-//                                    } else if (inId == this.primaryKey && outId == this.primaryKey) {
-//                                        sqlEdge = new SqlEdge(this.sqlGraph, edgeId, label, this, this, keyValues.toArray());
-//                                    } else {
-//                                        throw new IllegalStateException("inId or outId must match!");
-//                                    }
-//                                    break;
                             }
                             edges.add(sqlEdge);
                         }
@@ -328,7 +374,7 @@ public class SqlVertex extends SqlElement implements Vertex {
     protected Object[] load() {
         List<Object> keyValues = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.label));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
@@ -339,7 +385,7 @@ public class SqlVertex extends SqlElement implements Vertex {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);
             ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
+            if (resultSet.next()) {
                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                     String columnName = resultSetMetaData.getColumnName(i);
@@ -365,7 +411,8 @@ public class SqlVertex extends SqlElement implements Vertex {
                         }
                     }
                 }
-                break;
+            } else {
+                throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.label, this.primaryKey}));
             }
             return keyValues.toArray();
         } catch (SQLException e) {

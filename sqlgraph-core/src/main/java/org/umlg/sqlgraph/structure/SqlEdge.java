@@ -108,7 +108,7 @@ public class SqlEdge extends SqlElement implements Edge {
         long edgeId = insertGlobalEdge();
 
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.label));
         sql.append(" (");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(", ");
@@ -183,7 +183,7 @@ public class SqlEdge extends SqlElement implements Edge {
     protected Object[] load() {
         List<Object> keyValues = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.label));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");

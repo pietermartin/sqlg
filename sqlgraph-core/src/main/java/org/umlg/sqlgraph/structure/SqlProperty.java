@@ -3,6 +3,7 @@ package org.umlg.sqlgraph.structure;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
@@ -58,7 +59,7 @@ public class SqlProperty<V> implements Property<V>, Serializable {
     @Override
     public void remove() {
         StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.label()));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.label()));
         sql.append(" SET ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
         sql.append(" = ? WHERE ");

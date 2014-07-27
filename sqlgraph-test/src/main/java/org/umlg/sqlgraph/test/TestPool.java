@@ -1,5 +1,6 @@
 package org.umlg.sqlgraph.test;
 
+import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -16,7 +17,7 @@ import java.sql.Statement;
  * Date: 2014/07/16
  * Time: 7:43 PM
  */
-public class TestPool {
+public class TestPool extends BaseTest {
 
     @Test
     public void testPool() throws ConfigurationException, SQLException, PropertyVetoException {
@@ -33,6 +34,17 @@ public class TestPool {
             st.execute("select * from pg_catalog.pg_aggregate");
             st.close();
             conn.close();
+        }
+    }
+
+    @Test
+    public void testSqlGraphConnectionsDoesNotExhaustPool() {
+        for (int i = 0; i < 1000; i++) {
+            this.sqlGraph.addVertex(Element.LABEL, "Person");
+        }
+        this.sqlGraph.tx().commit();
+        for (int i = 0; i < 1000; i++) {
+            this.sqlGraph.V().has(Element.LABEL, "Person").hasNext();
         }
     }
 }

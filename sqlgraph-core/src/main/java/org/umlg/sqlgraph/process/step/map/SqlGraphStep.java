@@ -53,19 +53,11 @@ public class SqlGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Edge> edges() {
-//        final HasContainer indexedContainer = getIndexKey(Edge.class);
-//        Stream<Edge> edgeStream = (indexedContainer != null) ?
-//                getEdgesUsingIndex(indexedContainer) :
-//                getEdges();
         Stream<? extends Edge> edgeStream = getEdges();
         return edgeStream.filter(e -> HasContainer.testAll((Edge) e, this.hasContainers)).iterator();
     }
 
     private Iterator<? extends Vertex> vertices() {
-//        final HasContainer indexedContainer = getIndexKey(Vertex.class);
-//        Stream<Vertex> vertexStream = (indexedContainer != null) ?
-//                getVerticesUsingIndex(indexedContainer) :
-//                getVertices();
         Stream<? extends Vertex> vertexStream = getVertices();
         return vertexStream.filter(v -> HasContainer.testAll((Vertex) v, this.hasContainers)).iterator();
     }

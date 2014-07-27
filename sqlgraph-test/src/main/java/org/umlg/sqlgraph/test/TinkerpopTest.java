@@ -8,6 +8,7 @@ import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.util.function.FunctionUtils;
+import junit.framework.Assert;
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 import org.umlg.sqlgraph.structure.SqlGraph;
@@ -16,8 +17,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -25,6 +28,7 @@ import java.util.function.Consumer;
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.CLASSIC;
 import static com.tinkerpop.gremlin.structure.Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2014/07/13
@@ -32,30 +36,68 @@ import static org.junit.Assert.*;
  */
 public class TinkerpopTest extends BaseTest {
 
+
     @Test
-    @FeatureRequirement(featureClass = Graph.Features.GraphFeatures.class, feature = Graph.Features.GraphFeatures.FEATURE_TRANSACTIONS)
-    public void shouldSupportTransactionOneAndDone() {
-        final Graph graph = this.sqlGraph;
-
-        // first fail the tx
-        try {
-            this.sqlGraph.tx().submit(FunctionUtils.wrapFunction(grx -> {
-                grx.addVertex();
-                throw new Exception("fail");
-            })).oneAndDone();
-        } catch (Exception ex) {
-            assertEquals("fail", ex.getCause().getCause().getMessage());
+    @LoadGraphWith(CLASSIC)
+    public void g_V_bothX1_createdX_name() throws IOException {
+        readGraphMLIntoGraph(this.sqlGraph);
+        this.sqlGraph.tx().commit();
+        final Iterator<String> step = get_g_V_bothX1_createdX_name();
+        System.out.println("Testing: " + step);
+        int counter = 0;
+        while (step.hasNext()) {
+            counter++;
+            final String name = step.next();
+            assertTrue(name.equals("marko") || name.equals("lop") || name.equals("josh") || name.equals("ripple") || name.equals("peter"));
         }
+        assertEquals(5, counter);
+    }
 
-        AbstractGremlinSuite.assertVertexEdgeCounts(0, 0);
+    public Traversal<Vertex, String> get_g_V_bothX1_createdX_name() {
+        return this.sqlGraph.V().both(1, "created").value("name");
+    }
 
-        // this tx will work
-        this.sqlGraph.tx().submit(grx -> graph.addVertex()).oneAndDone();
-        AbstractGremlinSuite.assertVertexEdgeCounts(1, 0);
+//    @Test
+    public void g_V_asXxX_out_groupByXa_name_sizeX_jumpXx_2X_capXaX() throws IOException {
+        readGraphMLIntoGraph(this.sqlGraph);
+        assertEquals(6, this.sqlGraph.V().count().next(), 0);
+        assertEquals(6, this.sqlGraph.V().out().count().next(), 0);
 
-        // make sure a commit happened and a new tx started
-        this.sqlGraph.tx().rollback();
-        AbstractGremlinSuite.assertVertexEdgeCounts(1, 0);
+        List<Traversal<Vertex, Map<String, Integer>>> traversals = new ArrayList<>();
+        traversals.add(get_g_V_asXxX_out_groupByXa_name_sizeX_jumpXx_2X_capXaX());
+//        traversals.add(get_g_V_asXxX_out_groupByXa_name_sizeX_jumpXx_loops_lt_2X_capXaX());
+        traversals.forEach(traversal -> {
+            System.out.println("Testing: " + traversal);
+            final Map<String, Integer> map = traversal.next();
+            assertFalse(traversal.hasNext());
+            assertEquals(4, map.size());
+            assertTrue(map.containsKey("vadas"));
+            assertEquals(Integer.valueOf(1), map.get("vadas"));
+            assertTrue(map.containsKey("josh"));
+            assertEquals(Integer.valueOf(1), map.get("josh"));
+            assertTrue(map.containsKey("lop"));
+            assertEquals(Integer.valueOf(4), map.get("lop"));
+            assertTrue(map.containsKey("ripple"));
+            assertEquals(Integer.valueOf(2), map.get("ripple"));
+        });
+    }
+
+    public Traversal<Vertex, Map<String, Integer>> get_g_V_asXxX_out_groupByXa_name_sizeX_jumpXx_2X_capXaX() {
+        return this.sqlGraph.V().as("x").out().groupBy(
+                "a",
+                v -> v.value("name"),
+                v -> v,
+                vv -> vv.size()
+        ).jump("x", 2).cap("a");
+    }
+
+    public Traversal<Vertex, Map<String, Integer>> get_g_V_asXxX_out_groupByXa_name_sizeX_jumpXx_loops_lt_2X_capXaX() {
+        return this.sqlGraph.V().as("x").out().groupBy(
+                "a",
+                v -> v.value("name"),
+                v -> v,
+                vv -> vv.size()
+        ).jump("x", t -> t.getLoops() < 2).cap("a");
     }
 
     public Traversal<Vertex, String> get_g_E_subgraphXcreatedX(final Graph subgraph) {

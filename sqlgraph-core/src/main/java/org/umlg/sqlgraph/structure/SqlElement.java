@@ -3,6 +3,7 @@ package org.umlg.sqlgraph.structure;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
@@ -20,8 +21,8 @@ import java.util.Map;
  */
 public abstract class SqlElement implements Element {
 
-    public static final String IN_VERTEX_COLUMN_END = "_INID";
-    public static final String OUT_VERTEX_COLUMN_END = "_OUTID";
+    public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
+    public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
     protected String label;
     protected SqlGraph sqlGraph;
@@ -51,7 +52,7 @@ public abstract class SqlElement implements Element {
     @Override
     public void remove() {
         StringBuilder sql = new StringBuilder("DELETE FROM ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label()));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.label()));
         sql.append(" WHERE ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
@@ -121,14 +122,16 @@ public abstract class SqlElement implements Element {
         //Validate the property
         PropertyType.from(value);
         //Check if column exist
-        this.sqlGraph.getSchemaManager().ensureColumnExist(this.label, ImmutablePair.of(key, PropertyType.from(value)));
+        this.sqlGraph.getSchemaManager().ensureColumnExist(
+                this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.label : SchemaManager.EDGE_PREFIX + this.label,
+                ImmutablePair.of(key, PropertyType.from(value)));
         updateRow(key, value);
         return new SqlProperty<>(this.sqlGraph, this, key, value);
     }
 
     private void updateRow(String key, Object value) {
         StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label));
+        sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.label));
         sql.append(" SET ");
         sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
         sql.append(" = ?");

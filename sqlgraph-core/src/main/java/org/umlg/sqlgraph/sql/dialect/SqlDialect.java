@@ -75,4 +75,8 @@ public interface SqlDialect {
     public default boolean supportsStringArrayValues() {
         return true;
     }
+
+    public default void assertTableName(String tableName) {
+
+    }
 }

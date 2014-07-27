@@ -50,7 +50,7 @@ public abstract class BaseTest {
         SqlDialect sqlDialect;
         try {
             Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
-            sqlDialect = (SqlDialect)sqlDialectClass.newInstance();
+            sqlDialect = (SqlDialect) sqlDialectClass.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -63,7 +63,9 @@ public abstract class BaseTest {
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
-        try (Connection conn = SqlGraphDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
+        Connection conn;
+        try {
+            conn = SqlGraphDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection();
             DatabaseMetaData metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
                 String catalog = "sqlgraphdb";

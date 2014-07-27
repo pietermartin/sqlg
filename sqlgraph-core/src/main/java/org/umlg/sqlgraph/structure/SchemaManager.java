@@ -1,6 +1,7 @@
 package org.umlg.sqlgraph.structure;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.umlg.sqlgraph.sql.dialect.SqlDialect;
 
 import java.sql.*;
@@ -14,12 +15,16 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class SchemaManager {
 
+    public static final String VERTEX_PREFIX = "V_";
+    public static final String EDGE_PREFIX = "E_";
     public static final String VERTICES = "VERTICES";
     public static final String VERTEX_IN_LABELS = "IN_LABELS";
     public static final String VERTEX_OUT_LABELS = "OUT_LABELS";
     public static final String EDGES = "EDGES";
     private Map<String, Map<String, PropertyType>> schema = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedSchema = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> edgeForeignKeys = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
     private ReentrantLock schemaLock = new ReentrantLock();
     private SqlGraph sqlGraph;
     private SqlDialect sqlDialect;
@@ -32,7 +37,11 @@ public class SchemaManager {
                 for (String t : this.uncommittedSchema.keySet()) {
                     this.schema.put(t, this.uncommittedSchema.get(t));
                 }
+                for (String t : this.uncommittedEdgeForeignKeys.keySet()) {
+                    this.edgeForeignKeys.put(t, this.uncommittedEdgeForeignKeys.get(t));
+                }
                 this.uncommittedSchema.clear();
+                this.uncommittedEdgeForeignKeys.clear();
                 this.schemaLock.unlock();
             }
         });
@@ -40,10 +49,16 @@ public class SchemaManager {
             if (this.schemaLock.isHeldByCurrentThread()) {
                 if (this.getSqlDialect().supportsTransactionalSchema()) {
                     this.uncommittedSchema.clear();
+                    this.uncommittedEdgeForeignKeys.clear();
                 } else {
                     for (String t : this.uncommittedSchema.keySet()) {
                         this.schema.put(t, this.uncommittedSchema.get(t));
                     }
+                    for (String t : this.uncommittedEdgeForeignKeys.keySet()) {
+                        this.edgeForeignKeys.put(t, this.uncommittedEdgeForeignKeys.get(t));
+                    }
+                    this.uncommittedSchema.clear();
+                    this.uncommittedEdgeForeignKeys.clear();
                 }
                 this.schemaLock.unlock();
             }
@@ -84,47 +99,55 @@ public class SchemaManager {
         }
     }
 
-    public void ensureVertexTableExist(String table, Object... keyValues) {
+    public void ensureVertexTableExist(final String table, final Object... keyValues) {
         Objects.requireNonNull(table, "Given table must not be null");
+        final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.schema.containsKey(table)) {
+        if (!this.schema.containsKey(prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.schema.containsKey(table)) {
-                if (!this.uncommittedSchema.containsKey(table)) {
-                    this.uncommittedSchema.put(table, columns);
-                    createVertexTable(table, columns);
+            if (!this.schema.containsKey(prefixedTable)) {
+                if (!this.uncommittedSchema.containsKey(prefixedTable)) {
+                    this.uncommittedSchema.put(prefixedTable, columns);
+                    createVertexTable(prefixedTable, columns);
                 }
             }
         }
         //ensure columns exist
-        columns.forEach((k, v) -> ensureColumnExist(table, ImmutablePair.of(k, v)));
+        columns.forEach((k, v) -> ensureColumnExist(prefixedTable, ImmutablePair.of(k, v)));
     }
 
-    public void ensureEdgeTableExist(String table, String inTable, String outTable, Object... keyValues) {
+    public void ensureEdgeTableExist(final String table, final Pair<String, String> foreignKey, Object... keyValues) {
         Objects.requireNonNull(table, "Given table must not be null");
         Objects.requireNonNull(table, "Given inTable must not be null");
         Objects.requireNonNull(table, "Given outTable must not be null");
+        final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.schema.containsKey(table)) {
+        if (!this.schema.containsKey(prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.schema.containsKey(table)) {
-                if (!this.uncommittedSchema.containsKey(table)) {
-                    this.uncommittedSchema.put(table, columns);
-                    createEdgeTable(table, inTable, outTable, columns);
+            if (!this.schema.containsKey(prefixedTable)) {
+                if (!this.uncommittedSchema.containsKey(prefixedTable)) {
+                    this.uncommittedSchema.put(prefixedTable, columns);
+                    Set<String> foreignKeys = new HashSet<>();
+                    foreignKeys.add(foreignKey.getLeft());
+                    foreignKeys.add(foreignKey.getRight());
+                    this.uncommittedEdgeForeignKeys.put(prefixedTable, foreignKeys);
+                    createEdgeTable(prefixedTable, foreignKey, columns);
                 }
             }
         }
         //ensure columns exist
-        columns.forEach((k, v) -> ensureColumnExist(table, ImmutablePair.of(k, v)));
+        columns.forEach((k, v) -> ensureColumnExist(prefixedTable, ImmutablePair.of(k, v)));
+        ensureEdgeForeignKeysExist(prefixedTable, foreignKey.getLeft());
+        ensureEdgeForeignKeysExist(prefixedTable, foreignKey.getRight());
     }
 
-    public void ensureColumnExist(String table, ImmutablePair<String, PropertyType> keyValue) {
+    void ensureColumnExist(String table, ImmutablePair<String, PropertyType> keyValue) {
         final Map<String, PropertyType> cachedColumns = this.schema.get(table);
         final Map<String, PropertyType> uncommitedColumns;
         if (cachedColumns == null) {
@@ -146,27 +169,27 @@ public class SchemaManager {
         }
     }
 
-//    public void ensureEdgeTableInOutForeignKeysExist(String table, String inTable, String outTable) {
-//        final Map<String, PropertyType> cachedColumns = this.schema.get(table);
-//        final Map<String, PropertyType> uncommitedColumns;
-//        if (cachedColumns == null) {
-//            uncommitedColumns = this.uncommittedSchema.get(table);
-//        } else {
-//            uncommitedColumns = cachedColumns;
-//        }
-//        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
-//        if (!uncommitedColumns.containsKey(keyValue.left)) {
-//            //Make sure the current thread/transaction owns the lock
-//            if (!this.schemaLock.isHeldByCurrentThread()) {
-//                this.schemaLock.lock();
-//            }
-//            if (!uncommitedColumns.containsKey(keyValue.left)) {
-//                addEdgeTableInOutForeignKey(table, inTable, outTable);
-//                uncommitedColumns.put(keyValue.left, keyValue.right);
-//                this.uncommittedSchema.put(table, uncommitedColumns);
-//            }
-//        }
-//    }
+    private void ensureEdgeForeignKeysExist(String table, String foreignKey) {
+        Set<String> foreignKeys = this.edgeForeignKeys.get(table);
+        final Set<String> uncommittedForeignKeys;
+        if (foreignKeys == null) {
+            uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(table);
+        } else {
+            uncommittedForeignKeys = foreignKeys;
+        }
+        Objects.requireNonNull(uncommittedForeignKeys, "Table must already be present in the foreign key cache!");
+        if (!uncommittedForeignKeys.contains(foreignKey)) {
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
+            if (!uncommittedForeignKeys.contains(foreignKey)) {
+                addEdgeForeignKey(table, foreignKey);
+                uncommittedForeignKeys.add(foreignKey);
+                this.uncommittedEdgeForeignKeys.put(table, uncommittedForeignKeys);
+            }
+        }
+    }
 
     public void close() {
         this.schema.clear();
@@ -244,6 +267,7 @@ public class SchemaManager {
     }
 
     private void createVertexTable(String tableName, Map<String, PropertyType> columns) {
+        this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append(" (");
@@ -274,7 +298,8 @@ public class SchemaManager {
         }
     }
 
-    private void createEdgeTable(String tableName, String inTable, String outTable, Map<String, PropertyType> columns) {
+    private void createEdgeTable(String tableName, Pair<String, String> foreignKey, Map<String, PropertyType> columns) {
+        this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append("(");
@@ -294,25 +319,25 @@ public class SchemaManager {
             }
         }
         sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable + SqlElement.IN_VERTEX_COLUMN_END));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getLeft()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
         sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable + SqlElement.OUT_VERTEX_COLUMN_END));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getRight()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
         sql.append(", ");
         sql.append("FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable + SqlElement.IN_VERTEX_COLUMN_END));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getLeft()));
         sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKey.getLeft().replace(SqlElement.IN_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("), ");
         sql.append(" FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable + SqlElement.OUT_VERTEX_COLUMN_END));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getRight()));
         sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKey.getRight().replace(SqlElement.OUT_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("))");
@@ -412,22 +437,23 @@ public class SchemaManager {
         }
     }
 
-    private void addEdgeTableInOutForeignKey(String table, String inTable, String outTable) {
+    private void addEdgeForeignKey(String table, String foreignKey) {
         StringBuilder sql = new StringBuilder();
-        sql.append("FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable + SqlElement.IN_VERTEX_COLUMN_END));
-        sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(inTable));
-        sql.append(" (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append("), ");
-        sql.append(" FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable + SqlElement.OUT_VERTEX_COLUMN_END));
-        sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(outTable));
-        sql.append(" (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append("))");
+        sql.append("ALTER TABLE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+        sql.append(" ADD COLUMN ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey));
+        sql.append(" ");
+        sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
+        if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        Connection conn = this.sqlGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void createIndex(String label, String propertyKey) {
@@ -435,9 +461,9 @@ public class SchemaManager {
     }
 
     void loadSchema() {
-        Connection conn = this.sqlGraph.tx().getConnection();
-        DatabaseMetaData metadata;
         try {
+            Connection conn = SqlGraphDataSource.INSTANCE.get(this.sqlGraph.getJdbcUrl()).getConnection();
+            DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
@@ -455,8 +481,41 @@ public class SchemaManager {
                     String typeName = columnsRs.getString("TYPE_NAME");
                     PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
                     uncommitedColumns.put(column, propertyType);
-                    this.uncommittedSchema.put(table, uncommitedColumns);
+                    this.schema.put(table, uncommitedColumns);
                 }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Deletes all tables.
+     */
+    public void clear() {
+        try {
+            Connection conn = SqlGraphDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
+            DatabaseMetaData metadata = null;
+            metadata = conn.getMetaData();
+            if (sqlDialect.supportsCascade()) {
+                String catalog = "sqlgraphdb";
+                String schemaPattern = null;
+                String tableNamePattern = "%";
+                String[] types = {"TABLE"};
+                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (result.next()) {
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    }
+                }
+            } else {
+                throw new RuntimeException("Not yet implemented!");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

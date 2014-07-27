@@ -3,6 +3,7 @@ package org.umlg.sqlgraph.test;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.umlg.sqlgraph.structure.SchemaManager;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -19,8 +20,8 @@ public class TestVertexNavToEdges extends BaseTest {
         Vertex v2 = sqlGraph.addVertex();
         Edge e = v1.addEdge("label1", v2, "name", "marko");
         sqlGraph.tx().commit();
-        assertDb("label1", 1);
-        assertDb("vertex", 2);
+        assertDb(SchemaManager.EDGE_PREFIX + "label1", 1);
+        assertDb(SchemaManager.VERTEX_PREFIX  +  "vertex", 2);
 
         Edge edge = v1.outE("label1").next();
         assertEquals(e, edge);

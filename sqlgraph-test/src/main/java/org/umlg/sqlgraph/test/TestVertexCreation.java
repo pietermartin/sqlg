@@ -3,6 +3,7 @@ package org.umlg.sqlgraph.test;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.umlg.sqlgraph.structure.SchemaManager;
 import org.umlg.sqlgraph.structure.SqlGraphDataSource;
 
 import java.sql.Connection;
@@ -26,7 +27,7 @@ public class TestVertexCreation extends BaseTest {
         try (Connection conn = SqlGraphDataSource.INSTANCE.get(this.sqlGraph.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("vertex"));
+                sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "vertex"));
                 if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
@@ -66,7 +67,7 @@ public class TestVertexCreation extends BaseTest {
         try (Connection conn = SqlGraphDataSource.INSTANCE.get(this.sqlGraph.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("Person"));
+                sql.append(this.sqlGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "Person"));
                 if (this.sqlGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }

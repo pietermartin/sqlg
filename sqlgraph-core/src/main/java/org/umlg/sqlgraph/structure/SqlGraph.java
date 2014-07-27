@@ -149,11 +149,12 @@ public class SqlGraph implements Graph {
         }
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, evaluateToLong(id));
+            Long idAsLong = evaluateToLong(id);
+            preparedStatement.setLong(1, idAsLong);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 String label = resultSet.getString("VERTEX_TABLE");
-                sqlVertex = new SqlVertex(this, (Long) id, label);
+                sqlVertex = new SqlVertex(this, idAsLong, label);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -180,11 +181,12 @@ public class SqlGraph implements Graph {
         }
         Connection conn = this.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, evaluateToLong(id));
+            Long idAsLong = evaluateToLong(id);
+            preparedStatement.setLong(1, idAsLong);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 String label = resultSet.getString("EDGE_TABLE");
-                sqlEdge = new SqlEdge(this, (Long) id, label);
+                sqlEdge = new SqlEdge(this, idAsLong, label);
             }
             preparedStatement.close();
         } catch (SQLException e) {
