@@ -4,16 +4,16 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.umlg</groupId>
-		<artifactId>sqlgraph</artifactId>
+		<artifactId>sqlg</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>sqlgraph-postgres</artifactId>
-	<name>sqlgraph-postgres</name>
+	<artifactId>sqlg-postgres</artifactId>
+	<name>sqlg-postgres</name>
 
 	<dependencies>
         <dependency>
             <groupId>org.umlg</groupId>
-            <artifactId>sqlgraph-test</artifactId>
+            <artifactId>sqlg-test</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>

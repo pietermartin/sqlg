@@ -4,22 +4,22 @@
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.umlg</groupId>
-		<artifactId>sqlgraph</artifactId>
+		<artifactId>sqlg</artifactId>
 		<version>1.0-SNAPSHOT</version>
 	</parent>
-	<artifactId>sqlgraph-hsqldb</artifactId>
-	<name>sqlgraph-hsqldb</name>
+	<artifactId>sqlg-mariadb</artifactId>
+	<name>sqlg-mariadb</name>
 
 	<dependencies>
         <dependency>
             <groupId>org.umlg</groupId>
-            <artifactId>sqlgraph-test</artifactId>
+            <artifactId>sqlg-test</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.hsqldb</groupId>
-            <artifactId>hsqldb</artifactId>
-            <version>2.3.2</version>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>1.1.7</version>
             <scope>test</scope>
         </dependency>
 	</dependencies>

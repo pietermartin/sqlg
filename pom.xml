@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.umlg</groupId>
-    <artifactId>sqlgraph</artifactId>
+    <artifactId>sqlg</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <build>
@@ -59,11 +59,11 @@
         </pluginManagement>
     </build>
     <modules>
-        <module>sqlgraph-core</module>
-        <module>sqlgraph-test</module>
-        <module>sqlgraph-hsqldb</module>
-        <module>sqlgraph-postgres</module>
-        <module>sqlgraph-mariadb</module>
-        <module>sqlgraph-derby</module>
+        <module>sqlg-core</module>
+        <module>sqlg-test</module>
+        <module>sqlg-hsqldb</module>
+        <module>sqlg-postgres</module>
+        <module>sqlg-mariadb</module>
+        <module>sqlg-derby</module>
     </modules>
 </project>
