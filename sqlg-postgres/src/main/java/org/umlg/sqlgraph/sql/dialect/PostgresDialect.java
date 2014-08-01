@@ -1,9 +1,13 @@
 package org.umlg.sqlgraph.sql.dialect;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.lang3.StringUtils;
 import org.umlg.sqlgraph.structure.PropertyType;
 
+import java.sql.Array;
+import java.sql.SQLException;
 import java.sql.Types;
 
 /**
@@ -239,6 +243,5 @@ public class PostgresDialect implements SqlDialect {
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
-
 
 }

@@ -1,5 +1,8 @@
 package org.umlg.sqlgraph.structure;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
@@ -15,11 +18,9 @@ import org.umlg.sqlgraph.sql.dialect.SqlDialect;
 import org.umlg.sqlgraph.strategy.SqlGraphStepTraversalStrategy;
 
 import java.beans.PropertyVetoException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Date: 2014/07/12
@@ -31,6 +32,7 @@ public class SqlGraph implements Graph {
     private SchemaManager schemaManager;
     private SqlDialect sqlDialect;
     private String jdbcUrl;
+    private ObjectMapper mapper = new ObjectMapper();
 
     public String getJdbcUrl() {
         return jdbcUrl;
@@ -59,7 +61,7 @@ public class SqlGraph implements Graph {
     private SqlGraph(final Configuration configuration) {
         try {
             Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
-            this.sqlDialect = (SqlDialect)sqlDialectClass.newInstance();
+            this.sqlDialect = (SqlDialect) sqlDialectClass.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -610,6 +612,43 @@ public class SqlGraph implements Graph {
         }
     }
 
+    public String query(String query) {
+        try {
+            Connection conn = SqlGraphDataSource.INSTANCE.get(this.getJdbcUrl()).getConnection();
+            conn.setReadOnly(true);
+            ObjectNode result = this.mapper.createObjectNode();
+            ArrayNode dataNode = this.mapper.createArrayNode();
+            ObjectNode metaNode = this.mapper.createObjectNode();
+            Statement statement = conn.createStatement();
+            ResultSet rs = statement.executeQuery(query);
+            ResultSetMetaData rsmd = rs.getMetaData();
+            boolean first = true;
+            while (rs.next()) {
+                int numColumns = rsmd.getColumnCount();
+                ObjectNode obj = this.mapper.createObjectNode();
+                for (int i = 1; i < numColumns + 1; i++) {
+                    String columnName = rsmd.getColumnName(i);
+                    Object o = rs.getObject(columnName);
+                    int type = rsmd.getColumnType(i);
+                    this.sqlDialect.putJsonObject(obj, columnName, type, o);
+                    if (first) {
+                        this.sqlDialect.putJsonMetaObject(metaNode, columnName, type, o);
+                    }
+                }
+                first = false;
+                dataNode.add(obj);
+            }
+            result.put("data", dataNode);
+            result.put("meta", metaNode);
+            conn.setReadOnly(false);
+            return result.toString();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            this.tx().rollback();
+        }
+    }
+
     //indexing
     public void createUniqueConstraint(String label, String propertyKey) {
         this.tx().readWrite();
@@ -658,5 +697,60 @@ public class SqlGraph implements Graph {
         else
             longId = Double.valueOf(id.toString()).longValue();
         return longId;
+    }
+
+    protected ArrayNode convertObjectArrayToArrayNode(ArrayNode arrayNode, Object[] value, int baseType) {
+
+        if (value instanceof String[]) {
+            for (String s : (String[]) value) {
+                arrayNode.add(s);
+            }
+        }
+        if (value instanceof Integer[]) {
+            switch (baseType) {
+                case Types.TINYINT:
+                    for (Byte b : (Byte[]) value) {
+                        arrayNode.add(b);
+                    }
+                    break;
+                case Types.SMALLINT:
+                    for (Short s : (Short[]) value) {
+                        arrayNode.add(s);
+                    }
+                    break;
+                default:
+                    for (Integer i : (Integer[]) value) {
+                        arrayNode.add(i);
+                    }
+                    break;
+            }
+        }
+        if (value instanceof Long[]) {
+            for (Long l : (Long[]) value) {
+                arrayNode.add(l);
+            }
+        }
+        if (value instanceof Double[]) {
+            for (Double d : (Double[]) value) {
+                arrayNode.add(d);
+            }
+        }
+        if (value instanceof Float[]) {
+            for (Float f : (Float[]) value) {
+                arrayNode.add(f);
+            }
+        }
+        if (value instanceof Boolean[]) {
+            for (Boolean b : (Boolean[]) value) {
+                arrayNode.add(b);
+            }
+        }
+        if (value instanceof Character[]) {
+            for (Character c : (Character[]) value) {
+                arrayNode.add(c);
+            }
+        }
+        return arrayNode;
+
     }
 }

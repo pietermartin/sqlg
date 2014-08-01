@@ -26,6 +26,11 @@ public class SqlGraphTransaction implements Transaction {
             return null;
         }
     };
+    protected final ThreadLocal<Connection> threadLocalReadOnlyTx = new ThreadLocal<Connection>() {
+        protected Connection initialValue() {
+            return null;
+        }
+    };
 
     public SqlGraphTransaction(SqlGraph sqlGraph) {
         this.sqlGraph = sqlGraph;
@@ -39,6 +44,10 @@ public class SqlGraphTransaction implements Transaction {
 
     public Connection getConnection() {
         return this.threadLocalTx.get();
+    }
+
+    public Connection getReadOnlyConnection() {
+        return this.threadLocalReadOnlyTx.get();
     }
 
     @Override

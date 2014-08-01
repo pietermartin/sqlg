@@ -2,6 +2,7 @@ package org.umlg.sqlgraph;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.TestQuery;
 import org.umlg.sqlgraph.test.*;
 
 /**
@@ -10,7 +11,7 @@ import org.umlg.sqlgraph.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestDeletedVertex.class
+        TestQuery.class
 })
 public class AnyTest {
 }

@@ -175,9 +175,10 @@ public class SchemaManager {
         if (foreignKeys == null) {
             uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(table);
         } else {
-            uncommittedForeignKeys = foreignKeys;
+            uncommittedForeignKeys = new HashSet<>(foreignKeys);
         }
-        Objects.requireNonNull(uncommittedForeignKeys, "Table must already be present in the foreign key cache!");
+        Objects.requireNonNull(uncommittedForeignKeys, String.format(
+                "Table %s must already be present in the foreign key cache!", new String[]{table}));
         if (!uncommittedForeignKeys.contains(foreignKey)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
@@ -472,7 +473,8 @@ public class SchemaManager {
             ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
             while (tablesRs.next()) {
                 String table = tablesRs.getString(3);
-                final Map<String, PropertyType> uncommitedColumns = new ConcurrentHashMap<>();
+                final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
+                final Set<String> foreignKeys = new HashSet<>();
                 //get the columns
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                 while (columnsRs.next()) {
@@ -480,8 +482,12 @@ public class SchemaManager {
                     int columnType = columnsRs.getInt(5);
                     String typeName = columnsRs.getString("TYPE_NAME");
                     PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                    uncommitedColumns.put(column, propertyType);
-                    this.schema.put(table, uncommitedColumns);
+                    uncomitedColumns.put(column, propertyType);
+                    this.schema.put(table, uncomitedColumns);
+                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlElement.OUT_VERTEX_COLUMN_END))) {
+                        foreignKeys.add(column);
+                        this.edgeForeignKeys.put(table, foreignKeys);
+                    }
                 }
             }
         } catch (SQLException e) {
