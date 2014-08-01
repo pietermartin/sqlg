@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.process.graph.step.map.StartStep;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -15,12 +16,11 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
 import org.umlg.sqlgraph.sql.dialect.SqlDialect;
-import org.umlg.sqlgraph.strategy.SqlGraphStepTraversalStrategy;
+import org.umlg.sqlgraph.strategy.SqlGraphStepStrategy;
 
 import java.beans.PropertyVetoException;
 import java.sql.*;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Date: 2014/07/12
@@ -121,7 +121,7 @@ public class SqlGraph implements Graph {
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
-        traversal.strategies().register(new SqlGraphStepTraversalStrategy());
+        traversal.strategies().register(SqlGraphStepStrategy.instance());
         traversal.addStep(new SqlGraphStep<>(traversal, Vertex.class, this));
         return traversal;
     }
@@ -130,8 +130,17 @@ public class SqlGraph implements Graph {
     public GraphTraversal<Edge, Edge> E() {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
-        traversal.strategies().register(new SqlGraphStepTraversalStrategy());
+        traversal.strategies().register(SqlGraphStepStrategy.instance());
         traversal.addStep(new SqlGraphStep(traversal, Edge.class, this));
+        return traversal;
+    }
+
+    @Override
+    public <S, E> GraphTraversal<S, E> of() {
+        final GraphTraversal<S, E> traversal = new DefaultGraphTraversal<>();
+        traversal.memory().set(Graph.Key.hidden("g"), this);
+        traversal.strategies().register(SqlGraphStepStrategy.instance());
+        traversal.addStep(new StartStep<>(traversal));
         return traversal;
     }
 

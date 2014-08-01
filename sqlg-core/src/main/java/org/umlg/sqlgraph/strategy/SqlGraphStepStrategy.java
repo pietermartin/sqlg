@@ -12,11 +12,16 @@ import org.umlg.sqlgraph.process.step.map.SqlGraphStep;
  * Date: 2014/07/12
  * Time: 5:45 AM
  */
-public class SqlGraphStepTraversalStrategy implements TraversalStrategy.FinalTraversalStrategy {
+public class SqlGraphStepStrategy implements TraversalStrategy.NoDependencies {
+
+    private static final SqlGraphStepStrategy INSTANCE = new SqlGraphStepStrategy();
+
+    private SqlGraphStepStrategy() {
+    }
 
     public void apply(final Traversal traversal) {
 
-        if (traversal.getSteps().get(0) instanceof SqlGraphStep) {  // TODO: generalize for searching the whole traversal?
+        if (traversal.getSteps().get(0) instanceof SqlGraphStep) {
             final SqlGraphStep sqlGraphStep = (SqlGraphStep) traversal.getSteps().get(0);
             Step currentStep = sqlGraphStep.getNextStep();
             while (true) {
@@ -31,5 +36,9 @@ public class SqlGraphStepTraversalStrategy implements TraversalStrategy.FinalTra
                 currentStep = currentStep.getNextStep();
             }
         }
+    }
+
+    public static SqlGraphStepStrategy instance() {
+        return INSTANCE;
     }
 }
