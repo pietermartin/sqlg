@@ -6,7 +6,7 @@
     <key id="lang" for="node" attr.name="lang" attr.type="string"></key>
     <key id="age" for="node" attr.name="age" attr.type="int"></key>
     <key id="labelE" for="edge" attr.name="labelE" attr.type="string"></key>
-    <key id="weight" for="edge" attr.name="weight" attr.type="float"></key>
+    <key id="weight" for="edge" attr.name="weight" attr.type="double"></key>
     <graph id="G" edgedefault="directed">
         <node id="1">
             <data key="labelV">vertex</data>
