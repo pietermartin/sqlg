@@ -13,13 +13,18 @@
 	<dependencies>
         <dependency>
             <groupId>org.umlg</groupId>
-            <artifactId>sqlg-test</artifactId>
+            <artifactId>sqlg-core</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>2.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.umlg</groupId>
+            <artifactId>sqlg-test</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
 	</dependencies>
