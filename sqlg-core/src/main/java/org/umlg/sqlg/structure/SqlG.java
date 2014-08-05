@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.graph.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.map.StartStep;
+import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -123,7 +123,7 @@ public class SqlG implements Graph {
     @Override
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
+        final GraphTraversal traversal = new DefaultGraphTraversal<>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.addStep(new SqlGGraphStep<>(traversal, Vertex.class, this));
         return traversal;
@@ -139,9 +139,9 @@ public class SqlG implements Graph {
     }
 
     @Override
-    public <S, E> GraphTraversal<S, E> of() {
-        final GraphTraversal<S, E> traversal = new DefaultGraphTraversal<>();
-        traversal.memory().set(Graph.Key.hidden("g"), this);
+    public <S> GraphTraversal<S, S> of() {
+        final GraphTraversal<S, S> traversal = new DefaultGraphTraversal<>();
+        traversal.memory().set(Graph.Key.hide("g"), this);
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.addStep(new StartStep<>(traversal));
         return traversal;
