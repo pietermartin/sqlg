@@ -18,4 +18,14 @@ public class TestRemoveProperty extends BaseTest {
         Assert.assertFalse(v1.property("name").isPresent());
     }
 
+    @Test
+    public void testRemoveByteArrayProperty() {
+        Vertex v1 = sqlG.addVertex("name", "marko", "ages", new byte[]{1, 2, 3, 4});
+        this.sqlG.tx().commit();
+        Assert.assertTrue(v1.property("ages").isPresent());
+        v1.property("ages").remove();
+        this.sqlG.tx().commit();
+        Assert.assertFalse(v1.property("ages").isPresent());
+    }
+
 }

@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TinkerpopTest.class
+        TestRemoveProperty.class
 })
 public class AnyTest {
 }

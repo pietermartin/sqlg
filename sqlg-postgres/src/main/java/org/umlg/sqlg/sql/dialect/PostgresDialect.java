@@ -163,6 +163,8 @@ public class PostgresDialect implements SqlDialect {
                 return Types.DOUBLE;
             case STRING:
                 return Types.CLOB;
+            case BYTE_ARRAY:
+                return Types.ARRAY;
             case BOOLEAN_ARRAY:
                 return Types.ARRAY;
             case SHORT_ARRAY:
