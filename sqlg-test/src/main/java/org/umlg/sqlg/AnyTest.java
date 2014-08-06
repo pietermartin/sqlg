@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRemoveProperty.class
+        TestEdgeToDifferentLabeledVertexes.class
 })
 public class AnyTest {
 }

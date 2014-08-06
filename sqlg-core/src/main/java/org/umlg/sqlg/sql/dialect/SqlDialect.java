@@ -15,14 +15,6 @@ import java.sql.Types;
  */
 public interface SqlDialect {
 
-    /**
-     * Postgres sequences start with a 1
-     * @return
-     */
-    public default long sequenceInitialValue() {
-        return 1l;
-    }
-
     PropertyType sqlTypeToPropertyType(int sqlType, String typeName);
 
     String getJdbcDriver();

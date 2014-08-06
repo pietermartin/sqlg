@@ -10,19 +10,27 @@ import org.umlg.sqlg.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestAddVertexViaMap.class,
         TestAllEdges.class,
         TestAllVertices.class,
+        TestArrayProperties.class,
+        TestCountVerticesAndEdges.class,
+        TestDeletedVertex.class,
         TestEdgeCreation.class,
+        TestEdgeToDifferentLabeledVertexes.class,
         TestGetById.class,
         TestHas.class,
+        TestHasLabel.class,
+        TestLoadArrayProperties.class,
         TestLoadElementProperties.class,
+        TestLoadSchema.class,
+        TestPool.class,
         TestRemoveElement.class,
         TestRemoveProperty.class,
         TestSetProperty.class,
         TestVertexCreation.class,
-        TestVertexNavToEdges.class,
-        TestArrayProperties.class,
-        TestLoadArrayProperties.class
+        TestVertexEdgeSameName.class,
+        TestVertexNavToEdges.class
 })
 public class AllTest {
 }

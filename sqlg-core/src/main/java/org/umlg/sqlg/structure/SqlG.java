@@ -224,7 +224,7 @@ public class SqlG implements Graph {
     }
 
     @Override
-    public <V extends Variables> V variables() {
+    public Variables variables() {
         throw Graph.Exceptions.variablesNotSupported();
     }
 
@@ -240,6 +240,7 @@ public class SqlG implements Graph {
         return StringFactory.graphString(this, "SqlGraph");
     }
 
+    @Override
     public Features getFeatures() {
         return new SqlGFeatures();
     }
@@ -286,10 +287,6 @@ public class SqlG implements Graph {
         }
 
         public class SqlVertexFeatures implements VertexFeatures {
-            @Override
-            public VertexAnnotationFeatures annotations() {
-                return new SqlGVertexAnnotationFeatures();
-            }
 
             @Override
             public boolean supportsUserSuppliedIds() {
@@ -531,97 +528,6 @@ public class SqlG implements Graph {
             }
         }
 
-        public class SqlGVertexAnnotationFeatures implements VertexAnnotationFeatures {
-            @Override
-            public boolean supportsBooleanValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsDoubleValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsFloatValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsIntegerValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsLongValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsMapValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsMixedListValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsByteValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsBooleanArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsByteArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsDoubleArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsFloatArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsIntegerArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsLongArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsStringArrayValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsSerializableValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsStringValues() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsUniformListValues() {
-                return false;
-            }
-        }
     }
 
     public String query(String query) {

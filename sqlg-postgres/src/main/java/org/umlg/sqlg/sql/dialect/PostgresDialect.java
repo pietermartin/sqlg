@@ -122,6 +122,8 @@ public class PostgresDialect implements SqlDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
+            case Types.BINARY:
+                return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
                 switch (typeName) {
                     case "_bool":

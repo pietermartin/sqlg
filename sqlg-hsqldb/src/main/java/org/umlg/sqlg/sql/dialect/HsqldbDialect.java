@@ -20,16 +20,6 @@ public class HsqldbDialect implements SqlDialect {
         return false;
     }
 
-    /**
-     * Hsqldb sequences start with a 0
-     *
-     * @return
-     */
-    @Override
-    public long sequenceInitialValue() {
-        return 0l;
-    }
-
     @Override
     public String getJdbcDriver() {
         return "org.hsqldb.jdbc.JDBCDriver";
@@ -207,7 +197,7 @@ public class HsqldbDialect implements SqlDialect {
     @Override
     public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
         switch (sqlType) {
-            case Types.BIT:
+            case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
             case Types.SMALLINT:
                 return PropertyType.SHORT;
@@ -221,6 +211,8 @@ public class HsqldbDialect implements SqlDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
+            case Types.VARBINARY:
+                return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
                 switch (typeName) {
                     case "BOOLEAN ARRAY":
@@ -247,7 +239,7 @@ public class HsqldbDialect implements SqlDialect {
 
     @Override
     public String getForeignKeyTypeDefinition() {
-        return "BIGINT NOT NULL";
+        return "BIGINT";
     }
 
     @Override

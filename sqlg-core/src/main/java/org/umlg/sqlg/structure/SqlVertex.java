@@ -215,7 +215,6 @@ public class SqlVertex extends SqlElement implements Vertex {
 
     ///TODO make this lazy
     public Iterator<SqlEdge> getEdges(Direction direction, String... labels) {
-        long sequenceFirstValueLessOne = this.sqlG.getSqlDialect().sequenceInitialValue() - 1l;
         List<Direction> directions = new ArrayList<>(2);
         Set<SqlEdge> edges = new HashSet<>();
         Set<String> inVertexLabels = new HashSet<>();
@@ -310,12 +309,12 @@ public class SqlVertex extends SqlElement implements Vertex {
                             for (String inColumnName : inVertexColumnNames) {
                                 if (inId != null) {
                                     Long tempInId = resultSet.getLong(inColumnName);
-                                    if (tempInId.longValue() != sequenceFirstValueLessOne) {
+                                    if (!resultSet.wasNull()) {
                                         throw new IllegalStateException("Multiple in columns are set in vertex row!");
                                     }
                                 } else {
                                     Long tempInId = resultSet.getLong(inColumnName);
-                                    if (tempInId.longValue() != sequenceFirstValueLessOne) {
+                                    if (!resultSet.wasNull()) {
                                         inId = tempInId;
                                         inVertexColumnName = inColumnName;
                                     }
@@ -324,12 +323,12 @@ public class SqlVertex extends SqlElement implements Vertex {
                             for (String outColumnName : outVertexColumnNames) {
                                 if (outId != null) {
                                     Long tempOutId = resultSet.getLong(outColumnName);
-                                    if (tempOutId.longValue() != sequenceFirstValueLessOne) {
+                                    if (!resultSet.wasNull()) {
                                         throw new IllegalStateException("Multiple out columns are set in vertex row!");
                                     }
                                 } else {
                                     Long tempOutId = resultSet.getLong(outColumnName);
-                                    if (tempOutId.longValue() != sequenceFirstValueLessOne) {
+                                    if (!resultSet.wasNull()) {
                                         outId = tempOutId;
                                         outVertexColumnName = outColumnName;
                                     }
