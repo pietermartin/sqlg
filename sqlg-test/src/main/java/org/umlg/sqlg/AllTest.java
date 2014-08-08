@@ -30,7 +30,9 @@ import org.umlg.sqlg.test.*;
         TestSetProperty.class,
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
-        TestVertexNavToEdges.class
+        TestVertexNavToEdges.class,
+        TestByteArray.class,
+        TestQuery.class
 })
 public class AllTest {
 }
