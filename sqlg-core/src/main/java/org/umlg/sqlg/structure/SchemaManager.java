@@ -178,7 +178,7 @@ public class SchemaManager {
             uncommittedForeignKeys = new HashSet<>(foreignKeys);
         }
         Objects.requireNonNull(uncommittedForeignKeys, String.format(
-                "Table %s must already be present in the foreign key cache!", new String[]{table}));
+                "Table %s must already be present in the foreign key cache!", new Object[]{table}));
         if (!uncommittedForeignKeys.contains(foreignKey)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {

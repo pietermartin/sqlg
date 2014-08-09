@@ -15,6 +15,10 @@ import java.sql.Types;
  */
 public interface SqlDialect {
 
+    public default long getSequenceStart() {
+        return 1L;
+    }
+
     PropertyType sqlTypeToPropertyType(int sqlType, String typeName);
 
     String getJdbcDriver();

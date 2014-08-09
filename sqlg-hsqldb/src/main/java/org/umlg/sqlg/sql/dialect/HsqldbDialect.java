@@ -16,6 +16,11 @@ import java.sql.Types;
 public class HsqldbDialect implements SqlDialect {
 
     @Override
+    public long getSequenceStart() {
+        return 0L;
+    }
+
+    @Override
     public boolean supportsTransactionalSchema() {
         return false;
     }

@@ -214,7 +214,7 @@ public class SqlG implements Graph {
     }
 
     @Override
-    public <C extends GraphComputer> C compute(Class<C>... graphComputerClass) {
+    public GraphComputer compute(final Class... graphComputerClass) {
         throw Graph.Exceptions.graphComputerNotSupported();
     }
 
@@ -255,7 +255,7 @@ public class SqlG implements Graph {
                 }
 
                 @Override
-                public VariableFeatures memory() {
+                public VariableFeatures variables() {
                     return new SqlVariableFeatures();
                 }
 
