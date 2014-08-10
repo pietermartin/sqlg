@@ -257,12 +257,7 @@ public class SqlVertex extends SqlElement implements Vertex {
                             sql.append(" = ?");
                             break;
                         case BOTH:
-                            sql.append(" ");
-                            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.OUT_VERTEX_COLUMN_END));
-                            sql.append(" = ? OR ");
-                            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.IN_VERTEX_COLUMN_END));
-                            sql.append(" = ?");
-                            break;
+                            throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
                     }
                     if (this.sqlG.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
@@ -277,9 +272,7 @@ public class SqlVertex extends SqlElement implements Vertex {
                                 preparedStatement.setLong(1, this.primaryKey);
                                 break;
                             case BOTH:
-                                preparedStatement.setLong(1, this.primaryKey);
-                                preparedStatement.setLong(2, this.primaryKey);
-                                break;
+                                throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
                         }
 
                         ResultSet resultSet = preparedStatement.executeQuery();
