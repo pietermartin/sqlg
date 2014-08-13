@@ -25,6 +25,9 @@ public abstract class SqlElement implements Element {
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
     protected String label;
+    protected String schema;
+    protected String table;
+
     protected SqlG sqlG;
     protected long primaryKey;
 

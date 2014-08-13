@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -12,6 +13,23 @@ import java.util.concurrent.ConcurrentHashMap;
  * Time: 3:13 PM
  */
 public class SqlUtil {
+
+    public static Pair<String, String> parseLabel(final String label) {
+        String[] schemaLabel = label.split(".");
+        final String schema;
+        final String table;
+        if (schemaLabel.length > 2) {
+            throw new IllegalStateException("label may only contain one '.', indicating schema.table");
+        }
+        if (schemaLabel.length == 2)  {
+            schema = schemaLabel[0];
+            table = schemaLabel[1];
+        } else {
+            schema = "PUBLIC";
+            table = label;
+        }
+        return Pair.of(schema, table);
+    }
 
     public static Object[] mapTokeyValues(Map<String, Object> keyValues) {
         Object[] result = new Object[keyValues.size() * 2];

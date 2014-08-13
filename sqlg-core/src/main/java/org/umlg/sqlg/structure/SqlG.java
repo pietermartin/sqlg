@@ -14,6 +14,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.tuple.Pair;
 import org.umlg.sqlg.process.step.map.SqlGGraphStep;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
@@ -114,8 +115,9 @@ public class SqlG implements Graph {
             }
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        Pair<String, String> schemaTablePair = SqlUtil.parseLabel(label);
         this.tx().readWrite();
-        this.schemaManager.ensureVertexTableExist(label, keyValues);
+        this.schemaManager.ensureVertexTableExist(schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
         final SqlVertex vertex = new SqlVertex(this, label, keyValues);
         return vertex;
     }

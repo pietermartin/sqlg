@@ -7,6 +7,7 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.*;
 import java.util.*;
@@ -51,9 +52,10 @@ public class SqlVertex extends SqlElement implements Vertex {
                 this.sqlG.getSqlDialect().validateProperty(key, value);
             }
         }
+        Pair<String, String> schemaTablePair = SqlUtil.parseLabel(label);
         this.sqlG.tx().readWrite();
         this.sqlG.getSchemaManager().ensureEdgeTableExist(
-                label,
+                schemaTablePair.getLeft(), schemaTablePair.getRight(),
                 ImmutablePair.of(
                         inVertex.label() + SqlElement.IN_VERTEX_COLUMN_END,
                         this.label + SqlElement.OUT_VERTEX_COLUMN_END
@@ -193,7 +195,9 @@ public class SqlVertex extends SqlElement implements Vertex {
         long vertexId;
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-        sql.append(" (VERTEX_TABLE) VALUES (?)");
+        sql.append(" (");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("VERTEX_TABLE"));
+        sql.append(") VALUES (?, ?)");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }

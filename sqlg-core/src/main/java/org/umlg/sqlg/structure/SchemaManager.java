@@ -99,7 +99,8 @@ public class SchemaManager {
         }
     }
 
-    public void ensureVertexTableExist(final String table, final Object... keyValues) {
+    void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
+        Objects.requireNonNull(schema, "Given schema must not be null");
         Objects.requireNonNull(table, "Given table must not be null");
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlUtil.transformToColumnDefinitionMap(keyValues);
@@ -119,7 +120,8 @@ public class SchemaManager {
         columns.forEach((k, v) -> ensureColumnExist(prefixedTable, ImmutablePair.of(k, v)));
     }
 
-    public void ensureEdgeTableExist(final String table, final Pair<String, String> foreignKey, Object... keyValues) {
+    public void ensureEdgeTableExist(final String schema, final String table, final Pair<String, String> foreignKey, Object... keyValues) {
+        Objects.requireNonNull(schema, "Given schema must not be null");
         Objects.requireNonNull(table, "Given table must not be null");
         Objects.requireNonNull(table, "Given inTable must not be null");
         Objects.requireNonNull(table, "Given outTable must not be null");
@@ -207,7 +209,11 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
-        sql.append(", VERTEX_TABLE VARCHAR(255) NOT NULL, ");
+        sql.append(", ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("VERTEX_SCHEMA"));
+        sql.append(" VARCHAR(255) NOT NULL, ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("VERTEX_TABLE"));
+        sql.append(" VARCHAR(255) NOT NULL, ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
         sql.append(" ");
         sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
@@ -237,6 +243,8 @@ public class SchemaManager {
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         sql.append(", ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("EDGE_SCHEMA"));
+        sql.append(" VARCHAR(255), ");
         sql.append(this.sqlDialect.maybeWrapInQoutes("EDGE_TABLE"));
         sql.append(" VARCHAR(255))");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {

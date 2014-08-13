@@ -40,7 +40,7 @@ public class SqlGHsqldbProvider extends AbstractGraphProvider {
     public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith) {
         try {
             final InputStream is = AbstractGremlinTest.class.getResourceAsStream(loadGraphWith.value().location().replace("kryo", "graphson").replace(".gio", ".json"));
-            GraphSONReader.create().build().readGraph(is, g);
+            GraphSONReader.build().create().readGraph(is, g);
             is.close();
         } catch (IOException ioe) {
             throw new RuntimeException("Graph could not be loaded with data for test.");
