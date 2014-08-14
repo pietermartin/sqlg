@@ -118,7 +118,7 @@ public class SqlG implements Graph {
         Pair<String, String> schemaTablePair = SqlUtil.parseLabel(label);
         this.tx().readWrite();
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
-        final SqlVertex vertex = new SqlVertex(this, label, keyValues);
+        final SqlVertex vertex = new SqlVertex(this, schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
         return vertex;
     }
 
@@ -169,8 +169,9 @@ public class SqlG implements Graph {
             preparedStatement.setLong(1, idAsLong);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
-                String label = resultSet.getString("VERTEX_TABLE");
-                sqlVertex = new SqlVertex(this, idAsLong, label);
+                String schema = resultSet.getString("VERTEX_SCHEMA");
+                String table = resultSet.getString("VERTEX_TABLE");
+                sqlVertex = new SqlVertex(this, idAsLong, schema, table);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -201,8 +202,9 @@ public class SqlG implements Graph {
             preparedStatement.setLong(1, idAsLong);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
-                String label = resultSet.getString("EDGE_TABLE");
-                sqlEdge = new SqlEdge(this, idAsLong, label);
+                String schema = resultSet.getString("EDGE_SCHEMA");
+                String table = resultSet.getString("EDGE_TABLE");
+                sqlEdge = new SqlEdge(this, idAsLong, schema, table);
             }
             preparedStatement.close();
         } catch (SQLException e) {

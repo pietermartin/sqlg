@@ -18,13 +18,13 @@ import java.util.*;
  */
 public class SqlVertex extends SqlElement implements Vertex {
 
-    public SqlVertex(SqlG sqlG, String label, Object... keyValues) {
-        super(sqlG, label, keyValues);
+    public SqlVertex(SqlG sqlG, String schema, String table, Object... keyValues) {
+        super(sqlG, schema, table);
         insertVertex(keyValues);
     }
 
-    public SqlVertex(SqlG sqlG, Long id, String label) {
-        super(sqlG, id, label);
+    public SqlVertex(SqlG sqlG, Long id, String schema, String table) {
+        super(sqlG, id, schema, table);
     }
 
     public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
@@ -52,18 +52,19 @@ public class SqlVertex extends SqlElement implements Vertex {
                 this.sqlG.getSqlDialect().validateProperty(key, value);
             }
         }
-        Pair<String, String> schemaTablePair = SqlUtil.parseLabel(label);
+        Pair<String, String> schemaTablePair = Pair.of(this.schema, label);
         this.sqlG.tx().readWrite();
         this.sqlG.getSchemaManager().ensureEdgeTableExist(
-                schemaTablePair.getLeft(), schemaTablePair.getRight(),
-                ImmutablePair.of(
+                schemaTablePair.getLeft(),
+                schemaTablePair.getRight(),
+                Pair.of(
                         inVertex.label() + SqlElement.IN_VERTEX_COLUMN_END,
-                        this.label + SqlElement.OUT_VERTEX_COLUMN_END
+                        this.table + SqlElement.OUT_VERTEX_COLUMN_END
                 ),
                 keyValues);
         this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable((Long) this.id(), label, false);
         this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable((Long) inVertex.id(), label, true);
-        final SqlEdge edge = new SqlEdge(this.sqlG, label, (SqlVertex) inVertex, this, keyValues);
+        final SqlEdge edge = new SqlEdge(this.sqlG, schemaTablePair.getLeft(), schemaTablePair.getRight(), (SqlVertex) inVertex, this, keyValues);
         return edge;
     }
 
@@ -203,6 +204,7 @@ public class SqlVertex extends SqlElement implements Vertex {
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
+            preparedStatement.setString(1, this.label);
             preparedStatement.setString(1, this.label);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();

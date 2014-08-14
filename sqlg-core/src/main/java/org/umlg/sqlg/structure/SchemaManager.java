@@ -120,7 +120,14 @@ public class SchemaManager {
         columns.forEach((k, v) -> ensureColumnExist(prefixedTable, ImmutablePair.of(k, v)));
     }
 
-    public void ensureEdgeTableExist(final String schema, final String table, final Pair<String, String> foreignKey, Object... keyValues) {
+    /**
+     * @param schema The schema that the table for this edge will reside in.
+     * @param table The table for this edge
+     * @param foreignKeyIn The schema table pair of foreign key to the in vertex
+     * @param foreignKeyOut The schema table pair of foreign key to the out vertex
+     * @param keyValues
+     */
+    public void ensureEdgeTableExist(final String schema, final String table, final Pair<String, String> foreignKeyIn, final Pair<String, String> foreignKeyOut, Object... keyValues) {
         Objects.requireNonNull(schema, "Given schema must not be null");
         Objects.requireNonNull(table, "Given table must not be null");
         Objects.requireNonNull(table, "Given inTable must not be null");
@@ -139,14 +146,14 @@ public class SchemaManager {
                     foreignKeys.add(foreignKey.getLeft());
                     foreignKeys.add(foreignKey.getRight());
                     this.uncommittedEdgeForeignKeys.put(prefixedTable, foreignKeys);
-                    createEdgeTable(prefixedTable, foreignKey, columns);
+                    createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
                 }
             }
         }
         //ensure columns exist
         columns.forEach((k, v) -> ensureColumnExist(prefixedTable, ImmutablePair.of(k, v)));
-        ensureEdgeForeignKeysExist(prefixedTable, foreignKey.getLeft());
-        ensureEdgeForeignKeysExist(prefixedTable, foreignKey.getRight());
+        ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyIn);
+        ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyOut);
     }
 
     void ensureColumnExist(String table, ImmutablePair<String, PropertyType> keyValue) {
@@ -171,9 +178,9 @@ public class SchemaManager {
         }
     }
 
-    private void ensureEdgeForeignKeysExist(String table, String foreignKey) {
+    private void ensureEdgeForeignKeysExist(String schema, String table, Pair<String, String> foreignKey) {
         Set<String> foreignKeys = this.edgeForeignKeys.get(table);
-        final Set<String> uncommittedForeignKeys;
+        final Set<Pair<String, String>> uncommittedForeignKeys;
         if (foreignKeys == null) {
             uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(table);
         } else {
@@ -187,7 +194,7 @@ public class SchemaManager {
                 this.schemaLock.lock();
             }
             if (!uncommittedForeignKeys.contains(foreignKey)) {
-                addEdgeForeignKey(table, foreignKey);
+                addEdgeForeignKey(schema, table, foreignKey);
                 uncommittedForeignKeys.add(foreignKey);
                 this.uncommittedEdgeForeignKeys.put(table, uncommittedForeignKeys);
             }
@@ -307,9 +314,11 @@ public class SchemaManager {
         }
     }
 
-    private void createEdgeTable(String tableName, Pair<String, String> foreignKey, Map<String, PropertyType> columns) {
+    private void createEdgeTable(String schema, String tableName, Pair<String, String> foreignKeyIn, Pair<String, String> foreignKeyOut, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+        sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -328,25 +337,37 @@ public class SchemaManager {
             }
         }
         sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getLeft()));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getLeft()));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getRight()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
         sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getRight()));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getLeft()));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getRight()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
         sql.append(", ");
         sql.append("FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getLeft()));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getLeft()));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getRight()));
         sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKey.getLeft().replace(SqlElement.IN_VERTEX_COLUMN_END, "")));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getLeft()));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getRight().replace(SqlElement.IN_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("), ");
         sql.append(" FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getRight()));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getLeft()));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getRight()));
         sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKey.getRight().replace(SqlElement.OUT_VERTEX_COLUMN_END, "")));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getLeft()));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getRight().replace(SqlElement.OUT_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("))");
@@ -446,12 +467,12 @@ public class SchemaManager {
         }
     }
 
-    private void addEdgeForeignKey(String table, String foreignKey) {
+    private void addEdgeForeignKey(String table, Pair<String, String> foreignKey) {
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(table));
         sql.append(" ADD COLUMN ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getLeft() + "." + foreignKey.getRight()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
         if (this.sqlG.getSqlDialect().needsSemicolon()) {

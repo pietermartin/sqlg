@@ -24,22 +24,22 @@ public abstract class SqlElement implements Element {
     public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
-    protected String label;
     protected String schema;
     protected String table;
-
     protected SqlG sqlG;
     protected long primaryKey;
 
-    public SqlElement(SqlG sqlG, String label, Object... keyValues) {
-        this.label = label;
+    public SqlElement(SqlG sqlG, String schema, String table) {
         this.sqlG = sqlG;
+        this.schema = schema;
+        this.table = table;
     }
 
-    public SqlElement(SqlG sqlG, Long id, String label) {
+    public SqlElement(SqlG sqlG, Long id, String schema, String table) {
         this.sqlG = sqlG;
         this.primaryKey = id;
-        this.label = label;
+        this.schema = schema;
+        this.table = table;
     }
 
     @Override
@@ -49,7 +49,7 @@ public abstract class SqlElement implements Element {
 
     @Override
     public String label() {
-        return this.label;
+        return this.table;
     }
 
     @Override

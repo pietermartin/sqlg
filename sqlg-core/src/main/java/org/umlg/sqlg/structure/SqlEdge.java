@@ -24,13 +24,14 @@ public class SqlEdge extends SqlElement implements Edge {
      * This is called when creating a new edge. from vin.addEdge(label, vout)
      *
      * @param sqlG
-     * @param label
+     * @param schema
+     * @param table
      * @param inVertex
      * @param outVertex
      * @param keyValues
      */
-    public SqlEdge(SqlG sqlG, String label, SqlVertex inVertex, SqlVertex outVertex, Object... keyValues) {
-        super(sqlG, label, keyValues);
+    public SqlEdge(SqlG sqlG, String schema, String table, SqlVertex inVertex, SqlVertex outVertex, Object... keyValues) {
+        super(sqlG, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         try {
@@ -40,14 +41,14 @@ public class SqlEdge extends SqlElement implements Edge {
         }
     }
 
-    public SqlEdge(SqlG sqlG, Long id, String label, SqlVertex inVertex, SqlVertex outVertex, Object... keyValues) {
-        super(sqlG, id, label);
+    public SqlEdge(SqlG sqlG, Long id, String schema, String table, SqlVertex inVertex, SqlVertex outVertex, Object... keyValues) {
+        super(sqlG, id, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
     }
 
-    public SqlEdge(SqlG sqlG, Long id, String label) {
-        super(sqlG, id, label);
+    public SqlEdge(SqlG sqlG, Long id, String schema, String table) {
+        super(sqlG, id, schema, table);
     }
 
     @Override
