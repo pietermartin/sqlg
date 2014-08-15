@@ -123,8 +123,10 @@ public class SchemaManager {
                 this.schemaLock.lock();
             }
             if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
-                 this.uncommittedSchemas.add(schema);
-                 createSchema(schema);
+                if (!this.uncommittedSchemas.contains(schema)) {
+                    this.uncommittedSchemas.add(schema);
+                    createSchema(schema);
+                }
             }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
@@ -154,9 +156,9 @@ public class SchemaManager {
     }
 
     /**
-     * @param schema The tables that the table for this edge will reside in.
-     * @param table The table for this edge
-     * @param foreignKeyIn The tables table pair of foreign key to the in vertex
+     * @param schema        The tables that the table for this edge will reside in.
+     * @param table         The table for this edge
+     * @param foreignKeyIn  The tables table pair of foreign key to the in vertex
      * @param foreignKeyOut The tables table pair of foreign key to the out vertex
      * @param keyValues
      */
@@ -389,7 +391,7 @@ public class SchemaManager {
         sql.append(") REFERENCES ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getLeft()));
         sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getRight().replace(SqlElement.IN_VERTEX_COLUMN_END, "")));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getRight().replace(SqlGElement.IN_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("), ");
@@ -398,7 +400,7 @@ public class SchemaManager {
         sql.append(") REFERENCES ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getLeft()));
         sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getRight().replace(SqlElement.OUT_VERTEX_COLUMN_END, "")));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getRight().replace(SqlGElement.OUT_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("))");
@@ -432,7 +434,7 @@ public class SchemaManager {
             //varchar here must be lowercase
             int count = 1;
             StringBuilder sb = new StringBuilder();
-            for (Pair<String,String> l : labelSet) {
+            for (Pair<String, String> l : labelSet) {
                 sb.append(l.getLeft());
                 sb.append(".");
                 sb.append(l.getRight());
@@ -451,7 +453,7 @@ public class SchemaManager {
         }
     }
 
-    public Set<Pair<String,String>> getLabelsForVertex(Long id, boolean inDirection) {
+    public Set<Pair<String, String>> getLabelsForVertex(Long id, boolean inDirection) {
         Set<Pair<String, String>> labels = new HashSet<>();
         StringBuilder sql = new StringBuilder("SELECT ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
@@ -555,7 +557,7 @@ public class SchemaManager {
                     PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
                     uncomitedColumns.put(column, propertyType);
                     this.tables.put(schema + "." + table, uncomitedColumns);
-                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlElement.OUT_VERTEX_COLUMN_END))) {
+                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlGElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlGElement.OUT_VERTEX_COLUMN_END))) {
                         foreignKeys.add(column);
                         this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
                     }

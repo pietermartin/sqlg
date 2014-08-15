@@ -20,7 +20,7 @@ import java.util.Map;
  * Date: 2014/07/12
  * Time: 5:40 AM
  */
-public abstract class SqlElement implements Element {
+public abstract class SqlGElement implements Element {
 
     public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
@@ -31,13 +31,13 @@ public abstract class SqlElement implements Element {
     protected long primaryKey;
 
 
-    public SqlElement(SqlG sqlG, String schema, String table) {
+    public SqlGElement(SqlG sqlG, String schema, String table) {
         this.sqlG = sqlG;
         this.schema = schema;
         this.table = table;
     }
 
-    public SqlElement(SqlG sqlG, Long id, String label) {
+    public SqlGElement(SqlG sqlG, Long id, String label) {
         this.sqlG = sqlG;
         this.primaryKey = id;
         Pair<String, String> schemaTable = SqlGUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
@@ -45,7 +45,7 @@ public abstract class SqlElement implements Element {
         this.table = schemaTable.getRight();
     }
 
-    public SqlElement(SqlG sqlG, Long id, String schema, String table) {
+    public SqlGElement(SqlG sqlG, Long id, String schema, String table) {
         this.sqlG = sqlG;
         this.primaryKey = id;
         this.schema = schema;
@@ -59,7 +59,7 @@ public abstract class SqlElement implements Element {
 
     @Override
     public String label() {
-        return this.table;
+        return this.schema + "." + this.table;
     }
 
     @Override

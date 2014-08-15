@@ -69,7 +69,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _vertices() {
-        List<SqlVertex> sqlVertexes = new ArrayList<>();
+        List<SqlGGVertex> sqlGVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
@@ -82,17 +82,17 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
                 long id = resultSet.getLong(1);
                 String schema = resultSet.getString(2);
                 String table = resultSet.getString(3);
-                SqlVertex sqlVertex = new SqlVertex(this.sqlG, id, schema, table);
-                sqlVertexes.add(sqlVertex);
+                SqlGGVertex sqlGVertex = new SqlGGVertex(this.sqlG, id, schema, table);
+                sqlGVertexes.add(sqlGVertex);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return sqlVertexes;
+        return sqlGVertexes;
     }
 
     private Iterable<? extends Edge> _edges() {
-        List<SqlEdge> sqlEdges = new ArrayList<>();
+        List<SqlGGEdge> sqlGEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
@@ -103,15 +103,16 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
-                String schemaTable = resultSet.getString(2);
-                Pair<String,String> schemaTablePair = SqlGUtil.parseLabel(schemaTable, this.sqlG.getSqlDialect().getPublicSchema());
-                SqlEdge sqlEdge = new SqlEdge(this.sqlG, id, schemaTablePair.getLeft(), schemaTablePair.getRight());
-                sqlEdges.add(sqlEdge);
+                String schema = resultSet.getString(2);
+                String table = resultSet.getString(3);
+                Pair<String,String> schemaTablePair = Pair.of(schema, table);
+                SqlGGEdge sqlGEdge = new SqlGGEdge(this.sqlG, id, schemaTablePair.getLeft(), schemaTablePair.getRight());
+                sqlGEdges.add(sqlGEdge);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return sqlEdges;
+        return sqlGEdges;
     }
 
 }

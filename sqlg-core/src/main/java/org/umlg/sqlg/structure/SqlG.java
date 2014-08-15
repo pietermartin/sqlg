@@ -118,7 +118,7 @@ public class SqlG implements Graph {
         Pair<String, String> schemaTablePair = SqlGUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
         this.tx().readWrite();
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
-        final SqlVertex vertex = new SqlVertex(this, schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
+        final SqlGGVertex vertex = new SqlGGVertex(this, schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
         return vertex;
     }
 
@@ -157,7 +157,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, id);
 
-        SqlVertex sqlVertex = null;
+        SqlGGVertex sqlGVertex = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
@@ -174,15 +174,15 @@ public class SqlG implements Graph {
             while (resultSet.next()) {
                 String schema = resultSet.getString("VERTEX_SCHEMA");
                 String table = resultSet.getString("VERTEX_TABLE");
-                sqlVertex = new SqlVertex(this, idAsLong, schema, table);
+                sqlGVertex = new SqlGGVertex(this, idAsLong, schema, table);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        if (sqlVertex == null) {
+        if (sqlGVertex == null) {
             throw Graph.Exceptions.elementNotFound(Vertex.class, id);
         }
-        return sqlVertex;
+        return sqlGVertex;
     }
 
     @Override
@@ -190,7 +190,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, id);
 
-        SqlEdge sqlEdge = null;
+        SqlGGEdge sqlGEdge = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" WHERE ");
@@ -207,16 +207,16 @@ public class SqlG implements Graph {
             while (resultSet.next()) {
                 String schema = resultSet.getString("EDGE_SCHEMA");
                 String table = resultSet.getString("EDGE_TABLE");
-                sqlEdge = new SqlEdge(this, idAsLong, schema, table);
+                sqlGEdge = new SqlGGEdge(this, idAsLong, schema, table);
             }
             preparedStatement.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        if (sqlEdge == null) {
+        if (sqlGEdge == null) {
             throw Graph.Exceptions.elementNotFound(Edge.class, id);
         }
-        return sqlEdge;
+        return sqlGEdge;
 
     }
 

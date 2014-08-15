@@ -19,10 +19,10 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     private final String key;
     private V value;
-    private SqlElement element;
+    private SqlGElement element;
     protected SqlG sqlG;
 
-    public SqlProperty(SqlG sqlG, SqlElement element, String key, V value) {
+    public SqlProperty(SqlG sqlG, SqlGElement element, String key, V value) {
         this.sqlG = sqlG;
         this.element = element;
         this.key = key;
