@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.junit.Assume
 import org.junit.Test
 
 import static org.junit.Assert.assertEquals
@@ -14,6 +15,7 @@ class TestQuery extends BaseTest {
 
     @Test
     public void testQuery() {
+        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
         String[] arrStr = ['Ananas', 'Banana', 'Kiwi']
         this.sqlG.addVertex("Person", [name: "Pieter", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
                 nameArray: arrStr]);

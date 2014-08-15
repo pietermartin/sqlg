@@ -6,7 +6,6 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.*;
@@ -23,12 +22,16 @@ public class SqlVertex extends SqlElement implements Vertex {
         insertVertex(keyValues);
     }
 
+    public SqlVertex(SqlG sqlG, Long id, String label) {
+        super(sqlG, id, label);
+    }
+
     public SqlVertex(SqlG sqlG, Long id, String schema, String table) {
         super(sqlG, id, schema, table);
     }
 
     public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
-        Object[] parameters = SqlUtil.mapTokeyValues(keyValues);
+        Object[] parameters = SqlGUtil.mapTokeyValues(keyValues);
         return addEdge(label, inVertex, parameters);
     }
 
@@ -58,12 +61,17 @@ public class SqlVertex extends SqlElement implements Vertex {
                 schemaTablePair.getLeft(),
                 schemaTablePair.getRight(),
                 Pair.of(
-                        inVertex.label() + SqlElement.IN_VERTEX_COLUMN_END,
+                        ((SqlVertex) inVertex).schema,
+                        inVertex.label() + SqlElement.IN_VERTEX_COLUMN_END
+                ),
+                Pair.of(
+                        this.schema,
                         this.table + SqlElement.OUT_VERTEX_COLUMN_END
                 ),
                 keyValues);
-        this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable((Long) this.id(), label, false);
-        this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable((Long) inVertex.id(), label, true);
+        //TODO sort out schema and label
+        this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable((Long) this.id(), this.schema, label, false);
+        this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable((Long) inVertex.id(), ((SqlVertex) inVertex).schema, label, true);
         final SqlEdge edge = new SqlEdge(this.sqlG, schemaTablePair.getLeft(), schemaTablePair.getRight(), (SqlVertex) inVertex, this, keyValues);
         return edge;
     }
@@ -141,16 +149,18 @@ public class SqlVertex extends SqlElement implements Vertex {
     }
 
 
-    protected void insertVertex(Object... keyValues) {
+    private void insertVertex(Object... keyValues) {
 
         long vertexId = insertGlobalVertex();
 
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.label));
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(".");
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         sql.append(" (");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         int i = 1;
-        List<String> columns = SqlUtil.transformToInsertColumns(keyValues);
+        List<String> columns = SqlGUtil.transformToInsertColumns(keyValues);
         if (columns.size() > 0) {
             sql.append(", ");
         } else {
@@ -169,7 +179,7 @@ public class SqlVertex extends SqlElement implements Vertex {
             sql.append(" ");
         }
         i = 1;
-        List<String> values = SqlUtil.transformToInsertValues(keyValues);
+        List<String> values = SqlGUtil.transformToInsertValues(keyValues);
         for (String value : values) {
             sql.append("?");
             if (i++ < values.size()) {
@@ -178,7 +188,7 @@ public class SqlVertex extends SqlElement implements Vertex {
         }
         sql.append(")");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
+            sql.append(";");
         }
         i = 1;
         Connection conn = this.sqlG.tx().getConnection();
@@ -197,6 +207,8 @@ public class SqlVertex extends SqlElement implements Vertex {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" (");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("VERTEX_SCHEMA"));
+        sql.append(", ");
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("VERTEX_TABLE"));
         sql.append(") VALUES (?, ?)");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
@@ -204,8 +216,8 @@ public class SqlVertex extends SqlElement implements Vertex {
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, this.label);
-            preparedStatement.setString(1, this.label);
+            preparedStatement.setString(1, this.schema);
+            preparedStatement.setString(2, this.table);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
@@ -219,47 +231,70 @@ public class SqlVertex extends SqlElement implements Vertex {
         return vertexId;
     }
 
+    private void retainLabels(Set<Pair<String, String>> vertexLabels, String... labels) {
+        Set<Pair<String, String>> toRemove = new HashSet<>();
+        for (Pair<String, String> schemaTable : vertexLabels) {
+            boolean retain = false;
+            for (String label : labels) {
+                if (schemaTable.getRight().equals(label)) {
+                    retain = true;
+                    break;
+                }
+            }
+            if (!retain) {
+                toRemove.add(schemaTable);
+            }
+        }
+        vertexLabels.removeAll(toRemove);
+    }
+
     ///TODO make this lazy
     public Iterator<SqlEdge> getEdges(Direction direction, String... labels) {
         List<Direction> directions = new ArrayList<>(2);
         Set<SqlEdge> edges = new HashSet<>();
-        Set<String> inVertexLabels = new HashSet<>();
-        Set<String> outVertexLabels = new HashSet<>();
+        Set<Pair<String, String>> inVertexLabels = new HashSet<>();
+        Set<Pair<String, String>> outVertexLabels = new HashSet<>();
         if (direction == Direction.IN) {
             inVertexLabels.addAll(this.sqlG.getSchemaManager().getLabelsForVertex((Long) this.id(), true));
-            if (labels.length > 0)
-                inVertexLabels.retainAll(Arrays.asList(labels));
+            if (labels.length > 0) {
+                retainLabels(inVertexLabels, labels);
+            }
             directions.add(direction);
         } else if (direction == Direction.OUT) {
             outVertexLabels.addAll(this.sqlG.getSchemaManager().getLabelsForVertex((Long) this.id(), false));
-            if (labels.length > 0)
-                outVertexLabels.retainAll(Arrays.asList(labels));
+            if (labels.length > 0) {
+                retainLabels(outVertexLabels, labels);
+            }
             directions.add(direction);
         } else {
             inVertexLabels.addAll(this.sqlG.getSchemaManager().getLabelsForVertex((Long) this.id(), true));
             outVertexLabels.addAll(this.sqlG.getSchemaManager().getLabelsForVertex((Long) this.id(), false));
             if (labels.length > 0) {
-                inVertexLabels.retainAll(Arrays.asList(labels));
-                outVertexLabels.retainAll(Arrays.asList(labels));
+                retainLabels(inVertexLabels, labels);
+                retainLabels(outVertexLabels, labels);
             }
             directions.add(Direction.IN);
             directions.add(Direction.OUT);
         }
         for (Direction d : directions) {
-            for (String label : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
-                if (this.sqlG.getSchemaManager().tableExist(SchemaManager.EDGE_PREFIX + label)) {
+            for (Pair<String, String> schemaTable : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
+                if (this.sqlG.getSchemaManager().tableExist(schemaTable.getLeft(), SchemaManager.EDGE_PREFIX + schemaTable.getRight())) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + label));
-                    sql.append(" WHERE ");
                     switch (d) {
                         case IN:
-                            sql.append(" ");
-                            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.IN_VERTEX_COLUMN_END));
+                            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schemaTable.getLeft()));
+                            sql.append(".");
+                            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getRight()));
+                            sql.append(" WHERE ");
+                            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SqlElement.IN_VERTEX_COLUMN_END));
                             sql.append(" = ?");
                             break;
                         case OUT:
-                            sql.append(" ");
-                            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.label + SqlElement.OUT_VERTEX_COLUMN_END));
+                            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schemaTable.getLeft()));
+                            sql.append(".");
+                            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getRight()));
+                            sql.append(" WHERE ");
+                            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SqlElement.OUT_VERTEX_COLUMN_END));
                             sql.append(" = ?");
                             break;
                         case BOTH:
@@ -336,6 +371,8 @@ public class SqlVertex extends SqlElement implements Vertex {
                             if (inVertexColumnName.isEmpty() || outVertexColumnName.isEmpty()) {
                                 throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
                             }
+                            Pair<String, String> inSchemaTable = SqlGUtil.parseLabel(inVertexColumnName, this.sqlG.getSqlDialect().getPublicSchema());
+                            Pair<String, String> outSchemaTable = SqlGUtil.parseLabel(outVertexColumnName, this.sqlG.getSqlDialect().getPublicSchema());
 
                             List<Object> keyValues = new ArrayList<>();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
@@ -348,10 +385,34 @@ public class SqlVertex extends SqlElement implements Vertex {
                             SqlEdge sqlEdge = null;
                             switch (d) {
                                 case IN:
-                                    sqlEdge = new SqlEdge(this.sqlG, edgeId, label, this, new SqlVertex(this.sqlG, outId, outVertexColumnName.replace(SqlElement.OUT_VERTEX_COLUMN_END, "")), keyValues.toArray());
+                                    sqlEdge = new SqlEdge(
+                                            this.sqlG,
+                                            edgeId,
+                                            schemaTable.getLeft(),
+                                            schemaTable.getRight(),
+                                            this,
+                                            new SqlVertex(
+                                                    this.sqlG,
+                                                    outId,
+                                                    outSchemaTable.getLeft(),
+                                                    outSchemaTable.getRight().replace(SqlElement.OUT_VERTEX_COLUMN_END, "")
+                                            ),
+                                            keyValues.toArray());
                                     break;
                                 case OUT:
-                                    sqlEdge = new SqlEdge(this.sqlG, edgeId, label, new SqlVertex(this.sqlG, inId, inVertexColumnName.replace(SqlElement.IN_VERTEX_COLUMN_END, "")), this, keyValues.toArray());
+                                    sqlEdge = new SqlEdge(
+                                            this.sqlG,
+                                            edgeId,
+                                            schemaTable.getLeft(),
+                                            schemaTable.getRight(),
+                                            new SqlVertex(
+                                                    this.sqlG,
+                                                    inId,
+                                                    inSchemaTable.getLeft(),
+                                                    inSchemaTable.getRight().replace(SqlElement.IN_VERTEX_COLUMN_END, "")
+                                            ),
+                                            this,
+                                            keyValues.toArray());
                                     break;
                                 case BOTH:
                                     throw new IllegalStateException("This should not be possible!");
@@ -373,9 +434,11 @@ public class SqlVertex extends SqlElement implements Vertex {
     protected Object[] load() {
         List<Object> keyValues = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.label));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(".");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         sql.append(" WHERE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -394,16 +457,16 @@ public class SqlVertex extends SqlElement implements Vertex {
                         int type = resultSetMetaData.getColumnType(i);
                         switch (type) {
                             case Types.SMALLINT:
-                                keyValues.add(((Integer)o).shortValue());
+                                keyValues.add(((Integer) o).shortValue());
                                 break;
                             case Types.TINYINT:
-                                keyValues.add(((Integer)o).byteValue());
+                                keyValues.add(((Integer) o).byteValue());
                                 break;
                             case Types.REAL:
-                                keyValues.add(((Number)o).floatValue());
+                                keyValues.add(((Number) o).floatValue());
                                 break;
                             case Types.DOUBLE:
-                                keyValues.add(((Number)o).doubleValue());
+                                keyValues.add(((Number) o).doubleValue());
                                 break;
                             case Types.ARRAY:
                                 Array array = (Array) o;
@@ -417,7 +480,7 @@ public class SqlVertex extends SqlElement implements Vertex {
                     }
                 }
             } else {
-                throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.label, this.primaryKey}));
+                throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.primaryKey}));
             }
             return keyValues.toArray();
         } catch (SQLException e) {

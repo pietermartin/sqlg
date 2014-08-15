@@ -1,10 +1,8 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
-import org.apache.commons.lang.UnhandledException;
 import org.apache.commons.lang3.StringUtils;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlUtil;
 
 import java.sql.Types;
 

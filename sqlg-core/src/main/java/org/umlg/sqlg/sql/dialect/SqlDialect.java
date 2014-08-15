@@ -247,4 +247,8 @@ public interface SqlDialect {
     public default void prepareDB(Connection conn) {
 
     }
+
+    public default String getPublicSchema() {
+        return "public";
+    }
 }

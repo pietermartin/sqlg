@@ -16,6 +16,11 @@ import java.sql.Types;
 public class HsqldbDialect implements SqlDialect {
 
     @Override
+    public String getPublicSchema() {
+        return "PUBLIC";
+    }
+
+    @Override
     public long getSequenceStart() {
         return 0L;
     }

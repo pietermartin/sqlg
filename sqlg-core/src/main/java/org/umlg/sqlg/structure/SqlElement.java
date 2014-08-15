@@ -6,6 +6,7 @@ import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Array;
 import java.sql.Connection;
@@ -29,10 +30,19 @@ public abstract class SqlElement implements Element {
     protected SqlG sqlG;
     protected long primaryKey;
 
+
     public SqlElement(SqlG sqlG, String schema, String table) {
         this.sqlG = sqlG;
         this.schema = schema;
         this.table = table;
+    }
+
+    public SqlElement(SqlG sqlG, Long id, String label) {
+        this.sqlG = sqlG;
+        this.primaryKey = id;
+        Pair<String, String> schemaTable = SqlGUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
+        this.schema = schemaTable.getLeft();
+        this.table = schemaTable.getRight();
     }
 
     public SqlElement(SqlG sqlG, Long id, String schema, String table) {
@@ -126,7 +136,8 @@ public abstract class SqlElement implements Element {
         PropertyType.from(value);
         //Check if column exist
         this.sqlG.getSchemaManager().ensureColumnExist(
-                this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.label : SchemaManager.EDGE_PREFIX + this.label,
+                this.schema,
+                this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.table : SchemaManager.EDGE_PREFIX + this.table,
                 ImmutablePair.of(key, PropertyType.from(value)));
         updateRow(key, value);
         return new SqlProperty<>(this.sqlG, this, key, value);
@@ -134,12 +145,14 @@ public abstract class SqlElement implements Element {
 
     private void updateRow(String key, Object value) {
         StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.label));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(".");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
         sql.append(" SET ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(key));
         sql.append(" = ?");
         sql.append(" WHERE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -251,7 +264,7 @@ public abstract class SqlElement implements Element {
     }
 
     protected int setKeyValuesAsParameter(int i, Connection conn, PreparedStatement preparedStatement, Object[] keyValues) throws SQLException {
-        for (ImmutablePair<PropertyType, Object> pair : SqlUtil.transformToTypeAndValue(keyValues)) {
+        for (ImmutablePair<PropertyType, Object> pair : SqlGUtil.transformToTypeAndValue(keyValues)) {
             switch (pair.left) {
                 case BOOLEAN:
                     preparedStatement.setBoolean(i++, (Boolean) pair.right);
@@ -280,34 +293,34 @@ public abstract class SqlElement implements Element {
 
                 //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array booleanArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, booleanArray);
                     break;
                 case BYTE_ARRAY:
                     preparedStatement.setBytes(i++, (byte[])pair.right);
                     break;
                 case SHORT_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array shortArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, shortArray);
                     break;
                 case INTEGER_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array intArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, intArray);
                     break;
                 case LONG_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array longArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, longArray);
                     break;
                 case FLOAT_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array floatArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, floatArray);
                     break;
                 case DOUBLE_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array doubleArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, doubleArray);
                     break;
                 case STRING_ARRAY:
-                    java.sql.Array stringArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array stringArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlGUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, stringArray);
                     break;
                 default:

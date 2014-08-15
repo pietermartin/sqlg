@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchema.class
+        TestLoadSchema.class
 })
 public class AnyTest {
 }

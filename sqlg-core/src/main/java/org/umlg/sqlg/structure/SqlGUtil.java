@@ -12,10 +12,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * Date: 2014/07/12
  * Time: 3:13 PM
  */
-public class SqlUtil {
+public class SqlGUtil {
 
-    public static Pair<String, String> parseLabel(final String label) {
-        String[] schemaLabel = label.split(".");
+    public static Pair<String, String> parseLabel(final String label, String defaultSchema) {
+        Objects.requireNonNull(label, "label may not be null!");
+        String[] schemaLabel = label.split("\\.");
         final String schema;
         final String table;
         if (schemaLabel.length > 2) {
@@ -25,7 +26,7 @@ public class SqlUtil {
             schema = schemaLabel[0];
             table = schemaLabel[1];
         } else {
-            schema = "PUBLIC";
+            schema = defaultSchema;
             table = label;
         }
         return Pair.of(schema, table);

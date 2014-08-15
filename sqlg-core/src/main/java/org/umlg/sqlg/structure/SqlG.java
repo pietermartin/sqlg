@@ -90,7 +90,7 @@ public class SqlG implements Graph {
 
     public Vertex addVertex(String label, Map<String, Object> keyValues) {
         keyValues.put(Element.LABEL, label);
-        return addVertex(SqlUtil.mapTokeyValues(keyValues));
+        return addVertex(SqlGUtil.mapTokeyValues(keyValues));
     }
 
     @Override
@@ -115,7 +115,7 @@ public class SqlG implements Graph {
             }
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        Pair<String, String> schemaTablePair = SqlUtil.parseLabel(label);
+        Pair<String, String> schemaTablePair = SqlGUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
         this.tx().readWrite();
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
         final SqlVertex vertex = new SqlVertex(this, schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
@@ -125,9 +125,10 @@ public class SqlG implements Graph {
     @Override
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new DefaultGraphTraversal<>();
+        final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
-        traversal.addStep(new SqlGGraphStep<>(traversal, Vertex.class, this));
+        traversal.addStep(new SqlGGraphStep(traversal, Vertex.class, this));
+        traversal.memory().set(Key.hide("g"), this);
         return traversal;
     }
 
@@ -137,8 +138,10 @@ public class SqlG implements Graph {
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.addStep(new SqlGGraphStep(traversal, Edge.class, this));
+        traversal.memory().set(Key.hide("g"), this);
         return traversal;
     }
+
 
     @Override
     public <S> GraphTraversal<S, S> of() {

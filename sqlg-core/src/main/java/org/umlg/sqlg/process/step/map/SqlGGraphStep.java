@@ -8,10 +8,8 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SqlEdge;
-import org.umlg.sqlg.structure.SqlG;
-import org.umlg.sqlg.structure.SqlVertex;
+import org.apache.commons.lang3.tuple.Pair;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -82,8 +80,9 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
-                String tableName = resultSet.getString(2);
-                SqlVertex sqlVertex = new SqlVertex(this.sqlG, id, tableName);
+                String schema = resultSet.getString(2);
+                String table = resultSet.getString(3);
+                SqlVertex sqlVertex = new SqlVertex(this.sqlG, id, schema, table);
                 sqlVertexes.add(sqlVertex);
             }
         } catch (SQLException e) {
@@ -104,8 +103,9 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
-                String tableName = resultSet.getString(2);
-                SqlEdge sqlEdge = new SqlEdge(this.sqlG, id, tableName);
+                String schemaTable = resultSet.getString(2);
+                Pair<String,String> schemaTablePair = SqlGUtil.parseLabel(schemaTable, this.sqlG.getSqlDialect().getPublicSchema());
+                SqlEdge sqlEdge = new SqlEdge(this.sqlG, id, schemaTablePair.getLeft(), schemaTablePair.getRight());
                 sqlEdges.add(sqlEdge);
             }
         } catch (SQLException e) {
