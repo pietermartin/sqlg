@@ -120,6 +120,10 @@ public class SchemaManager {
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
+            if (!this.schemas.containsKey(schema)) {
+                 this.schemas.put();
+                 createSchema(schema);
+            }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
                     this.uncommittedTables.put(schema + "." + prefixedTable, columns);
@@ -129,6 +133,10 @@ public class SchemaManager {
         }
         //ensure columns exist
         columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
+    }
+
+    public void createSchema(String schema) {
+
     }
 
     /**
