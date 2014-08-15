@@ -21,8 +21,10 @@ public class SchemaManager {
     public static final String VERTEX_IN_LABELS = "IN_LABELS";
     public static final String VERTEX_OUT_LABELS = "OUT_LABELS";
     public static final String EDGES = "EDGES";
-    private Map<String, Map<String, PropertyType>> schemas = new ConcurrentHashMap<>();
-    private Map<String, Map<String, PropertyType>> uncommittedSchemas = new ConcurrentHashMap<>();
+
+    private Set<String> schemas = new HashSet<>();
+    private Set<String> uncommittedSchemas = new HashSet<>();
+
     private Map<String, Map<String, PropertyType>> tables = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
     private Map<String, Set<String>> edgeForeignKeys = new ConcurrentHashMap<>();
@@ -36,8 +38,8 @@ public class SchemaManager {
         this.sqlDialect = sqlDialect;
         this.sqlG.tx().afterCommit(() -> {
             if (this.schemaLock.isHeldByCurrentThread()) {
-                for (String t : this.uncommittedSchemas.keySet()) {
-                    this.schemas.put(t, this.uncommittedSchemas.get(t));
+                for (String t : this.uncommittedSchemas) {
+                    this.schemas.add(t);
                 }
                 for (String t : this.uncommittedTables.keySet()) {
                     this.tables.put(t, this.uncommittedTables.get(t));
@@ -58,8 +60,8 @@ public class SchemaManager {
                     this.uncommittedTables.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                 } else {
-                    for (String t : this.uncommittedSchemas.keySet()) {
-                        this.schemas.put(t, this.uncommittedSchemas.get(t));
+                    for (String t : this.uncommittedSchemas) {
+                        this.schemas.add(t);
                     }
                     for (String t : this.uncommittedTables.keySet()) {
                         this.tables.put(t, this.uncommittedTables.get(t));
@@ -120,8 +122,8 @@ public class SchemaManager {
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.schemas.containsKey(schema)) {
-                 this.schemas.put();
+            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+                 this.uncommittedSchemas.add(schema);
                  createSchema(schema);
             }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
@@ -136,6 +138,18 @@ public class SchemaManager {
     }
 
     public void createSchema(String schema) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("CREATE SCHEMA ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        Connection conn = this.sqlG.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -157,6 +171,10 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
+            }
+            if (this.schemas.contains(schema)) {
+                this.uncommittedSchemas.add(schema);
+                createSchema(schema);
             }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {

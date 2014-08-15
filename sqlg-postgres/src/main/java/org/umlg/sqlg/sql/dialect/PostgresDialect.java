@@ -5,12 +5,20 @@ import org.apache.commons.lang3.StringUtils;
 import org.umlg.sqlg.structure.PropertyType;
 
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Date: 2014/07/16
  * Time: 1:42 PM
  */
 public class PostgresDialect implements SqlDialect {
+
+    @Override
+    public Set<String> getDefaultSchemas() {
+        return new HashSet<>(Arrays.asList("pg_catalog", "public"));
+    }
 
     @Override
     public String getJdbcDriver() {

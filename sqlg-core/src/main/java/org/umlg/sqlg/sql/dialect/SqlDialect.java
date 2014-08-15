@@ -9,11 +9,11 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Set;
 
-/**
- * Created by pieter on 2014/07/16.
- */
 public interface SqlDialect {
+
+    Set<String> getDefaultSchemas();
 
     public default long getSequenceStart() {
         return 1L;

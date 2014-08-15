@@ -8,12 +8,20 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Date: 2014/07/16
  * Time: 3:09 PM
  */
 public class HsqldbDialect implements SqlDialect {
+
+    @Override
+    public Set<String> getDefaultSchemas() {
+        return new HashSet<>(Arrays.asList("PUBLIC", "INFORMATION_SCHEMA", "SYSTEM_LOBS"));
+    }
 
     @Override
     public String getPublicSchema() {

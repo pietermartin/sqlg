@@ -75,6 +75,8 @@ public abstract class BaseTest {
                 ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (result.next()) {
                     StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(2)));
+                    sql.append(".");
                     sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
                     sql.append(" CASCADE");
                     if (sqlDialect.needsSemicolon()) {
@@ -82,6 +84,23 @@ public abstract class BaseTest {
                     }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         preparedStatement.executeUpdate();
+                    }
+                }
+                catalog = null;
+                schemaPattern = null;
+                result = metadata.getSchemas(catalog, schemaPattern);
+                while (result.next()) {
+                    String schema = result.getString(1);
+                    if (!sqlDialect.getDefaultSchemas().contains(schema)) {
+                        StringBuilder sql = new StringBuilder("DROP SCHEMA ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        sql.append(" CASCADE");
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
                     }
                 }
             } else {
