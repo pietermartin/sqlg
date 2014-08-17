@@ -3,12 +3,12 @@ package org.umlg.sqlg.strategy;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
-import com.tinkerpop.gremlin.process.graph.step.filter.HasStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.IdentityStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.IntervalStep;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
-import org.umlg.sqlg.process.step.map.SqlGGraphStep;
+import org.umlg.sqlg.process.graph.util.SqlgHasStep;
+import org.umlg.sqlg.structure.SqlGGraphStep;
 
 /**
  * Date: 2014/07/12
@@ -29,8 +29,8 @@ public class SqlGGraphStepStrategy implements TraversalStrategy.NoDependencies {
             while (true) {
                 if (currentStep == EmptyStep.instance() || TraversalHelper.isLabeled(currentStep)) break;
 
-                if (currentStep instanceof HasStep) {
-                    sqlGGraphStep.hasContainers.add(((HasStep) currentStep).hasContainer);
+                if (currentStep instanceof SqlgHasStep) {
+                    sqlGGraphStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
                     TraversalHelper.removeStep(currentStep, traversal);
                 } else if (currentStep instanceof IntervalStep) {
                     sqlGGraphStep.hasContainers.add(((IntervalStep) currentStep).startContainer);

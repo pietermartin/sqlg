@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
+import org.umlg.sqlg.test.index.TestIndex;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,7 @@ import org.umlg.sqlg.test.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TinkerpopTest.class
+        TestSchema.class
 })
 public class AnyTest {
 }

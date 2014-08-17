@@ -5,6 +5,8 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.Objects;
  */
 public class SqlgEdge extends SqlgElement implements Edge {
 
+    private Logger logger = LoggerFactory.getLogger(SqlgEdge.class.getName());
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
 
@@ -151,7 +154,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(i++, edgeId);
-            i = setKeyValuesAsParameter(i, conn, preparedStatement, keyValues);
+            i = setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValues);
             preparedStatement.setLong(i++, this.inVertex.primaryKey);
             preparedStatement.setLong(i++, this.outVertex.primaryKey);
             preparedStatement.executeUpdate();
@@ -200,6 +203,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
             sql.append(";");
         }
         Connection conn = this.sqlG.tx().getConnection();
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);
             ResultSet resultSet = preparedStatement.executeQuery();

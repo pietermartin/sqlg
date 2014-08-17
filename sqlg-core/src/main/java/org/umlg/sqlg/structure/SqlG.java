@@ -14,9 +14,9 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
-import org.umlg.sqlg.process.step.map.SqlGGraphStep;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 
@@ -32,6 +32,7 @@ import java.util.Map;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class SqlG implements Graph {
 
+    private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
     private final SqlGTransaction sqlGTransaction;
     private SchemaManager schemaManager;
     private SqlDialect sqlDialect;
@@ -172,6 +173,9 @@ public class SqlG implements Graph {
             sql.append(";");
         }
         Connection conn = this.tx().getConnection();
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             Long idAsLong = evaluateToLong(id);
             preparedStatement.setLong(1, idAsLong);
@@ -205,6 +209,9 @@ public class SqlG implements Graph {
             sql.append(";");
         }
         Connection conn = this.tx().getConnection();
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             Long idAsLong = evaluateToLong(id);
             preparedStatement.setLong(1, idAsLong);
@@ -550,6 +557,9 @@ public class SqlG implements Graph {
             ArrayNode dataNode = this.mapper.createArrayNode();
             ArrayNode metaNode = this.mapper.createArrayNode();
             Statement statement = conn.createStatement();
+            if(logger.isDebugEnabled()) {
+                logger.debug(query);
+            }
             ResultSet rs = statement.executeQuery(query);
             ResultSetMetaData rsmd = rs.getMetaData();
             boolean first = true;
@@ -585,9 +595,26 @@ public class SqlG implements Graph {
 //        this.getSchemaManager().createUniqueConstraint(label, propertyKey);
     }
 
-    public void createLabeledIndex(String label, String propertyKey) {
+    public void createLabeledIndex(String label, Object ... dummykeyValues) {
+        int i = 0;
+        String key = "";
+        Object value;
+        for (Object keyValue : dummykeyValues) {
+            if (i++ % 2 == 0) {
+                key = (String) keyValue;
+            } else {
+                value = keyValue;
+                if (!key.equals(Element.LABEL)) {
+                    ElementHelper.validateProperty(key, value);
+                    this.sqlDialect.validateProperty(key, value);
+                }
+
+            }
+        }
         this.tx().readWrite();
-        this.getSchemaManager().createIndex(label, propertyKey);
+
+        SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
+        this.getSchemaManager().createIndex(schemaTablePair, dummykeyValues);
     }
 
     public long countVertices() {
@@ -595,6 +622,9 @@ public class SqlG implements Graph {
         Connection conn = this.tx().getConnection();
         StringBuilder sql = new StringBuilder("select count(1) from ");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet rs = preparedStatement.executeQuery();
             rs.next();
@@ -609,6 +639,9 @@ public class SqlG implements Graph {
         Connection conn = this.tx().getConnection();
         StringBuilder sql = new StringBuilder("select count(1) from ");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet rs = preparedStatement.executeQuery();
             rs.next();

@@ -9,6 +9,8 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
 import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 
@@ -20,6 +22,8 @@ import java.util.*;
  * Time: 5:42 AM
  */
 public class SqlgVertex extends SqlgElement implements Vertex {
+
+    private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
     private final ThreadLocal<Connection> edgesCache = new ThreadLocal<Connection>() {
         protected Connection initialValue() {
@@ -204,7 +208,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(i++, vertexId);
-            setKeyValuesAsParameter(i, conn, preparedStatement, keyValues);
+            setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValues);
             preparedStatement.executeUpdate();
             this.primaryKey = vertexId;
         } catch (SQLException e) {
@@ -314,6 +318,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         sql.append(";");
                     }
                     Connection conn = this.sqlG.tx().getConnection();
+                    if(logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         switch (d) {
                             case IN:
@@ -458,47 +465,54 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sql.append(";");
         }
         Connection conn = this.sqlG.tx().getConnection();
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
-                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                    String columnName = resultSetMetaData.getColumnName(i);
-                    Object o = resultSet.getObject(columnName);
-                    if (!columnName.equals("ID") && !Objects.isNull(o)) {
-                        keyValues.add(columnName);
-                        int type = resultSetMetaData.getColumnType(i);
-                        switch (type) {
-                            case Types.SMALLINT:
-                                keyValues.add(((Integer) o).shortValue());
-                                break;
-                            case Types.TINYINT:
-                                keyValues.add(((Integer) o).byteValue());
-                                break;
-                            case Types.REAL:
-                                keyValues.add(((Number) o).floatValue());
-                                break;
-                            case Types.DOUBLE:
-                                keyValues.add(((Number) o).doubleValue());
-                                break;
-                            case Types.ARRAY:
-                                Array array = (Array) o;
-                                int baseType = array.getBaseType();
-                                Object[] objectArray = (Object[]) array.getArray();
-                                keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
-                                break;
-                            default:
-                                keyValues.add(o);
-                        }
-                    }
-                }
+                loadWithLoadedResultSet(keyValues, resultSet);
             } else {
                 throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.primaryKey}));
             }
             return keyValues.toArray();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    void loadWithLoadedResultSet(List<Object> keyValues, ResultSet resultSet) throws SQLException {
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnName(i);
+            Object o = resultSet.getObject(columnName);
+            if (!columnName.equals("ID") && !Objects.isNull(o)) {
+                keyValues.add(columnName);
+                int type = resultSetMetaData.getColumnType(i);
+                switch (type) {
+                    case Types.SMALLINT:
+                        keyValues.add(((Integer) o).shortValue());
+                        break;
+                    case Types.TINYINT:
+                        keyValues.add(((Integer) o).byteValue());
+                        break;
+                    case Types.REAL:
+                        keyValues.add(((Number) o).floatValue());
+                        break;
+                    case Types.DOUBLE:
+                        keyValues.add(((Number) o).doubleValue());
+                        break;
+                    case Types.ARRAY:
+                        Array array = (Array) o;
+                        int baseType = array.getBaseType();
+                        Object[] objectArray = (Object[]) array.getArray();
+                        keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                        break;
+                    default:
+                        keyValues.add(o);
+                }
+            }
         }
     }
 

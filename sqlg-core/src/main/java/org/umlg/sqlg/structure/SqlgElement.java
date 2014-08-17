@@ -168,7 +168,7 @@ public abstract class SqlgElement implements Element {
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            setKeyValuesAsParameter(1, conn, preparedStatement, new Object[]{key, value});
+            setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, new Object[]{key, value});
             preparedStatement.setLong(2, (Long) this.id());
             preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -272,7 +272,7 @@ public abstract class SqlgElement implements Element {
         return target;
     }
 
-    protected int setKeyValuesAsParameter(int i, Connection conn, PreparedStatement preparedStatement, Object[] keyValues) throws SQLException {
+    public static int setKeyValuesAsParameter(SqlG sqlG, int i, Connection conn, PreparedStatement preparedStatement, Object[] keyValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : SqlgUtil.transformToTypeAndValue(keyValues)) {
             switch (pair.left) {
                 case BOOLEAN:
@@ -302,34 +302,34 @@ public abstract class SqlgElement implements Element {
 
                 //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array booleanArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, booleanArray);
                     break;
                 case BYTE_ARRAY:
                     preparedStatement.setBytes(i++, (byte[])pair.right);
                     break;
                 case SHORT_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array shortArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, shortArray);
                     break;
                 case INTEGER_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array intArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, intArray);
                     break;
                 case LONG_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array longArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, longArray);
                     break;
                 case FLOAT_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array floatArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, floatArray);
                     break;
                 case DOUBLE_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array doubleArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, doubleArray);
                     break;
                 case STRING_ARRAY:
-                    java.sql.Array stringArray = conn.createArrayOf(this.sqlG.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array stringArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, stringArray);
                     break;
                 default:

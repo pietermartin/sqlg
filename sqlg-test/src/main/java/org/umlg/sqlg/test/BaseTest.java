@@ -7,6 +7,8 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlG;
 import org.umlg.sqlg.structure.SqlGDataSource;
@@ -25,6 +27,7 @@ import static org.junit.Assert.fail;
  */
 public abstract class BaseTest {
 
+    private Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
     protected SqlG sqlG;
     protected static Configuration configuration;
 
@@ -132,9 +135,11 @@ public abstract class BaseTest {
             if (this.sqlG.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
+            if(logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
             ResultSet rs = stmt.executeQuery(sql.toString());
             int countRows = 0;
-
             while (rs.next()) {
                 countRows++;
             }

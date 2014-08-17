@@ -1,13 +1,12 @@
 package org.umlg.sqlg.structure;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.*;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -17,6 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class SchemaManager {
 
+    private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
     public static final String VERTICES = "VERTICES";
@@ -27,6 +27,8 @@ public class SchemaManager {
     private Set<String> schemas = new HashSet<>();
     private Set<String> uncommittedSchemas = new HashSet<>();
 
+    private Map<String, Set<String>> labelSchemas = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> uncommitedLabelSchemas = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> tables = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
     private Map<String, Set<String>> edgeForeignKeys = new ConcurrentHashMap<>();
@@ -46,11 +48,21 @@ public class SchemaManager {
                 for (String t : this.uncommittedTables.keySet()) {
                     this.tables.put(t, this.uncommittedTables.get(t));
                 }
+                for (String t : this.uncommitedLabelSchemas.keySet()) {
+                    Set<String> schemas = this.labelSchemas.get(t);
+                    if (schemas == null) {
+                        this.labelSchemas.put(t, this.uncommitedLabelSchemas.get(t));
+                    } else {
+                        schemas.addAll(this.uncommitedLabelSchemas.get(t));
+                        this.labelSchemas.put(t, schemas);
+                    }
+                }
                 for (String t : this.uncommittedEdgeForeignKeys.keySet()) {
                     this.edgeForeignKeys.put(t, this.uncommittedEdgeForeignKeys.get(t));
                 }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
+                this.uncommitedLabelSchemas.clear();
                 this.uncommittedEdgeForeignKeys.clear();
                 this.schemaLock.unlock();
             }
@@ -60,6 +72,7 @@ public class SchemaManager {
                 if (this.getSqlDialect().supportsTransactionalSchema()) {
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
+                    this.uncommitedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                 } else {
                     for (String t : this.uncommittedSchemas) {
@@ -68,11 +81,21 @@ public class SchemaManager {
                     for (String t : this.uncommittedTables.keySet()) {
                         this.tables.put(t, this.uncommittedTables.get(t));
                     }
+                    for (String t : this.uncommitedLabelSchemas.keySet()) {
+                        Set<String> schemas = this.labelSchemas.get(t);
+                        if (schemas == null) {
+                            this.labelSchemas.put(t, this.uncommitedLabelSchemas.get(t));
+                        } else {
+                            schemas.addAll(this.uncommitedLabelSchemas.get(t));
+                            this.labelSchemas.put(t, schemas);
+                        }
+                    }
                     for (String t : this.uncommittedEdgeForeignKeys.keySet()) {
                         this.edgeForeignKeys.put(t, this.uncommittedEdgeForeignKeys.get(t));
                     }
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
+                    this.uncommitedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                 }
                 this.schemaLock.unlock();
@@ -132,6 +155,13 @@ public class SchemaManager {
             }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+                    Set<String> schemas = this.uncommitedLabelSchemas.get(prefixedTable);
+                    if (schemas == null) {
+                        this.uncommitedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                    } else {
+                        schemas.add(schema);
+                        this.uncommitedLabelSchemas.put(prefixedTable, schemas);
+                    }
                     this.uncommittedTables.put(schema + "." + prefixedTable, columns);
                     createVertexTable(schema, prefixedTable, columns);
                 }
@@ -147,6 +177,9 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -189,6 +222,15 @@ public class SchemaManager {
                     foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable());
                     foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
                     this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
+
+                    Set<String> schemas = this.uncommitedLabelSchemas.get(prefixedTable);
+                    if (schemas == null) {
+                        this.uncommitedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                    } else {
+                        schemas.add(schema);
+                        this.uncommitedLabelSchemas.put(prefixedTable, schemas);
+                    }
+
                     createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
                 }
             }
@@ -275,6 +317,9 @@ public class SchemaManager {
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -299,6 +344,9 @@ public class SchemaManager {
         sql.append(" VARCHAR(255))");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -351,6 +399,9 @@ public class SchemaManager {
         sql.append(")");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
@@ -412,6 +463,9 @@ public class SchemaManager {
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
@@ -471,6 +525,9 @@ public class SchemaManager {
             sql.append(";");
         }
         Connection conn = this.sqlG.tx().getConnection();
+        if(logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
@@ -534,8 +591,36 @@ public class SchemaManager {
         }
     }
 
-    public void createIndex(String label, String propertyKey) {
+    public void createIndex(SchemaTable schemaTable, Object ... dummykeyValues) {
 
+        this.ensureVertexTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
+        this.sqlG.tx().commit();
+        this.sqlG.tx().readWrite();
+
+        int i = 1;
+        for (Object dummyKeyValue : dummykeyValues) {
+            if (i++ % 2 != 0) {
+                StringBuilder sql = new StringBuilder("CREATE INDEX ON ");
+                sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+                sql.append(".");
+                sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
+                sql.append(" (");
+                sql.append(this.sqlDialect.maybeWrapInQoutes((String)dummyKeyValue));
+                sql.append(")");
+                if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                Connection conn = this.sqlG.tx().getConnection();
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute(sql.toString());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     void loadSchema() {
@@ -604,5 +689,9 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Set<String> getSchemasForTable(String table) {
+        return this.labelSchemas.get(table);
     }
 }

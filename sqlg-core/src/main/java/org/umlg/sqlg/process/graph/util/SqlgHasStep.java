@@ -6,6 +6,7 @@ import com.tinkerpop.gremlin.process.graph.step.filter.FilterStep;
 import com.tinkerpop.gremlin.process.graph.step.filter.HasStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.util.HasContainer;
 
 /**
  * Date: 2014/08/15
@@ -27,6 +28,10 @@ public class SqlgHasStep extends FilterStep<Element> implements Reversible {
     @Override
     public String toString() {
         return TraversalHelper.makeStepString(this, this.hasStep.hasContainer);
+    }
+
+    public HasContainer getHasContainer() {
+        return this.hasStep.hasContainer;
     }
 
 }
