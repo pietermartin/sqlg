@@ -3,7 +3,8 @@ package org.umlg.sqlg.test.tp3.process;
 import com.tinkerpop.gremlin.process.ProcessComputerSuite;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
-import org.umlg.sqlg.test.tp3.SqlGPostgresProvider;
+import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.test.tp3.SqlgPostgresProvider;
 
 
 /**
@@ -13,6 +14,7 @@ import org.umlg.sqlg.test.tp3.SqlGPostgresProvider;
  */
 @RunWith(ProcessComputerSuite.class)
 @Ignore
-@ProcessComputerSuite.GraphProviderClass(SqlGPostgresProvider.class)
+@ProcessComputerSuite.GraphProviderClass(provider = SqlgPostgresProvider.class, graph = SqlG.class)
+//@ProcessComputerSuite.GraphProviderClass(SqlgPostgresProvider.class)
 public class SqlGPostgresProcessComputerTest {
 }

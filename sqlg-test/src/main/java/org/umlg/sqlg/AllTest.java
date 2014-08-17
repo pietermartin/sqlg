@@ -32,7 +32,8 @@ import org.umlg.sqlg.test.*;
         TestVertexEdgeSameName.class,
         TestVertexNavToEdges.class,
         TestByteArray.class,
-        TestQuery.class
+        TestQuery.class,
+        TestSchema.class
 })
 public class AllTest {
 }

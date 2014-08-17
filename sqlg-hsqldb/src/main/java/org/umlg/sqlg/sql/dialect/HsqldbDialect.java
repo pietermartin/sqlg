@@ -303,6 +303,14 @@ public class HsqldbDialect implements SqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        sql = new StringBuilder("SET DATABASE DEFAULT TABLE TYPE CACHED;");
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
+
 
 }

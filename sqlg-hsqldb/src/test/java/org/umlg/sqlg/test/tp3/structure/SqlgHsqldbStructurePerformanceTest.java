@@ -2,7 +2,8 @@ package org.umlg.sqlg.test.tp3.structure;
 
 import com.tinkerpop.gremlin.structure.StructurePerformanceSuite;
 import org.junit.runner.RunWith;
-import org.umlg.sqlg.test.tp3.SqlGPostgresProvider;
+import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
 
 /**
  * Executes the Gremlin Structure Performance Test Suite using TinkerGraph.
@@ -10,7 +11,8 @@ import org.umlg.sqlg.test.tp3.SqlGPostgresProvider;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @RunWith(StructurePerformanceSuite.class)
-@StructurePerformanceSuite.GraphProviderClass(SqlGPostgresProvider.class)
-public class SqlGPostgresStructurePerformanceTest {
+@StructurePerformanceSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlG.class)
+//@StructurePerformanceSuite.GraphProviderClass(SqlgHsqldbProvider.class)
+public class SqlgHsqldbStructurePerformanceTest {
 
 }

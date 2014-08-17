@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -13,7 +12,7 @@ import org.junit.Test;
  */
 public class TestSchema extends  BaseTest {
 
-//    @Test
+    @Test
     public void testSchema() {
         this.sqlG.addVertex(Element.LABEL, "TEST_SCHEMA1.Person", "name", "John");
         this.sqlG.tx().commit();
@@ -41,11 +40,15 @@ public class TestSchema extends  BaseTest {
         );
         Assert.assertEquals(2, this.sqlG.V().<Vertex>has(
                 Element.LABEL,
-                (a,b)->((String)a).endsWith((String)b),
+                (a, b) -> ((String) a).endsWith((String) b),
                 "Person"
         ).count().next(), 0);
-//        Assert.assertEquals(1, john.out("friend").has("name", "John").count().next(), 0);
-//        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "TEST_SCHEMA1.Person").count().next(), 0);
+        Assert.assertEquals(1, john.out("friend").has("name", "Tom").count().next(), 0);
+        Assert.assertEquals(2, this.sqlG.V().has(Element.LABEL, "Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "TEST_SCHEMA1.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "TEST_SCHEMA2.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "TEST_SCHEMA2.Ape").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Ape").count().next(), 0);
     }
 
 }

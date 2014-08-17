@@ -19,10 +19,10 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     private final String key;
     private V value;
-    private SqlGElement element;
+    private SqlgElement element;
     protected SqlG sqlG;
 
-    public SqlProperty(SqlG sqlG, SqlGElement element, String key, V value) {
+    public SqlProperty(SqlG sqlG, SqlgElement element, String key, V value) {
         this.sqlG = sqlG;
         this.element = element;
         this.key = key;
@@ -57,7 +57,9 @@ public class SqlProperty<V> implements Property<V>, Serializable {
     @Override
     public void remove() {
         StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.label()));
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
+        sql.append(".");
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.table));
         sql.append(" SET ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
         sql.append(" = ? WHERE ");

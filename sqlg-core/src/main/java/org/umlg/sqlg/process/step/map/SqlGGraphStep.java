@@ -16,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -56,6 +57,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Vertex> vertices() {
+//        return __vertices();
         Stream<? extends Vertex> vertexStream = getVertices();
         return vertexStream.filter(v -> HasContainer.testAll((Vertex) v, this.hasContainers)).iterator();
     }
@@ -69,7 +71,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _vertices() {
-        List<SqlGGVertex> sqlGVertexes = new ArrayList<>();
+        List<SqlgVertex> sqlGVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
@@ -82,17 +84,34 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
                 long id = resultSet.getLong(1);
                 String schema = resultSet.getString(2);
                 String table = resultSet.getString(3);
-                SqlGGVertex sqlGVertex = new SqlGGVertex(this.sqlG, id, schema, table);
+                SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, table);
                 sqlGVertexes.add(sqlGVertex);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        Collections.reverse(sqlGVertexes);
         return sqlGVertexes;
     }
 
+    private Iterator<? extends Vertex> __vertices() {
+        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        Connection conn = this.sqlG.tx().getConnection();
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(sql.toString());
+            ResultSet resultSet = preparedStatement.executeQuery();
+            return new ResultSetIterator(this.sqlG, resultSet);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Iterable<? extends Edge> _edges() {
-        List<SqlGGEdge> sqlGEdges = new ArrayList<>();
+        List<SqlgEdge> sqlGEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
@@ -105,8 +124,8 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
                 long id = resultSet.getLong(1);
                 String schema = resultSet.getString(2);
                 String table = resultSet.getString(3);
-                Pair<String,String> schemaTablePair = Pair.of(schema, table);
-                SqlGGEdge sqlGEdge = new SqlGGEdge(this.sqlG, id, schemaTablePair.getLeft(), schemaTablePair.getRight());
+                SchemaTable schemaTablePair = SchemaTable.of(schema, table);
+                SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTablePair.getSchema(), schemaTablePair.getTable());
                 sqlGEdges.add(sqlGEdge);
             }
         } catch (SQLException e) {

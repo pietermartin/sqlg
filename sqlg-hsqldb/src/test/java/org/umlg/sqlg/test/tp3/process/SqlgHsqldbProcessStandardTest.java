@@ -2,7 +2,8 @@ package org.umlg.sqlg.test.tp3.process;
 
 import com.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.junit.runner.RunWith;
-import org.umlg.sqlg.test.tp3.SqlGHsqldbProvider;
+import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
 
 
 /**
@@ -11,6 +12,7 @@ import org.umlg.sqlg.test.tp3.SqlGHsqldbProvider;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @RunWith(ProcessStandardSuite.class)
-@ProcessStandardSuite.GraphProviderClass(SqlGHsqldbProvider.class)
-public class SqlGHsqldbProcessStandardTest {
+@ProcessStandardSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlG.class)
+//@ProcessStandardSuite.GraphProviderClass(SqlgHsqldbProvider.class)
+public class SqlgHsqldbProcessStandardTest {
 }

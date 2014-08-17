@@ -2,7 +2,8 @@ package org.umlg.sqlg.test.tp3.structure;
 
 import com.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.runner.RunWith;
-import org.umlg.sqlg.test.tp3.SqlGPostgresProvider;
+import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
 
 
 /**
@@ -11,6 +12,7 @@ import org.umlg.sqlg.test.tp3.SqlGPostgresProvider;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @RunWith(StructureStandardSuite.class)
-@StructureStandardSuite.GraphProviderClass(SqlGPostgresProvider.class)
-public class SqlGPostgresStructureStandardTest {
+@StructureStandardSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlG.class)
+//@StructureStandardSuite.GraphProviderClass(SqlgHsqldbProvider.class)
+public class SqlgHsqldbStructureStandardTest {
 }

@@ -1,0 +1,61 @@
+package org.umlg.sqlg.process.graph.util;
+
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Contains;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.util.HasContainer;
+import org.apache.commons.lang3.tuple.Pair;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgElement;
+
+import java.io.Serializable;
+import java.util.function.BiPredicate;
+
+/**
+ * Date: 2014/08/15
+ * Time: 8:25 PM
+ */
+public class SqlgHasContainer implements Serializable {
+
+    private String key;
+    private BiPredicate predicate;
+    private Object value;
+
+    public SqlgHasContainer(HasContainer hasContainer) {
+        this.key = hasContainer.key;
+        this.predicate = hasContainer.predicate;
+        this.value = hasContainer.value;
+    }
+
+    public boolean test(final Element element) {
+        if (null != this.value) {
+            if (this.key.equals(Element.ID))
+                return this.predicate.test(element.id(), this.value);
+            else if (this.key.equals(Element.LABEL))
+                if (this.predicate == Compare.EQUAL) {
+                    SqlgElement sqlgElement = (SqlgElement)element;
+                    SchemaTable labelSchemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());
+                    String[] schemaTableValue = ((String)this.value).split("\\.");
+                    if (schemaTableValue.length==1) {
+                        return element.label().endsWith((String)this.value);
+                    } else if (schemaTableValue.length==2) {
+                        return schemaTableValue[0].equals(labelSchemaTable.getSchema()) &&
+                                schemaTableValue[1].equals(labelSchemaTable.getTable());
+                    } else {
+                        throw new IllegalStateException("label may only have one dot separator!");
+                    }
+                } else {
+                    return this.predicate.test(element.label(), this.value);
+                }
+            else {
+                final Property property = element.property(this.key);
+                return property.isPresent() && this.predicate.test(property.value(), this.value);
+            }
+        } else {
+            return Contains.IN.equals(this.predicate) ?
+                    element.property(this.key).isPresent() :
+                    !element.property(this.key).isPresent();
+        }
+    }
+}

@@ -12,9 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Date: 2014/07/12
  * Time: 3:13 PM
  */
-public class SqlGUtil {
+public class SqlgUtil {
 
-    public static Pair<String, String> parseLabel(final String label, String defaultSchema) {
+    public static SchemaTable parseLabel(final String label, String defaultSchema) {
         Objects.requireNonNull(label, "label may not be null!");
         String[] schemaLabel = label.split("\\.");
         final String schema;
@@ -29,7 +29,16 @@ public class SqlGUtil {
             schema = defaultSchema;
             table = label;
         }
-        return Pair.of(schema, table);
+        return SchemaTable.of(schema, table);
+    }
+
+    public static SchemaTable parseLabel(final String label) {
+        Objects.requireNonNull(label, "label may not be null!");
+        String[] schemaLabel = label.split("\\.");
+        if (schemaLabel.length != 2) {
+            throw new IllegalStateException("label must be if the format 'schema.table'");
+        }
+        return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
     }
 
     public static Object[] mapTokeyValues(Map<String, Object> keyValues) {

@@ -2,6 +2,8 @@ package org.umlg.sqlg.test.tp3;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.strategy.GraphStrategy;
+import com.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlG;
@@ -16,7 +18,7 @@ import java.util.Map;
  * Date: 2014/07/13
  * Time: 5:57 PM
  */
-public class SqlGPostgresProvider extends AbstractGraphProvider {
+public class SqlgPostgresProvider extends AbstractGraphProvider {
 
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName) {
@@ -76,6 +78,5 @@ public class SqlGPostgresProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         }
     }
-
 
 }

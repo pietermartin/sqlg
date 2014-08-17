@@ -3,7 +3,7 @@ package org.umlg.sqlg.test;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlGGVertex;
+import org.umlg.sqlg.structure.SqlgVertex;
 
 /**
  * Date: 2014/07/26
@@ -18,7 +18,7 @@ public class TestDeletedVertex extends BaseTest {
         this.sqlG.tx().close();
         v1.remove();
         this.sqlG.tx().commit();
-        SqlGGVertex sqlGVertex = new SqlGGVertex(this.sqlG, (Long)v1.id(), "Person");
+        SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, (Long)v1.id(), "Person");
         sqlGVertex.property("name");
     }
 }

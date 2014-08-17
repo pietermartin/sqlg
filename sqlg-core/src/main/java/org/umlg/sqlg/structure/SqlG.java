@@ -15,6 +15,7 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
+import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
 import org.umlg.sqlg.process.step.map.SqlGGraphStep;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
@@ -27,6 +28,8 @@ import java.util.Map;
  * Date: 2014/07/12
  * Time: 5:38 AM
  */
+@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class SqlG implements Graph {
 
     private final SqlGTransaction sqlGTransaction;
@@ -90,7 +93,7 @@ public class SqlG implements Graph {
 
     public Vertex addVertex(String label, Map<String, Object> keyValues) {
         keyValues.put(Element.LABEL, label);
-        return addVertex(SqlGUtil.mapTokeyValues(keyValues));
+        return addVertex(SqlgUtil.mapTokeyValues(keyValues));
     }
 
     @Override
@@ -115,10 +118,10 @@ public class SqlG implements Graph {
             }
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        Pair<String, String> schemaTablePair = SqlGUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
         this.tx().readWrite();
-        this.schemaManager.ensureVertexTableExist(schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
-        final SqlGGVertex vertex = new SqlGGVertex(this, schemaTablePair.getLeft(), schemaTablePair.getRight(), keyValues);
+        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        final SqlgVertex vertex = new SqlgVertex(this, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
         return vertex;
     }
 
@@ -127,6 +130,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
+        traversal.strategies().register(SqlgHasStepStrategy.instance());
         traversal.addStep(new SqlGGraphStep(traversal, Vertex.class, this));
         traversal.memory().set(Key.hide("g"), this);
         return traversal;
@@ -137,6 +141,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
+        traversal.strategies().register(SqlgHasStepStrategy.instance());
         traversal.addStep(new SqlGGraphStep(traversal, Edge.class, this));
         traversal.memory().set(Key.hide("g"), this);
         return traversal;
@@ -157,7 +162,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, id);
 
-        SqlGGVertex sqlGVertex = null;
+        SqlgVertex sqlGVertex = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
@@ -174,7 +179,7 @@ public class SqlG implements Graph {
             while (resultSet.next()) {
                 String schema = resultSet.getString("VERTEX_SCHEMA");
                 String table = resultSet.getString("VERTEX_TABLE");
-                sqlGVertex = new SqlGGVertex(this, idAsLong, schema, table);
+                sqlGVertex = new SqlgVertex(this, idAsLong, schema, table);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -190,7 +195,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, id);
 
-        SqlGGEdge sqlGEdge = null;
+        SqlgEdge sqlGEdge = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" WHERE ");
@@ -207,7 +212,7 @@ public class SqlG implements Graph {
             while (resultSet.next()) {
                 String schema = resultSet.getString("EDGE_SCHEMA");
                 String table = resultSet.getString("EDGE_TABLE");
-                sqlGEdge = new SqlGGEdge(this, idAsLong, schema, table);
+                sqlGEdge = new SqlgEdge(this, idAsLong, schema, table);
             }
             preparedStatement.close();
         } catch (SQLException e) {
@@ -273,7 +278,7 @@ public class SqlG implements Graph {
 
                 @Override
                 public boolean supportsFullyIsolatedTransactions() {
-                    return true;
+                    return false;
                 }
             };
         }

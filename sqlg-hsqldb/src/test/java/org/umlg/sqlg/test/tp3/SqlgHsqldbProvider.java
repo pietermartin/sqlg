@@ -6,6 +6,8 @@ import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.io.graphson.GraphSONReader;
 import com.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
+import com.tinkerpop.gremlin.structure.strategy.GraphStrategy;
+import com.tinkerpop.gremlin.structure.util.GraphFactory;
 import com.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -23,7 +25,7 @@ import java.util.Map;
  * Date: 2014/07/13
  * Time: 5:57 PM
  */
-public class SqlGHsqldbProvider extends AbstractGraphProvider {
+public class SqlgHsqldbProvider extends AbstractGraphProvider {
 
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName) {

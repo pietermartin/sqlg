@@ -56,9 +56,8 @@ public class TestLoadSchema extends BaseTest {
         this.sqlG.tx().commit();
         this.sqlG.close();
         this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(Element.LABEL, "Person");
-        Assert.assertTrue(iter.hasNext());
-        v1 = iter.next();
+        v1 = this.sqlG.v(v1.id());
+        Assert.assertNotNull(v1);
         Assert.assertEquals(true, v1.property("aBoolean").value());
         Assert.assertEquals((short) 1, v1.property("aShort").value());
         Assert.assertEquals(1, v1.property("aInteger").value());
@@ -66,8 +65,7 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(1D, v1.property("aDouble").value());
         Assert.assertEquals("aaaaaaaaaaaaa", v1.property("aString").value());
 
-        Assert.assertTrue(iter.hasNext());
-        v2 = iter.next();
+        v2 = this.sqlG.v(v2.id());
         Assert.assertEquals(true, v2.property("bBoolean").value());
         Assert.assertEquals((short) 2, v2.property("bShort").value());
         Assert.assertEquals(2, v2.property("bInteger").value());

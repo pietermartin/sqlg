@@ -1,37 +1,248 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.AbstractGremlinSuite;
+import com.tinkerpop.gremlin.GraphManager;
+import com.tinkerpop.gremlin.GraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
-import com.tinkerpop.gremlin.process.Path;
+import com.tinkerpop.gremlin.algorithm.generator.DistributionGenerator;
 import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
-import com.tinkerpop.gremlin.util.function.FunctionUtils;
+import com.tinkerpop.gremlin.structure.strategy.GraphStrategy;
+import com.tinkerpop.gremlin.structure.strategy.StrategyWrappedGraph;
+import com.tinkerpop.gremlin.structure.strategy.SubgraphStrategy;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.time.StopWatch;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlG;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.CLASSIC;
-import static com.tinkerpop.gremlin.structure.Graph.Features.VertexFeatures.FEATURE_ADD_VERTICES;
-import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/07/13
  * Time: 6:32 PM
  */
 public class TinkerpopTest extends BaseTest {
+
+    @Test
+    public void shouldTraverseInOutFromVertexWithMultipleEdgeLabelFilter() {
+        final Graph graph = this.sqlG;
+        final Vertex a = graph.addVertex();
+        final Vertex b = graph.addVertex();
+        final Vertex c = graph.addVertex();
+
+        final String labelFriend = "friend";
+        final String labelHate = "hate";
+
+        final Edge aFriendB = a.addEdge(labelFriend, b);
+        final Edge aFriendC = a.addEdge(labelFriend, c);
+        final Edge aHateC = a.addEdge(labelHate, c);
+        final Edge cHateA = c.addEdge(labelHate, a);
+        final Edge cHateB = c.addEdge(labelHate, b);
+
+        List<Edge> results = a.outE(labelFriend, labelHate).toList();
+        assertEquals(3, results.size());
+        assertTrue(results.contains(aFriendB));
+        assertTrue(results.contains(aFriendC));
+        assertTrue(results.contains(aHateC));
+
+        results = a.inE(labelFriend, labelHate).toList();
+        assertEquals(1, results.size());
+        assertTrue(results.contains(cHateA));
+
+        results = b.inE(labelFriend, labelHate).toList();
+        assertEquals(2, results.size());
+        assertTrue(results.contains(aFriendB));
+        assertTrue(results.contains(cHateB));
+
+        results = b.inE("blah1", "blah2").toList();
+        assertEquals(0, results.size());
+    }
+
+//    @Test
+    @LoadGraphWith(CLASSIC)
+    public void g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_2X_capXaX() throws IOException {
+        readGraphMLIntoGraph(this.sqlG);
+
+        Traversal<Vertex, Map<String, Integer>> t = get_g_V_asXxX_out_groupByXname();
+        printTraversalForm(t);
+        final Map<String, Integer> map = t.next();
+        t.forEach(
+                (a) -> System.out.println(a)
+        );
+
+//        Traversal<Vertex, Map<String, Integer>> traversal = get_g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_2X_capXaX();
+//        printTraversalForm(traversal);
+//        final Map<String, Integer> map = traversal.next();
+//        assertFalse(traversal.hasNext());
+//        assertEquals(4, map.size());
+//        assertTrue(map.containsKey("vadas"));
+//        assertEquals(Integer.valueOf(1), map.get("vadas"));
+//        assertTrue(map.containsKey("josh"));
+//        assertEquals(Integer.valueOf(1), map.get("josh"));
+//        assertTrue(map.containsKey("lop"));
+//        assertEquals(Integer.valueOf(4), map.get("lop"));
+//        assertTrue(map.containsKey("ripple"));
+//        assertEquals(Integer.valueOf(2), map.get("ripple"));
+
+    }
+
+    public Traversal<Vertex, Map<String, Integer>> get_g_V_asXxX_out_groupByXname() {
+        return this.sqlG.V().as("x").out().groupBy(v -> v.value("name"), v -> v, vv -> vv.size()).as("a").jump("x", 1).cap("a");
+    }
+
+    public Traversal<Vertex, Map<String, Integer>> get_g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_2X_capXaX() {
+        return this.sqlG.V().as("x").out().groupBy(v -> v.value("name"), v -> v, vv -> vv.size()).as("a").jump("x", 2).cap("a");
+    }
+
+    public Traversal<Vertex, Map<String, Integer>> get_g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_loops_lt_2X_capXaX() {
+        return this.sqlG.V().as("x").out().groupBy(v -> v.value("name"), v -> v, vv -> vv.size()).as("a").jump("x", t -> t.getLoops() < 2).cap("a");
+    }
+
+    //    @Test
+    @LoadGraphWith(CLASSIC)
+    public void g_v1_outEXknowsX_hasXweight_1X_asXhereX_inV_hasXname_joshX_backXhereX() throws IOException {
+        readGraphMLIntoGraph(this.sqlG);
+
+        final Traversal<Vertex, Edge> traversal = get_g_v1_outEXknowsX_hasXweight_1X_asXhereX_inV_hasXname_joshX_backXhereX(convertToVertexId("marko"));
+        printTraversalForm(traversal);
+        assertTrue(traversal.hasNext());
+        assertTrue(traversal.hasNext());
+        final Edge edge = traversal.next();
+        assertEquals("knows", edge.label());
+        assertEquals(Float.valueOf(1.0f), edge.<Float>value("weight"));
+        assertFalse(traversal.hasNext());
+        assertFalse(traversal.hasNext());
+    }
+
+    public Traversal<Vertex, Edge> get_g_v1_outEXknowsX_hasXweight_1X_asXhereX_inV_hasXname_joshX_backXhereX(final Object v1Id) {
+        return this.sqlG.v(v1Id).outE("knows").has("weight", 1.0f).as("here").inV().has("name", "josh").back("here");
+    }
+
+    protected void printTraversalForm(final Traversal traversal) {
+        System.out.println("Testing: " + traversal);
+        traversal.strategies().apply();
+        System.out.println("         " + traversal);
+    }
+
+//    @Test
+//    @LoadGraphWith(CLASSIC)
+    public void testMixedCriteria() throws Exception {
+
+        readGraphMLIntoGraph(this.sqlG);
+
+        Predicate<Vertex> vertexCriterion = vertex -> vertex.value("name").equals("josh") || vertex.value("name").equals("lop") || vertex.value("name").equals("ripple");
+        Predicate<Edge> edgeCriterion = edge -> {
+            // 9 && 11
+            if (edge.<Double>value("weight") == 0.4D && edge.label().equals("created"))
+                return true;
+                // 10
+            else if (edge.<Double>value("weight") == 1.0D && edge.label().equals("created"))
+                return true;
+            else return false;
+        };
+        Graph g = this.sqlG;
+        GraphStrategy strategyToTest = new SubgraphStrategy(vertexCriterion, edgeCriterion);
+        StrategyWrappedGraph sg = new StrategyWrappedGraph(g);
+        sg.strategy().setGraphStrategy(strategyToTest);
+
+        // three vertices are included in the subgraph
+        assertEquals(6, g.V().count().next().longValue());
+        assertEquals(3, sg.V().count().next().longValue());
+
+        // three edges are explicitly included, but one is missing its out-vertex due to the vertex criterion
+        assertEquals(6, g.E().count().next().longValue());
+        assertEquals(2, sg.E().count().next().longValue());
+
+        // from vertex
+
+        assertEquals(2, g.v(convertToVertexId("josh")).outE().count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).outE().count().next().longValue());
+        assertEquals(2, g.v(convertToVertexId("josh")).out().count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).out().count().next().longValue());
+
+        assertEquals(1, g.v(convertToVertexId("josh")).inE().count().next().longValue());
+        assertEquals(0, sg.v(convertToVertexId("josh")).inE().count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).in().count().next().longValue());
+        assertEquals(0, sg.v(convertToVertexId("josh")).in().count().next().longValue());
+
+        assertEquals(3, g.v(convertToVertexId("josh")).bothE().count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).bothE().count().next().longValue());
+        assertEquals(3, g.v(convertToVertexId("josh")).both().count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).both().count().next().longValue());
+
+        // with label
+
+        assertEquals(2, g.v(convertToVertexId("josh")).outE("created").count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).outE("created").count().next().longValue());
+        assertEquals(2, g.v(convertToVertexId("josh")).out("created").count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).out("created").count().next().longValue());
+        assertEquals(2, g.v(convertToVertexId("josh")).bothE("created").count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).bothE("created").count().next().longValue());
+        assertEquals(2, g.v(convertToVertexId("josh")).both("created").count().next().longValue());
+        assertEquals(2, sg.v(convertToVertexId("josh")).both("created").count().next().longValue());
+
+        assertEquals(1, g.v(convertToVertexId("josh")).inE("knows").count().next().longValue());
+        assertEquals(0, sg.v(convertToVertexId("josh")).inE("knows").count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).in("knows").count().next().longValue());
+        assertEquals(0, sg.v(convertToVertexId("josh")).in("knows").count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).bothE("knows").count().next().longValue());
+        assertEquals(0, sg.v(convertToVertexId("josh")).bothE("knows").count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).both("knows").count().next().longValue());
+        assertEquals(0, sg.v(convertToVertexId("josh")).both("knows").count().next().longValue());
+
+        // with branch factor
+
+        assertEquals(1, g.v(convertToVertexId("josh")).bothE(1).count().next().longValue());
+        assertEquals(1, sg.v(convertToVertexId("josh")).bothE(1).count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).both(1).count().next().longValue());
+        assertEquals(1, sg.v(convertToVertexId("josh")).both(1).count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).bothE(1, "knows", "created").count().next().longValue());
+// TODO: Why Neo4j not happy?
+//        assertEquals(1, sg.v(convertToVertexId("josh")).bothE(1, "knows", "created").count().next().longValue());
+        assertEquals(1, g.v(convertToVertexId("josh")).both(1, "knows", "created").count().next().longValue());
+        assertEquals(1, sg.v(convertToVertexId("josh")).both(1, "knows", "created").count().next().longValue());
+
+        // from edge
+
+        assertEquals(2, g.e(convertToEdgeId("marko", "created", "lop")).bothV().count().next().longValue());
+        assertEquals(1, sg.e(convertToEdgeId("marko", "created", "lop")).bothV().count().next().longValue());
+    }
+
+    protected Object convertToVertexId(final String vertexName) {
+        return convertToVertexId(this.sqlG, vertexName);
+    }
+
+    protected Object convertToVertexId(final Graph g, final String vertexName) {
+        return convertToVertex(g, vertexName).id();
+    }
+
+    protected Vertex convertToVertex(final Graph g, final String vertexName) {
+        // all test graphs have "name" as a unique id which makes it easy to hardcode this...works for now
+        return ((Vertex) g.V().has("name", vertexName).next());
+    }
+
+    protected Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
+        return convertToEdgeId(this.sqlG, outVertexName, edgeLabel, inVertexName);
+    }
+
+    protected Object convertToEdgeId(final Graph g, final String outVertexName, String edgeLabel, final String inVertexName) {
+        return ((Edge) g.V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).back("e").next()).id();
+    }
+
+
 
 //    @Test
 //    @LoadGraphWith(CLASSIC)
@@ -271,16 +482,16 @@ public class TinkerpopTest extends BaseTest {
 //        assertClassicGraph(this.sqlG, true, true);
 //    }
 //
-//    private static void readGraphMLIntoGraph(final Graph g) throws IOException {
-//        final GraphReader reader = GraphMLReader.create().build();
-//        try (final InputStream stream = new FileInputStream(new File("sqlg-test/src/main/resources/tinkerpop-classic.xml"))) {
+    private static void readGraphMLIntoGraph(final Graph g) throws IOException {
+        final GraphReader reader = GraphMLReader.build().create();
+        try (final InputStream stream = new FileInputStream(new File("sqlg-test/src/main/resources/tinkerpop-classic.xml"))) {
+            reader.readGraph(stream, g);
+        }
+//        try (final InputStream stream = TinkerpopTest.class.getResourceAsStream("tinkerpop-classic.xml")) {
 //            reader.readGraph(stream, g);
 //        }
-////        try (final InputStream stream = TinkerpopTest.class.getResourceAsStream("tinkerpop-classic.xml")) {
-////            reader.readGraph(stream, g);
-////        }
-//    }
-//
+    }
+
 //    public static void assertClassicGraph(final Graph g1, final boolean lossyForFloat, final boolean lossyForId) {
 //        assertEquals(new Long(6), g1.V().count().next());
 //        assertEquals(new Long(6), g1.E().count().next());
