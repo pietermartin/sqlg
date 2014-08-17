@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.index.TestIndex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchema.class
+        TinkerpopTest.class
 })
 public class AnyTest {
 }

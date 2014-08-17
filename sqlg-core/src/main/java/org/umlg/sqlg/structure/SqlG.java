@@ -28,6 +28,7 @@ import java.util.Map;
  * Date: 2014/07/12
  * Time: 5:38 AM
  */
+@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class SqlG implements Graph {

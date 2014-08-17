@@ -1,9 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.GraphManager;
-import com.tinkerpop.gremlin.GraphProvider;
 import com.tinkerpop.gremlin.LoadGraphWith;
-import com.tinkerpop.gremlin.algorithm.generator.DistributionGenerator;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -13,22 +10,17 @@ import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.structure.strategy.GraphStrategy;
 import com.tinkerpop.gremlin.structure.strategy.StrategyWrappedGraph;
 import com.tinkerpop.gremlin.structure.strategy.SubgraphStrategy;
-import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.CLASSIC;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/07/13
@@ -37,65 +29,30 @@ import static org.junit.Assert.assertTrue;
 public class TinkerpopTest extends BaseTest {
 
     @Test
-    public void shouldTraverseInOutFromVertexWithMultipleEdgeLabelFilter() {
-        final Graph graph = this.sqlG;
-        final Vertex a = graph.addVertex();
-        final Vertex b = graph.addVertex();
-        final Vertex c = graph.addVertex();
-
-        final String labelFriend = "friend";
-        final String labelHate = "hate";
-
-        final Edge aFriendB = a.addEdge(labelFriend, b);
-        final Edge aFriendC = a.addEdge(labelFriend, c);
-        final Edge aHateC = a.addEdge(labelHate, c);
-        final Edge cHateA = c.addEdge(labelHate, a);
-        final Edge cHateB = c.addEdge(labelHate, b);
-
-        List<Edge> results = a.outE(labelFriend, labelHate).toList();
-        assertEquals(3, results.size());
-        assertTrue(results.contains(aFriendB));
-        assertTrue(results.contains(aFriendC));
-        assertTrue(results.contains(aHateC));
-
-        results = a.inE(labelFriend, labelHate).toList();
-        assertEquals(1, results.size());
-        assertTrue(results.contains(cHateA));
-
-        results = b.inE(labelFriend, labelHate).toList();
-        assertEquals(2, results.size());
-        assertTrue(results.contains(aFriendB));
-        assertTrue(results.contains(cHateB));
-
-        results = b.inE("blah1", "blah2").toList();
-        assertEquals(0, results.size());
-    }
-
-//    @Test
     @LoadGraphWith(CLASSIC)
     public void g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_2X_capXaX() throws IOException {
         readGraphMLIntoGraph(this.sqlG);
 
         Traversal<Vertex, Map<String, Integer>> t = get_g_V_asXxX_out_groupByXname();
         printTraversalForm(t);
-        final Map<String, Integer> map = t.next();
-        t.forEach(
-                (a) -> System.out.println(a)
-        );
+//        final Map<String, Integer> map = t.next();
+//        t.forEach(
+//                (a) -> System.out.println(a)
+//        );
 
-//        Traversal<Vertex, Map<String, Integer>> traversal = get_g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_2X_capXaX();
-//        printTraversalForm(traversal);
-//        final Map<String, Integer> map = traversal.next();
-//        assertFalse(traversal.hasNext());
-//        assertEquals(4, map.size());
-//        assertTrue(map.containsKey("vadas"));
-//        assertEquals(Integer.valueOf(1), map.get("vadas"));
-//        assertTrue(map.containsKey("josh"));
-//        assertEquals(Integer.valueOf(1), map.get("josh"));
-//        assertTrue(map.containsKey("lop"));
-//        assertEquals(Integer.valueOf(4), map.get("lop"));
-//        assertTrue(map.containsKey("ripple"));
-//        assertEquals(Integer.valueOf(2), map.get("ripple"));
+        Traversal<Vertex, Map<String, Integer>> traversal = get_g_V_asXxX_out_groupByXname_sizeX_asXaX_jumpXx_2X_capXaX();
+        printTraversalForm(traversal);
+        final Map<String, Integer> map = traversal.next();
+        assertFalse(traversal.hasNext());
+        assertEquals(4, map.size());
+        assertTrue(map.containsKey("vadas"));
+        assertEquals(Integer.valueOf(1), map.get("vadas"));
+        assertTrue(map.containsKey("josh"));
+        assertEquals(Integer.valueOf(1), map.get("josh"));
+        assertTrue(map.containsKey("lop"));
+        assertEquals(Integer.valueOf(4), map.get("lop"));
+        assertTrue(map.containsKey("ripple"));
+        assertEquals(Integer.valueOf(2), map.get("ripple"));
 
     }
 
