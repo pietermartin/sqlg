@@ -5,7 +5,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SqlGDataSource;
+import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,7 +25,7 @@ public class TestVertexCreation extends BaseTest {
     public void testCreateEmptyVertex() throws SQLException {
         sqlG.addVertex();
         sqlG.tx().commit();
-        try (Connection conn = SqlGDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection()) {
+        try (Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "vertex"));
@@ -66,7 +66,7 @@ public class TestVertexCreation extends BaseTest {
         );
         sqlG.tx().commit();
 
-        try (Connection conn = SqlGDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection()) {
+        try (Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "Person"));

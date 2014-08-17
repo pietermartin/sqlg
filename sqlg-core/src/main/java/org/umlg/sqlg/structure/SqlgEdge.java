@@ -209,58 +209,61 @@ public class SqlgEdge extends SqlgElement implements Edge {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, this.primaryKey);
             ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                SchemaTable inVertexColumnName = null;
-                SchemaTable outVertexColumnName = null;
-                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                    String columnName = resultSetMetaData.getColumnName(i);
-                    Object o = resultSet.getObject(columnName);
-                    if (!columnName.equals("ID") &&
-                            !Objects.isNull(o) &&
-                            !columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END) &&
-                            !columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
-
-                        keyValues.add(columnName);
-
-                        int type = resultSetMetaData.getColumnType(i);
-                        switch (type) {
-                            case Types.SMALLINT:
-                                keyValues.add(((Integer) o).shortValue());
-                                break;
-                            case Types.TINYINT:
-                                keyValues.add(((Integer) o).byteValue());
-                                break;
-                            case Types.ARRAY:
-                                Array array = (Array) o;
-                                int baseType = array.getBaseType();
-                                Object[] objectArray = (Object[]) array.getArray();
-                                keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
-                                break;
-                            default:
-                                keyValues.add(o);
-                        }
-
-                    }
-                    if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
-                        inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
-                    } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
-                        outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
-                    }
-                }
-                if (inVertexColumnName == null || outVertexColumnName == null) {
-                    throw new IllegalStateException("in or out vertex id not set!!!!");
-                }
-                Long inId = resultSet.getLong(inVertexColumnName.getSchema() + "." + inVertexColumnName.getTable());
-                Long outId = resultSet.getLong(outVertexColumnName.getSchema() + "." + outVertexColumnName.getTable());
-
-                this.inVertex = new SqlgVertex(this.sqlG, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SqlgElement.IN_VERTEX_COLUMN_END, ""));
-                this.outVertex = new SqlgVertex(this.sqlG, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, ""));
-                break;
+            if (resultSet.next()) {
+                loadResultSet(keyValues, resultSet);
             }
             return keyValues.toArray();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    void loadResultSet(List<Object> keyValues, ResultSet resultSet) throws SQLException {
+        SchemaTable inVertexColumnName = null;
+        SchemaTable outVertexColumnName = null;
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnName(i);
+            Object o = resultSet.getObject(columnName);
+            if (!columnName.equals("ID") &&
+                    !Objects.isNull(o) &&
+                    !columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END) &&
+                    !columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+
+                keyValues.add(columnName);
+
+                int type = resultSetMetaData.getColumnType(i);
+                switch (type) {
+                    case Types.SMALLINT:
+                        keyValues.add(((Integer) o).shortValue());
+                        break;
+                    case Types.TINYINT:
+                        keyValues.add(((Integer) o).byteValue());
+                        break;
+                    case Types.ARRAY:
+                        Array array = (Array) o;
+                        int baseType = array.getBaseType();
+                        Object[] objectArray = (Object[]) array.getArray();
+                        keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                        break;
+                    default:
+                        keyValues.add(o);
+                }
+
+            }
+            if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+                inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+            } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
+                outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+            }
+        }
+        if (inVertexColumnName == null || outVertexColumnName == null) {
+            throw new IllegalStateException("in or out vertex id not set!!!!");
+        }
+        Long inId = resultSet.getLong(inVertexColumnName.getSchema() + "." + inVertexColumnName.getTable());
+        Long outId = resultSet.getLong(outVertexColumnName.getSchema() + "." + outVertexColumnName.getTable());
+
+        this.inVertex = new SqlgVertex(this.sqlG, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SqlgElement.IN_VERTEX_COLUMN_END, ""));
+        this.outVertex = new SqlgVertex(this.sqlG, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, ""));
     }
 }

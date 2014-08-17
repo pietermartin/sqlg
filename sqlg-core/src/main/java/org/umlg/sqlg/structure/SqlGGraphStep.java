@@ -9,10 +9,8 @@ import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -44,7 +42,6 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             this.starts.add(new TraverserIterator(this, Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
         else
             this.starts.add(new TraverserIterator(Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
-
     }
 
     @Override
@@ -53,8 +50,24 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Edge> edges() {
-        Stream<? extends Edge> edgeStream = getEdges();
+        Stream<? extends Edge> edgeStream;
+        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(Element.LABEL) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
+            //Scenario 1, using labeled index via 2 HasContainer
+            final HasContainer hasContainer1 = this.hasContainers.get(0);
+            final HasContainer hasContainer2 = this.hasContainers.get(1);
+            this.hasContainers.remove(hasContainer1);
+            this.hasContainers.remove(hasContainer2);
+            edgeStream = getEdgesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
+        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(Element.LABEL)) {
+            //Scenario 2, using label only for search
+            final HasContainer hasContainer1 = this.hasContainers.get(0);
+            edgeStream = getEdgesUsingLabel((String) hasContainer1.value);
+            this.hasContainers.remove(hasContainer1);
+        } else {
+            edgeStream = getEdges();
+        }
         return edgeStream.filter(e -> HasContainer.testAll((Edge) e, this.hasContainers)).iterator();
+
     }
 
     private Iterator<? extends Vertex> vertices() {
@@ -93,6 +106,14 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
         return StreamFactory.stream(this._verticesUsingLabeledIndex(label, key, value));
     }
 
+    private Stream<? extends Edge> getEdgesUsingLabel(String label) {
+        return StreamFactory.stream(this._edgesUsingLabel(label));
+    }
+
+    private Stream<? extends Edge> getEdgesUsingLabeledIndex(String label, String key, Object value) {
+        return StreamFactory.stream(this._edgesUsingLabeledIndex(label, key, value));
+    }
+
     private Iterable<? extends Vertex> _verticesUsingLabel(String label) {
         Set<String> schemas;
         SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
@@ -119,7 +140,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     long id = resultSet.getLong(1);
-                    SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                    SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
                     sqlGVertexes.add(sqlGVertex);
                 }
             } catch (SQLException e) {
@@ -153,7 +174,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
                 long id = resultSet.getLong(1);
                 SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
                 //TODO properties needs to be cached
-                sqlGVertex.loadWithLoadedResultSet(new ArrayList<>(), resultSet);
+                sqlGVertex.loadResultSet(new ArrayList<>(), resultSet);
                 sqlGVertexes.add(sqlGVertex);
             }
         } catch (SQLException e) {
@@ -188,23 +209,76 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
         return sqlGVertexes;
     }
 
-    /*
-    private Iterator<? extends Vertex> __vertices() {
+    private Iterable<? extends Edge> _edgesUsingLabel(String label) {
+        Set<String> schemas;
+        SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
+        if (schemaTable.getSchema() == null) {
+            schemas = this.sqlG.getSchemaManager().getSchemasForTable(SchemaManager.EDGE_PREFIX + schemaTable.getTable());
+        } else {
+            schemas = new HashSet<>();
+            schemas.add(schemaTable.getSchema());
+        }
+        List<SqlgEdge> sqlGEdges = new ArrayList<>();
+        for (String schema : schemas) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM ");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            Connection conn = this.sqlG.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    long id = resultSet.getLong(1);
+                    SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schema, schemaTable.getTable());
+                    //TODO properties needs to be cached
+                    sqlGEdge.loadResultSet(new ArrayList<>(), resultSet);
+                    sqlGEdges.add(sqlGEdge);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return sqlGEdges;
+    }
+
+    private Iterable<? extends Edge> _edgesUsingLabeledIndex(String label, String key, Object value) {
+        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
+        List<SqlgEdge> sqlGEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+        sql.append(".");
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+        sql.append(" a WHERE a.");
+        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+        sql.append(" = ?");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         Connection conn = this.sqlG.tx().getConnection();
-        try {
-            PreparedStatement preparedStatement = conn.prepareStatement(sql.toString());
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, new Object[]{key, value});
             ResultSet resultSet = preparedStatement.executeQuery();
-            return new ResultSetIterator(this.sqlG, resultSet);
+            while (resultSet.next()) {
+                long id = resultSet.getLong(1);
+                SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                //TODO properties needs to be cached
+                sqlGEdge.loadResultSet(new ArrayList<>(), resultSet);
+                sqlGEdges.add(sqlGEdge);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        return sqlGEdges;
     }
-    */
 
     private Iterable<? extends Edge> _edges() {
         List<SqlgEdge> sqlGEdges = new ArrayList<>();

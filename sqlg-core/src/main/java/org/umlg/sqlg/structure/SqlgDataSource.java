@@ -13,12 +13,12 @@ import java.util.Map;
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
-public class SqlGDataSource {
+public class SqlgDataSource {
 
-    public static final SqlGDataSource INSTANCE = new SqlGDataSource();
+    public static final SqlgDataSource INSTANCE = new SqlgDataSource();
     private Map<String, ComboPooledDataSource> cpdss = new HashMap<>();
 
-    private SqlGDataSource() {
+    private SqlgDataSource() {
     }
 
     public final DataSource get(String jdbcUrl) {

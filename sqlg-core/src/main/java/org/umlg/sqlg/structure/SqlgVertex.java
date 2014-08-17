@@ -8,7 +8,6 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
@@ -472,7 +471,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             preparedStatement.setLong(1, this.primaryKey);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
-                loadWithLoadedResultSet(keyValues, resultSet);
+                loadResultSet(keyValues, resultSet);
             } else {
                 throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.primaryKey}));
             }
@@ -482,7 +481,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    void loadWithLoadedResultSet(List<Object> keyValues, ResultSet resultSet) throws SQLException {
+    void loadResultSet(List<Object> keyValues, ResultSet resultSet) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnName(i);

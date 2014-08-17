@@ -70,6 +70,18 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.17</version>
+                <configuration>
+                    <includes>
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+                        <include>**/HsqldbAllTest.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
@@ -94,17 +106,6 @@
                             </goals>
                         </execution>
                     </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.16</version>
-                    <configuration>
-                        <includes>
-                            <!--<include>**/HsqldbAllTest.java</include>-->
-                            <include>**/SqlGHsqldbStructureStandardTest.java</include>
-                        </includes>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -4,7 +4,7 @@ import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.structure.SqlG;
-import org.umlg.sqlg.structure.SqlGDataSource;
+import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
 import java.sql.Connection;
@@ -38,7 +38,7 @@ public class SqlGProvider extends AbstractGraphProvider {
             g.close();
         }
         try {
-            SqlGDataSource.INSTANCE.setupDataSource(
+            SqlgDataSource.INSTANCE.setupDataSource(
                     configuration.getString("jdbc.driver"),
                     configuration.getString("jdbc.url"),
                     configuration.getString("jdbc.username"),
@@ -47,7 +47,7 @@ public class SqlGProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         }
         StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS PUBLIC CASCADE;");
-        try (Connection conn = SqlGDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
+        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 preparedStatement.executeUpdate();
@@ -58,7 +58,7 @@ public class SqlGProvider extends AbstractGraphProvider {
         }
         sql = new StringBuilder("CREATE SCHEMA PUBLIC;");
         // CREATE SCHEMA PUBLIC
-        try (Connection conn = SqlGDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
+        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
             conn.setAutoCommit(false);
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 preparedStatement.executeUpdate();

@@ -73,12 +73,12 @@ public class SqlG implements Graph {
         }
         try {
             this.jdbcUrl = configuration.getString("jdbc.url");
-            SqlGDataSource.INSTANCE.setupDataSource(
+            SqlgDataSource.INSTANCE.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration.getString("jdbc.url"),
                     configuration.getString("jdbc.username"),
                     configuration.getString("jdbc.password"));
-            this.sqlDialect.prepareDB(SqlGDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection());
+            this.sqlDialect.prepareDB(SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection());
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         } catch (SQLException e) {
@@ -253,7 +253,7 @@ public class SqlG implements Graph {
         if (this.tx().isOpen())
             this.tx().close();
         this.schemaManager.close();
-        SqlGDataSource.INSTANCE.close(this.getJdbcUrl());
+        SqlgDataSource.INSTANCE.close(this.getJdbcUrl());
     }
 
     public String toString() {
@@ -552,7 +552,7 @@ public class SqlG implements Graph {
 
     public String query(String query) {
         try {
-            Connection conn = SqlGDataSource.INSTANCE.get(this.getJdbcUrl()).getConnection();
+            Connection conn = SqlgDataSource.INSTANCE.get(this.getJdbcUrl()).getConnection();
             conn.setReadOnly(true);
             ObjectNode result = this.mapper.createObjectNode();
             ArrayNode dataNode = this.mapper.createArrayNode();
@@ -613,7 +613,6 @@ public class SqlG implements Graph {
             }
         }
         this.tx().readWrite();
-
         SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
         this.getSchemaManager().createIndex(schemaTablePair, dummykeyValues);
     }

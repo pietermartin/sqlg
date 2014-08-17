@@ -5,18 +5,13 @@ import com.tinkerpop.gremlin.AbstractGremlinTest;
 import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.io.graphson.GraphSONReader;
-import com.tinkerpop.gremlin.structure.io.graphson.GraphSONWriter;
-import com.tinkerpop.gremlin.structure.strategy.GraphStrategy;
-import com.tinkerpop.gremlin.structure.util.GraphFactory;
-import com.tinkerpop.gremlin.tinkergraph.structure.TinkerFactory;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlG;
-import org.umlg.sqlg.structure.SqlGDataSource;
+import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
 import java.io.*;
-import java.net.URL;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +59,7 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         }
         try {
-            SqlGDataSource.INSTANCE.setupDataSource(
+            SqlgDataSource.INSTANCE.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration.getString("jdbc.url"),
                     configuration.getString("jdbc.username"),
@@ -72,7 +67,7 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
-        try (Connection conn = SqlGDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
+        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
             DatabaseMetaData metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
                 String catalog = null;

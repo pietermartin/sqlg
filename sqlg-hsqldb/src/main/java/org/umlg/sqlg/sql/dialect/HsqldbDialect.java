@@ -2,7 +2,6 @@ package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlGDataSource;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -310,6 +309,11 @@ public class HsqldbDialect implements SqlDialect {
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Override
+    public boolean indexNeedsName() {
+        return true;
     }
 
 

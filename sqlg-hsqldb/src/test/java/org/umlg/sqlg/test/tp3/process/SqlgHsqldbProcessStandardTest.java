@@ -13,6 +13,5 @@ import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
  */
 @RunWith(ProcessStandardSuite.class)
 @ProcessStandardSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlG.class)
-//@ProcessStandardSuite.GraphProviderClass(SqlgHsqldbProvider.class)
 public class SqlgHsqldbProcessStandardTest {
 }

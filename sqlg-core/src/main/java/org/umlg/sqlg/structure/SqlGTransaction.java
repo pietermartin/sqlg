@@ -56,7 +56,7 @@ public class SqlGTransaction implements Transaction {
             throw Transaction.Exceptions.transactionAlreadyOpen();
         else {
             try {
-                Connection connection = SqlGDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+                Connection connection = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
                 threadLocalTx.set(connection);
             } catch (SQLException e) {

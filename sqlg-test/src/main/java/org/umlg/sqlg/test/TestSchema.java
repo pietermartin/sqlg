@@ -14,14 +14,14 @@ import java.util.HashMap;
  */
 public class TestSchema extends  BaseTest {
 
-//    @Test
+    @Test
     public void testSchema() {
         this.sqlG.addVertex(Element.LABEL, "TEST_SCHEMA1.Person", "name", "John");
         this.sqlG.tx().commit();
         Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Person").count().next(), 0);
     }
 
-//    @Test
+    @Test
     public void testEdgeBetweenSchemas() {
         Vertex john = this.sqlG.addVertex(Element.LABEL, "TEST_SCHEMA1.Person", "name", "John");
         Vertex tom = this.sqlG.addVertex(Element.LABEL, "TEST_SCHEMA2.Person", "name", "Tom");
@@ -58,10 +58,9 @@ public class TestSchema extends  BaseTest {
         Vertex previous = null;
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 100; j++) {
-                final int jj = j;
-                Vertex v = this.sqlG.addVertex("Schema" + i + ".Person", new HashMap() {{put("name1", "n" + jj);put("name2", "n" + jj);}});
+                Vertex v = this.sqlG.addVertex(Element.LABEL, "Schema" + i + ".Person", "name1", "n" + j, "name2", "n" + j);
                 if (previous != null) {
-                    previous.addEdge("edge", v);
+                    previous.addEdge("edge", v, "name1", "n" + j, "name2", "n" + j);
                 }
                 previous = v;
             }
@@ -71,6 +70,10 @@ public class TestSchema extends  BaseTest {
         Assert.assertEquals(1000, this.sqlG.V().has(Element.LABEL, "Person").count().next(), 0);
         Assert.assertEquals(100, this.sqlG.V().has(Element.LABEL, "Schema5.Person").count().next(), 0);
         Assert.assertEquals(999, this.sqlG.E().count().next(), 0);
+        Assert.assertEquals(999, this.sqlG.E().has(Element.LABEL, "edge").count().next(), 0);
+        Assert.assertEquals(100, this.sqlG.E().has(Element.LABEL, "Schema0.edge").count().next(), 0);
+        Assert.assertEquals(99, this.sqlG.E().has(Element.LABEL, "Schema9.edge").count().next(), 0);
+
     }
 
 }

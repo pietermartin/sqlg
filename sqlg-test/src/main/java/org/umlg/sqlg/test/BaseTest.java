@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlG;
-import org.umlg.sqlg.structure.SqlGDataSource;
+import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -58,7 +58,7 @@ public abstract class BaseTest {
             throw new RuntimeException(e);
         }
         try {
-            SqlGDataSource.INSTANCE.setupDataSource(
+            SqlgDataSource.INSTANCE.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration.getString("jdbc.url"),
                     configuration.getString("jdbc.username"),
@@ -68,7 +68,7 @@ public abstract class BaseTest {
         }
         Connection conn;
         try {
-            conn = SqlGDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection();
+            conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection();
             DatabaseMetaData metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
                 String catalog = null;
@@ -128,7 +128,7 @@ public abstract class BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlGDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+            conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(table));

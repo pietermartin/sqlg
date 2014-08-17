@@ -251,4 +251,8 @@ public interface SqlDialect {
     public default String getPublicSchema() {
         return "public";
     }
+
+    public default boolean indexNeedsName() {
+        return false;
+    }
 }

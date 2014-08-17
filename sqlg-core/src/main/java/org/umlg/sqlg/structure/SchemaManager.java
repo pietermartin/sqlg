@@ -241,6 +241,48 @@ public class SchemaManager {
         ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyOut);
     }
 
+    /**
+     * This is only called from createIndex
+     * @param schema
+     * @param table
+     * @param keyValues
+     */
+    public void ensureEdgeTableExist(final String schema, final String table, Object... keyValues) {
+        Objects.requireNonNull(schema, "Given tables must not be null");
+        Objects.requireNonNull(table, "Given table must not be null");
+        final String prefixedTable = EDGE_PREFIX + table;
+        final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
+            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+                if (!this.uncommittedSchemas.contains(schema)) {
+                    this.uncommittedSchemas.add(schema);
+                    createSchema(schema);
+                }
+            }
+            if (!this.tables.containsKey(schema + "." + prefixedTable)) {
+                if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+                    this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+
+                    Set<String> schemas = this.uncommitedLabelSchemas.get(prefixedTable);
+                    if (schemas == null) {
+                        this.uncommitedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                    } else {
+                        schemas.add(schema);
+                        this.uncommitedLabelSchemas.put(prefixedTable, schemas);
+                    }
+
+                    createEdgeTable(schema, prefixedTable, columns);
+                }
+            }
+        }
+        //ensure columns exist
+        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
+    }
+
     void ensureColumnExist(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
         final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
         final Map<String, PropertyType> uncommitedColumns;
@@ -265,14 +307,16 @@ public class SchemaManager {
 
     private void ensureEdgeForeignKeysExist(String schema, String table, SchemaTable foreignKey) {
         Set<String> foreignKeys = this.edgeForeignKeys.get(schema + "." + table);
-        final Set<String> uncommittedForeignKeys;
+        Set<String> uncommittedForeignKeys;
         if (foreignKeys == null) {
             uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + table);
         } else {
             uncommittedForeignKeys = new HashSet<>(foreignKeys);
         }
-        Objects.requireNonNull(uncommittedForeignKeys, String.format(
-                "Table %s must already be present in the foreign key cache!", new Object[]{table}));
+        if (uncommittedForeignKeys == null) {
+            //This happens on edge indexes which creates the table with no foreign keys to vertices.
+            uncommittedForeignKeys = new HashSet<>();
+        }
         if (!uncommittedForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
@@ -474,6 +518,43 @@ public class SchemaManager {
         }
     }
 
+    private void createEdgeTable(String schema, String tableName, Map<String, PropertyType> columns) {
+        this.sqlDialect.assertTableName(tableName);
+        StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+        sql.append("(");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
+        sql.append(this.sqlDialect.getPrimaryKeyType());
+        if (columns.size() > 0) {
+            sql.append(", ");
+        }
+        int i = 1;
+        for (String column : columns.keySet()) {
+            PropertyType propertyType = columns.get(column);
+            //Columns map 1 to 1 to property keys and are case sensitive
+            sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
+            if (i++ < columns.size()) {
+                sql.append(", ");
+            }
+        }
+        sql.append(")");
+        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlG.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public void addEdgeLabelToVerticesTable(Long id, String schema, String table, boolean inDirection) {
         Set<SchemaTable> labelSet = getLabelsForVertex(id, inDirection);
         labelSet.add(SchemaTable.of(schema, table));
@@ -594,30 +675,44 @@ public class SchemaManager {
     public void createIndex(SchemaTable schemaTable, Object ... dummykeyValues) {
 
         this.ensureVertexTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
+        this.ensureEdgeTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
         this.sqlG.tx().commit();
         this.sqlG.tx().readWrite();
 
         int i = 1;
-        for (Object dummyKeyValue : dummykeyValues) {
-            if (i++ % 2 != 0) {
-                StringBuilder sql = new StringBuilder("CREATE INDEX ON ");
-                sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                sql.append(".");
-                sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
-                sql.append(" (");
-                sql.append(this.sqlDialect.maybeWrapInQoutes((String)dummyKeyValue));
-                sql.append(")");
-                if (this.sqlG.getSqlDialect().needsSemicolon()) {
-                    sql.append(";");
-                }
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sql.toString());
-                }
-                Connection conn = this.sqlG.tx().getConnection();
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute(sql.toString());
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+        String[] prefixes = new String[]{VERTEX_PREFIX, EDGE_PREFIX};
+        for (String prefix : prefixes) {
+            for (Object dummyKeyValue : dummykeyValues) {
+                if (i++ % 2 != 0) {
+                    StringBuilder sql = new StringBuilder("CREATE INDEX ");
+                    if (this.sqlDialect.indexNeedsName()) {
+                        sql.append("index_");
+                        sql.append(schemaTable.getSchema());
+                        sql.append("_");
+                        sql.append(prefix);
+                        sql.append(schemaTable.getTable());
+                        sql.append("_");
+                        sql.append((String) dummyKeyValue);
+                    }
+                    sql.append(" ON ");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
+                    sql.append(" (");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes((String) dummyKeyValue));
+                    sql.append(")");
+                    if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    Connection conn = this.sqlG.tx().getConnection();
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute(sql.toString());
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }
@@ -625,7 +720,7 @@ public class SchemaManager {
 
     void loadSchema() {
         try {
-            Connection conn = SqlGDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
             DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             String catalog = null;
@@ -647,6 +742,12 @@ public class SchemaManager {
                     PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
                     uncomitedColumns.put(column, propertyType);
                     this.tables.put(schema + "." + table, uncomitedColumns);
+                    Set<String> schemas = this.labelSchemas.get(table);
+                    if (schemas == null) {
+                        schemas = new HashSet<>();
+                        this.labelSchemas.put(table, schemas);
+                    }
+                    schemas.add(schema);
                     if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlgElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END))) {
                         foreignKeys.add(column);
                         this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
@@ -663,7 +764,7 @@ public class SchemaManager {
      */
     public void clear() {
         try {
-            Connection conn = SqlGDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
+            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
             DatabaseMetaData metadata = null;
             metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
