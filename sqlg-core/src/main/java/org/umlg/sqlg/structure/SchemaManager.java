@@ -243,6 +243,7 @@ public class SchemaManager {
 
     /**
      * This is only called from createIndex
+     *
      * @param schema
      * @param table
      * @param keyValues
@@ -606,7 +607,7 @@ public class SchemaManager {
             sql.append(";");
         }
         Connection conn = this.sqlG.tx().getConnection();
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -672,7 +673,7 @@ public class SchemaManager {
         }
     }
 
-    public void createIndex(SchemaTable schemaTable, Object ... dummykeyValues) {
+    public void createIndex(SchemaTable schemaTable, Object... dummykeyValues) {
 
         this.ensureVertexTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
         this.ensureEdgeTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
@@ -684,37 +685,41 @@ public class SchemaManager {
         for (String prefix : prefixes) {
             for (Object dummyKeyValue : dummykeyValues) {
                 if (i++ % 2 != 0) {
-                    StringBuilder sql = new StringBuilder("CREATE INDEX ");
-                    if (this.sqlDialect.indexNeedsName()) {
-                        sql.append("index_");
-                        sql.append(schemaTable.getSchema());
-                        sql.append("_");
-                        sql.append(prefix);
-                        sql.append(schemaTable.getTable());
-                        sql.append("_");
-                        sql.append((String) dummyKeyValue);
-                    }
-                    sql.append(" ON ");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                    sql.append(".");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
-                    sql.append(" (");
-                    sql.append(this.sqlDialect.maybeWrapInQoutes((String) dummyKeyValue));
-                    sql.append(")");
-                    if (this.sqlG.getSqlDialect().needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-                    Connection conn = this.sqlG.tx().getConnection();
-                    try (Statement stmt = conn.createStatement()) {
-                        stmt.execute(sql.toString());
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
+                    if (!existIndex(schemaTable, prefix, this.sqlDialect.indexName(schemaTable, prefix, (String)dummyKeyValue))) {
+                        StringBuilder sql = new StringBuilder("CREATE INDEX ");
+                        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.indexName(schemaTable, prefix, (String)dummyKeyValue)));
+                        sql.append(" ON ");
+                        sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+                        sql.append(".");
+                        sql.append(this.sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
+                        sql.append(" (");
+                        sql.append(this.sqlDialect.maybeWrapInQoutes((String) dummyKeyValue));
+                        sql.append(")");
+                        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        Connection conn = this.sqlG.tx().getConnection();
+                        try (Statement stmt = conn.createStatement()) {
+                            stmt.execute(sql.toString());
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
                 }
             }
+        }
+    }
+
+    private boolean existIndex(SchemaTable schemaTable, String prefix, String indexName) {
+        Connection conn = this.sqlG.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            ResultSet rs = stmt.executeQuery(this.sqlDialect.existIndexQuery(schemaTable, prefix, indexName));
+            return rs.next();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 

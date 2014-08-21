@@ -3,10 +3,7 @@ package org.umlg.sqlg.structure;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.map.GraphStep;
 import com.tinkerpop.gremlin.process.util.TraverserIterator;
-import com.tinkerpop.gremlin.structure.Compare;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
@@ -38,10 +35,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     public void generateTraverserIterator(boolean trackPaths) {
         this.sqlG.tx().readWrite();
         this.starts.clear();
-        if (trackPaths)
-            this.starts.add(new TraverserIterator(this, Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
-        else
-            this.starts.add(new TraverserIterator(Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
+        this.starts.add(new TraverserIterator(this, trackPaths, Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
     @Override
@@ -50,7 +44,8 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Edge> edges() {
-        Stream<? extends Edge> edgeStream;
+        Stream<? extends Edge> edgeStream
+                ;
         if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(Element.LABEL) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
@@ -59,10 +54,15 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             this.hasContainers.remove(hasContainer2);
             edgeStream = getEdgesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
         } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(Element.LABEL)) {
+            HasContainer hasContainer = this.hasContainers.get(0);
             //Scenario 2, using label only for search
-            final HasContainer hasContainer1 = this.hasContainers.get(0);
-            edgeStream = getEdgesUsingLabel((String) hasContainer1.value);
-            this.hasContainers.remove(hasContainer1);
+            if (hasContainer.predicate == Contains.IN || hasContainer.predicate == Contains.NOT_IN) {
+                final List<String> labels = (List<String>) hasContainer.value;
+                edgeStream = getEdgesUsingLabel(labels.toArray(new String[labels.size()]));
+            } else {
+                edgeStream = getEdgesUsingLabel((String) hasContainer.value);
+            }
+            this.hasContainers.remove(hasContainer);
         } else {
             edgeStream = getEdges();
         }
@@ -81,9 +81,14 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             vertexStream = getVerticesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
         } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(Element.LABEL)) {
             //Scenario 2, using label only for search
-            final HasContainer hasContainer1 = this.hasContainers.get(0);
-            vertexStream = getVerticesUsingLabel((String) hasContainer1.value);
-            this.hasContainers.remove(hasContainer1);
+            HasContainer hasContainer = this.hasContainers.get(0);
+            if (hasContainer.predicate == Contains.IN || hasContainer.predicate == Contains.NOT_IN) {
+                final List<String> labels = (List<String>) hasContainer.value;
+                vertexStream = getVerticesUsingLabel(labels.toArray(new String[labels.size()]));
+            } else {
+                vertexStream = getVerticesUsingLabel((String) hasContainer.value);
+            }
+            this.hasContainers.remove(hasContainer);
         } else {
             vertexStream = getVertices();
         }
@@ -98,16 +103,24 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
         return StreamFactory.stream(this._edges());
     }
 
-    private Stream<? extends Vertex> getVerticesUsingLabel(String label) {
-        return StreamFactory.stream(this._verticesUsingLabel(label));
+    private Stream<? extends Vertex> getVerticesUsingLabel(String ... labels) {
+        Stream<? extends Vertex> vertices = Stream.empty();
+        for (String label : labels) {
+            vertices = Stream.concat(vertices, StreamFactory.stream(this._verticesUsingLabel(label)));
+        }
+        return vertices;
     }
 
     private Stream<? extends Vertex> getVerticesUsingLabeledIndex(String label, String key, Object value) {
         return StreamFactory.stream(this._verticesUsingLabeledIndex(label, key, value));
     }
 
-    private Stream<? extends Edge> getEdgesUsingLabel(String label) {
-        return StreamFactory.stream(this._edgesUsingLabel(label));
+    private Stream<? extends Edge> getEdgesUsingLabel(String ... labels) {
+        Stream<? extends Edge> edges = Stream.empty();
+        for (String label : labels) {
+            edges = Stream.concat(edges, StreamFactory.stream(this._edgesUsingLabel(label)));
+        }
+        return edges;
     }
 
     private Stream<? extends Edge> getEdgesUsingLabeledIndex(String label, String key, Object value) {
@@ -124,27 +137,30 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             schemas.add(schemaTable.getSchema());
         }
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
-        for (String schema : schemas) {
-            StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schema));
-            sql.append(".");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            Connection conn = this.sqlG.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    long id = resultSet.getLong(1);
-                    SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
-                    sqlGVertexes.add(sqlGVertex);
+        //Schemas are null when has('label') seearches for a label that does not exist yet.
+        if (schemas != null) {
+            for (String schema : schemas) {
+                StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schema));
+                sql.append(".");
+                sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
                 }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                Connection conn = this.sqlG.tx().getConnection();
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    while (resultSet.next()) {
+                        long id = resultSet.getLong(1);
+                        SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
+                        sqlGVertexes.add(sqlGVertex);
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
         return sqlGVertexes;

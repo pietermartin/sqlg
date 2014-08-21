@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.map.StartStep;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
@@ -134,7 +134,7 @@ public class SqlG implements Graph {
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.strategies().register(SqlgHasStepStrategy.instance());
         traversal.addStep(new SqlGGraphStep(traversal, Vertex.class, this));
-        traversal.memory().set(Key.hide("g"), this);
+        traversal.sideEffects().setGraph(this);
         return traversal;
     }
 
@@ -145,7 +145,7 @@ public class SqlG implements Graph {
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.strategies().register(SqlgHasStepStrategy.instance());
         traversal.addStep(new SqlGGraphStep(traversal, Edge.class, this));
-        traversal.memory().set(Key.hide("g"), this);
+        traversal.sideEffects().setGraph(this);
         return traversal;
     }
 
@@ -153,9 +153,9 @@ public class SqlG implements Graph {
     @Override
     public <S> GraphTraversal<S, S> of() {
         final GraphTraversal<S, S> traversal = new DefaultGraphTraversal<>();
-        traversal.memory().set(Graph.Key.hide("g"), this);
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.addStep(new StartStep<>(traversal));
+        traversal.sideEffects().setGraph(this);
         return traversal;
     }
 
@@ -260,8 +260,7 @@ public class SqlG implements Graph {
         return StringFactory.graphString(this, "SqlGraph");
     }
 
-    @Override
-    public Features getFeatures() {
+    public Features features() {
         return new SqlGFeatures();
     }
 

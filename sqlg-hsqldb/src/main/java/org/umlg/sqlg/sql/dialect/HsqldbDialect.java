@@ -2,6 +2,7 @@ package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -25,6 +26,19 @@ public class HsqldbDialect implements SqlDialect {
     @Override
     public String getPublicSchema() {
         return "PUBLIC";
+    }
+
+    @Override
+    public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
+        StringBuilder sb = new StringBuilder("SELECT * FROM INFORMATION_SCHEMA.SYSTEM_INDEXINFO WHERE TABLE_SCHEM = '");
+        sb.append(schemaTable.getSchema());
+        sb.append("' AND  TABLE_NAME = '");
+        sb.append(prefix);
+        sb.append(schemaTable.getTable());
+        sb.append("' AND INDEX_NAME = '");
+        sb.append(indexName);
+        sb.append("'");
+        return sb.toString();
     }
 
     @Override
@@ -310,11 +324,5 @@ public class HsqldbDialect implements SqlDialect {
         }
 
     }
-
-    @Override
-    public boolean indexNeedsName() {
-        return true;
-    }
-
 
 }
