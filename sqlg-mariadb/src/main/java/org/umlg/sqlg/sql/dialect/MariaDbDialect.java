@@ -4,6 +4,9 @@ import com.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.PropertyType;
 
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Date: 2014/07/16
@@ -12,8 +15,32 @@ import java.sql.Types;
 public class MariaDbDialect implements SqlDialect {
 
     @Override
+    public Set<String> getDefaultSchemas() {
+        return new HashSet<>(Arrays.asList("information_schema", "performance_schema", "mysql"));
+    }
+
+    @Override
     public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
-        return null;
+        switch (sqlType) {
+            case Types.BOOLEAN:
+                return PropertyType.BOOLEAN;
+            case Types.SMALLINT:
+                return PropertyType.SHORT;
+            case Types.INTEGER:
+                return PropertyType.INTEGER;
+            case Types.BIGINT:
+                return PropertyType.LONG;
+            case Types.REAL:
+                return PropertyType.FLOAT;
+            case Types.DOUBLE:
+                return PropertyType.DOUBLE;
+            case Types.VARCHAR:
+                return PropertyType.STRING;
+            case Types.VARBINARY:
+                return PropertyType.BYTE_ARRAY;
+            default:
+                throw new IllegalStateException("Unknown sqlType " + sqlType);
+        }
     }
 
     @Override
@@ -161,6 +188,11 @@ public class MariaDbDialect implements SqlDialect {
     @Override
     public boolean supportsStringArrayValues() {
         return false;
+    }
+
+    @Override
+    public String getArrayDriverType(PropertyType booleanArray) {
+        return null;
     }
 
 }

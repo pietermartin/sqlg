@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.tp3;
 import com.tinkerpop.gremlin.process.ProcessComputerSuite;
 import org.junit.Ignore;
 import org.junit.runner.RunWith;
+import org.umlg.sqlg.structure.SqlG;
 
 
 /**
@@ -12,6 +13,6 @@ import org.junit.runner.RunWith;
  */
 @RunWith(ProcessComputerSuite.class)
 @Ignore
-@ProcessComputerSuite.GraphProviderClass(SqlGMariaDBProvider.class)
+@ProcessComputerSuite.GraphProviderClass(provider = SqlGMariaDBProvider.class, graph = SqlG.class)
 public class SqlGMariaDBProcessComputerTest {
 }

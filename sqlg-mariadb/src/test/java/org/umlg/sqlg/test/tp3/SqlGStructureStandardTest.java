@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.tp3;
 
 import com.tinkerpop.gremlin.structure.StructureStandardSuite;
 import org.junit.runner.RunWith;
+import org.umlg.sqlg.structure.SqlG;
 
 
 /**
@@ -10,6 +11,6 @@ import org.junit.runner.RunWith;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @RunWith(StructureStandardSuite.class)
-@StructureStandardSuite.GraphProviderClass(SqlGMariaDBProvider.class)
+@StructureStandardSuite.GraphProviderClass(provider = SqlGMariaDBProvider.class, graph = SqlG.class)
 public class SqlGStructureStandardTest {
 }

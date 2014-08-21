@@ -115,7 +115,7 @@
         <module>sqlg-test</module>
         <module>sqlg-hsqldb</module>
         <module>sqlg-postgres</module>
-        <!--<module>sqlg-mariadb</module>-->
+        <module>sqlg-mariadb</module>
     </modules>
     <dependencyManagement>
         <dependencies>
