@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.lang3.StringUtils;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
 
 import java.sql.Types;
 import java.util.Arrays;
@@ -71,6 +72,17 @@ public class PostgresDialect implements SqlDialect {
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
         }
+    }
+
+    @Override
+    public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
+        StringBuilder sb = new StringBuilder("SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace");
+        sb.append(" WHERE  c.relname = '");
+        sb.append(indexName);
+        sb.append("' AND n.nspname = '");
+        sb.append(schemaTable.getSchema());
+        sb.append("'");
+        return sb.toString();
     }
 
     @Override

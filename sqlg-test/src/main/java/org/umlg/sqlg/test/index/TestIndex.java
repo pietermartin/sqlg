@@ -42,6 +42,28 @@ public class TestIndex extends BaseTest {
     }
 
     @Test
+    public void testIndexOnVertex1() throws SQLException {
+        this.sqlG.createLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
+        this.sqlG.tx().commit();
+        for (int i = 0; i < 5000; i++) {
+            this.sqlG.addVertex(Element.LABEL, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
+        }
+        this.sqlG.tx().commit();
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Person").has("name1", "john50").count().next(), 0);
+        Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+        Statement statement = conn.createStatement();
+        if (this.sqlG.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
+            ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
+            Assert.assertTrue(rs.next());
+            String result = rs.getString(1);
+            System.out.println(result);
+            Assert.assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            statement.close();
+            conn.close();
+        }
+    }
+
+    @Test
     public void testIndexOnEdge() throws SQLException {
         this.sqlG.createLabeledIndex("Schema0.edge", "name1", "dummy", "name2", "dummy", "name3", "dummy");
         this.sqlG.tx().commit();
@@ -69,6 +91,15 @@ public class TestIndex extends BaseTest {
             statement.close();
             conn.close();
         }
+    }
+
+    @Test
+    public void testIndexExist() {
+        this.sqlG.createLabeledIndex("Person", "name", "a");
+        this.sqlG.tx().commit();
+        this.sqlG.createLabeledIndex("Person", "name", "a");
+        this.sqlG.createLabeledIndex("Person", "name", "a");
+        this.sqlG.tx().commit();
     }
 
 }

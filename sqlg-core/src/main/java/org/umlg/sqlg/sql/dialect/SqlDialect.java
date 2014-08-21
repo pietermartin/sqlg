@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
 
 import java.sql.Array;
 import java.sql.Connection;
@@ -252,7 +253,17 @@ public interface SqlDialect {
         return "public";
     }
 
-    public default boolean indexNeedsName() {
-        return false;
+    public default String indexName(SchemaTable schemaTable, String prefix, String column) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(schemaTable.getSchema());
+        sb.append("_");
+        sb.append(prefix);
+        sb.append(schemaTable.getTable());
+        sb.append("_");
+        sb.append(column);
+        sb.append("Idx");
+        return sb.toString();
     }
+
+    String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName);
 }

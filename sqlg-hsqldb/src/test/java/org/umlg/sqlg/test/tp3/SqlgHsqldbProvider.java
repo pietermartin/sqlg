@@ -23,7 +23,7 @@ import java.util.Map;
 public class SqlgHsqldbProvider extends AbstractGraphProvider {
 
     @Override
-    public Map<String, Object> getBaseConfiguration(final String graphName) {
+    public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlG.class.getName());
             put("sql.dialect", "org.umlg.sqlg.sql.dialect.HsqldbDialect");
@@ -34,20 +34,9 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
     }
 
     @Override
-    public void loadGraphData(final Graph g, final LoadGraphWith loadGraphWith) {
-        try {
-            final InputStream is = AbstractGremlinTest.class.getResourceAsStream(loadGraphWith.value().location().replace("kryo", "graphson").replace(".gio", ".json"));
-            GraphSONReader.build().create().readGraph(is, g);
-            is.close();
-        } catch (IOException ioe) {
-            throw new RuntimeException("Graph could not be loaded with data for test.");
-        }
-    }
-
-    @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (null != g) {
-            if (g.getFeatures().graph().supportsTransactions())
+            if (g.features().graph().supportsTransactions())
                 g.tx().rollback();
             g.close();
         }
