@@ -15,6 +15,7 @@ import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.sql.*;
 
@@ -53,7 +54,8 @@ public abstract class BaseTest {
         SqlDialect sqlDialect;
         try {
             Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
-            sqlDialect = (SqlDialect) sqlDialectClass.newInstance();
+            Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
+            sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -106,6 +108,21 @@ public abstract class BaseTest {
                         }
                     }
                 }
+            } else if (!sqlDialect.supportSchemas()) {
+                ResultSet result = metadata.getCatalogs();
+                while (result.next()) {
+                    StringBuilder sql = new StringBuilder("DROP DATABASE ");
+                    String database = result.getString(1);
+                    if (!sqlDialect.getDefaultSchemas().contains(database)) {
+                        sql.append(sqlDialect.maybeWrapInQoutes(database));
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
+                    }
+                }
             } else {
                 conn.setAutoCommit(false);
                 JDBC.dropSchema(metadata, "APP");
@@ -131,7 +148,9 @@ public abstract class BaseTest {
             conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(table));
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+            sql.append(".");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(table));
             if (this.sqlG.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }

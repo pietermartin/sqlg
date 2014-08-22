@@ -16,6 +16,7 @@ class TestQuery extends BaseTest {
     @Test
     public void testQuery() {
         Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
+        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsStringArrayValues());
         String[] arrStr = ['Ananas', 'Banana', 'Kiwi']
         this.sqlG.addVertex("Person", [name: "Pieter", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
                 nameArray: arrStr]);

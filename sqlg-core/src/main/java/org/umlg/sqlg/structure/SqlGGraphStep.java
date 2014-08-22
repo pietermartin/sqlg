@@ -202,7 +202,9 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     private Iterable<? extends Vertex> _vertices() {
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(".");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
@@ -299,7 +301,9 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     private Iterable<? extends Edge> _edges() {
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(".");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }

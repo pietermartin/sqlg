@@ -144,9 +144,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             edges.next().remove();
         }
         StringBuilder sql = new StringBuilder("DELETE FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(".");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -218,6 +220,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     private long insertGlobalVertex() {
         long vertexId;
         StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(".");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" (");
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("VERTEX_SCHEMA"));

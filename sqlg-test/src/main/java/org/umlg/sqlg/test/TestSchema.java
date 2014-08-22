@@ -73,7 +73,6 @@ public class TestSchema extends  BaseTest {
         Assert.assertEquals(999, this.sqlG.E().has(Element.LABEL, "edge").count().next(), 0);
         Assert.assertEquals(100, this.sqlG.E().has(Element.LABEL, "Schema0.edge").count().next(), 0);
         Assert.assertEquals(99, this.sqlG.E().has(Element.LABEL, "Schema9.edge").count().next(), 0);
-
     }
 
 }

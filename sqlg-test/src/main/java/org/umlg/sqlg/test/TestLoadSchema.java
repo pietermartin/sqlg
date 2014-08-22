@@ -46,6 +46,27 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
+    public void testLoadMultipleSchemas() throws Exception {
+        this.sqlG.addVertex(Element.LABEL, "Test1.Person", "aBoolean", true, "aShort", (short) 1,
+                "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
+        this.sqlG.addVertex(Element.LABEL, "Test2.Person", "aBoolean", true, "aShort", (short) 1,
+                "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
+        this.sqlG.tx().commit();
+        this.sqlG.close();
+        this.sqlG = SqlG.open(configuration);
+        this.sqlG.addVertex(Element.LABEL, "Test1.Product", "aBoolean", true, "aShort", (short) 1,
+                "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
+        this.sqlG.addVertex(Element.LABEL, "Test2.Product", "aBoolean", true, "aShort", (short) 1,
+                "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
+        this.sqlG.tx().commit();
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Test1.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Test2.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Test1.Product").count().next(), 0);
+        Assert.assertEquals(1, this.sqlG.V().has(Element.LABEL, "Test2.Product").count().next(), 0);
+
+    }
+
+    @Test
     public void loadForeignKeys() throws Exception {
         Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");

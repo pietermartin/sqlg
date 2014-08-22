@@ -19,12 +19,12 @@ import java.util.Map;
 public class SqlGMariaDBProvider extends AbstractGraphProvider {
 
     @Override
-    public Map<String, Object> getBaseConfiguration(final String graphName) {
+    public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlG.class.getName());
             put("sql.dialect", "org.umlg.sqlg.sql.dialect.MariaDBDialect");
             put("jdbc.url", "jdbc:mysql://localhost:3306/" + graphName);
-            put("jdbc.username", "test");
+            put("jdbc.username", "sqlg");
             put("jdbc.password", "password");
         }};
     }
@@ -32,7 +32,7 @@ public class SqlGMariaDBProvider extends AbstractGraphProvider {
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (null != g) {
-            if (g.getFeatures().graph().supportsTransactions())
+            if (g.features().graph().supportsTransactions())
                 g.tx().rollback();
             g.close();
         }

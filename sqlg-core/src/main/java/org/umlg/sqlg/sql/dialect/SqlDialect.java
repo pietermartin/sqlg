@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 
@@ -13,6 +14,10 @@ import java.sql.Types;
 import java.util.Set;
 
 public interface SqlDialect {
+
+    public void setConfiguration(Configuration configuration);
+
+    public Configuration getConfiguration();
 
     Set<String> getDefaultSchemas();
 
@@ -266,4 +271,9 @@ public interface SqlDialect {
     }
 
     String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName);
+
+    //This is needed for mariadb, which does not support schemas, so need to drop the database instead
+    public default boolean supportSchemas() {
+        return true;
+    }
 }

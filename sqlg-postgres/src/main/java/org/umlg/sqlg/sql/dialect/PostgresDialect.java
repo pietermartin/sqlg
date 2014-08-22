@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -14,7 +15,11 @@ import java.util.Set;
  * Date: 2014/07/16
  * Time: 1:42 PM
  */
-public class PostgresDialect implements SqlDialect {
+public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
+
+    public PostgresDialect(Configuration configurator) {
+        super(configurator);
+    }
 
     @Override
     public Set<String> getDefaultSchemas() {

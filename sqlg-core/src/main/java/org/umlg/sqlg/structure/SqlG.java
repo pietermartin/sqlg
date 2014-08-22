@@ -14,6 +14,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
+import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
@@ -21,6 +22,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 
 import java.beans.PropertyVetoException;
+import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.Map;
 
@@ -67,7 +69,8 @@ public class SqlG implements Graph {
     private SqlG(final Configuration configuration) {
         try {
             Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
-            this.sqlDialect = (SqlDialect) sqlDialectClass.newInstance();
+            Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
+            this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -88,6 +91,10 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect);
         this.schemaManager.loadSchema();
+        if (!this.sqlDialect.supportSchemas() && !this.schemaManager.existSchema(this.sqlDialect.getPublicSchema())) {
+            //This is for mariadb. Need to make sure a db called public exist
+            this.schemaManager.createSchema(this.sqlDialect.getPublicSchema());
+        }
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
@@ -166,6 +173,8 @@ public class SqlG implements Graph {
 
         SqlgVertex sqlGVertex = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
+        sql.append(".");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
@@ -202,7 +211,9 @@ public class SqlG implements Graph {
 
         SqlgEdge sqlGEdge = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
+        sql.append(".");
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" WHERE ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
@@ -620,6 +631,8 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         Connection conn = this.tx().getConnection();
         StringBuilder sql = new StringBuilder("select count(1) from ");
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(this.getSqlDialect().getPublicSchema()));
+        sql.append(".");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
         if(logger.isDebugEnabled()) {
             logger.debug(sql.toString());
@@ -637,6 +650,8 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         Connection conn = this.tx().getConnection();
         StringBuilder sql = new StringBuilder("select count(1) from ");
+        sql.append(this.getSqlDialect().maybeWrapInQoutes(this.getSqlDialect().getPublicSchema()));
+        sql.append(".");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         if(logger.isDebugEnabled()) {
             logger.debug(sql.toString());

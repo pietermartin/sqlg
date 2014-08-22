@@ -171,6 +171,10 @@ public class SchemaManager {
         columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
     }
 
+    boolean existSchema(String schema) {
+        return this.schemas.contains(schema);
+    }
+
     public void createSchema(String schema) {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE SCHEMA ");
@@ -341,6 +345,8 @@ public class SchemaManager {
 
     private void createVerticesTable() throws SQLException {
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
+        sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -377,6 +383,8 @@ public class SchemaManager {
 
     private void createEdgesTable() throws SQLException {
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
+        sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -560,6 +568,8 @@ public class SchemaManager {
         Set<SchemaTable> labelSet = getLabelsForVertex(id, inDirection);
         labelSet.add(SchemaTable.of(schema, table));
         StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
+        sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" SET ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
@@ -599,6 +609,8 @@ public class SchemaManager {
         StringBuilder sql = new StringBuilder("SELECT ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
         sql.append(" FROM ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
+        sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
         sql.append(" WHERE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -685,9 +697,9 @@ public class SchemaManager {
         for (String prefix : prefixes) {
             for (Object dummyKeyValue : dummykeyValues) {
                 if (i++ % 2 != 0) {
-                    if (!existIndex(schemaTable, prefix, this.sqlDialect.indexName(schemaTable, prefix, (String)dummyKeyValue))) {
+                    if (!existIndex(schemaTable, prefix, this.sqlDialect.indexName(schemaTable, prefix, (String) dummyKeyValue))) {
                         StringBuilder sql = new StringBuilder("CREATE INDEX ");
-                        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.indexName(schemaTable, prefix, (String)dummyKeyValue)));
+                        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.indexName(schemaTable, prefix, (String) dummyKeyValue)));
                         sql.append(" ON ");
                         sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
                         sql.append(".");
@@ -716,7 +728,8 @@ public class SchemaManager {
     private boolean existIndex(SchemaTable schemaTable, String prefix, String indexName) {
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
-            ResultSet rs = stmt.executeQuery(this.sqlDialect.existIndexQuery(schemaTable, prefix, indexName));
+            String sql = this.sqlDialect.existIndexQuery(schemaTable, prefix, indexName);
+            ResultSet rs = stmt.executeQuery(sql);
             return rs.next();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -728,34 +741,74 @@ public class SchemaManager {
             Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
             DatabaseMetaData metadata;
             metadata = conn.getMetaData();
-            String catalog = null;
-            String schemaPattern = null;
-            String tableNamePattern = null;
-            String[] types = new String[]{"TABLE"};
-            ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-            while (tablesRs.next()) {
-                String table = tablesRs.getString(3);
-                final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
-                final Set<String> foreignKeys = new HashSet<>();
-                //get the columns
-                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
-                while (columnsRs.next()) {
-                    String schema = columnsRs.getString(2);
-                    String column = columnsRs.getString(4);
-                    int columnType = columnsRs.getInt(5);
-                    String typeName = columnsRs.getString("TYPE_NAME");
-                    PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                    uncomitedColumns.put(column, propertyType);
-                    this.tables.put(schema + "." + table, uncomitedColumns);
-                    Set<String> schemas = this.labelSchemas.get(table);
-                    if (schemas == null) {
-                        schemas = new HashSet<>();
-                        this.labelSchemas.put(table, schemas);
+            if (this.sqlDialect.supportSchemas()) {
+                String catalog = null;
+                String schemaPattern = null;
+                String tableNamePattern = null;
+                String[] types = new String[]{"TABLE"};
+                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (tablesRs.next()) {
+                    String table = tablesRs.getString(3);
+                    final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
+                    final Set<String> foreignKeys = new HashSet<>();
+                    //get the columns
+                    ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                    while (columnsRs.next()) {
+                        String schema = columnsRs.getString(2);
+                        this.schemas.add(schema);
+                        String column = columnsRs.getString(4);
+                        int columnType = columnsRs.getInt(5);
+                        String typeName = columnsRs.getString("TYPE_NAME");
+                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                        uncomitedColumns.put(column, propertyType);
+                        this.tables.put(schema + "." + table, uncomitedColumns);
+                        Set<String> schemas = this.labelSchemas.get(table);
+                        if (schemas == null) {
+                            schemas = new HashSet<>();
+                            this.labelSchemas.put(table, schemas);
+                        }
+                        schemas.add(schema);
+                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlgElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END))) {
+                            foreignKeys.add(column);
+                            this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
+                        }
                     }
-                    schemas.add(schema);
-                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlgElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END))) {
-                        foreignKeys.add(column);
-                        this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
+                }
+            } else {
+                //mariadb
+                String catalog = null;
+                String schemaPattern = null;
+                String tableNamePattern = null;
+                String[] types = new String[]{"TABLE"};
+                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (tablesRs.next()) {
+                    String db = tablesRs.getString(1);
+                    if (!sqlDialect.getDefaultSchemas().contains(db)) {
+                        String table = tablesRs.getString(3);
+                        final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
+                        final Set<String> foreignKeys = new HashSet<>();
+                        //get the columns
+                        ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                        while (columnsRs.next()) {
+                            String schema = columnsRs.getString(1);
+                            this.schemas.add(schema);
+                            String column = columnsRs.getString(4);
+                            int columnType = columnsRs.getInt(5);
+                            String typeName = columnsRs.getString("TYPE_NAME");
+                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                            uncomitedColumns.put(column, propertyType);
+                            this.tables.put(schema + "." + table, uncomitedColumns);
+                            Set<String> schemas = this.labelSchemas.get(table);
+                            if (schemas == null) {
+                                schemas = new HashSet<>();
+                                this.labelSchemas.put(table, schemas);
+                            }
+                            schemas.add(schema);
+                            if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlgElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END))) {
+                                foreignKeys.add(column);
+                                this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
+                            }
+                        }
                     }
                 }
             }

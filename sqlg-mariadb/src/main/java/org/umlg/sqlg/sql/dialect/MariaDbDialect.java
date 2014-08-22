@@ -1,7 +1,9 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
+import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
 
 import java.sql.Types;
 import java.util.Arrays;
@@ -12,35 +14,35 @@ import java.util.Set;
  * Date: 2014/07/16
  * Time: 1:42 PM
  */
-public class MariaDbDialect implements SqlDialect {
+public class MariaDbDialect extends BaseSqlDialect implements SqlDialect {
+
+    public MariaDbDialect(Configuration configurator) {
+        super(configurator);
+    }
+
+    /**
+     * MariaDb does not support schemas.
+     * The public schema in this case will be equivalent to the database name
+     * @return
+     */
+    @Override
+    public String getPublicSchema() {
+        return this.configurator.getString("mariadb.db");
+    }
+
+    @Override
+    public boolean supportsCascade() {
+        return false;
+    }
+
+    @Override
+    public boolean supportSchemas() {
+        return false;
+    }
 
     @Override
     public Set<String> getDefaultSchemas() {
         return new HashSet<>(Arrays.asList("information_schema", "performance_schema", "mysql"));
-    }
-
-    @Override
-    public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
-        switch (sqlType) {
-            case Types.BOOLEAN:
-                return PropertyType.BOOLEAN;
-            case Types.SMALLINT:
-                return PropertyType.SHORT;
-            case Types.INTEGER:
-                return PropertyType.INTEGER;
-            case Types.BIGINT:
-                return PropertyType.LONG;
-            case Types.REAL:
-                return PropertyType.FLOAT;
-            case Types.DOUBLE:
-                return PropertyType.DOUBLE;
-            case Types.VARCHAR:
-                return PropertyType.STRING;
-            case Types.VARBINARY:
-                return PropertyType.BYTE_ARRAY;
-            default:
-                throw new IllegalStateException("Unknown sqlType " + sqlType);
-        }
     }
 
     @Override
@@ -77,9 +79,11 @@ public class MariaDbDialect implements SqlDialect {
         if (value instanceof Double) {
             return;
         }
+        if (value instanceof byte[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
-
 
     @Override
     public String getColumnEscapeKey() {
@@ -116,6 +120,8 @@ public class MariaDbDialect implements SqlDialect {
                 return "DOUBLE PRECISION";
             case STRING:
                 return "TEXT";
+            case BYTE_ARRAY:
+                return "LONGBLOB";
             default:
                 throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(propertyType);
         }
@@ -140,18 +146,55 @@ public class MariaDbDialect implements SqlDialect {
                 return Types.DOUBLE;
             case STRING:
                 return Types.CLOB;
+            case BYTE_ARRAY:
+                return Types.LONGVARBINARY;
             default:
                 throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(propertyType);
         }
     }
 
     @Override
+    public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
+        switch (sqlType) {
+            case Types.BIT:
+                return PropertyType.BOOLEAN;
+            case Types.BOOLEAN:
+                return PropertyType.BOOLEAN;
+            case Types.SMALLINT:
+                return PropertyType.SHORT;
+            case Types.INTEGER:
+                return PropertyType.INTEGER;
+            case Types.BIGINT:
+                return PropertyType.LONG;
+            case Types.REAL:
+                return PropertyType.FLOAT;
+            case Types.DOUBLE:
+                return PropertyType.DOUBLE;
+            case Types.LONGVARCHAR:
+                return PropertyType.STRING;
+            case Types.VARCHAR:
+                return PropertyType.STRING;
+            case Types.VARBINARY:
+                return PropertyType.BYTE_ARRAY;
+            case Types.LONGVARBINARY:
+                return PropertyType.BYTE_ARRAY;
+            default:
+                throw new IllegalStateException("Unknown sqlType " + sqlType);
+        }
+    }
+
+    @Override
     public String getForeignKeyTypeDefinition() {
-        return "BIGINT NOT NULL";
+        return "BIGINT";
     }
 
     @Override
     public boolean supportsTransactionalSchema() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsShortArrayValues() {
         return false;
     }
 
@@ -193,6 +236,19 @@ public class MariaDbDialect implements SqlDialect {
     @Override
     public String getArrayDriverType(PropertyType booleanArray) {
         return null;
+    }
+
+    @Override
+    public String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName) {
+        StringBuilder sb = new StringBuilder("SHOW INDEX FROM ");
+        sb.append(schemaTable.getSchema());
+        sb.append(".");
+        sb.append(prefix);
+        sb.append(schemaTable.getTable());
+        sb.append(" WHERE Key_name = '");
+        sb.append(indexName);
+        sb.append("';");
+        return sb.toString();
     }
 
 }
