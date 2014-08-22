@@ -1,6 +1,8 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -13,6 +15,30 @@ import java.util.concurrent.ConcurrentHashMap;
  * Time: 3:13 PM
  */
 public class SqlgUtil {
+
+    public static Map<String, Object> toMap(Object ... keyValues) {
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if (ElementHelper.getIdValue(keyValues).isPresent())
+            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+
+        int i = 0;
+        String key = "";
+        Object value;
+        Map<String, Object> result = new HashMap<>();
+        for (Object keyValue : keyValues) {
+            if (i++ % 2 == 0) {
+                key = (String) keyValue;
+            } else {
+                value = keyValue;
+                if (!key.equals(Element.LABEL)) {
+                    ElementHelper.validateProperty(key, value);
+                }
+                result.put(key, value);
+
+            }
+        }
+        return result;
+    }
 
     public static SchemaTable parseLabel(final String label, String defaultSchema) {
         Objects.requireNonNull(label, "label may not be null!");
