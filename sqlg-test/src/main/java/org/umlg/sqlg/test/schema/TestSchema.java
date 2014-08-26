@@ -1,10 +1,11 @@
-package org.umlg.sqlg.test;
+package org.umlg.sqlg.test.schema;
 
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashMap;
 
@@ -12,7 +13,7 @@ import java.util.HashMap;
  * Date: 2014/08/13
  * Time: 10:49 AM
  */
-public class TestSchema extends  BaseTest {
+public class TestSchema extends BaseTest {
 
     @Test
     public void testSchema() {

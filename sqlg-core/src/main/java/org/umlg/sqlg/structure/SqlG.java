@@ -294,10 +294,6 @@ public class SqlG implements Graph {
                     return false;
                 }
 
-                @Override
-                public boolean supportsFullyIsolatedTransactions() {
-                    return false;
-                }
             };
         }
 
@@ -363,6 +359,11 @@ public class SqlG implements Graph {
             }
 
             @Override
+            public boolean supportsByteValues() {
+                return false;
+            }
+
+            @Override
             public boolean supportsFloatValues() {
                 return SqlG.this.getSchemaManager().getSqlDialect().supportsFloatValues();
             }
@@ -422,6 +423,11 @@ public class SqlG implements Graph {
 
             @Override
             public boolean supportsUniformListValues() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsByteValues() {
                 return false;
             }
 
