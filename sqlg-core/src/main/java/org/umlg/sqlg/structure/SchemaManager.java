@@ -286,11 +286,17 @@ public class SchemaManager {
 
     void ensureColumnExist(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
         final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
-        final Map<String, PropertyType> uncommitedColumns;
+        Map<String, PropertyType> uncommitedColumns;
         if (cachedColumns == null) {
             uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
         } else {
-            uncommitedColumns = cachedColumns;
+            //TODO rethink synchromization
+            uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
+            if (uncommitedColumns != null) {
+                uncommitedColumns.putAll(cachedColumns);
+            } else {
+                uncommitedColumns = new HashMap<>(cachedColumns);
+            }
         }
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
         if (!uncommitedColumns.containsKey(keyValue.left)) {

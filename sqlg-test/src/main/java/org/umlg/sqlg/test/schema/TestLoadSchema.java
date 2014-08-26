@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test;
+package org.umlg.sqlg.test.schema;
 
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Iterator;
 
@@ -15,6 +16,20 @@ import java.util.Iterator;
  * Time: 3:27 PM
  */
 public class TestLoadSchema extends BaseTest {
+
+    @Test
+    public void testLoadPropertyColumnNames() throws Exception {
+        this.sqlG.addVertex(Element.LABEL, "Person", "name", "a");
+        this.sqlG.tx().commit();
+        this.sqlG.close();
+        this.sqlG = SqlG.open(configuration);
+        Vertex v = this.sqlG.V().next();
+        v.property("surname", "b");
+        this.sqlG.tx().rollback();
+        v = this.sqlG.V().next();
+        v.property("surname", "b");
+        this.sqlG.tx().commit();
+    }
 
     @Test
     public void testLoadSchemaWithByteArray() throws Exception {
