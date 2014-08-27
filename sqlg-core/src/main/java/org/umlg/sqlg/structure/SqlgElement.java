@@ -14,7 +14,10 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -83,9 +86,16 @@ public abstract class SqlgElement implements Element {
         }
     }
 
+    /**
+     * @return All non hidden keys
+     */
     //TODO caching???
     @Override
     public Map<String, Property> properties() {
+        return internalGetProperties(false);
+    }
+
+    private Map<String, Property> internalGetProperties(boolean hidden) {
         this.sqlG.tx().readWrite();
         Object[] keyValues = load();
         Map<String, Property> properties = new HashMap<>();
@@ -98,7 +108,13 @@ public abstract class SqlgElement implements Element {
             } else {
                 value = o;
                 if (!key.equals("ID") && value != null) {
-                    properties.put(key, new SqlProperty<>(this.sqlG, this, key, value));
+                    if (hidden && Graph.Key.isHidden(key)) {
+                        properties.put(Graph.Key.unHide(key), new SqlProperty<>(this.sqlG, this, Graph.Key.unHide(key), value));
+                    } else if (!hidden && !Graph.Key.isHidden(key)) {
+                        properties.put(key, new SqlProperty<>(this.sqlG, this, key, value));
+                    } else {
+                        //ignore
+                    }
                 }
             }
         }
@@ -106,22 +122,35 @@ public abstract class SqlgElement implements Element {
     }
 
     @Override
-    public Map<String, Property> hiddens() {
+    public Set<String> keys() {
         this.sqlG.tx().readWrite();
-        Map<String, Property> properties = this.properties();
-        Map<String, Property> hiddens = new HashMap<>();
-        for (String key : properties.keySet()) {
-            if (Graph.Key.isHidden(key))
-                hiddens.put(Graph.Key.unHide(key), properties.get(key));
-        }
-        return hiddens;
+        return this.properties().keySet();
     }
 
+    @Override
+    public Set<String> hiddenKeys() {
+        this.sqlG.tx().readWrite();
+        return this.hiddens().keySet();
+    }
+
+    @Override
+    public Map<String, Property> hiddens() {
+        this.sqlG.tx().readWrite();
+        return internalGetProperties(true);
+    }
+
+    //TODO relook at hiddens, unnecessary looping and queries
     @Override
     public <V> Property<V> property(String key) {
         Property property = properties().get(key);
         if (property == null) {
-            return Property.empty();
+            //try hiddens
+            property = hiddens().get(Graph.Key.unHide(key));
+            if (property == null) {
+                return Property.empty();
+            } else {
+                return property;
+            }
         } else {
             return property;
         }

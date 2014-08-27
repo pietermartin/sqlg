@@ -8,6 +8,7 @@ import org.umlg.sqlg.structure.SqlG;
 import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
+import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,7 +40,8 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
         SqlDialect sqlDialect;
         try {
             Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
-            sqlDialect = (SqlDialect)sqlDialectClass.newInstance();
+            Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
+            sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
