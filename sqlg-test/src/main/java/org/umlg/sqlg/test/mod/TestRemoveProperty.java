@@ -1,8 +1,9 @@
-package org.umlg.sqlg.test;
+package org.umlg.sqlg.test.mod;
 
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.test.BaseTest;
 
 /**
  * Date: 2014/07/13

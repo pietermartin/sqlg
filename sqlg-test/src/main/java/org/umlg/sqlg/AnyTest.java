@@ -4,6 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.mod.TestUpdateVertex;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 
 /**
@@ -12,7 +13,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestIndex.class
+        TestUpdateVertex.class
 })
 public class AnyTest {
 }

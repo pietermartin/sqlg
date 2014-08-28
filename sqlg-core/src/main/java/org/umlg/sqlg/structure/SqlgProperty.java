@@ -15,14 +15,14 @@ import java.util.NoSuchElementException;
  * Date: 2014/07/12
  * Time: 5:43 AM
  */
-public class SqlProperty<V> implements Property<V>, Serializable {
+public class SqlgProperty<V> implements Property<V>, Serializable {
 
     private final String key;
     private V value;
     private SqlgElement element;
     protected SqlG sqlG;
 
-    public SqlProperty(SqlG sqlG, SqlgElement element, String key, V value) {
+    public SqlgProperty(SqlG sqlG, SqlgElement element, String key, V value) {
         this.sqlG = sqlG;
         this.element = element;
         this.key = key;
@@ -56,6 +56,7 @@ public class SqlProperty<V> implements Property<V>, Serializable {
 
     @Override
     public void remove() {
+        this.element.properties.remove(this.key);
         StringBuilder sql = new StringBuilder("UPDATE ");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
         sql.append(".");

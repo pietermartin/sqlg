@@ -14,7 +14,6 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
-import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
@@ -36,7 +35,7 @@ import java.util.Map;
 public class SqlG implements Graph {
 
     private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
-    private final SqlGTransaction sqlGTransaction;
+    private final SqlgTransaction sqlgTransaction;
     private SchemaManager schemaManager;
     private SqlDialect sqlDialect;
     private String jdbcUrl;
@@ -87,7 +86,7 @@ public class SqlG implements Graph {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        this.sqlGTransaction = new SqlGTransaction(this);
+        this.sqlgTransaction = new SqlgTransaction(this);
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect);
         this.schemaManager.loadSchema();
@@ -140,7 +139,7 @@ public class SqlG implements Graph {
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.strategies().register(SqlgHasStepStrategy.instance());
-        traversal.addStep(new SqlGGraphStep(traversal, Vertex.class, this));
+        traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
     }
@@ -151,7 +150,7 @@ public class SqlG implements Graph {
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
         traversal.strategies().register(SqlGGraphStepStrategy.instance());
         traversal.strategies().register(SqlgHasStepStrategy.instance());
-        traversal.addStep(new SqlGGraphStep(traversal, Edge.class, this));
+        traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
     }
@@ -250,8 +249,8 @@ public class SqlG implements Graph {
     }
 
     @Override
-    public SqlGTransaction tx() {
-        return this.sqlGTransaction;
+    public SqlgTransaction tx() {
+        return this.sqlgTransaction;
     }
 
     @Override

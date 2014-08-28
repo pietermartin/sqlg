@@ -13,7 +13,7 @@ import java.util.function.Function;
  * Date: 2014/07/12
  * Time: 2:18 PM
  */
-public class SqlGTransaction implements Transaction {
+public class SqlgTransaction implements Transaction {
 
     private Consumer<Transaction> readWriteConsumer;
     private Consumer<Transaction> closeConsumer;
@@ -32,7 +32,7 @@ public class SqlGTransaction implements Transaction {
         }
     };
 
-    public SqlGTransaction(SqlG sqlG) {
+    public SqlgTransaction(SqlG sqlG) {
         this.sqlG = sqlG;
 
         // auto transaction behavior

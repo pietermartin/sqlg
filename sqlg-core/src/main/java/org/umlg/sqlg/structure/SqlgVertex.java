@@ -4,6 +4,7 @@ import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
@@ -23,12 +24,6 @@ import java.util.*;
 public class SqlgVertex extends SqlgElement implements Vertex {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
-
-    private final ThreadLocal<Connection> edgesCache = new ThreadLocal<Connection>() {
-        protected Connection initialValue() {
-            return null;
-        }
-    };
 
     public SqlgVertex(SqlG sqlG, String schema, String table, Object... keyValues) {
         super(sqlG, schema, table);
@@ -175,29 +170,28 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(" (");
         sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         int i = 1;
-        List<String> columns = SqlgUtil.transformToInsertColumns(keyValues);
-        if (columns.size() > 0) {
+        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        if (keyValueMap.size() > 0) {
             sql.append(", ");
         } else {
             sql.append(" ");
         }
-        for (String column : columns) {
+        for (String column : keyValueMap.keySet()) {
             sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(column));
-            if (i++ < columns.size()) {
+            if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
         }
         sql.append(") VALUES (?");
-        if (columns.size() > 0) {
+        if (keyValueMap.size() > 0) {
             sql.append(", ");
         } else {
             sql.append(" ");
         }
         i = 1;
-        List<String> values = SqlgUtil.transformToInsertValues(keyValues);
-        for (String value : values) {
+        for (String column : keyValueMap.keySet()) {
             sql.append("?");
-            if (i++ < values.size()) {
+            if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
         }
@@ -209,12 +203,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(i++, vertexId);
-            setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValues);
+            setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValueMap);
             preparedStatement.executeUpdate();
             this.primaryKey = vertexId;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        //Cache the properties
+        this.properties.putAll(keyValueMap);
     }
 
     private long insertGlobalVertex() {
@@ -455,65 +451,64 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    protected Object[] load() {
-        List<Object> keyValues = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
-        sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
-        sql.append(" WHERE ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlG.tx().getConnection();
-        if(logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, this.primaryKey);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                loadResultSet(keyValues, resultSet);
-            } else {
-                throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.primaryKey}));
+    protected void load() {
+        if (this.properties.isEmpty()) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+            sql.append(".");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
+            sql.append(" WHERE ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
             }
-            return keyValues.toArray();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            Connection conn = this.sqlG.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.setLong(1, this.primaryKey);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                if (resultSet.next()) {
+                    loadResultSet(resultSet);
+                } else {
+                    throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.primaryKey}));
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    void loadResultSet(List<Object> keyValues, ResultSet resultSet) throws SQLException {
+    void loadResultSet(ResultSet resultSet) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnName(i);
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID") && !Objects.isNull(o)) {
-                keyValues.add(columnName);
                 int type = resultSetMetaData.getColumnType(i);
                 switch (type) {
                     case Types.SMALLINT:
-                        keyValues.add(((Integer) o).shortValue());
+                        this.properties.put(columnName, ((Integer) o).shortValue());
                         break;
                     case Types.TINYINT:
-                        keyValues.add(((Integer) o).byteValue());
+                        this.properties.put(columnName, ((Integer) o).byteValue());
                         break;
                     case Types.REAL:
-                        keyValues.add(((Number) o).floatValue());
+                        this.properties.put(columnName, ((Number) o).floatValue());
                         break;
                     case Types.DOUBLE:
-                        keyValues.add(((Number) o).doubleValue());
+                        this.properties.put(columnName, ((Number) o).doubleValue());
                         break;
                     case Types.ARRAY:
                         Array array = (Array) o;
                         int baseType = array.getBaseType();
                         Object[] objectArray = (Object[]) array.getArray();
-                        keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                        this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
                         break;
                     default:
-                        keyValues.add(o);
+                        this.properties.put(columnName, o);
                 }
             }
         }

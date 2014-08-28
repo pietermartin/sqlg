@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SqlgUtil {
 
-    public static Map<String, Object> toMap(Object ... keyValues) {
+    public static Map<String, Object> toMap(Object... keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
@@ -48,7 +48,7 @@ public class SqlgUtil {
         if (schemaLabel.length > 2) {
             throw new IllegalStateException("label may only contain one '.', indicating schema.table");
         }
-        if (schemaLabel.length == 2)  {
+        if (schemaLabel.length == 2) {
             schema = schemaLabel[0];
             table = schemaLabel[1];
         } else {
@@ -113,32 +113,8 @@ public class SqlgUtil {
         return result;
     }
 
-    public static List<String> transformToInsertColumns(Object... keyValues) {
-        List<String> result = new ArrayList<>();
-        int i = 1;
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 != 0) {
-                //key
-                //skip the label as that is not a property but the table
-                if (keyValue.equals(Element.LABEL) || keyValue.equals(Element.ID)) {
-                    continue;
-                }
-                //if duplicate key are specified then only take the last one
-                if (result.contains((String) keyValue)) {
-                    result.remove((String) keyValue);
-                }
-                result.add((String) keyValue);
-            } else {
-                //value
-            }
-        }
-        return result;
-    }
-
-    public static List<String> transformToInsertValues(Object... keyValues) {
-        Map<String, Integer> keyResultIndexMap = new HashMap<>();
-        List<String> result = new ArrayList<>();
-        int listIndex = 0;
+    public static Map<String, Object> transformToInsertValues(Object... keyValues) {
+        Map<String, Object> result = new TreeMap<>();
         int i = 1;
         String key = "";
         for (Object keyValue : keyValues) {
@@ -151,48 +127,22 @@ public class SqlgUtil {
                 if (key.equals(Element.LABEL) || key.equals(Element.ID)) {
                     continue;
                 }
-
-                //Check it the key is already in the result.
-                //If so remove it, as the last key/value pair wins
-                if (keyResultIndexMap.containsKey(key)) {
-                    result.remove(keyResultIndexMap.get(key).intValue());
-                    listIndex--;
-                }
-                keyResultIndexMap.put(key, listIndex++);
-
-                result.add(keyValue.toString());
+                result.put(key, keyValue);
             }
         }
         return result;
     }
 
-    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Object... keyValues) {
-        Map<String, Integer> keyResultIndexMap = new HashMap<>();
+    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Map<String, Object> keyValues) {
         List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
-        int listIndex = 0;
-        int i = 1;
-        String key = "";
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 != 0) {
-                //key
-                key = (String) keyValue;
-            } else {
-                //value
-                //skip the label as that is not a property but the table
-                if (key.equals(Element.LABEL)) {
-                    continue;
-                }
-
-                //Check it the key is already in the result.
-                //If so remove it, as the last key/value pair wins
-                if (keyResultIndexMap.containsKey(key)) {
-                    result.remove(keyResultIndexMap.get(key).intValue());
-                    listIndex--;
-                }
-                keyResultIndexMap.put(key, listIndex++);
-
-                result.add(ImmutablePair.of(PropertyType.from(keyValue), keyValue));
+        for (String key : keyValues.keySet()) {
+            Object value = keyValues.get(key);
+            //value
+            //skip the label as that is not a property but the table
+            if (key.equals(Element.LABEL)) {
+                continue;
             }
+            result.add(ImmutablePair.of(PropertyType.from(value), value));
         }
         return result;
     }
@@ -208,10 +158,10 @@ public class SqlgUtil {
         return getArray(value);
     }
 
-    private static Object[] getArray(Object val){
+    private static Object[] getArray(Object val) {
         int arrlength = Array.getLength(val);
         Object[] outputArray = new Object[arrlength];
-        for(int i = 0; i < arrlength; ++i){
+        for (int i = 0; i < arrlength; ++i) {
             outputArray[i] = Array.get(val, i);
         }
         return outputArray;

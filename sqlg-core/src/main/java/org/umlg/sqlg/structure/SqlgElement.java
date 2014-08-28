@@ -6,7 +6,6 @@ import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.lang.reflect.Array;
 import java.sql.Connection;
@@ -14,10 +13,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -32,7 +29,7 @@ public abstract class SqlgElement implements Element {
     protected String table;
     protected SqlG sqlG;
     protected long primaryKey;
-
+    protected Map<String, Object> properties = new HashMap<>();
 
     public SqlgElement(SqlG sqlG, String schema, String table) {
         this.sqlG = sqlG;
@@ -97,24 +94,17 @@ public abstract class SqlgElement implements Element {
 
     private Map<String, Property> internalGetProperties(boolean hidden) {
         this.sqlG.tx().readWrite();
-        Object[] keyValues = load();
+        load();
         Map<String, Property> properties = new HashMap<>();
-        int i = 1;
-        String key = "";
-        Object value;
-        for (Object o : keyValues) {
-            if (i++ % 2 != 0) {
-                key = (String) o;
-            } else {
-                value = o;
-                if (!key.equals("ID") && value != null) {
-                    if (hidden && Graph.Key.isHidden(key)) {
-                        properties.put(Graph.Key.unHide(key), new SqlProperty<>(this.sqlG, this, Graph.Key.unHide(key), value));
-                    } else if (!hidden && !Graph.Key.isHidden(key)) {
-                        properties.put(key, new SqlProperty<>(this.sqlG, this, key, value));
-                    } else {
-                        //ignore
-                    }
+        for (String key : this.properties.keySet()) {
+            Object value = this.properties.get(key);
+            if (!key.equals("ID") && value != null) {
+                if (hidden && Graph.Key.isHidden(key)) {
+                    properties.put(Graph.Key.unHide(key), new SqlgProperty<>(this.sqlG, this, Graph.Key.unHide(key), value));
+                } else if (!hidden && !Graph.Key.isHidden(key)) {
+                    properties.put(key, new SqlgProperty<>(this.sqlG, this, key, value));
+                } else {
+                    //ignore
                 }
             }
         }
@@ -168,10 +158,13 @@ public abstract class SqlgElement implements Element {
                 this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.table : SchemaManager.EDGE_PREFIX + this.table,
                 ImmutablePair.of(key, PropertyType.from(value)));
         updateRow(key, value);
-        return new SqlProperty<>(this.sqlG, this, key, value);
+        return new SqlgProperty<>(this.sqlG, this, key, value);
     }
 
-    protected abstract Object[] load();
+    /**
+     * load the row from the db and caches the results in the element
+     */
+    protected abstract void load();
 
     public String getSchema() {
         return schema;
@@ -197,13 +190,17 @@ public abstract class SqlgElement implements Element {
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, new Object[]{key, value});
+            Map<String, Object> keyValue = new HashMap<>();
+            keyValue.put(key, value);
+            setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValue);
             preparedStatement.setLong(2, (Long) this.id());
             preparedStatement.executeUpdate();
             preparedStatement.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        //Cache the properties
+        this.properties.put(key, value);
     }
 
     @Override
@@ -296,12 +293,12 @@ public abstract class SqlgElement implements Element {
             if (value[i] == null) {
                 throw new IllegalArgumentException("Property array value elements may not be null.");
             }
-            Array.set(target, i, ((Number)value[i]).shortValue());
+            Array.set(target, i, ((Number) value[i]).shortValue());
         }
         return target;
     }
 
-    public static int setKeyValuesAsParameter(SqlG sqlG, int i, Connection conn, PreparedStatement preparedStatement, Object[] keyValues) throws SQLException {
+    public static int setKeyValuesAsParameter(SqlG sqlG, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : SqlgUtil.transformToTypeAndValue(keyValues)) {
             switch (pair.left) {
                 case BOOLEAN:
@@ -335,7 +332,7 @@ public abstract class SqlgElement implements Element {
                     preparedStatement.setArray(i++, booleanArray);
                     break;
                 case BYTE_ARRAY:
-                    preparedStatement.setBytes(i++, (byte[])pair.right);
+                    preparedStatement.setBytes(i++, (byte[]) pair.right);
                     break;
                 case SHORT_ARRAY:
                     java.sql.Array shortArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));

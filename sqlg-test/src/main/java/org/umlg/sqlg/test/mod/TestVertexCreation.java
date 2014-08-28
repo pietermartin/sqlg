@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test;
+package org.umlg.sqlg.test.mod;
 
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -6,6 +6,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SqlgDataSource;
+import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

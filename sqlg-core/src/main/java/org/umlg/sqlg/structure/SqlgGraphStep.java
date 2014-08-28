@@ -20,13 +20,13 @@ import java.util.stream.Stream;
  * Date: 2014/07/12
  * Time: 5:49 AM
  */
-public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
+public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
     private SqlG sqlG;
     public final List<HasContainer> hasContainers = new ArrayList<>();
 
-    public SqlGGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlG sqlG) {
+    public SqlgGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlG sqlG) {
         super(traversal, returnClass);
         this.sqlG = sqlG;
     }
@@ -44,8 +44,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterator<? extends Edge> edges() {
-        Stream<? extends Edge> edgeStream
-                ;
+        Stream<? extends Edge> edgeStream;
         if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(Element.LABEL) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
@@ -103,7 +102,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
         return StreamFactory.stream(this._edges());
     }
 
-    private Stream<? extends Vertex> getVerticesUsingLabel(String ... labels) {
+    private Stream<? extends Vertex> getVerticesUsingLabel(String... labels) {
         Stream<? extends Vertex> vertices = Stream.empty();
         for (String label : labels) {
             vertices = Stream.concat(vertices, StreamFactory.stream(this._verticesUsingLabel(label)));
@@ -115,7 +114,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
         return StreamFactory.stream(this._verticesUsingLabeledIndex(label, key, value));
     }
 
-    private Stream<? extends Edge> getEdgesUsingLabel(String ... labels) {
+    private Stream<? extends Edge> getEdgesUsingLabel(String... labels) {
         Stream<? extends Edge> edges = Stream.empty();
         for (String label : labels) {
             edges = Stream.concat(edges, StreamFactory.stream(this._edgesUsingLabel(label)));
@@ -166,7 +165,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
         return sqlGVertexes;
     }
 
-    private Iterable<? extends Vertex> _verticesUsingLabeledIndex(String label, String key, Object value1) {
+    private Iterable<? extends Vertex> _verticesUsingLabeledIndex(String label, String key, Object value) {
         SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
@@ -184,13 +183,15 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, new Object[]{key, value1});
+            Map<String, Object> keyValueMap = new HashMap<>();
+            keyValueMap.put(key, value);
+            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
                 SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
                 //TODO properties needs to be cached
-                sqlGVertex.loadResultSet(new ArrayList<>(), resultSet);
+                sqlGVertex.loadResultSet(resultSet);
                 sqlGVertexes.add(sqlGVertex);
             }
         } catch (SQLException e) {
@@ -255,7 +256,7 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
                     long id = resultSet.getLong(1);
                     SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schema, schemaTable.getTable());
                     //TODO properties needs to be cached
-                    sqlGEdge.loadResultSet(new ArrayList<>(), resultSet);
+                    sqlGEdge.loadResultSet(resultSet);
                     sqlGEdges.add(sqlGEdge);
                 }
             } catch (SQLException e) {
@@ -283,13 +284,15 @@ public class SqlGGraphStep<E extends Element> extends GraphStep<E> {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, new Object[]{key, value});
+            Map<String, Object> keyValueMap = new HashMap<>();
+            keyValueMap.put(key, value);
+            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 long id = resultSet.getLong(1);
                 SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
                 //TODO properties needs to be cached
-                sqlGEdge.loadResultSet(new ArrayList<>(), resultSet);
+                sqlGEdge.loadResultSet(resultSet);
                 sqlGEdges.add(sqlGEdge);
             }
         } catch (SQLException e) {

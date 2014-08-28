@@ -9,10 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Date: 2014/07/12
@@ -122,14 +119,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(", ");
         int i = 1;
-        List<String> columns = SqlgUtil.transformToInsertColumns(keyValues);
-        for (String column : columns) {
+        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        for (String column : keyValueMap.keySet()) {
             sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(column));
-            if (i++ < columns.size()) {
+            if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
         }
-        if (columns.size() > 0) {
+        if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + SqlgElement.IN_VERTEX_COLUMN_END));
@@ -137,14 +134,13 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SqlgElement.OUT_VERTEX_COLUMN_END));
         sql.append(") VALUES (?, ");
         i = 1;
-        List<String> values = SqlgUtil.transformToInsertValues(keyValues);
-        for (String value : values) {
+        for (String column : keyValueMap.keySet()) {
             sql.append("?");
-            if (i++ < values.size()) {
+            if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
         }
-        if (values.size() > 0) {
+        if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
         sql.append("?, ?");
@@ -156,12 +152,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(i++, edgeId);
-            i = setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValues);
+            i = setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValueMap);
             preparedStatement.setLong(i++, this.inVertex.primaryKey);
             preparedStatement.setLong(i++, this.outVertex.primaryKey);
             preparedStatement.executeUpdate();
             this.primaryKey = edgeId;
         }
+        //Cache the properties
+        this.properties.putAll(keyValueMap);
     }
 
     private long insertGlobalEdge() throws SQLException {
@@ -194,35 +192,35 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
-    protected Object[] load() {
-        List<Object> keyValues = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
-        sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
-        sql.append(" WHERE ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlG.tx().getConnection();
-        if(logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, this.primaryKey);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if (resultSet.next()) {
-                loadResultSet(keyValues, resultSet);
+    protected void load() {
+        if (this.properties.isEmpty()) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+            sql.append(".");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
+            sql.append(" WHERE ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
             }
-            return keyValues.toArray();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            Connection conn = this.sqlG.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.setLong(1, this.primaryKey);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                if (resultSet.next()) {
+                    loadResultSet(resultSet);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
-    void loadResultSet(List<Object> keyValues, ResultSet resultSet) throws SQLException {
+    void loadResultSet(ResultSet resultSet) throws SQLException {
         SchemaTable inVertexColumnName = null;
         SchemaTable outVertexColumnName = null;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -234,24 +232,28 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     !columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
 
-                keyValues.add(columnName);
-
                 int type = resultSetMetaData.getColumnType(i);
                 switch (type) {
                     case Types.SMALLINT:
-                        keyValues.add(((Integer) o).shortValue());
+                        this.properties.put(columnName, ((Integer) o).shortValue());
                         break;
                     case Types.TINYINT:
-                        keyValues.add(((Integer) o).byteValue());
+                        this.properties.put(columnName, ((Integer) o).byteValue());
+                        break;
+                    case Types.REAL:
+                        this.properties.put(columnName, ((Number) o).floatValue());
+                        break;
+                    case Types.DOUBLE:
+                        this.properties.put(columnName, ((Number) o).doubleValue());
                         break;
                     case Types.ARRAY:
                         Array array = (Array) o;
                         int baseType = array.getBaseType();
                         Object[] objectArray = (Object[]) array.getArray();
-                        keyValues.add(convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                        this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
                         break;
                     default:
-                        keyValues.add(o);
+                        this.properties.put(columnName, o);
                 }
 
             }
