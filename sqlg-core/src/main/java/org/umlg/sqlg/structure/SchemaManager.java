@@ -857,6 +857,15 @@ public class SchemaManager {
     }
 
     public Set<String> getSchemasForTable(String table) {
-        return this.labelSchemas.get(table);
+        Set<String> labels = this.labelSchemas.get(table);
+        Set<String> uncommitedLabels = this.uncommitedLabelSchemas.get(table);
+        Set<String> result = new HashSet<>();
+        if (labels != null) {
+            result.addAll(labels);
+        }
+        if (uncommitedLabels != null) {
+            result.addAll(uncommitedLabels);
+        }
+        return result;
     }
 }

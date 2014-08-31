@@ -76,4 +76,11 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(99, this.sqlG.E().has(Element.LABEL, "Schema9.edge").count().next(), 0);
     }
 
+    @Test
+    public void testLabelsForSchemaBeforeCommit() {
+        Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Person");
+        Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Person");
+        Assert.assertEquals(2, this.sqlG.V().has(Element.LABEL, "Person").count().next(), 0);
+    }
+
 }

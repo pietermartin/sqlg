@@ -148,6 +148,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
@@ -198,6 +201,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(")");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
         }
         i = 1;
         Connection conn = this.sqlG.tx().getConnection();
