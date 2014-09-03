@@ -46,7 +46,7 @@ public class SqlgUtil {
         final String schema;
         final String table;
         if (schemaLabel.length > 2) {
-            throw new IllegalStateException("label may only contain one '.', indicating schema.table");
+            throw new IllegalStateException(String.format("label may only contain one '.', indicating schema.table, %s", new Object[]{label}));
         }
         if (schemaLabel.length == 2) {
             schema = schemaLabel[0];
@@ -62,7 +62,7 @@ public class SqlgUtil {
         Objects.requireNonNull(label, "label may not be null!");
         String[] schemaLabel = label.split("\\.");
         if (schemaLabel.length != 2) {
-            throw new IllegalStateException("label must be if the format 'schema.table'");
+            throw new IllegalStateException(String.format("label must be if the format 'schema.table', %s", new Object[]{label}));
         }
         return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
     }

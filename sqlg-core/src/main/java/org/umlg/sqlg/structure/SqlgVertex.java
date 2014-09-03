@@ -47,6 +47,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
         if (label == null)
             throw Edge.Exceptions.edgeLabelCanNotBeNull();
+        if (label.contains("."))
+            throw new IllegalStateException(String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", new Object[]{label}));
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
@@ -323,7 +325,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         sql.append(";");
                     }
                     Connection conn = this.sqlG.tx().getConnection();
-                    if(logger.isDebugEnabled()) {
+                    if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
