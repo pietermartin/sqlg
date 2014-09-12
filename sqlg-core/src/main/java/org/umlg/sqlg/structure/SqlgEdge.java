@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -52,8 +53,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlG, id, schema, table);
     }
 
-    @Override
-    public Iterator<Vertex> vertices(Direction direction) {
+    private Iterator<Vertex> internalGetVertices(Direction direction) {
         final List<Vertex> vertices = new ArrayList<>();
         if (direction.equals(Direction.OUT) || direction.equals(Direction.BOTH))
             vertices.add(getOutVertex());
@@ -277,5 +277,32 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
         this.inVertex = new SqlgVertex(this.sqlG, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SqlgElement.IN_VERTEX_COLUMN_END, ""));
         this.outVertex = new SqlgVertex(this.sqlG, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, ""));
+    }
+
+    @Override
+    public Edge.Iterators iterators() {
+        return this.iterators;
+    }
+
+    private final Edge.Iterators iterators = new Iterators();
+
+    protected class Iterators extends SqlgElement.Iterators implements Edge.Iterators {
+
+        @Override
+        public <V> Iterator<Property<V>> properties(final String... propertyKeys) {
+            return (Iterator) super.properties(propertyKeys);
+        }
+
+        @Override
+        public <V> Iterator<Property<V>> hiddens(final String... propertyKeys) {
+            return (Iterator) super.hiddens(propertyKeys);
+        }
+
+        @Override
+        public Iterator<Vertex> vertices(final Direction direction) {
+            SqlgEdge.this.sqlG.tx().readWrite();
+            return internalGetVertices(direction);
+        }
+
     }
 }

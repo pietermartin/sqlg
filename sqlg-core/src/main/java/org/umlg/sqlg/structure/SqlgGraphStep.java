@@ -136,13 +136,13 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             schemas.add(schemaTable.getSchema());
         }
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
-        //Schemas are null when has('label') seearches for a label that does not exist yet.
+        //Schemas are null when has('label') searches for a label that does not exist yet.
         if (schemas != null) {
             for (String schema : schemas) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schema));
+                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schema));
                 sql.append(".");
-                sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
                 if (this.sqlG.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
@@ -167,35 +167,39 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterable<? extends Vertex> _verticesUsingLabeledIndex(String label, String key, Object value) {
         SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
+        //Check that the table and column exist
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-        sql.append(".");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
-        sql.append(" a WHERE a.");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlG.tx().getConnection();
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            Map<String, Object> keyValueMap = new HashMap<>();
-            keyValueMap.put(key, value);
-            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                long id = resultSet.getLong(1);
-                SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
-                //TODO properties needs to be cached
-                sqlGVertex.loadResultSet(resultSet);
-                sqlGVertexes.add(sqlGVertex);
+        if (this.sqlG.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()) &&
+                this.sqlG.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable(), key)) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM ");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+            sql.append(".");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+            sql.append(" a WHERE a.");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            Connection conn = this.sqlG.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                Map<String, Object> keyValueMap = new HashMap<>();
+                keyValueMap.put(key, value);
+                SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    long id = resultSet.getLong(1);
+                    SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                    //TODO properties needs to be cached
+                    sqlGVertex.loadResultSet(resultSet);
+                    sqlGVertexes.add(sqlGVertex);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
         return sqlGVertexes;
     }
@@ -267,36 +271,39 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Edge> _edgesUsingLabeledIndex(String label, String key, Object value) {
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-        sql.append(".");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-        sql.append(" a WHERE a.");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlG.tx().getConnection();
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            Map<String, Object> keyValueMap = new HashMap<>();
-            keyValueMap.put(key, value);
-            SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                long id = resultSet.getLong(1);
-                SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
-                //TODO properties needs to be cached
-                sqlGEdge.loadResultSet(resultSet);
-                sqlGEdges.add(sqlGEdge);
+        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
+        if (this.sqlG.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable()) &&
+                this.sqlG.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable(), key)) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM ");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+            sql.append(".");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+            sql.append(" a WHERE a.");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            Connection conn = this.sqlG.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                Map<String, Object> keyValueMap = new HashMap<>();
+                keyValueMap.put(key, value);
+                SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    long id = resultSet.getLong(1);
+                    SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                    //TODO properties needs to be cached
+                    sqlGEdge.loadResultSet(resultSet);
+                    sqlGEdges.add(sqlGEdge);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
         return sqlGEdges;
     }

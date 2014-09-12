@@ -2,11 +2,11 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.*;
-import org.umlg.sqlg.test.index.TestIndex;
-import org.umlg.sqlg.test.mod.TestUpdateVertex;
-import org.umlg.sqlg.test.schema.TestLoadSchema;
+import org.umlg.sqlg.test.TestVertexNavToEdges;
+import org.umlg.sqlg.test.TinkerpopTest;
+import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
  * Date: 2014/07/16
@@ -14,7 +14,7 @@ import org.umlg.sqlg.test.schema.TestSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchema.class
+        TinkerpopTest.class
 })
 public class AnyTest {
 }

@@ -116,11 +116,11 @@ public class TestVertexCreation extends BaseTest {
         this.sqlG.tx().commit();
         assertEquals(1, this.sqlG.V().count().next(), 0);
         assertEquals(v1, this.sqlG.v(v1.id()));
-        assertEquals(1, v1.properties().size());
+        assertEquals(1, v1.properties().count().next(), 0);
         Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Person", "name2", "john");
         assertEquals(2, this.sqlG.V().count().next(), 0);
         assertEquals(v2, this.sqlG.v(v2.id()));
-        assertEquals(1, v2.properties().size());
+        assertEquals(1, v2.properties().count().next(), 0);
     }
 
 }

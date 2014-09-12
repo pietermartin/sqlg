@@ -28,7 +28,7 @@ public class SchemaManager {
     private Set<String> uncommittedSchemas = new HashSet<>();
 
     private Map<String, Set<String>> labelSchemas = new ConcurrentHashMap<>();
-    private Map<String, Set<String>> uncommitedLabelSchemas = new ConcurrentHashMap<>();
+    private Map<String, Set<String>> uncommittedLabelSchemas = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> tables = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
     private Map<String, Set<String>> edgeForeignKeys = new ConcurrentHashMap<>();
@@ -48,12 +48,12 @@ public class SchemaManager {
                 for (String t : this.uncommittedTables.keySet()) {
                     this.tables.put(t, this.uncommittedTables.get(t));
                 }
-                for (String t : this.uncommitedLabelSchemas.keySet()) {
+                for (String t : this.uncommittedLabelSchemas.keySet()) {
                     Set<String> schemas = this.labelSchemas.get(t);
                     if (schemas == null) {
-                        this.labelSchemas.put(t, this.uncommitedLabelSchemas.get(t));
+                        this.labelSchemas.put(t, this.uncommittedLabelSchemas.get(t));
                     } else {
-                        schemas.addAll(this.uncommitedLabelSchemas.get(t));
+                        schemas.addAll(this.uncommittedLabelSchemas.get(t));
                         this.labelSchemas.put(t, schemas);
                     }
                 }
@@ -62,7 +62,7 @@ public class SchemaManager {
                 }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
-                this.uncommitedLabelSchemas.clear();
+                this.uncommittedLabelSchemas.clear();
                 this.uncommittedEdgeForeignKeys.clear();
                 this.schemaLock.unlock();
             }
@@ -72,7 +72,7 @@ public class SchemaManager {
                 if (this.getSqlDialect().supportsTransactionalSchema()) {
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
-                    this.uncommitedLabelSchemas.clear();
+                    this.uncommittedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                 } else {
                     for (String t : this.uncommittedSchemas) {
@@ -81,12 +81,12 @@ public class SchemaManager {
                     for (String t : this.uncommittedTables.keySet()) {
                         this.tables.put(t, this.uncommittedTables.get(t));
                     }
-                    for (String t : this.uncommitedLabelSchemas.keySet()) {
+                    for (String t : this.uncommittedLabelSchemas.keySet()) {
                         Set<String> schemas = this.labelSchemas.get(t);
                         if (schemas == null) {
-                            this.labelSchemas.put(t, this.uncommitedLabelSchemas.get(t));
+                            this.labelSchemas.put(t, this.uncommittedLabelSchemas.get(t));
                         } else {
-                            schemas.addAll(this.uncommitedLabelSchemas.get(t));
+                            schemas.addAll(this.uncommittedLabelSchemas.get(t));
                             this.labelSchemas.put(t, schemas);
                         }
                     }
@@ -95,7 +95,7 @@ public class SchemaManager {
                     }
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
-                    this.uncommitedLabelSchemas.clear();
+                    this.uncommittedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                 }
                 this.schemaLock.unlock();
@@ -155,12 +155,12 @@ public class SchemaManager {
             }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                    Set<String> schemas = this.uncommitedLabelSchemas.get(prefixedTable);
+                    Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                     if (schemas == null) {
-                        this.uncommitedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                        this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
                     } else {
                         schemas.add(schema);
-                        this.uncommitedLabelSchemas.put(prefixedTable, schemas);
+                        this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                     }
                     this.uncommittedTables.put(schema + "." + prefixedTable, columns);
                     createVertexTable(schema, prefixedTable, columns);
@@ -227,12 +227,12 @@ public class SchemaManager {
                     foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
                     this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
 
-                    Set<String> schemas = this.uncommitedLabelSchemas.get(prefixedTable);
+                    Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                     if (schemas == null) {
-                        this.uncommitedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                        this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
                     } else {
                         schemas.add(schema);
-                        this.uncommitedLabelSchemas.put(prefixedTable, schemas);
+                        this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                     }
 
                     createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
@@ -272,12 +272,12 @@ public class SchemaManager {
                 if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
                     this.uncommittedTables.put(schema + "." + prefixedTable, columns);
 
-                    Set<String> schemas = this.uncommitedLabelSchemas.get(prefixedTable);
+                    Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                     if (schemas == null) {
-                        this.uncommitedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                        this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
                     } else {
                         schemas.add(schema);
-                        this.uncommitedLabelSchemas.put(prefixedTable, schemas);
+                        this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                     }
 
                     createEdgeTable(schema, prefixedTable, columns);
@@ -286,6 +286,24 @@ public class SchemaManager {
         }
         //ensure columns exist
         columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
+    }
+
+    boolean columnExists(String schema, String table, String column) {
+        final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
+        Map<String, PropertyType> uncommitedColumns;
+        if (cachedColumns == null) {
+            uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
+        } else {
+            //TODO rethink synchromization
+            uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
+            if (uncommitedColumns != null) {
+                uncommitedColumns.putAll(cachedColumns);
+            } else {
+                uncommitedColumns = new HashMap<>(cachedColumns);
+            }
+        }
+        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
+        return uncommitedColumns.containsKey(column);
     }
 
     void ensureColumnExist(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
@@ -829,7 +847,7 @@ public class SchemaManager {
     public void clear() {
         try {
             Connection conn = SqlgDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
-            DatabaseMetaData metadata = null;
+            DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
                 String catalog = "sqlgraphdb";
@@ -856,16 +874,24 @@ public class SchemaManager {
         }
     }
 
-    public Set<String> getSchemasForTable(String table) {
+    Set<String> getSchemasForTable(String table) {
         Set<String> labels = this.labelSchemas.get(table);
-        Set<String> uncommitedLabels = this.uncommitedLabelSchemas.get(table);
+        Set<String> uncommittedLabels = this.uncommittedLabelSchemas.get(table);
         Set<String> result = new HashSet<>();
         if (labels != null) {
             result.addAll(labels);
         }
-        if (uncommitedLabels != null) {
-            result.addAll(uncommitedLabels);
+        if (uncommittedLabels != null) {
+            result.addAll(uncommittedLabels);
         }
         return result;
     }
+
+    Set<String> getEdgeForeignKeys(String schemaTable) {
+        Map<String, Set<String>> allForeignKeys = new HashMap<>();
+        allForeignKeys.putAll(this.edgeForeignKeys);
+        allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
+        return allForeignKeys.get(schemaTable);
+    }
+
 }

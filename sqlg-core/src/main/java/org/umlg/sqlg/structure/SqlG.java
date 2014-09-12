@@ -40,6 +40,7 @@ public class SqlG implements Graph {
     private SqlDialect sqlDialect;
     private String jdbcUrl;
     private ObjectMapper mapper = new ObjectMapper();
+    private boolean inBatchMode = false;
 
     public String getJdbcUrl() {
         return jdbcUrl;
@@ -630,6 +631,14 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
         this.getSchemaManager().createIndex(schemaTablePair, dummykeyValues);
+    }
+
+    public void batchModeOn() {
+        this.inBatchMode = true;
+    }
+
+    public void batchModeOff() {
+        this.inBatchMode = false;
     }
 
     public long countVertices() {

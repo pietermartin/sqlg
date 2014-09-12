@@ -47,25 +47,21 @@ public class TestUpdateVertex extends BaseTest {
         // but doesn't actually blow it away
         swg.strategy().setGraphStrategy(new GraphStrategy() {
             @Override
-            public UnaryOperator<Supplier<Void>> getRemoveElementStrategy(final Strategy.Context<? extends StrategyWrappedElement> ctx) {
-                if (ctx.getCurrent() instanceof StrategyWrappedVertex) {
-                    return (t) -> () -> {
-                        final Vertex v = ((StrategyWrappedVertex) ctx.getCurrent()).getBaseVertex();
-                        v.bothE().remove();
-                        v.properties().values().forEach(Property::remove);
-                        v.property("deleted", true);
-                        return null;
-                    };
-                } else {
-                    return UnaryOperator.identity();
-                }
+            public UnaryOperator<Supplier<Void>> getRemoveVertexStrategy(final Strategy.Context<StrategyWrappedVertex> ctx) {
+                return (t) -> () -> {
+                    final Vertex v = ctx.getCurrent().getBaseVertex();
+                    v.bothE().remove();
+                    v.properties().forEachRemaining(Property::remove);
+                    v.property("deleted", true);
+                    return null;
+                };
             }
         });
 
         final Vertex toRemove = g.addVertex("name", "pieter");
         toRemove.addEdge("likes", g.addVertex("feature", "Strategy"));
 
-        assertEquals(1, toRemove.properties().size());
+        assertEquals(1, toRemove.properties().count().next(), 0);
         assertEquals(new Long(1), toRemove.bothE().count().next());
         assertFalse(toRemove.property("deleted").isPresent());
 
@@ -73,7 +69,7 @@ public class TestUpdateVertex extends BaseTest {
 
         final Vertex removed = g.v(toRemove.id());
         assertNotNull(removed);
-        assertEquals(1, removed.properties().size());
+        assertEquals(1, removed.properties().count().next(), 0);
         assertEquals(new Long(0), removed.bothE().count().next());
         assertTrue(toRemove.property("deleted").isPresent());
     }

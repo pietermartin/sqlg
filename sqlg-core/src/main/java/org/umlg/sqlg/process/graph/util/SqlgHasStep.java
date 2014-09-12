@@ -20,7 +20,9 @@ public class SqlgHasStep extends FilterStep<Element> implements Reversible {
         super(traversal);
         this.hasStep = hasStep;
         this.setPredicate(
-                traverser -> new SqlgHasContainer(this.hasStep.hasContainer).test(traverser.get())
+                traverser -> {
+                    return new SqlgHasContainer(this.hasStep.hasContainer).test(traverser.get());
+                }
         );
         this.setLabel(this.hasStep.getLabel());
     }
