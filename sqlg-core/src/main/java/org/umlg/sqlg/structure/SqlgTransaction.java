@@ -2,6 +2,8 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -20,6 +22,9 @@ public class SqlgTransaction implements Transaction {
     private SqlG sqlG;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
+    private BatchManager batchManager;
+    private boolean inBatchMode = false;
+    private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
 
     protected final ThreadLocal<Connection> threadLocalTx = new ThreadLocal<Connection>() {
         protected Connection initialValue() {
@@ -40,6 +45,26 @@ public class SqlgTransaction implements Transaction {
 
         // commit on close
         closeConsumer = CLOSE_BEHAVIOR.COMMIT;
+    }
+
+    public void batchModeOn() {
+        if (this.sqlG.features().supportsBatchMode()) {
+            if (isOpen()) {
+                throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
+            }
+            this.inBatchMode = true;
+            this.batchManager = new BatchManager(this.sqlG, this.sqlG.getSqlDialect());
+        } else {
+            logger.warn("Batch mode not supported! Continuing in normal mode.");
+        }
+    }
+
+    public boolean isInBatchMode() {
+        return this.inBatchMode;
+    }
+
+    public BatchManager getBatchManager() {
+        return batchManager;
     }
 
     public Connection getConnection() {
@@ -72,11 +97,19 @@ public class SqlgTransaction implements Transaction {
 
         try {
             try {
+                if (this.inBatchMode) {
+                    this.batchManager.flush();
+                }
                 Connection connection = threadLocalTx.get();
                 connection.commit();
                 connection.setAutoCommit(true);
                 if (this.afterCommitFunction != null) {
                     this.afterCommitFunction.doAfterCommit();
+                }
+                this.inBatchMode = false;
+                if (this.batchManager != null) {
+                    this.batchManager.clear();
+                    this.batchManager = null;
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -100,6 +133,11 @@ public class SqlgTransaction implements Transaction {
             threadLocalTx.get().rollback();
             if (this.afterRollbackFunction != null) {
                 this.afterRollbackFunction.doAfterRollback();
+            }
+            this.inBatchMode = false;
+            if (this.batchManager != null) {
+                this.batchManager.clear();
+                this.batchManager = null;
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

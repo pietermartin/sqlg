@@ -155,6 +155,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     while (resultSet.next()) {
                         long id = resultSet.getLong(1);
                         SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
+                        sqlGVertex.loadResultSet(resultSet);
                         sqlGVertexes.add(sqlGVertex);
                     }
                 } catch (SQLException e) {
@@ -193,7 +194,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                 while (resultSet.next()) {
                     long id = resultSet.getLong(1);
                     SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
-                    //TODO properties needs to be cached
                     sqlGVertex.loadResultSet(resultSet);
                     sqlGVertexes.add(sqlGVertex);
                 }

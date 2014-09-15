@@ -34,7 +34,7 @@ public abstract class BaseTest {
 
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
-        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlgraph.properties");
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
 

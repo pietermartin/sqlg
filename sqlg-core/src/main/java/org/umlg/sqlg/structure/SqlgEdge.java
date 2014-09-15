@@ -111,9 +111,19 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     protected void insertEdge(Object... keyValues) throws SQLException {
+        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        if (this.sqlG.features().supportsBatchMode() &&  this.sqlG.tx().isInBatchMode()) {
+            internalBatchAddEdge(keyValueMap);
+        } else {
+            internalAddEdge(keyValueMap);
+        }
+        //Cache the properties
+        this.properties.putAll(keyValueMap);
+    }
+
+    private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
 
         long edgeId = insertGlobalEdge();
-
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
@@ -122,7 +132,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(", ");
         int i = 1;
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         for (String column : keyValueMap.keySet()) {
             sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(column));
             if (i++ < keyValueMap.size()) {
@@ -164,8 +173,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
             preparedStatement.executeUpdate();
             this.primaryKey = edgeId;
         }
-        //Cache the properties
-        this.properties.putAll(keyValueMap);
+
+    }
+
+    private void internalBatchAddEdge(Map<String, Object> keyValueMap) {
+        this.sqlG.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
     }
 
     private long insertGlobalEdge() throws SQLException {

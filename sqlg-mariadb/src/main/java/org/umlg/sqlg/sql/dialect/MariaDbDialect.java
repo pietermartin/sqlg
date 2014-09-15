@@ -1,14 +1,14 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.Types;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Date: 2014/07/16
@@ -38,6 +38,16 @@ public class MariaDbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public boolean supportSchemas() {
         return false;
+    }
+
+    @Override
+    public void flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
+    }
+
+    @Override
+    public void flushEdgeCache(SqlG sqlG, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
     @Override

@@ -4,8 +4,8 @@ package org.umlg.sqlg.structure;
  * Date: 2014/08/17
  * Time: 7:20 AM
  */
-public class SchemaTable {
 
+public class SchemaTable {
     private String schema;
     private String table;
 

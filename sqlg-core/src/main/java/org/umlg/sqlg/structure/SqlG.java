@@ -23,6 +23,7 @@ import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 import java.beans.PropertyVetoException;
 import java.lang.reflect.Constructor;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -40,7 +41,7 @@ public class SqlG implements Graph {
     private SqlDialect sqlDialect;
     private String jdbcUrl;
     private ObjectMapper mapper = new ObjectMapper();
-    private boolean inBatchMode = false;
+    private boolean implementForeignKeys;
 
     public String getJdbcUrl() {
         return jdbcUrl;
@@ -71,6 +72,7 @@ public class SqlG implements Graph {
             Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
+            this.implementForeignKeys = configuration.getBoolean("implementForeignKeys", false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -271,11 +273,15 @@ public class SqlG implements Graph {
         return StringFactory.graphString(this, "SqlGraph");
     }
 
-    public Features features() {
+    public ISqlGFeatures features() {
         return new SqlGFeatures();
     }
 
-    public class SqlGFeatures implements Features {
+    public interface ISqlGFeatures extends Features {
+        boolean supportsBatchMode();
+    }
+
+    public class SqlGFeatures implements ISqlGFeatures {
         @Override
         public GraphFeatures graph() {
             return new GraphFeatures() {
@@ -310,6 +316,11 @@ public class SqlG implements Graph {
         @Override
         public String toString() {
             return StringFactory.featureString(this);
+        }
+
+        @Override
+        public boolean supportsBatchMode() {
+            return getSqlDialect().supportsBatchMode();
         }
 
         public class SqlVertexFeatures implements VertexFeatures {
@@ -566,6 +577,11 @@ public class SqlG implements Graph {
 
     }
 
+    /**
+     * This is executes a sql query and returns the result as a json string
+     * @param query
+     * @return
+     */
     public String query(String query) {
         try {
             Connection conn = SqlgDataSource.INSTANCE.get(this.getJdbcUrl()).getConnection();
@@ -633,14 +649,6 @@ public class SqlG implements Graph {
         this.getSchemaManager().createIndex(schemaTablePair, dummykeyValues);
     }
 
-    public void batchModeOn() {
-        this.inBatchMode = true;
-    }
-
-    public void batchModeOff() {
-        this.inBatchMode = false;
-    }
-
     public long countVertices() {
         this.tx().readWrite();
         Connection conn = this.tx().getConnection();
@@ -690,4 +698,7 @@ public class SqlG implements Graph {
         return longId;
     }
 
+    boolean isImplementForeignKeys() {
+        return implementForeignKeys;
+    }
 }

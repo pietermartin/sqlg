@@ -5,8 +5,9 @@ import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.util.StreamFactory;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
 import java.sql.Connection;
@@ -25,6 +26,7 @@ public abstract class SqlgElement implements Element {
 
     public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
+    private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
     protected String schema;
     protected String table;
@@ -53,6 +55,10 @@ public abstract class SqlgElement implements Element {
         this.table = table;
     }
 
+    public void setInternalPrimaryKey(Long id) {
+        this.primaryKey = id;
+    }
+
     @Override
     public Object id() {
         return primaryKey;
@@ -74,6 +80,9 @@ public abstract class SqlgElement implements Element {
         sql.append(" = ?");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
         }
         Connection conn = this.sqlG.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -130,7 +139,6 @@ public abstract class SqlgElement implements Element {
                 ImmutablePair.of(key, PropertyType.from(value)));
         updateRow(key, value);
         return instantiateProperty(key, value);
-//        return new SqlgProperty<>(this.sqlG, this, key, value);
     }
 
     protected <V> SqlgProperty<V> instantiateProperty(String key, V value) {
@@ -151,42 +159,59 @@ public abstract class SqlgElement implements Element {
     }
 
     private void updateRow(String key, Object value) {
-        StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
-        sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
-        sql.append(" SET ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(key));
-        sql.append(" = ?");
-        sql.append(" WHERE ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
+
+        boolean elementInInsertedCache = false;
+        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+            elementInInsertedCache = this.sqlG.tx().getBatchManager().updateProperty(this, key, value);
         }
-        Connection conn = this.sqlG.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            Map<String, Object> keyValue = new HashMap<>();
-            keyValue.put(key, value);
-            setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValue);
-            preparedStatement.setLong(2, (Long) this.id());
-            preparedStatement.executeUpdate();
-            preparedStatement.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+
+        if (!elementInInsertedCache) {
+            StringBuilder sql = new StringBuilder("UPDATE ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+            sql.append(".");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
+            sql.append(" SET ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(key));
+            sql.append(" = ?");
+            sql.append(" WHERE ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            Connection conn = this.sqlG.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                Map<String, Object> keyValue = new HashMap<>();
+                keyValue.put(key, value);
+                setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValue);
+                preparedStatement.setLong(2, (Long) this.id());
+                preparedStatement.executeUpdate();
+                preparedStatement.close();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
+
         //Cache the properties
         this.properties.put(key, value);
     }
 
     @Override
     public boolean equals(final Object object) {
-        return ElementHelper.areEqual(this, object);
+        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+            return super.equals(object);
+        } else {
+            return ElementHelper.areEqual(this, object);
+        }
     }
 
     @Override
     public int hashCode() {
-        return this.id().hashCode();
+        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+            return super.hashCode();
+        } else {
+            return this.id().hashCode();
+        }
     }
 
     protected Object convertObjectArrayToPrimitiveArray(Object[] value, int baseType) {

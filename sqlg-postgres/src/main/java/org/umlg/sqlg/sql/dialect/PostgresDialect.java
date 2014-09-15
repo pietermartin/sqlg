@@ -1,15 +1,23 @@
 package org.umlg.sqlg.sql.dialect;
 
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
+import org.postgresql.copy.CopyManager;
+import org.postgresql.core.BaseConnection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.*;
 
-import java.sql.Types;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.sql.*;
+import java.util.*;
 
 /**
  * Date: 2014/07/16
@@ -17,8 +25,16 @@ import java.util.Set;
  */
 public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
+    private static final String COPY_COMMAND_SEPERATOR = "~";
+    private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
+
     public PostgresDialect(Configuration configurator) {
         super(configurator);
+    }
+
+    @Override
+    public boolean supportsBatchMode() {
+        return true;
     }
 
     @Override
@@ -88,6 +104,257 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sb.append(schemaTable.getSchema());
         sb.append("'");
         return sb.toString();
+    }
+
+    /**
+     * flushes the cache via the copy command.
+     * first writes the
+     *
+     * @param vertexCache A rather complex object.
+     *                    The map's key is the vertex being cached.
+     *                    The Triple holds, 1) The in labels
+     *                    2) The out labels
+     *                    3) The properties as a map of key values
+     */
+    @Override
+    public void flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlG.tx().getConnection();
+        try {
+            Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
+            Object[] arg = new Object[]{};
+            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
+
+            //first insert the VERTICES
+            for (SchemaTable schemaTable : vertexCache.keySet()) {
+
+                Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
+
+                Long copyCount;
+                try (InputStream is = mapToVERTICES_InputStream(schemaTable, vertices)) {
+                    StringBuilder sql = new StringBuilder();
+                    sql.append("COPY ");
+                    sql.append(maybeWrapInQoutes(getPublicSchema()));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTICES));
+                    sql.append(" (");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_SCHEMA));
+                    sql.append(", ");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_TABLE));
+                    sql.append(", ");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
+                    sql.append(", ");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
+                    sql.append(") FROM stdin WITH (DELIMITER '");
+                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append("')");
+                    sql.append(";");
+                    if (this.logger.isDebugEnabled()) {
+                        this.logger.debug(sql.toString());
+                    }
+                    copyCount = copyManager.copyIn(sql.toString(), is);
+                }
+                Long endHigh;
+                if (logger.isDebugEnabled()) {
+                    logger.debug(String.format("copied in %d vertices", new Long[]{copyCount}));
+                    logger.debug("SELECT CURRVAL('\"" + SchemaManager.VERTICES + "_ID_seq\"');");
+                }
+                try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + SchemaManager.VERTICES + "_ID_seq\"');")) {
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    resultSet.next();
+                    endHigh = resultSet.getLong(1);
+                    resultSet.close();
+                }
+
+                //insert the labeled vertices
+                try (InputStream is = mapToLabeledVertex_InputStream(endHigh, vertices)) {
+                    StringBuffer sql = new StringBuffer();
+                    sql.append("COPY ");
+                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                    sql.append(" (\"ID\"");
+                    for (Triple<String, String, Map<String, Object>> pair : vertices.values()) {
+                        int count = 1;
+                        for (String key : pair.getRight().keySet()) {
+                            if (count++ <= pair.getRight().size()) {
+                                sql.append(", ");
+                            }
+                            sql.append(maybeWrapInQoutes(key));
+                        }
+                        break;
+                    }
+                    sql.append(") ");
+                    sql.append(" FROM stdin DELIMITER '");
+                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append("';");
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    copyManager.copyIn(sql.toString(), is);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void flushEdgeCache(SqlG sqlG, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlG.tx().getConnection();
+        try {
+            Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
+            Object[] arg = new Object[]{};
+            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
+
+            //first insert the EDGES
+            for (SchemaTable schemaTable : edgeCache.keySet()) {
+                Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = edgeCache.get(schemaTable);
+                try (InputStream is = mapToEDGES_InputStream(schemaTable, triples)) {
+                    StringBuilder sql = new StringBuilder();
+                    sql.append("COPY ");
+                    sql.append(maybeWrapInQoutes(this.getPublicSchema()));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(SchemaManager.EDGES));
+                    sql.append(" (");
+                    sql.append(maybeWrapInQoutes(SchemaManager.EDGE_SCHEMA));
+                    sql.append(", ");
+                    sql.append(maybeWrapInQoutes(SchemaManager.EDGE_TABLE));
+                    sql.append(") FROM stdin DELIMITER '");
+                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append("';");
+                    if (this.logger.isDebugEnabled()) {
+                        this.logger.debug(sql.toString());
+                    }
+                    copyManager.copyIn(sql.toString(), is);
+                }
+                Long endHigh;
+                try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + SchemaManager.EDGES + "_ID_seq\"');")) {
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    resultSet.next();
+                    endHigh = resultSet.getLong(1);
+                    resultSet.close();
+                }
+
+                //insert the edges
+                try (InputStream is = mapToEdge_InputStream(endHigh, triples)) {
+                    StringBuffer sql = new StringBuffer();
+                    sql.append("COPY ");
+                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+                    sql.append(" (\"ID\", ");
+                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.values()) {
+                        int count = 1;
+                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getLeft().getTable() + SqlgElement.OUT_VERTEX_COLUMN_END));
+                        sql.append(", ");
+                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getMiddle().getTable() + SqlgElement.IN_VERTEX_COLUMN_END));
+                        for (String key : triple.getRight().keySet()) {
+                            if (count++ <= triple.getRight().size()) {
+                                sql.append(", ");
+                            }
+                            sql.append(maybeWrapInQoutes(key));
+                        }
+                        break;
+                    }
+                    sql.append(") ");
+                    sql.append(" FROM stdin DELIMITER '");
+                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append("';");
+                    copyManager.copyIn(sql.toString(), is);
+                }
+            }
+
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private InputStream mapToEdge_InputStream(Long endHigh, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
+        Long start = endHigh - edgeCache.size() + 1;
+        StringBuilder sb = new StringBuilder();
+        int count = 1;
+        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
+            sb.append(start++);
+            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(triple.getLeft().id().toString());
+            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(triple.getMiddle().id().toString());
+            if (!triple.getRight().isEmpty()) {
+                sb.append(COPY_COMMAND_SEPERATOR);
+            }
+            int countKeys = 1;
+            for (String key : triple.getRight().keySet()) {
+                Object value = triple.getRight().get(key);
+                sb.append(value.toString());
+                if (countKeys++ < triple.getRight().size()) {
+                    sb.append(COPY_COMMAND_SEPERATOR);
+                }
+            }
+            if (count++ < edgeCache.size()) {
+                sb.append("\n");
+            }
+        }
+        return new ByteArrayInputStream(sb.toString().getBytes());
+    }
+
+    private InputStream mapToLabeledVertex_InputStream(Long endHigh, Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertexCache) {
+        //String str = "2,peter\n3,john";
+        Long start = endHigh - vertexCache.size() + 1;
+        StringBuilder sb = new StringBuilder();
+        int count = 1;
+        for (SqlgVertex sqlgVertex : vertexCache.keySet()) {
+            Triple<String, String, Map<String, Object>> triple = vertexCache.get(sqlgVertex);
+            //set the internal batch id to be used which inserting batch edges
+            sqlgVertex.setInternalPrimaryKey(start);
+            sb.append(start++);
+            int countKeys = 1;
+            for (String key : triple.getRight().keySet()) {
+                if (countKeys++ <= triple.getRight().size()) {
+                    sb.append(COPY_COMMAND_SEPERATOR);
+                }
+                Object value = triple.getRight().get(key);
+                sb.append(value.toString());
+            }
+            if (count++ < vertexCache.size()) {
+                sb.append("\n");
+            }
+        }
+        return new ByteArrayInputStream(sb.toString().getBytes());
+    }
+
+    private InputStream mapToVERTICES_InputStream(SchemaTable schemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertexCache) {
+        StringBuilder sb = new StringBuilder();
+        int count = 1;
+        for (Triple<String, String, Map<String, Object>> triple : vertexCache.values()) {
+            sb.append(schemaTable.getSchema());
+            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(schemaTable.getTable());
+            sb.append(COPY_COMMAND_SEPERATOR);
+            //out labels
+            sb.append(triple.getLeft());
+            sb.append(COPY_COMMAND_SEPERATOR);
+            //in labels
+            sb.append(triple.getMiddle());
+            if (count++ < vertexCache.size()) {
+                sb.append("\n");
+            }
+        }
+        return new ByteArrayInputStream(sb.toString().getBytes());
+    }
+
+    private InputStream mapToEDGES_InputStream(SchemaTable schemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
+        StringBuilder sb = new StringBuilder();
+        int count = 1;
+        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
+            sb.append(schemaTable.getSchema());
+            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(schemaTable.getTable());
+            if (count++ < edgeCache.size()) {
+                sb.append("\n");
+            }
+        }
+        return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
     @Override

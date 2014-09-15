@@ -3,9 +3,11 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
+import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.*;
+import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
@@ -42,7 +44,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestSchema.class,
         TestIndex.class,
         TestVertexOutWithHas.class,
-        TestEdgeHas.class
+        TestEdgeHas.class,
+        TestBatch.class,
+        TestRemoveEdge.class
 })
 public class AllTest {
 }

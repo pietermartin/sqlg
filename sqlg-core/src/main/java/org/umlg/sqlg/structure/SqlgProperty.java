@@ -57,29 +57,36 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     @Override
     public void remove() {
         this.element.properties.remove(this.key);
-        StringBuilder sql = new StringBuilder("UPDATE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
-        sql.append(".");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.table));
-        sql.append(" SET ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
-        sql.append(" = ? WHERE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
+        boolean elementInInsertedCache = false;
+        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+            elementInInsertedCache = this.sqlG.tx().getBatchManager().removeProperty(this, key);
         }
-        Connection conn = this.sqlG.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            PropertyType propertyType = PropertyType.from(value);
-            preparedStatement.setNull(1, this.sqlG.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
-            preparedStatement.setLong(2, (Long) this.element.id());
-            int numberOfRowsUpdated = preparedStatement.executeUpdate();
-            if (numberOfRowsUpdated != 1) {
-                throw new IllegalStateException("Remove property failed!");
+
+        if (!elementInInsertedCache) {
+            StringBuilder sql = new StringBuilder("UPDATE ");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
+            sql.append(".");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.table));
+            sql.append(" SET ");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
+            sql.append(" = ? WHERE ");
+            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            Connection conn = this.sqlG.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                PropertyType propertyType = PropertyType.from(value);
+                preparedStatement.setNull(1, this.sqlG.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
+                preparedStatement.setLong(2, (Long) this.element.id());
+                int numberOfRowsUpdated = preparedStatement.executeUpdate();
+                if (numberOfRowsUpdated != 1) {
+                    throw new IllegalStateException("Remove property failed!");
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
