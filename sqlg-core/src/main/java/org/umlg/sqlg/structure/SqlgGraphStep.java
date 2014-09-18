@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.util.TraverserIterator;
@@ -45,14 +46,14 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterator<? extends Edge> edges() {
         Stream<? extends Edge> edgeStream;
-        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(Element.LABEL) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
+        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
             this.hasContainers.remove(hasContainer1);
             this.hasContainers.remove(hasContainer2);
             edgeStream = getEdgesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
-        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(Element.LABEL)) {
+        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
             HasContainer hasContainer = this.hasContainers.get(0);
             //Scenario 2, using label only for search
             if (hasContainer.predicate == Contains.IN || hasContainer.predicate == Contains.NOT_IN) {
@@ -71,14 +72,14 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterator<? extends Vertex> vertices() {
         Stream<? extends Vertex> vertexStream;
-        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(Element.LABEL) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
+        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
             this.hasContainers.remove(hasContainer1);
             this.hasContainers.remove(hasContainer2);
             vertexStream = getVerticesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
-        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(Element.LABEL)) {
+        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
             //Scenario 2, using label only for search
             HasContainer hasContainer = this.hasContainers.get(0);
             if (hasContainer.predicate == Contains.IN || hasContainer.predicate == Contains.NOT_IN) {

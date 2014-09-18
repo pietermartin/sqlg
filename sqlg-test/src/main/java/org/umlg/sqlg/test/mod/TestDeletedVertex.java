@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgVertex;
@@ -14,8 +14,8 @@ public class TestDeletedVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testDeletedVertex() {
-        Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko");
-        Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "pieter");
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "marko");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name", "pieter");
         this.sqlG.tx().close();
         v1.remove();
         this.sqlG.tx().commit();

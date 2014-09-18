@@ -1,10 +1,12 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import com.tinkerpop.gremlin.process.T.*;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -30,7 +32,7 @@ public class SqlgUtil {
                 key = (String) keyValue;
             } else {
                 value = keyValue;
-                if (!key.equals(Element.LABEL)) {
+                if (!key.equals(T.label)) {
                     ElementHelper.validateProperty(key, value);
                 }
                 result.put(key, value);
@@ -79,10 +81,20 @@ public class SqlgUtil {
         }
     }
 
-    public static Object[] mapTokeyValues(Map<String, Object> keyValues) {
+    public static Object[] mapTokeyValues(Map<Object, Object> keyValues) {
         Object[] result = new Object[keyValues.size() * 2];
         int i = 0;
-        for (String key : keyValues.keySet()) {
+        for (Object key : keyValues.keySet()) {
+            result[i++] = key;
+            result[i++] = keyValues.get(key);
+        }
+        return result;
+    }
+
+    public static Object[] mapToStringKeyValues(Map<String, Object> keyValues) {
+        Object[] result = new Object[keyValues.size() * 2];
+        int i = 0;
+        for (Object key : keyValues.keySet()) {
             result[i++] = key;
             result[i++] = keyValues.get(key);
         }
@@ -94,20 +106,20 @@ public class SqlgUtil {
         Set<String> keys = new HashSet<>();
         ConcurrentHashMap<String, PropertyType> result = new ConcurrentHashMap<>();
         int i = 1;
-        String key = "";
+        Object key = null;
         for (Object keyValue : keyValues) {
             if (i++ % 2 != 0) {
                 //key
-                key = (String) keyValue;
+                key = keyValue;
             } else {
                 //value
                 //key
                 //skip the label as that is not a property but the table
-                if (key.equals(Element.LABEL) || keys.contains(key)) {
+                if (key.equals(T.label) || keys.contains(key)) {
                     continue;
                 }
-                keys.add(key);
-                result.put(key, PropertyType.from(keyValue));
+                keys.add((String)key);
+                result.put((String)key, PropertyType.from(keyValue));
             }
         }
         return result;
@@ -116,18 +128,18 @@ public class SqlgUtil {
     public static Map<String, Object> transformToInsertValues(Object... keyValues) {
         Map<String, Object> result = new TreeMap<>();
         int i = 1;
-        String key = "";
+        Object key = null;
         for (Object keyValue : keyValues) {
             if (i++ % 2 != 0) {
                 //key
-                key = (String) keyValue;
+                key = keyValue;
             } else {
                 //value
                 //skip the label as that is not a property but the table
-                if (key.equals(Element.LABEL) || key.equals(Element.ID)) {
+                if (key.equals(T.label) || key.equals(T.id)) {
                     continue;
                 }
-                result.put(key, keyValue);
+                result.put((String)key, keyValue);
             }
         }
         return result;
@@ -139,7 +151,7 @@ public class SqlgUtil {
             Object value = keyValues.get(key);
             //value
             //skip the label as that is not a property but the table
-            if (key.equals(Element.LABEL)) {
+            if (key.equals(T.label)) {
                 continue;
             }
             result.add(ImmutablePair.of(PropertyType.from(value), value));

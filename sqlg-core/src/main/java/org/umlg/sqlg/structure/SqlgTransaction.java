@@ -2,11 +2,14 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -96,28 +99,35 @@ public class SqlgTransaction implements Transaction {
             return;
 
         try {
-            try {
-                if (this.inBatchMode) {
-                    this.batchManager.flush();
-                }
-                Connection connection = threadLocalTx.get();
-                connection.commit();
-                connection.setAutoCommit(true);
-                if (this.afterCommitFunction != null) {
-                    this.afterCommitFunction.doAfterCommit();
-                }
-                this.inBatchMode = false;
-                if (this.batchManager != null) {
-                    this.batchManager.clear();
-                    this.batchManager = null;
-                }
-            } catch (SQLException e) {
+            if (this.inBatchMode) {
+                this.batchManager.flush();
+            }
+            Connection connection = threadLocalTx.get();
+            connection.commit();
+            connection.setAutoCommit(true);
+            if (this.afterCommitFunction != null) {
+                this.afterCommitFunction.doAfterCommit();
+            }
+            this.inBatchMode = false;
+            if (this.batchManager != null) {
+                this.batchManager.clear();
+                this.batchManager = null;
+            }
+        } catch (Exception e) {
+            this.rollback();
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
                 throw new RuntimeException(e);
             }
         } finally {
             try {
-                threadLocalTx.get().close();
-                threadLocalTx.remove();
+                //this is null after a rollback.
+                //might occur if sqlg has a bug and there is a SqlException
+                if (threadLocalTx.get() != null) {
+                    threadLocalTx.get().close();
+                    threadLocalTx.remove();
+                }
             } catch (SQLException e) {
                 threadLocalTx.remove();
                 throw new RuntimeException(e);
@@ -145,6 +155,49 @@ public class SqlgTransaction implements Transaction {
             try {
                 threadLocalTx.get().close();
                 threadLocalTx.remove();
+            } catch (SQLException e) {
+                threadLocalTx.remove();
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
+        if (!this.inBatchMode)
+            throw new IllegalStateException("Must be in batch mode to batchCommit!");
+
+        if (!isOpen())
+            return Collections.emptyMap();
+
+        try {
+            Map<SchemaTable, Pair<Long, Long>> verticesRange = this.batchManager.flush();
+            Connection connection = threadLocalTx.get();
+            connection.commit();
+            connection.setAutoCommit(true);
+            if (this.afterCommitFunction != null) {
+                this.afterCommitFunction.doAfterCommit();
+            }
+            this.inBatchMode = false;
+            if (this.batchManager != null) {
+                this.batchManager.clear();
+                this.batchManager = null;
+            }
+            return verticesRange;
+        } catch (Exception e) {
+            this.rollback();
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            try {
+                //this is null after a rollback.
+                //might occur if sqlg has a bug and there is a SqlException
+                if (threadLocalTx.get() != null) {
+                    threadLocalTx.get().close();
+                    threadLocalTx.remove();
+                }
             } catch (SQLException e) {
                 threadLocalTx.remove();
                 throw new RuntimeException(e);

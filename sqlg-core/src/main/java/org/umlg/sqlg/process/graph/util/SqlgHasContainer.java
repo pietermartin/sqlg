@@ -1,5 +1,6 @@
 package org.umlg.sqlg.process.graph.util;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Compare;
 import com.tinkerpop.gremlin.structure.Contains;
 import com.tinkerpop.gremlin.structure.Element;
@@ -30,9 +31,9 @@ public class SqlgHasContainer implements Serializable {
 
     public boolean test(final Element element) {
         if (null != this.value) {
-            if (this.key.equals(Element.ID))
+            if (this.key.equals(T.id))
                 return this.predicate.test(element.id(), this.value);
-            else if (this.key.equals(Element.LABEL))
+            else if (this.key.equals(T.label))
                 if (this.predicate == Compare.EQUAL) {
                     SqlgElement sqlgElement = (SqlgElement)element;
                     SchemaTable labelSchemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());

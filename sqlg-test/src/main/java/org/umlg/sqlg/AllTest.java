@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
+import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
@@ -46,7 +47,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
         TestBatch.class,
-        TestRemoveEdge.class
+        TestRemoveEdge.class,
+        TestEdgeSchemaCreation.class
 })
 public class AllTest {
 }

@@ -23,7 +23,7 @@ public class TestUpdateVertex extends BaseTest {
 
 //    @Test
 //    public void testUpdateVertex() {
-//        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person", "name", "john");
+//        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
 //        Assert.assertEquals("john", v.value("name"));
 //        v.property("name", "joe");
 //        Assert.assertEquals("joe", v.value("name"));
@@ -33,7 +33,7 @@ public class TestUpdateVertex extends BaseTest {
 //
 //    @Test
 //    public void testPropertyIsPresent() {
-//        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person", "name", "john");
+//        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
 //        Assert.assertTrue(v.property("name").isPresent());
 //    }
 

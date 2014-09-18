@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,16 +21,16 @@ public class TestHas extends BaseTest {
 
     @Test
     public void testQueryTableNotYetExists() {
-        this.sqlG.addVertex(Element.LABEL, "Animal");
+        this.sqlG.addVertex(T.label, "Animal");
         this.sqlG.tx().commit();
-        Assert.assertEquals(0, this.sqlG.V().has(Element.LABEL, "Person").count().next(), 0);
+        Assert.assertEquals(0, this.sqlG.V().has(T.label, "Person").count().next(), 0);
     }
 
     @Test
     public void testQueryPropertyNotYetExists() {
-        this.sqlG.addVertex(Element.LABEL, "Person");
+        this.sqlG.addVertex(T.label, "Person");
         this.sqlG.tx().commit();
-        Assert.assertEquals(0, this.sqlG.V().has(Element.LABEL, "Person").has("name", "john").count().next(), 0);
+        Assert.assertEquals(0, this.sqlG.V().has(T.label, "Person").has("name", "john").count().next(), 0);
     }
 
     @Test
@@ -44,20 +44,20 @@ public class TestHas extends BaseTest {
 
     @Test
     public void testEdgeQueryTableNotYetExists() {
-        Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Animal");
-        Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Animal");
+        Vertex v1 = this.sqlG.addVertex(T.label, "Animal");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Animal");
         v1.addEdge("friend", v2);
         this.sqlG.tx().commit();
-        Assert.assertEquals(0, this.sqlG.E().has(Element.LABEL, "friendXXX").count().next(), 0);
+        Assert.assertEquals(0, this.sqlG.E().has(T.label, "friendXXX").count().next(), 0);
     }
 
     @Test
     public void testEdgeQueryPropertyNotYetExists() {
-        Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Person");
-        Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Person");
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person");
         v1.addEdge("friend", v2);
         this.sqlG.tx().commit();
-        Assert.assertEquals(0, this.sqlG.V().has(Element.LABEL, "friend").has("weight", "5").count().next(), 0);
+        Assert.assertEquals(0, this.sqlG.V().has(T.label, "friend").has("weight", "5").count().next(), 0);
     }
 
 }

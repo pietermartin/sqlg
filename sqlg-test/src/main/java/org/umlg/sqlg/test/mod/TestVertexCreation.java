@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/07/12
@@ -49,7 +48,7 @@ public class TestVertexCreation extends BaseTest {
     @Test
     public void testCreateVertexWithProperties() throws SQLException {
         Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        sqlG.addVertex(Element.LABEL, "Person",
+        sqlG.addVertex(T.label, "Person",
                 "boolean1", true,
                 "short1", (short) 1,
                 "integer1", 1,
@@ -58,7 +57,7 @@ public class TestVertexCreation extends BaseTest {
                 "double1", 1D,
                 "name", "marko"
         );
-        sqlG.addVertex(Element.LABEL, "Person",
+        sqlG.addVertex(T.label, "Person",
                 "boolean1", true,
                 "short1", (short) 1,
                 "integer1", 1,
@@ -112,12 +111,12 @@ public class TestVertexCreation extends BaseTest {
 
     @Test
     public void testAndColumns() {
-        Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Person", "name1", "marko");
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name1", "marko");
         this.sqlG.tx().commit();
         assertEquals(1, this.sqlG.V().count().next(), 0);
         assertEquals(v1, this.sqlG.v(v1.id()));
         assertEquals(1, v1.properties().count().next(), 0);
-        Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Person", "name2", "john");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name2", "john");
         assertEquals(2, this.sqlG.V().count().next(), 0);
         assertEquals(v2, this.sqlG.v(v2.id()));
         assertEquals(1, v2.properties().count().next(), 0);

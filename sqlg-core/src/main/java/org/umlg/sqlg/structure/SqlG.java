@@ -3,12 +3,12 @@ package org.umlg.sqlg.structure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -23,7 +23,7 @@ import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 import java.beans.PropertyVetoException;
 import java.lang.reflect.Constructor;
 import java.sql.*;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -103,8 +103,9 @@ public class SqlG implements Graph {
     }
 
     public Vertex addVertex(String label, Map<String, Object> keyValues) {
-        keyValues.put(Element.LABEL, label);
-        return addVertex(SqlgUtil.mapTokeyValues(keyValues));
+        Map<Object, Object> tmp = new HashMap<>(keyValues);
+        tmp.put(T.label, label);
+        return addVertex(SqlgUtil.mapTokeyValues(tmp));
     }
 
     @Override
@@ -114,15 +115,15 @@ public class SqlG implements Graph {
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
 
         int i = 0;
-        String key = "";
+        Object key = null;
         Object value;
         for (Object keyValue : keyValues) {
             if (i++ % 2 == 0) {
-                key = (String) keyValue;
+                key = keyValue;
             } else {
                 value = keyValue;
-                if (!key.equals(Element.LABEL)) {
-                    ElementHelper.validateProperty(key, value);
+                if (!key.equals(T.label)) {
+                    ElementHelper.validateProperty((String)key, value);
                     this.sqlDialect.validateProperty(key, value);
                 }
 
@@ -637,7 +638,7 @@ public class SqlG implements Graph {
                 key = (String) keyValue;
             } else {
                 value = keyValue;
-                if (!key.equals(Element.LABEL)) {
+                if (!key.equals(T.label)) {
                     ElementHelper.validateProperty(key, value);
                     this.sqlDialect.validateProperty(key, value);
                 }

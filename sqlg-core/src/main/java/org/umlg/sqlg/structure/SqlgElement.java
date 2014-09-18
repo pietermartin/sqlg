@@ -55,6 +55,10 @@ public abstract class SqlgElement implements Element {
         this.table = table;
     }
 
+    SchemaTable getSchemaTable() {
+        return SchemaTable.of(this.getSchema(), this.getTable());
+    }
+
     public void setInternalPrimaryKey(Long id) {
         this.primaryKey = id;
     }

@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
@@ -20,12 +21,16 @@ public class BatchManager {
     private SqlDialect sqlDialect;
 
     //map per label, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
-    private Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache = new HashMap<>();
+    private Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache = new LinkedHashMap<>();
     //map per label, contains a map edges. The triple is outVertex, inVertex, edge properties
-    private Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache = new HashMap<>();
+    private Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache = new LinkedHashMap<>();
 
     private Map<SqlgVertex, Map<String, List<SqlgEdge>>> vertexInEdgeCache = new HashMap<>();
     private Map<SqlgVertex, Map<String, List<SqlgEdge>>> vertexOutEdgeCache = new HashMap<>();
+
+    //this cache is used the cache in and out labels of vertices that are not itself in the cache.
+    //i.e. when adding edges between vertices in batch mode
+    private Map<SqlgVertex, Pair<String, String>> vertexOutInLabelCache = new LinkedHashMap<>();
 
     BatchManager(SqlG sqlG, SqlDialect sqlDialect) {
         this.sqlG = sqlG;
@@ -45,12 +50,12 @@ public class BatchManager {
     }
 
     public synchronized void addEdge(SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        SchemaTable schemaTable = SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable());
-        Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(schemaTable);
+        SchemaTable outSchemaTable = SchemaTable.of(outVertex.getSchema(), sqlgEdge.getTable());
+        Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(outSchemaTable);
         if (triples == null) {
             triples = new LinkedHashMap<>();
             triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
-            this.edgeCache.put(schemaTable, triples);
+            this.edgeCache.put(outSchemaTable, triples);
         } else {
             triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
         }
@@ -90,13 +95,15 @@ public class BatchManager {
         }
     }
 
-    public synchronized void flush() {
-        this.sqlDialect.flushVertexCache(this.sqlG, this.vertexCache);
+    public synchronized Map<SchemaTable, Pair<Long, Long>> flush() {
+        Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlG, this.vertexCache);
         this.sqlDialect.flushEdgeCache(this.sqlG, this.edgeCache);
+        this.sqlDialect.flushVertexLabelCache(this.sqlG, this.vertexOutInLabelCache);
+        return verticesRange;
     }
 
     public boolean updateVertexCacheWithEdgeLabel(SqlgVertex vertex, SchemaTable schemaTable, boolean inDirection) {
-        Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertices = this.vertexCache.get(SchemaTable.of(vertex.getSchema(), vertex.getTable()));
+        Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertices = this.vertexCache.get(vertex.getSchemaTable());
         if (vertices != null) {
             Triple<String, String, Map<String, Object>> triple = vertices.get(vertex);
             if (triple != null) {
@@ -111,17 +118,33 @@ public class BatchManager {
                 }
                 return true;
             }
+        } else {
+            if (inDirection) {
+                Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
+                if (outInLabel == null) {
+                    this.vertexOutInLabelCache.put(vertex, Pair.of(null, schemaTable.toString()));
+                } else {
+                    this.vertexOutInLabelCache.put(vertex, Pair.of(outInLabel.getLeft(), updateVertexLabels(outInLabel.getRight(), schemaTable)));
+                }
+            } else {
+                Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
+                if (outInLabel == null) {
+                    this.vertexOutInLabelCache.put(vertex, Pair.of(schemaTable.toString(), null));
+                } else {
+                    this.vertexOutInLabelCache.put(vertex, Pair.of(updateVertexLabels(outInLabel.getLeft(), schemaTable), outInLabel.getRight()));
+                }
+            }
         }
         return false;
     }
 
     private String updateVertexLabels(String currentLabel, SchemaTable schemaTable) {
-        if (currentLabel.equals(BATCH_NULL)) {
+        if (currentLabel == null || currentLabel.equals(BATCH_NULL)) {
             return schemaTable.toString();
         } else if (currentLabel.equals(schemaTable.toString())) {
             return currentLabel;
         } else {
-            return currentLabel + "," + schemaTable.toString();
+            return currentLabel + SchemaManager.LABEL_SEPERATOR + schemaTable.toString();
         }
     }
 
@@ -232,6 +255,7 @@ public class BatchManager {
         this.edgeCache.clear();
         this.vertexInEdgeCache.clear();
         this.vertexOutEdgeCache.clear();
+        this.vertexOutInLabelCache.clear();
     }
 
 }

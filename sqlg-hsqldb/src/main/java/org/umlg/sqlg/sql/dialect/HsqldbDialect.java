@@ -47,13 +47,18 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
     @Override
     public void flushEdgeCache(SqlG sqlG, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushVertexLabelCache(SqlG sqlG, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
     @Override

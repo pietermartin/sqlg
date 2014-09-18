@@ -112,12 +112,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
      *
      * @param vertexCache A rather complex object.
      *                    The map's key is the vertex being cached.
-     *                    The Triple holds, 1) The in labels
+     *                    The Triple holds,
+     *                    1) The in labels
      *                    2) The out labels
      *                    3) The properties as a map of key values
      */
     @Override
-    public void flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+        Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlG.tx().getConnection();
         try {
             Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
@@ -192,7 +194,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     copyManager.copyIn(sql.toString(), is);
                 }
+
+                verticesRanges.put(schemaTable, Pair.of(endHigh - copyCount + 1, endHigh));
+
             }
+
+            return verticesRanges;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -245,9 +252,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(" (\"ID\", ");
                     for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.values()) {
                         int count = 1;
-                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getLeft().getTable() + SqlgElement.OUT_VERTEX_COLUMN_END));
+                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SqlgElement.OUT_VERTEX_COLUMN_END));
                         sql.append(", ");
-                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getMiddle().getTable() + SqlgElement.IN_VERTEX_COLUMN_END));
+                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SqlgElement.IN_VERTEX_COLUMN_END));
                         for (String key : triple.getRight().keySet()) {
                             if (count++ <= triple.getRight().size()) {
                                 sql.append(", ");
@@ -260,6 +267,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(" FROM stdin DELIMITER '");
                     sql.append(COPY_COMMAND_SEPERATOR);
                     sql.append("';");
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
                     copyManager.copyIn(sql.toString(), is);
                 }
             }
@@ -267,6 +277,60 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void flushVertexLabelCache(SqlG sqlG, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
+        if (!vertexOutInLabelMap.isEmpty()) {
+            Connection conn = sqlG.tx().getConnection();
+            StringBuilder sql = new StringBuilder();
+            sql.append("update \"VERTICES\" a\n" +
+                    "SET (\"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\") =\n" +
+                    "\t(v.\"VERTEX_SCHEMA\", v.\"VERTEX_TABLE\", v.\"IN_LABELS\", v.\"OUT_LABELS\")\n" +
+                    "FROM ( \n" +
+                    "    VALUES \n");
+            int count = 1;
+            for (SqlgVertex sqlgVertex : vertexOutInLabelMap.keySet()) {
+                Pair<String, String> outInLabel = vertexOutInLabelMap.get(sqlgVertex);
+                sql.append("        (");
+                sql.append(sqlgVertex.id());
+                sql.append(", '");
+                sql.append(sqlgVertex.getSchema());
+                sql.append("', '");
+                sql.append(sqlgVertex.getTable());
+                sql.append("', ");
+                if (outInLabel.getRight() == null) {
+                    sql.append("null");
+                } else {
+                    sql.append("'");
+                    sql.append(outInLabel.getRight());
+                    sql.append("'");
+                }
+                sql.append(", ");
+
+                if (outInLabel.getLeft() == null) {
+                    sql.append("null");
+                } else {
+                    sql.append("'");
+                    sql.append(outInLabel.getLeft());
+                    sql.append("'");
+                }
+                sql.append(")");
+                if (count++ < vertexOutInLabelMap.size()) {
+                    sql.append(",        \n");
+                }
+            }
+            sql.append("\n) AS v(id, \"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\")");
+            sql.append("\nWHERE a.\"ID\" = v.id");
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (Statement statement = conn.createStatement()) {
+                statement.execute(sql.toString());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -14,7 +14,7 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testSetProperty() {
-        Vertex marko = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko");
+        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
         marko.property("surname", "xxxx");
         this.sqlG.tx().commit();
         Assert.assertEquals("xxxx", marko.property("surname").value());
@@ -29,7 +29,7 @@ public class TestSetProperty extends BaseTest {
     @Test
     public void testFloat() {
         Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person", "age", 1f);
+        Vertex v = this.sqlG.addVertex(T.label, "Person", "age", 1f);
         this.sqlG.tx().commit();
         Assert.assertEquals(1f, v.property("age").value());
     }
@@ -37,7 +37,7 @@ public class TestSetProperty extends BaseTest {
     @Test
     public void testPrimitiveProperties() {
         Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person",
+        Vertex v = this.sqlG.addVertex(T.label, "Person",
                 "age2", (short)1,
                 "age3", 1,
                 "age4", 1l,
@@ -54,7 +54,7 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testPrimitivePropertiesNoFloat() {
-        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person",
+        Vertex v = this.sqlG.addVertex(T.label, "Person",
                 "age2", (short)1,
                 "age3", 1,
                 "age4", 1l,
@@ -70,7 +70,7 @@ public class TestSetProperty extends BaseTest {
     @Test
     public void testObjectProperties() {
         Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person",
+        Vertex v = this.sqlG.addVertex(T.label, "Person",
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
                 "age4", new Long(1l),
@@ -87,7 +87,7 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testObjectPropertiesNoFloat() {
-        Vertex v = this.sqlG.addVertex(Element.LABEL, "Person",
+        Vertex v = this.sqlG.addVertex(T.label, "Person",
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
                 "age4", new Long(1l),

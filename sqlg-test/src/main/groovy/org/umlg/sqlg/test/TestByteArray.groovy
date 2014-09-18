@@ -1,9 +1,9 @@
 package org.umlg.sqlg.test
 
-import com.tinkerpop.gremlin.structure.Element
 import com.tinkerpop.gremlin.structure.Vertex
 import org.junit.Assert
 import org.junit.Test
+import com.tinkerpop.gremlin.process.T
 
 /**
  * Created by pieter on 2014/08/03.
@@ -16,7 +16,7 @@ class TestByteArray extends BaseTest {
         Vertex v1 = this.sqlG.addVertex("Person", [name: 'pieter', bytea: bytea]);
         this.sqlG.tx().commit()
 
-        Vertex v2 = this.sqlG.V().has(Element.LABEL, "Person").next();
+        Vertex v2 = this.sqlG.V().has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertArrayEquals(bytea, v2.property("bytea").value());
     }

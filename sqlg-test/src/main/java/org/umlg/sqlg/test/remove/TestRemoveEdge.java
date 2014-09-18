@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.remove;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
@@ -14,7 +14,7 @@ public class TestRemoveEdge extends BaseTest {
 
     @Test
     public void testRemoveEdgeAndVertex() {
-        Vertex dataTypeEntity = this.sqlG.addVertex(Element.LABEL, "DataTypeEntity", "name", "marko");
+        Vertex dataTypeEntity = this.sqlG.addVertex(T.label, "DataTypeEntity", "name", "marko");
         Vertex date1 = this.sqlG.addVertex("name", "a");
         Vertex date2 = this.sqlG.addVertex("name", "b");
         Vertex date3 = this.sqlG.addVertex("name", "c");

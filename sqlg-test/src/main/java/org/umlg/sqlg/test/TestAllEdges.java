@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -13,8 +13,8 @@ public class TestAllEdges extends BaseTest {
 
     @Test
     public void testAllEdges() {
-        Vertex marko = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko");
-        Vertex john = this.sqlG.addVertex(Element.LABEL, "Person", "name", "john");
+        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
+        Vertex john = this.sqlG.addVertex(T.label, "Person", "name", "john");
         marko.addEdge("friend", john);
         marko.addEdge("family", john);
         this.sqlG.tx().commit();

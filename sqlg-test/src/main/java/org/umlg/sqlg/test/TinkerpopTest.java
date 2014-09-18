@@ -2,6 +2,7 @@ package org.umlg.sqlg.test;
 
 import com.tinkerpop.gremlin.FeatureRequirement;
 import com.tinkerpop.gremlin.FeatureRequirementSet;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -33,9 +34,9 @@ public class TinkerpopTest extends BaseTest {
                 .incrementalLoading(true, Exists.OVERWRITE, Exists.IGNORE)
                 .vertexIdKey("name")
                 .bufferSize(1).create();
-        graph.addVertex(Element.ID, "marko", "age", 29);
-        final Vertex v1 = graph.addVertex(Element.ID, "stephen", "age", 37);
-        final Vertex v2 = graph.addVertex(Element.ID, "marko", "age", 34);
+        graph.addVertex(T.id, "marko", "age", 29);
+        final Vertex v1 = graph.addVertex(T.id, "stephen", "age", 37);
+        final Vertex v2 = graph.addVertex(T.id, "marko", "age", 34);
         v1.addEdge("knows", v2, "weight", 1.0d);
         graph.tx().commit();
 

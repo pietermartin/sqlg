@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.structure.*;
@@ -25,8 +26,8 @@ import java.util.stream.Stream;
 public class SqlgVertex extends SqlgElement implements Vertex {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
-//    Set<SchemaTable> inLabelsForVertex = new HashSet<>();
-//    Set<SchemaTable> outLabelsForVertex = new HashSet<>();
+    Set<SchemaTable> inLabelsForVertex = null;
+    Set<SchemaTable> outLabelsForVertex = null;
 
     public SqlgVertex(SqlG sqlG, String schema, String table, Object... keyValues) {
         super(sqlG, schema, table);
@@ -43,10 +44,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     public SqlgVertex(SqlG sqlG, Long id, String schema, String table, Object... keyValues) {
         super(sqlG, id, schema, table);
+        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        this.properties.putAll(keyValueMap);
     }
 
     public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
-        Object[] parameters = SqlgUtil.mapTokeyValues(keyValues);
+        Object[] parameters = SqlgUtil.mapToStringKeyValues(keyValues);
         return addEdge(label, inVertex, parameters);
     }
 
@@ -147,12 +150,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public void remove() {
         this.sqlG.tx().readWrite();
-        super.remove();
         //Remove all edges
         Iterator<SqlgEdge> edges = this.internalGetEdges(Direction.BOTH);
         while (edges.hasNext()) {
             edges.next().remove();
         }
+        super.remove();
         StringBuilder sql = new StringBuilder("DELETE FROM ");
         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
         sql.append(".");
@@ -300,7 +303,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         } else {
 
             Set<SqlgVertex> vertices = new HashSet<>();
-            List<HasContainer> labelHasContainers = filterHasContainerOnKey(hasContainers, Element.LABEL);
+            List<HasContainer> labelHasContainers = filterHasContainerOnKey(hasContainers, T.label.getAccessor());
             Set<String> hasContainerLabels = extractLabelsFromHasContainer(labelHasContainers);
 
             List<Direction> directions = new ArrayList<>(2);

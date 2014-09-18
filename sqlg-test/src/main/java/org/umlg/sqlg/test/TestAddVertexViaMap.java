@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -25,7 +26,7 @@ public class TestAddVertexViaMap extends BaseTest {
         map.put("name3", "p3");
         Vertex v1 = this.sqlG.addVertex("Person", map);
         this.sqlG.tx().commit();
-        Vertex v2 = this.sqlG.V().<Vertex>has(Element.LABEL, "Person").next();
+        Vertex v2 = this.sqlG.V().<Vertex>has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertEquals("p1", v2.property("name1").value());
         Assert.assertEquals("p2", v2.property("name2").value());
@@ -45,13 +46,13 @@ public class TestAddVertexViaMap extends BaseTest {
 
     @Test
     public void howToUpdateManyRows() {
-        this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko");
-        this.sqlG.addVertex(Element.LABEL, "Person", "name", "joe");
-        this.sqlG.addVertex(Element.LABEL, "Person", "name", "john");
-        this.sqlG.addVertex(Element.LABEL, "Person", "name", "peter");
+        this.sqlG.addVertex(T.label, "Person", "name", "marko");
+        this.sqlG.addVertex(T.label, "Person", "name", "joe");
+        this.sqlG.addVertex(T.label, "Person", "name", "john");
+        this.sqlG.addVertex(T.label, "Person", "name", "peter");
         this.sqlG.tx().commit();
 
-        List<Vertex> markos = this.sqlG.V().has(Element.LABEL, "Person").<Vertex>has("name", "marko").toList();
+        List<Vertex> markos = this.sqlG.V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
         if (markos.isEmpty()) {
             markos.get(0).property("name", "marko2");
         }

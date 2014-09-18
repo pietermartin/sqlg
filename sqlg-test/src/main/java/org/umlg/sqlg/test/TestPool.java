@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import org.junit.Test;
 
 /**
@@ -12,11 +12,11 @@ public class TestPool extends BaseTest {
     @Test
     public void testSqlGraphConnectionsDoesNotExhaustPool() {
         for (int i = 0; i < 1000; i++) {
-            this.sqlG.addVertex(Element.LABEL, "Person");
+            this.sqlG.addVertex(T.label, "Person");
         }
         this.sqlG.tx().commit();
         for (int i = 0; i < 1000; i++) {
-            this.sqlG.V().has(Element.LABEL, "Person").hasNext();
+            this.sqlG.V().has(T.label, "Person").hasNext();
         }
     }
 }

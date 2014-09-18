@@ -318,7 +318,6 @@ public class SchemaManager {
         if (cachedColumns == null) {
             uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
         } else {
-            //TODO rethink synchromization
             uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
             if (uncommitedColumns != null) {
                 uncommitedColumns.putAll(cachedColumns);
@@ -346,7 +345,12 @@ public class SchemaManager {
         if (foreignKeys == null) {
             uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + table);
         } else {
-            uncommittedForeignKeys = new HashSet<>(foreignKeys);
+            uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + table);
+            if (uncommittedForeignKeys != null) {
+                uncommittedForeignKeys.addAll(foreignKeys);
+            } else {
+                uncommittedForeignKeys = new HashSet<>(foreignKeys);
+            }
         }
         if (uncommittedForeignKeys == null) {
             //This happens on edge indexes which creates the table with no foreign keys to vertices.
@@ -604,15 +608,13 @@ public class SchemaManager {
         Long id = (Long) sqlgVertex.id();
         SchemaTable schemaTable = SchemaTable.of(schema, table);
 
-        boolean wasInCache = false;
         if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
-            wasInCache = this.sqlG.tx().getBatchManager().updateVertexCacheWithEdgeLabel(sqlgVertex, schemaTable, inDirection);
-        }
-
-        if (!wasInCache) {
+            this.sqlG.tx().getBatchManager().updateVertexCacheWithEdgeLabel(sqlgVertex, schemaTable, inDirection);
+        } else {
             Set<SchemaTable> labelSet = getLabelsForVertex(sqlgVertex, inDirection);
             if (!labelSet.contains(schemaTable)) {
                 labelSet.add(schemaTable);
+
                 StringBuilder sql = new StringBuilder("UPDATE ");
                 sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
                 sql.append(".");
@@ -657,7 +659,8 @@ public class SchemaManager {
 
     public Set<SchemaTable> getLabelsForVertex(SqlgVertex sqlgVertex, boolean inDirection) {
 
-//        if ((inDirection && sqlgVertex.inLabelsForVertex.isEmpty()) || (!inDirection && sqlgVertex.outLabelsForVertex.isEmpty())) {
+        //the inLabelsForVertex and outLabelsForVertex sets are initialized to null to distinguish between having been loaded and having no labels
+        if ((inDirection && sqlgVertex.inLabelsForVertex == null) || (!inDirection && sqlgVertex.outLabelsForVertex == null)) {
             Long id = (Long) sqlgVertex.id();
             Set<SchemaTable> labels = new HashSet<>();
             StringBuilder sql = new StringBuilder("SELECT ");
@@ -695,18 +698,19 @@ public class SchemaManager {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        return labels;
-//            if (inDirection) {
-//                sqlgVertex.inLabelsForVertex.addAll(labels);
-//            } else {
-//                sqlgVertex.outLabelsForVertex.addAll(labels);
-//            }
-//        }
-//        if (inDirection) {
-//            return sqlgVertex.inLabelsForVertex;
-//        } else {
-//            return sqlgVertex.outLabelsForVertex;
-//        }
+            if (inDirection) {
+                sqlgVertex.inLabelsForVertex = new HashSet<>();
+                sqlgVertex.inLabelsForVertex.addAll(labels);
+            } else {
+                sqlgVertex.outLabelsForVertex = new HashSet<>();
+                sqlgVertex.outLabelsForVertex.addAll(labels);
+            }
+        }
+        if (inDirection) {
+            return sqlgVertex.inLabelsForVertex;
+        } else {
+            return sqlgVertex.outLabelsForVertex;
+        }
     }
 
     private void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {

@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.vertexout;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,12 +16,12 @@ public class TestVertexOutWithHas extends BaseTest {
 
     @Test
     public void testVertexOutWithHas() {
-        Vertex marko = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko");
-        Vertex bmw1 = this.sqlG.addVertex(Element.LABEL, "Car", "name", "bmw", "cc", 600);
-        Vertex bmw2 = this.sqlG.addVertex(Element.LABEL, "Car", "name", "bmw", "cc", 800);
-        Vertex ktm1 = this.sqlG.addVertex(Element.LABEL, "Bike", "name", "ktm", "cc", 200);
-        Vertex ktm2 = this.sqlG.addVertex(Element.LABEL, "Bike", "name", "ktm", "cc", 200);
-        Vertex ktm3 = this.sqlG.addVertex(Element.LABEL, "Bike", "name", "ktm", "cc", 400);
+        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
+        Vertex bmw1 = this.sqlG.addVertex(T.label, "Car", "name", "bmw", "cc", 600);
+        Vertex bmw2 = this.sqlG.addVertex(T.label, "Car", "name", "bmw", "cc", 800);
+        Vertex ktm1 = this.sqlG.addVertex(T.label, "Bike", "name", "ktm", "cc", 200);
+        Vertex ktm2 = this.sqlG.addVertex(T.label, "Bike", "name", "ktm", "cc", 200);
+        Vertex ktm3 = this.sqlG.addVertex(T.label, "Bike", "name", "ktm", "cc", 400);
         marko.addEdge("drives", bmw1);
         marko.addEdge("drives", bmw2);
         marko.addEdge("drives", ktm1);
@@ -45,11 +45,11 @@ public class TestVertexOutWithHas extends BaseTest {
 
     @Test
     public void testVertexInWithHas() {
-        Vertex marko1 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko1");
-        Vertex marko2 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko2", "age", 20);
-        Vertex marko3 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko3", "age", 20);
-        Vertex marko4 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko4", "age", 30);
-        Vertex marko5 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko5", "age", 40);
+        Vertex marko1 = this.sqlG.addVertex(T.label, "Person", "name", "marko1");
+        Vertex marko2 = this.sqlG.addVertex(T.label, "Person", "name", "marko2", "age", 20);
+        Vertex marko3 = this.sqlG.addVertex(T.label, "Person", "name", "marko3", "age", 20);
+        Vertex marko4 = this.sqlG.addVertex(T.label, "Person", "name", "marko4", "age", 30);
+        Vertex marko5 = this.sqlG.addVertex(T.label, "Person", "name", "marko5", "age", 40);
 
         marko2.addEdge("friend", marko1);
         marko3.addEdge("friend", marko1);
@@ -84,14 +84,14 @@ public class TestVertexOutWithHas extends BaseTest {
 
     @Test
     public void testVertexHasLabel() {
-        Vertex marko = this.sqlG.addVertex(Element.LABEL, "Person", "name", "marko");
-        Vertex bmw = this.sqlG.addVertex(Element.LABEL, "Car", "name", "bmw");
-        Vertex vw = this.sqlG.addVertex(Element.LABEL, "Car", "name", "vw");
+        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
+        Vertex bmw = this.sqlG.addVertex(T.label, "Car", "name", "bmw");
+        Vertex vw = this.sqlG.addVertex(T.label, "Car", "name", "vw");
         marko.addEdge("drives", bmw);
         marko.addEdge("drives", vw);
         this.sqlG.tx().commit();
-        Assert.assertEquals(1, marko.out("drives").has(Element.LABEL, "Car").has("name", "bmw").count().next(), 0);
-        Assert.assertEquals(0, marko.out("drives").has(Element.LABEL, "Person").has("name", "vw").count().next(), 0);
+        Assert.assertEquals(1, marko.out("drives").has(T.label, "Car").has("name", "bmw").count().next(), 0);
+        Assert.assertEquals(0, marko.out("drives").has(T.label, "Person").has("name", "vw").count().next(), 0);
 
 
     }

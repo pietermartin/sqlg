@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,9 +16,9 @@ public class TestEdgeToDifferentLabeledVertexes extends BaseTest {
 
     @Test
     public void testEdgeIsToDifferentLabeledVertexes() {
-        Vertex v1 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "a");
-        Vertex v2 = this.sqlG.addVertex(Element.LABEL, "Person", "name", "b");
-        Vertex v3 = this.sqlG.addVertex(Element.LABEL, "Product", "name", "c");
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "a");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name", "b");
+        Vertex v3 = this.sqlG.addVertex(T.label, "Product", "name", "c");
         v1.addEdge("label1", v2);
         v1.addEdge("label1", v3);
         this.sqlG.tx().commit();

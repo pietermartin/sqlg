@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -26,7 +26,7 @@ public class TestLoadArrayProperties extends BaseTest {
                         this.sqlG.getSqlDialect().supportsDoubleArrayValues() &&
                         this.sqlG.getSqlDialect().supportsStringArrayValues()
         );
-        this.sqlG.addVertex(Element.LABEL, "Person",
+        this.sqlG.addVertex(T.label, "Person",
                 "aBoolean", new boolean[]{true},
                 "aShort", new short[]{(short) 1},
                 "aInteger", new int[]{1},
@@ -38,7 +38,7 @@ public class TestLoadArrayProperties extends BaseTest {
         this.sqlG.tx().commit();
         this.sqlG.close();
         this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(Element.LABEL, "Person");
+        Iterator<Vertex> iter = this.sqlG.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -51,7 +51,7 @@ public class TestLoadArrayProperties extends BaseTest {
 
         this.sqlG.close();
         this.sqlG.open(configuration);
-        iter = this.sqlG.V().has(Element.LABEL, "Person");
+        iter = this.sqlG.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -72,7 +72,7 @@ public class TestLoadArrayProperties extends BaseTest {
                         this.sqlG.getSqlDialect().supportsDoubleArrayValues() &&
                         this.sqlG.getSqlDialect().supportsStringArrayValues()
         );
-        this.sqlG.addVertex(Element.LABEL, "Person",
+        this.sqlG.addVertex(T.label, "Person",
                 "aBoolean", new boolean[]{true},
                 "aShort", new short[]{(short) 1},
                 "aInteger", new int[]{1},
@@ -83,7 +83,7 @@ public class TestLoadArrayProperties extends BaseTest {
         this.sqlG.tx().commit();
         this.sqlG.close();
         this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(Element.LABEL, "Person");
+        Iterator<Vertex> iter = this.sqlG.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -95,7 +95,7 @@ public class TestLoadArrayProperties extends BaseTest {
 
         this.sqlG.close();
         this.sqlG.open(configuration);
-        iter = this.sqlG.V().has(Element.LABEL, "Person");
+        iter = this.sqlG.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
