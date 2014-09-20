@@ -4,17 +4,15 @@ import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.step.filter.IntervalStep;
-import com.tinkerpop.gremlin.process.graph.step.util.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.process.graph.util.SqlgHasStep;
 import org.umlg.sqlg.process.graph.util.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraphStep;
-import org.umlg.sqlg.structure.SqlgVertex;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 /**
