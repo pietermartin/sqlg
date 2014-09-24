@@ -926,8 +926,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     public void reset() {
-        this.inLabelsForVertex.clear();
-        this.outLabelsForVertex.clear();
+        if (this.inLabelsForVertex != null) {
+            this.inLabelsForVertex.clear();
+        }
+        if (this.outLabelsForVertex != null) {
+            this.outLabelsForVertex.clear();
+        }
         this.inLabelsForVertex = null;
         this.outLabelsForVertex = null;
     }

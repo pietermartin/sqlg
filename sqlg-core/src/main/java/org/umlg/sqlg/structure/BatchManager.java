@@ -34,8 +34,8 @@ public class BatchManager {
     private Map<SqlgVertex, Pair<String, String>> vertexOutInLabelCache = new LinkedHashMap<>();
 
     //this is a cache of changes to properties that are already persisted, i.e. not in the vertexCache
-    private Map<SqlgVertex, Map<String, Object>> vertexPropertyCache = new LinkedHashMap<>();
-    private Map<SqlgEdge, Map<String, Object>> edgePropertyCache = new LinkedHashMap<>();
+    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache = new LinkedHashMap<>();
+    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache = new LinkedHashMap<>();
 
     BatchManager(SqlG sqlG, SqlDialect sqlDialect) {
         this.sqlG = sqlG;
@@ -54,7 +54,7 @@ public class BatchManager {
         SchemaTable schemaTable = SchemaTable.of(vertex.getSchema(), vertex.getTable());
         Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> pairs = this.vertexCache.get(schemaTable);
         if (pairs == null) {
-            pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()) ,new LinkedHashMap<>());
+            pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
             pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
             this.vertexCache.put(schemaTable, pairs);
         } else {
@@ -201,12 +201,20 @@ public class BatchManager {
                     return true;
                 }
             } else {
-                Map<String, Object> properties = this.vertexPropertyCache.get(sqlgElement);
-                if (properties==null) {
-                    this.vertexPropertyCache.put((SqlgVertex)sqlgElement, null);
-                } else {
-                    properties.put(key, value);
+                Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> schemaVertices = this.vertexPropertyCache.get(schemaTable);
+                if (schemaVertices == null) {
+                    schemaVertices = Pair.of(new TreeSet<>(), new LinkedHashMap<>());
+                    this.vertexPropertyCache.put(schemaTable, schemaVertices);
                 }
+                SortedSet<String> keys = schemaVertices.getLeft();
+                keys.add(key);
+                Map<String, Object> properties = schemaVertices.getRight().get(sqlgElement);
+                if (properties == null) {
+                    properties = new LinkedHashMap<>();
+                    schemaVertices.getRight().put((SqlgVertex) sqlgElement, properties);
+                }
+                properties.put(key, value);
+                return true;
             }
         } else {
             Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(schemaTable);
@@ -217,12 +225,20 @@ public class BatchManager {
                     return true;
                 }
             } else {
-                Map<String, Object> properties = this.edgePropertyCache.get(sqlgElement);
-                if (properties==null) {
-                    this.edgePropertyCache.put((SqlgEdge)sqlgElement, null);
-                } else {
-                    properties.put(key, value);
+                Pair<SortedSet<String>,Map<SqlgEdge, Map<String, Object>>> schemaEdges = this.edgePropertyCache.get(schemaTable);
+                if (schemaEdges == null) {
+                    schemaEdges = Pair.of(new TreeSet<>(), new LinkedHashMap<>());
+                    this.edgePropertyCache.put(schemaTable, schemaEdges);
                 }
+                SortedSet<String> keys = schemaEdges.getLeft();
+                keys.add(key);
+                Map<String, Object> properties = schemaEdges.getRight().get(sqlgElement);
+                if (properties == null) {
+                    properties = new LinkedHashMap<>();
+                    schemaEdges.getRight().put((SqlgEdge) sqlgElement, properties);
+                }
+                properties.put(key, value);
+                return true;
             }
         }
         return false;
@@ -256,7 +272,7 @@ public class BatchManager {
     public List<SqlgVertex> getVertices(SqlgVertex vertex, Direction direction, String[] labels) {
         List<SqlgVertex> vertices = new ArrayList<>();
         List<SqlgEdge> edges = getEdges(vertex, direction, labels);
-        for (SqlgEdge sqlgEdge: edges) {
+        for (SqlgEdge sqlgEdge : edges) {
             switch (direction) {
                 case IN:
                     vertices.add(sqlgEdge.getOutVertex());

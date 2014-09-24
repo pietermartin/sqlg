@@ -199,6 +199,9 @@ public abstract class SqlgElement implements Element {
             if (this.sqlG.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
             Connection conn = this.sqlG.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 Map<String, Object> keyValue = new HashMap<>();

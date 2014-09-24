@@ -292,7 +292,7 @@ public interface SqlDialect {
 
     String getBatchNull();
 
-    void flushVertexPropertyCache(SqlG sqlG, Map<SqlgVertex, Map<String,Object>> vertexPropertyCache);
+    void flushVertexPropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache);
 
-    void flushEdgePropertyCache(SqlG sqlG, Map<SqlgEdge, Map<String,Object>> edgePropertyCache);
+    void flushEdgePropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache);
 }

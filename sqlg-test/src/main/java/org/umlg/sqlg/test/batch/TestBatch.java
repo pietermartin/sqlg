@@ -493,23 +493,121 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("Huawei_Gsm", softwareVersion.out("softwareVersion_vendorTechnology").next().value("name"));
     }
 
-//    @Test
-//    public void testBatchUpdatePersistentVertices() {
-//        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "a");
-//        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "surname", "b");
-//        this.sqlG.tx().commit();
-//        Assert.assertEquals("a", this.sqlG.v(v1.id()).value("name"));
-//        Assert.assertEquals("b", this.sqlG.v(v2.id()).value("surname"));
-//
-//        this.sqlG.tx().rollback();
-//        this.sqlG.tx().batchModeOn();
-//        v1.property("name", "aa");
-//        v2.property("name", "bb");
-//        this.sqlG.tx().commit();
-//
-//        Assert.assertEquals("aa", this.sqlG.v(v1.id()).value("name"));
-//        Assert.assertEquals("bb", this.sqlG.v(v1.id()).value("surname"));
-//    }
+    @Test
+    public void testBatchUpdatePersistentVertices() {
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "a");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "surname", "b");
+        this.sqlG.tx().commit();
+        Assert.assertEquals("a", this.sqlG.v(v1.id()).value("name"));
+        Assert.assertEquals("b", this.sqlG.v(v2.id()).value("surname"));
+
+        this.sqlG.tx().rollback();
+        this.sqlG.tx().batchModeOn();
+        v1.property("name", "aa");
+        v2.property("surname", "bb");
+        this.sqlG.tx().commit();
+
+        Assert.assertEquals("aa", this.sqlG.v(v1.id()).value("name"));
+        Assert.assertEquals("bb", this.sqlG.v(v2.id()).value("surname"));
+    }
+
+    @Test
+    public void testBatchUpdatePersistentVerticesAllTypes() {
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "a");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "surname", "b");
+        this.sqlG.tx().commit();
+        Assert.assertEquals("a", this.sqlG.v(v1.id()).value("name"));
+        Assert.assertEquals("b", this.sqlG.v(v2.id()).value("surname"));
+
+        this.sqlG.tx().rollback();
+        this.sqlG.tx().batchModeOn();
+        v1.property("name", "aa");
+        v1.property("boolean", true);
+        v1.property("short", (short)1);
+        v1.property("integer", 1);
+        v1.property("long", 1L);
+        v1.property("float", 1F);
+        v1.property("double", 1D);
+
+        v2.property("surname", "bb");
+        v2.property("boolean", false);
+        v2.property("short", (short)2);
+        v2.property("integer", 2);
+        v2.property("long", 2L);
+        v2.property("float", 2F);
+        v2.property("double", 2D);
+        this.sqlG.tx().commit();
+
+        Assert.assertEquals("aa", this.sqlG.v(v1.id()).value("name"));
+        Assert.assertEquals(true, this.sqlG.v(v1.id()).value("boolean"));
+        Assert.assertEquals((short)1, this.sqlG.v(v1.id()).<Short>value("short").shortValue());
+        Assert.assertEquals(1, this.sqlG.v(v1.id()).<Integer>value("integer").intValue());
+        Assert.assertEquals(1L, this.sqlG.v(v1.id()).<Long>value("long").longValue(), 0);
+        Assert.assertEquals(1F, this.sqlG.v(v1.id()).<Float>value("float").floatValue(), 0);
+        Assert.assertEquals(1D, this.sqlG.v(v1.id()).<Double>value("double").doubleValue(), 0);
+
+        Assert.assertEquals("bb", this.sqlG.v(v2.id()).value("surname"));
+        Assert.assertEquals(false, this.sqlG.v(v2.id()).value("boolean"));
+        Assert.assertEquals((short)2, this.sqlG.v(v2.id()).<Short>value("short").shortValue());
+        Assert.assertEquals(2, this.sqlG.v(v2.id()).<Integer>value("integer").intValue());
+        Assert.assertEquals(2L, this.sqlG.v(v2.id()).<Long>value("long").longValue(), 0);
+        Assert.assertEquals(2F, this.sqlG.v(v2.id()).<Float>value("float").floatValue(), 0);
+        Assert.assertEquals(2D, this.sqlG.v(v2.id()).<Double>value("double").doubleValue(), 0);
+    }
+
+    @Test
+    public void testBatchUpdatePersistentVerticesPerformance1() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        int count = 1;
+        for (int i = 0; i < 100000; i++) {
+            this.sqlG.addVertex(T.label, "Person", "name", "a");
+            if (count++ % 10000 == 0) {
+                this.sqlG.tx().commit();
+            }
+
+        }
+        this.sqlG.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+
+        List<Vertex> vertices = this.sqlG.V().toList();
+        count = 1;
+        for (Vertex v : vertices) {
+            v.property("name", "b");
+            if (count++ % 10000 == 0) {
+                this.sqlG.tx().commit();
+            }
+        }
+        this.sqlG.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
+
+    @Test
+    public void testBatchUpdatePersistentVerticesPerformance2() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        this.sqlG.tx().batchModeOn();
+        for (int i = 0; i < 100000; i++) {
+            this.sqlG.addVertex(T.label, "Person", "name", "a");
+        }
+        this.sqlG.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        this.sqlG.tx().batchModeOn();
+        List<Vertex> vertices = this.sqlG.V().toList();
+        for (Vertex v : vertices) {
+            v.property("name", "b");
+        }
+        this.sqlG.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
 
     //batch mode on is ignored if the graph does not support batch mode
 //    @Test(expected = IllegalStateException.class)

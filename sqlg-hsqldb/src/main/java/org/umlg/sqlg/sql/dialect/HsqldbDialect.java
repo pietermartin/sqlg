@@ -66,12 +66,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexPropertyCache(SqlG sqlG, Map<SqlgVertex, Map<String, Object>> vertexPropertyCache) {
+    public void flushVertexPropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
     @Override
-    public void flushEdgePropertyCache(SqlG sqlG, Map<SqlgEdge, Map<String, Object>> edgePropertyCache) {
+    public void flushEdgePropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 

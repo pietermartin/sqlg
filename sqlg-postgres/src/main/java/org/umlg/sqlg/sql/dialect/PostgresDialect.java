@@ -4,6 +4,7 @@ import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.postgresql.copy.CopyManager;
@@ -333,12 +334,136 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexPropertyCache(SqlG sqlG, Map<SqlgVertex, Map<String, Object>> vertexPropertyCache) {
+    public void flushVertexPropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> schemaVertexPropertyCache) {
+
+        Connection conn = sqlG.tx().getConnection();
+        for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
+
+            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
+            SortedSet<String> keys = vertexKeysPropertyCache.getLeft();
+            Map<SqlgVertex, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
+
+
+            StringBuilder sql = new StringBuilder();
+            sql.append("UPDATE ");
+            sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
+            sql.append(".");
+            sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+            sql.append(" a \nSET\n\t(");
+            int count = 1;
+            for (String key : keys) {
+                sql.append(maybeWrapInQoutes(key));
+                if (count++ < keys.size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(") = \n\t(");
+            count = 1;
+            for (String key : keys) {
+                sql.append("v.");
+                sql.append(maybeWrapInQoutes(key));
+                if (count++ < keys.size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(")\nFROM (\nVALUES\n\t");
+            count = 1;
+            for (SqlgVertex sqlgVertex : vertexPropertyCache.keySet()) {
+                Map<String, Object> properties = vertexPropertyCache.get(sqlgVertex);
+                sql.append("(");
+                sql.append(sqlgVertex.id());
+                sql.append(", ");
+                int countProperties = 1;
+                for (String key : keys) {
+                    Object value = properties.get(key);
+                    if (value != null) {
+                        PropertyType propertyType = PropertyType.from(value);
+                        switch (propertyType) {
+                            case BOOLEAN:
+                                sql.append(value);
+                                break;
+                            case BYTE:
+                                sql.append(value);
+                                break;
+                            case SHORT:
+                                sql.append(value);
+                                break;
+                            case INTEGER:
+                                sql.append(value);
+                                break;
+                            case LONG:
+                                sql.append(value);
+                                break;
+                            case FLOAT:
+                                sql.append(value);
+                                break;
+                            case DOUBLE:
+                                sql.append(value);
+                                break;
+                            case STRING:
+                                sql.append("'");
+                                sql.append(value);
+                                sql.append("'");
+                                break;
+                            case BOOLEAN_ARRAY:
+                                break;
+                            case BYTE_ARRAY:
+                                break;
+                            case SHORT_ARRAY:
+                                break;
+                            case INTEGER_ARRAY:
+                                break;
+                            case LONG_ARRAY:
+                                break;
+                            case FLOAT_ARRAY:
+                                break;
+                            case DOUBLE_ARRAY:
+                                break;
+                            case STRING_ARRAY:
+                                break;
+                            default:
+                                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                        }
+                    } else {
+                        sql.append("null");
+                    }
+                    if (countProperties++ < keys.size()) {
+                        sql.append(", ");
+                    }
+                }
+                sql.append(")");
+                if (count++ < vertexPropertyCache.size()) {
+                    sql.append(",\n\t");
+                }
+                //clear the label cache as it is not updated in batch mode
+                sqlgVertex.reset();
+            }
+            sql.append("\n) AS v(id, ");
+            count = 1;
+            for (String key : keys) {
+                sql.append(maybeWrapInQoutes(key));
+                if (count++ < keys.size()) {
+                    sql.append(", ");
+                }
+            }
+            sql.append(")");
+            sql.append("\nWHERE a.\"ID\" = v.id");
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (Statement statement = conn.createStatement()) {
+                statement.execute(sql.toString());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+
+        }
 
     }
 
     @Override
-    public void flushEdgePropertyCache(SqlG sqlG, Map<SqlgEdge, Map<String, Object>> edgePropertyCache) {
+    public void flushEdgePropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
 
     }
 
