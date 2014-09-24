@@ -19,6 +19,7 @@ public class BatchManager {
     //This is postgres's default copy command null value
     private SqlG sqlG;
     private SqlDialect sqlDialect;
+    private boolean batchModeOn = false;
 
     //map per label/keys, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache = new LinkedHashMap<>();
@@ -39,6 +40,14 @@ public class BatchManager {
     BatchManager(SqlG sqlG, SqlDialect sqlDialect) {
         this.sqlG = sqlG;
         this.sqlDialect = sqlDialect;
+    }
+
+    public boolean isBatchModeOn() {
+        return batchModeOn;
+    }
+
+    public void batchModeOn() {
+        this.batchModeOn = true;
     }
 
     public synchronized void addVertex(SqlgVertex vertex, Map<String, Object> keyValueMap) {

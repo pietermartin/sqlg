@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,12 +26,12 @@ public class SqlgTransaction implements Transaction {
     private SqlG sqlG;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
-    private BatchManager batchManager;
-    private boolean inBatchMode = false;
+//    private BatchManager batchManager;
+//    private boolean inBatchMode = false;
     private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
 
-    protected final ThreadLocal<Pair<Connection, List<ElementPropertyRollback>>> threadLocalTx = new ThreadLocal<Pair<Connection, List<ElementPropertyRollback>>>() {
-        protected Pair<Connection, List<ElementPropertyRollback>> initialValue() {
+    protected final ThreadLocal<Triple<Connection, List<ElementPropertyRollback>, BatchManager>> threadLocalTx = new ThreadLocal<Triple<Connection, List<ElementPropertyRollback>, BatchManager>>() {
+        protected Triple<Connection, List<ElementPropertyRollback>, BatchManager> initialValue() {
             return null;
         }
     };
@@ -55,19 +56,19 @@ public class SqlgTransaction implements Transaction {
             if (isOpen()) {
                 throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
             }
-            this.inBatchMode = true;
-            this.batchManager = new BatchManager(this.sqlG, this.sqlG.getSqlDialect());
+            readWrite();
+            threadLocalTx.get().getRight().batchModeOn();
         } else {
             logger.warn("Batch mode not supported! Continuing in normal mode.");
         }
     }
 
     public boolean isInBatchMode() {
-        return this.inBatchMode;
+        return threadLocalTx.get().getRight().isBatchModeOn();
     }
 
     public BatchManager getBatchManager() {
-        return batchManager;
+        return threadLocalTx.get().getRight();
     }
 
     public Connection getConnection() {
@@ -86,7 +87,7 @@ public class SqlgTransaction implements Transaction {
             try {
                 Connection connection = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
-                threadLocalTx.set(Pair.of(connection, new ArrayList<>()));
+                threadLocalTx.set(Triple.of(connection, new ArrayList<>(), new BatchManager(this.sqlG, this.sqlG.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -99,8 +100,8 @@ public class SqlgTransaction implements Transaction {
             return;
 
         try {
-            if (this.inBatchMode) {
-                this.batchManager.flush();
+            if (this.threadLocalTx.get().getRight().isBatchModeOn()) {
+                this.threadLocalTx.get().getRight().flush();
             }
             Connection connection = threadLocalTx.get().getLeft();
             connection.commit();
@@ -108,11 +109,7 @@ public class SqlgTransaction implements Transaction {
             if (this.afterCommitFunction != null) {
                 this.afterCommitFunction.doAfterCommit();
             }
-            this.inBatchMode = false;
-            if (this.batchManager != null) {
-                this.batchManager.clear();
-                this.batchManager = null;
-            }
+            this.threadLocalTx.get().getRight().clear();
         } catch (Exception e) {
             this.rollback();
             if (e instanceof RuntimeException) {
@@ -126,6 +123,7 @@ public class SqlgTransaction implements Transaction {
                 //might occur if sqlg has a bug and there is a SqlException
                 if (threadLocalTx.get() != null) {
                     threadLocalTx.get().getLeft().close();
+                    threadLocalTx.get().getMiddle().clear();
                     threadLocalTx.get().getRight().clear();
                     threadLocalTx.remove();
                 }
@@ -145,19 +143,16 @@ public class SqlgTransaction implements Transaction {
             if (this.afterRollbackFunction != null) {
                 this.afterRollbackFunction.doAfterRollback();
             }
-            for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getRight()) {
+            for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getMiddle()) {
                 elementPropertyRollback.clearProperties();
             }
-            this.inBatchMode = false;
-            if (this.batchManager != null) {
-                this.batchManager.clear();
-                this.batchManager = null;
-            }
+            threadLocalTx.get().getRight().clear();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
             try {
                 threadLocalTx.get().getLeft().close();
+                threadLocalTx.get().getMiddle().clear();
                 threadLocalTx.get().getRight().clear();
                 threadLocalTx.remove();
             } catch (SQLException e) {
@@ -168,25 +163,21 @@ public class SqlgTransaction implements Transaction {
     }
 
     public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
-        if (!this.inBatchMode)
+        if (!threadLocalTx.get().getRight().isBatchModeOn())
             throw new IllegalStateException("Must be in batch mode to batchCommit!");
 
         if (!isOpen())
             return Collections.emptyMap();
 
         try {
-            Map<SchemaTable, Pair<Long, Long>> verticesRange = this.batchManager.flush();
+            Map<SchemaTable, Pair<Long, Long>> verticesRange = threadLocalTx.get().getRight().flush();
             Connection connection = threadLocalTx.get().getLeft();
             connection.commit();
             connection.setAutoCommit(true);
             if (this.afterCommitFunction != null) {
                 this.afterCommitFunction.doAfterCommit();
             }
-            this.inBatchMode = false;
-            if (this.batchManager != null) {
-                this.batchManager.clear();
-                this.batchManager = null;
-            }
+            threadLocalTx.get().getRight().clear();
             return verticesRange;
         } catch (Exception e) {
             this.rollback();
@@ -201,6 +192,8 @@ public class SqlgTransaction implements Transaction {
                 //might occur if sqlg has a bug and there is a SqlException
                 if (threadLocalTx.get() != null) {
                     threadLocalTx.get().getLeft().close();
+                    threadLocalTx.get().getMiddle().clear();
+                    threadLocalTx.get().getRight().clear();
                     threadLocalTx.remove();
                 }
             } catch (SQLException e) {
@@ -214,7 +207,7 @@ public class SqlgTransaction implements Transaction {
         if (!isOpen()) {
             throw new IllegalStateException("A transaction must be in progress to add a elementPropertyRollback function!");
         }
-        threadLocalTx.get().getRight().add(elementPropertyRollback);
+        threadLocalTx.get().getMiddle().add(elementPropertyRollback);
     }
 
     public void afterCommit(AfterCommit afterCommitFunction) {
