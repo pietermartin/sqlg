@@ -112,7 +112,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     protected void insertEdge(Object... keyValues) throws SQLException {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
-        if (this.sqlG.features().supportsBatchMode() &&  this.sqlG.tx().isInBatchMode()) {
+        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
             internalBatchAddEdge(keyValueMap);
         } else {
             internalAddEdge(keyValueMap);
@@ -275,10 +275,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 }
 
             }
-            if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
-                inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
-            } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
-                outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+            if (!Objects.isNull(o)) {
+                if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+                    inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+                } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
+                    outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+                }
             }
         }
         if (inVertexColumnName == null || outVertexColumnName == null) {

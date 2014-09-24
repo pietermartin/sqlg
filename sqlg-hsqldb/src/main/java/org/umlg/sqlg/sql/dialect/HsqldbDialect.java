@@ -1,7 +1,6 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -47,7 +46,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
@@ -58,6 +57,21 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void flushVertexLabelCache(SqlG sqlG, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public String getBatchNull() {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushVertexPropertyCache(SqlG sqlG, Map<SqlgVertex, Map<String, Object>> vertexPropertyCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushEdgePropertyCache(SqlG sqlG, Map<SqlgEdge, Map<String, Object>> edgePropertyCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 

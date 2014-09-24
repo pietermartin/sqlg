@@ -3,7 +3,6 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -13,9 +12,9 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 
 public interface SqlDialect {
 
@@ -281,7 +280,7 @@ public interface SqlDialect {
         return true;
     }
 
-    Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache);
+    Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache);
 
     void flushEdgeCache(SqlG sqlG, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache);
 
@@ -290,4 +289,10 @@ public interface SqlDialect {
     }
 
     void flushVertexLabelCache(SqlG sqlG, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap);
+
+    String getBatchNull();
+
+    void flushVertexPropertyCache(SqlG sqlG, Map<SqlgVertex, Map<String,Object>> vertexPropertyCache);
+
+    void flushEdgePropertyCache(SqlG sqlG, Map<SqlgEdge, Map<String,Object>> edgePropertyCache);
 }

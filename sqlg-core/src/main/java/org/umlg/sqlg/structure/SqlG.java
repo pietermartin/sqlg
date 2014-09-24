@@ -12,6 +12,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
+import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
@@ -325,6 +326,24 @@ public class SqlG implements Graph {
         }
 
         public class SqlVertexFeatures implements VertexFeatures {
+
+            /**
+             * Determines if a {@link Vertex} can support multiple properties with the same key.
+             */
+            @FeatureDescriptor(name = FEATURE_MULTI_PROPERTIES)
+            public boolean supportsMultiProperties() {
+                return false;
+            }
+
+            /**
+             * Determines if a {@link Vertex} can support properties on vertex properties.  It is assumed that a
+             * graph will support all the same data types for meta-properties that are supported for regular
+             * properties.
+             */
+            @FeatureDescriptor(name = FEATURE_META_PROPERTIES)
+            public boolean supportsMetaProperties() {
+                return false;
+            }
 
             @Override
             public boolean supportsUserSuppliedIds() {

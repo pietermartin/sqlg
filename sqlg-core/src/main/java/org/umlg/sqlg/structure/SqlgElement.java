@@ -387,7 +387,7 @@ public abstract class SqlgElement implements Element {
                 Object value = this.properties.get(key);
                 if (!key.equals("ID") && value != null) {
                     if (hidden && Graph.Key.isHidden(key)) {
-                        properties.put(Graph.Key.unHide(key), instantiateProperty(Graph.Key.unHide(key), (V) value));
+                        properties.put(Graph.Key.unHide(key), instantiateProperty(key, (V) value));
                     } else if (!hidden && !Graph.Key.isHidden(key)) {
                         properties.put(key, instantiateProperty(key, (V) value));
                     } else {
@@ -420,7 +420,7 @@ public abstract class SqlgElement implements Element {
             final String[] hiddenKeys = Stream.of(propertyKeys).map(Graph.Key::hide)
                     .collect(Collectors.toList()).toArray(new String[propertyKeys.length]);
 
-            return SqlgElement.this.<V>internalGetHiddens(propertyKeys).values().iterator();
+            return SqlgElement.this.<V>internalGetHiddens(hiddenKeys).values().iterator();
         }
 
     }

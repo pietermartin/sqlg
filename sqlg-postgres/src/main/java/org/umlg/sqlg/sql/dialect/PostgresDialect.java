@@ -2,7 +2,6 @@ package org.umlg.sqlg.sql.dialect;
 
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,7 +24,8 @@ import java.util.*;
  */
 public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
-    private static final String COPY_COMMAND_SEPERATOR = "~";
+    private static final String BATCH_NULL = "\\N";
+    private static final String COPY_COMMAND_SEPARATOR = "\t";
     private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
 
     public PostgresDialect(Configuration configurator) {
@@ -118,7 +118,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
      *                    3) The properties as a map of key values
      */
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlG.tx().getConnection();
         try {
@@ -129,7 +129,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             //first insert the VERTICES
             for (SchemaTable schemaTable : vertexCache.keySet()) {
 
-                Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
+                Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertices = vertexCache.get(schemaTable);
 
                 Long copyCount;
                 try (InputStream is = mapToVERTICES_InputStream(schemaTable, vertices)) {
@@ -147,7 +147,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(", ");
                     sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
                     sql.append(") FROM stdin WITH (DELIMITER '");
-                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append(COPY_COMMAND_SEPARATOR);
                     sql.append("')");
                     sql.append(";");
                     if (this.logger.isDebugEnabled()) {
@@ -175,19 +175,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(".");
                     sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
                     sql.append(" (\"ID\"");
-                    for (Triple<String, String, Map<String, Object>> pair : vertices.values()) {
-                        int count = 1;
-                        for (String key : pair.getRight().keySet()) {
-                            if (count++ <= pair.getRight().size()) {
-                                sql.append(", ");
-                            }
-                            sql.append(maybeWrapInQoutes(key));
+                    int count = 1;
+                    for (String key : vertices.getLeft()) {
+                        if (count++ <= vertices.getLeft().size()) {
+                            sql.append(", ");
                         }
-                        break;
+                        sql.append(maybeWrapInQoutes(key));
                     }
                     sql.append(") ");
                     sql.append(" FROM stdin DELIMITER '");
-                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append(COPY_COMMAND_SEPARATOR);
                     sql.append("';");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
@@ -198,7 +195,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 verticesRanges.put(schemaTable, Pair.of(endHigh - copyCount + 1, endHigh));
 
             }
-
             return verticesRanges;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -227,7 +223,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(", ");
                     sql.append(maybeWrapInQoutes(SchemaManager.EDGE_TABLE));
                     sql.append(") FROM stdin DELIMITER '");
-                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append(COPY_COMMAND_SEPARATOR);
                     sql.append("';");
                     if (this.logger.isDebugEnabled()) {
                         this.logger.debug(sql.toString());
@@ -265,7 +261,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     sql.append(") ");
                     sql.append(" FROM stdin DELIMITER '");
-                    sql.append(COPY_COMMAND_SEPERATOR);
+                    sql.append(COPY_COMMAND_SEPARATOR);
                     sql.append("';");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
@@ -320,6 +316,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 if (count++ < vertexOutInLabelMap.size()) {
                     sql.append(",        \n");
                 }
+                //clear the label cache as it is not updated in batch mode
+                sqlgVertex.reset();
             }
             sql.append("\n) AS v(id, \"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\")");
             sql.append("\nWHERE a.\"ID\" = v.id");
@@ -334,25 +332,40 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
+    @Override
+    public void flushVertexPropertyCache(SqlG sqlG, Map<SqlgVertex, Map<String, Object>> vertexPropertyCache) {
+
+    }
+
+    @Override
+    public void flushEdgePropertyCache(SqlG sqlG, Map<SqlgEdge, Map<String, Object>> edgePropertyCache) {
+
+    }
+
+    @Override
+    public String getBatchNull() {
+        return BATCH_NULL;
+    }
+
     private InputStream mapToEdge_InputStream(Long endHigh, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
         Long start = endHigh - edgeCache.size() + 1;
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
             sb.append(start++);
-            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(COPY_COMMAND_SEPARATOR);
             sb.append(triple.getLeft().id().toString());
-            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(COPY_COMMAND_SEPARATOR);
             sb.append(triple.getMiddle().id().toString());
             if (!triple.getRight().isEmpty()) {
-                sb.append(COPY_COMMAND_SEPERATOR);
+                sb.append(COPY_COMMAND_SEPARATOR);
             }
             int countKeys = 1;
             for (String key : triple.getRight().keySet()) {
                 Object value = triple.getRight().get(key);
                 sb.append(value.toString());
                 if (countKeys++ < triple.getRight().size()) {
-                    sb.append(COPY_COMMAND_SEPERATOR);
+                    sb.append(COPY_COMMAND_SEPARATOR);
                 }
             }
             if (count++ < edgeCache.size()) {
@@ -362,45 +375,49 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
-    private InputStream mapToLabeledVertex_InputStream(Long endHigh, Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertexCache) {
+    private InputStream mapToLabeledVertex_InputStream(Long endHigh, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
         //String str = "2,peter\n3,john";
-        Long start = endHigh - vertexCache.size() + 1;
+        Long start = endHigh - vertexCache.getRight().size() + 1;
         StringBuilder sb = new StringBuilder();
         int count = 1;
-        for (SqlgVertex sqlgVertex : vertexCache.keySet()) {
-            Triple<String, String, Map<String, Object>> triple = vertexCache.get(sqlgVertex);
+        for (SqlgVertex sqlgVertex : vertexCache.getRight().keySet()) {
+            Triple<String, String, Map<String, Object>> triple = vertexCache.getRight().get(sqlgVertex);
             //set the internal batch id to be used which inserting batch edges
             sqlgVertex.setInternalPrimaryKey(start);
             sb.append(start++);
             int countKeys = 1;
-            for (String key : triple.getRight().keySet()) {
-                if (countKeys++ <= triple.getRight().size()) {
-                    sb.append(COPY_COMMAND_SEPERATOR);
+            for (String key : vertexCache.getLeft()) {
+                if (countKeys++ <= vertexCache.getLeft().size()) {
+                    sb.append(COPY_COMMAND_SEPARATOR);
                 }
                 Object value = triple.getRight().get(key);
-                sb.append(value.toString());
+                if (value == null) {
+                    sb.append(getBatchNull());
+                } else {
+                    sb.append(value.toString());
+                }
             }
-            if (count++ < vertexCache.size()) {
+            if (count++ < vertexCache.getRight().size()) {
                 sb.append("\n");
             }
         }
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
-    private InputStream mapToVERTICES_InputStream(SchemaTable schemaTable, Map<SqlgVertex, Triple<String, String, Map<String, Object>>> vertexCache) {
+    private InputStream mapToVERTICES_InputStream(SchemaTable schemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
         StringBuilder sb = new StringBuilder();
         int count = 1;
-        for (Triple<String, String, Map<String, Object>> triple : vertexCache.values()) {
+        for (Triple<String, String, Map<String, Object>> triple : vertexCache.getRight().values()) {
             sb.append(schemaTable.getSchema());
-            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(COPY_COMMAND_SEPARATOR);
             sb.append(schemaTable.getTable());
-            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(COPY_COMMAND_SEPARATOR);
             //out labels
             sb.append(triple.getLeft());
-            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(COPY_COMMAND_SEPARATOR);
             //in labels
             sb.append(triple.getMiddle());
-            if (count++ < vertexCache.size()) {
+            if (count++ < vertexCache.getRight().size()) {
                 sb.append("\n");
             }
         }
@@ -412,7 +429,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         int count = 1;
         for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
             sb.append(schemaTable.getSchema());
-            sb.append(COPY_COMMAND_SEPERATOR);
+            sb.append(COPY_COMMAND_SEPARATOR);
             sb.append(schemaTable.getTable());
             if (count++ < edgeCache.size()) {
                 sb.append("\n");

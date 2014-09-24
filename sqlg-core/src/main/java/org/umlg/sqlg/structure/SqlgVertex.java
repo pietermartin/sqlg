@@ -96,44 +96,44 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    protected <V> Map<String, MetaProperty<V>> internalGetProperties(final String... propertyKeys) {
+    protected <V> Map<String, VertexProperty<V>> internalGetProperties(final String... propertyKeys) {
         return internalGetProperties(false, propertyKeys);
     }
 
     @Override
-    protected <V> Map<String, MetaProperty<V>> internalGetProperties(boolean hidden, final String... propertyKeys) {
+    protected <V> Map<String, VertexProperty<V>> internalGetProperties(boolean hidden, final String... propertyKeys) {
         this.sqlG.tx().readWrite();
         Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetProperties(hidden, propertyKeys);
-        return (Map<String, MetaProperty<V>>) metaPropertiesMap;
+        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
     @Override
-    protected <V> Map<String, MetaProperty<V>> internalGetHiddens(final String... propertyKeys) {
+    protected <V> Map<String, VertexProperty<V>> internalGetHiddens(final String... propertyKeys) {
         this.sqlG.tx().readWrite();
         return internalGetProperties(true, propertyKeys);
     }
 
     @Override
-    public <V> MetaProperty<V> property(final String key) {
+    public <V> VertexProperty<V> property(final String key) {
         this.sqlG.tx().readWrite();
-        return (MetaProperty) super.property(key);
+        return (VertexProperty) super.property(key);
     }
 
     @Override
-    public <V> MetaProperty<V> property(final String key, final V value) {
+    public <V> VertexProperty<V> property(final String key, final V value) {
         ElementHelper.validateProperty(key, value);
         this.sqlG.tx().readWrite();
-        return (MetaProperty) super.property(key, value);
+        return (VertexProperty) super.property(key, value);
     }
 
     @Override
     protected <V> SqlgProperty<V> instantiateProperty(String key, V value) {
-        return new SqlgMetaProperty<>(this.sqlG, this, key, value);
+        return new SqlgVertexProperty<>(this.sqlG, this, key, value);
     }
 
     @Override
     protected Property emptyProperty() {
-        return MetaProperty.empty();
+        return VertexProperty.empty();
     }
 
     private Iterator<Edge> internalGetEdges(Direction direction, int branchFactor, String... labels) {
@@ -909,20 +909,27 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
 
         @Override
-        public <V> Iterator<MetaProperty<V>> properties(final String... propertyKeys) {
+        public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
             SqlgVertex.this.sqlG.tx().readWrite();
             return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
         }
 
         @Override
-        public <V> Iterator<MetaProperty<V>> hiddens(final String... propertyKeys) {
+        public <V> Iterator<VertexProperty<V>> hiddens(final String... propertyKeys) {
             SqlgVertex.this.sqlG.tx().readWrite();
             // make sure all keys request are hidden - the nature of Graph.Key.hide() is to not re-hide a hidden key
             final String[] hiddenKeys = Stream.of(propertyKeys).map(Graph.Key::hide)
                     .collect(Collectors.toList()).toArray(new String[propertyKeys.length]);
 
-            return SqlgVertex.this.<V>internalGetHiddens(propertyKeys).values().iterator();
+            return SqlgVertex.this.<V>internalGetHiddens(hiddenKeys).values().iterator();
         }
+    }
+
+    public void reset() {
+        this.inLabelsForVertex.clear();
+        this.outLabelsForVertex.clear();
+        this.inLabelsForVertex = null;
+        this.outLabelsForVertex = null;
     }
 
 }
