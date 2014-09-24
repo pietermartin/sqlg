@@ -9,3 +9,4 @@ pom.xml.next
 release.properties
 /.idea
 *.iml
+src/test/db/

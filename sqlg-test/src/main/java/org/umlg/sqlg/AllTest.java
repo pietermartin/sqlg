@@ -8,7 +8,9 @@ import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.*;
+import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
+import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
@@ -48,7 +50,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestEdgeHas.class,
         TestBatch.class,
         TestRemoveEdge.class,
-        TestEdgeSchemaCreation.class
+        TestEdgeSchemaCreation.class,
+        TestRollback.class,
+        TestMultiThread.class
 })
 public class AllTest {
 }

@@ -33,11 +33,14 @@ public abstract class SqlgElement implements Element {
     protected final SqlG sqlG;
     protected long primaryKey;
     protected Map<String, Object> properties = new HashMap<>();
+    private SqlgElementElementPropertyRollback elementPropertyRollback;
 
     public SqlgElement(SqlG sqlG, String schema, String table) {
         this.sqlG = sqlG;
         this.schema = schema;
         this.table = table;
+        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
 
     public SqlgElement(SqlG sqlG, Long id, String label) {
@@ -46,6 +49,8 @@ public abstract class SqlgElement implements Element {
         SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
         this.schema = schemaTable.getSchema();
         this.table = schemaTable.getTable();
+        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
 
     public SqlgElement(SqlG sqlG, Long id, String schema, String table) {
@@ -53,6 +58,16 @@ public abstract class SqlgElement implements Element {
         this.primaryKey = id;
         this.schema = schema;
         this.table = table;
+        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
+    }
+
+    class SqlgElementElementPropertyRollback implements ElementPropertyRollback {
+
+        @Override
+        public void clearProperties() {
+            SqlgElement.this.properties.clear();
+        }
     }
 
     SchemaTable getSchemaTable() {
@@ -134,6 +149,7 @@ public abstract class SqlgElement implements Element {
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         this.sqlG.getSqlDialect().validateProperty(key, value);
+        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
         //Validate the property
         PropertyType.from(value);
         //Check if column exist
