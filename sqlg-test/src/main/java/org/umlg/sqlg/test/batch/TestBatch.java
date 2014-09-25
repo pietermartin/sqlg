@@ -10,6 +10,10 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -607,6 +611,32 @@ public class TestBatch extends BaseTest {
         this.sqlG.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
+    }
+
+    @Test
+    public void testVerticesOutLabelsForEdgeToPersistentVertices() {
+        Vertex realWorkspace = this.sqlG.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
+        Vertex softwareVersion = this.sqlG.addVertex(T.label, "SoftwareVersion", "name", "R15");
+        Vertex vendorTechnology = this.sqlG.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
+        vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
+        this.sqlG.tx().commit();
+
+        this.sqlG.tx().batchModeOn();
+        for (int i = 0; i < 10; i++) {
+            Vertex workspaceElement = this.sqlG.addVertex(T.label, "WorkspaceElement");
+            workspaceElement.addEdge("workspaceElementRealWorkspace", realWorkspace);
+            realWorkspace.addEdge("workspaceElementSoftwareVersion", softwareVersion);
+        }
+        this.sqlG.tx().commit();
+        Connection conn = this.sqlG.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            ResultSet resultSet = statement.executeQuery("SELECT \"IN_LABELS\" FROM \"public\".\"VERTICES\" WHERE \"VERTEX_TABLE\" = 'SoftwareVersion'");
+            resultSet.next();
+            Assert.assertEquals("public.vendorTechnology_softwareVersion:::public.workspaceElementSoftwareVersion", resultSet.getString(1));
+        } catch (SQLException e) {
+            Assert.fail(e.getMessage());
+        }
+
     }
 
     //batch mode on is ignored if the graph does not support batch mode

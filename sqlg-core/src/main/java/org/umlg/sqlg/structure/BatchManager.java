@@ -182,7 +182,7 @@ public class BatchManager {
     private String updateVertexLabels(String currentLabel, SchemaTable schemaTable) {
         if (StringUtils.isEmpty(currentLabel) || currentLabel.equals(this.sqlDialect.getBatchNull())) {
             return schemaTable.toString();
-        } else if (currentLabel.equals(schemaTable.toString())) {
+        } else if (currentLabel.contains(schemaTable.toString())) {
             return currentLabel;
         } else {
             return currentLabel + SchemaManager.LABEL_SEPERATOR + schemaTable.toString();

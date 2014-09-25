@@ -72,6 +72,9 @@ public class SqlgTransaction implements Transaction {
     }
 
     public Connection getConnection() {
+        if (!isOpen()) {
+            readWrite();
+        }
         return this.threadLocalTx.get().getLeft();
     }
 
