@@ -591,11 +591,11 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testBatchUpdatePersistentVerticesPerformance2() {
+    public void testInsertUpdateQuotedStrings() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         this.sqlG.tx().batchModeOn();
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 100; i++) {
             this.sqlG.addVertex(T.label, "Person", "name", "'a'");
         }
         this.sqlG.tx().commit();
@@ -612,6 +612,7 @@ public class TestBatch extends BaseTest {
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
+
 
     @Test
     public void testVerticesOutLabelsForEdgeToPersistentVertices() {
