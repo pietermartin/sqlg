@@ -282,7 +282,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (!vertexOutInLabelMap.isEmpty()) {
             Connection conn = sqlG.tx().getConnection();
             StringBuilder sql = new StringBuilder();
-            sql.append("update \"VERTICES\" a\n" +
+            sql.append("UPDATE \"VERTICES\" a\n" +
                     "SET (\"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\") =\n" +
                     "\t(v.\"VERTEX_SCHEMA\", v.\"VERTEX_TABLE\", v.\"IN_LABELS\", v.\"OUT_LABELS\")\n" +
                     "FROM ( \n" +
@@ -401,9 +401,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(value);
                                 break;
                             case STRING:
-                                sql.append("'");
+                                //Postgres supports custom qouted strings using the 'with token' clause
+                                sql.append("$token$");
                                 sql.append(value);
-                                sql.append("'");
+                                sql.append("$token$");
                                 break;
                             case BOOLEAN_ARRAY:
                                 break;

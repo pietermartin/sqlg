@@ -596,7 +596,7 @@ public class TestBatch extends BaseTest {
         stopWatch.start();
         this.sqlG.tx().batchModeOn();
         for (int i = 0; i < 100000; i++) {
-            this.sqlG.addVertex(T.label, "Person", "name", "a");
+            this.sqlG.addVertex(T.label, "Person", "name", "'a'");
         }
         this.sqlG.tx().commit();
         stopWatch.stop();
@@ -606,7 +606,7 @@ public class TestBatch extends BaseTest {
         this.sqlG.tx().batchModeOn();
         List<Vertex> vertices = this.sqlG.V().toList();
         for (Vertex v : vertices) {
-            v.property("name", "b");
+            v.property("name", "'b'");
         }
         this.sqlG.tx().commit();
         stopWatch.stop();
