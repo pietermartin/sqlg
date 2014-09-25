@@ -18,7 +18,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TinkerpopTest.class
 })
 public class AnyTest {
 }

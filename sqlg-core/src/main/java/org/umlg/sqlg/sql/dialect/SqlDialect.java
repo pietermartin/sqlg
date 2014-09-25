@@ -3,6 +3,11 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.structure.Contains;
+import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -12,6 +17,7 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -295,4 +301,12 @@ public interface SqlDialect {
     void flushVertexPropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache);
 
     void flushEdgePropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache);
+
+    public default String hasContainerKeyToColumn(String key) {
+
+        if (key.equals(T.id.getAccessor()))
+            return "ID";
+        else
+            return key;
+    }
 }

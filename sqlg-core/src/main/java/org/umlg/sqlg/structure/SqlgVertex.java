@@ -381,7 +381,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                                     for (HasContainer hasContainer : hasContainers) {
                                         sql.append(" AND ");
-                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(hasContainer.key));
+                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
+                                        sql.append(".");
+                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
+                                        sql.append(".");
+                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
                                         if (!hasContainer.predicate.equals(Compare.EQUAL)) {
                                             throw new IllegalStateException("Only equals is supported at the moment");
                                         }
@@ -418,7 +422,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                                     for (HasContainer hasContainer : hasContainers) {
                                         sql.append(" AND ");
-                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(hasContainer.key));
+                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
+                                        sql.append(".");
+                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
+                                        sql.append(".");
+                                        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
                                         if (!hasContainer.predicate.equals(Compare.EQUAL)) {
                                             throw new IllegalStateException("Only equals is supported at the moment");
                                         }

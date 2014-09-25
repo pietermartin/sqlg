@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static com.tinkerpop.gremlin.structure.Graph.Features.DataTypeFeatures.FEATURE_INTEGER_VALUES;
 import static com.tinkerpop.gremlin.structure.Graph.Features.ElementFeatures.FEATURE_USER_SUPPLIED_IDS;
 import static org.junit.Assert.assertEquals;
@@ -33,19 +34,28 @@ import static org.junit.Assert.assertTrue;
 public class TinkerpopTest extends BaseTest {
 
     @Test
-    @FeatureRequirementSet(FeatureRequirementSet.Package.VERTICES_ONLY)
-    public void shouldReturnHiddenKeysWithOutHiddenPrefix() {
+    @LoadGraphWith(MODERN)
+    public void g_v4_out_asXhereX_hasXlang_javaX_backXhereX() throws IOException {
         Graph g = this.sqlG;
-        final Vertex v = g.addVertex("name", "marko", Graph.Key.hide("acl"), "rw", Graph.Key.hide("other"), "rw", "acl", "r");
-        g.tx().commit();
-        final Vertex v1 = g.v(v.id());
-        assertEquals(2, v1.hiddenKeys().size());
-        assertTrue(v1.hiddenKeys().stream().allMatch(key -> !Graph.Key.isHidden(key)));
-        assertTrue(v1.hiddenKeys().stream().allMatch(k -> k.equals("acl") || k.equals("other")));
-        assertEquals("rw", v1.iterators().hiddens("acl").next().value());
-        assertEquals("r", v1.iterators().properties("acl").next().value());
-        assertEquals("acl", v1.property(Graph.Key.hide("acl")).key());
-        assertEquals("other", v1.property(Graph.Key.hide("other")).key());
+        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+            reader.readGraph(stream, g);
+        }
+
+        final Traversal<Vertex, Vertex> traversal = get_g_v4_out_asXhereX_hasXlang_javaX_backXhereX(convertToVertexId("josh"));
+        printTraversalForm(traversal);
+        int counter = 0;
+        while (traversal.hasNext()) {
+            counter++;
+            final Vertex vertex = traversal.next();
+            assertEquals("java", vertex.<String>value("lang"));
+            assertTrue(vertex.value("name").equals("ripple") || vertex.value("name").equals("lop"));
+        }
+        assertEquals(2, counter);
+    }
+
+    public Traversal<Vertex, Vertex> get_g_v4_out_asXhereX_hasXlang_javaX_backXhereX(final Object v4Id) {
+        return this.sqlG.v(v4Id).out().as("here").has("lang", "java").back("here");
     }
 
     /**
