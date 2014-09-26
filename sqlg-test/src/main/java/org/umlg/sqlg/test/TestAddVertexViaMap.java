@@ -44,20 +44,20 @@ public class TestAddVertexViaMap extends BaseTest {
         Assert.assertEquals("p3", e1.property("name3").value());
     }
 
-    @Test
-    public void howToUpdateManyRows() {
-        this.sqlG.addVertex(T.label, "Person", "name", "marko");
-        this.sqlG.addVertex(T.label, "Person", "name", "joe");
-        this.sqlG.addVertex(T.label, "Person", "name", "john");
-        this.sqlG.addVertex(T.label, "Person", "name", "peter");
-        this.sqlG.tx().commit();
-
-        List<Vertex> markos = this.sqlG.V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
-        if (markos.isEmpty()) {
-            markos.get(0).property("name", "marko2");
-        }
-        this.sqlG.tx().commit();
-
-    }
+//    @Test
+//    public void howToUpdateManyRows() {
+//        this.sqlG.addVertex(T.label, "Person", "name", "marko");
+//        this.sqlG.addVertex(T.label, "Person", "name", "joe");
+//        this.sqlG.addVertex(T.label, "Person", "name", "john");
+//        this.sqlG.addVertex(T.label, "Person", "name", "peter");
+//        this.sqlG.tx().commit();
+//
+//        List<Vertex> markos = this.sqlG.V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
+//        if (markos.isEmpty()) {
+//            markos.get(0).property("name", "marko2");
+//        }
+//        this.sqlG.tx().commit();
+//
+//    }
 
 }

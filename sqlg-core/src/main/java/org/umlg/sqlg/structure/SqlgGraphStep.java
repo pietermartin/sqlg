@@ -136,31 +136,35 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
         }
+        //check that the schema exist
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
         //Schemas are null when has('label') searches for a label that does not exist yet.
         if (schemas != null) {
             for (String schema : schemas) {
-                StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schema));
-                sql.append(".");
-                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
-                if (this.sqlG.getSqlDialect().needsSemicolon()) {
-                    sql.append(";");
-                }
-                Connection conn = this.sqlG.tx().getConnection();
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sql.toString());
-                }
-                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    while (resultSet.next()) {
-                        long id = resultSet.getLong(1);
-                        SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
-                        sqlGVertex.loadResultSet(resultSet);
-                        sqlGVertexes.add(sqlGVertex);
+                //check that the schema exists
+                if (this.sqlG.getSchemaManager().tableExist(schema, SchemaManager.VERTEX_PREFIX + schemaTable.getTable())) {
+                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schema));
+                    sql.append(".");
+                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                    if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
                     }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                    Connection conn = this.sqlG.tx().getConnection();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        while (resultSet.next()) {
+                            long id = resultSet.getLong(1);
+                            SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
+                            sqlGVertex.loadResultSet(resultSet);
+                            sqlGVertexes.add(sqlGVertex);
+                        }
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }

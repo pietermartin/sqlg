@@ -94,7 +94,7 @@ public class SqlG implements Graph {
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect);
         this.schemaManager.loadSchema();
-        if (!this.sqlDialect.supportSchemas() && !this.schemaManager.existSchema(this.sqlDialect.getPublicSchema())) {
+        if (!this.sqlDialect.supportSchemas() && !this.schemaManager.schemaExist(this.sqlDialect.getPublicSchema())) {
             //This is for mariadb. Need to make sure a db called public exist
             this.schemaManager.createSchema(this.sqlDialect.getPublicSchema());
         }

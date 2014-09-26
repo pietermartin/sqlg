@@ -60,4 +60,15 @@ public class TestHas extends BaseTest {
         Assert.assertEquals(0, this.sqlG.V().has(T.label, "friend").has("weight", "5").count().next(), 0);
     }
 
+    @Test
+    public void testHasOnTableThatDoesNotExist() {
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person");
+        v1.addEdge("friend", v2);
+        this.sqlG.tx().commit();
+        Assert.assertEquals(0, this.sqlG.V().has(T.label, "friend").has("weight", "5").count().next(), 0);
+        Assert.assertFalse(this.sqlG.V().has(T.label, "xxx").hasNext());
+        Assert.assertFalse(this.sqlG.V().has(T.label, "public.xxx").hasNext());
+    }
+
 }

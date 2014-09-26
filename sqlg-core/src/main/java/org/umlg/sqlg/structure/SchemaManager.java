@@ -146,6 +146,9 @@ public class SchemaManager {
     void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
         Objects.requireNonNull(schema, "Given tables must not be null");
         Objects.requireNonNull(table, "Given table must not be null");
+        if (table.equals("lapdlnkbsc")) {
+            System.out.println(table);
+        }
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.tables.containsKey(schema + "." + prefixedTable)) {
@@ -177,7 +180,7 @@ public class SchemaManager {
         columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
     }
 
-    boolean existSchema(String schema) {
+    boolean schemaExist(String schema) {
         return this.schemas.contains(schema);
     }
 

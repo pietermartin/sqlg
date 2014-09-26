@@ -20,4 +20,9 @@ public class TestRollback extends BaseTest {
         this.sqlG.tx().rollback();
         Assert.assertFalse(v1.property("name").isPresent());
     }
+
+    @Test
+    public void testRollbackRollsbackSchema() {
+
+    }
 }

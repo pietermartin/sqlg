@@ -50,7 +50,7 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
 
         this.sqlG.close();
-        this.sqlG.open(configuration);
+        this.sqlG = SqlG.open(configuration);
         iter = this.sqlG.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
@@ -94,7 +94,7 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
 
         this.sqlG.close();
-        this.sqlG.open(configuration);
+        this.sqlG = SqlG.open(configuration);
         iter = this.sqlG.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
