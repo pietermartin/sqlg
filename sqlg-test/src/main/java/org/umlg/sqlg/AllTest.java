@@ -6,6 +6,7 @@ import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
+import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
@@ -52,7 +53,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
-        TestMultiThread.class
+        TestMultiThread.class,
+        TestForeignKeyIndexPerformance.class
 })
 public class AllTest {
 }
