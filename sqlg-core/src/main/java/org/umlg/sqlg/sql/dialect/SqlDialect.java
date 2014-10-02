@@ -17,10 +17,7 @@ import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 
 public interface SqlDialect {
 
@@ -308,5 +305,13 @@ public interface SqlDialect {
             return "ID";
         else
             return key;
+    }
+
+    void flushRemovedVertices(SqlG sqlG, Map<SchemaTable, List<SqlgVertex>> removeVertexCache);
+
+    void flushRemovedEdges(SqlG sqlG, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache);
+
+    public default boolean needForeignKeyIndex() {
+        return false;
     }
 }

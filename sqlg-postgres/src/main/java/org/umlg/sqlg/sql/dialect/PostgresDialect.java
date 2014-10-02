@@ -4,7 +4,6 @@ import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.postgresql.copy.CopyManager;
@@ -27,6 +26,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     private static final String BATCH_NULL = "\\N";
     private static final String COPY_COMMAND_SEPARATOR = "\t";
+    private static final int PARAMETER_LIMIT = 32767;
     private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
 
     public PostgresDialect(Configuration configurator) {
@@ -469,6 +469,368 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void flushRemovedVertices(SqlG sqlG, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
+
+        if (!removeVertexCache.isEmpty()) {
+
+            //split the list of vertices, postgres has a 2 byte limit in the in clause
+            for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
+
+                SchemaTable schemaTable = schemaVertices.getKey();
+                List<SqlgVertex> vertices = schemaVertices.getValue();
+                //TODO do all the vertices
+
+                int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
+                int previous = 0;
+                for (int i = 1; i <= numberOfLoops + 1; i++) {
+
+                    int sublistTo = i * PARAMETER_LIMIT;
+                    List<SqlgVertex> subVertices;
+                    if (i <= numberOfLoops) {
+                        subVertices = vertices.subList(previous, sublistTo);
+                    } else {
+                        subVertices = vertices.subList(previous, vertices.size());
+                    }
+
+                    previous = sublistTo;
+
+                    if (!subVertices.isEmpty()) {
+                        Pair<Set<Long>, Set<SchemaTable>> outLabels = Pair.of(new HashSet<Long>(), new HashSet<SchemaTable>());
+                        Pair<Set<Long>, Set<SchemaTable>> inLabels = Pair.of(new HashSet<Long>(), new HashSet<SchemaTable>());
+                        //get all the in and out labels for each vertex
+                        //then for all in and out edges
+                        //then remove the edges
+                        getInAndOutEdgesToRemove(sqlG, subVertices, outLabels, inLabels);
+                        deleteEdges(sqlG, schemaTable, outLabels, true);
+                        deleteEdges(sqlG, schemaTable, inLabels, false);
+
+
+                        StringBuilder sql = new StringBuilder("DELETE FROM ");
+                        sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                        sql.append(".");
+                        sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.VERTEX_PREFIX) + schemaTable.getTable()));
+                        sql.append(" WHERE ");
+                        sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+                        sql.append(" in (");
+                        int count = 1;
+                        for (SqlgVertex sqlgVertex : subVertices) {
+                            sql.append("?");
+                            if (count++ < subVertices.size()) {
+                                sql.append(",");
+                            }
+                        }
+                        sql.append(")");
+                        if (sqlG.getSqlDialect().needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        Connection conn = sqlG.tx().getConnection();
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            count = 1;
+                            for (SqlgVertex sqlgVertex : subVertices) {
+                                preparedStatement.setLong(count++, (Long) sqlgVertex.id());
+                            }
+                            preparedStatement.executeUpdate();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                        sql = new StringBuilder("DELETE FROM ");
+                        sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(sqlG.getSqlDialect().getPublicSchema()));
+                        sql.append(".");
+                        sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+                        sql.append(" WHERE ");
+                        sql.append(sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+                        sql.append(" in (");
+
+                        count = 1;
+                        for (SqlgVertex vertex : subVertices) {
+                            sql.append("?");
+                            if (count++ < subVertices.size()) {
+                                sql.append(",");
+                            }
+                        }
+                        sql.append(")");
+                        if (sqlG.getSqlDialect().needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        conn = sqlG.tx().getConnection();
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            count = 1;
+                            for (SqlgVertex vertex : subVertices) {
+                                preparedStatement.setLong(count++, (Long) vertex.id());
+                            }
+                            preparedStatement.executeUpdate();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                }
+
+            }
+        }
+    }
+
+    private void deleteEdges(SqlG sqlG, SchemaTable vertexSchemaTable, Pair<Set<Long>, Set<SchemaTable>> outLabels, boolean outDirection) {
+
+        List<Long> edgesToDeleteId = new ArrayList<>();
+        Pair<Set<Long>, Set<SchemaTable>> vertexEdgeSchemaTable = outLabels;
+        for (SchemaTable edgeSchemaTable : vertexEdgeSchemaTable.getRight()) {
+            StringBuilder sql = new StringBuilder();
+            sql.append("DELETE FROM ");
+            sql.append(maybeWrapInQoutes(edgeSchemaTable.getSchema()));
+            sql.append(".");
+            sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeSchemaTable.getTable()));
+            sql.append(" WHERE ");
+            sql.append(maybeWrapInQoutes(vertexSchemaTable.toString() + (outDirection ? SqlgElement.OUT_VERTEX_COLUMN_END : SqlgElement.IN_VERTEX_COLUMN_END)));
+            sql.append(" IN (");
+            int count = 1;
+            for (Long id : vertexEdgeSchemaTable.getLeft()) {
+                sql.append("?");
+                if (count++ < vertexEdgeSchemaTable.getLeft().size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")  RETURNING *");
+            if (sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            Connection conn = sqlG.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                count = 1;
+                for (Long id : vertexEdgeSchemaTable.getLeft()) {
+                    preparedStatement.setLong(count++, id);
+                }
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    edgesToDeleteId.add(resultSet.getLong(SchemaManager.ID));
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (!edgesToDeleteId.isEmpty()) {
+
+            //split on PARAMETER_LIMIT
+            int numberOfLoops = (edgesToDeleteId.size() / PARAMETER_LIMIT);
+            int previous = 0;
+            for (int i = 1; i <= numberOfLoops + 1; i++) {
+
+                int sublistTo = i * PARAMETER_LIMIT;
+                List<Long> subEdges;
+                if (i <= numberOfLoops) {
+                    subEdges = edgesToDeleteId.subList(previous, sublistTo);
+                } else {
+                    subEdges = edgesToDeleteId.subList(previous, edgesToDeleteId.size());
+                }
+
+                previous = sublistTo;
+
+                if (!subEdges.isEmpty()) {
+                    //Delete from the EDGES table
+                    StringBuilder sql = new StringBuilder();
+                    sql.append("DELETE FROM ");
+                    sql.append(maybeWrapInQoutes(this.getPublicSchema()));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(SchemaManager.EDGES));
+                    sql.append(" WHERE ");
+                    sql.append(maybeWrapInQoutes(SchemaManager.ID));
+                    sql.append(" IN (");
+                    int count = 1;
+                    for (Long id : subEdges) {
+                        sql.append("?");
+                        if (count++ < subEdges.size()) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append(")");
+                    if (sqlG.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    Connection conn = sqlG.tx().getConnection();
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        count = 1;
+                        for (Long id : subEdges) {
+                            preparedStatement.setLong(count++, id);
+                        }
+                        preparedStatement.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+        }
+    }
+
+    private void getInAndOutEdgesToRemove(SqlG sqlG, List<SqlgVertex> removeVertexCache,
+                                          Pair<Set<Long>, Set<SchemaTable>> outLabels,
+                                          Pair<Set<Long>, Set<SchemaTable>> inLabels) {
+        List<SqlgVertex> vertices = removeVertexCache;
+
+        StringBuilder sql = new StringBuilder("SELECT ");
+        sql.append(maybeWrapInQoutes(SchemaManager.ID));
+        sql.append(", ");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_SCHEMA));
+        sql.append(", ");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_TABLE));
+        sql.append(", ");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
+        sql.append(", ");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
+        sql.append(" FROM ");
+        sql.append(maybeWrapInQoutes(getPublicSchema()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTICES));
+        sql.append(" WHERE ");
+        sql.append(maybeWrapInQoutes("ID"));
+        sql.append(" in (");
+
+        int countVertexes = 1;
+        for (SqlgVertex sqlgVertex : vertices) {
+            sql.append("?");
+            if (countVertexes++ < vertices.size()) {
+                sql.append(",");
+            }
+        }
+        sql.append(")");
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        Connection conn = sqlG.tx().getConnection();
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            countVertexes = 1;
+            for (SqlgVertex sqlgVertex : vertices) {
+                if (countVertexes <= vertices.size()) {
+                    preparedStatement.setLong(countVertexes++, (Long) sqlgVertex.id());
+                }
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                Long vertexId = resultSet.getLong(SchemaManager.ID);
+                String vertexSchema = resultSet.getString(SchemaManager.VERTEX_SCHEMA);
+                String vertexTable = resultSet.getString(SchemaManager.VERTEX_TABLE);
+                String commaSeparatedOutLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
+                if (commaSeparatedOutLabels != null) {
+                    String[] schemaLabels = commaSeparatedOutLabels.split(SchemaManager.LABEL_SEPERATOR);
+                    for (String schemaLabel : schemaLabels) {
+                        SchemaTable outSchemaLabel = SqlgUtil.parseLabel(schemaLabel, getPublicSchema());
+                        outLabels.getLeft().add(vertexId);
+                        outLabels.getRight().add(outSchemaLabel);
+                    }
+                }
+
+                String commaSeparatedInLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
+                if (commaSeparatedInLabels != null) {
+                    String[] schemaLabels = commaSeparatedInLabels.split(SchemaManager.LABEL_SEPERATOR);
+                    for (String schemaLabel : schemaLabels) {
+                        SchemaTable inSchemaLabel = SqlgUtil.parseLabel(schemaLabel, getPublicSchema());
+                        SchemaTable schemaTable = SchemaTable.of(vertexSchema, vertexTable);
+                        inLabels.getLeft().add(vertexId);
+                        inLabels.getRight().add(inSchemaLabel);
+                    }
+                }
+
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void flushRemovedEdges(SqlG sqlG, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
+
+        if (!removeEdgeCache.isEmpty()) {
+            List<SqlgEdge> flattenedEdges = new ArrayList<>();
+            for (SchemaTable schemaTable : removeEdgeCache.keySet()) {
+                List<SqlgEdge> edges = removeEdgeCache.get(schemaTable);
+                StringBuilder sql = new StringBuilder("DELETE FROM ");
+                sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                sql.append(".");
+                sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
+                sql.append(" WHERE ");
+                sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+                sql.append(" in (");
+                int count = 1;
+                for (SqlgEdge sqlgEdge : edges) {
+                    flattenedEdges.add(sqlgEdge);
+                    sql.append("?");
+                    if (count++ < edges.size()) {
+                        sql.append(",");
+                    }
+                }
+                sql.append(")");
+                if (sqlG.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                Connection conn = sqlG.tx().getConnection();
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    count = 1;
+                    for (SqlgEdge sqlgEdge : edges) {
+                        preparedStatement.setLong(count++, (Long) sqlgEdge.id());
+                    }
+                    preparedStatement.executeUpdate();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            StringBuilder sql = new StringBuilder("DELETE FROM ");
+            sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(sqlG.getSqlDialect().getPublicSchema()));
+            sql.append(".");
+            sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+            sql.append(" WHERE ");
+            sql.append(sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" in (");
+
+            int count = 1;
+            for (SqlgEdge edge : flattenedEdges) {
+                sql.append(" ? ");
+                if (count++ < flattenedEdges.size()) {
+                    sql.append(",");
+                }
+            }
+            sql.append(")");
+            if (sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            Connection conn = sqlG.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                count = 1;
+                for (SqlgEdge edge : flattenedEdges) {
+                    preparedStatement.setLong(count++, (Long) edge.id());
+                }
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+    }
+
+    @Override
     public String getBatchNull() {
         return BATCH_NULL;
     }
@@ -764,6 +1126,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
+    }
+
+    @Override
+    public boolean needForeignKeyIndex() {
+        return true;
     }
 
 }

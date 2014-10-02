@@ -23,6 +23,7 @@ public class SchemaManager {
     public static final String VERTEX_IN_LABELS = "IN_LABELS";
     public static final String VERTEX_OUT_LABELS = "OUT_LABELS";
     public static final String EDGES = "EDGES";
+    public static final String ID = "ID";
     public static final String VERTEX_SCHEMA = "VERTEX_SCHEMA";
     public static final String VERTEX_TABLE = "VERTEX_TABLE";
     public static final String EDGE_SCHEMA = "EDGE_SCHEMA";
@@ -146,9 +147,6 @@ public class SchemaManager {
     void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
         Objects.requireNonNull(schema, "Given tables must not be null");
         Objects.requireNonNull(table, "Given table must not be null");
-        if (table.equals("lapdlnkbsc")) {
-            System.out.println(table);
-        }
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.tables.containsKey(schema + "." + prefixedTable)) {
@@ -537,6 +535,8 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
+
+        //foreign key definition start
         sql.append(", ");
         sql.append("FOREIGN KEY (");
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable()));
@@ -555,10 +555,32 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append("))");
+        sql.append(")");
+        //foreign key definition end
+
+        sql.append(")");
         if (this.sqlG.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+
+        if (this.sqlG.getSqlDialect().needForeignKeyIndex()) {
+            sql.append("\nCREATE INDEX ON ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+            sql.append(" (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable()));
+            sql.append(");");
+
+            sql.append("\nCREATE INDEX ON ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+            sql.append(" (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable()));
+            sql.append(");");
+        }
+
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }

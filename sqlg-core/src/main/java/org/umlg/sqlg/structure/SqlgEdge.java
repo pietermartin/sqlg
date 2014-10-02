@@ -65,27 +65,33 @@ public class SqlgEdge extends SqlgElement implements Edge {
     @Override
     public void remove() {
         this.sqlG.tx().readWrite();
-        StringBuilder sql = new StringBuilder("DELETE FROM ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
-        sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-        sql.append(" WHERE ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
+
+        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+            this.sqlG.tx().getBatchManager().removeEdge(this.schema, this.table, this);
+        }  else {
+            StringBuilder sql = new StringBuilder("DELETE FROM ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+            sql.append(".");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+            sql.append(" WHERE ");
+            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = ?");
+            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            Connection conn = this.sqlG.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.setLong(1, (Long) this.id());
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            super.remove();
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlG.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, (Long) this.id());
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        super.remove();
+
     }
 
     public SqlgVertex getInVertex() {

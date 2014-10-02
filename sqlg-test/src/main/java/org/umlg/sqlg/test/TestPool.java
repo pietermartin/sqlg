@@ -9,6 +9,7 @@ import org.junit.Test;
  */
 public class TestPool extends BaseTest {
 
+    //TODO this test nothing, needs to multi threaded
     @Test
     public void testSqlGraphConnectionsDoesNotExhaustPool() {
         for (int i = 0; i < 1000; i++) {

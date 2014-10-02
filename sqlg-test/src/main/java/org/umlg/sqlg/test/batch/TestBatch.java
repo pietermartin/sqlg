@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
@@ -638,6 +639,85 @@ public class TestBatch extends BaseTest {
             Assert.fail(e.getMessage());
         }
 
+    }
+
+    @Test
+    public void testBatchRemoveVertex() {
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v3 = this.sqlG.addVertex(T.label, "Person");
+        this.sqlG.tx().commit();
+        this.sqlG.tx().batchModeOn();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlG.tx().commit();
+        Assert.assertEquals(0, this.sqlG.V().count().next().intValue());
+    }
+
+    @Test
+    public void testBatchRemoveEdges() {
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v3 = this.sqlG.addVertex(T.label, "Person");
+        Edge edge1 = v1.addEdge("test", v2);
+        Edge edge2 = v1.addEdge("test", v3);
+        this.sqlG.tx().commit();
+        this.sqlG.tx().batchModeOn();
+        edge1.remove();
+        edge2.remove();
+        this.sqlG.tx().commit();
+        Assert.assertEquals(3, this.sqlG.V().count().next().intValue());
+        Assert.assertEquals(0, this.sqlG.E().count().next().intValue());
+    }
+
+    @Test
+    public void testBatchRemoveVerticesAndEdges() {
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v3 = this.sqlG.addVertex(T.label, "Person");
+        Edge edge1 = v1.addEdge("test", v2);
+        Edge edge2 = v1.addEdge("test", v3);
+        this.sqlG.tx().commit();
+        this.sqlG.tx().batchModeOn();
+        edge1.remove();
+        edge2.remove();
+        v1.remove();
+        v2.remove();
+        v3.remove();
+        this.sqlG.tx().commit();
+        Assert.assertEquals(0, this.sqlG.V().count().next().intValue());
+        Assert.assertEquals(0, this.sqlG.E().count().next().intValue());
+    }
+
+    @Test
+    public void testDeletePerformance() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        this.sqlG.tx().batchModeOn();
+        //32767
+        for (int i = 0; i < 300000; i++) {
+            Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "name1" + i);
+            Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name", "name2" + i);
+            v1.addEdge("friend", v1, "weight", 1);
+            v1.addEdge("friend", v1, "weight", 2);
+        }
+        this.sqlG.tx().commit();
+        this.sqlG.tx().batchModeOn();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        List<SqlgVertex> vertexes = this.sqlG.V().<SqlgVertex>has(T.label, "Person").toList();
+        int count = 1;
+        for (SqlgVertex sqlgVertex : vertexes) {
+            sqlgVertex.remove();
+        }
+        this.sqlG.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        Assert.assertEquals(0, this.sqlG.V().count().next().intValue());
+        Assert.assertEquals(0, this.sqlG.E().count().next().intValue());
     }
 
     //batch mode on is ignored if the graph does not support batch mode

@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.remove;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -22,8 +23,10 @@ public class TestRemoveEdge extends BaseTest {
         Edge edge2 = dataTypeEntity.addEdge("address", date2);
         Edge edge3 = dataTypeEntity.addEdge("address", date3);
         this.sqlG.tx().commit();
-//        edge2.remove();
-        date2.remove();
+        edge1.remove();
+        edge2.remove();
+        edge3.remove();
         this.sqlG.tx().commit();
+        Assert.assertEquals(0, this.sqlG.E().count().next().intValue());
     }
 }

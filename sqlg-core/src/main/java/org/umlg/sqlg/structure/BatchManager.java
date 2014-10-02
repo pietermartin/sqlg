@@ -37,6 +37,11 @@ public class BatchManager {
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache = new LinkedHashMap<>();
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache = new LinkedHashMap<>();
 
+    //map per label's vertices to delete
+    private Map<SchemaTable, List<SqlgVertex>> removeVertexCache = new LinkedHashMap<>();
+    //map per label's edges to delete
+    private Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
+
     BatchManager(SqlG sqlG, SqlDialect sqlDialect) {
         this.sqlG = sqlG;
         this.sqlDialect = sqlDialect;
@@ -115,6 +120,8 @@ public class BatchManager {
         this.sqlDialect.flushVertexLabelCache(this.sqlG, this.vertexOutInLabelCache);
         this.sqlDialect.flushVertexPropertyCache(this.sqlG, this.vertexPropertyCache);
         this.sqlDialect.flushEdgePropertyCache(this.sqlG, this.edgePropertyCache);
+        this.sqlDialect.flushRemovedEdges(this.sqlG, this.removeEdgeCache);
+        this.sqlDialect.flushRemovedVertices(this.sqlG, this.removeVertexCache);
         return verticesRange;
     }
 
@@ -328,6 +335,26 @@ public class BatchManager {
         this.vertexInEdgeCache.clear();
         this.vertexOutEdgeCache.clear();
         this.vertexOutInLabelCache.clear();
+    }
+
+    public void removeVertex(String schema, String table, SqlgVertex vertex) {
+        SchemaTable schemaTable = SchemaTable.of(schema, table);
+        List<SqlgVertex> vertices = this.removeVertexCache.get(schemaTable);
+        if (vertices == null) {
+            vertices = new ArrayList<>();
+            this.removeVertexCache.put(schemaTable, vertices);
+        }
+        vertices.add(vertex);
+    }
+
+    public void removeEdge(String schema, String table, SqlgEdge edge) {
+        SchemaTable schemaTable = SchemaTable.of(schema, table);
+        List<SqlgEdge> edges = this.removeEdgeCache.get(schemaTable);
+        if (edges == null) {
+            edges = new ArrayList<>();
+            this.removeEdgeCache.put(schemaTable, edges);
+        }
+        edges.add(edge);
     }
 
 }
