@@ -70,6 +70,16 @@ public class MariaDbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void flushRemovedVertices(SqlG sqlG, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
+    }
+
+    @Override
+    public void flushRemovedEdges(SqlG sqlG, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
+    }
+
+    @Override
     public Set<String> getDefaultSchemas() {
         return new HashSet<>(Arrays.asList("information_schema", "performance_schema", "mysql"));
     }
