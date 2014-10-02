@@ -17,7 +17,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestForeignKeyIndexPerformance.class
+        TestBatch.class
 })
 public class AnyTest {
 }

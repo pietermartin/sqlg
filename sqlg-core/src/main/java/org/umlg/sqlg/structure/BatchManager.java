@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,8 +27,8 @@ public class BatchManager {
     //map per label, contains a map edges. The triple is outVertex, inVertex, edge properties
     private Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache = new LinkedHashMap<>();
 
-    private Map<SqlgVertex, Map<String, List<SqlgEdge>>> vertexInEdgeCache = new HashMap<>();
-    private Map<SqlgVertex, Map<String, List<SqlgEdge>>> vertexOutEdgeCache = new HashMap<>();
+    private Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexInEdgeCache = new HashMap<>();
+    private Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexOutEdgeCache = new HashMap<>();
 
     //this cache is used to cache out and in labels of vertices that are not itself in the cache.
     //i.e. when adding edges between vertices in batch mode
@@ -68,7 +69,7 @@ public class BatchManager {
         }
     }
 
-    public synchronized void addEdge(SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void addEdge(SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         SchemaTable outSchemaTable = SchemaTable.of(outVertex.getSchema(), sqlgEdge.getTable());
         Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(outSchemaTable);
         if (triples == null) {
@@ -78,36 +79,36 @@ public class BatchManager {
         } else {
             triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
         }
-        Map<String, List<SqlgEdge>> outEdgesMap = this.vertexOutEdgeCache.get(outVertex);
+        Map<SchemaTable, List<SqlgEdge>> outEdgesMap = this.vertexOutEdgeCache.get(outVertex);
         if (outEdgesMap == null) {
             outEdgesMap = new HashMap<>();
             List<SqlgEdge> edges = new ArrayList<>();
             edges.add(sqlgEdge);
-            outEdgesMap.put(sqlgEdge.label(), edges);
+            outEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
             this.vertexOutEdgeCache.put(outVertex, outEdgesMap);
         } else {
-            List<SqlgEdge> sqlgEdges = outEdgesMap.get(sqlgEdge.label());
+            List<SqlgEdge> sqlgEdges = outEdgesMap.get(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()));
             if (sqlgEdges == null) {
                 List<SqlgEdge> edges = new ArrayList<>();
                 edges.add(sqlgEdge);
-                outEdgesMap.put(sqlgEdge.label(), edges);
+                outEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
             } else {
                 sqlgEdges.add(sqlgEdge);
             }
         }
-        Map<String, List<SqlgEdge>> inEdgesMap = this.vertexInEdgeCache.get(outVertex);
+        Map<SchemaTable, List<SqlgEdge>> inEdgesMap = this.vertexInEdgeCache.get(outVertex);
         if (inEdgesMap == null) {
             inEdgesMap = new HashMap<>();
             List<SqlgEdge> edges = new ArrayList<>();
             edges.add(sqlgEdge);
-            inEdgesMap.put(sqlgEdge.label(), edges);
+            inEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
             this.vertexInEdgeCache.put(inVertex, inEdgesMap);
         } else {
-            List<SqlgEdge> sqlgEdges = inEdgesMap.get(sqlgEdge.label());
+            List<SqlgEdge> sqlgEdges = inEdgesMap.get(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()));
             if (sqlgEdges == null) {
                 List<SqlgEdge> edges = new ArrayList<>();
                 edges.add(sqlgEdge);
-                inEdgesMap.put(sqlgEdge.label(), edges);
+                inEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
             } else {
                 sqlgEdges.add(sqlgEdge);
             }
@@ -311,11 +312,15 @@ public class BatchManager {
         return result;
     }
 
-    private void internalGetEdgesFromMap(Map<SqlgVertex, Map<String, List<SqlgEdge>>> vertexEdgeCache, SqlgVertex sqlgVertex, List<SqlgEdge> result, String[] labels) {
+    private void internalGetEdgesFromMap(Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexEdgeCache, SqlgVertex sqlgVertex, List<SqlgEdge> result, String[] labels) {
         for (String label : labels) {
-            Map<String, List<SqlgEdge>> labeledEdgeMap = vertexEdgeCache.get(sqlgVertex);
-            if (labeledEdgeMap != null && labeledEdgeMap.containsKey(label)) {
-                result.addAll(labeledEdgeMap.get(label));
+            Map<SchemaTable, List<SqlgEdge>> labeledEdgeMap = vertexEdgeCache.get(sqlgVertex);
+            for (Map.Entry<SchemaTable, List<SqlgEdge>> schemaTableListEntry : labeledEdgeMap.entrySet()) {
+                SchemaTable edgeSchemaTable = schemaTableListEntry.getKey();
+                List<SqlgEdge> sqlgEdges = schemaTableListEntry.getValue();
+                if (edgeSchemaTable.getTable().equals(label)) {
+                    result.addAll(sqlgEdges);
+                }
             }
         }
     }
@@ -339,22 +344,73 @@ public class BatchManager {
 
     public void removeVertex(String schema, String table, SqlgVertex vertex) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
-        List<SqlgVertex> vertices = this.removeVertexCache.get(schemaTable);
-        if (vertices == null) {
-            vertices = new ArrayList<>();
-            this.removeVertexCache.put(schemaTable, vertices);
+        //check it the vertex is in the newly inserted cache
+        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexSortedSetMapPair = this.vertexCache.get(schemaTable);
+        if (vertexSortedSetMapPair != null && vertexSortedSetMapPair.getRight().containsKey(vertex)) {
+            vertexSortedSetMapPair.getRight().remove(vertex);
+            //all the edges of a new vertex must also be new
+            Map<SchemaTable, List<SqlgEdge>> outEdges = this.vertexOutEdgeCache.get(vertex);
+            if (outEdges != null) {
+                for (Map.Entry<SchemaTable, List<SqlgEdge>> entry : outEdges.entrySet()) {
+                    SchemaTable edgeSchemaTable = entry.getKey();
+                    List<SqlgEdge> edges = entry.getValue();
+                    //remove these edges from the edge cache
+                    Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> cachedEdge = this.edgeCache.get(edgeSchemaTable);
+                    if (cachedEdge == null) {
+                        throw new IllegalStateException("BUG: new edge not found in edgeCache during bulk remove!");
+                    }
+                    for (SqlgEdge sqlgEdge : edges) {
+                        cachedEdge.remove(sqlgEdge);
+                    }
+                    if (cachedEdge.isEmpty()) {
+                        this.edgeCache.remove(edgeSchemaTable);
+                    }
+                }
+                this.vertexOutEdgeCache.remove(vertex);
+            }
+            Map<SchemaTable, List<SqlgEdge>> inEdges = this.vertexInEdgeCache.get(vertex);
+            if (inEdges != null) {
+                for (Map.Entry<SchemaTable, List<SqlgEdge>> entry : inEdges.entrySet()) {
+                    SchemaTable edgeSchemaTable = entry.getKey();
+                    List<SqlgEdge> edges = entry.getValue();
+                    //remove these edges from the edge cache
+                    Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> cachedEdge = this.edgeCache.get(edgeSchemaTable);
+                    if (cachedEdge == null) {
+                        throw new IllegalStateException("BUG: new edge not found in edgeCache during bulk remove!");
+                    }
+                    for (SqlgEdge sqlgEdge : edges) {
+                        cachedEdge.remove(sqlgEdge);
+                    }
+                    if (cachedEdge.isEmpty()) {
+                        this.edgeCache.remove(edgeSchemaTable);
+                    }
+                }
+                this.vertexInEdgeCache.remove(vertex);
+            }
+        } else {
+            List<SqlgVertex> vertices = this.removeVertexCache.get(schemaTable);
+            if (vertices == null) {
+                vertices = new ArrayList<>();
+                this.removeVertexCache.put(schemaTable, vertices);
+            }
+            vertices.add(vertex);
         }
-        vertices.add(vertex);
     }
 
     public void removeEdge(String schema, String table, SqlgEdge edge) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
-        List<SqlgEdge> edges = this.removeEdgeCache.get(schemaTable);
-        if (edges == null) {
-            edges = new ArrayList<>();
-            this.removeEdgeCache.put(schemaTable, edges);
+        //check it the edge is in the newly inserted cache
+        Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleMap = this.edgeCache.get(schemaTable);
+        if (sqlgEdgeTripleMap != null && sqlgEdgeTripleMap.containsKey(edge)) {
+            sqlgEdgeTripleMap.remove(edge);
+        } else {
+            List<SqlgEdge> edges = this.removeEdgeCache.get(schemaTable);
+            if (edges == null) {
+                edges = new ArrayList<>();
+                this.removeEdgeCache.put(schemaTable, edges);
+            }
+            edges.add(edge);
         }
-        edges.add(edge);
     }
 
 }

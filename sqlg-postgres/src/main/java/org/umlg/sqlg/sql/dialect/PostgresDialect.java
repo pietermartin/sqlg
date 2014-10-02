@@ -804,7 +804,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
             int count = 1;
             for (SqlgEdge edge : flattenedEdges) {
-                sql.append(" ? ");
+                sql.append("?");
                 if (count++ < flattenedEdges.size()) {
                     sql.append(",");
                 }
