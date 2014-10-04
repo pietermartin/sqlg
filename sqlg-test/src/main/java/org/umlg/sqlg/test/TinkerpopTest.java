@@ -34,6 +34,50 @@ import static org.junit.Assert.assertTrue;
 public class TinkerpopTest extends BaseTest {
 
     @Test
+    public void shouldCommitPropertyAutoTransactionByDefault() {
+        Graph g = this.sqlG;
+        final Vertex v1 = g.addVertex();
+        final Edge e1 = v1.addEdge("l", v1);
+        g.tx().commit();
+        AbstractGremlinSuite.assertVertexEdgeCounts(1, 1);
+        assertEquals(v1.id(), g.v(v1.id()).id());
+        assertEquals(e1.id(), g.e(e1.id()).id());
+
+        v1.property("name", "marko");
+        assertEquals("marko", v1.<String>value("name"));
+        assertEquals("marko", g.v(v1.id()).<String>value("name"));
+        g.tx().commit();
+
+        assertEquals("marko", v1.<String>value("name"));
+        assertEquals("marko", g.v(v1.id()).<String>value("name"));
+
+        v1.singleProperty("name", "stephen");
+
+        assertEquals("stephen", v1.<String>value("name"));
+        assertEquals("stephen", g.v(v1.id()).<String>value("name"));
+
+        g.tx().commit();
+
+        assertEquals("stephen", v1.<String>value("name"));
+        assertEquals("stephen", g.v(v1.id()).<String>value("name"));
+
+        e1.property("name", "xxx");
+
+        assertEquals("xxx", e1.<String>value("name"));
+        assertEquals("xxx", g.e(e1.id()).<String>value("name"));
+
+        g.tx().commit();
+
+        assertEquals("xxx", e1.<String>value("name"));
+        assertEquals("xxx", g.e(e1.id()).<String>value("name"));
+
+        AbstractGremlinSuite.assertVertexEdgeCounts(1, 1);
+        assertEquals(v1.id(), g.v(v1.id()).id());
+        assertEquals(e1.id(), g.e(e1.id()).id());
+    }
+
+
+//    @Test
     @LoadGraphWith(MODERN)
     public void g_v4_out_asXhereX_hasXlang_javaX_backXhereX() throws IOException {
         Graph g = this.sqlG;

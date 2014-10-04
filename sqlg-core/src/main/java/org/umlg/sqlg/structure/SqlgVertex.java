@@ -39,6 +39,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     public SqlgVertex(SqlG sqlG, String schema, String table, Object... keyValues) {
         super(sqlG, schema, table);
         insertVertex(keyValues);
+        if (!sqlG.tx().isInBatchMode()) {
+            sqlG.tx().add(this);
+        }
     }
 
     public SqlgVertex(SqlG sqlG, Long id, String label) {
@@ -46,7 +49,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     public static SqlgVertex of(SqlG sqlG, Long id, String schema, String table) {
-        return new SqlgVertex(sqlG, id, schema, table);
+        if (!sqlG.tx().isInBatchMode()) {
+            return sqlG.tx().putVertexIfAbsent(sqlG, id, schema, table);
+        } else {
+            return new SqlgVertex(sqlG, id, schema, table);
+        }
     }
 
     /**
@@ -56,7 +63,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param schema
      * @param table
      */
-    private SqlgVertex(SqlG sqlG, Long id, String schema, String table) {
+    SqlgVertex(SqlG sqlG, Long id, String schema, String table) {
         super(sqlG, id, schema, table);
     }
 

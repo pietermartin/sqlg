@@ -38,7 +38,7 @@ public class ResultSetIterator implements Iterator<Vertex> {
             long id = resultSet.getLong(1);
             String schema = resultSet.getString(2);
             String table = resultSet.getString(3);
-            SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, table);
+            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schema, table);
             return sqlGVertex;
         } catch (SQLException e) {
             throw new RuntimeException(e);

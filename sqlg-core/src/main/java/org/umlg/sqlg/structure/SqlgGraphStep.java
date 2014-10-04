@@ -158,7 +158,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                         ResultSet resultSet = preparedStatement.executeQuery();
                         while (resultSet.next()) {
                             long id = resultSet.getLong(1);
-                            SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, schemaTable.getTable());
+                            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schema, schemaTable.getTable());
                             sqlGVertex.loadResultSet(resultSet);
                             sqlGVertexes.add(sqlGVertex);
                         }
@@ -198,7 +198,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     long id = resultSet.getLong(1);
-                    SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                    SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
                     sqlGVertex.loadResultSet(resultSet);
                     sqlGVertexes.add(sqlGVertex);
                 }
@@ -228,7 +228,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                 long id = resultSet.getLong(1);
                 String schema = resultSet.getString(2);
                 String table = resultSet.getString(3);
-                SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, id, schema, table);
+                SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schema, table);
                 sqlGVertexes.add(sqlGVertex);
             }
         } catch (SQLException e) {

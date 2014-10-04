@@ -197,7 +197,7 @@ public class SqlG implements Graph {
             while (resultSet.next()) {
                 String schema = resultSet.getString("VERTEX_SCHEMA");
                 String table = resultSet.getString("VERTEX_TABLE");
-                sqlGVertex = new SqlgVertex(this, idAsLong, schema, table);
+                sqlGVertex = SqlgVertex.of(this, idAsLong, schema, table);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
