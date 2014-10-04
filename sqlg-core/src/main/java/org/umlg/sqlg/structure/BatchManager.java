@@ -237,7 +237,7 @@ public class BatchManager {
                     return true;
                 }
             } else {
-                Pair<SortedSet<String>,Map<SqlgEdge, Map<String, Object>>> schemaEdges = this.edgePropertyCache.get(schemaTable);
+                Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>> schemaEdges = this.edgePropertyCache.get(schemaTable);
                 if (schemaEdges == null) {
                     schemaEdges = Pair.of(new TreeSet<>(), new LinkedHashMap<>());
                     this.edgePropertyCache.put(schemaTable, schemaEdges);
@@ -319,11 +319,13 @@ public class BatchManager {
     private void internalGetEdgesFromMap(Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexEdgeCache, SqlgVertex sqlgVertex, List<SqlgEdge> result, String[] labels) {
         for (String label : labels) {
             Map<SchemaTable, List<SqlgEdge>> labeledEdgeMap = vertexEdgeCache.get(sqlgVertex);
-            for (Map.Entry<SchemaTable, List<SqlgEdge>> schemaTableListEntry : labeledEdgeMap.entrySet()) {
-                SchemaTable edgeSchemaTable = schemaTableListEntry.getKey();
-                List<SqlgEdge> sqlgEdges = schemaTableListEntry.getValue();
-                if (edgeSchemaTable.getTable().equals(label)) {
-                    result.addAll(sqlgEdges);
+            if (labeledEdgeMap != null) {
+                for (Map.Entry<SchemaTable, List<SqlgEdge>> schemaTableListEntry : labeledEdgeMap.entrySet()) {
+                    SchemaTable edgeSchemaTable = schemaTableListEntry.getKey();
+                    List<SqlgEdge> sqlgEdges = schemaTableListEntry.getValue();
+                    if (edgeSchemaTable.getTable().equals(label)) {
+                        result.addAll(sqlgEdges);
+                    }
                 }
             }
         }

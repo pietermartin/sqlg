@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
+import org.umlg.sqlg.test.edges.TestEdgeCache;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
@@ -15,6 +16,7 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
+import org.umlg.sqlg.test.vertex.TestVertexCache;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
@@ -56,7 +58,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRollback.class,
         TestMultiThread.class,
         TestForeignKeyIndexPerformance.class,
-        TestNewVertex.class
+        TestNewVertex.class,
+        TestEdgeCache.class,
+        TestVertexCache.class
 })
 public class AllTest {
 }

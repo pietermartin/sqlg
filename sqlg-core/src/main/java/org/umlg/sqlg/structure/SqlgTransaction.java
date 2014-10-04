@@ -21,20 +21,21 @@ import java.util.function.Function;
  */
 public class SqlgTransaction implements Transaction {
 
+    private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
     private Consumer<Transaction> readWriteConsumer;
     private Consumer<Transaction> closeConsumer;
     private SqlG sqlG;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
-//    private BatchManager batchManager;
-//    private boolean inBatchMode = false;
-    private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
 
-    protected final ThreadLocal<Triple<Connection, List<ElementPropertyRollback>, BatchManager>> threadLocalTx = new ThreadLocal<Triple<Connection, List<ElementPropertyRollback>, BatchManager>>() {
+    protected final ThreadLocal<Triple<Connection, List<ElementPropertyRollback>, BatchManager>> threadLocalTx =
+            new ThreadLocal<Triple<Connection, List<ElementPropertyRollback>, BatchManager>>() {
+
         protected Triple<Connection, List<ElementPropertyRollback>, BatchManager> initialValue() {
             return null;
         }
     };
+
     protected final ThreadLocal<Connection> threadLocalReadOnlyTx = new ThreadLocal<Connection>() {
         protected Connection initialValue() {
             return null;

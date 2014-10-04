@@ -760,5 +760,15 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(50, this.sqlG.E().count().next().intValue());
     }
 
-
+    @Test
+    public void testNullEdge() {
+        this.sqlG.tx().batchModeOn();
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Assert.assertEquals(0, v1.out("cars").count().next().intValue());
+        Vertex v2 = this.sqlG.addVertex(T.label, "Car");
+        v1.addEdge("cars", v2);
+        Assert.assertEquals(1, v1.out("cars").count().next().intValue());
+        this.sqlG.tx().commit();
+        Assert.assertEquals(1, v1.out("cars").count().next().intValue());
+    }
 }

@@ -29,6 +29,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     Set<SchemaTable> inLabelsForVertex = null;
     Set<SchemaTable> outLabelsForVertex = null;
 
+    /**
+     * Called from SqlG.addVertex
+     * @param sqlG
+     * @param schema
+     * @param table
+     * @param keyValues
+     */
     public SqlgVertex(SqlG sqlG, String schema, String table, Object... keyValues) {
         super(sqlG, schema, table);
         insertVertex(keyValues);
@@ -38,11 +45,22 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         super(sqlG, id, label);
     }
 
-    public SqlgVertex(SqlG sqlG, Long id, String schema, String table) {
+    public static SqlgVertex of(SqlG sqlG, Long id, String schema, String table) {
+        return new SqlgVertex(sqlG, id, schema, table);
+    }
+
+    /**
+     * This is the primary constructor to create a vertex that already exist
+     * @param sqlG
+     * @param id
+     * @param schema
+     * @param table
+     */
+    private SqlgVertex(SqlG sqlG, Long id, String schema, String table) {
         super(sqlG, id, schema, table);
     }
 
-    public SqlgVertex(SqlG sqlG, Long id, String schema, String table, Object... keyValues) {
+    private SqlgVertex(SqlG sqlG, Long id, String schema, String table, Object... keyValues) {
         super(sqlG, id, schema, table);
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         this.properties.putAll(keyValueMap);
