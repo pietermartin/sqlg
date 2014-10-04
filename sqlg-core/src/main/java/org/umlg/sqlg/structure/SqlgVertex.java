@@ -193,6 +193,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         //Cache the properties
         this.properties.putAll(keyValueMap);
+        //its a new vertex so we know it has no labels
+        this.inLabelsForVertex = new HashSet<>();
+        this.outLabelsForVertex = new HashSet<>();
     }
 
     private void internalBatchAddVertex(Map<String, Object> keyValueMap) {

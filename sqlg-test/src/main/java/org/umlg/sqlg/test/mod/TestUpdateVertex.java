@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.mod;
 
 import com.tinkerpop.gremlin.FeatureRequirementSet;
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
@@ -21,24 +22,23 @@ import static org.junit.Assert.*;
  */
 public class TestUpdateVertex extends BaseTest {
 
-//    @Test
-//    public void testUpdateVertex() {
-//        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
-//        Assert.assertEquals("john", v.value("name"));
-//        v.property("name", "joe");
-//        Assert.assertEquals("joe", v.value("name"));
-//        this.sqlG.tx().commit();
-//        Assert.assertEquals("joe", v.value("name"));
-//    }
-//
-//    @Test
-//    public void testPropertyIsPresent() {
-//        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
-//        Assert.assertTrue(v.property("name").isPresent());
-//    }
+    @Test
+    public void testUpdateVertex() {
+        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
+        Assert.assertEquals("john", v.value("name"));
+        v.property("name", "joe");
+        Assert.assertEquals("joe", v.value("name"));
+        this.sqlG.tx().commit();
+        Assert.assertEquals("joe", v.value("name"));
+    }
 
     @Test
-    @FeatureRequirementSet(FeatureRequirementSet.Package.SIMPLE)
+    public void testPropertyIsPresent() {
+        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
+        Assert.assertTrue(v.property("name").isPresent());
+    }
+
+    @Test
     public void shouldNotCallBaseFunctionThusNotRemovingTheVertex() throws Exception {
         Graph g = this.sqlG;
         final StrategyWrappedGraph swg = new StrategyWrappedGraph(g);

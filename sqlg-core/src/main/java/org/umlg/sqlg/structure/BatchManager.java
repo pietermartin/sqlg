@@ -135,10 +135,12 @@ public class BatchManager {
                     //vertex = inVertex
                     //keep outLabels untouched, update inLabels
                     vertices.getRight().put(vertex, Triple.of(triple.getLeft(), updateVertexLabels(triple.getMiddle(), schemaTable), triple.getRight()));
+                    vertex.inLabelsForVertex.add(schemaTable);
                 } else {
                     //vertex = outVertex
                     //keep inLabels untouched, update outLabels
                     vertices.getRight().put(vertex, Triple.of(updateVertexLabels(triple.getLeft(), schemaTable), triple.getMiddle(), triple.getRight()));
+                    vertex.outLabelsForVertex.add(schemaTable);
                 }
                 return true;
             }
@@ -154,6 +156,7 @@ public class BatchManager {
                 } else {
                     this.vertexOutInLabelCache.put(vertex, Pair.of(outInLabel.getLeft(), updateVertexLabels(outInLabel.getRight(), schemaTable)));
                 }
+                vertex.inLabelsForVertex.add(schemaTable);
             } else {
                 Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
                 if (outInLabel == null) {
@@ -165,6 +168,7 @@ public class BatchManager {
                 } else {
                     this.vertexOutInLabelCache.put(vertex, Pair.of(updateVertexLabels(outInLabel.getLeft(), schemaTable), outInLabel.getRight()));
                 }
+                vertex.outLabelsForVertex.add(schemaTable);
             }
         }
         return false;

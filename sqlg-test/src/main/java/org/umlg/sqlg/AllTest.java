@@ -14,6 +14,7 @@ import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.vertex.TestNewVertex;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
@@ -54,7 +55,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestEdgeSchemaCreation.class,
         TestRollback.class,
         TestMultiThread.class,
-        TestForeignKeyIndexPerformance.class
+        TestForeignKeyIndexPerformance.class,
+        TestNewVertex.class
 })
 public class AllTest {
 }

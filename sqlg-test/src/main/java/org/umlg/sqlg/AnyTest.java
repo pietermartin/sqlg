@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
+import org.umlg.sqlg.test.vertex.TestNewVertex;
 
 /**
  * Date: 2014/07/16
