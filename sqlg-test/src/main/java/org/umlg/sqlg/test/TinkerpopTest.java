@@ -3,6 +3,7 @@ package org.umlg.sqlg.test;
 import com.tinkerpop.gremlin.*;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
@@ -19,13 +20,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.*;
+import java.util.function.Function;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static com.tinkerpop.gremlin.structure.Graph.Features.DataTypeFeatures.FEATURE_INTEGER_VALUES;
 import static com.tinkerpop.gremlin.structure.Graph.Features.ElementFeatures.FEATURE_USER_SUPPLIED_IDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/07/13
@@ -34,50 +36,82 @@ import static org.junit.Assert.assertTrue;
 public class TinkerpopTest extends BaseTest {
 
     @Test
-    public void shouldCommitPropertyAutoTransactionByDefault() {
+    @LoadGraphWith(MODERN)
+    public void g_V_matchXa_created_b__b_0created_cX_whereXa_neq_cX_selectXa_c_nameX() throws Exception {
         Graph g = this.sqlG;
-        final Vertex v1 = g.addVertex();
-        final Edge e1 = v1.addEdge("l", v1);
-        g.tx().commit();
-        AbstractGremlinSuite.assertVertexEdgeCounts(1, 1);
-        assertEquals(v1.id(), g.v(v1.id()).id());
-        assertEquals(e1.id(), g.e(e1.id()).id());
-
-        v1.property("name", "marko");
-        assertEquals("marko", v1.<String>value("name"));
-        assertEquals("marko", g.v(v1.id()).<String>value("name"));
-        g.tx().commit();
-
-        assertEquals("marko", v1.<String>value("name"));
-        assertEquals("marko", g.v(v1.id()).<String>value("name"));
-
-        v1.singleProperty("name", "stephen");
-
-        assertEquals("stephen", v1.<String>value("name"));
-        assertEquals("stephen", g.v(v1.id()).<String>value("name"));
-
-        g.tx().commit();
-
-        assertEquals("stephen", v1.<String>value("name"));
-        assertEquals("stephen", g.v(v1.id()).<String>value("name"));
-
-        e1.property("name", "xxx");
-
-        assertEquals("xxx", e1.<String>value("name"));
-        assertEquals("xxx", g.e(e1.id()).<String>value("name"));
-
-        g.tx().commit();
-
-        assertEquals("xxx", e1.<String>value("name"));
-        assertEquals("xxx", g.e(e1.id()).<String>value("name"));
-
-        AbstractGremlinSuite.assertVertexEdgeCounts(1, 1);
-        assertEquals(v1.id(), g.v(v1.id()).id());
-        assertEquals(e1.id(), g.e(e1.id()).id());
+        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+            reader.readGraph(stream, g);
+        }
+        Traversal<Vertex, Map<String, String>> traversal = a();
+        printTraversalForm(traversal);
+        List<Map<String, String>> vertices = traversal.toList();
+        for (Map<String, String> stringStringMap : vertices) {
+            System.out.println(stringStringMap);
+        }
+        assertResults(Function.identity(), traversal,
+                new Bindings<String>().put("a", "marko").put("c", "josh"),
+                new Bindings<String>().put("a", "marko").put("c", "peter"),
+                new Bindings<String>().put("a", "josh").put("c", "marko"),
+                new Bindings<String>().put("a", "josh").put("c", "peter"),
+                new Bindings<String>().put("a", "peter").put("c", "marko"),
+                new Bindings<String>().put("a", "peter").put("c", "josh"),
+                new Bindings<String>().put("a", "josh").put("c", "marko")); // TODO: THIS IS REPEATED
     }
 
+    public Traversal<Vertex, Map<String, String>> a() {
+        return this.sqlG.V().match("a",
+                this.sqlG.of().as("a").out("created").as("b"),
+                this.sqlG.of().as("b").in("created").as("c"))
+                .where("a", T.neq, "c")
+                .select(Arrays.asList("a", "c"), v -> ((Vertex) v).value("name"));
+    }
 
-//    @Test
+    public Traversal<Vertex, Map<String, String>> b() {
+        return this.sqlG.V().match("a",
+                this.sqlG.of().as("a").out("created").as("b"))
+//                .where("a", T.neq, "c")
+                .select(Arrays.asList("a", "b"), v -> ((Vertex) v).value("name"));
+    }
+
+    private <S, E> void assertResults(final Function<E, String> toStringFunction,
+                                      final Traversal<S, Map<String, E>> actual,
+                                      final Bindings<E>... expected) {
+        Comparator<Bindings<E>> comp = new Bindings.BindingsComparator<>(toStringFunction);
+
+        List<Bindings<E>> actualList = toBindings(actual);
+        List<Bindings<E>> expectedList = new LinkedList<>();
+        Collections.addAll(expectedList, expected);
+
+        if (expectedList.size() > actualList.size()) {
+            fail("" + (expectedList.size() - actualList.size()) + " expected results not found, including " + expectedList.get(actualList.size()));
+        } else if (actualList.size() > expectedList.size()) {
+            fail("" + (actualList.size() - expectedList.size()) + " unexpected results, including " + actualList.get(expectedList.size()));
+        }
+
+        Collections.sort(actualList, comp);
+        Collections.sort(expectedList, comp);
+
+        for (int j = 0; j < actualList.size(); j++) {
+            Bindings<E> a = actualList.get(j);
+            Bindings<E> e = expectedList.get(j);
+
+            if (0 != comp.compare(a, e)) {
+                fail("unexpected result(s), including " + a);
+            }
+        }
+        assertFalse(actual.hasNext());
+    }
+
+    private <S, E> List<Bindings<E>> toBindings(final Traversal<S, Map<String, E>> traversal) {
+        List<Bindings<E>> result = new LinkedList<>();
+        traversal.forEach(o -> {
+            result.add(new Bindings<>(o));
+        });
+        return result;
+    }
+
+    //    @Test
     @LoadGraphWith(MODERN)
     public void g_v4_out_asXhereX_hasXlang_javaX_backXhereX() throws IOException {
         Graph g = this.sqlG;

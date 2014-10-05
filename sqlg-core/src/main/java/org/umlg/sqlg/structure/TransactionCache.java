@@ -73,6 +73,15 @@ public class TransactionCache {
         }
     }
 
+    SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
+        if (!this.vertexCache.containsKey(sqlgVertex.id())) {
+            this.vertexCache.put((Long) sqlgVertex.id(), sqlgVertex);
+            return sqlgVertex;
+        } else {
+            return this.vertexCache.get(sqlgVertex.id());
+        }
+    }
+
     void add(SqlgVertex sqlgVertex) {
         if (this.vertexCache.containsKey(sqlgVertex.id())) {
             throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
