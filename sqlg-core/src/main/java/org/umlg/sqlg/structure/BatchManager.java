@@ -346,6 +346,10 @@ public class BatchManager {
         this.vertexInEdgeCache.clear();
         this.vertexOutEdgeCache.clear();
         this.vertexOutInLabelCache.clear();
+        this.removeEdgeCache.clear();
+        this.removeVertexCache.clear();
+        this.edgePropertyCache.clear();
+        this.vertexPropertyCache.clear();
     }
 
     public void removeVertex(String schema, String table, SqlgVertex vertex) {

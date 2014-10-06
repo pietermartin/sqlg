@@ -107,11 +107,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 schemaTablePair.getTable(),
                 SchemaTable.of(
                         ((SqlgVertex) inVertex).schema,
-                        ((SqlgVertex) inVertex).table + SqlgElement.IN_VERTEX_COLUMN_END
+                        ((SqlgVertex) inVertex).table + SchemaManager.IN_VERTEX_COLUMN_END
                 ),
                 SchemaTable.of(
                         this.schema,
-                        this.table + SqlgElement.OUT_VERTEX_COLUMN_END
+                        this.table + SchemaManager.OUT_VERTEX_COLUMN_END
                 ),
                 keyValues);
         this.sqlG.getSchemaManager().addEdgeLabelToVerticesTable(this, this.schema, label, false);
@@ -401,7 +401,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             sql.append(".");
                             switch (d) {
                                 case IN:
-                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SqlgElement.OUT_VERTEX_COLUMN_END));
+                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
                                     sql.append(" FROM ");
 
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
@@ -418,7 +418,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     sql.append(".");
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
                                     sql.append(".");
-                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SqlgElement.OUT_VERTEX_COLUMN_END));
+                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
                                     sql.append(" = ");
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
                                     sql.append(".");
@@ -427,7 +427,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
 
                                     sql.append(" WHERE ");
-                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SqlgElement.IN_VERTEX_COLUMN_END));
+                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
                                     sql.append(" = ? ");
 
                                     for (HasContainer hasContainer : hasContainers) {
@@ -445,7 +445,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                                     break;
                                 case OUT:
-                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SqlgElement.IN_VERTEX_COLUMN_END));
+                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
                                     sql.append(" FROM ");
 
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
@@ -462,7 +462,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     sql.append(".");
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
                                     sql.append(".");
-                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SqlgElement.IN_VERTEX_COLUMN_END));
+                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
                                     sql.append(" = ");
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
                                     sql.append(".");
@@ -471,7 +471,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
 
                                     sql.append(" WHERE ");
-                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SqlgElement.OUT_VERTEX_COLUMN_END));
+                                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
                                     sql.append(" = ? ");
 
                                     for (HasContainer hasContainer : hasContainers) {
@@ -528,9 +528,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                                     for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                         String columnName = resultSetMetaData.getColumnName(i);
-                                        if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+                                        if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                                             inVertexColumnNames.add(columnName);
-                                        } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
+                                        } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                                             outVertexColumnNames.add(columnName);
                                         }
                                     }
@@ -671,24 +671,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return result;
     }
 
-    private Set<SchemaTable> transformToOutSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
-        Set<SchemaTable> result = new HashSet<>();
-        for (String edgeForeignKey : edgeForeignKeys) {
-            String[] schemaTableArray = edgeForeignKey.split("\\.");
-            String schema = schemaTableArray[0];
-            String table = schemaTableArray[1];
-
-            if (table.endsWith("_OUT_ID")) {
-                table = table.substring(0, table.length() - 7);
-                if (labels.isEmpty() || labels.contains(table)) {
-                    result.add(SchemaTable.of(schema, table));
-                }
-            }
-
-        }
-        return result;
-    }
-
     //TODO make this lazy
     private Iterator<SqlgEdge> internalGetEdges(Direction direction, String... labels) {
 
@@ -732,7 +714,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 sql.append(".");
                                 sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
                                 sql.append(" WHERE ");
-                                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SqlgElement.IN_VERTEX_COLUMN_END));
+                                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
                                 sql.append(" = ?");
                                 break;
                             case OUT:
@@ -740,7 +722,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 sql.append(".");
                                 sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
                                 sql.append(" WHERE ");
-                                sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SqlgElement.OUT_VERTEX_COLUMN_END));
+                                sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
                                 sql.append(" = ?");
                                 break;
                             case BOTH:
@@ -774,9 +756,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                     String columnName = resultSetMetaData.getColumnName(i);
-                                    if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+                                    if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                                         inVertexColumnNames.add(columnName);
-                                    } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
+                                    } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                                         outVertexColumnNames.add(columnName);
                                     }
                                 }
@@ -840,7 +822,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                                 schemaTable.getSchema(),
                                                 schemaTable.getTable(),
                                                 this,
-                                                SqlgVertex.of(this.sqlG, outId, outSchemaTable.getSchema(), outSchemaTable.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, "")),
+                                                SqlgVertex.of(this.sqlG, outId, outSchemaTable.getSchema(), outSchemaTable.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
                                                 keyValues.toArray());
                                         break;
                                     case OUT:
@@ -849,7 +831,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                                 edgeId,
                                                 schemaTable.getSchema(),
                                                 schemaTable.getTable(),
-                                                SqlgVertex.of(this.sqlG, inId, inSchemaTable.getSchema(), inSchemaTable.getTable().replace(SqlgElement.IN_VERTEX_COLUMN_END, "")),
+                                                SqlgVertex.of(this.sqlG, inId, inSchemaTable.getSchema(), inSchemaTable.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
                                                 this,
                                                 keyValues.toArray());
                                         break;
@@ -994,6 +976,24 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         this.inLabelsForVertex = null;
         this.outLabelsForVertex = null;
+    }
+
+    private Set<SchemaTable> transformToOutSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
+        Set<SchemaTable> result = new HashSet<>();
+        for (String edgeForeignKey : edgeForeignKeys) {
+            String[] schemaTableArray = edgeForeignKey.split("\\.");
+            String schema = schemaTableArray[0];
+            String table = schemaTableArray[1];
+
+            if (table.endsWith("_OUT_ID")) {
+                table = table.substring(0, table.length() - 7);
+                if (labels.isEmpty() || labels.contains(table)) {
+                    result.add(SchemaTable.of(schema, table));
+                }
+            }
+
+        }
+        return result;
     }
 
 }

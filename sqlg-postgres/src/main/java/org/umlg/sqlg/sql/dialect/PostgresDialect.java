@@ -28,6 +28,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     private static final String COPY_COMMAND_SEPARATOR = "\t";
     private static final int PARAMETER_LIMIT = 32767;
     private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
+    private String foreignKeyNames;
 
     public PostgresDialect(Configuration configurator) {
         super(configurator);
@@ -249,9 +250,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(" (\"ID\", ");
                     for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.values()) {
                         int count = 1;
-                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SqlgElement.OUT_VERTEX_COLUMN_END));
+                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
                         sql.append(", ");
-                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SqlgElement.IN_VERTEX_COLUMN_END));
+                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
                         for (String key : triple.getRight().keySet()) {
                             if (count++ <= triple.getRight().size()) {
                                 sql.append(", ");
@@ -477,9 +478,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
 
                 SchemaTable schemaTable = schemaVertices.getKey();
-                List<SqlgVertex> vertices = schemaVertices.getValue();
-                //TODO do all the vertices
 
+                logger.info("dropping xxxxxxxxxxxxxxxxx = " + schemaTable.toString());
+                dropForeignKeys(sqlG, schemaTable);
+
+                List<SqlgVertex> vertices = schemaVertices.getValue();
                 int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
                 int previous = 0;
                 for (int i = 1; i <= numberOfLoops + 1; i++) {
@@ -573,6 +576,89 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 }
 
+                createForeignKeys(sqlG, schemaTable);
+
+            }
+        }
+    }
+
+    private void dropForeignKeys(SqlG sqlG, SchemaTable schemaTable) {
+
+        SchemaManager schemaManager = sqlG.getSchemaManager();
+        Map<String, Set<String>> edgeForeignKeys = schemaManager.getEdgeForeignKeys();
+
+        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
+            String edgeTable = edgeForeignKey.getKey();
+            Set<String> foreignKeys = edgeForeignKey.getValue();
+            String[] schemaTableArray = edgeTable.split("\\.");
+
+            for (String foreignKey : foreignKeys) {
+                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
+
+                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlG, schemaTableArray[0], schemaTableArray[1]);
+                    for (String foreignKeyName : foreignKeyNames) {
+
+                        StringBuilder sql = new StringBuilder();
+                        sql.append("ALTER TABLE ");
+                        sql.append(maybeWrapInQoutes(schemaTableArray[0]));
+                        sql.append(".");
+                        sql.append(maybeWrapInQoutes(schemaTableArray[1]));
+                        sql.append(" DROP CONSTRAINT ");
+                        sql.append(maybeWrapInQoutes(foreignKeyName));
+                        if (needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        Connection conn = sqlG.tx().getConnection();
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        } catch (SQLException e) {
+                            throw new RuntimeException(e);
+                        }
+
+                    }
+                }
+            }
+        }
+    }
+
+    private void createForeignKeys(SqlG sqlG, SchemaTable schemaTable) {
+        SchemaManager schemaManager = sqlG.getSchemaManager();
+        Map<String, Set<String>> edgeForeignKeys = schemaManager.getEdgeForeignKeys();
+
+        for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
+            String edgeTable = edgeForeignKey.getKey();
+            Set<String> foreignKeys = edgeForeignKey.getValue();
+            for (String foreignKey : foreignKeys) {
+                if (foreignKey.startsWith(schemaTable.toString() + "_")) {
+                    String[] schemaTableArray = edgeTable.split("\\.");
+                    StringBuilder sql = new StringBuilder();
+                    sql.append("ALTER TABLE ");
+                    sql.append(maybeWrapInQoutes(schemaTableArray[0]));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(schemaTableArray[1]));
+                    sql.append(" ADD FOREIGN KEY (");
+                    sql.append(maybeWrapInQoutes(foreignKey));
+                    sql.append(") REFERENCES ");
+                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                    sql.append(" MATCH SIMPLE");
+                    if (needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    Connection conn = sqlG.tx().getConnection();
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             }
         }
     }
@@ -588,7 +674,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sql.append(".");
             sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeSchemaTable.getTable()));
             sql.append(" WHERE ");
-            sql.append(maybeWrapInQoutes(vertexSchemaTable.toString() + (outDirection ? SqlgElement.OUT_VERTEX_COLUMN_END : SqlgElement.IN_VERTEX_COLUMN_END)));
+            sql.append(maybeWrapInQoutes(vertexSchemaTable.toString() + (outDirection ? SchemaManager.OUT_VERTEX_COLUMN_END : SchemaManager.IN_VERTEX_COLUMN_END)));
             sql.append(" IN (");
             int count = 1;
             for (Long id : vertexEdgeSchemaTable.getLeft()) {
@@ -1133,4 +1219,22 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return true;
     }
 
+    public Set<String> getForeignKeyConstraintNames(SqlG sqlG, String foreignKeySchema, String foreignKeyTable) {
+        Set<String> result = new HashSet<>();
+        Connection conn = sqlG.tx().getConnection();
+        DatabaseMetaData metadata;
+        try {
+            metadata = conn.getMetaData();
+            String childCatalog = null;
+            String childSchemaPattern = foreignKeySchema;
+            String childTableNamePattern = foreignKeyTable;
+            ResultSet resultSet = metadata.getImportedKeys(childCatalog, childSchemaPattern, childTableNamePattern);
+            while (resultSet.next()) {
+                result.add(resultSet.getString("FK_NAME"));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
 }

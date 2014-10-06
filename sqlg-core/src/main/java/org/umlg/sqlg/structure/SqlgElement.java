@@ -24,8 +24,6 @@ import java.util.stream.Stream;
  */
 public abstract class SqlgElement implements Element {
 
-    public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
-    public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
     protected String schema;

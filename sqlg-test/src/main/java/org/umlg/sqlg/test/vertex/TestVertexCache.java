@@ -52,7 +52,7 @@ public class TestVertexCache extends BaseTest {
         Edge e1 = v1.addEdge("friend", v2);
         Assert.assertEquals(1, v1.out("friend").count().next().intValue());
 
-        Vertex tmpV1 = v1.outE("friend").inV().next();
+        Vertex tmpV1 = v1.outE("friend").outV().next();
         tmpV1.addEdge("foe", v3);
         //this should fail as v1's out edges will not be updated
         Assert.assertEquals(1, tmpV1.out("foe").count().next().intValue());

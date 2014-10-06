@@ -29,7 +29,8 @@ public class SchemaManager {
     public static final String EDGE_SCHEMA = "EDGE_SCHEMA";
     public static final String EDGE_TABLE = "EDGE_TABLE";
     public static final String LABEL_SEPERATOR = ":::";
-
+    public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
+    public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
     private Set<String> schemas = new HashSet<>();
     private Set<String> uncommittedSchemas = new HashSet<>();
@@ -543,7 +544,7 @@ public class SchemaManager {
         sql.append(") REFERENCES ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema()));
         sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getTable().replace(SqlgElement.IN_VERTEX_COLUMN_END, "")));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append("), ");
@@ -552,7 +553,7 @@ public class SchemaManager {
         sql.append(") REFERENCES ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema()));
         sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, "")));
+        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")));
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(")");
@@ -590,6 +591,10 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String foreignKeyNameStrategy(SchemaTable foreignKeyIn, String referenceColumn) {
+        return foreignKeyIn.toString() + "_" + referenceColumn;
     }
 
     private void createEdgeTable(String schema, String tableName, Map<String, PropertyType> columns) {
@@ -862,7 +867,7 @@ public class SchemaManager {
                             this.labelSchemas.put(table, schemas);
                         }
                         schemas.add(schema);
-                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlgElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END))) {
+                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                             foreignKeys.add(column);
                             this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
                         }
@@ -898,7 +903,7 @@ public class SchemaManager {
                                 this.labelSchemas.put(table, schemas);
                             }
                             schemas.add(schema);
-                            if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SqlgElement.IN_VERTEX_COLUMN_END) || column.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END))) {
+                            if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                                 foreignKeys.add(column);
                                 this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
                             }
@@ -962,6 +967,10 @@ public class SchemaManager {
         allForeignKeys.putAll(this.edgeForeignKeys);
         allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
         return allForeignKeys.get(schemaTable);
+    }
+
+    public Map<String, Set<String>> getEdgeForeignKeys() {
+        return this.edgeForeignKeys;
     }
 
 }

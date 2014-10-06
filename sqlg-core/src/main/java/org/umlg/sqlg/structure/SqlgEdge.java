@@ -147,9 +147,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + SqlgElement.IN_VERTEX_COLUMN_END));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(", ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SqlgElement.OUT_VERTEX_COLUMN_END));
+        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SchemaManager.OUT_VERTEX_COLUMN_END));
         sql.append(") VALUES (?, ");
         i = 1;
         for (String column : keyValueMap.keySet()) {
@@ -253,8 +253,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID") &&
                     !Objects.isNull(o) &&
-                    !columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END) &&
-                    !columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+                    !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
+                    !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
                 int type = resultSetMetaData.getColumnType(i);
                 switch (type) {
@@ -282,9 +282,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
             }
             if (!Objects.isNull(o)) {
-                if (columnName.endsWith(SqlgElement.IN_VERTEX_COLUMN_END)) {
+                if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                     inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
-                } else if (columnName.endsWith(SqlgElement.OUT_VERTEX_COLUMN_END)) {
+                } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                     outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
                 }
             }
@@ -295,8 +295,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         Long inId = resultSet.getLong(inVertexColumnName.getSchema() + "." + inVertexColumnName.getTable());
         Long outId = resultSet.getLong(outVertexColumnName.getSchema() + "." + outVertexColumnName.getTable());
 
-        this.inVertex = SqlgVertex.of(this.sqlG, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SqlgElement.IN_VERTEX_COLUMN_END, ""));
-        this.outVertex = SqlgVertex.of(this.sqlG, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SqlgElement.OUT_VERTEX_COLUMN_END, ""));
+        this.inVertex = SqlgVertex.of(this.sqlG, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, ""));
+        this.outVertex = SqlgVertex.of(this.sqlG, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
     }
 
     @Override
