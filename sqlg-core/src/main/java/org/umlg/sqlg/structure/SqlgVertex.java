@@ -80,8 +80,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
-        if (label == null)
-            throw Edge.Exceptions.edgeLabelCanNotBeNull();
+        ElementHelper.validateLabel(label);
         if (label.contains("."))
             throw new IllegalStateException(String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", new Object[]{label}));
         ElementHelper.legalPropertyKeyValueArray(keyValues);
@@ -342,7 +341,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             return vertices.stream().filter(v -> HasContainer.testAll(v, hasContainers)).iterator();
         } else {
 
-            Set<SqlgVertex> vertices = new HashSet<>();
+            List<SqlgVertex> vertices = new ArrayList<>();
             List<HasContainer> labelHasContainers = filterHasContainerOnKey(hasContainers, T.label.getAccessor());
             Set<String> hasContainerLabels = extractLabelsFromHasContainer(labelHasContainers);
 
@@ -437,7 +436,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
                                         sql.append(".");
                                         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
-                                        if (!hasContainer.predicate.equals(Compare.EQUAL)) {
+                                        if (!hasContainer.predicate.equals(Compare.eq)) {
                                             throw new IllegalStateException("Only equals is supported at the moment");
                                         }
                                         sql.append(" = ?");
@@ -481,7 +480,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
                                         sql.append(".");
                                         sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
-                                        if (!hasContainer.predicate.equals(Compare.EQUAL)) {
+                                        if (!hasContainer.predicate.equals(Compare.eq)) {
                                             throw new IllegalStateException("Only equals is supported at the moment");
                                         }
                                         sql.append(" = ?");
@@ -512,7 +511,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 int countHasContainers = 2;
                                 for (HasContainer hasContainer : hasContainers) {
                                     sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(hasContainer.key));
-                                    if (!hasContainer.predicate.equals(Compare.EQUAL)) {
+                                    if (!hasContainer.predicate.equals(Compare.eq)) {
                                         throw new IllegalStateException("Only equals is supported at present.");
                                     }
                                     Map<String, Object> keyValues = new HashMap<>();
@@ -679,7 +678,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             return edges.iterator();
         } else {
             List<Direction> directions = new ArrayList<>(2);
-            Set<SqlgEdge> edges = new HashSet<>();
+            List<SqlgEdge> edges = new ArrayList<>();
             Set<SchemaTable> inVertexLabels = new HashSet<>();
             Set<SchemaTable> outVertexLabels = new HashSet<>();
             if (direction == Direction.IN) {

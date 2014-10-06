@@ -34,7 +34,7 @@ public class SqlgHasContainer implements Serializable {
             if (this.key.equals(T.id))
                 return this.predicate.test(element.id(), this.value);
             else if (this.key.equals(T.label))
-                if (this.predicate == Compare.EQUAL) {
+                if (this.predicate == Compare.eq) {
                     SqlgElement sqlgElement = (SqlgElement)element;
                     SchemaTable labelSchemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());
                     String[] schemaTableValue = ((String)this.value).split("\\.");
@@ -54,7 +54,7 @@ public class SqlgHasContainer implements Serializable {
                 return property.isPresent() && this.predicate.test(property.value(), this.value);
             }
         } else {
-            return Contains.IN.equals(this.predicate) ?
+            return Contains.in.equals(this.predicate) ?
                     element.property(this.key).isPresent() :
                     !element.property(this.key).isPresent();
         }

@@ -46,7 +46,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterator<? extends Edge> edges() {
         Stream<? extends Edge> edgeStream;
-        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
+        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
@@ -56,7 +56,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
             HasContainer hasContainer = this.hasContainers.get(0);
             //Scenario 2, using label only for search
-            if (hasContainer.predicate == Contains.IN || hasContainer.predicate == Contains.NOT_IN) {
+            if (hasContainer.predicate == Contains.in || hasContainer.predicate == Contains.nin) {
                 final List<String> labels = (List<String>) hasContainer.value;
                 edgeStream = getEdgesUsingLabel(labels.toArray(new String[labels.size()]));
             } else {
@@ -72,7 +72,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterator<? extends Vertex> vertices() {
         Stream<? extends Vertex> vertexStream;
-        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.EQUAL)) {
+        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
@@ -82,7 +82,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
             //Scenario 2, using label only for search
             HasContainer hasContainer = this.hasContainers.get(0);
-            if (hasContainer.predicate == Contains.IN || hasContainer.predicate == Contains.NOT_IN) {
+            if (hasContainer.predicate == Contains.in || hasContainer.predicate == Contains.nin) {
                 final List<String> labels = (List<String>) hasContainer.value;
                 vertexStream = getVerticesUsingLabel(labels.toArray(new String[labels.size()]));
             } else {

@@ -38,8 +38,7 @@ public class SqlGGraphStepStrategy implements TraversalStrategy.NoDependencies {
                     sqlgGraphStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
                     TraversalHelper.removeStep(currentStep, traversal);
                 } else if (currentStep instanceof IntervalStep) {
-                    sqlgGraphStep.hasContainers.add(((IntervalStep) currentStep).startContainer);
-                    sqlgGraphStep.hasContainers.add(((IntervalStep) currentStep).endContainer);
+                    sqlgGraphStep.hasContainers.add(((IntervalStep) currentStep).getHasContainers());
                     TraversalHelper.removeStep(currentStep, traversal);
                 } else if (currentStep instanceof IdentityStep) {
                     // do nothing
@@ -63,8 +62,7 @@ public class SqlGGraphStepStrategy implements TraversalStrategy.NoDependencies {
                         sqlgVertexStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
                         toRemove.add(currentStep);
                     } else if (currentStep instanceof IntervalStep) {
-                        sqlgVertexStep.hasContainers.add(((IntervalStep) currentStep).startContainer);
-                        sqlgVertexStep.hasContainers.add(((IntervalStep) currentStep).endContainer);
+                        sqlgVertexStep.hasContainers.add(((IntervalStep) currentStep).getHasContainers());
                         toRemove.add(currentStep);
                     } else if (currentStep instanceof IdentityStep) {
                         // do nothing

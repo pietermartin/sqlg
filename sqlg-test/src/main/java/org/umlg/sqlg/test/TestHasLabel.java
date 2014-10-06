@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test;
 
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Contains;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -50,9 +52,9 @@ public class TestHasLabel extends BaseTest {
         a.addEdge("created", d);
         this.sqlG.tx().commit();
         Assert.assertEquals(4, this.sqlG.V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(2, this.sqlG.E().has(T.label, T.in, Arrays.asList("knows")).count().next(), 0);
-        Assert.assertEquals(2, this.sqlG.E().has(T.label, T.in, Arrays.asList("created")).count().next(), 0);
-        Assert.assertEquals(4, this.sqlG.E().has(T.label, T.in, Arrays.asList("knows", "created")).count().next(), 0);
+        Assert.assertEquals(2, this.sqlG.E().has(T.label, Contains.in, Arrays.asList("knows")).count().next(), 0);
+        Assert.assertEquals(2, this.sqlG.E().has(T.label, Contains.in, Arrays.asList("created")).count().next(), 0);
+        Assert.assertEquals(4, this.sqlG.E().has(T.label, Contains.in, Arrays.asList("knows", "created")).count().next(), 0);
     }
 
 }

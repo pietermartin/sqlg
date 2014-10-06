@@ -4,10 +4,7 @@ import com.tinkerpop.gremlin.*;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
@@ -63,7 +60,7 @@ public class TinkerpopTest extends BaseTest {
         return this.sqlG.V().match("a",
                 this.sqlG.of().as("a").out("created").as("b"),
                 this.sqlG.of().as("b").in("created").as("c"))
-                .where("a", T.neq, "c")
+                .where("a", Compare.neq, "c")
                 .select(Arrays.asList("a", "c"), v -> ((Vertex) v).value("name"));
     }
 
