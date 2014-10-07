@@ -136,16 +136,19 @@
                 <groupId>com.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
                 <version>3.0.0.M3</version>
+                <!--<version>3.0.0-SNAPSHOT</version>-->
             </dependency>
             <dependency>
                 <groupId>com.tinkerpop</groupId>
                 <artifactId>gremlin-groovy</artifactId>
                 <version>3.0.0.M3</version>
+                <!--<version>3.0.0-SNAPSHOT</version>-->
             </dependency>
             <dependency>
                 <groupId>com.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
                 <version>3.0.0.M3</version>
+                <!--<version>3.0.0-SNAPSHOT</version>-->
             </dependency>
         </dependencies>
     </dependencyManagement>

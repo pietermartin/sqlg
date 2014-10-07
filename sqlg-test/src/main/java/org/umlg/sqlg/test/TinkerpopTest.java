@@ -11,6 +11,8 @@ import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
 import com.tinkerpop.gremlin.structure.util.batch.BatchGraph;
 import com.tinkerpop.gremlin.structure.util.batch.Exists;
 import com.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
+import com.tinkerpop.gremlin.util.function.TriFunction;
+import org.javatuples.Pair;
 import org.junit.Test;
 
 import java.io.File;
@@ -24,6 +26,7 @@ import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static com.tinkerpop.gremlin.structure.Graph.Features.DataTypeFeatures.FEATURE_INTEGER_VALUES;
 import static com.tinkerpop.gremlin.structure.Graph.Features.ElementFeatures.FEATURE_USER_SUPPLIED_IDS;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -32,29 +35,77 @@ import static org.junit.Assert.fail;
  */
 public class TinkerpopTest extends BaseTest {
 
+
     @Test
-    @LoadGraphWith(MODERN)
-    public void g_V_matchXa_created_b__b_0created_cX_whereXa_neq_cX_selectXa_c_nameX() throws Exception {
-        Graph g = this.sqlG;
-        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
-            reader.readGraph(stream, g);
-        }
-        Traversal<Vertex, Map<String, String>> traversal = a();
-        printTraversalForm(traversal);
-        List<Map<String, String>> vertices = traversal.toList();
-        for (Map<String, String> stringStringMap : vertices) {
-            System.out.println(stringStringMap);
-        }
-        assertResults(Function.identity(), traversal,
-                new Bindings<String>().put("a", "marko").put("c", "josh"),
-                new Bindings<String>().put("a", "marko").put("c", "peter"),
-                new Bindings<String>().put("a", "josh").put("c", "marko"),
-                new Bindings<String>().put("a", "josh").put("c", "peter"),
-                new Bindings<String>().put("a", "peter").put("c", "marko"),
-                new Bindings<String>().put("a", "peter").put("c", "josh"),
-                new Bindings<String>().put("a", "josh").put("c", "marko")); // TODO: THIS IS REPEATED
+    @FeatureRequirementSet(FeatureRequirementSet.Package.VERTICES_ONLY)
+    public void shouldNotReHideAnAlreadyHiddenKeyWhenGettingHiddenValue() {
+        final Vertex v = this.sqlG.addVertex("name", "marko", Graph.Key.hide("acl"), "rw", Graph.Key.hide("other"), "rw");
+        this.sqlG.tx().commit();
+        final Vertex v1 = this.sqlG.v(v.id());
+        v1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(v1.hiddenValue(hiddenKey).hasNext()));
+        assertFalse(v1.hiddenValue(Graph.Key.hide("other")).hasNext());
+        assertTrue(v1.hiddenValue("other").hasNext());
+
+        final Vertex u = this.sqlG.addVertex();
+        Edge e = v1.addEdge("knows", u, Graph.Key.hide("acl"), "private", "acl", "public");
+        this.sqlG.tx().commit();
+        final Edge e1 = this.sqlG.e(e.id());
+        e1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(e1.hiddenValue(hiddenKey).hasNext()));
+        assertFalse(e1.hiddenValue(Graph.Key.hide("acl")).hasNext());
+        assertTrue(e1.hiddenValue("acl").hasNext());
+        assertEquals("private", e1.iterators().hiddens("acl").next().value());
+        assertEquals("public", e1.iterators().properties("acl").next().value());
     }
+
+//    @Test
+    public void shouldHandleHiddenVertexProperties() {
+
+        final Vertex v = this.sqlG.addVertex(Graph.Key.hide("age"), 29, "age", 16, "name", "marko", "food", "taco", Graph.Key.hide("color"), "purple");
+        this.sqlG.tx().commit();
+
+        boolean multi = false;
+
+        assertTrue(v.property("age").isPresent());
+        assertTrue(v.value("age").equals(16));
+        assertTrue(v.properties("age").count().next().intValue() == 1);
+        assertTrue(v.properties("age").value().next().equals(16));
+        assertTrue(v.hiddens("age").count().next().intValue() == (multi ? 2 : 1));
+        assertTrue(v.hiddens(Graph.Key.hide("age")).count().next().intValue() == 0);
+        assertTrue(v.properties(Graph.Key.hide("age")).count().next().intValue() == 0);
+        assertTrue(multi ? v.hiddens("age").value().toList().contains(34) : v.hiddens("age").value().toList().contains(29));
+        assertTrue(v.hiddens("age").value().toList().contains(29));
+        assertTrue(v.hiddenKeys().size() == 2);
+        assertTrue(v.keys().size() == 3);
+        assertTrue(v.keys().contains("age"));
+        assertTrue(v.keys().contains("name"));
+        assertTrue(v.hiddenKeys().contains("age"));
+        assertTrue(v.property(Graph.Key.hide("color")).key().equals("color"));
+
+    }
+
+//    @Test
+//    @LoadGraphWith(MODERN)
+//    public void g_V_matchXa_created_b__b_0created_cX_whereXa_neq_cX_selectXa_c_nameX() throws Exception {
+//        Graph g = this.sqlG;
+//        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+//            reader.readGraph(stream, g);
+//        }
+//        Traversal<Vertex, Map<String, String>> traversal = a();
+//        printTraversalForm(traversal);
+//        List<Map<String, String>> vertices = traversal.toList();
+//        for (Map<String, String> stringStringMap : vertices) {
+//            System.out.println(stringStringMap);
+//        }
+//        assertResults(Function.identity(), traversal,
+//                new Bindings<String>().put("a", "marko").put("c", "josh"),
+//                new Bindings<String>().put("a", "marko").put("c", "peter"),
+//                new Bindings<String>().put("a", "josh").put("c", "marko"),
+//                new Bindings<String>().put("a", "josh").put("c", "peter"),
+//                new Bindings<String>().put("a", "peter").put("c", "marko"),
+//                new Bindings<String>().put("a", "peter").put("c", "josh"),
+//                new Bindings<String>().put("a", "josh").put("c", "marko")); // TODO: THIS IS REPEATED
+//    }
 
     public Traversal<Vertex, Map<String, String>> a() {
         return this.sqlG.V().match("a",

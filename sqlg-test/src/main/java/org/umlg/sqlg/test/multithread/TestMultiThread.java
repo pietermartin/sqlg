@@ -38,7 +38,7 @@ public class TestMultiThread extends BaseTest {
         executorService.awaitTermination(60, TimeUnit.SECONDS);
         Assert.assertEquals(100, tables.size());
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlG.getSchemaManager().tableExist("public", "V_Person" + String.valueOf(i)));
+            Assert.assertTrue(this.sqlG.getSchemaManager().tableExist(this.sqlG.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             Assert.assertEquals(10, this.sqlG.V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
         }
     }
@@ -67,7 +67,7 @@ public class TestMultiThread extends BaseTest {
         executorService.awaitTermination(60, TimeUnit.SECONDS);
         Assert.assertEquals(100, tables.size());
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlG.getSchemaManager().tableExist("public", "V_Person" + String.valueOf(i)));
+            Assert.assertTrue(this.sqlG.getSchemaManager().tableExist(this.sqlG.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             Assert.assertEquals(10, this.sqlG.V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
             Assert.assertEquals(10, v1.out("test" + String.valueOf(i)).count().next().intValue());
         }

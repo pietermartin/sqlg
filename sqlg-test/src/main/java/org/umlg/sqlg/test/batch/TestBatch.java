@@ -6,6 +6,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgVertex;
@@ -390,6 +391,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchCommit() {
+        Assume.assumeTrue(this.sqlG.features().supportsBatchMode());
         this.sqlG.tx().batchModeOn();
         for (int i = 0; i < 111; i++) {
             this.sqlG.addVertex(T.label, "Person1", "name", i);
@@ -432,7 +434,7 @@ public class TestBatch extends BaseTest {
         Assert.assertTrue(person1.out("Friend").hasNext());
         Assert.assertEquals(10000, person1.out("Friend").count().next(), 0);
         List<Vertex> friends = person1.out("Friend").toList();
-        List<String> names = friends.stream().map(v->v.<String>value("name")).collect(Collectors.toList());
+        List<String> names = friends.stream().map(v -> v.<String>value("name")).collect(Collectors.toList());
         Assert.assertEquals(10000, names.size(), 0);
         for (int i = 0; i < 10000; i++) {
             Assert.assertTrue(names.contains("person" + i));
@@ -518,6 +520,9 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchUpdatePersistentVerticesAllTypes() {
+
+        Assume.assumeTrue(this.sqlG.features().vertex().properties().supportsFloatValues());
+
         Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlG.addVertex(T.label, "Person", "surname", "b");
         this.sqlG.tx().commit();
@@ -528,7 +533,7 @@ public class TestBatch extends BaseTest {
         this.sqlG.tx().batchModeOn();
         v1.property("name", "aa");
         v1.property("boolean", true);
-        v1.property("short", (short)1);
+        v1.property("short", (short) 1);
         v1.property("integer", 1);
         v1.property("long", 1L);
         v1.property("float", 1F);
@@ -536,7 +541,7 @@ public class TestBatch extends BaseTest {
 
         v2.property("surname", "bb");
         v2.property("boolean", false);
-        v2.property("short", (short)2);
+        v2.property("short", (short) 2);
         v2.property("integer", 2);
         v2.property("long", 2L);
         v2.property("float", 2F);
@@ -545,7 +550,7 @@ public class TestBatch extends BaseTest {
 
         Assert.assertEquals("aa", this.sqlG.v(v1.id()).value("name"));
         Assert.assertEquals(true, this.sqlG.v(v1.id()).value("boolean"));
-        Assert.assertEquals((short)1, this.sqlG.v(v1.id()).<Short>value("short").shortValue());
+        Assert.assertEquals((short) 1, this.sqlG.v(v1.id()).<Short>value("short").shortValue());
         Assert.assertEquals(1, this.sqlG.v(v1.id()).<Integer>value("integer").intValue());
         Assert.assertEquals(1L, this.sqlG.v(v1.id()).<Long>value("long").longValue(), 0);
         Assert.assertEquals(1F, this.sqlG.v(v1.id()).<Float>value("float").floatValue(), 0);
@@ -553,7 +558,7 @@ public class TestBatch extends BaseTest {
 
         Assert.assertEquals("bb", this.sqlG.v(v2.id()).value("surname"));
         Assert.assertEquals(false, this.sqlG.v(v2.id()).value("boolean"));
-        Assert.assertEquals((short)2, this.sqlG.v(v2.id()).<Short>value("short").shortValue());
+        Assert.assertEquals((short) 2, this.sqlG.v(v2.id()).<Short>value("short").shortValue());
         Assert.assertEquals(2, this.sqlG.v(v2.id()).<Integer>value("integer").intValue());
         Assert.assertEquals(2L, this.sqlG.v(v2.id()).<Long>value("long").longValue(), 0);
         Assert.assertEquals(2F, this.sqlG.v(v2.id()).<Float>value("float").floatValue(), 0);
@@ -632,9 +637,13 @@ public class TestBatch extends BaseTest {
         this.sqlG.tx().commit();
         Connection conn = this.sqlG.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("SELECT \"IN_LABELS\" FROM \"public\".\"VERTICES\" WHERE \"VERTEX_TABLE\" = 'SoftwareVersion'");
+            StringBuilder sql = new StringBuilder();
+            sql.append("SELECT \"IN_LABELS\" FROM \"");
+            sql.append(this.sqlG.getSqlDialect().getPublicSchema());
+            sql.append("\".\"VERTICES\" WHERE \"VERTEX_TABLE\" = 'SoftwareVersion'");
+            ResultSet resultSet = statement.executeQuery(sql.toString());
             resultSet.next();
-            Assert.assertEquals("public.vendorTechnology_softwareVersion:::public.workspaceElementSoftwareVersion", resultSet.getString(1));
+            Assert.assertEquals(this.sqlG.getSqlDialect().getPublicSchema() + ".vendorTechnology_softwareVersion:::" + this.sqlG.getSqlDialect().getPublicSchema() + ".workspaceElementSoftwareVersion", resultSet.getString(1));
         } catch (SQLException e) {
             Assert.fail(e.getMessage());
         }
@@ -783,7 +792,7 @@ public class TestBatch extends BaseTest {
             Vertex v2 = this.sqlG.addVertex(T.label, "test2.Car", "model", "vw");
             v1.addEdge("car", v2, "bought", 1);
         }
-        List<Vertex> cars  = v1.out("car").toList();
+        List<Vertex> cars = v1.out("car").toList();
         for (int i = 0; i < 50; i++) {
             cars.get(i).remove();
         }
@@ -800,7 +809,7 @@ public class TestBatch extends BaseTest {
             Vertex v2 = this.sqlG.addVertex(T.label, "test2.Car", "model", "vw");
             v1.addEdge("car", v2, "bought", 1);
         }
-        List<Edge> cars  = v1.outE("car").toList();
+        List<Edge> cars = v1.outE("car").toList();
         for (int i = 0; i < 50; i++) {
             cars.get(i).remove();
         }

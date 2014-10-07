@@ -121,20 +121,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetProperties(final String... propertyKeys) {
-        return internalGetProperties(false, propertyKeys);
-    }
-
-    @Override
-    protected <V> Map<String, VertexProperty<V>> internalGetProperties(boolean hidden, final String... propertyKeys) {
         this.sqlG.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetProperties(hidden, propertyKeys);
+        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetProperties(propertyKeys);
         return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetHiddens(final String... propertyKeys) {
         this.sqlG.tx().readWrite();
-        return internalGetProperties(true, propertyKeys);
+        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetHiddens(propertyKeys);
+        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
     @Override
@@ -955,14 +951,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
         }
 
+        /**
+         * @param propertyKeys keys in the normal unhidden state
+         * @param <V>
+         * @return if the key is hidden return its property
+         */
         @Override
         public <V> Iterator<VertexProperty<V>> hiddens(final String... propertyKeys) {
             SqlgVertex.this.sqlG.tx().readWrite();
-            // make sure all keys request are hidden - the nature of Graph.Key.hide() is to not re-hide a hidden key
-            final String[] hiddenKeys = Stream.of(propertyKeys).map(Graph.Key::hide)
-                    .collect(Collectors.toList()).toArray(new String[propertyKeys.length]);
-
-            return SqlgVertex.this.<V>internalGetHiddens(hiddenKeys).values().iterator();
+            return SqlgVertex.this.<V>internalGetHiddens(propertyKeys).values().iterator();
         }
     }
 

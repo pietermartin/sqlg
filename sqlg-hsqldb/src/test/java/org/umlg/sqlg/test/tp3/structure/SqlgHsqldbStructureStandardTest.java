@@ -7,7 +7,7 @@ import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
 
 
 /**
- * Executes the Standard Gremlin Structure Test Suite using Neo4j.
+ * Executes the Standard Gremlin Structure Test Suite using Hsqldb.
  *
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
