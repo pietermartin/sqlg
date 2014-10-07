@@ -582,9 +582,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     switch (d) {
                                         case IN:
                                             sqlGVertex = SqlgVertex.of(this.sqlG, outId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
-                                            Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
-                                            this.properties.clear();
-                                            this.properties.putAll(keyValueMap);
+                                            Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
+                                            sqlGVertex.properties.clear();
+                                            sqlGVertex.properties.putAll(keyValueMap);
 //                                            sqlGVertex = new SqlgVertex(
 //                                                    this.sqlG,
 //                                                    outId,
@@ -594,16 +594,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                             break;
                                         case OUT:
                                             sqlGVertex = SqlgVertex.of(this.sqlG, inId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
-                                            keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
-                                            this.properties.clear();
-                                            this.properties.putAll(keyValueMap);
+                                            keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
+                                            sqlGVertex.properties.clear();
+                                            sqlGVertex.properties.putAll(keyValueMap);
 
-//                                            sqlGVertex = new SqlgVertex(
-//                                                    this.sqlG,
-//                                                    inId,
-//                                                    joinSchemaTable.getSchema(),
-//                                                    joinSchemaTable.getTable(),
-//                                                    keyValues.toArray());
+                                            sqlGVertex = new SqlgVertex(
+                                                    this.sqlG,
+                                                    inId,
+                                                    joinSchemaTable.getSchema(),
+                                                    joinSchemaTable.getTable(),
+                                                    keyValues.toArray());
                                             break;
                                         case BOTH:
                                             throw new IllegalStateException("This should not be possible!");

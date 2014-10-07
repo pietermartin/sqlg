@@ -479,7 +479,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 SchemaTable schemaTable = schemaVertices.getKey();
 
-                logger.info("dropping xxxxxxxxxxxxxxxxx = " + schemaTable.toString());
                 dropForeignKeys(sqlG, schemaTable);
 
                 List<SqlgVertex> vertices = schemaVertices.getValue();

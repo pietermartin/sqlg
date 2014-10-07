@@ -7,6 +7,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.List;
+
 /**
  * Date: 2014/10/04
  * Time: 2:03 PM
@@ -86,6 +88,26 @@ public class TestVertexCache extends BaseTest {
         v1.property("name", "john1");
         Assert.assertEquals("john1", v1.value("name"));
         Assert.assertEquals("john1", _v1.value("name"));
+    }
+
+    @Test
+    public void testPropertiesNotBeingCachedOnVertexOut() {
+
+        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Vertex v2 = this.sqlG.addVertex(T.label, "Car", "name", "a");
+        Vertex v3 = this.sqlG.addVertex(T.label, "Car", "name", "b");
+        Vertex v4 = this.sqlG.addVertex(T.label, "Car", "name", "c");
+
+        v1.addEdge("car", v2);
+        v1.addEdge("car", v3);
+        v1.addEdge("car", v4);
+
+        this.sqlG.tx().commit();
+
+        v1 = this.sqlG.v(v1.id());
+        List<Vertex> cars = v1.out("car").toList();
+        Assert.assertEquals(3, cars.size());
+
     }
 
     //TODO test multiple threads accessing same vertex changing properties
