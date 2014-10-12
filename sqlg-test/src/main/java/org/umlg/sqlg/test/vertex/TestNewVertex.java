@@ -13,10 +13,10 @@ public class TestNewVertex extends BaseTest {
 
     @Test
     public void testNewVertexDoesNotQueryLabels() {
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "john1");
-        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name", "john2");
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
         v1.addEdge("friend", v2, "weight", 1);
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
 
     }
 }

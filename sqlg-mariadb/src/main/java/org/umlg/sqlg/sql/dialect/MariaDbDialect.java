@@ -40,17 +40,17 @@ public class MariaDbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
     @Override
-    public void flushEdgeCache(SqlG sqlG, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
     @Override
-    public void flushVertexLabelCache(SqlG sqlG, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
+    public void flushVertexLabelCache(SqlgGraph sqlgGraph, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
@@ -60,22 +60,22 @@ public class MariaDbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexPropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
+    public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
     @Override
-    public void flushEdgePropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
+    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
     @Override
-    public void flushRemovedVertices(SqlG sqlG, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
+    public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 
     @Override
-    public void flushRemovedEdges(SqlG sqlG, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
+    public void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by MariaDb.");
     }
 

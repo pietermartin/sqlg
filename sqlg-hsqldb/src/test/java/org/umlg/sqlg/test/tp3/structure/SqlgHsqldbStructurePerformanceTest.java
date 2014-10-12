@@ -2,7 +2,7 @@ package org.umlg.sqlg.test.tp3.structure;
 
 import com.tinkerpop.gremlin.structure.StructurePerformanceSuite;
 import org.junit.runner.RunWith;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
 
 /**
@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
  * @author Stephen Mallette (http://stephen.genoprime.com)
  */
 @RunWith(StructurePerformanceSuite.class)
-@StructurePerformanceSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlG.class)
+@StructurePerformanceSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlgGraph.class)
 //@StructurePerformanceSuite.GraphProviderClass(SqlgHsqldbProvider.class)
 public class SqlgHsqldbStructurePerformanceTest {
 

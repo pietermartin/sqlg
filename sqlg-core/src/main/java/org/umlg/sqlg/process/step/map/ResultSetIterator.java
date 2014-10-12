@@ -1,7 +1,7 @@
 package org.umlg.sqlg.process.step.map;
 
 import com.tinkerpop.gremlin.structure.Vertex;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 
 import java.sql.ResultSet;
@@ -15,10 +15,10 @@ import java.util.Iterator;
 public class ResultSetIterator implements Iterator<Vertex> {
 
     private ResultSet resultSet;
-    private SqlG sqlG;
+    private SqlgGraph sqlgGraph;
 
-    public ResultSetIterator(SqlG sqlG, ResultSet resultSet) {
-        this.sqlG = sqlG;
+    public ResultSetIterator(SqlgGraph sqlgGraph, ResultSet resultSet) {
+        this.sqlgGraph = sqlgGraph;
         this.resultSet = resultSet;
     }
 
@@ -38,7 +38,7 @@ public class ResultSetIterator implements Iterator<Vertex> {
             long id = resultSet.getLong(1);
             String schema = resultSet.getString(2);
             String table = resultSet.getString(3);
-            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schema, table);
+            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, table);
             return sqlGVertex;
         } catch (SQLException e) {
             throw new RuntimeException(e);

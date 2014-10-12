@@ -1,18 +1,20 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.*;
-import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.AbstractGremlinTest;
+import com.tinkerpop.gremlin.FeatureRequirement;
+import com.tinkerpop.gremlin.FeatureRequirementSet;
+import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
-import com.tinkerpop.gremlin.structure.util.batch.BatchGraph;
-import com.tinkerpop.gremlin.structure.util.batch.Exists;
+import com.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
 import com.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
-import com.tinkerpop.gremlin.util.function.TriFunction;
-import org.javatuples.Pair;
 import org.junit.Test;
 
 import java.io.File;
@@ -23,11 +25,7 @@ import java.util.*;
 import java.util.function.Function;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
-import static com.tinkerpop.gremlin.structure.Graph.Features.DataTypeFeatures.FEATURE_INTEGER_VALUES;
-import static com.tinkerpop.gremlin.structure.Graph.Features.ElementFeatures.FEATURE_USER_SUPPLIED_IDS;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/07/13
@@ -36,32 +34,58 @@ import static org.junit.Assert.fail;
 public class TinkerpopTest extends BaseTest {
 
 
+//    @Test
+    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
+    public void shouldNotBeEqualsPropertiesAsThereIsDifferentValue() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+            reader.readGraph(stream, g);
+        }
+        final Edge e = g.v(4).addEdge("created", g.v(convertToVertexId("josh")), "weight", 123.0001d);
+        assertFalse(DetachedProperty.detach(e.property("weight")).equals(DetachedProperty.detach(g.e(convertToEdgeId("josh", "created", "lop")).property("weight"))));
+    }
+
     @Test
+    public void shouldNotEvaluateToEqualDifferentId() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+            reader.readGraph(stream, g);
+        }
+        Object joshCreatedLopEdgeId = convertToEdgeId("josh", "created", "lop");
+        final Vertex vOut = g.v(convertToVertexId("josh"));
+        final Vertex vIn = g.v(convertToVertexId("lop"));
+        final Edge e = vOut.addEdge("created", vIn, "weight", 0.4d);
+        assertFalse(DetachedEdge.detach(g.e(joshCreatedLopEdgeId)).equals(DetachedEdge.detach(e)));
+    }
+
+//    @Test
     @FeatureRequirementSet(FeatureRequirementSet.Package.VERTICES_ONLY)
     public void shouldNotReHideAnAlreadyHiddenKeyWhenGettingHiddenValue() {
-        final Vertex v = this.sqlG.addVertex("name", "marko", Graph.Key.hide("acl"), "rw", Graph.Key.hide("other"), "rw");
-        this.sqlG.tx().commit();
-        final Vertex v1 = this.sqlG.v(v.id());
+        final Vertex v = this.sqlgGraph.addVertex("name", "marko", Graph.Key.hide("acl"), "rw", Graph.Key.hide("other"), "rw");
+        this.sqlgGraph.tx().commit();
+        final Vertex v1 = this.sqlgGraph.v(v.id());
         v1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(v1.hiddenValue(hiddenKey).hasNext()));
         assertFalse(v1.hiddenValue(Graph.Key.hide("other")).hasNext());
         assertTrue(v1.hiddenValue("other").hasNext());
 
-        final Vertex u = this.sqlG.addVertex();
+        final Vertex u = this.sqlgGraph.addVertex();
         Edge e = v1.addEdge("knows", u, Graph.Key.hide("acl"), "private", "acl", "public");
-        this.sqlG.tx().commit();
-        final Edge e1 = this.sqlG.e(e.id());
+        this.sqlgGraph.tx().commit();
+        final Edge e1 = this.sqlgGraph.e(e.id());
         e1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(e1.hiddenValue(hiddenKey).hasNext()));
         assertFalse(e1.hiddenValue(Graph.Key.hide("acl")).hasNext());
         assertTrue(e1.hiddenValue("acl").hasNext());
-        assertEquals("private", e1.iterators().hiddens("acl").next().value());
-        assertEquals("public", e1.iterators().properties("acl").next().value());
+        assertEquals("private", e1.iterators().hiddenPropertyIterator("acl").next().value());
+        assertEquals("public", e1.iterators().propertyIterator("acl").next().value());
     }
 
 //    @Test
     public void shouldHandleHiddenVertexProperties() {
 
-        final Vertex v = this.sqlG.addVertex(Graph.Key.hide("age"), 29, "age", 16, "name", "marko", "food", "taco", Graph.Key.hide("color"), "purple");
-        this.sqlG.tx().commit();
+        final Vertex v = this.sqlgGraph.addVertex(Graph.Key.hide("age"), 29, "age", 16, "name", "marko", "food", "taco", Graph.Key.hide("color"), "purple");
+        this.sqlgGraph.tx().commit();
 
         boolean multi = false;
 
@@ -108,16 +132,16 @@ public class TinkerpopTest extends BaseTest {
 //    }
 
     public Traversal<Vertex, Map<String, String>> a() {
-        return this.sqlG.V().match("a",
-                this.sqlG.of().as("a").out("created").as("b"),
-                this.sqlG.of().as("b").in("created").as("c"))
+        return this.sqlgGraph.V().match("a",
+                this.sqlgGraph.of().as("a").out("created").as("b"),
+                this.sqlgGraph.of().as("b").in("created").as("c"))
                 .where("a", Compare.neq, "c")
                 .select(Arrays.asList("a", "c"), v -> ((Vertex) v).value("name"));
     }
 
     public Traversal<Vertex, Map<String, String>> b() {
-        return this.sqlG.V().match("a",
-                this.sqlG.of().as("a").out("created").as("b"))
+        return this.sqlgGraph.V().match("a",
+                this.sqlgGraph.of().as("a").out("created").as("b"))
 //                .where("a", T.neq, "c")
                 .select(Arrays.asList("a", "b"), v -> ((Vertex) v).value("name"));
     }
@@ -162,7 +186,7 @@ public class TinkerpopTest extends BaseTest {
     //    @Test
     @LoadGraphWith(MODERN)
     public void g_v4_out_asXhereX_hasXlang_javaX_backXhereX() throws IOException {
-        Graph g = this.sqlG;
+        Graph g = this.sqlgGraph;
         final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
             reader.readGraph(stream, g);
@@ -181,7 +205,7 @@ public class TinkerpopTest extends BaseTest {
     }
 
     public Traversal<Vertex, Vertex> get_g_v4_out_asXhereX_hasXlang_javaX_backXhereX(final Object v4Id) {
-        return this.sqlG.v(v4Id).out().as("here").has("lang", "java").back("here");
+        return this.sqlgGraph.v(v4Id).out().as("here").has("lang", "java").back("here");
     }
 
     /**
@@ -191,7 +215,7 @@ public class TinkerpopTest extends BaseTest {
      * @return the id as generated by the graph
      */
     public Object convertToVertexId(final String vertexName) {
-        return convertToVertexId(this.sqlG, vertexName);
+        return convertToVertexId(this.sqlgGraph, vertexName);
     }
 
     /**
@@ -212,9 +236,10 @@ public class TinkerpopTest extends BaseTest {
 
 
     public Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
-        return convertToEdgeId(this.sqlG, outVertexName, edgeLabel, inVertexName);
+        return convertToEdgeId(this.sqlgGraph, outVertexName, edgeLabel, inVertexName);
     }
 
+    //josh created lop
     public Object convertToEdgeId(final Graph g, final String outVertexName, String edgeLabel, final String inVertexName) {
         return ((Edge) g.V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).back("e").next()).id();
     }

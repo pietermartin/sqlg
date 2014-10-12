@@ -14,12 +14,12 @@ public class TestDeletedVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testDeletedVertex() {
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "marko");
-        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name", "pieter");
-        this.sqlG.tx().close();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "pieter");
+        this.sqlgGraph.tx().close();
         v1.remove();
-        this.sqlG.tx().commit();
-        SqlgVertex sqlGVertex = new SqlgVertex(this.sqlG, (Long)v1.id(), "Person");
+        this.sqlgGraph.tx().commit();
+        SqlgVertex sqlGVertex = new SqlgVertex(this.sqlgGraph, (Long)v1.id(), "Person");
         sqlGVertex.property("name");
     }
 }

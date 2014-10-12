@@ -1,0 +1,2 @@
+CREATE USER 'sqlg'@'localhost' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON *.* TO 'sqlg'@'locahost' WITH GRANT OPTION;

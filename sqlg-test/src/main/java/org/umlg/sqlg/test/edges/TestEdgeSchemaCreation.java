@@ -13,15 +13,15 @@ public class TestEdgeSchemaCreation extends BaseTest {
 
     @Test
     public void testEdgeSchemaCreation() {
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name", "b");
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
         v1.addEdge("label1", v2);
-        this.sqlG.tx().commit();
-        Vertex v3 = this.sqlG.addVertex(T.label, "Product", "name", "c");
-        Vertex v4 = this.sqlG.addVertex(T.label, "Product", "name", "d");
+        this.sqlgGraph.tx().commit();
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Product", "name", "c");
+        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Product", "name", "d");
         v1.addEdge("label1", v3);
         v1.addEdge("label1", v4);
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
 
     }
 }

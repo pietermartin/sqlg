@@ -13,11 +13,11 @@ public class TestPool extends BaseTest {
     @Test
     public void testSqlGraphConnectionsDoesNotExhaustPool() {
         for (int i = 0; i < 1000; i++) {
-            this.sqlG.addVertex(T.label, "Person");
+            this.sqlgGraph.addVertex(T.label, "Person");
         }
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         for (int i = 0; i < 1000; i++) {
-            this.sqlG.V().has(T.label, "Person").hasNext();
+            this.sqlgGraph.V().has(T.label, "Person").hasNext();
         }
     }
 }

@@ -13,10 +13,10 @@ class TestByteArray extends BaseTest {
     @Test
     public void testByteArray() {
         byte[] bytea = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-        Vertex v1 = this.sqlG.addVertex("Person", [name: 'pieter', bytea: bytea]);
-        this.sqlG.tx().commit()
+        Vertex v1 = this.sqlgGraph.addVertex("Person", [name: 'pieter', bytea: bytea]);
+        this.sqlgGraph.tx().commit()
 
-        Vertex v2 = this.sqlG.V().has(T.label, "Person").next();
+        Vertex v2 = this.sqlgGraph.V().has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertArrayEquals(bytea, v2.property("bytea").value());
     }

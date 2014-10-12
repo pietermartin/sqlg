@@ -5,7 +5,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Iterator;
@@ -18,25 +18,25 @@ public class TestLoadSchema extends BaseTest {
 
     @Test
     public void testLoadPropertyColumnNames() throws Exception {
-        this.sqlG.addVertex(T.label, "Person", "name", "a");
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        Vertex v = this.sqlG.V().next();
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Vertex v = this.sqlgGraph.V().next();
         v.property("surname", "b");
-        this.sqlG.tx().rollback();
-        v = this.sqlG.V().next();
+        this.sqlgGraph.tx().rollback();
+        v = this.sqlgGraph.V().next();
         v.property("surname", "b");
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
     }
 
     @Test
     public void testLoadSchemaWithByteArray() throws Exception {
-        this.sqlG.addVertex(T.label, "Person", "byteArray", new byte[]{1,2,3,4});
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(T.label, "Person");
+        this.sqlgGraph.addVertex(T.label, "Person", "byteArray", new byte[]{1,2,3,4});
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertArrayEquals(new byte[]{1,2,3,4}, v.<byte[]>property("byteArray").value());
@@ -44,12 +44,12 @@ public class TestLoadSchema extends BaseTest {
 
     @Test
     public void testLoadSchema() throws Exception {
-        this.sqlG.addVertex(T.label, "Person", "aBoolean", true, "aShort", (short) 1,
+        this.sqlgGraph.addVertex(T.label, "Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(T.label, "Person");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertEquals(true, v.property("aBoolean").value());
@@ -61,37 +61,37 @@ public class TestLoadSchema extends BaseTest {
 
     @Test
     public void testLoadMultipleSchemas() throws Exception {
-        this.sqlG.addVertex(T.label, "Test1.Person", "aBoolean", true, "aShort", (short) 1,
+        this.sqlgGraph.addVertex(T.label, "Test1.Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlG.addVertex(T.label, "Test2.Person", "aBoolean", true, "aShort", (short) 1,
+        this.sqlgGraph.addVertex(T.label, "Test2.Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        this.sqlG.addVertex(T.label, "Test1.Product", "aBoolean", true, "aShort", (short) 1,
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        this.sqlgGraph.addVertex(T.label, "Test1.Product", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlG.addVertex(T.label, "Test2.Product", "aBoolean", true, "aShort", (short) 1,
+        this.sqlgGraph.addVertex(T.label, "Test2.Product", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlG.tx().commit();
-        Assert.assertEquals(1, this.sqlG.V().has(T.label, "Test1.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlG.V().has(T.label, "Test2.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlG.V().has(T.label, "Test1.Product").count().next(), 0);
-        Assert.assertEquals(1, this.sqlG.V().has(T.label, "Test2.Product").count().next(), 0);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test1.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test2.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test1.Product").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test2.Product").count().next(), 0);
 
     }
 
     @Test
     public void loadForeignKeys() throws Exception {
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "aBoolean", true, "aShort", (short) 1,
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "bBoolean", true, "bShort", (short) 2,
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "bBoolean", true, "bShort", (short) 2,
                 "bInteger", 2, "bLong", 2L, "bDouble", 2D, "bString", "bbbbbbbbbbbbb");
         v1.addEdge("edgeTest", v2, "cBoolean", true, "cShort", (short) 3,
                 "cInteger", 3, "cLong", 3L, "cDouble", 3D, "cString", "ccccccccccccc");
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        v1 = this.sqlG.v(v1.id());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        v1 = this.sqlgGraph.v(v1.id());
         Assert.assertNotNull(v1);
         Assert.assertEquals(true, v1.property("aBoolean").value());
         Assert.assertEquals((short) 1, v1.property("aShort").value());
@@ -100,7 +100,7 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(1D, v1.property("aDouble").value());
         Assert.assertEquals("aaaaaaaaaaaaa", v1.property("aString").value());
 
-        v2 = this.sqlG.v(v2.id());
+        v2 = this.sqlgGraph.v(v2.id());
         Assert.assertEquals(true, v2.property("bBoolean").value());
         Assert.assertEquals((short) 2, v2.property("bShort").value());
         Assert.assertEquals(2, v2.property("bInteger").value());
@@ -118,7 +118,7 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(3D, e.property("cDouble").value());
         Assert.assertEquals("ccccccccccccc", e.property("cString").value());
 
-        Vertex v3 = this.sqlG.addVertex(T.label, "Person", "dBoolean", true, "dShort", (short) 4,
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "dBoolean", true, "dShort", (short) 4,
                 "dInteger", 4, "dLong", 4L, "bDouble", 4D, "dString", "ddddddddddddd");
         v1.addEdge("edgeTest", v3, "eBoolean", true, "eShort", (short) 3,
                 "eInteger", 3, "eLong", 3L, "eDouble", 3D, "eString", "eeeeeeeeeeeee");

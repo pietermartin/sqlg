@@ -13,7 +13,7 @@
     <groupId>org.umlg</groupId>
     <artifactId>sqlg</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <name>sqlg</name>
     <description>Sqlg is a tinkerpop 3 implementation on top of a rdbms.
     </description>
@@ -128,27 +128,27 @@
         <module>sqlg-test</module>
         <module>sqlg-hsqldb</module>
         <module>sqlg-postgres</module>
-        <module>sqlg-mariadb</module>
+        <!--<module>sqlg-mariadb</module>-->
     </modules>
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <groupId>com.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
-                <version>3.0.0.M3</version>
-                <!--<version>3.0.0-SNAPSHOT</version>-->
+                <!--<version>3.0.0.M3</version>-->
+                <version>3.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.tinkerpop</groupId>
                 <artifactId>gremlin-groovy</artifactId>
-                <version>3.0.0.M3</version>
-                <!--<version>3.0.0-SNAPSHOT</version>-->
+                <!--<version>3.0.0.M3</version>-->
+                <version>3.0.0-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
-                <version>3.0.0.M3</version>
-                <!--<version>3.0.0-SNAPSHOT</version>-->
+                <!--<version>3.0.0.M3</version>-->
+                <version>3.0.0-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

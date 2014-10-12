@@ -34,9 +34,9 @@ import java.util.Map;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
-public class SqlG implements Graph {
+public class SqlgGraph implements Graph {
 
-    private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
+    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
     private SchemaManager schemaManager;
     private SqlDialect sqlDialect;
@@ -60,17 +60,15 @@ public class SqlG implements Graph {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
         if (!configuration.containsKey("jdbc.url"))
-            throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+            throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
-        if (!configuration.containsKey("sql.dialect"))
-            throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "sql.dialect"));
-
-        return (G) new SqlG(configuration);
+        return (G) new SqlgGraph(configuration);
     }
 
-    private SqlG(final Configuration configuration) {
+    private SqlgGraph(final Configuration configuration) {
         try {
-            Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
+            Class<?> sqlDialectClass = findSqlGDialect();
+            logger.debug(String.format("Initializing SqlG with %s dialect", sqlDialectClass.getSimpleName()));
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
             this.implementForeignKeys = configuration.getBoolean("implementForeignKeys", false);
@@ -396,42 +394,42 @@ public class SqlG implements Graph {
 
             @Override
             public boolean supportsFloatValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsFloatValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
             }
 
             @Override
             public boolean supportsBooleanArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
             }
 
             @Override
             public boolean supportsByteArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
             }
 
             @Override
             public boolean supportsDoubleArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
             }
 
             @Override
             public boolean supportsFloatArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
             }
 
             @Override
             public boolean supportsIntegerArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
             }
 
             @Override
             public boolean supportsLongArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
             }
 
             @Override
             public boolean supportsStringArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
             }
 
         }
@@ -464,42 +462,42 @@ public class SqlG implements Graph {
 
             @Override
             public boolean supportsFloatValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsFloatValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
             }
 
             @Override
             public boolean supportsBooleanArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
             }
 
             @Override
             public boolean supportsByteArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
             }
 
             @Override
             public boolean supportsDoubleArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
             }
 
             @Override
             public boolean supportsFloatArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
             }
 
             @Override
             public boolean supportsIntegerArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
             }
 
             @Override
             public boolean supportsLongArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
             }
 
             @Override
             public boolean supportsStringArrayValues() {
-                return SqlG.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
             }
         }
 
@@ -721,4 +719,21 @@ public class SqlG implements Graph {
     boolean isImplementForeignKeys() {
         return implementForeignKeys;
     }
+
+    private Class<?> findSqlGDialect() {
+        try {
+            return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
+        } catch (ClassNotFoundException e) {
+        }
+        try {
+            return Class.forName("org.umlg.sqlg.sql.dialect.MariaDbDialect");
+        } catch (ClassNotFoundException e) {
+        }
+        try {
+            return Class.forName("org.umlg.sqlg.sql.dialect.HsqldbDialect");
+        } catch (ClassNotFoundException e) {
+        }
+        throw new IllegalStateException("No sqlg dialect found!");
+    }
+
 }

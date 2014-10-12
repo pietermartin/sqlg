@@ -24,17 +24,17 @@ import java.util.stream.Stream;
 public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
-    private SqlG sqlG;
+    private SqlgGraph sqlgGraph;
     public final List<HasContainer> hasContainers = new ArrayList<>();
 
-    public SqlgGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlG sqlG) {
+    public SqlgGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlgGraph sqlgGraph) {
         super(traversal, returnClass);
-        this.sqlG = sqlG;
+        this.sqlgGraph = sqlgGraph;
     }
 
     @Override
     public void generateTraverserIterator(boolean trackPaths) {
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().readWrite();
         this.starts.clear();
         this.starts.add(new TraverserIterator(this, trackPaths, Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
@@ -56,7 +56,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
             HasContainer hasContainer = this.hasContainers.get(0);
             //Scenario 2, using label only for search
-            if (hasContainer.predicate == Contains.in || hasContainer.predicate == Contains.nin) {
+            if (hasContainer.predicate == Contains.within || hasContainer.predicate == Contains.without) {
                 final List<String> labels = (List<String>) hasContainer.value;
                 edgeStream = getEdgesUsingLabel(labels.toArray(new String[labels.size()]));
             } else {
@@ -82,7 +82,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
             //Scenario 2, using label only for search
             HasContainer hasContainer = this.hasContainers.get(0);
-            if (hasContainer.predicate == Contains.in || hasContainer.predicate == Contains.nin) {
+            if (hasContainer.predicate == Contains.within || hasContainer.predicate == Contains.without) {
                 final List<String> labels = (List<String>) hasContainer.value;
                 vertexStream = getVerticesUsingLabel(labels.toArray(new String[labels.size()]));
             } else {
@@ -131,7 +131,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         Set<String> schemas;
         SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
         if (schemaTable.getSchema() == null) {
-            schemas = this.sqlG.getSchemaManager().getSchemasForTable(SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
+            schemas = this.sqlgGraph.getSchemaManager().getSchemasForTable(SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
         } else {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
@@ -142,15 +142,15 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         if (schemas != null) {
             for (String schema : schemas) {
                 //check that the schema exists
-                if (this.sqlG.getSchemaManager().tableExist(schema, SchemaManager.VERTEX_PREFIX + schemaTable.getTable())) {
+                if (this.sqlgGraph.getSchemaManager().tableExist(schema, SchemaManager.VERTEX_PREFIX + schemaTable.getTable())) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(schema));
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
                     sql.append(".");
-                    sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
-                    if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                    if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
                     }
-                    Connection conn = this.sqlG.tx().getConnection();
+                    Connection conn = this.sqlgGraph.tx().getConnection();
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
@@ -158,7 +158,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                         ResultSet resultSet = preparedStatement.executeQuery();
                         while (resultSet.next()) {
                             long id = resultSet.getLong(1);
-                            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schema, schemaTable.getTable());
+                            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, schemaTable.getTable());
                             sqlGVertex.loadResultSet(resultSet);
                             sqlGVertexes.add(sqlGVertex);
                         }
@@ -172,33 +172,33 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _verticesUsingLabeledIndex(String label, String key, Object value) {
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlgGraph.getSqlDialect().getPublicSchema());
         //Check that the table and column exist
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
-        if (this.sqlG.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()) &&
-                this.sqlG.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable(), key)) {
+        if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()) &&
+                this.sqlgGraph.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable(), key)) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
             sql.append(" a WHERE a.");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 Map<String, Object> keyValueMap = new HashMap<>();
                 keyValueMap.put(key, value);
-                SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
+                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, 1, conn, preparedStatement, keyValueMap);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     long id = resultSet.getLong(1);
-                    SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                    SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
                     sqlGVertex.loadResultSet(resultSet);
                     sqlGVertexes.add(sqlGVertex);
                 }
@@ -212,13 +212,13 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     private Iterable<? extends Vertex> _vertices() {
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
         sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -228,7 +228,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                 long id = resultSet.getLong(1);
                 String schema = resultSet.getString(2);
                 String table = resultSet.getString(3);
-                SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlG, id, schema, table);
+                SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, table);
                 sqlGVertexes.add(sqlGVertex);
             }
         } catch (SQLException e) {
@@ -241,7 +241,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         Set<String> schemas;
         SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
         if (schemaTable.getSchema() == null) {
-            schemas = this.sqlG.getSchemaManager().getSchemasForTable(SchemaManager.EDGE_PREFIX + schemaTable.getTable());
+            schemas = this.sqlgGraph.getSchemaManager().getSchemasForTable(SchemaManager.EDGE_PREFIX + schemaTable.getTable());
         } else {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
@@ -249,13 +249,13 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
         for (String schema : schemas) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schema));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
@@ -263,7 +263,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     long id = resultSet.getLong(1);
-                    SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schema, schemaTable.getTable());
+                    SqlgEdge sqlGEdge = new SqlgEdge(this.sqlgGraph, id, schema, schemaTable.getTable());
                     //TODO properties needs to be cached
                     sqlGEdge.loadResultSet(resultSet);
                     sqlGEdges.add(sqlGEdge);
@@ -277,31 +277,31 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterable<? extends Edge> _edgesUsingLabeledIndex(String label, String key, Object value) {
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
-        if (this.sqlG.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable()) &&
-                this.sqlG.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable(), key)) {
+        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable()) &&
+                this.sqlgGraph.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable(), key)) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
             sql.append(" a WHERE a.");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 Map<String, Object> keyValueMap = new HashMap<>();
                 keyValueMap.put(key, value);
-                SqlgElement.setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValueMap);
+                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, 1, conn, preparedStatement, keyValueMap);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     long id = resultSet.getLong(1);
-                    SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTable.getSchema(), schemaTable.getTable());
+                    SqlgEdge sqlGEdge = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
                     //TODO properties needs to be cached
                     sqlGEdge.loadResultSet(resultSet);
                     sqlGEdges.add(sqlGEdge);
@@ -316,13 +316,13 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     private Iterable<? extends Edge> _edges() {
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
         sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -333,7 +333,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                 String schema = resultSet.getString(2);
                 String table = resultSet.getString(3);
                 SchemaTable schemaTablePair = SchemaTable.of(schema, table);
-                SqlgEdge sqlGEdge = new SqlgEdge(this.sqlG, id, schemaTablePair.getSchema(), schemaTablePair.getTable());
+                SqlgEdge sqlGEdge = new SqlgEdge(this.sqlgGraph, id, schemaTablePair.getSchema(), schemaTablePair.getTable());
                 sqlGEdges.add(sqlGEdge);
             }
         } catch (SQLException e) {

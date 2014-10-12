@@ -42,13 +42,13 @@ public class SchemaManager {
     private Map<String, Set<String>> edgeForeignKeys = new ConcurrentHashMap<>();
     private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
     private ReentrantLock schemaLock = new ReentrantLock();
-    private SqlG sqlG;
+    private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
 
-    SchemaManager(SqlG sqlG, SqlDialect sqlDialect) {
-        this.sqlG = sqlG;
+    SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
+        this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
-        this.sqlG.tx().afterCommit(() -> {
+        this.sqlgGraph.tx().afterCommit(() -> {
             if (this.schemaLock.isHeldByCurrentThread()) {
                 for (String t : this.uncommittedSchemas) {
                     this.schemas.add(t);
@@ -75,7 +75,7 @@ public class SchemaManager {
                 this.schemaLock.unlock();
             }
         });
-        this.sqlG.tx().afterRollback(() -> {
+        this.sqlgGraph.tx().afterRollback(() -> {
             if (this.schemaLock.isHeldByCurrentThread()) {
                 if (this.getSqlDialect().supportsTransactionalSchema()) {
                     this.uncommittedSchemas.clear();
@@ -187,13 +187,13 @@ public class SchemaManager {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE SCHEMA ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
@@ -401,13 +401,13 @@ public class SchemaManager {
         sql.append(" ");
         sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
         sql.append(")");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         }
@@ -431,13 +431,13 @@ public class SchemaManager {
         sql.append(" VARCHAR(255), ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(EDGE_TABLE));
         sql.append(" VARCHAR(255))");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         }
@@ -473,7 +473,7 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
         sql.append(this.sqlDialect.getPrimaryKeyType());
-        if (this.sqlG.isImplementForeignKeys()) {
+        if (this.sqlgGraph.isImplementForeignKeys()) {
             sql.append(" REFERENCES ");
             sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
             sql.append(".");
@@ -492,13 +492,13 @@ public class SchemaManager {
             }
         }
         sql.append(")");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
@@ -560,11 +560,11 @@ public class SchemaManager {
         //foreign key definition end
 
         sql.append(")");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
 
-        if (this.sqlG.getSqlDialect().needForeignKeyIndex()) {
+        if (this.sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
             sql.append("\nCREATE INDEX ON ");
             sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
             sql.append(".");
@@ -585,7 +585,7 @@ public class SchemaManager {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
@@ -620,13 +620,13 @@ public class SchemaManager {
             }
         }
         sql.append(")");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
@@ -638,8 +638,8 @@ public class SchemaManager {
         Long id = (Long) sqlgVertex.id();
         SchemaTable schemaTable = SchemaTable.of(schema, table);
 
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
-            this.sqlG.tx().getBatchManager().updateVertexCacheWithEdgeLabel(sqlgVertex, schemaTable, inDirection);
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+            this.sqlgGraph.tx().getBatchManager().updateVertexCacheWithEdgeLabel(sqlgVertex, schemaTable, inDirection);
         } else {
             Set<SchemaTable> labelSet = getLabelsForVertex(sqlgVertex, inDirection);
             if (!labelSet.contains(schemaTable)) {
@@ -655,13 +655,13 @@ public class SchemaManager {
                 sql.append(" WHERE ");
                 sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
                 sql.append(" = ?");
-                if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
                 if (logger.isDebugEnabled()) {
                     logger.debug(sql.toString());
                 }
-                Connection conn = this.sqlG.tx().getConnection();
+                Connection conn = this.sqlgGraph.tx().getConnection();
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                     //varchar here must be lowercase
                     int count = 1;
@@ -702,10 +702,10 @@ public class SchemaManager {
             sql.append(" WHERE ");
             sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
@@ -752,10 +752,10 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(keyValue.left));
         sql.append(" ");
         sql.append(this.sqlDialect.propertyTypeToSqlDefinition(keyValue.right));
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -773,10 +773,10 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -788,8 +788,8 @@ public class SchemaManager {
 
         this.ensureVertexTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
         this.ensureEdgeTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
-        this.sqlG.tx().commit();
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().readWrite();
 
         int i = 1;
         String[] prefixes = new String[]{VERTEX_PREFIX, EDGE_PREFIX};
@@ -806,13 +806,13 @@ public class SchemaManager {
                         sql.append(" (");
                         sql.append(this.sqlDialect.maybeWrapInQoutes((String) dummyKeyValue));
                         sql.append(")");
-                        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                             sql.append(";");
                         }
                         if (logger.isDebugEnabled()) {
                             logger.debug(sql.toString());
                         }
-                        Connection conn = this.sqlG.tx().getConnection();
+                        Connection conn = this.sqlgGraph.tx().getConnection();
                         try (Statement stmt = conn.createStatement()) {
                             stmt.execute(sql.toString());
                         } catch (SQLException e) {
@@ -825,7 +825,7 @@ public class SchemaManager {
     }
 
     private boolean existIndex(SchemaTable schemaTable, String prefix, String indexName) {
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             String sql = this.sqlDialect.existIndexQuery(schemaTable, prefix, indexName);
             ResultSet rs = stmt.executeQuery(sql);
@@ -837,7 +837,7 @@ public class SchemaManager {
 
     void loadSchema() {
         try {
-            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
             DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             if (this.sqlDialect.supportSchemas()) {

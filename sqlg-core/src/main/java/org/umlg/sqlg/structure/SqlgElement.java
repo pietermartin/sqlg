@@ -15,8 +15,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Date: 2014/07/12
@@ -28,36 +26,36 @@ public abstract class SqlgElement implements Element {
 
     protected String schema;
     protected String table;
-    protected final SqlG sqlG;
+    protected final SqlgGraph sqlgGraph;
     protected long primaryKey;
     protected Map<String, Object> properties = new HashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
 
-    public SqlgElement(SqlG sqlG, String schema, String table) {
-        this.sqlG = sqlG;
+    public SqlgElement(SqlgGraph sqlgGraph, String schema, String table) {
+        this.sqlgGraph = sqlgGraph;
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
 
-    public SqlgElement(SqlG sqlG, Long id, String label) {
-        this.sqlG = sqlG;
+    public SqlgElement(SqlgGraph sqlgGraph, Long id, String label) {
+        this.sqlgGraph = sqlgGraph;
         this.primaryKey = id;
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlG.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlgGraph.getSqlDialect().getPublicSchema());
         this.schema = schemaTable.getSchema();
         this.table = schemaTable.getTable();
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
 
-    public SqlgElement(SqlG sqlG, Long id, String schema, String table) {
-        this.sqlG = sqlG;
+    public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+        this.sqlgGraph = sqlgGraph;
         this.primaryKey = id;
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
 
     class SqlgElementElementPropertyRollback implements ElementPropertyRollback {
@@ -89,19 +87,19 @@ public abstract class SqlgElement implements Element {
     @Override
     public void remove() {
         StringBuilder sql = new StringBuilder("DELETE FROM ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
         sql.append(" WHERE ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(1, (Long) this.id());
             preparedStatement.executeUpdate();
@@ -112,13 +110,13 @@ public abstract class SqlgElement implements Element {
 
     @Override
     public Set<String> keys() {
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().readWrite();
         return this.internalGetProperties().keySet();
     }
 
     @Override
     public Set<String> hiddenKeys() {
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().readWrite();
         return this.internalGetHiddens().keySet();
     }
 
@@ -146,12 +144,12 @@ public abstract class SqlgElement implements Element {
     @Override
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
-        this.sqlG.getSqlDialect().validateProperty(key, value);
-        sqlG.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        this.sqlgGraph.getSqlDialect().validateProperty(key, value);
+        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
         //Validate the property
         PropertyType.from(value);
         //Check if column exist
-        this.sqlG.getSchemaManager().ensureColumnExist(
+        this.sqlgGraph.getSchemaManager().ensureColumnExist(
                 this.schema,
                 this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.table : SchemaManager.EDGE_PREFIX + this.table,
                 ImmutablePair.of(key, PropertyType.from(value)));
@@ -160,7 +158,7 @@ public abstract class SqlgElement implements Element {
     }
 
     protected <V> SqlgProperty<V> instantiateProperty(String key, V value) {
-        return new SqlgProperty<>(this.sqlG, this, key, value);
+        return new SqlgProperty<>(this.sqlgGraph, this, key, value);
     }
 
     /**
@@ -179,32 +177,32 @@ public abstract class SqlgElement implements Element {
     private void updateRow(String key, Object value) {
 
         boolean elementInInsertedCache = false;
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
-            elementInInsertedCache = this.sqlG.tx().getBatchManager().updateProperty(this, key, value);
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+            elementInInsertedCache = this.sqlgGraph.tx().getBatchManager().updateProperty(this, key, value);
         }
 
         if (!elementInInsertedCache) {
             StringBuilder sql = new StringBuilder("UPDATE ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
             sql.append(" SET ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(key));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
             sql.append(" WHERE ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 Map<String, Object> keyValue = new HashMap<>();
                 keyValue.put(key, value);
-                setKeyValuesAsParameter(this.sqlG, 1, conn, preparedStatement, keyValue);
+                setKeyValuesAsParameter(this.sqlgGraph, 1, conn, preparedStatement, keyValue);
                 preparedStatement.setLong(2, (Long) this.id());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
@@ -219,7 +217,8 @@ public abstract class SqlgElement implements Element {
 
     @Override
     public boolean equals(final Object object) {
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+        this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             return super.equals(object);
         } else {
             return ElementHelper.areEqual(this, object);
@@ -228,7 +227,8 @@ public abstract class SqlgElement implements Element {
 
     @Override
     public int hashCode() {
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+        this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             return super.hashCode();
         } else {
             return this.id().hashCode();
@@ -320,7 +320,7 @@ public abstract class SqlgElement implements Element {
         return target;
     }
 
-    public static int setKeyValuesAsParameter(SqlG sqlG, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
+    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : SqlgUtil.transformToTypeAndValue(keyValues)) {
             switch (pair.left) {
                 case BOOLEAN:
@@ -350,34 +350,34 @@ public abstract class SqlgElement implements Element {
 
                 //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, booleanArray);
                     break;
                 case BYTE_ARRAY:
                     preparedStatement.setBytes(i++, (byte[]) pair.right);
                     break;
                 case SHORT_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, shortArray);
                     break;
                 case INTEGER_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, intArray);
                     break;
                 case LONG_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, longArray);
                     break;
                 case FLOAT_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, floatArray);
                     break;
                 case DOUBLE_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, doubleArray);
                     break;
                 case STRING_ARRAY:
-                    java.sql.Array stringArray = conn.createArrayOf(sqlG.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(i++, stringArray);
                     break;
                 default:
@@ -388,7 +388,7 @@ public abstract class SqlgElement implements Element {
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().readWrite();
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
         for (String key : this.properties.keySet()) {
@@ -403,7 +403,7 @@ public abstract class SqlgElement implements Element {
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetHiddens(final String... propertyKeys) {
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().readWrite();
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
         for (String key : this.properties.keySet()) {
@@ -420,14 +420,14 @@ public abstract class SqlgElement implements Element {
     protected class Iterators implements Element.Iterators {
 
         @Override
-        public <V> Iterator<? extends Property<V>> properties(final String... propertyKeys) {
-            SqlgElement.this.sqlG.tx().readWrite();
+        public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
+            SqlgElement.this.sqlgGraph.tx().readWrite();
             return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
         }
 
         @Override
-        public <V> Iterator<? extends Property<V>> hiddens(final String... propertyKeys) {
-            SqlgElement.this.sqlG.tx().readWrite();
+        public <V> Iterator<? extends Property<V>> hiddenPropertyIterator(final String... propertyKeys) {
+            SqlgElement.this.sqlgGraph.tx().readWrite();
             return SqlgElement.this.<V>internalGetHiddens(propertyKeys).values().iterator();
         }
 

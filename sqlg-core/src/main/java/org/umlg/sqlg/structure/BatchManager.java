@@ -1,12 +1,10 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.codehaus.groovy.util.StringUtil;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.util.*;
@@ -18,7 +16,7 @@ import java.util.*;
 public class BatchManager {
 
     //This is postgres's default copy command null value
-    private SqlG sqlG;
+    private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
     private boolean batchModeOn = false;
 
@@ -43,8 +41,8 @@ public class BatchManager {
     //map per label's edges to delete
     private Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
 
-    BatchManager(SqlG sqlG, SqlDialect sqlDialect) {
-        this.sqlG = sqlG;
+    BatchManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
+        this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
     }
 
@@ -116,13 +114,13 @@ public class BatchManager {
     }
 
     public synchronized Map<SchemaTable, Pair<Long, Long>> flush() {
-        Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlG, this.vertexCache);
-        this.sqlDialect.flushEdgeCache(this.sqlG, this.edgeCache);
-        this.sqlDialect.flushVertexLabelCache(this.sqlG, this.vertexOutInLabelCache);
-        this.sqlDialect.flushVertexPropertyCache(this.sqlG, this.vertexPropertyCache);
-        this.sqlDialect.flushEdgePropertyCache(this.sqlG, this.edgePropertyCache);
-        this.sqlDialect.flushRemovedEdges(this.sqlG, this.removeEdgeCache);
-        this.sqlDialect.flushRemovedVertices(this.sqlG, this.removeVertexCache);
+        Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
+        this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
+        this.sqlDialect.flushVertexLabelCache(this.sqlgGraph, this.vertexOutInLabelCache);
+        this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
+        this.sqlDialect.flushEdgePropertyCache(this.sqlgGraph, this.edgePropertyCache);
+        this.sqlDialect.flushRemovedEdges(this.sqlgGraph, this.removeEdgeCache);
+        this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
         return verticesRange;
     }
 
@@ -148,8 +146,8 @@ public class BatchManager {
             if (inDirection) {
                 Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
                 if (outInLabel == null) {
-                    Set<SchemaTable> currentInLabels = this.sqlG.getSchemaManager().getLabelsForVertex(vertex, true);
-                    Set<SchemaTable> currentOutLabels = this.sqlG.getSchemaManager().getLabelsForVertex(vertex, false);
+                    Set<SchemaTable> currentInLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, true);
+                    Set<SchemaTable> currentOutLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, false);
                     String inLabels = schemaTablesToString(currentInLabels);
                     String outLabels = schemaTablesToString(currentOutLabels);
                     this.vertexOutInLabelCache.put(vertex, Pair.of(outLabels, updateVertexLabels(inLabels, schemaTable)));
@@ -160,8 +158,8 @@ public class BatchManager {
             } else {
                 Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
                 if (outInLabel == null) {
-                    Set<SchemaTable> currentInLabels = this.sqlG.getSchemaManager().getLabelsForVertex(vertex, true);
-                    Set<SchemaTable> currentOutLabels = this.sqlG.getSchemaManager().getLabelsForVertex(vertex, false);
+                    Set<SchemaTable> currentInLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, true);
+                    Set<SchemaTable> currentOutLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, false);
                     String inLabels = schemaTablesToString(currentInLabels);
                     String outLabels = schemaTablesToString(currentOutLabels);
                     this.vertexOutInLabelCache.put(vertex, Pair.of(updateVertexLabels(outLabels, schemaTable), inLabels));

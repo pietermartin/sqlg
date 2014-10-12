@@ -63,9 +63,9 @@ public class TransactionCache {
         }
     }
 
-    SqlgVertex putVertexIfAbsent(SqlG sqlG, Long id, String schema, String table) {
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         if (!this.vertexCache.containsKey(id)) {
-            SqlgVertex sqlgVertex = new SqlgVertex(sqlG, id, schema, table);
+            SqlgVertex sqlgVertex = new SqlgVertex(sqlgGraph, id, schema, table);
             this.vertexCache.put(id, sqlgVertex);
             return sqlgVertex;
         } else {

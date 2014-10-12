@@ -27,7 +27,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     private static final String BATCH_NULL = "\\N";
     private static final String COPY_COMMAND_SEPARATOR = "\t";
     private static final int PARAMETER_LIMIT = 32767;
-    private Logger logger = LoggerFactory.getLogger(SqlG.class.getName());
+    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private String foreignKeyNames;
 
     public PostgresDialect(Configuration configurator) {
@@ -120,9 +120,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
      *                    3) The properties as a map of key values
      */
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlG.tx().getConnection();
+        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
             Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
             Object[] arg = new Object[]{};
@@ -204,8 +204,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushEdgeCache(SqlG sqlG, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlG.tx().getConnection();
+    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
             Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
             Object[] arg = new Object[]{};
@@ -279,9 +279,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexLabelCache(SqlG sqlG, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
+    public void flushVertexLabelCache(SqlgGraph sqlgGraph, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
         if (!vertexOutInLabelMap.isEmpty()) {
-            Connection conn = sqlG.tx().getConnection();
+            Connection conn = sqlgGraph.tx().getConnection();
             StringBuilder sql = new StringBuilder();
             sql.append("UPDATE \"VERTICES\" a\n" +
                     "SET (\"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\") =\n" +
@@ -335,9 +335,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexPropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> schemaVertexPropertyCache) {
+    public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> schemaVertexPropertyCache) {
 
-        Connection conn = sqlG.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
@@ -465,12 +465,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushEdgePropertyCache(SqlG sqlG, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
+    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
 
     }
 
     @Override
-    public void flushRemovedVertices(SqlG sqlG, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
+    public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
 
         if (!removeVertexCache.isEmpty()) {
 
@@ -479,7 +479,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 SchemaTable schemaTable = schemaVertices.getKey();
 
-                dropForeignKeys(sqlG, schemaTable);
+                dropForeignKeys(sqlgGraph, schemaTable);
 
                 List<SqlgVertex> vertices = schemaVertices.getValue();
                 int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
@@ -502,17 +502,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         //get all the in and out labels for each vertex
                         //then for all in and out edges
                         //then remove the edges
-                        getInAndOutEdgesToRemove(sqlG, subVertices, outLabels, inLabels);
-                        deleteEdges(sqlG, schemaTable, outLabels, true);
-                        deleteEdges(sqlG, schemaTable, inLabels, false);
+                        getInAndOutEdgesToRemove(sqlgGraph, subVertices, outLabels, inLabels);
+                        deleteEdges(sqlgGraph, schemaTable, outLabels, true);
+                        deleteEdges(sqlgGraph, schemaTable, inLabels, false);
 
 
                         StringBuilder sql = new StringBuilder("DELETE FROM ");
-                        sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                         sql.append(".");
-                        sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.VERTEX_PREFIX) + schemaTable.getTable()));
+                        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.VERTEX_PREFIX) + schemaTable.getTable()));
                         sql.append(" WHERE ");
-                        sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+                        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
                         sql.append(" in (");
                         int count = 1;
                         for (SqlgVertex sqlgVertex : subVertices) {
@@ -522,13 +522,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             }
                         }
                         sql.append(")");
-                        if (sqlG.getSqlDialect().needsSemicolon()) {
+                        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                             sql.append(";");
                         }
                         if (logger.isDebugEnabled()) {
                             logger.debug(sql.toString());
                         }
-                        Connection conn = sqlG.tx().getConnection();
+                        Connection conn = sqlgGraph.tx().getConnection();
                         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                             count = 1;
                             for (SqlgVertex sqlgVertex : subVertices) {
@@ -540,11 +540,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         }
 
                         sql = new StringBuilder("DELETE FROM ");
-                        sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(sqlG.getSqlDialect().getPublicSchema()));
+                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
                         sql.append(".");
-                        sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
                         sql.append(" WHERE ");
-                        sql.append(sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
                         sql.append(" in (");
 
                         count = 1;
@@ -555,13 +555,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             }
                         }
                         sql.append(")");
-                        if (sqlG.getSqlDialect().needsSemicolon()) {
+                        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                             sql.append(";");
                         }
                         if (logger.isDebugEnabled()) {
                             logger.debug(sql.toString());
                         }
-                        conn = sqlG.tx().getConnection();
+                        conn = sqlgGraph.tx().getConnection();
                         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                             count = 1;
                             for (SqlgVertex vertex : subVertices) {
@@ -575,15 +575,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 }
 
-                createForeignKeys(sqlG, schemaTable);
+                createForeignKeys(sqlgGraph, schemaTable);
 
             }
         }
     }
 
-    private void dropForeignKeys(SqlG sqlG, SchemaTable schemaTable) {
+    private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
 
-        SchemaManager schemaManager = sqlG.getSchemaManager();
+        SchemaManager schemaManager = sqlgGraph.getSchemaManager();
         Map<String, Set<String>> edgeForeignKeys = schemaManager.getEdgeForeignKeys();
 
         for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
@@ -594,7 +594,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             for (String foreignKey : foreignKeys) {
                 if (foreignKey.startsWith(schemaTable.toString() + "_")) {
 
-                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlG, schemaTableArray[0], schemaTableArray[1]);
+                    Set<String> foreignKeyNames = getForeignKeyConstraintNames(sqlgGraph, schemaTableArray[0], schemaTableArray[1]);
                     for (String foreignKeyName : foreignKeyNames) {
 
                         StringBuilder sql = new StringBuilder();
@@ -610,7 +610,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         if (logger.isDebugEnabled()) {
                             logger.debug(sql.toString());
                         }
-                        Connection conn = sqlG.tx().getConnection();
+                        Connection conn = sqlgGraph.tx().getConnection();
                         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                             preparedStatement.executeUpdate();
                         } catch (SQLException e) {
@@ -623,8 +623,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
-    private void createForeignKeys(SqlG sqlG, SchemaTable schemaTable) {
-        SchemaManager schemaManager = sqlG.getSchemaManager();
+    private void createForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        SchemaManager schemaManager = sqlgGraph.getSchemaManager();
         Map<String, Set<String>> edgeForeignKeys = schemaManager.getEdgeForeignKeys();
 
         for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
@@ -651,7 +651,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
-                    Connection conn = sqlG.tx().getConnection();
+                    Connection conn = sqlgGraph.tx().getConnection();
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         preparedStatement.executeUpdate();
                     } catch (SQLException e) {
@@ -662,7 +662,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
-    private void deleteEdges(SqlG sqlG, SchemaTable vertexSchemaTable, Pair<Set<Long>, Set<SchemaTable>> outLabels, boolean outDirection) {
+    private void deleteEdges(SqlgGraph sqlgGraph, SchemaTable vertexSchemaTable, Pair<Set<Long>, Set<SchemaTable>> outLabels, boolean outDirection) {
 
         List<Long> edgesToDeleteId = new ArrayList<>();
         Pair<Set<Long>, Set<SchemaTable>> vertexEdgeSchemaTable = outLabels;
@@ -683,13 +683,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 }
             }
             sql.append(")  RETURNING *");
-            if (sqlG.getSqlDialect().needsSemicolon()) {
+            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
-            Connection conn = sqlG.tx().getConnection();
+            Connection conn = sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 count = 1;
                 for (Long id : vertexEdgeSchemaTable.getLeft()) {
@@ -739,13 +739,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         }
                     }
                     sql.append(")");
-                    if (sqlG.getSqlDialect().needsSemicolon()) {
+                    if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
                     }
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
-                    Connection conn = sqlG.tx().getConnection();
+                    Connection conn = sqlgGraph.tx().getConnection();
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         count = 1;
                         for (Long id : subEdges) {
@@ -761,7 +761,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
-    private void getInAndOutEdgesToRemove(SqlG sqlG, List<SqlgVertex> removeVertexCache,
+    private void getInAndOutEdgesToRemove(SqlgGraph sqlgGraph, List<SqlgVertex> removeVertexCache,
                                           Pair<Set<Long>, Set<SchemaTable>> outLabels,
                                           Pair<Set<Long>, Set<SchemaTable>> inLabels) {
         List<SqlgVertex> vertices = removeVertexCache;
@@ -795,7 +795,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (needsSemicolon()) {
             sql.append(";");
         }
-        Connection conn = sqlG.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -839,18 +839,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushRemovedEdges(SqlG sqlG, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
+    public void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
 
         if (!removeEdgeCache.isEmpty()) {
             List<SqlgEdge> flattenedEdges = new ArrayList<>();
             for (SchemaTable schemaTable : removeEdgeCache.keySet()) {
                 List<SqlgEdge> edges = removeEdgeCache.get(schemaTable);
                 StringBuilder sql = new StringBuilder("DELETE FROM ");
-                sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                 sql.append(".");
-                sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
+                sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
                 sql.append(" WHERE ");
-                sql.append(sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+                sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
                 sql.append(" in (");
                 int count = 1;
                 for (SqlgEdge sqlgEdge : edges) {
@@ -861,13 +861,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                 }
                 sql.append(")");
-                if (sqlG.getSqlDialect().needsSemicolon()) {
+                if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
                 if (logger.isDebugEnabled()) {
                     logger.debug(sql.toString());
                 }
-                Connection conn = sqlG.tx().getConnection();
+                Connection conn = sqlgGraph.tx().getConnection();
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                     count = 1;
                     for (SqlgEdge sqlgEdge : edges) {
@@ -880,11 +880,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
 
             StringBuilder sql = new StringBuilder("DELETE FROM ");
-            sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(sqlG.getSqlDialect().getPublicSchema()));
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
             sql.append(".");
-            sql.append(sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
             sql.append(" WHERE ");
-            sql.append(sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" in (");
 
             int count = 1;
@@ -895,13 +895,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 }
             }
             sql.append(")");
-            if (sqlG.getSqlDialect().needsSemicolon()) {
+            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
-            Connection conn = sqlG.tx().getConnection();
+            Connection conn = sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 count = 1;
                 for (SqlgEdge edge : flattenedEdges) {
@@ -1218,9 +1218,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return true;
     }
 
-    public Set<String> getForeignKeyConstraintNames(SqlG sqlG, String foreignKeySchema, String foreignKeyTable) {
+    public Set<String> getForeignKeyConstraintNames(SqlgGraph sqlgGraph, String foreignKeySchema, String foreignKeyTable) {
         Set<String> result = new HashSet<>();
-        Connection conn = sqlG.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         DatabaseMetaData metadata;
         try {
             metadata = conn.getMetaData();

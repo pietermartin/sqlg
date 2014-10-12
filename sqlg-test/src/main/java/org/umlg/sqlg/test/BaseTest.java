@@ -10,7 +10,7 @@ import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
@@ -29,7 +29,7 @@ import static org.junit.Assert.fail;
 public abstract class BaseTest {
 
     private Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
-    protected SqlG sqlG;
+    protected SqlgGraph sqlgGraph;
     protected static Configuration configuration;
 
     @BeforeClass
@@ -41,9 +41,6 @@ public abstract class BaseTest {
             if (!configuration.containsKey("jdbc.url"))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
 
-            if (!configuration.containsKey("sql.dialect"))
-                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "sql.dialect"));
-
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
@@ -53,7 +50,7 @@ public abstract class BaseTest {
     public void before() throws IOException {
         SqlDialect sqlDialect;
         try {
-            Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
+            Class<?> sqlDialectClass = findSqlGDialect();
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
@@ -132,26 +129,26 @@ public abstract class BaseTest {
             throw new RuntimeException(e);
         }
 
-        this.sqlG = SqlG.open(configuration);
+        this.sqlgGraph = SqlgGraph.open(configuration);
     }
 
     @After
     public void after() throws Exception {
-        this.sqlG.tx().onClose(Transaction.CLOSE_BEHAVIOR.COMMIT);
-        this.sqlG.close();
+        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.COMMIT);
+        this.sqlgGraph.close();
     }
 
     protected void assertDb(String table, int numberOfRows) {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+            conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
             sql.append(".");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(table));
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if(logger.isDebugEnabled()) {
@@ -184,4 +181,19 @@ public abstract class BaseTest {
 
     }
 
+    private Class<?> findSqlGDialect() {
+        try {
+            return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
+        } catch (ClassNotFoundException e) {
+        }
+        try {
+            return Class.forName("org.umlg.sqlg.sql.dialect.MariaDbDialect");
+        } catch (ClassNotFoundException e) {
+        }
+        try {
+            return Class.forName("org.umlg.sqlg.sql.dialect.HsqldbDialect");
+        } catch (ClassNotFoundException e) {
+        }
+        throw new IllegalStateException("No sqlg dialect found!");
+    }
 }

@@ -14,10 +14,10 @@ public class TestRollback extends BaseTest {
 
     @Test
     public void testRollback() {
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
-        this.sqlG.tx().commit();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+        this.sqlgGraph.tx().commit();
         v1.property("name", "john");
-        this.sqlG.tx().rollback();
+        this.sqlgGraph.tx().rollback();
         Assert.assertFalse(v1.property("name").isPresent());
     }
 

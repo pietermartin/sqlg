@@ -23,15 +23,15 @@ public class TestVertexCreation extends BaseTest {
 
     @Test
     public void testCreateEmptyVertex() throws SQLException {
-        sqlG.addVertex();
-        sqlG.tx().commit();
-        try (Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection()) {
+        sqlgGraph.addVertex();
+        sqlgGraph.tx().commit();
+        try (Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
                 sql.append(".");
-                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "vertex"));
-                if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "vertex"));
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
                 ResultSet rs = stmt.executeQuery(sql.toString());
@@ -47,8 +47,8 @@ public class TestVertexCreation extends BaseTest {
 
     @Test
     public void testCreateVertexWithProperties() throws SQLException {
-        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        sqlG.addVertex(T.label, "Person",
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        sqlgGraph.addVertex(T.label, "Person",
                 "boolean1", true,
                 "short1", (short) 1,
                 "integer1", 1,
@@ -57,7 +57,7 @@ public class TestVertexCreation extends BaseTest {
                 "double1", 1D,
                 "name", "marko"
         );
-        sqlG.addVertex(T.label, "Person",
+        sqlgGraph.addVertex(T.label, "Person",
                 "boolean1", true,
                 "short1", (short) 1,
                 "integer1", 1,
@@ -66,15 +66,15 @@ public class TestVertexCreation extends BaseTest {
                 "double1", 1D,
                 "name", "marko"
         );
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
 
-        try (Connection conn = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection()) {
+        try (Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
                 sql.append(".");
-                sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "Person"));
-                if (this.sqlG.getSqlDialect().needsSemicolon()) {
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "Person"));
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
                 ResultSet rs = stmt.executeQuery(sql.toString());
@@ -111,14 +111,14 @@ public class TestVertexCreation extends BaseTest {
 
     @Test
     public void testAndColumns() {
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person", "name1", "marko");
-        this.sqlG.tx().commit();
-        assertEquals(1, this.sqlG.V().count().next(), 0);
-        assertEquals(v1, this.sqlG.v(v1.id()));
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name1", "marko");
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, this.sqlgGraph.V().count().next(), 0);
+        assertEquals(v1, this.sqlgGraph.v(v1.id()));
         assertEquals(1, v1.properties().count().next(), 0);
-        Vertex v2 = this.sqlG.addVertex(T.label, "Person", "name2", "john");
-        assertEquals(2, this.sqlG.V().count().next(), 0);
-        assertEquals(v2, this.sqlG.v(v2.id()));
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name2", "john");
+        assertEquals(2, this.sqlgGraph.V().count().next(), 0);
+        assertEquals(v2, this.sqlgGraph.v(v2.id()));
         assertEquals(1, v2.properties().count().next(), 0);
     }
 

@@ -14,37 +14,37 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testSetProperty() {
-        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         marko.property("surname", "xxxx");
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals("xxxx", marko.property("surname").value());
     }
 
     @Test
     public void testPropertyManyTimes() {
-        Vertex v = this.sqlG.addVertex("age", 1, "name", "marko", "name", "john");
-        this.sqlG.tx().commit();
+        Vertex v = this.sqlgGraph.addVertex("age", 1, "name", "marko", "name", "john");
+        this.sqlgGraph.tx().commit();
     }
 
     @Test
     public void testFloat() {
-        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Vertex v = this.sqlG.addVertex(T.label, "Person", "age", 1f);
-        this.sqlG.tx().commit();
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "age", 1f);
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals(1f, v.property("age").value());
     }
 
     @Test
     public void testPrimitiveProperties() {
-        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Vertex v = this.sqlG.addVertex(T.label, "Person",
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", (short)1,
                 "age3", 1,
                 "age4", 1l,
                 "age5", 1f,
                 "age6", 1d
         );
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals((short)1, v.property("age2").value());
         Assert.assertEquals(1, v.property("age3").value());
         Assert.assertEquals(1l, v.property("age4").value());
@@ -54,13 +54,13 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testPrimitivePropertiesNoFloat() {
-        Vertex v = this.sqlG.addVertex(T.label, "Person",
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", (short)1,
                 "age3", 1,
                 "age4", 1l,
                 "age6", 1d
         );
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals((short)1, v.property("age2").value());
         Assert.assertEquals(1, v.property("age3").value());
         Assert.assertEquals(1l, v.property("age4").value());
@@ -69,15 +69,15 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testObjectProperties() {
-        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Vertex v = this.sqlG.addVertex(T.label, "Person",
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
                 "age4", new Long(1l),
                 "age5", new Float(1f),
                 "age6", new Double(1d)
         );
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals(new Short((short)1), v.property("age2").value());
         Assert.assertEquals(new Integer(1), v.property("age3").value());
         Assert.assertEquals(new Long(1l), v.property("age4").value());
@@ -87,13 +87,13 @@ public class TestSetProperty extends BaseTest {
 
     @Test
     public void testObjectPropertiesNoFloat() {
-        Vertex v = this.sqlG.addVertex(T.label, "Person",
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
                 "age4", new Long(1l),
                 "age6", new Double(1d)
         );
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals(new Short((short)1), v.property("age2").value());
         Assert.assertEquals(new Integer(1), v.property("age3").value());
         Assert.assertEquals(new Long(1l), v.property("age4").value());

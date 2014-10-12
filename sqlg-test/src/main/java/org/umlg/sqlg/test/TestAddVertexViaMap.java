@@ -2,7 +2,6 @@ package org.umlg.sqlg.test;
 
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,9 +23,9 @@ public class TestAddVertexViaMap extends BaseTest {
         map.put("name1", "p1");
         map.put("name2", "p2");
         map.put("name3", "p3");
-        Vertex v1 = this.sqlG.addVertex("Person", map);
-        this.sqlG.tx().commit();
-        Vertex v2 = this.sqlG.V().<Vertex>has(T.label, "Person").next();
+        Vertex v1 = this.sqlgGraph.addVertex("Person", map);
+        this.sqlgGraph.tx().commit();
+        Vertex v2 = this.sqlgGraph.V().<Vertex>has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertEquals("p1", v2.property("name1").value());
         Assert.assertEquals("p2", v2.property("name2").value());
@@ -38,7 +37,7 @@ public class TestAddVertexViaMap extends BaseTest {
         edgeMap.put("name2", "p2");
         edgeMap.put("name3", "p3");
         Edge e1 = ((SqlgVertex)v1).addEdgeWithMap("e1", v2, edgeMap);
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals("p1", e1.property("name1").value());
         Assert.assertEquals("p2", e1.property("name2").value());
         Assert.assertEquals("p3", e1.property("name3").value());
@@ -46,17 +45,17 @@ public class TestAddVertexViaMap extends BaseTest {
 
     @Test
     public void howToUpdateManyRows() {
-        this.sqlG.addVertex(T.label, "Person", "name", "marko");
-        this.sqlG.addVertex(T.label, "Person", "name", "joe");
-        this.sqlG.addVertex(T.label, "Person", "name", "john");
-        this.sqlG.addVertex(T.label, "Person", "name", "peter");
-        this.sqlG.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "joe");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+        this.sqlgGraph.tx().commit();
 
-        List<Vertex> markos = this.sqlG.V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
+        List<Vertex> markos = this.sqlgGraph.V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
         if (markos.isEmpty()) {
             markos.get(0).property("name", "marko2");
         }
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
 
     }
 

@@ -16,18 +16,18 @@ public class TestVertexOutWithHas extends BaseTest {
 
     @Test
     public void testVertexOutWithHas() {
-        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
-        Vertex bmw1 = this.sqlG.addVertex(T.label, "Car", "name", "bmw", "cc", 600);
-        Vertex bmw2 = this.sqlG.addVertex(T.label, "Car", "name", "bmw", "cc", 800);
-        Vertex ktm1 = this.sqlG.addVertex(T.label, "Bike", "name", "ktm", "cc", 200);
-        Vertex ktm2 = this.sqlG.addVertex(T.label, "Bike", "name", "ktm", "cc", 200);
-        Vertex ktm3 = this.sqlG.addVertex(T.label, "Bike", "name", "ktm", "cc", 400);
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex bmw1 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw", "cc", 600);
+        Vertex bmw2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw", "cc", 800);
+        Vertex ktm1 = this.sqlgGraph.addVertex(T.label, "Bike", "name", "ktm", "cc", 200);
+        Vertex ktm2 = this.sqlgGraph.addVertex(T.label, "Bike", "name", "ktm", "cc", 200);
+        Vertex ktm3 = this.sqlgGraph.addVertex(T.label, "Bike", "name", "ktm", "cc", 400);
         marko.addEdge("drives", bmw1);
         marko.addEdge("drives", bmw2);
         marko.addEdge("drives", ktm1);
         marko.addEdge("drives", ktm2);
         marko.addEdge("drives", ktm3);
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         List<Vertex> drivesBmw = marko.out("drives").<Vertex>has("name", "bmw").toList();
         Assert.assertEquals(2L, drivesBmw.size(), 0);
         List<Vertex> drivesKtm = marko.out("drives").<Vertex>has("name", "ktm").toList();
@@ -45,18 +45,18 @@ public class TestVertexOutWithHas extends BaseTest {
 
     @Test
     public void testVertexInWithHas() {
-        Vertex marko1 = this.sqlG.addVertex(T.label, "Person", "name", "marko1");
-        Vertex marko2 = this.sqlG.addVertex(T.label, "Person", "name", "marko2", "age", 20);
-        Vertex marko3 = this.sqlG.addVertex(T.label, "Person", "name", "marko3", "age", 20);
-        Vertex marko4 = this.sqlG.addVertex(T.label, "Person", "name", "marko4", "age", 30);
-        Vertex marko5 = this.sqlG.addVertex(T.label, "Person", "name", "marko5", "age", 40);
+        Vertex marko1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko1");
+        Vertex marko2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko2", "age", 20);
+        Vertex marko3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko3", "age", 20);
+        Vertex marko4 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko4", "age", 30);
+        Vertex marko5 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko5", "age", 40);
 
         marko2.addEdge("friend", marko1);
         marko3.addEdge("friend", marko1);
         marko4.addEdge("friend", marko1);
         marko5.addEdge("friend", marko1);
 
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
 
         List<Vertex> inFriendMarko2 = marko1.in("friend").<Vertex>has("name", "marko2").toList();
         Assert.assertEquals(1, inFriendMarko2.size(), 0);
@@ -84,12 +84,12 @@ public class TestVertexOutWithHas extends BaseTest {
 
     @Test
     public void testVertexHasLabel() {
-        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
-        Vertex bmw = this.sqlG.addVertex(T.label, "Car", "name", "bmw");
-        Vertex vw = this.sqlG.addVertex(T.label, "Car", "name", "vw");
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex bmw = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
+        Vertex vw = this.sqlgGraph.addVertex(T.label, "Car", "name", "vw");
         marko.addEdge("drives", bmw);
         marko.addEdge("drives", vw);
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, marko.out("drives").has(T.label, "Car").has("name", "bmw").count().next(), 0);
         Assert.assertEquals(0, marko.out("drives").has(T.label, "Person").has("name", "vw").count().next(), 0);
 

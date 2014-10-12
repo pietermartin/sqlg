@@ -16,10 +16,10 @@ public class TestVertexNavToEdges extends BaseTest {
 
     @Test
     public void testFromVertexGetEdges() {
-        Vertex v1 = sqlG.addVertex();
-        Vertex v2 = sqlG.addVertex();
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
         Edge e = v1.addEdge("label1", v2, "name", "marko");
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
         assertDb(SchemaManager.EDGE_PREFIX + "label1", 1);
         assertDb(SchemaManager.VERTEX_PREFIX  +  "vertex", 2);
 
@@ -36,41 +36,41 @@ public class TestVertexNavToEdges extends BaseTest {
 
     @Test
     public void testOutE() {
-        Vertex v1 = sqlG.addVertex();
-        Vertex v2 = sqlG.addVertex();
-        Vertex v3 = sqlG.addVertex();
-        Vertex v4 = sqlG.addVertex();
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
+        Vertex v3 = sqlgGraph.addVertex();
+        Vertex v4 = sqlgGraph.addVertex();
         Edge e1 = v1.addEdge("label1", v2);
         Edge e2 = v1.addEdge("label1", v3);
         Edge e3 = v1.addEdge("label1", v4);
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
         assertEquals(3L, v1.outE("label1").count().next(), 0);
     }
 
     @Test
     public void testOutEAllLabels() {
-        Vertex v1 = sqlG.addVertex();
-        Vertex v2 = sqlG.addVertex();
-        Vertex v3 = sqlG.addVertex();
-        Vertex v4 = sqlG.addVertex();
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
+        Vertex v3 = sqlgGraph.addVertex();
+        Vertex v4 = sqlgGraph.addVertex();
         Edge e1 = v1.addEdge("label1", v2);
         Edge e2 = v1.addEdge("label2", v3);
         Edge e3 = v1.addEdge("label3", v4);
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
         assertEquals(3L, v1.outE().count().next(), 0);
     }
 
     @Test
     public void testInOut() {
-        Vertex v1 = sqlG.addVertex();
-        Vertex v2 = sqlG.addVertex();
-        Vertex v3 = sqlG.addVertex();
-        Vertex v4 = sqlG.addVertex();
-        Vertex v5 = sqlG.addVertex();
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
+        Vertex v3 = sqlgGraph.addVertex();
+        Vertex v4 = sqlgGraph.addVertex();
+        Vertex v5 = sqlgGraph.addVertex();
         Edge e1 = v1.addEdge("label1", v2);
         Edge e2 = v2.addEdge("label2", v3);
         Edge e3 = v3.addEdge("label3", v4);
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
 
         assertEquals(1, v2.inE().count().next(), 1);
         assertEquals(e1, v2.inE().next());

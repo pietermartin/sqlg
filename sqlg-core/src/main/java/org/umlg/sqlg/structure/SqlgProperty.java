@@ -20,10 +20,10 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     private final String key;
     private V value;
     private SqlgElement element;
-    protected SqlG sqlG;
+    protected SqlgGraph sqlgGraph;
 
-    public SqlgProperty(SqlG sqlG, SqlgElement element, String key, V value) {
-        this.sqlG = sqlG;
+    public SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
+        this.sqlgGraph = sqlgGraph;
         this.element = element;
         this.key = key;
         this.value = value;
@@ -58,27 +58,27 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     public void remove() {
         this.element.properties.remove(this.key);
         boolean elementInInsertedCache = false;
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
-            elementInInsertedCache = this.sqlG.tx().getBatchManager().removeProperty(this, key);
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+            elementInInsertedCache = this.sqlgGraph.tx().getBatchManager().removeProperty(this, key);
         }
 
         if (!elementInInsertedCache) {
             StringBuilder sql = new StringBuilder("UPDATE ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.element.schema));
             sql.append(".");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.table));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this.element instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.element.table));
             sql.append(" SET ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.key));
             sql.append(" = ? WHERE ");
-            sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 PropertyType propertyType = PropertyType.from(value);
-                preparedStatement.setNull(1, this.sqlG.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
+                preparedStatement.setNull(1, this.sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
                 preparedStatement.setLong(2, (Long) this.element.id());
                 int numberOfRowsUpdated = preparedStatement.executeUpdate();
                 if (numberOfRowsUpdated != 1) {

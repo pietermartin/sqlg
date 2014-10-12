@@ -1,6 +1,5 @@
 package org.umlg.sqlg.test.edgehas;
 
-import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -15,11 +14,11 @@ public class TestEdgeHas extends BaseTest {
 
     @Test
     public void testEdgeHas() {
-        Vertex stephen = this.sqlG.addVertex("name", "stephen");
-        Vertex marko = this.sqlG.addVertex("name", "marko");
+        Vertex stephen = this.sqlgGraph.addVertex("name", "stephen");
+        Vertex marko = this.sqlgGraph.addVertex("name", "marko");
         stephen.addEdge("knows", marko, "weight", 1.0d);
         stephen.addEdge("knows", marko, "weight", 2.0d);
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         GraphTraversal knows = stephen.outE("knows");
         knows.has("weight", 1.0d);
         Assert.assertEquals(1L, knows.count().next());

@@ -13,8 +13,8 @@ public class TestByteSupport extends BaseTest {
 
     @Test
     public void testByte() {
-        Vertex v = this.sqlG.addVertex(T.label, "Person", "age", (byte)1);
-        this.sqlG.tx().commit();
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "age", (byte)1);
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals((byte)1, v.property("age").value());
 
     }

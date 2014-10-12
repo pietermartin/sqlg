@@ -5,7 +5,6 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +24,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
     /**
      * This is called when creating a new edge. from vin.addEdge(label, vout)
      *
-     * @param sqlG
+     * @param sqlgGraph
      * @param schema
      * @param table
      * @param inVertex
      * @param outVertex
      * @param keyValues
      */
-    public SqlgEdge(SqlG sqlG, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
-        super(sqlG, schema, table);
+    public SqlgEdge(SqlgGraph sqlgGraph, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+        super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         try {
@@ -43,14 +42,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    public SqlgEdge(SqlG sqlG, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
-        super(sqlG, id, schema, table);
+    public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+        super(sqlgGraph, id, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
     }
 
-    public SqlgEdge(SqlG sqlG, Long id, String schema, String table) {
-        super(sqlG, id, schema, table);
+    public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+        super(sqlgGraph, id, schema, table);
     }
 
     private Iterator<Vertex> internalGetVertices(Direction direction) {
@@ -64,25 +63,25 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     @Override
     public void remove() {
-        this.sqlG.tx().readWrite();
+        this.sqlgGraph.tx().readWrite();
 
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
-            this.sqlG.tx().getBatchManager().removeEdge(this.schema, this.table, this);
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+            this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
         }  else {
             StringBuilder sql = new StringBuilder("DELETE FROM ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
             sql.append(".");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
             sql.append(" WHERE ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 preparedStatement.setLong(1, (Long) this.id());
                 preparedStatement.executeUpdate();
@@ -118,7 +117,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     protected void insertEdge(Object... keyValues) throws SQLException {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
-        if (this.sqlG.features().supportsBatchMode() && this.sqlG.tx().isInBatchMode()) {
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             internalBatchAddEdge(keyValueMap);
         } else {
             internalAddEdge(keyValueMap);
@@ -131,15 +130,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
         long edgeId = insertGlobalEdge();
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
         sql.append(" (");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(", ");
         int i = 1;
         for (String column : keyValueMap.keySet()) {
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(column));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
             if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
@@ -147,9 +146,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + SchemaManager.IN_VERTEX_COLUMN_END));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(", ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SchemaManager.OUT_VERTEX_COLUMN_END));
         sql.append(") VALUES (?, ");
         i = 1;
         for (String column : keyValueMap.keySet()) {
@@ -163,17 +162,17 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
         sql.append("?, ?");
         sql.append(")");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
         i = 1;
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.setLong(i++, edgeId);
-            i = setKeyValuesAsParameter(this.sqlG, i, conn, preparedStatement, keyValueMap);
+            i = setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
             preparedStatement.setLong(i++, this.inVertex.primaryKey);
             preparedStatement.setLong(i++, this.outVertex.primaryKey);
             preparedStatement.executeUpdate();
@@ -183,24 +182,24 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalBatchAddEdge(Map<String, Object> keyValueMap) {
-        this.sqlG.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
+        this.sqlgGraph.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
     }
 
     private long insertGlobalEdge() throws SQLException {
         long edgeId;
         StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.sqlG.getSqlDialect().getPublicSchema()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
         sql.append(".");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
         sql.append(" (");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_SCHEMA"));
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_SCHEMA"));
         sql.append(", ");
-        sql.append(this.sqlG.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_TABLE"));
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_TABLE"));
         sql.append(") VALUES (?, ?)");
-        if (this.sqlG.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        Connection conn = this.sqlG.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, this.schema);
             preparedStatement.setString(2, this.table);
@@ -219,16 +218,16 @@ public class SqlgEdge extends SqlgElement implements Edge {
     protected void load() {
         if (this.properties.isEmpty()) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(this.schema));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
             sql.append(" WHERE ");
-            sql.append(this.sqlG.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
-            if (this.sqlG.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
-            Connection conn = this.sqlG.tx().getConnection();
+            Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
@@ -283,9 +282,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
             if (!Objects.isNull(o)) {
                 if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                    inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+                    inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
                 } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                    outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlG.getSqlDialect().getPublicSchema());
+                    outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
                 }
             }
         }
@@ -295,8 +294,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         Long inId = resultSet.getLong(inVertexColumnName.getSchema() + "." + inVertexColumnName.getTable());
         Long outId = resultSet.getLong(outVertexColumnName.getSchema() + "." + outVertexColumnName.getTable());
 
-        this.inVertex = SqlgVertex.of(this.sqlG, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, ""));
-        this.outVertex = SqlgVertex.of(this.sqlG, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
+        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, ""));
+        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
     }
 
     @Override
@@ -309,18 +308,18 @@ public class SqlgEdge extends SqlgElement implements Edge {
     protected class Iterators extends SqlgElement.Iterators implements Edge.Iterators {
 
         @Override
-        public <V> Iterator<Property<V>> properties(final String... propertyKeys) {
-            return (Iterator) super.properties(propertyKeys);
+        public <V> Iterator<Property<V>> propertyIterator(final String... propertyKeys) {
+            return (Iterator) super.propertyIterator(propertyKeys);
         }
 
         @Override
-        public <V> Iterator<Property<V>> hiddens(final String... propertyKeys) {
-            return (Iterator) super.hiddens(propertyKeys);
+        public <V> Iterator<Property<V>> hiddenPropertyIterator(final String... propertyKeys) {
+            return (Iterator) super.hiddenPropertyIterator(propertyKeys);
         }
 
         @Override
-        public Iterator<Vertex> vertices(final Direction direction) {
-            SqlgEdge.this.sqlG.tx().readWrite();
+        public Iterator<Vertex> vertexIterator(final Direction direction) {
+            SqlgEdge.this.sqlgGraph.tx().readWrite();
             return internalGetVertices(direction);
         }
 

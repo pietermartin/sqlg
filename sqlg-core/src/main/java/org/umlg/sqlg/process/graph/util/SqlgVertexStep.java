@@ -42,7 +42,7 @@ public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> im
                 }
             });
         else
-            this.setFunction(traverser -> (Iterator<E>) traverser.get().iterators().edges(this.direction, this.branchFactor, this.edgeLabels));
+            this.setFunction(traverser -> (Iterator<E>) traverser.get().iterators().edgeIterator(this.direction, this.branchFactor, this.edgeLabels));
     }
 
     public String toString() {

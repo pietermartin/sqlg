@@ -54,7 +54,7 @@ public class SqlgHasContainer implements Serializable {
                 return property.isPresent() && this.predicate.test(property.value(), this.value);
             }
         } else {
-            return Contains.in.equals(this.predicate) ?
+            return Contains.within.equals(this.predicate) ?
                     element.property(this.key).isPresent() :
                     !element.property(this.key).isPresent();
         }

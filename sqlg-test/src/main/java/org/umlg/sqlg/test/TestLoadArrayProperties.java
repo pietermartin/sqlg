@@ -5,7 +5,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -19,14 +19,14 @@ public class TestLoadArrayProperties extends BaseTest {
     @Test
     public void testLoadSchemaWithArrays() throws Exception {
         Assume.assumeTrue(
-                this.sqlG.getSqlDialect().supportsBooleanArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsFloatArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsLongArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsIntegerArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsDoubleArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsStringArrayValues()
+                this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsFloatArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsLongArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsStringArrayValues()
         );
-        this.sqlG.addVertex(T.label, "Person",
+        this.sqlgGraph.addVertex(T.label, "Person",
                 "aBoolean", new boolean[]{true},
                 "aShort", new short[]{(short) 1},
                 "aInteger", new int[]{1},
@@ -35,10 +35,10 @@ public class TestLoadArrayProperties extends BaseTest {
                 "aDouble", new double[]{1D},
                 "aString", new String[]{"aaaaaaaaaaaaa"});
 
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(T.label, "Person");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -49,9 +49,9 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new double[]{1d}, (double[])v.property("aDouble").value()));
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
 
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        iter = this.sqlG.V().has(T.label, "Person");
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        iter = this.sqlgGraph.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -66,13 +66,13 @@ public class TestLoadArrayProperties extends BaseTest {
     @Test
     public void testLoadSchemaWithArraysWithoutFloat() throws Exception {
         Assume.assumeTrue(
-                this.sqlG.getSqlDialect().supportsBooleanArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsLongArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsIntegerArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsDoubleArrayValues() &&
-                        this.sqlG.getSqlDialect().supportsStringArrayValues()
+                this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsLongArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues() &&
+                        this.sqlgGraph.getSqlDialect().supportsStringArrayValues()
         );
-        this.sqlG.addVertex(T.label, "Person",
+        this.sqlgGraph.addVertex(T.label, "Person",
                 "aBoolean", new boolean[]{true},
                 "aShort", new short[]{(short) 1},
                 "aInteger", new int[]{1},
@@ -80,10 +80,10 @@ public class TestLoadArrayProperties extends BaseTest {
                 "aDouble", new double[]{1D},
                 "aString", new String[]{"aaaaaaaaaaaaa"});
 
-        this.sqlG.tx().commit();
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        Iterator<Vertex> iter = this.sqlG.V().has(T.label, "Person");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -93,9 +93,9 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new double[]{1d}, (double[])v.property("aDouble").value()));
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
 
-        this.sqlG.close();
-        this.sqlG = SqlG.open(configuration);
-        iter = this.sqlG.V().has(T.label, "Person");
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        iter = this.sqlgGraph.V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));

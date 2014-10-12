@@ -1,15 +1,8 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.VertexProperty;
-import com.tinkerpop.gremlin.util.StreamFactory;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 
 /**
  * Date: 2014/09/10
@@ -17,8 +10,8 @@ import java.util.Iterator;
  */
 public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProperty<V> {
 
-    public SqlgVertexProperty(SqlG sqlG, SqlgElement element, String key, V value) {
-        super(sqlG, element, key, value);
+    public SqlgVertexProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
+        super(sqlgGraph, element, key, value);
     }
 
     @Override

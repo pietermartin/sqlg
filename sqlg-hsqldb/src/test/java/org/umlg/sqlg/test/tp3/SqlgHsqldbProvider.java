@@ -1,17 +1,13 @@
 package org.umlg.sqlg.test.tp3;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
-import com.tinkerpop.gremlin.AbstractGremlinTest;
-import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.io.graphson.GraphSONReader;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
-import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.HashMap;
@@ -26,8 +22,7 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
         return new HashMap<String, Object>() {{
-            put("gremlin.graph", SqlG.class.getName());
-            put("sql.dialect", "org.umlg.sqlg.sql.dialect.HsqldbDialect");
+            put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:hsqldb:file:src/test/db/" + graphName + "");
             put("jdbc.username", "SA");
             put("jdbc.password", "");
@@ -43,7 +38,7 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
         }
         SqlDialect sqlDialect;
         try {
-            Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
+            Class<?> sqlDialectClass = Class.forName("org.umlg.sqlg.sql.dialect.HsqldbDialect");
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {

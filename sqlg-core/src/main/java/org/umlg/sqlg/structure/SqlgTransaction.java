@@ -23,7 +23,7 @@ public class SqlgTransaction implements Transaction {
     private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
     private Consumer<Transaction> readWriteConsumer;
     private Consumer<Transaction> closeConsumer;
-    private SqlG sqlG;
+    private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
 
@@ -41,8 +41,8 @@ public class SqlgTransaction implements Transaction {
         }
     };
 
-    SqlgTransaction(SqlG sqlG) {
-        this.sqlG = sqlG;
+    SqlgTransaction(SqlgGraph sqlgGraph) {
+        this.sqlgGraph = sqlgGraph;
 
         // auto transaction behavior
         readWriteConsumer = READ_WRITE_BEHAVIOR.AUTO;
@@ -52,14 +52,14 @@ public class SqlgTransaction implements Transaction {
     }
 
     public void batchModeOn() {
-        if (this.sqlG.features().supportsBatchMode()) {
+        if (this.sqlgGraph.features().supportsBatchMode()) {
             if (isOpen()) {
                 throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
             }
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn();
         } else {
-            logger.warn("Batch mode not supported! Continuing in normal mode.");
+            throw new IllegalStateException("Batch mode not supported!");
         }
     }
 
@@ -88,9 +88,9 @@ public class SqlgTransaction implements Transaction {
             throw Transaction.Exceptions.transactionAlreadyOpen();
         else {
             try {
-                Connection connection = SqlgDataSource.INSTANCE.get(this.sqlG.getJdbcUrl()).getConnection();
+                Connection connection = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
-                threadLocalTx.set(TransactionCache.of(connection, new ArrayList<>(), new BatchManager(this.sqlG, this.sqlG.getSqlDialect())));
+                threadLocalTx.set(TransactionCache.of(connection, new ArrayList<>(), new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -215,7 +215,7 @@ public class SqlgTransaction implements Transaction {
 
     @Override
     public <R> Workload<R> submit(final Function<Graph, R> work) {
-        return new Workload<>(this.sqlG, work);
+        return new Workload<>(this.sqlgGraph, work);
     }
 
     @Override
@@ -250,8 +250,8 @@ public class SqlgTransaction implements Transaction {
         return this;
     }
 
-    SqlgVertex putVertexIfAbsent(SqlG sqlG, Long id, String schema, String table) {
-        return this.threadLocalTx.get().putVertexIfAbsent(sqlG, id, schema, table);
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, id, schema, table);
     }
 
     //Called for vertices that exist but are not yet in the transaction cache

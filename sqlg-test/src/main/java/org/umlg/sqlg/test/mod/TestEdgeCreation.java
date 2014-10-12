@@ -16,20 +16,20 @@ public class TestEdgeCreation extends BaseTest {
 
     @Test
     public void testCreateEdge() throws Exception {
-        Vertex v1 = sqlG.addVertex();
-        Vertex v2 = sqlG.addVertex();
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
         v1.addEdge("label1", v2, "name", "marko");
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
         assertDb(SchemaManager.EDGE_PREFIX +  "label1", 1);
         assertDb(SchemaManager.VERTEX_PREFIX + "vertex", 2);
     }
 
     @Test
     public void testCreateEdgeWithProperties() {
-        Vertex v1 = sqlG.addVertex();
-        Vertex v2 = sqlG.addVertex();
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
         v1.addEdge("label1", v2, "name", "marko");
-        sqlG.tx().commit();
+        sqlgGraph.tx().commit();
         assertDb(SchemaManager.EDGE_PREFIX  + "label1", 1);
         assertDb(SchemaManager.VERTEX_PREFIX + "vertex", 2);
     }

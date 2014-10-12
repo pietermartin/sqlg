@@ -15,16 +15,16 @@ class TestQuery extends BaseTest {
 
     @Test
     public void testQuery() {
-        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsFloatValues());
-        Assume.assumeTrue(this.sqlG.getSqlDialect().supportsStringArrayValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
         String[] arrStr = ['Ananas', 'Banana', 'Kiwi']
-        this.sqlG.addVertex("Person", [name: "Pieter", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
+        this.sqlgGraph.addVertex("Person", [name: "Pieter", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
                 nameArray: arrStr]);
-        this.sqlG.addVertex("Person", [name: "Marko", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
+        this.sqlgGraph.addVertex("Person", [name: "Marko", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
                 nameArray: arrStr]);
-        this.sqlG.tx().commit()
-        assertEquals(2, this.sqlG.V().count().next());
-        String json = this.sqlG.query("select * from \"V_Person\"");
+        this.sqlgGraph.tx().commit()
+        assertEquals(2, this.sqlgGraph.V().count().next());
+        String json = this.sqlgGraph.query("select * from \"V_Person\"");
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> jsonAsMap = mapper.readValue(json, Map.class);
         List<Map<String,Object>> data = jsonAsMap.get("data");

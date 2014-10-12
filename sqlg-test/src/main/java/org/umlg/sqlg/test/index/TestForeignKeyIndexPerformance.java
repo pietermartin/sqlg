@@ -4,6 +4,7 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang.time.StopWatch;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -17,12 +18,13 @@ public class TestForeignKeyIndexPerformance extends BaseTest {
 
     @Test
     public void testForeignKeyPerformance() {
-        this.sqlG.tx().batchModeOn();
-        Vertex v1 = this.sqlG.addVertex(T.label, "Person");
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         for (int i = 0; i < 10000; i++) {
-            v1.addEdge("car", this.sqlG.addVertex(T.label, "Car"));
+            v1.addEdge("car", this.sqlgGraph.addVertex(T.label, "Car"));
         }
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();

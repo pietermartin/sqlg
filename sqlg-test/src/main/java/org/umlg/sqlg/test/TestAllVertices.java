@@ -13,15 +13,15 @@ public class TestAllVertices extends BaseTest {
 
     @Test
     public void testAllVertices()  {
-        Vertex marko = this.sqlG.addVertex(T.label, "Person", "name", "marko");
-        Vertex john = this.sqlG.addVertex(T.label, "Person", "name", "john");
-        Vertex peter = this.sqlG.addVertex(T.label, "Person", "name", "peter");
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
 
-        Vertex washineMachine = this.sqlG.addVertex(T.label, "Product", "productName", "Washing Machine");
+        Vertex washineMachine = this.sqlgGraph.addVertex(T.label, "Product", "productName", "Washing Machine");
         marko.addEdge("happiness", washineMachine, "love", true);
 
 
-        this.sqlG.tx().commit();
-        Assert.assertEquals(4L, this.sqlG.V().count().next(), 0);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(4L, this.sqlgGraph.V().count().next(), 0);
     }
 }

@@ -1,8 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
-import com.tinkerpop.gremlin.FeatureRequirementSet;
 import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -24,23 +22,23 @@ public class TestUpdateVertex extends BaseTest {
 
     @Test
     public void testUpdateVertex() {
-        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Assert.assertEquals("john", v.value("name"));
         v.property("name", "joe");
         Assert.assertEquals("joe", v.value("name"));
-        this.sqlG.tx().commit();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals("joe", v.value("name"));
     }
 
     @Test
     public void testPropertyIsPresent() {
-        Vertex v = this.sqlG.addVertex(T.label, "Person", "name", "john");
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Assert.assertTrue(v.property("name").isPresent());
     }
 
     @Test
     public void shouldNotCallBaseFunctionThusNotRemovingTheVertex() throws Exception {
-        Graph g = this.sqlG;
+        Graph g = this.sqlgGraph;
         final StrategyWrappedGraph swg = new StrategyWrappedGraph(g);
 
         // create an ad-hoc strategy that only marks a vertex as "deleted" and removes all edges and properties

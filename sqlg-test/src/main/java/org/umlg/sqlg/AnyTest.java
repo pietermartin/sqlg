@@ -20,7 +20,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestVertexCache.class
+        TinkerpopTest.class
 })
 public class AnyTest {
 }

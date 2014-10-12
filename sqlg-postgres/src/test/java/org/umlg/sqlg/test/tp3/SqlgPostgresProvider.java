@@ -4,7 +4,7 @@ import com.tinkerpop.gremlin.AbstractGraphProvider;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.SqlG;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
@@ -22,8 +22,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
         return new HashMap<String, Object>() {{
-            put("gremlin.graph", SqlG.class.getName());
-            put("sql.dialect", "org.umlg.sqlg.sql.dialect.PostgresDialect");
+            put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
             put("jdbc.username", "postgres");
             put("jdbc.password", "postgres");
@@ -39,7 +38,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
         }
         SqlDialect sqlDialect;
         try {
-            Class<?> sqlDialectClass = Class.forName(configuration.getString("sql.dialect"));
+            Class<?> sqlDialectClass = Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
