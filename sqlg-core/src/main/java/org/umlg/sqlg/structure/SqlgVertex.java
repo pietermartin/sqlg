@@ -504,7 +504,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 }
                                 int countHasContainers = 2;
                                 for (HasContainer hasContainer : hasContainers) {
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.key));
                                     if (!hasContainer.predicate.equals(Compare.eq)) {
                                         throw new IllegalStateException("Only equals is supported at present.");
                                     }
