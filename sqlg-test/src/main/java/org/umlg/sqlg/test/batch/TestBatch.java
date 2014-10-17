@@ -7,6 +7,7 @@ import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.*;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -841,4 +842,24 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("a", v1.value("name"));
         Assert.assertEquals("b", v2.value("name"));
     }
+
+    //this test a 'contains' bug in the update of labels batch logic
+    @Test
+    public void testBatchUpdateOfLabels() throws Exception {
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "mike");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
+        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Bike", "name", "ktm");
+        v1.addEdge("bts_aaaaaa", v2);
+        v1.addEdge("bts_btsalmtos", v4);
+        v1.addEdge("bts_btsalm", v3);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        v1  = this.sqlgGraph.v(v1.id());
+        Assert.assertEquals(1, v1.out("bts_btsalm").count().next().intValue());
+        Assert.assertEquals(1, v1.out("bts_btsalmtos").count().next().intValue());
+    }
+
 }
