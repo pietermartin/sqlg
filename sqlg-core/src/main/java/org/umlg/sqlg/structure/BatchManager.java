@@ -195,7 +195,7 @@ public class BatchManager {
         } else if (currentLabel.equals(schemaTable.toString()) ||
                 currentLabel.startsWith(schemaTable.toString() + SchemaManager.LABEL_SEPERATOR) ||
                 currentLabel.contains(SchemaManager.LABEL_SEPERATOR + schemaTable.toString() + SchemaManager.LABEL_SEPERATOR) ||
-                currentLabel.endsWith(schemaTable.toString() + SchemaManager.LABEL_SEPERATOR)) {
+                currentLabel.endsWith(SchemaManager.LABEL_SEPERATOR + schemaTable.toString())) {
             return currentLabel;
         } else {
             return currentLabel + SchemaManager.LABEL_SEPERATOR + schemaTable.toString();
