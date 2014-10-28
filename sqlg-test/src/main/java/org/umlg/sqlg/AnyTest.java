@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
+import org.umlg.sqlg.test.vertex.TestPropertyOnRemovedVertex;
 import org.umlg.sqlg.test.vertex.TestTinkerpopBug;
 import org.umlg.sqlg.test.vertex.TestVertexCache;
 
@@ -21,7 +22,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TestPropertyOnRemovedVertex.class
 })
 public class AnyTest {
 }

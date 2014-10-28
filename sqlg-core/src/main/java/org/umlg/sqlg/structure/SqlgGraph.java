@@ -14,6 +14,7 @@ import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,7 @@ public class SqlgGraph implements Graph {
     private String jdbcUrl;
     private ObjectMapper mapper = new ObjectMapper();
     private boolean implementForeignKeys;
+    private Configuration configuration = new BaseConfiguration();
 
     public String getJdbcUrl() {
         return jdbcUrl;
@@ -72,6 +74,7 @@ public class SqlgGraph implements Graph {
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
             this.implementForeignKeys = configuration.getBoolean("implementForeignKeys", false);
+            this.configuration = configuration;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -99,6 +102,11 @@ public class SqlgGraph implements Graph {
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
+    }
+
+    @Override
+    public Configuration configuration() {
+        return this.configuration;
     }
 
     public Vertex addVertex(String label, Map<String, Object> keyValues) {

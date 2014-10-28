@@ -258,7 +258,7 @@ public class BatchManager {
     }
 
     public boolean removeProperty(SqlgProperty sqlgProperty, String key) {
-        SqlgElement sqlgElement = (SqlgElement) sqlgProperty.getElement();
+        SqlgElement sqlgElement = (SqlgElement) sqlgProperty.element();
         SchemaTable schemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());
         if (Vertex.class.isAssignableFrom(sqlgElement.getClass())) {
             Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> triples = this.vertexCache.get(schemaTable);

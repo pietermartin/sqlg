@@ -1,9 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
@@ -30,6 +27,7 @@ public abstract class SqlgElement implements Element {
     protected long primaryKey;
     protected Map<String, Object> properties = new HashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
+    protected boolean removed = false;
 
     public SqlgElement(SqlgGraph sqlgGraph, String schema, String table) {
         this.sqlgGraph = sqlgGraph;
@@ -56,6 +54,11 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
         sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+    }
+
+    @Override
+    public Graph graph() {
+        return this.sqlgGraph;
     }
 
     class SqlgElementElementPropertyRollback implements ElementPropertyRollback {
@@ -106,6 +109,7 @@ public abstract class SqlgElement implements Element {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        this.removed = true;
     }
 
     @Override
@@ -123,17 +127,21 @@ public abstract class SqlgElement implements Element {
     //TODO relook at hiddens, unnecessary looping and queries
     @Override
     public <V> Property<V> property(String key) {
-        Property property = internalGetProperties().get(key);
-        if (property == null) {
-            //try hiddens
-            property = internalGetHiddens().get(Graph.Key.unHide(key));
+        if (this.removed) {
+            return Property.empty();
+        } else {
+            Property property = internalGetProperties().get(key);
             if (property == null) {
-                return emptyProperty();
+                //try hiddens
+                property = internalGetHiddens().get(Graph.Key.unHide(key));
+                if (property == null) {
+                    return emptyProperty();
+                } else {
+                    return property;
+                }
             } else {
                 return property;
             }
-        } else {
-            return property;
         }
     }
 

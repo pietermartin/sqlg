@@ -134,14 +134,18 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public <V> VertexProperty<V> property(final String key) {
         this.sqlgGraph.tx().readWrite();
-        if (!sqlgGraph.tx().isInBatchMode()) {
-            SqlgVertex sqlgVertex = this.sqlgGraph.tx().putVertexIfAbsent(this);
-            if (sqlgVertex != this) {
-                //sync the properties
-                this.properties = sqlgVertex.properties;
+        if (this.removed) {
+            return VertexProperty.empty();
+        } else {
+            if (!sqlgGraph.tx().isInBatchMode()) {
+                SqlgVertex sqlgVertex = this.sqlgGraph.tx().putVertexIfAbsent(this);
+                if (sqlgVertex != this) {
+                    //sync the properties
+                    this.properties = sqlgVertex.properties;
+                }
             }
+            return (VertexProperty) super.property(key);
         }
-        return (VertexProperty) super.property(key);
     }
 
     @Override

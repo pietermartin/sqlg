@@ -2,6 +2,7 @@ package org.umlg.sqlg.strategy;
 
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.step.filter.IntervalStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
@@ -26,7 +27,7 @@ public class SqlGGraphStepStrategy implements TraversalStrategy.NoDependencies {
     private SqlGGraphStepStrategy() {
     }
 
-    public void apply(final Traversal traversal) {
+    public void apply(final Traversal traversal, final TraversalEngine traversalEngine) {
 
         if (traversal.getSteps().get(0) instanceof SqlgGraphStep) {
             final SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);

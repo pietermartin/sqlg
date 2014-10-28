@@ -16,7 +16,7 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
 
     @Override
     public Object id() {
-        return (long) (this.key().hashCode() + this.value().hashCode() + this.getElement().id().hashCode());
+        return (long) (this.key().hashCode() + this.value().hashCode() + this.element().id().hashCode());
     }
 
     @Override
@@ -25,24 +25,13 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
     }
 
     @Override
-    public Vertex getElement() {
-        return super.getElement();
+    public Vertex element() {
+        return super.element();
     }
 
     @Override
     public Iterators iterators() {
         throw VertexProperty.Exceptions.metaPropertiesNotSupported();
-//        return new Iterators() {
-//            @Override
-//            public <U> Iterator<Property<U>> properties(String... propertyKeys) {
-//                return Collections.emptyIterator();
-//            }
-//
-//            @Override
-//            public <U> Iterator<Property<U>> hiddens(String... propertyKeys) {
-//                return Collections.emptyIterator();
-//            }
-//        };
     }
 
 }

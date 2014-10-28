@@ -5,6 +5,7 @@ import com.tinkerpop.gremlin.FeatureRequirement;
 import com.tinkerpop.gremlin.FeatureRequirementSet;
 import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
 import com.tinkerpop.gremlin.structure.Compare;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -246,7 +247,7 @@ public class TinkerpopTest extends BaseTest {
 
     protected void printTraversalForm(final Traversal traversal) {
         System.out.println("Testing: " + traversal);
-        traversal.strategies().apply();
+        traversal.strategies().apply(TraversalEngine.STANDARD);
         System.out.println("         " + traversal);
     }
 

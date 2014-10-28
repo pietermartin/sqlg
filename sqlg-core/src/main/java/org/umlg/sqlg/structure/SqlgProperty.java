@@ -8,7 +8,9 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.io.Serializable;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.NoSuchElementException;
 
 /**
@@ -50,7 +52,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     }
 
     @Override
-    public <E extends Element> E getElement() {
+    public <E extends Element> E element() {
         return (E) this.element;
     }
 
