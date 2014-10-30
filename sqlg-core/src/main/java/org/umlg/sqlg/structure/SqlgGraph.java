@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * Date: 2014/07/12
@@ -148,8 +149,8 @@ public class SqlgGraph implements Graph {
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
-        traversal.strategies().register(SqlGGraphStepStrategy.instance());
-        traversal.strategies().register(SqlgHasStepStrategy.instance());
+        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
+        traversal.getStrategies().register(SqlgHasStepStrategy.instance());
         traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -159,8 +160,8 @@ public class SqlgGraph implements Graph {
     public GraphTraversal<Edge, Edge> E() {
         this.tx().readWrite();
         final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
-        traversal.strategies().register(SqlGGraphStepStrategy.instance());
-        traversal.strategies().register(SqlgHasStepStrategy.instance());
+        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
+        traversal.getStrategies().register(SqlgHasStepStrategy.instance());
         traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -170,7 +171,7 @@ public class SqlgGraph implements Graph {
     @Override
     public <S> GraphTraversal<S, S> of() {
         final GraphTraversal<S, S> traversal = new DefaultGraphTraversal<>();
-        traversal.strategies().register(SqlGGraphStepStrategy.instance());
+        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
         traversal.addStep(new StartStep<>(traversal));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -180,6 +181,7 @@ public class SqlgGraph implements Graph {
     public Vertex v(final Object id) {
         this.tx().readWrite();
         if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, id);
+        if (!(id instanceof Long)) throw new NoSuchElementException(id.toString());
 
         SqlgVertex sqlGVertex = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
@@ -218,6 +220,7 @@ public class SqlgGraph implements Graph {
     public Edge e(final Object id) {
         this.tx().readWrite();
         if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, id);
+        if (!(id instanceof Long)) throw new NoSuchElementException(id.toString());
 
         SqlgEdge sqlGEdge = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");

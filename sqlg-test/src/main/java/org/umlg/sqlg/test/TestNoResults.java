@@ -26,7 +26,7 @@ public class TestNoResults extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
 
         Set<Long> result = new HashSet<>();
-        this.sqlgGraph.V().<Vertex>has(T.label, "Person").forEach (
+        this.sqlgGraph.V().<Vertex>has(T.label, "Person").forEachRemaining (
                 vertex -> result.add((Long)vertex.id())
         );
         Assert.assertEquals(0, result.size());

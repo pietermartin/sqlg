@@ -64,7 +64,11 @@ public class SqlgTransaction implements Transaction {
     }
 
     public boolean isInBatchMode() {
-        return threadLocalTx.get().getBatchManager().isBatchModeOn();
+        if (threadLocalTx.get() != null) {
+            return threadLocalTx.get().getBatchManager().isBatchModeOn();
+        } else {
+            return false;
+        }
     }
 
     public BatchManager getBatchManager() {

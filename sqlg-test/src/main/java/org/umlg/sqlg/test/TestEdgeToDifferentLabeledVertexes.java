@@ -24,7 +24,7 @@ public class TestEdgeToDifferentLabeledVertexes extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, v1.out().count().next(), 0);
         Set<String> names = new HashSet();
-        v1.out().forEach(
+        v1.out().forEachRemaining(
                v -> names.add(v.<String>property("name").value())
         );
         Assert.assertTrue(names.contains("b"));

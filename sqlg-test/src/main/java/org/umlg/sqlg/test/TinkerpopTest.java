@@ -178,7 +178,7 @@ public class TinkerpopTest extends BaseTest {
 
     private <S, E> List<Bindings<E>> toBindings(final Traversal<S, Map<String, E>> traversal) {
         List<Bindings<E>> result = new LinkedList<>();
-        traversal.forEach(o -> {
+        traversal.forEachRemaining(o -> {
             result.add(new Bindings<>(o));
         });
         return result;
@@ -247,7 +247,7 @@ public class TinkerpopTest extends BaseTest {
 
     protected void printTraversalForm(final Traversal traversal) {
         System.out.println("Testing: " + traversal);
-        traversal.strategies().apply(TraversalEngine.STANDARD);
+        traversal.getStrategies().apply(TraversalEngine.STANDARD);
         System.out.println("         " + traversal);
     }
 

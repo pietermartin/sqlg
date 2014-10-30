@@ -52,8 +52,8 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     }
 
     @Override
-    public <E extends Element> E element() {
-        return (E) this.element;
+    public Element element() {
+        return this.element;
     }
 
     @Override

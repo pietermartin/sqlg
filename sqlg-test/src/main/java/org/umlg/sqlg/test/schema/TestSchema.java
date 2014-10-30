@@ -33,7 +33,7 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(tom, john.out("friend").next());
         Assert.assertEquals(john, tom.in("friend").next());
         Assert.assertEquals(2, this.sqlgGraph.E().count().next(), 0);
-        this.sqlgGraph.E().<Edge>has(T.label, "friend").forEach(
+        this.sqlgGraph.E().<Edge>has(T.label, "friend").forEachRemaining(
                 a -> {
                     Assert.assertEquals(john, a.outV().next());
                     Assert.assertEquals(tom, a.inV().next());

@@ -848,19 +848,24 @@ public class SchemaManager {
                 ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (tablesRs.next()) {
                     String table = tablesRs.getString(3);
-                    final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
-                    final Set<String> foreignKeys = new HashSet<>();
+                    final Map<String, PropertyType> uncomittedColumns = new ConcurrentHashMap<>();
+                    Set<String> foreignKeys = null;
                     //get the columns
+                    String previousSchema = "";
                     ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                     while (columnsRs.next()) {
                         String schema = columnsRs.getString(2);
                         this.schemas.add(schema);
+                        if (!previousSchema.equals(schema)) {
+                            foreignKeys = new HashSet<>();
+                        }
+                        previousSchema = schema;
                         String column = columnsRs.getString(4);
                         int columnType = columnsRs.getInt(5);
                         String typeName = columnsRs.getString("TYPE_NAME");
                         PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                        uncomitedColumns.put(column, propertyType);
-                        this.tables.put(schema + "." + table, uncomitedColumns);
+                        uncomittedColumns.put(column, propertyType);
+                        this.tables.put(schema + "." + table, uncomittedColumns);
                         Set<String> schemas = this.labelSchemas.get(table);
                         if (schemas == null) {
                             schemas = new HashSet<>();

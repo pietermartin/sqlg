@@ -919,9 +919,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public GraphTraversal<Vertex, Vertex> start() {
         final GraphTraversal<Vertex, Vertex> traversal = GraphTraversal.of();
-        traversal.strategies().register(SqlGGraphStepStrategy.instance());
-        traversal.strategies().register(SqlgHasStepStrategy.instance());
-        traversal.strategies().register(SqlgVertexStepStrategy.instance());
+        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
+        traversal.getStrategies().register(SqlgHasStepStrategy.instance());
+        traversal.getStrategies().register(SqlgVertexStepStrategy.instance());
         return (GraphTraversal) traversal.addStep(new StartStep<>(traversal, this));
     }
 

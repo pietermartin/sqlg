@@ -26,7 +26,7 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
 
     @Override
     public Vertex element() {
-        return super.element();
+        return (Vertex)super.element();
     }
 
     @Override

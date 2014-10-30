@@ -43,7 +43,7 @@ public class TestUpdateVertex extends BaseTest {
 
         // create an ad-hoc strategy that only marks a vertex as "deleted" and removes all edges and properties
         // but doesn't actually blow it away
-        swg.strategy().setGraphStrategy(new GraphStrategy() {
+        swg.getStrategy().setGraphStrategy(new GraphStrategy() {
             @Override
             public UnaryOperator<Supplier<Void>> getRemoveVertexStrategy(final Strategy.Context<StrategyWrappedVertex> ctx) {
                 return (t) -> () -> {

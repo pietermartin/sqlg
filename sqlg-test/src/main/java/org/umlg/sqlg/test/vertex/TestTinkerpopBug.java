@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestTinkerpopBug extends BaseTest {
 
-    @Test
+    @Test(expected = IllegalStateException.class)
     public void hasNextCountBug() {
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.addVertex(T.label, "Person");

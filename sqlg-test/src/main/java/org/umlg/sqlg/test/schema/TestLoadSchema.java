@@ -125,4 +125,23 @@ public class TestLoadSchema extends BaseTest {
 
     }
 
+    @Test
+    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemas() throws Exception {
+        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
+        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+        realBsc.addEdge("workspaceElement", realBscWE);
+
+        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
+        Vertex planBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+        planBsc.addEdge("workspaceElement", planBscWE);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+
+        Assert.assertEquals(1, this.sqlgGraph.v(realBscWE.id()).in("workspaceElement").count().next().intValue());
+        Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
+        Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
+    }
+
 }

@@ -22,7 +22,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestPropertyOnRemovedVertex.class
+        TestLoadSchema.class
 })
 public class AnyTest {
 }
