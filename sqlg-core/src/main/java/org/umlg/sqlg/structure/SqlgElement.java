@@ -161,6 +161,7 @@ public abstract class SqlgElement implements Element {
                 this.schema,
                 this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.table : SchemaManager.EDGE_PREFIX + this.table,
                 ImmutablePair.of(key, PropertyType.from(value)));
+        load();
         updateRow(key, value);
         return instantiateProperty(key, value);
     }

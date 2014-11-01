@@ -72,4 +72,15 @@ public class TestUpdateVertex extends BaseTest {
         assertTrue(toRemove.property("deleted").isPresent());
     }
 
+    @Test
+    public void testLoadPropertiesOnUpdate() {
+        Vertex vertex = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a", "property2", "b");
+        this.sqlgGraph.tx().commit();
+
+        vertex = this.sqlgGraph.v(vertex.id());
+        vertex.property("property1", "aa");
+        Assert.assertEquals("b", vertex.value("property2"));
+
+    }
+
 }

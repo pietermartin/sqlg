@@ -862,4 +862,36 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(1, v1.out("bts_btsalmtos").count().next().intValue());
     }
 
+    @Test
+    public void testBatchUpdateDifferentPropertiesDifferentRows() {
+
+        Vertex sqlgVertex1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a1", "property2", "b1", "property3", "c1");
+        Vertex sqlgVertex2 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a2", "property2", "b2", "property3", "c2");
+        Vertex sqlgVertex3 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a3", "property2", "b3", "property3", "c3");
+        this.sqlgGraph.tx().commit();
+
+        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+        Assert.assertEquals("a1", sqlgVertex1.value("property1"));
+        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
+        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.tx().batchModeOn();
+        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+        sqlgVertex1.property("property1", "a11");
+        sqlgVertex2.property("property2", "b22");
+        sqlgVertex3.property("property3", "b33");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals("a11", sqlgVertex1.value("property1"));
+        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
+        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+
+        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+        Assert.assertEquals("a11", sqlgVertex1.value("property1"));
+        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
+        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+
+    }
+
 }

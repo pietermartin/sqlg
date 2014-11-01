@@ -131,7 +131,7 @@ public class SqlgGraph implements Graph {
             } else {
                 value = keyValue;
                 if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty((String)key, value);
+                    ElementHelper.validateProperty((String) key, value);
                     this.sqlDialect.validateProperty(key, value);
                 }
 
@@ -195,7 +195,7 @@ public class SqlgGraph implements Graph {
             sql.append(";");
         }
         Connection conn = this.tx().getConnection();
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -234,7 +234,7 @@ public class SqlgGraph implements Graph {
             sql.append(";");
         }
         Connection conn = this.tx().getConnection();
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -608,6 +608,7 @@ public class SqlgGraph implements Graph {
 
     /**
      * This is executes a sql query and returns the result as a json string
+     *
      * @param query
      * @return
      */
@@ -619,7 +620,7 @@ public class SqlgGraph implements Graph {
             ArrayNode dataNode = this.mapper.createArrayNode();
             ArrayNode metaNode = this.mapper.createArrayNode();
             Statement statement = conn.createStatement();
-            if(logger.isDebugEnabled()) {
+            if (logger.isDebugEnabled()) {
                 logger.debug(query);
             }
             ResultSet rs = statement.executeQuery(query);
@@ -657,7 +658,7 @@ public class SqlgGraph implements Graph {
 //        this.getSchemaManager().createUniqueConstraint(label, propertyKey);
     }
 
-    public void createLabeledIndex(String label, Object ... dummykeyValues) {
+    public void createLabeledIndex(String label, Object... dummykeyValues) {
         int i = 0;
         String key = "";
         Object value;
@@ -685,7 +686,7 @@ public class SqlgGraph implements Graph {
         sql.append(this.getSqlDialect().maybeWrapInQoutes(this.getSqlDialect().getPublicSchema()));
         sql.append(".");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -704,7 +705,7 @@ public class SqlgGraph implements Graph {
         sql.append(this.getSqlDialect().maybeWrapInQoutes(this.getSqlDialect().getPublicSchema()));
         sql.append(".");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-        if(logger.isDebugEnabled()) {
+        if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {

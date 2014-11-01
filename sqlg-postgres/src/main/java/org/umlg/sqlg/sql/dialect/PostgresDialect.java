@@ -402,7 +402,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(value);
                                 break;
                             case STRING:
-                                //Postgres supports custom qouted strings using the 'with token' clause
+                                //Postgres supports custom quoted strings using the 'with token' clause
                                 sql.append("$token$");
                                 sql.append(value);
                                 sql.append("$token$");
@@ -427,7 +427,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
                         }
                     } else {
-                        sql.append("null");
+                        //set it to what it is
+                        if (sqlgVertex.property(key).isPresent()) {
+                            sql.append("$token$");
+                            sql.append((Object)sqlgVertex.value(key));
+                            sql.append("$token$");
+
+                        } else {
+                            sql.append("null");
+                        }
                     }
                     if (countProperties++ < keys.size()) {
                         sql.append(", ");

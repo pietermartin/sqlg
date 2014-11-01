@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import java.sql.*;
 import java.util.ArrayList;

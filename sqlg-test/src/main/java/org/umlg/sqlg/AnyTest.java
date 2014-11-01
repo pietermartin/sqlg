@@ -7,6 +7,7 @@ import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.edges.TestEdgeCache;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
+import org.umlg.sqlg.test.mod.TestUpdateVertex;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
@@ -22,7 +23,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLoadSchema.class
+        TestBatch.class
 })
 public class AnyTest {
 }
