@@ -29,6 +29,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     /**
      * Called from SqlG.addVertex
+     *
      * @param sqlgGraph
      * @param schema
      * @param table
@@ -56,6 +57,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     /**
      * This is the primary constructor to create a vertex that already exist
+     *
      * @param sqlgGraph
      * @param id
      * @param schema
@@ -849,7 +851,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     protected void load() {
-        if (this.properties.isEmpty()) {
+
+        //if in batch mode only load vertexes that are not new.
+        //new vertexes have no id, impossible to load, but then all its properties are already cached.
+        if ((!this.sqlgGraph.tx().isInBatchMode() && this.properties.isEmpty()) ||
+                (this.properties.isEmpty() && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() &&
+                        !this.sqlgGraph.tx().getBatchManager().vertexIsCached(this))) {
+
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");

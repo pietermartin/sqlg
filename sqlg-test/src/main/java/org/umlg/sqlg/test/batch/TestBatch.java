@@ -894,4 +894,19 @@ public class TestBatch extends BaseTest {
 
     }
 
+    @Test
+    public void testBatchUpdateNewVertex() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+        v2.property("property2", "bb");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("a", v1.value("property1"));
+        Assert.assertFalse(v1.property("property2").isPresent());
+        Assert.assertFalse(v2.property("property1").isPresent());
+        Assert.assertEquals("bb", v2.value("property2"));
+
+    }
+
 }
