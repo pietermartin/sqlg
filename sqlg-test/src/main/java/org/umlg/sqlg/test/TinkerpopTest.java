@@ -39,7 +39,7 @@ public class TinkerpopTest extends BaseTest {
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     public void shouldNotBeEqualsPropertiesAsThereIsDifferentValue() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
             reader.readGraph(stream, g);
         }
@@ -50,7 +50,7 @@ public class TinkerpopTest extends BaseTest {
     @Test
     public void shouldNotEvaluateToEqualDifferentId() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
             reader.readGraph(stream, g);
         }
@@ -67,17 +67,17 @@ public class TinkerpopTest extends BaseTest {
         final Vertex v = this.sqlgGraph.addVertex("name", "marko", Graph.Key.hide("acl"), "rw", Graph.Key.hide("other"), "rw");
         this.sqlgGraph.tx().commit();
         final Vertex v1 = this.sqlgGraph.v(v.id());
-        v1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(v1.hiddenValue(hiddenKey).hasNext()));
-        assertFalse(v1.hiddenValue(Graph.Key.hide("other")).hasNext());
-        assertTrue(v1.hiddenValue("other").hasNext());
+        v1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(v1.hiddenValues(hiddenKey).hasNext()));
+        assertFalse(v1.hiddenValues(Graph.Key.hide("other")).hasNext());
+        assertTrue(v1.hiddenValues("other").hasNext());
 
         final Vertex u = this.sqlgGraph.addVertex();
         Edge e = v1.addEdge("knows", u, Graph.Key.hide("acl"), "private", "acl", "public");
         this.sqlgGraph.tx().commit();
         final Edge e1 = this.sqlgGraph.e(e.id());
-        e1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(e1.hiddenValue(hiddenKey).hasNext()));
-        assertFalse(e1.hiddenValue(Graph.Key.hide("acl")).hasNext());
-        assertTrue(e1.hiddenValue("acl").hasNext());
+        e1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(e1.hiddenValues(hiddenKey).hasNext()));
+        assertFalse(e1.hiddenValues(Graph.Key.hide("acl")).hasNext());
+        assertTrue(e1.hiddenValues("acl").hasNext());
         assertEquals("private", e1.iterators().hiddenPropertyIterator("acl").next().value());
         assertEquals("public", e1.iterators().propertyIterator("acl").next().value());
     }
@@ -188,7 +188,7 @@ public class TinkerpopTest extends BaseTest {
     @LoadGraphWith(MODERN)
     public void g_v4_out_asXhereX_hasXlang_javaX_backXhereX() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader reader = KryoReader.build().setWorkingDirectory(File.separator + "tmp").create();
+        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
             reader.readGraph(stream, g);
         }

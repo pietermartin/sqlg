@@ -167,15 +167,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return VertexProperty.empty();
     }
 
-    private Iterator<Edge> internalGetEdges(Direction direction, int branchFactor, String... labels) {
+    private Iterator<Edge> internalGetEdges(Direction direction, String... labels) {
         this.sqlgGraph.tx().readWrite();
-        return (Iterator) StreamFactory.stream(internalGetEdges(direction, labels)).limit(branchFactor).iterator();
+        return (Iterator) StreamFactory.stream(_internalGetEdges(direction, labels)).iterator();
     }
 
-    public Iterator<Vertex> vertices(List<HasContainer> hasContainers, Direction direction, int branchFactor, String... labels) {
+    public Iterator<Vertex> vertices(List<HasContainer> hasContainers, Direction direction, String... labels) {
         this.sqlgGraph.tx().readWrite();
         Iterator<SqlgVertex> itty = internalGetVertices(hasContainers, direction, labels);
-        return (Iterator) StreamFactory.stream(itty).limit(branchFactor).iterator();
+        return (Iterator)itty;
     }
 
     @Override
@@ -185,7 +185,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
         } else {
             //Remove all edges
-            Iterator<SqlgEdge> edges = this.internalGetEdges(Direction.BOTH);
+            Iterator<SqlgEdge> edges = this._internalGetEdges(Direction.BOTH);
             while (edges.hasNext()) {
                 edges.next().remove();
             }
@@ -670,7 +670,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     //TODO make this lazy
-    private Iterator<SqlgEdge> internalGetEdges(Direction direction, String... labels) {
+    private Iterator<SqlgEdge> _internalGetEdges(Direction direction, String... labels) {
 
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && this.sqlgGraph.tx().getBatchManager().vertexIsCached(this)) {
             List<SqlgEdge> edges = this.sqlgGraph.tx().getBatchManager().getEdges(this, direction, labels);
@@ -943,15 +943,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     protected class Iterators extends SqlgElement.Iterators implements Vertex.Iterators {
 
         @Override
-        public Iterator<Vertex> vertexIterator(final Direction direction, final int branchFactor, final String... labels) {
+        public Iterator<Vertex> vertexIterator(final Direction direction, final String... labels) {
             SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.vertices(Collections.emptyList(), direction, branchFactor, labels);
+            return SqlgVertex.this.vertices(Collections.emptyList(), direction, labels);
         }
 
         @Override
-        public Iterator<Edge> edgeIterator(final Direction direction, final int branchFactor, final String... labels) {
+        public Iterator<Edge> edgeIterator(final Direction direction, final String... labels) {
             SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.internalGetEdges(direction, branchFactor, labels);
+            return SqlgVertex.this.internalGetEdges(direction, labels);
         }
 
         @Override

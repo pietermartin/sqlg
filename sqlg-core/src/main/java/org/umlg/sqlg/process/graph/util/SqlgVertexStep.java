@@ -23,26 +23,24 @@ public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> im
 
     public String[] edgeLabels;
     public Direction direction;
-    public int branchFactor;
     public Class<E> returnClass;
 
-    public SqlgVertexStep(final Traversal traversal, final Class<E> returnClass, final Direction direction, final int branchFactor, String label, final String... edgeLabels) {
+    public SqlgVertexStep(final Traversal traversal, final Class<E> returnClass, final Direction direction, String label, final String... edgeLabels) {
         super(traversal);
         this.direction = direction;
         this.edgeLabels = edgeLabels;
-        this.branchFactor = branchFactor;
         this.returnClass = returnClass;
         this.label = label;
         if (Vertex.class.isAssignableFrom(this.returnClass))
             this.setFunction(traverser -> {
                 if (this.hasContainers.isEmpty()) {
-                    return (Iterator<E>) ((SqlgVertex)traverser.get()).vertices(Collections.emptyList(), this.direction, this.branchFactor, this.edgeLabels);
+                    return (Iterator<E>) ((SqlgVertex)traverser.get()).vertices(Collections.emptyList(), this.direction, this.edgeLabels);
                 } else {
-                    return (Iterator<E>) ((SqlgVertex)traverser.get()).vertices(hasContainers, this.direction, this.branchFactor, this.edgeLabels);
+                    return (Iterator<E>) ((SqlgVertex)traverser.get()).vertices(hasContainers, this.direction, this.edgeLabels);
                 }
             });
         else
-            this.setFunction(traverser -> (Iterator<E>) traverser.get().iterators().edgeIterator(this.direction, this.branchFactor, this.edgeLabels));
+            this.setFunction(traverser -> (Iterator<E>) traverser.get().iterators().edgeIterator(this.direction, this.edgeLabels));
     }
 
     public String toString() {

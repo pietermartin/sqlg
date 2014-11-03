@@ -24,7 +24,7 @@ public class SqlgVertexStepStrategy implements TraversalStrategy.NoDependencies 
     public void apply(final Traversal traversal, final TraversalEngine traversalEngine) {
         List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
         vertexSteps.forEach(
-                (s) -> TraversalHelper.replaceStep(s, new SqlgVertexStep(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getBranchFactor(), s.getLabel(), s.getEdgeLabels()), traversal)
+                (s) -> TraversalHelper.replaceStep(s, new SqlgVertexStep(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getLabel(), s.getEdgeLabels()), traversal)
         );
     }
 
