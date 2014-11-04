@@ -223,13 +223,13 @@ public class SchemaManager {
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-            if (!this.sqlgGraph.tx().isSchemaModification()) {
-                loadSchema();
-            }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 //Make sure the current thread/transaction owns the lock
                 if (!this.schemaLock.isHeldByCurrentThread()) {
                     this.schemaLock.lock();
+                }
+                if (!this.sqlgGraph.tx().isSchemaModification()) {
+                    loadSchema();
                 }
                 if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
                     if (!this.uncommittedSchemas.contains(schema)) {
@@ -332,15 +332,16 @@ public class SchemaManager {
         Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, table);
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
         if (!uncommitedColumns.containsKey(keyValue.left)) {
-            if (!this.sqlgGraph.tx().isSchemaModification()) {
-                loadSchema();
-            }
             uncommitedColumns = internalGetColumn(schema, table);
         }
         if (!uncommitedColumns.containsKey(keyValue.left)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
+            }
+            if (!this.sqlgGraph.tx().isSchemaModification()) {
+                loadSchema();
+                uncommitedColumns = internalGetColumn(schema, table);
             }
             if (!uncommitedColumns.containsKey(keyValue.left)) {
                 addColumn(schema, table, keyValue);

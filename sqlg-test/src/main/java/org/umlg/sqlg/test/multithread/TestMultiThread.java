@@ -21,7 +21,7 @@ public class TestMultiThread extends BaseTest {
     public void testMultiThreadVertices() throws InterruptedException, ExecutionException {
         AtomicInteger atomicInteger = new AtomicInteger(1);
         Set<Integer> tables = new ConcurrentSkipListSet<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(10);
+        ExecutorService executorService = Executors.newFixedThreadPool(1);
         for (int j = 0; j < 100; j++) {
             executorService.submit(() -> {
                 final Random random = new Random();
