@@ -151,12 +151,15 @@ public class SchemaManager {
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-            loadSchema();
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
+            if (!this.sqlgGraph.tx().isSchemaModification()) {
+                loadSchema();
+            }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                //Make sure the current thread/transaction owns the lock
-                if (!this.schemaLock.isHeldByCurrentThread()) {
-                    this.schemaLock.lock();
-                }
+
                 if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
                     if (!this.uncommittedSchemas.contains(schema)) {
                         this.uncommittedSchemas.add(schema);
@@ -220,7 +223,9 @@ public class SchemaManager {
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-            loadSchema();
+            if (!this.sqlgGraph.tx().isSchemaModification()) {
+                loadSchema();
+            }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
                 //Make sure the current thread/transaction owns the lock
                 if (!this.schemaLock.isHeldByCurrentThread()) {
@@ -327,7 +332,9 @@ public class SchemaManager {
         Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, table);
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
         if (!uncommitedColumns.containsKey(keyValue.left)) {
-            loadSchema();
+            if (!this.sqlgGraph.tx().isSchemaModification()) {
+                loadSchema();
+            }
             uncommitedColumns = internalGetColumn(schema, table);
         }
         if (!uncommitedColumns.containsKey(keyValue.left)) {
@@ -486,6 +493,7 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        this.sqlgGraph.tx().setSchemaModification(true);
     }
 
     private void createEdgeTable(String schema, String tableName, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
@@ -820,7 +828,9 @@ public class SchemaManager {
     public boolean tableExist(String schema, String table) {
         boolean exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
         if (!exists) {
-            loadSchema();
+            if (!this.sqlgGraph.tx().isSchemaModification()) {
+                loadSchema();
+            }
             exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
         }
         return exists;
