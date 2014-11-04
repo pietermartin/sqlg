@@ -150,28 +150,31 @@ public class SchemaManager {
         Objects.requireNonNull(table, "Given table must not be null");
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-            //Make sure the current thread/transaction owns the lock
-            if (!this.schemaLock.isHeldByCurrentThread()) {
-                this.schemaLock.lock();
-            }
-            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
-                if (!this.uncommittedSchemas.contains(schema)) {
-                    this.uncommittedSchemas.add(schema);
-                    createSchema(schema);
-                }
-            }
+        if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+            loadSchema();
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                    Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                    if (schemas == null) {
-                        this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
-                    } else {
-                        schemas.add(schema);
-                        this.uncommittedLabelSchemas.put(prefixedTable, schemas);
+                //Make sure the current thread/transaction owns the lock
+                if (!this.schemaLock.isHeldByCurrentThread()) {
+                    this.schemaLock.lock();
+                }
+                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+                    if (!this.uncommittedSchemas.contains(schema)) {
+                        this.uncommittedSchemas.add(schema);
+                        createSchema(schema);
                     }
-                    this.uncommittedTables.put(schema + "." + prefixedTable, columns);
-                    createVertexTable(schema, prefixedTable, columns);
+                }
+                if (!this.tables.containsKey(schema + "." + prefixedTable)) {
+                    if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+                        Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
+                        if (schemas == null) {
+                            this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                        } else {
+                            schemas.add(schema);
+                            this.uncommittedLabelSchemas.put(prefixedTable, schemas);
+                        }
+                        this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+                        createVertexTable(schema, prefixedTable, columns);
+                    }
                 }
             }
         }
@@ -216,34 +219,37 @@ public class SchemaManager {
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-            //Make sure the current thread/transaction owns the lock
-            if (!this.schemaLock.isHeldByCurrentThread()) {
-                this.schemaLock.lock();
-            }
-            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
-                if (!this.uncommittedSchemas.contains(schema)) {
-                    this.uncommittedSchemas.add(schema);
-                    createSchema(schema);
-                }
-            }
+        if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+            loadSchema();
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                    this.uncommittedTables.put(schema + "." + prefixedTable, columns);
-                    Set<String> foreignKeys = new HashSet<>();
-                    foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable());
-                    foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
-                    this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
-
-                    Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                    if (schemas == null) {
-                        this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
-                    } else {
-                        schemas.add(schema);
-                        this.uncommittedLabelSchemas.put(prefixedTable, schemas);
+                //Make sure the current thread/transaction owns the lock
+                if (!this.schemaLock.isHeldByCurrentThread()) {
+                    this.schemaLock.lock();
+                }
+                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+                    if (!this.uncommittedSchemas.contains(schema)) {
+                        this.uncommittedSchemas.add(schema);
+                        createSchema(schema);
                     }
+                }
+                if (!this.tables.containsKey(schema + "." + prefixedTable)) {
+                    if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+                        this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+                        Set<String> foreignKeys = new HashSet<>();
+                        foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable());
+                        foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
+                        this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
 
-                    createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
+                        Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
+                        if (schemas == null) {
+                            this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                        } else {
+                            schemas.add(schema);
+                            this.uncommittedLabelSchemas.put(prefixedTable, schemas);
+                        }
+
+                        createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
+                    }
                 }
             }
         }
@@ -297,12 +303,15 @@ public class SchemaManager {
     }
 
     boolean columnExists(String schema, String table, String column) {
+        return internalGetColumn(schema, table).containsKey(column);
+    }
+
+    private Map<String, PropertyType> internalGetColumn(String schema, String table) {
         final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
         Map<String, PropertyType> uncommitedColumns;
         if (cachedColumns == null) {
             uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
         } else {
-            //TODO rethink synchromization
             uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
             if (uncommitedColumns != null) {
                 uncommitedColumns.putAll(cachedColumns);
@@ -311,23 +320,16 @@ public class SchemaManager {
             }
         }
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
-        return uncommitedColumns.containsKey(column);
+        return uncommitedColumns;
     }
 
     void ensureColumnExist(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
-        final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
-        Map<String, PropertyType> uncommitedColumns;
-        if (cachedColumns == null) {
-            uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
-        } else {
-            uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
-            if (uncommitedColumns != null) {
-                uncommitedColumns.putAll(cachedColumns);
-            } else {
-                uncommitedColumns = new HashMap<>(cachedColumns);
-            }
-        }
+        Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, table);
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
+        if (!uncommitedColumns.containsKey(keyValue.left)) {
+            loadSchema();
+            uncommitedColumns = internalGetColumn(schema, table);
+        }
         if (!uncommitedColumns.containsKey(keyValue.left)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
@@ -441,26 +443,6 @@ public class SchemaManager {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         }
-    }
-
-    public boolean tableExist(String schema, String table) {
-        return this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
-//        Connection conn = this.sqlG.tx().getConnection();
-//        DatabaseMetaData metadata;
-//        try {
-//            metadata = conn.getMetaData();
-//            String catalog = null;
-//            String schemaPattern = schema;
-//            String tableNamePattern = table;
-//            String[] types = null;
-//            ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-//            while (result.next()) {
-//                return true;
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//        return false;
     }
 
     private void createVertexTable(String schema, String tableName, Map<String, PropertyType> columns) {
@@ -835,6 +817,15 @@ public class SchemaManager {
         }
     }
 
+    public boolean tableExist(String schema, String table) {
+        boolean exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
+        if (!exists) {
+            loadSchema();
+            exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
+        }
+        return exists;
+    }
+
     void loadSchema() {
         try {
             Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
@@ -848,7 +839,7 @@ public class SchemaManager {
                 ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (tablesRs.next()) {
                     String table = tablesRs.getString(3);
-                    final Map<String, PropertyType> uncomittedColumns = new ConcurrentHashMap<>();
+                    final Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
                     Set<String> foreignKeys = null;
                     //get the columns
                     String previousSchema = "";
@@ -864,8 +855,8 @@ public class SchemaManager {
                         int columnType = columnsRs.getInt(5);
                         String typeName = columnsRs.getString("TYPE_NAME");
                         PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                        uncomittedColumns.put(column, propertyType);
-                        this.tables.put(schema + "." + table, uncomittedColumns);
+                        uncommittedColumns.put(column, propertyType);
+                        this.tables.put(schema + "." + table, uncommittedColumns);
                         Set<String> schemas = this.labelSchemas.get(table);
                         if (schemas == null) {
                             schemas = new HashSet<>();

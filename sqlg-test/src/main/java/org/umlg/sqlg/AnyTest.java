@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.mod.TestUpdateVertex;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
+import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
 import org.umlg.sqlg.test.vertex.TestPropertyOnRemovedVertex;
@@ -23,7 +24,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TestLazyLoadSchema.class
 })
 public class AnyTest {
 }

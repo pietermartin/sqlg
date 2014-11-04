@@ -47,18 +47,6 @@ public class SqlgGraph implements Graph {
     private boolean implementForeignKeys;
     private Configuration configuration = new BaseConfiguration();
 
-    public String getJdbcUrl() {
-        return jdbcUrl;
-    }
-
-    public SchemaManager getSchemaManager() {
-        return schemaManager;
-    }
-
-    public SqlDialect getSqlDialect() {
-        return sqlDialect;
-    }
-
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
@@ -87,9 +75,7 @@ public class SqlgGraph implements Graph {
                     configuration.getString("jdbc.username"),
                     configuration.getString("jdbc.password"));
             this.sqlDialect.prepareDB(SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection());
-        } catch (PropertyVetoException e) {
-            throw new RuntimeException(e);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         this.sqlgTransaction = new SqlgTransaction(this);
@@ -103,6 +89,18 @@ public class SqlgGraph implements Graph {
         this.schemaManager.ensureGlobalVerticesTableExist();
         this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
+    }
+
+    public String getJdbcUrl() {
+        return jdbcUrl;
+    }
+
+    public SchemaManager getSchemaManager() {
+        return schemaManager;
+    }
+
+    public SqlDialect getSqlDialect() {
+        return sqlDialect;
     }
 
     @Override

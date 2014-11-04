@@ -73,7 +73,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     private Iterator<? extends Vertex> vertices() {
         Stream<? extends Vertex> vertexStream;
         if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
-            //Scenario 1, using labeled index via 2 HasContainer
+            //Scenario 1, using labeled index via 2 HasContainers
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
             this.hasContainers.remove(hasContainer1);
@@ -135,6 +135,11 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
+        }
+        //if schemas are empty reload the schema from the db
+        if (schemas.isEmpty()) {
+            this.sqlgGraph.getSchemaManager().loadSchema();
+            schemas = this.sqlgGraph.getSchemaManager().getSchemasForTable(SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
         }
         //check that the schema exist
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
@@ -245,6 +250,11 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
+        }
+        //if schemas are empty reload the schema from the db
+        if (schemas.isEmpty()) {
+            this.sqlgGraph.getSchemaManager().loadSchema();
+            schemas = this.sqlgGraph.getSchemaManager().getSchemasForTable(SchemaManager.EDGE_PREFIX + schemaTable.getTable());
         }
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
         for (String schema : schemas) {
