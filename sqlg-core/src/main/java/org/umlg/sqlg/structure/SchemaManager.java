@@ -838,8 +838,8 @@ public class SchemaManager {
     }
 
     void loadSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
             DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             if (this.sqlDialect.supportSchemas()) {

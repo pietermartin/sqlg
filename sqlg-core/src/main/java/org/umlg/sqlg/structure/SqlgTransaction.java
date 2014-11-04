@@ -106,7 +106,7 @@ public class SqlgTransaction implements Transaction {
             if (this.afterCommitFunction != null) {
                 this.afterCommitFunction.doAfterCommit();
             }
-            this.threadLocalTx.get().getBatchManager().clear();
+            connection.close();
         } catch (Exception e) {
             this.rollback();
             if (e instanceof RuntimeException) {
@@ -116,14 +116,9 @@ public class SqlgTransaction implements Transaction {
             }
         } finally {
             this.schemaModification = false;
-            try {
-                //this is null after a rollback.
-                //might occur if sqlg has a bug and there is a SqlException
-                if (threadLocalTx.get() != null) {
-                    threadLocalTx.get().clear();
-                }
-            } finally {
-                threadLocalTx.remove();
+            if (this.threadLocalTx.get() != null) {
+                this.threadLocalTx.get().clear();
+                this.threadLocalTx.remove();
             }
         }
     }
@@ -133,21 +128,21 @@ public class SqlgTransaction implements Transaction {
         if (!isOpen())
             return;
         try {
-            threadLocalTx.get().getConnection().rollback();
+            Connection connection = threadLocalTx.get().getConnection();
+            connection.rollback();
             if (this.afterRollbackFunction != null) {
                 this.afterRollbackFunction.doAfterRollback();
             }
             for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback()) {
                 elementPropertyRollback.clearProperties();
             }
-            threadLocalTx.get().getBatchManager().clear();
+            connection.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
             this.schemaModification = false;
-            try {
+            if (threadLocalTx.get() != null) {
                 threadLocalTx.get().clear();
-            } finally {
                 threadLocalTx.remove();
             }
         }
@@ -161,14 +156,14 @@ public class SqlgTransaction implements Transaction {
             return Collections.emptyMap();
 
         try {
-            Map<SchemaTable, Pair<Long, Long>> verticesRange = threadLocalTx.get().getBatchManager().flush();
-            Connection connection = threadLocalTx.get().getConnection();
+            Map<SchemaTable, Pair<Long, Long>> verticesRange = this.threadLocalTx.get().getBatchManager().flush();
+            Connection connection = this.threadLocalTx.get().getConnection();
             connection.commit();
             connection.setAutoCommit(true);
             if (this.afterCommitFunction != null) {
                 this.afterCommitFunction.doAfterCommit();
             }
-            threadLocalTx.get().getBatchManager().clear();
+            connection.close();
             return verticesRange;
         } catch (Exception e) {
             this.rollback();
@@ -179,18 +174,11 @@ public class SqlgTransaction implements Transaction {
             }
         } finally {
             this.schemaModification = false;
-            try {
-                //this is null after a rollback.
-                //might occur if sqlg has a bug and there is a SqlException
-                if (threadLocalTx.get() != null) {
-                    threadLocalTx.get().getConnection().close();
-                    threadLocalTx.get().getElementPropertyRollback().clear();
-                    threadLocalTx.get().getBatchManager().clear();
-                    threadLocalTx.remove();
-                }
-            } catch (SQLException e) {
-                threadLocalTx.remove();
-                throw new RuntimeException(e);
+            //this is null after a rollback.
+            //might occur if sqlg has a bug and there is a SqlException
+            if (this.threadLocalTx.get() != null) {
+                this.threadLocalTx.get().clear();
+                this.threadLocalTx.remove();
             }
         }
     }
