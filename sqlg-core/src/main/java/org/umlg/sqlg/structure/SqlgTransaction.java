@@ -3,12 +3,13 @@ package org.umlg.sqlg.structure;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -20,26 +21,23 @@ import java.util.function.Function;
  */
 public class SqlgTransaction implements Transaction {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
     private Consumer<Transaction> readWriteConsumer;
     private Consumer<Transaction> closeConsumer;
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
 
-    protected final ThreadLocal<TransactionCache> threadLocalTx =
-            new ThreadLocal<TransactionCache>() {
+    //true if a schema modification statement has been executed.
+    //it is important to know this as schema modification creates exclusive locks.
+    //In particular it locks quering the schema itself.
+    private boolean schemaModification;
 
-                protected TransactionCache initialValue() {
-                    return null;
-                }
-            };
-
-    protected final ThreadLocal<Connection> threadLocalReadOnlyTx = new ThreadLocal<Connection>() {
-        protected Connection initialValue() {
+    protected final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
+        protected TransactionCache initialValue() {
             return null;
         }
     };
+
 
     SqlgTransaction(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
@@ -64,11 +62,7 @@ public class SqlgTransaction implements Transaction {
     }
 
     public boolean isInBatchMode() {
-        if (threadLocalTx.get() != null) {
-            return threadLocalTx.get().getBatchManager().isBatchModeOn();
-        } else {
-            return false;
-        }
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeOn();
     }
 
     public BatchManager getBatchManager() {
@@ -80,10 +74,6 @@ public class SqlgTransaction implements Transaction {
             readWrite();
         }
         return this.threadLocalTx.get().getConnection();
-    }
-
-    public Connection getReadOnlyConnection() {
-        return this.threadLocalReadOnlyTx.get();
     }
 
     @Override
