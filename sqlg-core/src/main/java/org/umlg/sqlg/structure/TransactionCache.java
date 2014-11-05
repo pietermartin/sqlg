@@ -17,6 +17,10 @@ public class TransactionCache {
     private List<ElementPropertyRollback> elementPropertyRollbackFunctions;
     private BatchManager batchManager;
     private Map<Long, SqlgVertex> vertexCache = new HashMap<>();
+    //true if a schema modification statement has been executed.
+    //it is important to know this as schema modification creates exclusive locks.
+    //In particular it locks querying the schema itself.
+    private boolean schemaModification = false;
 
     static TransactionCache of(Connection connection, List<ElementPropertyRollback> elementPropertyRollbackFunctions, BatchManager batchManager) {
         return new TransactionCache(connection, elementPropertyRollbackFunctions, batchManager);
@@ -88,6 +92,14 @@ public class TransactionCache {
         } else {
             this.vertexCache.put((Long) sqlgVertex.id(), sqlgVertex);
         }
+    }
+
+    boolean isSchemaModification() {
+        return schemaModification;
+    }
+
+    void setSchemaModification(boolean schemaModification) {
+        this.schemaModification = schemaModification;
     }
 
 }

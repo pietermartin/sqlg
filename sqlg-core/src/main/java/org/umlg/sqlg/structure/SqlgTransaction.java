@@ -27,11 +27,6 @@ public class SqlgTransaction implements Transaction {
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
 
-    //true if a schema modification statement has been executed.
-    //it is important to know this as schema modification creates exclusive locks.
-    //In particular it locks querying the schema itself.
-    private boolean schemaModification = false;
-
     protected final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
         protected TransactionCache initialValue() {
             return null;
@@ -67,6 +62,14 @@ public class SqlgTransaction implements Transaction {
 
     public BatchManager getBatchManager() {
         return threadLocalTx.get().getBatchManager();
+    }
+
+    boolean isSchemaModification() {
+        return threadLocalTx.get().isSchemaModification();
+    }
+
+    void setSchemaModification(boolean schemaModification) {
+        threadLocalTx.get().setSchemaModification(schemaModification);
     }
 
     public Connection getConnection() {
@@ -115,7 +118,6 @@ public class SqlgTransaction implements Transaction {
                 throw new RuntimeException(e);
             }
         } finally {
-            this.schemaModification = false;
             if (this.threadLocalTx.get() != null) {
                 this.threadLocalTx.get().clear();
                 this.threadLocalTx.remove();
@@ -140,7 +142,6 @@ public class SqlgTransaction implements Transaction {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
-            this.schemaModification = false;
             if (threadLocalTx.get() != null) {
                 threadLocalTx.get().clear();
                 threadLocalTx.remove();
@@ -173,7 +174,6 @@ public class SqlgTransaction implements Transaction {
                 throw new RuntimeException(e);
             }
         } finally {
-            this.schemaModification = false;
             //this is null after a rollback.
             //might occur if sqlg has a bug and there is a SqlException
             if (this.threadLocalTx.get() != null) {
@@ -247,13 +247,5 @@ public class SqlgTransaction implements Transaction {
     //Called for new vertices
     void add(SqlgVertex sqlgVertex) {
         this.threadLocalTx.get().add(sqlgVertex);
-    }
-
-    boolean isSchemaModification() {
-        return schemaModification;
-    }
-
-    void setSchemaModification(boolean schemaModification) {
-        this.schemaModification = schemaModification;
     }
 }

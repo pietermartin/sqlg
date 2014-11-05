@@ -582,6 +582,7 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        this.sqlgGraph.tx().setSchemaModification(true);
     }
 
     private String foreignKeyNameStrategy(SchemaTable foreignKeyIn, String referenceColumn) {
@@ -746,12 +747,16 @@ public class SchemaManager {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        this.sqlgGraph.tx().setSchemaModification(true);
     }
 
     private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey) {
@@ -827,6 +832,7 @@ public class SchemaManager {
     }
 
     public boolean tableExist(String schema, String table) {
+        this.sqlgGraph.tx().readWrite();
         boolean exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
         if (!exists) {
             if (!this.sqlgGraph.tx().isSchemaModification()) {
@@ -838,6 +844,9 @@ public class SchemaManager {
     }
 
     void loadSchema() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("SchemaManager.loadSchema()...");
+        }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata;
@@ -979,5 +988,6 @@ public class SchemaManager {
     public Map<String, Set<String>> getEdgeForeignKeys() {
         return this.edgeForeignKeys;
     }
+
 
 }
