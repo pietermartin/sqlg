@@ -22,6 +22,7 @@ public class TestLazyLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, sqlgGraph1.V().count().next().intValue());
         Assert.assertEquals(1, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
+        sqlgGraph1.close();
     }
 
     @Test
@@ -33,6 +34,7 @@ public class TestLazyLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, sqlgGraph1.V().count().next().intValue());
         Assert.assertEquals(1, sqlgGraph1.V().has(T.label, "Person").has("name", "a").count().next().intValue());
+        sqlgGraph1.close();
     }
 
     @Test
@@ -55,6 +57,7 @@ public class TestLazyLoadSchema extends BaseTest {
 
         Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
         Assert.assertEquals("ccc", v12.value("surname"));
+        sqlgGraph1.close();
     }
 
     @Test
@@ -66,6 +69,7 @@ public class TestLazyLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
         Assert.assertEquals("ccc", v12.value("surname"));
+        sqlgGraph1.close();
     }
 
     @Test
@@ -87,6 +91,7 @@ public class TestLazyLoadSchema extends BaseTest {
         sqlgGraph1.tx().commit();
 
         Assert.assertEquals(1, v11.out("friend").count().next().intValue());
+        sqlgGraph1.close();
     }
 
     @Test
@@ -103,10 +108,11 @@ public class TestLazyLoadSchema extends BaseTest {
         Assert.assertEquals(1, sqlgGraph1.E().count().next().intValue());
         Assert.assertEquals(1, sqlgGraph1.E().has(T.label, "friend").count().next().intValue());
         Assert.assertEquals(2, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
+        sqlgGraph1.close();
     }
 
     @Test
-    public void testLoadSchemaRemembersUncommittedSchemas() {
+    public void testLoadSchemaRemembersUncommittedSchemas() throws Exception {
 
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
@@ -124,6 +130,7 @@ public class TestLazyLoadSchema extends BaseTest {
         Assert.assertEquals(1, sqlgGraph1.E().has(T.label, "friend").count().next().intValue());
         Assert.assertEquals(2, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
 
+        sqlgGraph1.close();
     }
 
 }

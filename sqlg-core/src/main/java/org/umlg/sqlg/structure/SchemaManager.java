@@ -1,5 +1,8 @@
 package org.umlg.sqlg.structure;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,26 +35,37 @@ public class SchemaManager {
     public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
-    private Set<String> schemas = new HashSet<>();
+    private IMap<String, String> schemas;
     private Set<String> uncommittedSchemas = new HashSet<>();
 
-    private Map<String, Set<String>> labelSchemas = new ConcurrentHashMap<>();
+    private IMap<String, Set<String>> labelSchemas;
     private Map<String, Set<String>> uncommittedLabelSchemas = new ConcurrentHashMap<>();
-    private Map<String, Map<String, PropertyType>> tables = new ConcurrentHashMap<>();
+
+    private Map<String, Map<String, PropertyType>> tables;
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
-    private Map<String, Set<String>> edgeForeignKeys = new ConcurrentHashMap<>();
+
+    private Map<String, Set<String>> edgeForeignKeys;
     private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
+
     private ReentrantLock schemaLock = new ReentrantLock();
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
+    private HazelcastInstance hazelcastInstance;
 
     SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
+        this.hazelcastInstance = Hazelcast.newHazelcastInstance();
+
+        this.schemas = this.hazelcastInstance.getMap("schemas");
+        this.labelSchemas = this.hazelcastInstance.getMap("labelSchemas");
+        this.tables = this.hazelcastInstance.getMap("tables");
+        this.edgeForeignKeys = this.hazelcastInstance.getMap("edgeForeignKeys");
+
         this.sqlgGraph.tx().afterCommit(() -> {
             if (this.schemaLock.isHeldByCurrentThread()) {
                 for (String t : this.uncommittedSchemas) {
-                    this.schemas.add(t);
+                    this.schemas.put(t, t);
                 }
                 for (String t : this.uncommittedTables.keySet()) {
                     this.tables.put(t, this.uncommittedTables.get(t));
@@ -84,7 +98,7 @@ public class SchemaManager {
                     this.uncommittedEdgeForeignKeys.clear();
                 } else {
                     for (String t : this.uncommittedSchemas) {
-                        this.schemas.add(t);
+                        this.schemas.put(t, t);
                     }
                     for (String t : this.uncommittedTables.keySet()) {
                         this.tables.put(t, this.uncommittedTables.get(t));
@@ -155,12 +169,9 @@ public class SchemaManager {
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.sqlgGraph.tx().isSchemaModification()) {
-                loadSchema();
-            }
             if (!this.tables.containsKey(schema + "." + prefixedTable)) {
 
-                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
                     if (!this.uncommittedSchemas.contains(schema)) {
                         this.uncommittedSchemas.add(schema);
                         createSchema(schema);
@@ -186,7 +197,7 @@ public class SchemaManager {
     }
 
     boolean schemaExist(String schema) {
-        return this.schemas.contains(schema);
+        return this.schemas.containsKey(schema);
     }
 
     public void createSchema(String schema) {
@@ -228,10 +239,7 @@ public class SchemaManager {
                 if (!this.schemaLock.isHeldByCurrentThread()) {
                     this.schemaLock.lock();
                 }
-                if (!this.sqlgGraph.tx().isSchemaModification()) {
-                    loadSchema();
-                }
-                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
                     if (!this.uncommittedSchemas.contains(schema)) {
                         this.uncommittedSchemas.add(schema);
                         createSchema(schema);
@@ -281,7 +289,7 @@ public class SchemaManager {
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.contains(schema)) {
+            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
                 if (!this.uncommittedSchemas.contains(schema)) {
                     this.uncommittedSchemas.add(schema);
                     createSchema(schema);
@@ -339,10 +347,6 @@ public class SchemaManager {
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.sqlgGraph.tx().isSchemaModification()) {
-                loadSchema();
-                uncommitedColumns = internalGetColumn(schema, table);
-            }
             if (!uncommitedColumns.containsKey(keyValue.left)) {
                 addColumn(schema, table, keyValue);
                 uncommitedColumns.put(keyValue.left, keyValue.right);
@@ -383,6 +387,7 @@ public class SchemaManager {
 
     public void close() {
         this.tables.clear();
+        this.hazelcastInstance.shutdown();
     }
 
     private boolean verticesExist() throws SQLException {
@@ -834,12 +839,12 @@ public class SchemaManager {
     public boolean tableExist(String schema, String table) {
         this.sqlgGraph.tx().readWrite();
         boolean exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
-        if (!exists) {
-            if (!this.sqlgGraph.tx().isSchemaModification()) {
-                loadSchema();
-            }
-            exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
-        }
+//        if (!exists) {
+//            if (!this.sqlgGraph.tx().isSchemaModification()) {
+//                loadSchema();
+//            }
+//            exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
+//        }
         return exists;
     }
 
@@ -866,7 +871,7 @@ public class SchemaManager {
                     ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                     while (columnsRs.next()) {
                         String schema = columnsRs.getString(2);
-                        this.schemas.add(schema);
+                        this.schemas.put(schema, schema);
                         if (!previousSchema.equals(schema)) {
                             foreignKeys = new HashSet<>();
                         }
@@ -880,9 +885,9 @@ public class SchemaManager {
                         Set<String> schemas = this.labelSchemas.get(table);
                         if (schemas == null) {
                             schemas = new HashSet<>();
-                            this.labelSchemas.put(table, schemas);
                         }
                         schemas.add(schema);
+                        this.labelSchemas.put(table, schemas);
                         if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                             foreignKeys.add(column);
                             this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
@@ -906,7 +911,7 @@ public class SchemaManager {
                         ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                         while (columnsRs.next()) {
                             String schema = columnsRs.getString(1);
-                            this.schemas.add(schema);
+                            this.schemas.put(schema, schema);
                             String column = columnsRs.getString(4);
                             int columnType = columnsRs.getInt(5);
                             String typeName = columnsRs.getString("TYPE_NAME");

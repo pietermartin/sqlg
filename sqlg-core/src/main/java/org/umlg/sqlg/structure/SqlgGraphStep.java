@@ -136,11 +136,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
         }
-        //if schemas are empty reload the schema from the db
-        if (schemas.isEmpty()) {
-            this.sqlgGraph.getSchemaManager().loadSchema();
-            schemas = this.sqlgGraph.getSchemaManager().getSchemasForTable(SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
-        }
         //check that the schema exist
         List<SqlgVertex> sqlGVertexes = new ArrayList<>();
         //Schemas are null when has('label') searches for a label that does not exist yet.
@@ -250,11 +245,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         } else {
             schemas = new HashSet<>();
             schemas.add(schemaTable.getSchema());
-        }
-        //if schemas are empty reload the schema from the db
-        if (schemas.isEmpty()) {
-            this.sqlgGraph.getSchemaManager().loadSchema();
-            schemas = this.sqlgGraph.getSchemaManager().getSchemasForTable(SchemaManager.EDGE_PREFIX + schemaTable.getTable());
         }
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
         for (String schema : schemas) {
