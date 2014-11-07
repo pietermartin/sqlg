@@ -87,6 +87,10 @@ public class SqlgGraph implements Graph {
         this.tx().commit();
     }
 
+    Configuration getConfiguration() {
+        return configuration;
+    }
+
     public String getJdbcUrl() {
         return jdbcUrl;
     }

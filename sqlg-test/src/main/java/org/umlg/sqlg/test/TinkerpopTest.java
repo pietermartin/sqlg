@@ -1,9 +1,7 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.AbstractGremlinTest;
-import com.tinkerpop.gremlin.FeatureRequirement;
-import com.tinkerpop.gremlin.FeatureRequirementSet;
-import com.tinkerpop.gremlin.LoadGraphWith;
+import com.tinkerpop.gremlin.*;
+import com.tinkerpop.gremlin.algorithm.generator.CommunityGenerator;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
@@ -16,6 +14,7 @@ import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
 import com.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
 import com.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
+import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
 
 import java.io.File;
@@ -24,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
 import static org.junit.Assert.*;
@@ -34,8 +34,7 @@ import static org.junit.Assert.*;
  */
 public class TinkerpopTest extends BaseTest {
 
-
-//    @Test
+    //    @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
     public void shouldNotBeEqualsPropertiesAsThereIsDifferentValue() throws IOException {
         Graph g = this.sqlgGraph;

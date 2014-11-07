@@ -2,6 +2,8 @@ package org.umlg.sqlg.structure;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
@@ -15,6 +17,7 @@ import java.util.Map;
  */
 public class SqlgDataSource {
 
+    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     public static final SqlgDataSource INSTANCE = new SqlgDataSource();
     private Map<String, ComboPooledDataSource> cpdss = new HashMap<>();
 
@@ -29,6 +32,7 @@ public class SqlgDataSource {
         if (this.cpdss.get(connectURI) != null) {
             return;
         }
+        logger.info(String.format("Setting up datasource to %s for user %s", connectURI, username));
         ComboPooledDataSource cpds = new ComboPooledDataSource();
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);

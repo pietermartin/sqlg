@@ -54,15 +54,20 @@ public class SchemaManager {
     private SqlDialect sqlDialect;
     private HazelcastInstance hazelcastInstance;
 
+    private static final String SCHEMAS_HAZELCAST_MAP = "_schemas";
+    private static final String LABEL_SCHEMAS_HAZELCAST_MAP = "_labelSchemas";
+    private static final String TABLES_HAZELCAST_MAP = "_tables";
+    private static final String EDGE_FOREIGN_KEYS_HAZELCAST_MAP = "_edgeForeignKeys";
+
     SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
         this.hazelcastInstance = Hazelcast.newHazelcastInstance();
 
-        this.schemas = this.hazelcastInstance.getMap("schemas");
-        this.labelSchemas = this.hazelcastInstance.getMap("labelSchemas");
-        this.tables = this.hazelcastInstance.getMap("tables");
-        this.edgeForeignKeys = this.hazelcastInstance.getMap("edgeForeignKeys");
+        this.schemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+        this.labelSchemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
+        this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
+        this.edgeForeignKeys = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
 
         this.schemas.addEntryListener(new SchemasMapEntryListener(), true);
         this.labelSchemas.addEntryListener(new LabelSchemasMapEntryListener(), true);
@@ -181,12 +186,13 @@ public class SchemaManager {
         Objects.requireNonNull(table, "Given table must not be null");
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+        if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
+            logger.info("this.schemaLock.isHeldByCurrentThread()");
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
+            if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
 
                 if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
                     if (!this.uncommittedSchemas.contains(schema)) {
@@ -246,7 +252,7 @@ public class SchemaManager {
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+        if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
@@ -257,8 +263,7 @@ public class SchemaManager {
                     createSchema(schema);
                 }
             }
-            if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
-                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+            if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
                 Set<String> foreignKeys = new HashSet<>();
                 foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable());
                 foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
@@ -272,12 +277,12 @@ public class SchemaManager {
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
 
+                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
                 createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
             }
         }
         //ensure columns exist
         ensureColumnsExist(schema, prefixedTable, columns);
-//        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
         ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyIn);
         ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyOut);
     }
@@ -294,7 +299,7 @@ public class SchemaManager {
         Objects.requireNonNull(table, "Given table must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+        if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
@@ -305,8 +310,7 @@ public class SchemaManager {
                     createSchema(schema);
                 }
             }
-            if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
-                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+            if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
 
                 Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                 if (schemas == null) {
@@ -316,6 +320,7 @@ public class SchemaManager {
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
 
+                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
                 createEdgeTable(schema, prefixedTable, columns);
             }
         }
