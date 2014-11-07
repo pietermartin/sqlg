@@ -18,10 +18,10 @@ public class SqlgGraphGraphTraversal<S, E> extends DefaultGraphTraversal<S, E> {
 
     static {
         final DefaultTraversalStrategies traversalStrategies = new DefaultTraversalStrategies();
-        GraphTraversalStrategyRegistry.instance().toList().forEach(traversalStrategies::register);
-        traversalStrategies.register(SqlGGraphStepStrategy.instance());
-        traversalStrategies.register(SqlgHasStepStrategy.instance());
-        traversalStrategies.register(SqlgVertexStepStrategy.instance());
+        GraphTraversalStrategyRegistry.instance().getTraversalStrategies().forEach(traversalStrategies::addStrategy);
+        traversalStrategies.addStrategy(SqlgHasStepStrategy.instance());
+        traversalStrategies.addStrategy(SqlgVertexStepStrategy.instance());
+        traversalStrategies.addStrategy(SqlGGraphStepStrategy.instance());
         TraversalStrategies.GlobalCache.registerStrategies(SqlgGraphGraphTraversal.class, traversalStrategies);
     }
 

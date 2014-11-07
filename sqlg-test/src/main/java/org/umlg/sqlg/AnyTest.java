@@ -8,6 +8,7 @@ import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
 import org.umlg.sqlg.test.edges.TestEdgeCache;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
+import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.TestUpdateVertex;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
@@ -25,7 +26,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestHasLabel.class
+        TestIndex.class
 })
 public class AnyTest {
 }

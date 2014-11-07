@@ -1,8 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.IMap;
+import com.hazelcast.core.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,15 +34,19 @@ public class SchemaManager {
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
     private IMap<String, String> schemas;
+    private Map<String, String> localSchemas = new HashMap<>();
     private Set<String> uncommittedSchemas = new HashSet<>();
 
     private IMap<String, Set<String>> labelSchemas;
+    private Map<String, Set<String>> localLabelSchemas = new HashMap<>();
     private Map<String, Set<String>> uncommittedLabelSchemas = new ConcurrentHashMap<>();
 
-    private Map<String, Map<String, PropertyType>> tables;
+    private IMap<String, Map<String, PropertyType>> tables;
+    private Map<String, Map<String, PropertyType>> localTables = new HashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
 
-    private Map<String, Set<String>> edgeForeignKeys;
+    private IMap<String, Set<String>> edgeForeignKeys;
+    private Map<String, Set<String>> localEdgeForeignKeys = new HashMap<>();
     private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
 
     private ReentrantLock schemaLock = new ReentrantLock();
@@ -62,25 +64,35 @@ public class SchemaManager {
         this.tables = this.hazelcastInstance.getMap("tables");
         this.edgeForeignKeys = this.hazelcastInstance.getMap("edgeForeignKeys");
 
+        this.schemas.addEntryListener(new SchemasMapEntryListener(), true);
+        this.labelSchemas.addEntryListener(new LabelSchemasMapEntryListener(), true);
+        this.tables.addEntryListener(new TablesMapEntryListener(), true);
+        this.edgeForeignKeys.addEntryListener(new EdgeForeignKeysMapEntryListener(), true);
+
         this.sqlgGraph.tx().afterCommit(() -> {
             if (this.schemaLock.isHeldByCurrentThread()) {
-                for (String t : this.uncommittedSchemas) {
-                    this.schemas.put(t, t);
+                for (String schema : this.uncommittedSchemas) {
+                    this.schemas.put(schema, schema);
+                    this.localSchemas.put(schema, schema);
                 }
-                for (String t : this.uncommittedTables.keySet()) {
-                    this.tables.put(t, this.uncommittedTables.get(t));
+                for (String table : this.uncommittedTables.keySet()) {
+                    this.tables.put(table, this.uncommittedTables.get(table));
+                    this.localTables.put(table, this.uncommittedTables.get(table));
                 }
-                for (String t : this.uncommittedLabelSchemas.keySet()) {
-                    Set<String> schemas = this.labelSchemas.get(t);
+                for (String table : this.uncommittedLabelSchemas.keySet()) {
+                    Set<String> schemas = this.labelSchemas.get(table);
                     if (schemas == null) {
-                        this.labelSchemas.put(t, this.uncommittedLabelSchemas.get(t));
+                        this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                        this.localLabelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
                     } else {
-                        schemas.addAll(this.uncommittedLabelSchemas.get(t));
-                        this.labelSchemas.put(t, schemas);
+                        schemas.addAll(this.uncommittedLabelSchemas.get(table));
+                        this.labelSchemas.put(table, schemas);
+                        this.localLabelSchemas.put(table, schemas);
                     }
                 }
-                for (String t : this.uncommittedEdgeForeignKeys.keySet()) {
-                    this.edgeForeignKeys.put(t, this.uncommittedEdgeForeignKeys.get(t));
+                for (String table : this.uncommittedEdgeForeignKeys.keySet()) {
+                    this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                    this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                 }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
@@ -97,23 +109,28 @@ public class SchemaManager {
                     this.uncommittedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                 } else {
-                    for (String t : this.uncommittedSchemas) {
-                        this.schemas.put(t, t);
+                    for (String table : this.uncommittedSchemas) {
+                        this.schemas.put(table, table);
+                        this.localSchemas.put(table, table);
                     }
-                    for (String t : this.uncommittedTables.keySet()) {
-                        this.tables.put(t, this.uncommittedTables.get(t));
+                    for (String table : this.uncommittedTables.keySet()) {
+                        this.tables.put(table, this.uncommittedTables.get(table));
+                        this.localTables.put(table, this.uncommittedTables.get(table));
                     }
-                    for (String t : this.uncommittedLabelSchemas.keySet()) {
-                        Set<String> schemas = this.labelSchemas.get(t);
+                    for (String table : this.uncommittedLabelSchemas.keySet()) {
+                        Set<String> schemas = this.labelSchemas.get(table);
                         if (schemas == null) {
-                            this.labelSchemas.put(t, this.uncommittedLabelSchemas.get(t));
+                            this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                            this.localLabelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
                         } else {
-                            schemas.addAll(this.uncommittedLabelSchemas.get(t));
-                            this.labelSchemas.put(t, schemas);
+                            schemas.addAll(this.uncommittedLabelSchemas.get(table));
+                            this.labelSchemas.put(table, schemas);
+                            this.localLabelSchemas.put(table, schemas);
                         }
                     }
-                    for (String t : this.uncommittedEdgeForeignKeys.keySet()) {
-                        this.edgeForeignKeys.put(t, this.uncommittedEdgeForeignKeys.get(t));
+                    for (String table : this.uncommittedEdgeForeignKeys.keySet()) {
+                        this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                        this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                     }
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
@@ -164,41 +181,36 @@ public class SchemaManager {
         Objects.requireNonNull(table, "Given table must not be null");
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+        if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.tables.containsKey(schema + "." + prefixedTable)) {
+            if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
 
-                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
+                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
                     if (!this.uncommittedSchemas.contains(schema)) {
                         this.uncommittedSchemas.add(schema);
                         createSchema(schema);
                     }
                 }
-                if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                    if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                        Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                        if (schemas == null) {
-                            this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
-                        } else {
-                            schemas.add(schema);
-                            this.uncommittedLabelSchemas.put(prefixedTable, schemas);
-                        }
-                        this.uncommittedTables.put(schema + "." + prefixedTable, columns);
-                        createVertexTable(schema, prefixedTable, columns);
-                    }
+                Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
+                if (schemas == null) {
+                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                } else {
+                    schemas.add(schema);
+                    this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
+                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+                createVertexTable(schema, prefixedTable, columns);
             }
         }
         //ensure columns exist
         ensureColumnsExist(schema, prefixedTable, columns);
-//        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
     }
 
     boolean schemaExist(String schema) {
-        return this.schemas.containsKey(schema);
+        return this.localSchemas.containsKey(schema);
     }
 
     public void createSchema(String schema) {
@@ -234,37 +246,33 @@ public class SchemaManager {
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-            if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                //Make sure the current thread/transaction owns the lock
-                if (!this.schemaLock.isHeldByCurrentThread()) {
-                    this.schemaLock.lock();
+        if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+            //Make sure the current thread/transaction owns the lock
+            if (!this.schemaLock.isHeldByCurrentThread()) {
+                this.schemaLock.lock();
+            }
+            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
+                if (!this.uncommittedSchemas.contains(schema)) {
+                    this.uncommittedSchemas.add(schema);
+                    createSchema(schema);
                 }
-                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
-                    if (!this.uncommittedSchemas.contains(schema)) {
-                        this.uncommittedSchemas.add(schema);
-                        createSchema(schema);
-                    }
-                }
-                if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                    if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                        this.uncommittedTables.put(schema + "." + prefixedTable, columns);
-                        Set<String> foreignKeys = new HashSet<>();
-                        foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable());
-                        foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
-                        this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
+            }
+            if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
+                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+                Set<String> foreignKeys = new HashSet<>();
+                foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable());
+                foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable());
+                this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
 
-                        Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                        if (schemas == null) {
-                            this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
-                        } else {
-                            schemas.add(schema);
-                            this.uncommittedLabelSchemas.put(prefixedTable, schemas);
-                        }
-
-                        createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
-                    }
+                Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
+                if (schemas == null) {
+                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                } else {
+                    schemas.add(schema);
+                    this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
+
+                createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
             }
         }
         //ensure columns exist
@@ -286,36 +294,33 @@ public class SchemaManager {
         Objects.requireNonNull(table, "Given table must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
+        if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.schemaLock.isHeldByCurrentThread()) {
                 this.schemaLock.lock();
             }
-            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
+            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
                 if (!this.uncommittedSchemas.contains(schema)) {
                     this.uncommittedSchemas.add(schema);
                     createSchema(schema);
                 }
             }
-            if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-                if (!this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                    this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+            if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
+                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
 
-                    Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                    if (schemas == null) {
-                        this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
-                    } else {
-                        schemas.add(schema);
-                        this.uncommittedLabelSchemas.put(prefixedTable, schemas);
-                    }
-
-                    createEdgeTable(schema, prefixedTable, columns);
+                Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
+                if (schemas == null) {
+                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                } else {
+                    schemas.add(schema);
+                    this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
+
+                createEdgeTable(schema, prefixedTable, columns);
             }
         }
         //ensure columns exist
         ensureColumnsExist(schema, prefixedTable, columns);
-//        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
     }
 
     boolean columnExists(String schema, String table, String column) {
@@ -323,7 +328,7 @@ public class SchemaManager {
     }
 
     private Map<String, PropertyType> internalGetColumn(String schema, String table) {
-        final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
+        final Map<String, PropertyType> cachedColumns = this.localTables.get(schema + "." + table);
         Map<String, PropertyType> uncommitedColumns;
         if (cachedColumns == null) {
             uncommitedColumns = this.uncommittedTables.get(schema + "." + table);
@@ -387,7 +392,7 @@ public class SchemaManager {
     }
 
     private void ensureEdgeForeignKeysExist(String schema, String table, SchemaTable foreignKey) {
-        Set<String> foreignKeys = this.edgeForeignKeys.get(schema + "." + table);
+        Set<String> foreignKeys = this.localEdgeForeignKeys.get(schema + "." + table);
         Set<String> uncommittedForeignKeys;
         if (foreignKeys == null) {
             uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + table);
@@ -417,7 +422,6 @@ public class SchemaManager {
     }
 
     public void close() {
-        this.tables.clear();
         this.hazelcastInstance.shutdown();
     }
 
@@ -869,13 +873,7 @@ public class SchemaManager {
 
     public boolean tableExist(String schema, String table) {
         this.sqlgGraph.tx().readWrite();
-        boolean exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
-//        if (!exists) {
-//            if (!this.sqlgGraph.tx().isSchemaModification()) {
-//                loadSchema();
-//            }
-//            exists = this.tables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
-//        }
+        boolean exists = this.localTables.containsKey(schema + "." + table) || this.uncommittedTables.containsKey(schema + "." + table);
         return exists;
     }
 
@@ -1002,7 +1000,7 @@ public class SchemaManager {
     }
 
     Set<String> getSchemasForTable(String table) {
-        Set<String> labels = this.labelSchemas.get(table);
+        Set<String> labels = this.localLabelSchemas.get(table);
         Set<String> uncommittedLabels = this.uncommittedLabelSchemas.get(table);
         Set<String> result = new HashSet<>();
         if (labels != null) {
@@ -1016,14 +1014,145 @@ public class SchemaManager {
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
         Map<String, Set<String>> allForeignKeys = new HashMap<>();
-        allForeignKeys.putAll(this.edgeForeignKeys);
+        allForeignKeys.putAll(this.localEdgeForeignKeys);
         allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
         return allForeignKeys.get(schemaTable);
     }
 
     public Map<String, Set<String>> getEdgeForeignKeys() {
-        return this.edgeForeignKeys;
+        return this.localEdgeForeignKeys;
     }
 
+    class SchemasMapEntryListener implements EntryListener<String, String> {
+
+        @Override
+        public void entryAdded(EntryEvent<String, String> event) {
+            SchemaManager.this.localSchemas.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryRemoved(EntryEvent<String, String> event) {
+            SchemaManager.this.localSchemas.remove(event.getKey());
+        }
+
+        @Override
+        public void entryUpdated(EntryEvent<String, String> event) {
+            SchemaManager.this.localSchemas.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryEvicted(EntryEvent<String, String> event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapEvicted(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapCleared(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+    }
+
+    class LabelSchemasMapEntryListener implements EntryListener<String, Set<String>> {
+
+        @Override
+        public void entryAdded(EntryEvent<String, Set<String>> event) {
+            SchemaManager.this.localLabelSchemas.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryRemoved(EntryEvent<String, Set<String>> event) {
+            SchemaManager.this.localLabelSchemas.remove(event.getKey());
+        }
+
+        @Override
+        public void entryUpdated(EntryEvent<String, Set<String>> event) {
+            SchemaManager.this.localLabelSchemas.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryEvicted(EntryEvent<String, Set<String>> event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapEvicted(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapCleared(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+    }
+
+    class TablesMapEntryListener implements EntryListener<String, Map<String, PropertyType>> {
+
+        @Override
+        public void entryAdded(EntryEvent<String, Map<String, PropertyType>> event) {
+            SchemaManager.this.localTables.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryRemoved(EntryEvent<String, Map<String, PropertyType>> event) {
+            SchemaManager.this.localTables.remove(event.getKey());
+        }
+
+        @Override
+        public void entryUpdated(EntryEvent<String, Map<String, PropertyType>> event) {
+            SchemaManager.this.localTables.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryEvicted(EntryEvent<String, Map<String, PropertyType>> event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapEvicted(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapCleared(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+    }
+
+    class EdgeForeignKeysMapEntryListener implements EntryListener<String, Set<String>> {
+
+        @Override
+        public void entryAdded(EntryEvent<String, Set<String>> event) {
+            SchemaManager.this.localEdgeForeignKeys.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryRemoved(EntryEvent<String, Set<String>> event) {
+            SchemaManager.this.localEdgeForeignKeys.remove(event.getKey());
+        }
+
+        @Override
+        public void entryUpdated(EntryEvent<String, Set<String>> event) {
+            SchemaManager.this.localEdgeForeignKeys.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryEvicted(EntryEvent<String, Set<String>> event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapEvicted(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapCleared(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+    }
 
 }
