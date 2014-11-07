@@ -25,7 +25,7 @@ import org.umlg.sqlg.test.vertex.TestVertexCache;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestMultiThreadedBatch.class
+        TestHasLabel.class
 })
 public class AnyTest {
 }

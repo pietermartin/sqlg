@@ -6,6 +6,8 @@ import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.TraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.step.filter.IntervalStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
+import com.tinkerpop.gremlin.process.graph.strategy.TraverserSourceStrategy;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -20,9 +22,14 @@ import java.util.Set;
  * Date: 2014/07/12
  * Time: 5:45 AM
  */
-public class SqlGGraphStepStrategy implements TraversalStrategy.NoDependencies {
+public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
 
     private static final SqlGGraphStepStrategy INSTANCE = new SqlGGraphStepStrategy();
+    private static final Set<Class<? extends TraversalStrategy>> POSTS = new HashSet<>();
+
+    static {
+        POSTS.add(TraverserSourceStrategy.class);
+    }
 
     private SqlGGraphStepStrategy() {
     }
@@ -82,4 +89,10 @@ public class SqlGGraphStepStrategy implements TraversalStrategy.NoDependencies {
     public static SqlGGraphStepStrategy instance() {
         return INSTANCE;
     }
+
+    @Override
+    public Set<Class<? extends TraversalStrategy>> applyPost() {
+        return POSTS;
+    }
+
 }

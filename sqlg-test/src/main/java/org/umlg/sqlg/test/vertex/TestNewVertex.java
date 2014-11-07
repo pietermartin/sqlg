@@ -17,6 +17,5 @@ public class TestNewVertex extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
         v1.addEdge("friend", v2, "weight", 1);
         this.sqlgGraph.tx().commit();
-
     }
 }

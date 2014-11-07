@@ -2,8 +2,9 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
+import com.tinkerpop.gremlin.process.TraverserGenerator;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.util.TraverserIterator;
+import com.tinkerpop.gremlin.process.util.TraversalMetrics;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.HasContainer;
 import com.tinkerpop.gremlin.util.StreamFactory;
@@ -33,10 +34,11 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     @Override
-    public void generateTraverserIterator(boolean trackPaths) {
-        this.sqlgGraph.tx().readWrite();
-        this.starts.clear();
-        this.starts.add(new TraverserIterator(this, trackPaths, Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
+    public void generateTraversers(final TraverserGenerator traverserGenerator) {
+        if (PROFILING_ENABLED) TraversalMetrics.start(this);
+        this.start = Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges();
+        super.generateTraversers(traverserGenerator);
+        if (PROFILING_ENABLED) TraversalMetrics.stop(this);
     }
 
     @Override

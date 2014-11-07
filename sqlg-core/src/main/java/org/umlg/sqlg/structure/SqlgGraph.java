@@ -7,7 +7,6 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
-import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -18,11 +17,8 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 
-import java.beans.PropertyVetoException;
 import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.HashMap;
@@ -146,9 +142,7 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new DefaultGraphTraversal<Object, Vertex>();
-        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
-        traversal.getStrategies().register(SqlgHasStepStrategy.instance());
+        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
         traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -157,9 +151,7 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversal<Edge, Edge> E() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new DefaultGraphTraversal<Object, Edge>();
-        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
-        traversal.getStrategies().register(SqlgHasStepStrategy.instance());
+        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
         traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -168,8 +160,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public <S> GraphTraversal<S, S> of() {
-        final GraphTraversal<S, S> traversal = new DefaultGraphTraversal<>();
-        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
+        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
         traversal.addStep(new StartStep<>(traversal));
         traversal.sideEffects().setGraph(this);
         return traversal;

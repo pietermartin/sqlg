@@ -193,7 +193,8 @@ public class SchemaManager {
             }
         }
         //ensure columns exist
-        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
+        ensureColumnsExist(schema, prefixedTable, columns);
+//        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
     }
 
     boolean schemaExist(String schema) {
@@ -267,7 +268,8 @@ public class SchemaManager {
             }
         }
         //ensure columns exist
-        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
+        ensureColumnsExist(schema, prefixedTable, columns);
+//        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
         ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyIn);
         ensureEdgeForeignKeysExist(schema, prefixedTable, foreignKeyOut);
     }
@@ -312,7 +314,8 @@ public class SchemaManager {
             }
         }
         //ensure columns exist
-        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
+        ensureColumnsExist(schema, prefixedTable, columns);
+//        columns.forEach((k, v) -> ensureColumnExist(schema, prefixedTable, ImmutablePair.of(k, v)));
     }
 
     boolean columnExists(String schema, String table, String column) {
@@ -334,6 +337,34 @@ public class SchemaManager {
         }
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
         return uncommitedColumns;
+    }
+
+    void ensureColumnsExist(String schema, String table, ConcurrentHashMap<String, PropertyType> columns) {
+        Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, table);
+        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
+
+        for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
+
+            String columnName = column.getKey();
+            PropertyType columnType = column.getValue();
+
+            if (!uncommitedColumns.containsKey(columnName)) {
+                uncommitedColumns = internalGetColumn(schema, table);
+            }
+            if (!uncommitedColumns.containsKey(columnName)) {
+                //Make sure the current thread/transaction owns the lock
+                if (!this.schemaLock.isHeldByCurrentThread()) {
+                    this.schemaLock.lock();
+                }
+                if (!uncommitedColumns.containsKey(columnName)) {
+                    addColumn(schema, table, ImmutablePair.of(columnName, columnType));
+                    uncommitedColumns.put(columnName, columnType);
+                    this.uncommittedTables.put(schema + "." + table, uncommitedColumns);
+                }
+            }
+
+        }
+
     }
 
     void ensureColumnExist(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {

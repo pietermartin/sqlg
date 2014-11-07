@@ -10,9 +10,6 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
-import org.umlg.sqlg.process.graph.util.SqlgVertexStepStrategy;
-import org.umlg.sqlg.strategy.SqlGGraphStepStrategy;
 
 import java.sql.*;
 import java.util.*;
@@ -926,10 +923,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public GraphTraversal<Vertex, Vertex> start() {
-        final GraphTraversal<Vertex, Vertex> traversal = GraphTraversal.of();
-        traversal.getStrategies().register(SqlGGraphStepStrategy.instance());
-        traversal.getStrategies().register(SqlgHasStepStrategy.instance());
-        traversal.getStrategies().register(SqlgVertexStepStrategy.instance());
+        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
         return (GraphTraversal) traversal.addStep(new StartStep<>(traversal, this));
     }
 

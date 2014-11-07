@@ -1,7 +1,9 @@
 package org.umlg.sqlg.test.vertex;
 
-import com.tinkerpop.gremlin.FeatureRequirement;
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.VertexProperty;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 

@@ -245,10 +245,12 @@ public class TinkerpopTest extends BaseTest {
         return ((Edge) g.V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).back("e").next()).id();
     }
 
-    protected void printTraversalForm(final Traversal traversal) {
-        System.out.println("Testing: " + traversal);
-        traversal.getStrategies().apply(TraversalEngine.STANDARD);
-        System.out.println("         " + traversal);
+    public void printTraversalForm(final Traversal traversal) {
+        final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
+
+        if (!muted) System.out.println("Testing: " + traversal);
+        traversal.applyStrategies(TraversalEngine.STANDARD); // TODO!!!!
+        if (!muted) System.out.println("         " + traversal);
     }
 
     private static void readGraphMLIntoGraph(final Graph g) throws IOException {
