@@ -20,7 +20,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnInteger() {
-        this.sqlgGraph.createLabeledIndex("Person", "name1", "dummy", "age", 1);
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name1", "dummy", "age", 1);
         this.sqlgGraph.tx().commit();
         for (int i = 0; i < 5000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i, "age", i);
@@ -30,7 +30,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnVertex() throws SQLException {
-        this.sqlgGraph.createLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
         this.sqlgGraph.tx().commit();
         for (int i = 0; i < 5000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
@@ -52,7 +52,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnVertex1() throws SQLException {
-        this.sqlgGraph.createLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
         this.sqlgGraph.tx().commit();
         for (int i = 0; i < 5000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
@@ -74,7 +74,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexOnEdge() throws SQLException {
-        this.sqlgGraph.createLabeledIndex("Schema0.edge", "name1", "dummy", "name2", "dummy", "name3", "dummy");
+        this.sqlgGraph.createEdgeLabeledIndex("Schema0.edge", "name1", "dummy", "name2", "dummy", "name3", "dummy");
         this.sqlgGraph.tx().commit();
         Vertex previous = null;
         for (int i = 0; i < 5; i++) {
@@ -104,10 +104,10 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexExist() {
-        this.sqlgGraph.createLabeledIndex("Person", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.createLabeledIndex("Person", "name", "a");
-        this.sqlgGraph.createLabeledIndex("Person", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.tx().commit();
     }
 

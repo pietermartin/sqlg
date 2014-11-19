@@ -56,6 +56,6 @@ public class TestMultiThreadedBatch extends BaseTest {
             Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             Assert.assertEquals(10, this.sqlgGraph.V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
         }
-
     }
+
 }

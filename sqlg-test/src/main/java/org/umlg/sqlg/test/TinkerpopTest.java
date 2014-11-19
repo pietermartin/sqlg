@@ -4,28 +4,38 @@ import com.tinkerpop.gremlin.*;
 import com.tinkerpop.gremlin.algorithm.generator.CommunityGenerator;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
-import com.tinkerpop.gremlin.structure.Compare;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.process.marker.CapTraversal;
+import com.tinkerpop.gremlin.process.marker.CountTraversal;
+import com.tinkerpop.gremlin.process.util.MapHelper;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
 import com.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
 import com.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
+import com.tinkerpop.gremlin.util.function.FunctionUtils;
 import org.apache.commons.configuration.Configuration;
+import org.javatuples.Pair;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.CLASSIC;
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 /**
@@ -33,6 +43,166 @@ import static org.junit.Assert.*;
  * Time: 6:32 PM
  */
 public class TinkerpopTest extends BaseTest {
+
+    @Test
+    @LoadGraphWith(CLASSIC)
+    public void shouldHaveSameTraversalReturnTypesForAllMethods() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GraphMLReader.build().create();
+        try (final InputStream stream = new FileInputStream(new File("sqlg-test/src/main/resources/tinkerpop-classic.xml"))) {
+            reader.readGraph(stream, g);
+        }
+
+        final Set<String> allReturnTypes = new HashSet<>();
+        final List<Pair<String, Object>> vendorsClasses = Arrays.asList(
+                Pair.<String, Object>with("g.V Traversal", g.V()),
+                Pair.<String, Object>with("g.E Traversal", g.E()),
+                Pair.<String, Object>with("v.identity Traversal", g.V().next().identity()),
+                Pair.<String, Object>with("e.identity Traversal", g.E().next().identity()),
+                Pair.<String, Object>with("v", g.V().next()),
+                Pair.<String, Object>with("e", g.E().next()),
+                Pair.<String, Object>with("g.of()", g.of())
+        );
+        vendorsClasses.forEach(triplet -> {
+            final String situation = triplet.getValue0();
+            final Class vendorClass = triplet.getValue1().getClass();
+            final Set<String> returnTypes = new HashSet<>();
+            Arrays.asList(vendorClass.getMethods())
+                    .stream()
+                    .filter(m -> GraphTraversal.class.isAssignableFrom(m.getReturnType()))
+                    .filter(m -> !Modifier.isStatic(m.getModifiers()))
+                    .map(m -> getDeclaredVersion(m, vendorClass))
+                    .forEach(m -> {
+                        returnTypes.add(m.getReturnType().getCanonicalName());
+                        allReturnTypes.add(m.getReturnType().getCanonicalName());
+                    });
+            if (returnTypes.size() > 1) {
+                final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
+                if (!muted) System.out.println("FAILURE: " + vendorClass.getCanonicalName() + " methods do not return in full fluency for [" + situation + "]");
+                fail("The return types of all traversal methods should be the same to ensure proper fluency: " + returnTypes);
+            } else {
+                final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
+                if (!muted) System.out.println("SUCCESS: " + vendorClass.getCanonicalName() + " methods return in full fluency for [" + situation + "]");
+            }
+        });
+        if (allReturnTypes.size() > 1)
+            fail("All traversals possible do not maintain the same return types and thus, not fully fluent for entire graph system: " + allReturnTypes);
+    }
+
+    private static Method getDeclaredVersion(final Method method, final Class vendorClass) {
+        return Arrays.asList(vendorClass.getMethods())
+                .stream()
+                .filter(m -> !GraphTraversal.class.equals(m.getReturnType()))
+                .filter(m -> !Traversal.class.equals(m.getReturnType()))
+                .filter(m -> !CountTraversal.class.equals(m.getReturnType()))
+                .filter(m -> !CapTraversal.class.equals(m.getReturnType()))
+                        //.filter(m -> !Traversal.class.isAssignableFrom(m.getReturnType()))
+                .filter(m -> !Modifier.isStatic(m.getModifiers()))
+                .filter(m -> m.getName().equals(method.getName()))
+                .filter(m -> Arrays.asList(m.getParameterTypes()).toString().equals(Arrays.asList(method.getParameterTypes()).toString()))
+                .findAny().orElseGet(() -> {
+                    final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
+                    if (!muted) System.out.println("IGNORE IF TEST PASSES: Can not find native implementation of: " + method);
+                    return method;
+                });
+    }
+
+    //    @Test
+    @LoadGraphWith(MODERN)
+    public void g_v4_bothE_localLimitX2X_otherV_name() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+            reader.readGraph(stream, g);
+        }
+
+        final Traversal<Vertex, String> traversal = get_g_v4_bothE_localLimitX2X_otherV_name(convertToVertexId("josh"));
+        printTraversalForm(traversal);
+        int counter = 0;
+        while (traversal.hasNext()) {
+            counter++;
+            final Object name = traversal.next();
+            System.out.println(name);
+//            assertTrue(name.equals("marko") || name.equals("ripple") || name.equals("lop"));
+        }
+        assertEquals(2, counter);
+        assertFalse(traversal.hasNext());
+    }
+
+    public Traversal<Vertex, String> get_g_v4_bothE_localLimitX2X_otherV_name(final Object v4Id) {
+        return this.sqlgGraph.v(v4Id).bothE().localLimit(2).inV().values("name");
+//        return this.sqlgGraph.v(v4Id).bothE().inV().values("name");
+//        return this.sqlgGraph.v(v4Id).bothE().inV();
+    }
+
+    //    @Test
+    @LoadGraphWith(MODERN)
+    public void g_V_hasXageX_propertiesXname_ageX_value() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+            reader.readGraph(stream, g);
+        }
+
+//        Traversal<Vertex, Object> gt = get_g_V_hasXageX_propertiesXage_nameX_value();
+//        gt.toList().forEach(a-> System.out.println(a));
+        System.out.println("------------");
+        Traversal<Vertex, Object>gt = get_g_V_hasXageX_propertiesXname_ageX_value();
+        gt.toList().forEach(a-> System.out.println(a));
+
+//        Arrays.asList(/*get_g_V_hasXageX_propertiesXage_nameX_value(),*/ get_g_V_hasXageX_propertiesXname_ageX_value()).forEach(traversal -> {
+//            printTraversalForm(traversal);
+//            checkResults(Arrays.asList("marko", 29, "vadas", 27, "josh", 32, "peter", 35), traversal);
+//        });
+    }
+
+    public <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+        final List<T> results = traversal.toList();
+        assertEquals("Checking result size", expectedResults.size(), results.size());
+        for (T t : results) {
+            if (t instanceof Map) {
+                assertTrue("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> checkMap((Map) e, (Map) t)).findAny().isPresent());
+            } else {
+                assertTrue("Checking result existence: " + t, expectedResults.contains(t));
+            }
+        }
+        final Map<T, Long> expectedResultsCount = new HashMap<>();
+        final Map<T, Long> resultsCount = new HashMap<>();
+        assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
+        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
+        results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
+        expectedResultsCount.forEach((k, v) -> assertEquals("Checking result group counts", v, resultsCount.get(k)));
+        assertFalse(traversal.hasNext());
+    }
+
+    private <A, B> boolean checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
+        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
+
+        if (expectedList.size() > actualList.size()) {
+            return false;
+        } else if (actualList.size() > expectedList.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < actualList.size(); i++) {
+            if (!actualList.get(i).getKey().equals(expectedList.get(i).getKey())) {
+                return false;
+            }
+            if (!actualList.get(i).getValue().equals(expectedList.get(i).getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public Traversal<Vertex, Object> get_g_V_hasXageX_propertiesXname_ageX_value() {
+        return this.sqlgGraph.V().has("age").properties("name", "age").value();
+    }
+
+    public Traversal<Vertex, Object> get_g_V_hasXageX_propertiesXage_nameX_value() {
+        return this.sqlgGraph.V().has("age").properties("age", "name").value();
+    }
 
     //    @Test
     @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
@@ -46,7 +216,7 @@ public class TinkerpopTest extends BaseTest {
         assertFalse(DetachedProperty.detach(e.property("weight")).equals(DetachedProperty.detach(g.e(convertToEdgeId("josh", "created", "lop")).property("weight"))));
     }
 
-    @Test
+//    @Test
     public void shouldNotEvaluateToEqualDifferentId() throws IOException {
         Graph g = this.sqlgGraph;
         final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
@@ -60,7 +230,7 @@ public class TinkerpopTest extends BaseTest {
         assertFalse(DetachedEdge.detach(g.e(joshCreatedLopEdgeId)).equals(DetachedEdge.detach(e)));
     }
 
-//    @Test
+    //    @Test
     @FeatureRequirementSet(FeatureRequirementSet.Package.VERTICES_ONLY)
     public void shouldNotReHideAnAlreadyHiddenKeyWhenGettingHiddenValue() {
         final Vertex v = this.sqlgGraph.addVertex("name", "marko", Graph.Key.hide("acl"), "rw", Graph.Key.hide("other"), "rw");
@@ -81,7 +251,7 @@ public class TinkerpopTest extends BaseTest {
         assertEquals("public", e1.iterators().propertyIterator("acl").next().value());
     }
 
-//    @Test
+    //    @Test
     public void shouldHandleHiddenVertexProperties() {
 
         final Vertex v = this.sqlgGraph.addVertex(Graph.Key.hide("age"), 29, "age", 16, "name", "marko", "food", "taco", Graph.Key.hide("color"), "purple");

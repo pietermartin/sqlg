@@ -1,6 +1,9 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Element;
+import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Property;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
@@ -11,7 +14,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Date: 2014/07/12
@@ -128,12 +135,12 @@ public abstract class SqlgElement implements Element {
     @Override
     public <V> Property<V> property(String key) {
         if (this.removed) {
-            return Property.empty();
+            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
         } else {
             Property property = internalGetProperties().get(key);
             if (property == null) {
                 //try hiddens
-                property = internalGetHiddens().get(Graph.Key.unHide(key));
+                property = internalGetHiddens().get(key);
                 if (property == null) {
                     return emptyProperty();
                 } else {
@@ -396,18 +403,28 @@ public abstract class SqlgElement implements Element {
         return i;
     }
 
+    protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
+        this.sqlgGraph.tx().readWrite();
+        load();
+        Map<String, SqlgProperty<V>> properties = new HashMap<>();
+        this.properties.entrySet().stream()
+                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
+                .filter(entry -> !entry.getKey().equals("ID"))
+                .filter(entry -> entry.getValue()!=null)
+                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
+        return properties;
+    }
+
     protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
-        for (String key : this.properties.keySet()) {
-            if (!Graph.Key.isHidden(key) && (propertyKeys.length == 0 || Arrays.binarySearch(propertyKeys, key) >= 0)) {
-                Object value = this.properties.get(key);
-                if (!key.equals("ID") && value != null) {
-                    properties.put(key, instantiateProperty(key, (V) value));
-                }
-            }
-        }
+        this.properties.entrySet().stream()
+                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
+                .filter(entry -> !Graph.Key.isHidden(entry.getKey()))
+                .filter(entry -> !entry.getKey().equals("ID"))
+                .filter(entry -> entry.getValue()!=null)
+                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
         return properties;
     }
 
@@ -415,14 +432,14 @@ public abstract class SqlgElement implements Element {
         this.sqlgGraph.tx().readWrite();
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
-        for (String key : this.properties.keySet()) {
-            if (Graph.Key.isHidden(key) && (propertyKeys.length == 0 || Arrays.binarySearch(propertyKeys, Graph.Key.unHide(key)) >= 0)) {
-                Object value = this.properties.get(key);
-                if (!key.equals("ID") && value != null) {
-                    properties.put(Graph.Key.unHide(key), instantiateProperty(key, (V) value));
-                }
-            }
-        }
+
+        this.properties.entrySet().stream()
+                .filter(entry -> Graph.Key.isHidden(entry.getKey()))
+                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(Graph.Key.unHide(entry.getKey()))).findAny().isPresent())
+                        .filter(entry -> !entry.getKey().equals("ID"))
+                        .filter(entry -> entry.getValue() != null)
+                        .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
+
         return properties;
     }
 
@@ -431,13 +448,7 @@ public abstract class SqlgElement implements Element {
         @Override
         public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
             SqlgElement.this.sqlgGraph.tx().readWrite();
-            return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
-        }
-
-        @Override
-        public <V> Iterator<? extends Property<V>> hiddenPropertyIterator(final String... propertyKeys) {
-            SqlgElement.this.sqlgGraph.tx().readWrite();
-            return SqlgElement.this.<V>internalGetHiddens(propertyKeys).values().iterator();
+            return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
         }
 
     }

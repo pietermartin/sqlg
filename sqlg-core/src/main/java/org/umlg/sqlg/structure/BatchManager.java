@@ -178,7 +178,7 @@ public class BatchManager {
         for (SchemaTable schemaTable : schemaTables) {
             sb.append(schemaTable.toString());
             if (count++ < schemaTables.size()) {
-                sb.append(SchemaManager.LABEL_SEPERATOR);
+                sb.append(SchemaManager.LABEL_SEPARATOR);
             }
         }
         String result = sb.toString();
@@ -193,12 +193,12 @@ public class BatchManager {
         if (StringUtils.isEmpty(currentLabel) || currentLabel.equals(this.sqlDialect.getBatchNull())) {
             return schemaTable.toString();
         } else if (currentLabel.equals(schemaTable.toString()) ||
-                currentLabel.startsWith(schemaTable.toString() + SchemaManager.LABEL_SEPERATOR) ||
-                currentLabel.contains(SchemaManager.LABEL_SEPERATOR + schemaTable.toString() + SchemaManager.LABEL_SEPERATOR) ||
-                currentLabel.endsWith(SchemaManager.LABEL_SEPERATOR + schemaTable.toString())) {
+                currentLabel.startsWith(schemaTable.toString() + SchemaManager.LABEL_SEPARATOR) ||
+                currentLabel.contains(SchemaManager.LABEL_SEPARATOR + schemaTable.toString() + SchemaManager.LABEL_SEPARATOR) ||
+                currentLabel.endsWith(SchemaManager.LABEL_SEPARATOR + schemaTable.toString())) {
             return currentLabel;
         } else {
-            return currentLabel + SchemaManager.LABEL_SEPERATOR + schemaTable.toString();
+            return currentLabel + SchemaManager.LABEL_SEPARATOR + schemaTable.toString();
         }
     }
 
@@ -355,7 +355,7 @@ public class BatchManager {
 
     public void removeVertex(String schema, String table, SqlgVertex vertex) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
-        //check it the vertex is in the newly inserted cache
+        //check if the vertex is in the newly inserted cache
         Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexSortedSetMapPair = this.vertexCache.get(schemaTable);
         if (vertexSortedSetMapPair != null && vertexSortedSetMapPair.getRight().containsKey(vertex)) {
             vertexSortedSetMapPair.getRight().remove(vertex);

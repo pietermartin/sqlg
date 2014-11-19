@@ -76,7 +76,7 @@ public class SqlgGraph implements Graph {
         }
         this.sqlgTransaction = new SqlgTransaction(this);
         this.tx().readWrite();
-        this.schemaManager = new SchemaManager(this, sqlDialect);
+        this.schemaManager = new SchemaManager(this, sqlDialect, configuration);
         this.schemaManager.loadSchema();
         if (!this.sqlDialect.supportSchemas() && !this.schemaManager.schemaExist(this.sqlDialect.getPublicSchema())) {
             //This is for mariadb. Need to make sure a db called public exist
@@ -146,7 +146,7 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
+        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -155,7 +155,7 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversal<Edge, Edge> E() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
+        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -164,7 +164,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public <S> GraphTraversal<S, S> of() {
-        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
+        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         traversal.addStep(new StartStep<>(traversal));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -651,7 +651,7 @@ public class SqlgGraph implements Graph {
 //        this.getSchemaManager().createUniqueConstraint(label, propertyKey);
     }
 
-    public void createLabeledIndex(String label, Object... dummykeyValues) {
+    public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
         int i = 0;
         String key = "";
         Object value;
@@ -669,7 +669,28 @@ public class SqlgGraph implements Graph {
         }
         this.tx().readWrite();
         SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
-        this.getSchemaManager().createIndex(schemaTablePair, dummykeyValues);
+        this.getSchemaManager().createVertexIndex(schemaTablePair, dummykeyValues);
+    }
+
+    public void createEdgeLabeledIndex(String label, Object... dummykeyValues) {
+        int i = 0;
+        String key = "";
+        Object value;
+        for (Object keyValue : dummykeyValues) {
+            if (i++ % 2 == 0) {
+                key = (String) keyValue;
+            } else {
+                value = keyValue;
+                if (!key.equals(T.label)) {
+                    ElementHelper.validateProperty(key, value);
+                    this.sqlDialect.validateProperty(key, value);
+                }
+
+            }
+        }
+        this.tx().readWrite();
+        SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
+        this.getSchemaManager().createEdgeIndex(schemaTablePair, dummykeyValues);
     }
 
     public long countVertices() {

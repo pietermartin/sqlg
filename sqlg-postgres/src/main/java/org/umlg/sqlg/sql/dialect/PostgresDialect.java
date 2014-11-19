@@ -505,15 +505,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     previous = sublistTo;
 
                     if (!subVertices.isEmpty()) {
-                        Pair<Set<Long>, Set<SchemaTable>> outLabels = Pair.of(new HashSet<Long>(), new HashSet<SchemaTable>());
-                        Pair<Set<Long>, Set<SchemaTable>> inLabels = Pair.of(new HashSet<Long>(), new HashSet<SchemaTable>());
+                        Pair<Set<Long>, Set<SchemaTable>> outLabels = Pair.of(new HashSet<>(), new HashSet<>());
+                        Pair<Set<Long>, Set<SchemaTable>> inLabels = Pair.of(new HashSet<>(), new HashSet<>());
                         //get all the in and out labels for each vertex
                         //then for all in and out edges
                         //then remove the edges
                         getInAndOutEdgesToRemove(sqlgGraph, subVertices, outLabels, inLabels);
                         deleteEdges(sqlgGraph, schemaTable, outLabels, true);
                         deleteEdges(sqlgGraph, schemaTable, inLabels, false);
-
 
                         StringBuilder sql = new StringBuilder("DELETE FROM ");
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
@@ -821,7 +820,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 String vertexTable = resultSet.getString(SchemaManager.VERTEX_TABLE);
                 String commaSeparatedOutLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
                 if (commaSeparatedOutLabels != null) {
-                    String[] schemaLabels = commaSeparatedOutLabels.split(SchemaManager.LABEL_SEPERATOR);
+                    String[] schemaLabels = commaSeparatedOutLabels.split(SchemaManager.LABEL_SEPARATOR);
                     for (String schemaLabel : schemaLabels) {
                         SchemaTable outSchemaLabel = SqlgUtil.parseLabel(schemaLabel, getPublicSchema());
                         outLabels.getLeft().add(vertexId);
@@ -831,7 +830,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 String commaSeparatedInLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
                 if (commaSeparatedInLabels != null) {
-                    String[] schemaLabels = commaSeparatedInLabels.split(SchemaManager.LABEL_SEPERATOR);
+                    String[] schemaLabels = commaSeparatedInLabels.split(SchemaManager.LABEL_SEPARATOR);
                     for (String schemaLabel : schemaLabels) {
                         SchemaTable inSchemaLabel = SqlgUtil.parseLabel(schemaLabel, getPublicSchema());
                         SchemaTable schemaTable = SchemaTable.of(vertexSchema, vertexTable);

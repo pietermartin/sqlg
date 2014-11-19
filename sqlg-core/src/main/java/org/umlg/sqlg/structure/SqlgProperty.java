@@ -33,7 +33,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
 
     @Override
     public String key() {
-        return Graph.Key.unHide(this.key);
+        return this.key;
     }
 
     @Override

@@ -1,9 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
+import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,9 +62,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
     public void remove() {
         this.sqlgGraph.tx().readWrite();
 
+        if (this.removed)
+            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
-        }  else {
+        } else {
             StringBuilder sql = new StringBuilder("DELETE FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
             sql.append(".");
@@ -312,10 +312,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
             return (Iterator) super.propertyIterator(propertyKeys);
         }
 
-        @Override
-        public <V> Iterator<Property<V>> hiddenPropertyIterator(final String... propertyKeys) {
-            return (Iterator) super.hiddenPropertyIterator(propertyKeys);
-        }
+//        @Override
+//        public <V> Iterator<Property<V>> hiddenPropertyIterator(final String... propertyKeys) {
+//            return (Iterator) super.hiddenPropertyIterator(propertyKeys);
+//        }
 
         @Override
         public Iterator<Vertex> vertexIterator(final Direction direction) {

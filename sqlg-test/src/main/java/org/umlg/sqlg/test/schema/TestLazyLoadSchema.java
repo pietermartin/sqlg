@@ -2,16 +2,37 @@ package org.umlg.sqlg.test.schema;
 
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.beans.PropertyVetoException;
+import java.io.IOException;
+import java.net.URL;
 
 /**
  * Date: 2014/11/03
  * Time: 6:22 PM
  */
 public class TestLazyLoadSchema extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+        try {
+            configuration = new PropertiesConfiguration(sqlProperties);
+            configuration.addProperty("distributed", true);
+            if (!configuration.containsKey("jdbc.url"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Test
     public void testLazyLoadTableViaVertexHas() throws Exception {

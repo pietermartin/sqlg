@@ -117,6 +117,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
+    protected <V> Map<String, VertexProperty<V>> internalGetAllProperties(final String... propertyKeys) {
+        this.sqlgGraph.tx().readWrite();
+        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetAllProperties(propertyKeys);
+        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
+    }
+
+    @Override
     protected <V> Map<String, VertexProperty<V>> internalGetProperties(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
         Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetProperties(propertyKeys);
@@ -134,7 +141,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     public <V> VertexProperty<V> property(final String key) {
         this.sqlgGraph.tx().readWrite();
         if (this.removed) {
-            return VertexProperty.empty();
+            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
         } else {
             if (!sqlgGraph.tx().isInBatchMode()) {
                 SqlgVertex sqlgVertex = this.sqlgGraph.tx().putVertexIfAbsent(this);
@@ -178,6 +185,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public void remove() {
         this.sqlgGraph.tx().readWrite();
+
+        if (this.removed)
+            throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
+
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
         } else {
@@ -923,7 +934,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public GraphTraversal<Vertex, Vertex> start() {
-        final GraphTraversal traversal = new SqlgGraphGraphTraversal<Object, Vertex>();
+        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         return (GraphTraversal) traversal.addStep(new StartStep<>(traversal, this));
     }
 
@@ -951,19 +962,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         @Override
         public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
             SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
+            return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
         }
 
-        /**
-         * @param propertyKeys keys in the normal unhidden state
-         * @param <V>
-         * @return if the key is hidden return its property
-         */
-        @Override
-        public <V> Iterator<VertexProperty<V>> hiddenPropertyIterator(final String... propertyKeys) {
-            SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.<V>internalGetHiddens(propertyKeys).values().iterator();
-        }
     }
 
     public void reset() {

@@ -1,6 +1,8 @@
 package org.umlg.sqlg.structure;
 
+import com.hazelcast.config.*;
 import com.hazelcast.core.*;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -29,74 +32,91 @@ public class SchemaManager {
     public static final String VERTEX_TABLE = "VERTEX_TABLE";
     public static final String EDGE_SCHEMA = "EDGE_SCHEMA";
     public static final String EDGE_TABLE = "EDGE_TABLE";
-    public static final String LABEL_SEPERATOR = ":::";
+    public static final String LABEL_SEPARATOR = ":::";
     public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
     public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
 
-    private IMap<String, String> schemas;
+    private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();
     private Set<String> uncommittedSchemas = new HashSet<>();
 
-    private IMap<String, Set<String>> labelSchemas;
+    private Map<String, Set<String>> labelSchemas;
     private Map<String, Set<String>> localLabelSchemas = new HashMap<>();
     private Map<String, Set<String>> uncommittedLabelSchemas = new ConcurrentHashMap<>();
 
-    private IMap<String, Map<String, PropertyType>> tables;
+    private Map<String, Map<String, PropertyType>> tables;
     private Map<String, Map<String, PropertyType>> localTables = new HashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
 
-    private IMap<String, Set<String>> edgeForeignKeys;
+    private Map<String, Set<String>> edgeForeignKeys;
     private Map<String, Set<String>> localEdgeForeignKeys = new HashMap<>();
     private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
 
-    private ReentrantLock schemaLock = new ReentrantLock();
+    private Lock schemaLock;
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
     private HazelcastInstance hazelcastInstance;
+    private boolean distributed;
 
     private static final String SCHEMAS_HAZELCAST_MAP = "_schemas";
     private static final String LABEL_SCHEMAS_HAZELCAST_MAP = "_labelSchemas";
     private static final String TABLES_HAZELCAST_MAP = "_tables";
     private static final String EDGE_FOREIGN_KEYS_HAZELCAST_MAP = "_edgeForeignKeys";
 
-    SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
+    SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect, Configuration configuration) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
-        this.hazelcastInstance = Hazelcast.newHazelcastInstance();
+        this.distributed = configuration.getBoolean("distributed", false);
 
-        this.schemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-        this.labelSchemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
-        this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
-        this.edgeForeignKeys = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
-
-        this.schemas.addEntryListener(new SchemasMapEntryListener(), true);
-        this.labelSchemas.addEntryListener(new LabelSchemasMapEntryListener(), true);
-        this.tables.addEntryListener(new TablesMapEntryListener(), true);
-        this.edgeForeignKeys.addEntryListener(new EdgeForeignKeysMapEntryListener(), true);
+        if (this.distributed) {
+            this.hazelcastInstance = Hazelcast.newHazelcastInstance(configHazelcast(configuration));
+//            this.hazelcastInstance = Hazelcast.newHazelcastInstance();
+            this.schemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+            this.labelSchemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
+            this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
+            this.edgeForeignKeys = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
+            ((IMap) this.schemas).addEntryListener(new SchemasMapEntryListener(), true);
+            ((IMap) this.labelSchemas).addEntryListener(new LabelSchemasMapEntryListener(), true);
+            ((IMap) this.tables).addEntryListener(new TablesMapEntryListener(), true);
+            ((IMap) this.edgeForeignKeys).addEntryListener(new EdgeForeignKeysMapEntryListener(), true);
+            this.schemaLock = this.hazelcastInstance.getLock("schemaLock");
+        } else {
+            this.schemaLock = new ReentrantLock();
+        }
 
         this.sqlgGraph.tx().afterCommit(() -> {
-            if (this.schemaLock.isHeldByCurrentThread()) {
+            if (this.isLockedByCurrentThread()) {
                 for (String schema : this.uncommittedSchemas) {
-                    this.schemas.put(schema, schema);
+                    if (distributed) {
+                        this.schemas.put(schema, schema);
+                    }
                     this.localSchemas.put(schema, schema);
                 }
                 for (String table : this.uncommittedTables.keySet()) {
-                    this.tables.put(table, this.uncommittedTables.get(table));
+                    if (distributed) {
+                        this.tables.put(table, this.uncommittedTables.get(table));
+                    }
                     this.localTables.put(table, this.uncommittedTables.get(table));
                 }
                 for (String table : this.uncommittedLabelSchemas.keySet()) {
-                    Set<String> schemas = this.labelSchemas.get(table);
+                    Set<String> schemas = this.localLabelSchemas.get(table);
                     if (schemas == null) {
-                        this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                        if (distributed) {
+                            this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                        }
                         this.localLabelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
                     } else {
                         schemas.addAll(this.uncommittedLabelSchemas.get(table));
-                        this.labelSchemas.put(table, schemas);
+                        if (distributed) {
+                            this.labelSchemas.put(table, schemas);
+                        }
                         this.localLabelSchemas.put(table, schemas);
                     }
                 }
                 for (String table : this.uncommittedEdgeForeignKeys.keySet()) {
-                    this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                    if (distributed) {
+                        this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                    }
                     this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                 }
                 this.uncommittedSchemas.clear();
@@ -107,7 +127,7 @@ public class SchemaManager {
             }
         });
         this.sqlgGraph.tx().afterRollback(() -> {
-            if (this.schemaLock.isHeldByCurrentThread()) {
+            if (this.isLockedByCurrentThread()) {
                 if (this.getSqlDialect().supportsTransactionalSchema()) {
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
@@ -115,26 +135,36 @@ public class SchemaManager {
                     this.uncommittedEdgeForeignKeys.clear();
                 } else {
                     for (String table : this.uncommittedSchemas) {
-                        this.schemas.put(table, table);
+                        if (distributed) {
+                            this.schemas.put(table, table);
+                        }
                         this.localSchemas.put(table, table);
                     }
                     for (String table : this.uncommittedTables.keySet()) {
-                        this.tables.put(table, this.uncommittedTables.get(table));
+                        if (distributed) {
+                            this.tables.put(table, this.uncommittedTables.get(table));
+                        }
                         this.localTables.put(table, this.uncommittedTables.get(table));
                     }
                     for (String table : this.uncommittedLabelSchemas.keySet()) {
-                        Set<String> schemas = this.labelSchemas.get(table);
+                        Set<String> schemas = this.localLabelSchemas.get(table);
                         if (schemas == null) {
-                            this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                            if (distributed) {
+                                this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                            }
                             this.localLabelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
                         } else {
                             schemas.addAll(this.uncommittedLabelSchemas.get(table));
-                            this.labelSchemas.put(table, schemas);
+                            if (distributed) {
+                                this.labelSchemas.put(table, schemas);
+                            }
                             this.localLabelSchemas.put(table, schemas);
                         }
                     }
                     for (String table : this.uncommittedEdgeForeignKeys.keySet()) {
-                        this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                        if (distributed) {
+                            this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                        }
                         this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                     }
                     this.uncommittedSchemas.clear();
@@ -145,6 +175,24 @@ public class SchemaManager {
                 this.schemaLock.unlock();
             }
         });
+    }
+
+    private Config configHazelcast(Configuration configuration) {
+        Config config = new Config();
+        config.getNetworkConfig().setPort(5900);
+        config.getNetworkConfig().setPortAutoIncrement(true);
+        String[] ips = configuration.getStringArray("hazelcast.members");
+        if (ips.length > 0) {
+            NetworkConfig network = config.getNetworkConfig();
+            JoinConfig join = network.getJoin();
+            join.getMulticastConfig().setEnabled(false);
+            for (String member : ips) {
+                join.getTcpIpConfig().addMember(member);
+            }
+            join.getTcpIpConfig().setEnabled(true);
+        }
+        return config;
+
     }
 
     public SqlDialect getSqlDialect() {
@@ -188,8 +236,7 @@ public class SchemaManager {
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
-            logger.info("this.schemaLock.isHeldByCurrentThread()");
-            if (!this.schemaLock.isHeldByCurrentThread()) {
+            if (!this.isLockedByCurrentThread()) {
                 this.schemaLock.lock();
             }
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
@@ -254,7 +301,7 @@ public class SchemaManager {
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
-            if (!this.schemaLock.isHeldByCurrentThread()) {
+            if (!this.isLockedByCurrentThread()) {
                 this.schemaLock.lock();
             }
             if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
@@ -288,7 +335,7 @@ public class SchemaManager {
     }
 
     /**
-     * This is only called from createIndex
+     * This is only called from createVertexIndex
      *
      * @param schema
      * @param table
@@ -301,7 +348,7 @@ public class SchemaManager {
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
-            if (!this.schemaLock.isHeldByCurrentThread()) {
+            if (!this.isLockedByCurrentThread()) {
                 this.schemaLock.lock();
             }
             if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
@@ -363,7 +410,7 @@ public class SchemaManager {
             }
             if (!uncommitedColumns.containsKey(columnName)) {
                 //Make sure the current thread/transaction owns the lock
-                if (!this.schemaLock.isHeldByCurrentThread()) {
+                if (!this.isLockedByCurrentThread()) {
                     this.schemaLock.lock();
                 }
                 if (!uncommitedColumns.containsKey(columnName)) {
@@ -385,7 +432,7 @@ public class SchemaManager {
         }
         if (!uncommitedColumns.containsKey(keyValue.left)) {
             //Make sure the current thread/transaction owns the lock
-            if (!this.schemaLock.isHeldByCurrentThread()) {
+            if (!this.isLockedByCurrentThread()) {
                 this.schemaLock.lock();
             }
             if (!uncommitedColumns.containsKey(keyValue.left)) {
@@ -415,7 +462,7 @@ public class SchemaManager {
         }
         if (!uncommittedForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
             //Make sure the current thread/transaction owns the lock
-            if (!this.schemaLock.isHeldByCurrentThread()) {
+            if (!this.isLockedByCurrentThread()) {
                 this.schemaLock.lock();
             }
             if (!uncommittedForeignKeys.contains(foreignKey)) {
@@ -427,7 +474,9 @@ public class SchemaManager {
     }
 
     public void close() {
-        this.hazelcastInstance.shutdown();
+        if (this.distributed) {
+            this.hazelcastInstance.shutdown();
+        }
     }
 
     private boolean verticesExist() throws SQLException {
@@ -708,7 +757,7 @@ public class SchemaManager {
                         sb.append(".");
                         sb.append(l.getTable());
                         if (count++ < labelSet.size()) {
-                            sb.append(LABEL_SEPERATOR);
+                            sb.append(LABEL_SEPARATOR);
                         }
                     }
                     preparedStatement.setString(1, sb.toString());
@@ -752,7 +801,7 @@ public class SchemaManager {
                 while (resultSet.next()) {
                     String commaSeparatedLabels = resultSet.getString(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
                     if (commaSeparatedLabels != null) {
-                        String[] schemaLabels = commaSeparatedLabels.split(LABEL_SEPERATOR);
+                        String[] schemaLabels = commaSeparatedLabels.split(LABEL_SEPARATOR);
                         for (String schemaLabel : schemaLabels) {
                             SchemaTable schemaLabelPair = SqlgUtil.parseLabel(schemaLabel, this.sqlDialect.getPublicSchema());
                             labels.add(schemaLabelPair);
@@ -825,40 +874,45 @@ public class SchemaManager {
         }
     }
 
-    public void createIndex(SchemaTable schemaTable, Object... dummykeyValues) {
-
+    public void createVertexIndex(SchemaTable schemaTable, Object... dummykeyValues) {
         this.ensureVertexTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().readWrite();
+        internalCreateIndex(schemaTable, VERTEX_PREFIX, dummykeyValues);
+    }
+
+    public void createEdgeIndex(SchemaTable schemaTable, Object... dummykeyValues) {
         this.ensureEdgeTableExist(schemaTable.getSchema(), schemaTable.getTable(), dummykeyValues);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().readWrite();
+        internalCreateIndex(schemaTable, EDGE_PREFIX, dummykeyValues);
+    }
 
+    private void internalCreateIndex(SchemaTable schemaTable, String prefix, Object[] dummykeyValues) {
         int i = 1;
-        String[] prefixes = new String[]{VERTEX_PREFIX, EDGE_PREFIX};
-        for (String prefix : prefixes) {
-            for (Object dummyKeyValue : dummykeyValues) {
-                if (i++ % 2 != 0) {
-                    if (!existIndex(schemaTable, prefix, this.sqlDialect.indexName(schemaTable, prefix, (String) dummyKeyValue))) {
-                        StringBuilder sql = new StringBuilder("CREATE INDEX ");
-                        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.indexName(schemaTable, prefix, (String) dummyKeyValue)));
-                        sql.append(" ON ");
-                        sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
-                        sql.append(".");
-                        sql.append(this.sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
-                        sql.append(" (");
-                        sql.append(this.sqlDialect.maybeWrapInQoutes((String) dummyKeyValue));
-                        sql.append(")");
-                        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        Connection conn = this.sqlgGraph.tx().getConnection();
-                        try (Statement stmt = conn.createStatement()) {
-                            stmt.execute(sql.toString());
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
+        for (Object dummyKeyValue : dummykeyValues) {
+            if (i++ % 2 != 0) {
+                if (!existIndex(schemaTable, prefix, this.sqlDialect.indexName(schemaTable, prefix, (String) dummyKeyValue))) {
+                    StringBuilder sql = new StringBuilder("CREATE INDEX ");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.indexName(schemaTable, prefix, (String) dummyKeyValue)));
+                    sql.append(" ON ");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(".");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
+                    sql.append(" (");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes((String) dummyKeyValue));
+                    sql.append(")");
+                    if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    Connection conn = this.sqlgGraph.tx().getConnection();
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute(sql.toString());
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -905,7 +959,7 @@ public class SchemaManager {
                     ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                     while (columnsRs.next()) {
                         String schema = columnsRs.getString(2);
-                        this.schemas.put(schema, schema);
+                        this.localSchemas.put(schema, schema);
                         if (!previousSchema.equals(schema)) {
                             foreignKeys = new HashSet<>();
                         }
@@ -915,16 +969,16 @@ public class SchemaManager {
                         String typeName = columnsRs.getString("TYPE_NAME");
                         PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
                         uncommittedColumns.put(column, propertyType);
-                        this.tables.put(schema + "." + table, uncommittedColumns);
-                        Set<String> schemas = this.labelSchemas.get(table);
+                        this.localTables.put(schema + "." + table, uncommittedColumns);
+                        Set<String> schemas = this.localLabelSchemas.get(table);
                         if (schemas == null) {
                             schemas = new HashSet<>();
                         }
                         schemas.add(schema);
-                        this.labelSchemas.put(table, schemas);
+                        this.localLabelSchemas.put(table, schemas);
                         if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                             foreignKeys.add(column);
-                            this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
+                            this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
                         }
                     }
                 }
@@ -945,26 +999,32 @@ public class SchemaManager {
                         ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                         while (columnsRs.next()) {
                             String schema = columnsRs.getString(1);
-                            this.schemas.put(schema, schema);
+                            this.localSchemas.put(schema, schema);
                             String column = columnsRs.getString(4);
                             int columnType = columnsRs.getInt(5);
                             String typeName = columnsRs.getString("TYPE_NAME");
                             PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
                             uncomitedColumns.put(column, propertyType);
-                            this.tables.put(schema + "." + table, uncomitedColumns);
-                            Set<String> schemas = this.labelSchemas.get(table);
+                            this.localTables.put(schema + "." + table, uncomitedColumns);
+                            Set<String> schemas = this.localLabelSchemas.get(table);
                             if (schemas == null) {
                                 schemas = new HashSet<>();
-                                this.labelSchemas.put(table, schemas);
+                                this.localLabelSchemas.put(table, schemas);
                             }
                             schemas.add(schema);
                             if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                                 foreignKeys.add(column);
-                                this.edgeForeignKeys.put(schema + "." + table, foreignKeys);
+                                this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
                             }
                         }
                     }
                 }
+            }
+            if (distributed) {
+                this.schemas.putAll(this.localSchemas);
+                this.labelSchemas.putAll(this.localLabelSchemas);
+                this.tables.putAll(this.localTables);
+                this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -1160,4 +1220,11 @@ public class SchemaManager {
         }
     }
 
+    private boolean isLockedByCurrentThread() {
+        if (this.distributed) {
+            return ((ILock) this.schemaLock).isLockedByCurrentThread();
+        } else {
+            return ((ReentrantLock) this.schemaLock).isHeldByCurrentThread();
+        }
+    }
 }

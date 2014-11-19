@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.mchange.v2.beans.BeansUtils;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -8,8 +9,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Date: 2014/07/12
@@ -61,5 +61,93 @@ public class SqlgDataSource {
                 remove.close();
         }
     }
+
+    public String getPoolStatsAsJson() {
+        try {
+            StringBuffer json = new StringBuffer();
+            json.append("[");
+            int count = 1;
+            for (Map.Entry<String, ComboPooledDataSource> entry : this.cpdss.entrySet()) {
+                ComboPooledDataSource comboPooledDataSource = entry.getValue();
+                json.append("{\"jdbcUrl\":\"").append(entry.getKey()).append("\",");
+                json.append("\"numConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
+                json.append("\"numBusyConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
+                json.append("\"numIdleConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
+                json.append("\"numUnclosedOrphanedConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\"");
+                json.append("}");
+                if (count++ < this.cpdss.size()) {
+                    json.append(",");
+                }
+            }
+            json.append("]");
+            return json.toString();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    final static Set TO_STRING_IGNORE_PROPS = new HashSet(Arrays.asList(new String[]{
+            "connection",
+            "lastAcquisitionFailureDefaultUser",
+            "lastCheckinFailureDefaultUser",
+            "lastCheckoutFailureDefaultUser",
+            "lastConnectionTestFailureDefaultUser",
+            "lastIdleTestFailureDefaultUser",
+            "logWriter",
+            "loginTimeout",
+            "numBusyConnections",
+            "numBusyConnectionsAllUsers",
+            "numBusyConnectionsDefaultUser",
+            "numConnections",
+            "numConnectionsAllUsers",
+            "numConnectionsDefaultUser",
+            "numFailedCheckinsDefaultUser",
+            "numFailedCheckoutsDefaultUser",
+            "numFailedIdleTestsDefaultUser",
+            "numIdleConnections",
+            "numIdleConnectionsAllUsers",
+            "numThreadsAwaitingCheckoutDefaultUser",
+            "numIdleConnectionsDefaultUser",
+            "numUnclosedOrphanedConnections",
+            "numUnclosedOrphanedConnectionsAllUsers",
+            "numUnclosedOrphanedConnectionsDefaultUser",
+            "numUserPools",
+            "effectivePropertyCycleDefaultUser",
+            "parentLogger",
+            "startTimeMillisDefaultUser",
+            "statementCacheNumCheckedOutDefaultUser",
+            "statementCacheNumCheckedOutStatementsAllUsers",
+            "statementCacheNumConnectionsWithCachedStatementsAllUsers",
+            "statementCacheNumConnectionsWithCachedStatementsDefaultUser",
+            "statementCacheNumStatementsAllUsers",
+            "statementCacheNumStatementsDefaultUser",
+            "statementDestroyerNumConnectionsInUseAllUsers",
+            "statementDestroyerNumConnectionsWithDeferredDestroyStatementsAllUsers",
+            "statementDestroyerNumDeferredDestroyStatementsAllUsers",
+            "statementDestroyerNumConnectionsInUseDefaultUser",
+            "statementDestroyerNumConnectionsWithDeferredDestroyStatementsDefaultUser",
+            "statementDestroyerNumDeferredDestroyStatementsDefaultUser",
+            "statementDestroyerNumThreads",
+            "statementDestroyerNumActiveThreads",
+            "statementDestroyerNumIdleThreads",
+            "statementDestroyerNumTasksPending",
+            "threadPoolSize",
+            "threadPoolNumActiveThreads",
+            "threadPoolNumIdleThreads",
+            "threadPoolNumTasksPending",
+            "threadPoolStackTraces",
+            "threadPoolStatus",
+            "overrideDefaultUser",
+            "overrideDefaultPassword",
+            "password",
+            "reference",
+            "upTimeMillisDefaultUser",
+            "user",
+            "userOverridesAsString",
+            "allUsers",
+            "connectionPoolDataSource",
+            "propertyChangeListeners",
+            "vetoableChangeListeners"
+    }));
 
 }
