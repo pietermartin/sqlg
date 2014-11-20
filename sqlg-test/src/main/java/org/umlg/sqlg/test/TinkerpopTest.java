@@ -247,7 +247,6 @@ public class TinkerpopTest extends BaseTest {
         e1.hiddenKeys().stream().forEach(hiddenKey -> assertTrue(e1.hiddenValues(hiddenKey).hasNext()));
         assertFalse(e1.hiddenValues(Graph.Key.hide("acl")).hasNext());
         assertTrue(e1.hiddenValues("acl").hasNext());
-        assertEquals("private", e1.iterators().hiddenPropertyIterator("acl").next().value());
         assertEquals("public", e1.iterators().propertyIterator("acl").next().value());
     }
 
