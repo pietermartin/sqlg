@@ -149,6 +149,18 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
                     sql.append(".");
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+
+                    //JOINS to VERTICES to preload the in and out edges labels
+                    sql.append(" a JOIN ");
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
+                    sql.append(".");
+                    sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+                    sql.append(" b ON a.");
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                    sql.append(" = b.");
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+
+
                     if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
                     }
@@ -162,7 +174,21 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                             long id = resultSet.getLong(1);
                             SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, schemaTable.getTable());
                             sqlGVertex.loadResultSet(resultSet);
+
+                            //Load the in and out labels
+                            Set<SchemaTable> labels = new HashSet<>();
+                            String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
+                            this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
+                            sqlGVertex.inLabelsForVertex = new HashSet<>();
+                            sqlGVertex.inLabelsForVertex.addAll(labels);
+                            String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
+                            labels.clear();
+                            this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
+                            sqlGVertex.outLabelsForVertex = new HashSet<>();
+                            sqlGVertex.outLabelsForVertex.addAll(labels);
+
                             sqlGVertexes.add(sqlGVertex);
+
                         }
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -183,7 +209,16 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
             sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
-            sql.append(" a WHERE a.");
+            //join to VERTICES to get the in and out labels
+            sql.append(" a JOIN ");
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
+            sql.append(".");
+            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+            sql.append(" b ON a.");
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" = b.");
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(" WHERE a.");
             sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
@@ -202,6 +237,19 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     long id = resultSet.getLong(1);
                     SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
                     sqlGVertex.loadResultSet(resultSet);
+
+                    //Load the in and out labels
+                    Set<SchemaTable> labels = new HashSet<>();
+                    String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
+                    this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
+                    sqlGVertex.inLabelsForVertex = new HashSet<>();
+                    sqlGVertex.inLabelsForVertex.addAll(labels);
+                    String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
+                    labels.clear();
+                    this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
+                    sqlGVertex.outLabelsForVertex = new HashSet<>();
+                    sqlGVertex.outLabelsForVertex.addAll(labels);
+
                     sqlGVertexes.add(sqlGVertex);
                 }
             } catch (SQLException e) {

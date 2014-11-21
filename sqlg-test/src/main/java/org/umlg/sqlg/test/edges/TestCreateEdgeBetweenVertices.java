@@ -6,6 +6,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.List;
+
 /**
  * Date: 2014/11/20
  * Time: 9:31 PM
@@ -24,16 +26,54 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         Assert.assertEquals(1, person1.out("friend").count().next().intValue());
         Assert.assertEquals(1, person2.in("friend").count().next().intValue());
     }
+//
+//    TODO
+//    @Test
+//    public void testCreateEdgeBetweenVerticesPropertiesEagerlyLoaded() {
+//        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//        Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+//        this.sqlgGraph.tx().commit();
+//        person1 = this.sqlgGraph.v(person1.id());
+//        person2 = this.sqlgGraph.v(person2.id());
+//        Assert.assertEquals("john", person1.value("name"));
+//        Assert.assertEquals("peter", person2.value("name"));
+//        this.sqlgGraph.tx().commit();
+//    }
 
     @Test
-    public void testCreateEdgeBetweenVerticesPropertiesEagerlyLoaded() {
+    public void testCreateEdgeBetweenVerticesPropertiesEagerlyLoadedOnHas() {
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
         person1 = this.sqlgGraph.v(person1.id());
         person2 = this.sqlgGraph.v(person2.id());
+        person1.addEdge("friend", person2);
         Assert.assertEquals("john", person1.value("name"));
         Assert.assertEquals("peter", person2.value("name"));
         this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.V().<Vertex>has(T.label, "Person").toList();
+        Assert.assertEquals(1, vertices.get(0).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertices.get(1).in("friend").count().next().intValue());
+        Assert.assertEquals(2, vertices.size());
     }
+
+    @Test
+    public void testCreateEdgeBetweenVerticesPropertiesEagerlyLoadedOnHasHas() {
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+        this.sqlgGraph.tx().commit();
+        person1 = this.sqlgGraph.v(person1.id());
+        person2 = this.sqlgGraph.v(person2.id());
+        person1.addEdge("friend", person2);
+        Assert.assertEquals("john", person1.value("name"));
+        Assert.assertEquals("peter", person2.value("name"));
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.V().<Vertex>has(T.label, "Person").<Vertex>has("name", "john").toList();
+        Assert.assertEquals(1, vertices.get(0).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.V().<Vertex>has(T.label, "Person").<Vertex>has("name", "peter").toList();
+        Assert.assertEquals(1, vertices.get(0).in("friend").count().next().intValue());
+        Assert.assertEquals(1, vertices.size());
+    }
+
 }

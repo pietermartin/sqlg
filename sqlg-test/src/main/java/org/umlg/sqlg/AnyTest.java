@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TinkerpopTest;
+import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.hidden.TestHidden;
@@ -16,7 +17,7 @@ import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestCreateEdgeBetweenVertices.class
+        TestBatch.class
 })
 public class AnyTest {
 }

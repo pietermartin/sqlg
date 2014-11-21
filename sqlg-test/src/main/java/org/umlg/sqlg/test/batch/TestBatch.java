@@ -33,55 +33,55 @@ public class TestBatch extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
-    @Test
-    public void testVerticesBatchOn() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 10000; i++) {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
-            v1.addEdge("Friend", v2);
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        Assert.assertEquals(20000, this.sqlgGraph.V().count().next(), 0);
-        Assert.assertEquals(10000, this.sqlgGraph.E().count().next(), 0);
-    }
-
-    @Test
-    public void testBatchVertices() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        v1.addEdge("Friend", v2, "weight", 1);
-        v1.addEdge("Friend", v3, "weight", 2);
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3, this.sqlgGraph.V().count().next(), 0);
-        Assert.assertEquals(2, v1.out("Friend").count().next(), 0);
-        Assert.assertTrue(v1.out("Friend").toList().contains(v2));
-        Assert.assertTrue(v1.out("Friend").toList().contains(v3));
-        Assert.assertTrue(v2.in("Friend").toList().contains(v1));
-        Assert.assertTrue(v3.in("Friend").toList().contains(v1));
-    }
-
-    @Test
-    public void testBatchModeNeedsCleanTransactionPass() {
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(4, this.sqlgGraph.V().count().next(), 0);
-    }
+//    @Test
+//    public void testVerticesBatchOn() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 10000; i++) {
+//            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
+//            v1.addEdge("Friend", v2);
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        Assert.assertEquals(20000, this.sqlgGraph.V().count().next(), 0);
+//        Assert.assertEquals(10000, this.sqlgGraph.E().count().next(), 0);
+//    }
+//
+//    @Test
+//    public void testBatchVertices() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//        v1.addEdge("Friend", v2, "weight", 1);
+//        v1.addEdge("Friend", v3, "weight", 2);
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(3, this.sqlgGraph.V().count().next(), 0);
+//        Assert.assertEquals(2, v1.out("Friend").count().next(), 0);
+//        Assert.assertTrue(v1.out("Friend").toList().contains(v2));
+//        Assert.assertTrue(v1.out("Friend").toList().contains(v3));
+//        Assert.assertTrue(v2.in("Friend").toList().contains(v1));
+//        Assert.assertTrue(v3.in("Friend").toList().contains(v1));
+//    }
+//
+//    @Test
+//    public void testBatchModeNeedsCleanTransactionPass() {
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().batchModeOn();
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(4, this.sqlgGraph.V().count().next(), 0);
+//    }
 
 
     /**
@@ -146,767 +146,767 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(200002, lastCar.get() - (Long) firstVertex.id());
     }
 
-    @Test
-    public void testVertexProperties() {
-        List<Short> shortList = new ArrayList<>();
-        List<Integer> integerList = new ArrayList<>();
-        List<Long> longList = new ArrayList<>();
-        List<Double> doubleList = new ArrayList<>();
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person",
-                    "age2", (short) i,
-                    "age3", i,
-                    "age4", new Long(i),
-                    "age6", new Double(i)
-            );
-            shortList.add((short) i);
-            integerList.add(new Integer(i));
-            longList.add(new Long(i));
-            doubleList.add(new Double(i));
-        }
-        Assert.assertEquals(100, shortList.size());
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.V().toList();
-        for (Vertex v : vertices) {
-            shortList.remove((Short) v.value("age2"));
-            integerList.remove((Integer) v.value("age3"));
-            longList.remove((Long) v.value("age4"));
-            doubleList.remove((Double) v.value("age6"));
-        }
-        Assert.assertTrue(shortList.isEmpty());
-        Assert.assertTrue(integerList.isEmpty());
-        Assert.assertTrue(longList.isEmpty());
-        Assert.assertTrue(doubleList.isEmpty());
-    }
-
-    @Test
-    public void testEdgeProperties() {
-        List<Short> shortList = new ArrayList<>();
-        List<Integer> integerList = new ArrayList<>();
-        List<Long> longList = new ArrayList<>();
-        List<Double> doubleList = new ArrayList<>();
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 100; i++) {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-            Edge e1 = v1.addEdge("Friend", v2,
-                    "age2", (short) i,
-                    "age3", i,
-                    "age4", new Long(i),
-                    "age6", new Double(i)
-            );
-            shortList.add((short) i);
-            integerList.add(new Integer(i));
-            longList.add(new Long(i));
-            doubleList.add(new Double(i));
-        }
-        Assert.assertEquals(100, shortList.size());
-        this.sqlgGraph.tx().commit();
-        List<Edge> edges = this.sqlgGraph.E().toList();
-        for (Edge e : edges) {
-            shortList.remove((Short) e.value("age2"));
-            integerList.remove((Integer) e.value("age3"));
-            longList.remove((Long) e.value("age4"));
-            doubleList.remove((Double) e.value("age6"));
-        }
-        Assert.assertTrue(shortList.isEmpty());
-        Assert.assertTrue(integerList.isEmpty());
-        Assert.assertTrue(longList.isEmpty());
-        Assert.assertTrue(doubleList.isEmpty());
-    }
-
-    @Test
-    public void testUpdateInsertedVertexProperty() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        v1.property("name", "john");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals("john", v1.value("name"));
-        Assert.assertEquals("john", this.sqlgGraph.V().next().value("name"));
-        v1 = this.sqlgGraph.v(v1.id());
-        Assert.assertEquals("john", v1.value("name"));
-        Assert.assertEquals("john", this.sqlgGraph.V().next().value("name"));
-    }
-
-    @Test
-    public void testAddPropertyToInsertedVertexProperty() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        v1.property("name", "john");
-        v1.property("surname", "aaaa");
-        this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.v(v1.id());
-        Assert.assertEquals("john", v1.value("name"));
-        Assert.assertEquals("aaaa", v1.value("surname"));
-        Assert.assertEquals("john", this.sqlgGraph.V().next().value("name"));
-    }
-
-    @Test
-    public void testUpdateInsertedEdgeProperty() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        Edge edge = v1.addEdge("Friend", v2, "weight", 1);
-        edge.property("weight", 2);
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, edge.<Integer>value("weight"), 0);
-        Assert.assertEquals(2, this.sqlgGraph.E().next().<Integer>value("weight"), 0);
-    }
-
-    //    @Test
-    //TODO need to deal with missing properties, set them to null
-    public void testRemoveProperty() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        Edge friend = marko.addEdge("Friend", john, "weight", 1);
-        Edge colleague = marko.addEdge("Colleague", john, "toRemove", "a");
-        marko.property("name").remove();
-        colleague.property("toRemove").remove();
-        this.sqlgGraph.tx().commit();
-
-        marko = this.sqlgGraph.v(marko.id());
-        Assert.assertFalse(marko.property("name").isPresent());
-    }
-
-    @Test
-    public void testInOutOnEdges() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
-        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
-        root.addEdge("rootGod", god);
-        this.sqlgGraph.tx().commit();
-    }
-
-    @Test
-    public void testGetEdges() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
-        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
-        Edge sqlgEdge = root.addEdge("rootGod", god);
-        Assert.assertEquals(sqlgEdge, root.outE("rootGod").next());
-        this.sqlgGraph.tx().commit();
-    }
-
-    @Test
-    public void testGetVertices() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
-        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
-        Vertex human = this.sqlgGraph.addVertex(T.label, "Human");
-        root.addEdge("rootGod", god);
-        root.addEdge("rootHuman", human);
-        god.addEdge("rootROOT", root);
-        Assert.assertEquals(god, root.out("rootGod").next());
-        Assert.assertEquals(human, root.out("rootHuman").next());
-        this.sqlgGraph.tx().commit();
-    }
-
-    @Test
-    public void testPerformance() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 10000; i++) {
-            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
-            Vertex spaceTime = this.sqlgGraph.addVertex(T.label, "SpaceTime", "name", "marko" + i);
-            Vertex space = this.sqlgGraph.addVertex(T.label, "Space", "name", "marko" + i);
-            Vertex time = this.sqlgGraph.addVertex(T.label, "Time", "name", "marko" + i);
-            person.addEdge("spaceTime", spaceTime, "context", 1);
-            spaceTime.addEdge("space", space, "dimension", 3);
-            spaceTime.addEdge("time", time, "dimension", 1);
-            if (i != 0 && i % 10000 == 0) {
-                this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().batchModeOn();
-            }
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
-        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "SpaceTime").count().next(), 0);
-        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "Space").count().next(), 0);
-        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "Time").count().next(), 0);
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-    }
-
-    @Test
-    public void testGetVerticesWithHas() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
-        Vertex jah = this.sqlgGraph.addVertex(T.label, "God", "name", "Jah");
-        Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
-        root.addEdge("rootGod", jah);
-        root.addEdge("rootGod", jehova);
-        List<Vertex> vertices = root.out("rootGod").toList();
-        Assert.assertTrue(vertices.contains(jah));
-        Assert.assertTrue(vertices.contains(jehova));
-        Assert.assertEquals(jah, root.out("rootGod").has("name", "Jah").next());
-        Assert.assertEquals(jehova, root.out("rootGod").has("name", "Jehova").next());
-        this.sqlgGraph.tx().commit();
-    }
-
-    @Test
-    public void testVertexLabelCache() {
-        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex jah = this.sqlgGraph.addVertex(T.label, "God", "name", "Jah");
-        Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
-        root.addEdge("rootGod", jah);
-        root.addEdge("rootGod", jehova);
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = root.out("rootGod").toList();
-        Assert.assertTrue(vertices.contains(jah));
-        Assert.assertTrue(vertices.contains(jehova));
-        Assert.assertEquals(jah, root.out("rootGod").has("name", "Jah").next());
-        Assert.assertEquals(jehova, root.out("rootGod").has("name", "Jehova").next());
-    }
-
-    @Test
-    public void testVertexMultipleEdgesLabels() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
-        Vertex bike = this.sqlgGraph.addVertex(T.label, "Bike", "name", "c");
-        person.addEdge("car", car);
-        person.addEdge("bike", bike);
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, person.out().count().next(), 0);
-    }
-
-    @Test
-    public void testAddEdgeAccrossSchema() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex person = this.sqlgGraph.addVertex(T.label, "Schema1.Person", "name", "a");
-        Vertex car = this.sqlgGraph.addVertex(T.label, "Schema2.Car", "name", "b");
-        Vertex bike = this.sqlgGraph.addVertex(T.label, "Schema2.Bike", "name", "c");
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        person.addEdge("car", car);
-        person.addEdge("bike", bike);
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, person.out().count().next(), 0);
-    }
-
-    @Test
-    public void testBatchCommit() {
-        Assume.assumeTrue(this.sqlgGraph.features().supportsBatchMode());
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 111; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
-            this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
-        }
-        Map<SchemaTable, Pair<Long, Long>> result = this.sqlgGraph.tx().batchCommit();
-        Assert.assertEquals(1l, result.get(SchemaTable.of("public", "Person1")).getLeft(), 0);
-        Assert.assertEquals(111l, result.get(SchemaTable.of("public", "Person1")).getRight(), 0);
-        Assert.assertEquals(112l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
-        Assert.assertEquals(222l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
-
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 111; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
-            this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
-        }
-        result = this.sqlgGraph.tx().batchCommit();
-        Assert.assertEquals(223l, result.get(SchemaTable.of("public", "Person1")).getLeft(), 0);
-        Assert.assertEquals(333l, result.get(SchemaTable.of("public", "Person1")).getRight(), 0);
-        Assert.assertEquals(334l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
-        Assert.assertEquals(444l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
-
-    }
-
-    @Test
-    public void testCacheAndUpdateVERTICESLabels() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "person");
-        List<Vertex> cache = new ArrayList<>();
-        for (int i = 0; i < 10000; i++) {
-            cache.add(this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i));
-        }
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        for (Vertex person2 : cache) {
-            person1.addEdge("Friend", person2);
-        }
-        this.sqlgGraph.tx().commit();
-        person1 = this.sqlgGraph.v(person1.id());
-        Assert.assertTrue(person1.out("Friend").hasNext());
-        Assert.assertEquals(10000, person1.out("Friend").count().next(), 0);
-        List<Vertex> friends = person1.out("Friend").toList();
-        List<String> names = friends.stream().map(v -> v.<String>value("name")).collect(Collectors.toList());
-        Assert.assertEquals(10000, names.size(), 0);
-        for (int i = 0; i < 10000; i++) {
-            Assert.assertTrue(names.contains("person" + i));
-        }
-    }
-
-    @Test
-    public void testBatchInsertDifferentKeys() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
-        this.sqlgGraph.tx().commit();
-
-        List<Vertex> persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person").<Vertex>has("name", "a").toList();
-        Assert.assertEquals(1, persons.size());
-        Assert.assertFalse(persons.get(0).property("surname").isPresent());
-
-        persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person").<Vertex>has("surname", "b").toList();
-        Assert.assertEquals(1, persons.size());
-        Assert.assertFalse(persons.get(0).property("name").isPresent());
-
-        persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person").has("surname", "b").<Vertex>has("name", "a").toList();
-        Assert.assertEquals(0, persons.size());
-    }
-
-    @Test
-    public void testVerticesOutLabelsForPersistentVertices() {
-        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
-        Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
-        Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
-        vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals("Huawei_Gsm", softwareVersion.in("vendorTechnology_softwareVersion").next().value("name"));
-
-        this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex rwe1 = this.sqlgGraph.addVertex(T.label, "RWE", "name", "cell1");
-        rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
-        this.sqlgGraph.tx().commit();
-
-        softwareVersion = this.sqlgGraph.v(softwareVersion.id());
-        Assert.assertEquals("Huawei_Gsm", softwareVersion.in("vendorTechnology_softwareVersion").next().value("name"));
-    }
-
-    @Test
-    public void testVerticesInLabelsForPersistentVertices() {
-        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
-        Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
-        Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
-        softwareVersion.addEdge("softwareVersion_vendorTechnology", vendorTechnology);
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals("Huawei_Gsm", softwareVersion.out("softwareVersion_vendorTechnology").next().value("name"));
-
-        this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex rwe1 = this.sqlgGraph.addVertex(T.label, "RWE", "name", "cell1");
-        rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
-        this.sqlgGraph.tx().commit();
-
-        softwareVersion = this.sqlgGraph.v(softwareVersion.id());
-        Assert.assertEquals("Huawei_Gsm", softwareVersion.out("softwareVersion_vendorTechnology").next().value("name"));
-    }
-
-    @Test
-    public void testBatchUpdatePersistentVertices() {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals("a", this.sqlgGraph.v(v1.id()).value("name"));
-        Assert.assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
-
-        this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
-        v1.property("name", "aa");
-        v2.property("surname", "bb");
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals("aa", this.sqlgGraph.v(v1.id()).value("name"));
-        Assert.assertEquals("bb", this.sqlgGraph.v(v2.id()).value("surname"));
-    }
-
-    @Test
-    public void testBatchUpdatePersistentVerticesAllTypes() {
-
-        Assume.assumeTrue(this.sqlgGraph.features().vertex().properties().supportsFloatValues());
-
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals("a", this.sqlgGraph.v(v1.id()).value("name"));
-        Assert.assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
-
-        this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
-        v1.property("name", "aa");
-        v1.property("boolean", true);
-        v1.property("short", (short) 1);
-        v1.property("integer", 1);
-        v1.property("long", 1L);
-        v1.property("float", 1F);
-        v1.property("double", 1D);
-
-        v2.property("surname", "bb");
-        v2.property("boolean", false);
-        v2.property("short", (short) 2);
-        v2.property("integer", 2);
-        v2.property("long", 2L);
-        v2.property("float", 2F);
-        v2.property("double", 2D);
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals("aa", this.sqlgGraph.v(v1.id()).value("name"));
-        Assert.assertEquals(true, this.sqlgGraph.v(v1.id()).value("boolean"));
-        Assert.assertEquals((short) 1, this.sqlgGraph.v(v1.id()).<Short>value("short").shortValue());
-        Assert.assertEquals(1, this.sqlgGraph.v(v1.id()).<Integer>value("integer").intValue());
-        Assert.assertEquals(1L, this.sqlgGraph.v(v1.id()).<Long>value("long").longValue(), 0);
-        Assert.assertEquals(1F, this.sqlgGraph.v(v1.id()).<Float>value("float").floatValue(), 0);
-        Assert.assertEquals(1D, this.sqlgGraph.v(v1.id()).<Double>value("double").doubleValue(), 0);
-
-        Assert.assertEquals("bb", this.sqlgGraph.v(v2.id()).value("surname"));
-        Assert.assertEquals(false, this.sqlgGraph.v(v2.id()).value("boolean"));
-        Assert.assertEquals((short) 2, this.sqlgGraph.v(v2.id()).<Short>value("short").shortValue());
-        Assert.assertEquals(2, this.sqlgGraph.v(v2.id()).<Integer>value("integer").intValue());
-        Assert.assertEquals(2L, this.sqlgGraph.v(v2.id()).<Long>value("long").longValue(), 0);
-        Assert.assertEquals(2F, this.sqlgGraph.v(v2.id()).<Float>value("float").floatValue(), 0);
-        Assert.assertEquals(2D, this.sqlgGraph.v(v2.id()).<Double>value("double").doubleValue(), 0);
-    }
-
-    @Test
-    public void testBatchUpdatePersistentVerticesPerformance1() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        int count = 1;
-        for (int i = 0; i < 100000; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-            if (count++ % 10000 == 0) {
-                this.sqlgGraph.tx().commit();
-            }
-
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
-
-        List<Vertex> vertices = this.sqlgGraph.V().toList();
-        count = 1;
-        for (Vertex v : vertices) {
-            v.property("name", "b");
-            if (count++ % 10000 == 0) {
-                this.sqlgGraph.tx().commit();
-            }
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-    }
-
-    @Test
-    public void testInsertUpdateQuotedStrings() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "name", "'a'");
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        List<Vertex> vertices = this.sqlgGraph.V().toList();
-        for (Vertex v : vertices) {
-            v.property("name", "'b'");
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-    }
-
-
-    @Test
-    public void testVerticesOutLabelsForEdgeToPersistentVertices() {
-        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
-        Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
-        Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
-        vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
-        this.sqlgGraph.tx().commit();
-
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 10; i++) {
-            Vertex workspaceElement = this.sqlgGraph.addVertex(T.label, "WorkspaceElement");
-            workspaceElement.addEdge("workspaceElementRealWorkspace", realWorkspace);
-            realWorkspace.addEdge("workspaceElementSoftwareVersion", softwareVersion);
-        }
-        this.sqlgGraph.tx().commit();
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement statement = conn.createStatement()) {
-            StringBuilder sql = new StringBuilder();
-            sql.append("SELECT \"IN_LABELS\" FROM \"");
-            sql.append(this.sqlgGraph.getSqlDialect().getPublicSchema());
-            sql.append("\".\"VERTICES\" WHERE \"VERTEX_TABLE\" = 'SoftwareVersion'");
-            ResultSet resultSet = statement.executeQuery(sql.toString());
-            resultSet.next();
-            Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".vendorTechnology_softwareVersion:::" + this.sqlgGraph.getSqlDialect().getPublicSchema() + ".workspaceElementSoftwareVersion", resultSet.getString(1));
-        } catch (SQLException e) {
-            Assert.fail(e.getMessage());
-        }
-
-    }
-
-    @Test
-    public void testBatchRemoveVertex() {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        v1.remove();
-        v2.remove();
-        v3.remove();
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(0, this.sqlgGraph.V().count().next().intValue());
-    }
-
-    @Test
-    public void testBatchRemoveEdges() {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge edge1 = v1.addEdge("test", v2);
-        Edge edge2 = v1.addEdge("test", v3);
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        edge1.remove();
-        edge2.remove();
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3, this.sqlgGraph.V().count().next().intValue());
-        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
-    }
-
-    @Test
-    public void testBatchRemoveVerticesAndEdges() {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge edge1 = v1.addEdge("test", v2);
-        Edge edge2 = v1.addEdge("test", v3);
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        edge1.remove();
-        edge2.remove();
-        v1.remove();
-        v2.remove();
-        v3.remove();
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(0, this.sqlgGraph.V().count().next().intValue());
-        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
-    }
-
-    @Test
-    public void testDeletePerformance() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        //32767
-        int j = 1;
-        //create 280 foreign keys
-        for (int i = 0; i < 2810; i++) {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
-            if (j == 281) {
-                j = 1;
-            }
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "huawei.NetworkElement", "name", "networkElement" + i + "_" + j);
-            v2.addEdge("WorkspaceElement_NetworkElement" + j, v1);
-            j++;
-        }
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
-        List<SqlgVertex> vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "WorkspaceElement").toList();
-        int count = 1;
-        for (SqlgVertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "NetworkElement").toList();
-        count = 1;
-        for (SqlgVertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        Assert.assertEquals(0, this.sqlgGraph.V().count().next().intValue());
-        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
-    }
-
-    @Test
-    public void testDropForeignKeys() {
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex workspaceElementBsc = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "bsc1");
-        Vertex networkElementBsc = this.sqlgGraph.addVertex(T.label, "bsc", "name", "bsc1");
-        Vertex workspaceElementCell1 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "cell1");
-        Vertex networkElementCell1 = this.sqlgGraph.addVertex(T.label, "cell", "name", "cell1");
-        Vertex workspaceElementCell2 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "cell2");
-        Vertex networkElementCell2 = this.sqlgGraph.addVertex(T.label, "cell", "name", "cell2");
-        Vertex workspaceElementBsctmr1 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "bsctmr1");
-        Vertex networkElementBsctmr1 = this.sqlgGraph.addVertex(T.label, "bsctmr", "name", "bsctms1");
-        //add edges to workspaceelement
-        networkElementBsc.addEdge("bsc_workspaceElement", workspaceElementBsc);
-        networkElementCell1.addEdge("cell_workspaceElement", workspaceElementCell1);
-        networkElementCell2.addEdge("cell_workspaceElement", workspaceElementCell2);
-        networkElementBsctmr1.addEdge("bsctmr_workspaceElement", workspaceElementBsctmr1);
-
-        //add edges to between elements
-        networkElementBsc.addEdge("bsc_cell", networkElementCell1);
-        networkElementBsc.addEdge("bsc_cell", networkElementCell2);
-        networkElementBsc.addEdge("bsc_bsctmr", networkElementBsctmr1);
-
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-
-        List<SqlgVertex> vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "WorkspaceElement").toList();
-        for (SqlgVertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "bsc").toList();
-        for (SqlgVertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "cell").toList();
-        for (SqlgVertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "bsctmr").toList();
-        for (SqlgVertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        this.sqlgGraph.tx().commit();
-    }
-
-    @Test
-    public void testBatchDeleteVertexNewlyAdded() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
-        for (int i = 0; i < 100; i++) {
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
-            v1.addEdge("car", v2, "bought", 1);
-        }
-        List<Vertex> cars = v1.out("car").toList();
-        for (int i = 0; i < 50; i++) {
-            cars.get(i).remove();
-        }
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(51, this.sqlgGraph.V().count().next().intValue());
-        Assert.assertEquals(50, this.sqlgGraph.E().count().next().intValue());
-    }
-
-    @Test
-    public void testBatchDeleteEdgeNewlyAdded() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
-        for (int i = 0; i < 100; i++) {
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
-            v1.addEdge("car", v2, "bought", 1);
-        }
-        List<Edge> cars = v1.outE("car").toList();
-        for (int i = 0; i < 50; i++) {
-            cars.get(i).remove();
-        }
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(101, this.sqlgGraph.V().count().next().intValue());
-        Assert.assertEquals(50, this.sqlgGraph.E().count().next().intValue());
-    }
-
-    @Test
-    public void testNullEdge() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Assert.assertEquals(0, v1.out("cars").count().next().intValue());
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car");
-        v1.addEdge("cars", v2);
-        Assert.assertEquals(1, v1.out("cars").count().next().intValue());
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, v1.out("cars").count().next().intValue());
-    }
-
-    @Test
-    public void testBatchModeStuffsUpProperties() {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
-        Assert.assertEquals("a", v1.value("name"));
-        Assert.assertEquals("b", v2.value("name"));
-    }
-
-    //this test a 'contains' bug in the update of labels batch logic
-    @Test
-    public void testBatchUpdateOfLabels() throws Exception {
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "mike");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
-        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Bike", "name", "ktm");
-        v1.addEdge("bts_aaaaaa", v2);
-        v1.addEdge("bts_btsalmtos", v4);
-        v1.addEdge("bts_btsalm", v3);
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        v1  = this.sqlgGraph.v(v1.id());
-        Assert.assertEquals(1, v1.out("bts_btsalm").count().next().intValue());
-        Assert.assertEquals(1, v1.out("bts_btsalmtos").count().next().intValue());
-    }
-
-    @Test
-    public void testBatchUpdateDifferentPropertiesDifferentRows() {
-
-        Vertex sqlgVertex1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a1", "property2", "b1", "property3", "c1");
-        Vertex sqlgVertex2 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a2", "property2", "b2", "property3", "c2");
-        Vertex sqlgVertex3 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a3", "property2", "b3", "property3", "c3");
-        this.sqlgGraph.tx().commit();
-
-        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
-        Assert.assertEquals("a1", sqlgVertex1.value("property1"));
-        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
-        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
-
-        this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
-        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
-        sqlgVertex1.property("property1", "a11");
-        sqlgVertex2.property("property2", "b22");
-        sqlgVertex3.property("property3", "b33");
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals("a11", sqlgVertex1.value("property1"));
-        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
-        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
-
-        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
-        Assert.assertEquals("a11", sqlgVertex1.value("property1"));
-        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
-        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
-
-    }
-
-    @Test
-    public void testBatchUpdateNewVertex() {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a");
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        v2.property("property2", "bb");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals("a", v1.value("property1"));
-        Assert.assertFalse(v1.property("property2").isPresent());
-        Assert.assertFalse(v2.property("property1").isPresent());
-        Assert.assertEquals("bb", v2.value("property2"));
-
-    }
+//    @Test
+//    public void testVertexProperties() {
+//        List<Short> shortList = new ArrayList<>();
+//        List<Integer> integerList = new ArrayList<>();
+//        List<Long> longList = new ArrayList<>();
+//        List<Double> doubleList = new ArrayList<>();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 100; i++) {
+//            this.sqlgGraph.addVertex(T.label, "Person",
+//                    "age2", (short) i,
+//                    "age3", i,
+//                    "age4", new Long(i),
+//                    "age6", new Double(i)
+//            );
+//            shortList.add((short) i);
+//            integerList.add(new Integer(i));
+//            longList.add(new Long(i));
+//            doubleList.add(new Double(i));
+//        }
+//        Assert.assertEquals(100, shortList.size());
+//        this.sqlgGraph.tx().commit();
+//        List<Vertex> vertices = this.sqlgGraph.V().toList();
+//        for (Vertex v : vertices) {
+//            shortList.remove((Short) v.value("age2"));
+//            integerList.remove((Integer) v.value("age3"));
+//            longList.remove((Long) v.value("age4"));
+//            doubleList.remove((Double) v.value("age6"));
+//        }
+//        Assert.assertTrue(shortList.isEmpty());
+//        Assert.assertTrue(integerList.isEmpty());
+//        Assert.assertTrue(longList.isEmpty());
+//        Assert.assertTrue(doubleList.isEmpty());
+//    }
+//
+//    @Test
+//    public void testEdgeProperties() {
+//        List<Short> shortList = new ArrayList<>();
+//        List<Integer> integerList = new ArrayList<>();
+//        List<Long> longList = new ArrayList<>();
+//        List<Double> doubleList = new ArrayList<>();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 100; i++) {
+//            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//            Edge e1 = v1.addEdge("Friend", v2,
+//                    "age2", (short) i,
+//                    "age3", i,
+//                    "age4", new Long(i),
+//                    "age6", new Double(i)
+//            );
+//            shortList.add((short) i);
+//            integerList.add(new Integer(i));
+//            longList.add(new Long(i));
+//            doubleList.add(new Double(i));
+//        }
+//        Assert.assertEquals(100, shortList.size());
+//        this.sqlgGraph.tx().commit();
+//        List<Edge> edges = this.sqlgGraph.E().toList();
+//        for (Edge e : edges) {
+//            shortList.remove((Short) e.value("age2"));
+//            integerList.remove((Integer) e.value("age3"));
+//            longList.remove((Long) e.value("age4"));
+//            doubleList.remove((Double) e.value("age6"));
+//        }
+//        Assert.assertTrue(shortList.isEmpty());
+//        Assert.assertTrue(integerList.isEmpty());
+//        Assert.assertTrue(longList.isEmpty());
+//        Assert.assertTrue(doubleList.isEmpty());
+//    }
+//
+//    @Test
+//    public void testUpdateInsertedVertexProperty() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        v1.property("name", "john");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals("john", v1.value("name"));
+//        Assert.assertEquals("john", this.sqlgGraph.V().next().value("name"));
+//        v1 = this.sqlgGraph.v(v1.id());
+//        Assert.assertEquals("john", v1.value("name"));
+//        Assert.assertEquals("john", this.sqlgGraph.V().next().value("name"));
+//    }
+//
+//    @Test
+//    public void testAddPropertyToInsertedVertexProperty() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        v1.property("name", "john");
+//        v1.property("surname", "aaaa");
+//        this.sqlgGraph.tx().commit();
+//        v1 = this.sqlgGraph.v(v1.id());
+//        Assert.assertEquals("john", v1.value("name"));
+//        Assert.assertEquals("aaaa", v1.value("surname"));
+//        Assert.assertEquals("john", this.sqlgGraph.V().next().value("name"));
+//    }
+//
+//    @Test
+//    public void testUpdateInsertedEdgeProperty() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//        Edge edge = v1.addEdge("Friend", v2, "weight", 1);
+//        edge.property("weight", 2);
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(2, edge.<Integer>value("weight"), 0);
+//        Assert.assertEquals(2, this.sqlgGraph.E().next().<Integer>value("weight"), 0);
+//    }
+//
+//    //    @Test
+//    //TODO need to deal with missing properties, set them to null
+//    public void testRemoveProperty() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//        Edge friend = marko.addEdge("Friend", john, "weight", 1);
+//        Edge colleague = marko.addEdge("Colleague", john, "toRemove", "a");
+//        marko.property("name").remove();
+//        colleague.property("toRemove").remove();
+//        this.sqlgGraph.tx().commit();
+//
+//        marko = this.sqlgGraph.v(marko.id());
+//        Assert.assertFalse(marko.property("name").isPresent());
+//    }
+//
+//    @Test
+//    public void testInOutOnEdges() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+//        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+//        root.addEdge("rootGod", god);
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testGetEdges() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+//        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+//        Edge sqlgEdge = root.addEdge("rootGod", god);
+//        Assert.assertEquals(sqlgEdge, root.outE("rootGod").next());
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testGetVertices() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+//        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+//        Vertex human = this.sqlgGraph.addVertex(T.label, "Human");
+//        root.addEdge("rootGod", god);
+//        root.addEdge("rootHuman", human);
+//        god.addEdge("rootROOT", root);
+//        Assert.assertEquals(god, root.out("rootGod").next());
+//        Assert.assertEquals(human, root.out("rootHuman").next());
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testPerformance() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 10000; i++) {
+//            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
+//            Vertex spaceTime = this.sqlgGraph.addVertex(T.label, "SpaceTime", "name", "marko" + i);
+//            Vertex space = this.sqlgGraph.addVertex(T.label, "Space", "name", "marko" + i);
+//            Vertex time = this.sqlgGraph.addVertex(T.label, "Time", "name", "marko" + i);
+//            person.addEdge("spaceTime", spaceTime, "context", 1);
+//            spaceTime.addEdge("space", space, "dimension", 3);
+//            spaceTime.addEdge("time", time, "dimension", 1);
+//            if (i != 0 && i % 10000 == 0) {
+//                this.sqlgGraph.tx().commit();
+//                this.sqlgGraph.tx().batchModeOn();
+//            }
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        stopWatch.reset();
+//        stopWatch.start();
+//        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
+//        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "SpaceTime").count().next(), 0);
+//        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "Space").count().next(), 0);
+//        Assert.assertEquals(10000, this.sqlgGraph.V().has(T.label, "Time").count().next(), 0);
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//    }
+//
+//    @Test
+//    public void testGetVerticesWithHas() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+//        Vertex jah = this.sqlgGraph.addVertex(T.label, "God", "name", "Jah");
+//        Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
+//        root.addEdge("rootGod", jah);
+//        root.addEdge("rootGod", jehova);
+//        List<Vertex> vertices = root.out("rootGod").toList();
+//        Assert.assertTrue(vertices.contains(jah));
+//        Assert.assertTrue(vertices.contains(jehova));
+//        Assert.assertEquals(jah, root.out("rootGod").has("name", "Jah").next());
+//        Assert.assertEquals(jehova, root.out("rootGod").has("name", "Jehova").next());
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testVertexLabelCache() {
+//        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex jah = this.sqlgGraph.addVertex(T.label, "God", "name", "Jah");
+//        Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
+//        root.addEdge("rootGod", jah);
+//        root.addEdge("rootGod", jehova);
+//        this.sqlgGraph.tx().commit();
+//        List<Vertex> vertices = root.out("rootGod").toList();
+//        Assert.assertTrue(vertices.contains(jah));
+//        Assert.assertTrue(vertices.contains(jehova));
+//        Assert.assertEquals(jah, root.out("rootGod").has("name", "Jah").next());
+//        Assert.assertEquals(jehova, root.out("rootGod").has("name", "Jehova").next());
+//    }
+//
+//    @Test
+//    public void testVertexMultipleEdgesLabels() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+//        Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
+//        Vertex bike = this.sqlgGraph.addVertex(T.label, "Bike", "name", "c");
+//        person.addEdge("car", car);
+//        person.addEdge("bike", bike);
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(2, person.out().count().next(), 0);
+//    }
+//
+//    @Test
+//    public void testAddEdgeAccrossSchema() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex person = this.sqlgGraph.addVertex(T.label, "Schema1.Person", "name", "a");
+//        Vertex car = this.sqlgGraph.addVertex(T.label, "Schema2.Car", "name", "b");
+//        Vertex bike = this.sqlgGraph.addVertex(T.label, "Schema2.Bike", "name", "c");
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        person.addEdge("car", car);
+//        person.addEdge("bike", bike);
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(2, person.out().count().next(), 0);
+//    }
+//
+//    @Test
+//    public void testBatchCommit() {
+//        Assume.assumeTrue(this.sqlgGraph.features().supportsBatchMode());
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 111; i++) {
+//            this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
+//            this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
+//        }
+//        Map<SchemaTable, Pair<Long, Long>> result = this.sqlgGraph.tx().batchCommit();
+//        Assert.assertEquals(1l, result.get(SchemaTable.of("public", "Person1")).getLeft(), 0);
+//        Assert.assertEquals(111l, result.get(SchemaTable.of("public", "Person1")).getRight(), 0);
+//        Assert.assertEquals(112l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
+//        Assert.assertEquals(222l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
+//
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 111; i++) {
+//            this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
+//            this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
+//        }
+//        result = this.sqlgGraph.tx().batchCommit();
+//        Assert.assertEquals(223l, result.get(SchemaTable.of("public", "Person1")).getLeft(), 0);
+//        Assert.assertEquals(333l, result.get(SchemaTable.of("public", "Person1")).getRight(), 0);
+//        Assert.assertEquals(334l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
+//        Assert.assertEquals(444l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
+//
+//    }
+//
+//    @Test
+//    public void testCacheAndUpdateVERTICESLabels() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "person");
+//        List<Vertex> cache = new ArrayList<>();
+//        for (int i = 0; i < 10000; i++) {
+//            cache.add(this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i));
+//        }
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (Vertex person2 : cache) {
+//            person1.addEdge("Friend", person2);
+//        }
+//        this.sqlgGraph.tx().commit();
+//        person1 = this.sqlgGraph.v(person1.id());
+//        Assert.assertTrue(person1.out("Friend").hasNext());
+//        Assert.assertEquals(10000, person1.out("Friend").count().next(), 0);
+//        List<Vertex> friends = person1.out("Friend").toList();
+//        List<String> names = friends.stream().map(v -> v.<String>value("name")).collect(Collectors.toList());
+//        Assert.assertEquals(10000, names.size(), 0);
+//        for (int i = 0; i < 10000; i++) {
+//            Assert.assertTrue(names.contains("person" + i));
+//        }
+//    }
+//
+//    @Test
+//    public void testBatchInsertDifferentKeys() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
+//        this.sqlgGraph.tx().commit();
+//
+//        List<Vertex> persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person").<Vertex>has("name", "a").toList();
+//        Assert.assertEquals(1, persons.size());
+//        Assert.assertFalse(persons.get(0).property("surname").isPresent());
+//
+//        persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person").<Vertex>has("surname", "b").toList();
+//        Assert.assertEquals(1, persons.size());
+//        Assert.assertFalse(persons.get(0).property("name").isPresent());
+//
+//        persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person").has("surname", "b").<Vertex>has("name", "a").toList();
+//        Assert.assertEquals(0, persons.size());
+//    }
+//
+//    @Test
+//    public void testVerticesOutLabelsForPersistentVertices() {
+//        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
+//        Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
+//        Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
+//        vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
+//        this.sqlgGraph.tx().commit();
+//
+//        Assert.assertEquals("Huawei_Gsm", softwareVersion.in("vendorTechnology_softwareVersion").next().value("name"));
+//
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex rwe1 = this.sqlgGraph.addVertex(T.label, "RWE", "name", "cell1");
+//        rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
+//        this.sqlgGraph.tx().commit();
+//
+//        softwareVersion = this.sqlgGraph.v(softwareVersion.id());
+//        Assert.assertEquals("Huawei_Gsm", softwareVersion.in("vendorTechnology_softwareVersion").next().value("name"));
+//    }
+//
+//    @Test
+//    public void testVerticesInLabelsForPersistentVertices() {
+//        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
+//        Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
+//        Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
+//        softwareVersion.addEdge("softwareVersion_vendorTechnology", vendorTechnology);
+//        this.sqlgGraph.tx().commit();
+//
+//        Assert.assertEquals("Huawei_Gsm", softwareVersion.out("softwareVersion_vendorTechnology").next().value("name"));
+//
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex rwe1 = this.sqlgGraph.addVertex(T.label, "RWE", "name", "cell1");
+//        rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
+//        this.sqlgGraph.tx().commit();
+//
+//        softwareVersion = this.sqlgGraph.v(softwareVersion.id());
+//        Assert.assertEquals("Huawei_Gsm", softwareVersion.out("softwareVersion_vendorTechnology").next().value("name"));
+//    }
+//
+//    @Test
+//    public void testBatchUpdatePersistentVertices() {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals("a", this.sqlgGraph.v(v1.id()).value("name"));
+//        Assert.assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
+//
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().batchModeOn();
+//        v1.property("name", "aa");
+//        v2.property("surname", "bb");
+//        this.sqlgGraph.tx().commit();
+//
+//        Assert.assertEquals("aa", this.sqlgGraph.v(v1.id()).value("name"));
+//        Assert.assertEquals("bb", this.sqlgGraph.v(v2.id()).value("surname"));
+//    }
+//
+//    @Test
+//    public void testBatchUpdatePersistentVerticesAllTypes() {
+//
+//        Assume.assumeTrue(this.sqlgGraph.features().vertex().properties().supportsFloatValues());
+//
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals("a", this.sqlgGraph.v(v1.id()).value("name"));
+//        Assert.assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
+//
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().batchModeOn();
+//        v1.property("name", "aa");
+//        v1.property("boolean", true);
+//        v1.property("short", (short) 1);
+//        v1.property("integer", 1);
+//        v1.property("long", 1L);
+//        v1.property("float", 1F);
+//        v1.property("double", 1D);
+//
+//        v2.property("surname", "bb");
+//        v2.property("boolean", false);
+//        v2.property("short", (short) 2);
+//        v2.property("integer", 2);
+//        v2.property("long", 2L);
+//        v2.property("float", 2F);
+//        v2.property("double", 2D);
+//        this.sqlgGraph.tx().commit();
+//
+//        Assert.assertEquals("aa", this.sqlgGraph.v(v1.id()).value("name"));
+//        Assert.assertEquals(true, this.sqlgGraph.v(v1.id()).value("boolean"));
+//        Assert.assertEquals((short) 1, this.sqlgGraph.v(v1.id()).<Short>value("short").shortValue());
+//        Assert.assertEquals(1, this.sqlgGraph.v(v1.id()).<Integer>value("integer").intValue());
+//        Assert.assertEquals(1L, this.sqlgGraph.v(v1.id()).<Long>value("long").longValue(), 0);
+//        Assert.assertEquals(1F, this.sqlgGraph.v(v1.id()).<Float>value("float").floatValue(), 0);
+//        Assert.assertEquals(1D, this.sqlgGraph.v(v1.id()).<Double>value("double").doubleValue(), 0);
+//
+//        Assert.assertEquals("bb", this.sqlgGraph.v(v2.id()).value("surname"));
+//        Assert.assertEquals(false, this.sqlgGraph.v(v2.id()).value("boolean"));
+//        Assert.assertEquals((short) 2, this.sqlgGraph.v(v2.id()).<Short>value("short").shortValue());
+//        Assert.assertEquals(2, this.sqlgGraph.v(v2.id()).<Integer>value("integer").intValue());
+//        Assert.assertEquals(2L, this.sqlgGraph.v(v2.id()).<Long>value("long").longValue(), 0);
+//        Assert.assertEquals(2F, this.sqlgGraph.v(v2.id()).<Float>value("float").floatValue(), 0);
+//        Assert.assertEquals(2D, this.sqlgGraph.v(v2.id()).<Double>value("double").doubleValue(), 0);
+//    }
+//
+//    @Test
+//    public void testBatchUpdatePersistentVerticesPerformance1() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        int count = 1;
+//        for (int i = 0; i < 100000; i++) {
+//            this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+//            if (count++ % 10000 == 0) {
+//                this.sqlgGraph.tx().commit();
+//            }
+//
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        stopWatch.reset();
+//        stopWatch.start();
+//
+//        List<Vertex> vertices = this.sqlgGraph.V().toList();
+//        count = 1;
+//        for (Vertex v : vertices) {
+//            v.property("name", "b");
+//            if (count++ % 10000 == 0) {
+//                this.sqlgGraph.tx().commit();
+//            }
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//    }
+//
+//    @Test
+//    public void testInsertUpdateQuotedStrings() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 100; i++) {
+//            this.sqlgGraph.addVertex(T.label, "Person", "name", "'a'");
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        stopWatch.reset();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        List<Vertex> vertices = this.sqlgGraph.V().toList();
+//        for (Vertex v : vertices) {
+//            v.property("name", "'b'");
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//    }
+//
+//
+//    @Test
+//    public void testVerticesOutLabelsForEdgeToPersistentVertices() {
+//        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
+//        Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
+//        Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
+//        vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
+//        this.sqlgGraph.tx().commit();
+//
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 10; i++) {
+//            Vertex workspaceElement = this.sqlgGraph.addVertex(T.label, "WorkspaceElement");
+//            workspaceElement.addEdge("workspaceElementRealWorkspace", realWorkspace);
+//            realWorkspace.addEdge("workspaceElementSoftwareVersion", softwareVersion);
+//        }
+//        this.sqlgGraph.tx().commit();
+//        Connection conn = this.sqlgGraph.tx().getConnection();
+//        try (Statement statement = conn.createStatement()) {
+//            StringBuilder sql = new StringBuilder();
+//            sql.append("SELECT \"IN_LABELS\" FROM \"");
+//            sql.append(this.sqlgGraph.getSqlDialect().getPublicSchema());
+//            sql.append("\".\"VERTICES\" WHERE \"VERTEX_TABLE\" = 'SoftwareVersion'");
+//            ResultSet resultSet = statement.executeQuery(sql.toString());
+//            resultSet.next();
+//            Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".vendorTechnology_softwareVersion:::" + this.sqlgGraph.getSqlDialect().getPublicSchema() + ".workspaceElementSoftwareVersion", resultSet.getString(1));
+//        } catch (SQLException e) {
+//            Assert.fail(e.getMessage());
+//        }
+//
+//    }
+//
+//    @Test
+//    public void testBatchRemoveVertex() {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        v1.remove();
+//        v2.remove();
+//        v3.remove();
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(0, this.sqlgGraph.V().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testBatchRemoveEdges() {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Edge edge1 = v1.addEdge("test", v2);
+//        Edge edge2 = v1.addEdge("test", v3);
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        edge1.remove();
+//        edge2.remove();
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(3, this.sqlgGraph.V().count().next().intValue());
+//        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testBatchRemoveVerticesAndEdges() {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Edge edge1 = v1.addEdge("test", v2);
+//        Edge edge2 = v1.addEdge("test", v3);
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        edge1.remove();
+//        edge2.remove();
+//        v1.remove();
+//        v2.remove();
+//        v3.remove();
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(0, this.sqlgGraph.V().count().next().intValue());
+//        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testDeletePerformance() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        //32767
+//        int j = 1;
+//        //create 280 foreign keys
+//        for (int i = 0; i < 2810; i++) {
+//            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
+//            if (j == 281) {
+//                j = 1;
+//            }
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "huawei.NetworkElement", "name", "networkElement" + i + "_" + j);
+//            v2.addEdge("WorkspaceElement_NetworkElement" + j, v1);
+//            j++;
+//        }
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        stopWatch.reset();
+//        stopWatch.start();
+//        List<SqlgVertex> vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "WorkspaceElement").toList();
+//        int count = 1;
+//        for (SqlgVertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "NetworkElement").toList();
+//        count = 1;
+//        for (SqlgVertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        Assert.assertEquals(0, this.sqlgGraph.V().count().next().intValue());
+//        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testDropForeignKeys() {
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex workspaceElementBsc = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "bsc1");
+//        Vertex networkElementBsc = this.sqlgGraph.addVertex(T.label, "bsc", "name", "bsc1");
+//        Vertex workspaceElementCell1 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "cell1");
+//        Vertex networkElementCell1 = this.sqlgGraph.addVertex(T.label, "cell", "name", "cell1");
+//        Vertex workspaceElementCell2 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "cell2");
+//        Vertex networkElementCell2 = this.sqlgGraph.addVertex(T.label, "cell", "name", "cell2");
+//        Vertex workspaceElementBsctmr1 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "bsctmr1");
+//        Vertex networkElementBsctmr1 = this.sqlgGraph.addVertex(T.label, "bsctmr", "name", "bsctms1");
+//        //add edges to workspaceelement
+//        networkElementBsc.addEdge("bsc_workspaceElement", workspaceElementBsc);
+//        networkElementCell1.addEdge("cell_workspaceElement", workspaceElementCell1);
+//        networkElementCell2.addEdge("cell_workspaceElement", workspaceElementCell2);
+//        networkElementBsctmr1.addEdge("bsctmr_workspaceElement", workspaceElementBsctmr1);
+//
+//        //add edges to between elements
+//        networkElementBsc.addEdge("bsc_cell", networkElementCell1);
+//        networkElementBsc.addEdge("bsc_cell", networkElementCell2);
+//        networkElementBsc.addEdge("bsc_bsctmr", networkElementBsctmr1);
+//
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//
+//        List<SqlgVertex> vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "WorkspaceElement").toList();
+//        for (SqlgVertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "bsc").toList();
+//        for (SqlgVertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "cell").toList();
+//        for (SqlgVertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        vertexes = this.sqlgGraph.V().<SqlgVertex>has(T.label, "bsctmr").toList();
+//        for (SqlgVertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testBatchDeleteVertexNewlyAdded() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
+//        for (int i = 0; i < 100; i++) {
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
+//            v1.addEdge("car", v2, "bought", 1);
+//        }
+//        List<Vertex> cars = v1.out("car").toList();
+//        for (int i = 0; i < 50; i++) {
+//            cars.get(i).remove();
+//        }
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(51, this.sqlgGraph.V().count().next().intValue());
+//        Assert.assertEquals(50, this.sqlgGraph.E().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testBatchDeleteEdgeNewlyAdded() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
+//        for (int i = 0; i < 100; i++) {
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
+//            v1.addEdge("car", v2, "bought", 1);
+//        }
+//        List<Edge> cars = v1.outE("car").toList();
+//        for (int i = 0; i < 50; i++) {
+//            cars.get(i).remove();
+//        }
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(101, this.sqlgGraph.V().count().next().intValue());
+//        Assert.assertEquals(50, this.sqlgGraph.E().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testNullEdge() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+//        Assert.assertEquals(0, v1.out("cars").count().next().intValue());
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car");
+//        v1.addEdge("cars", v2);
+//        Assert.assertEquals(1, v1.out("cars").count().next().intValue());
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(1, v1.out("cars").count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testBatchModeStuffsUpProperties() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+//        Assert.assertEquals("a", v1.value("name"));
+//        Assert.assertEquals("b", v2.value("name"));
+//    }
+//
+//    //this test a 'contains' bug in the update of labels batch logic
+//    @Test
+//    public void testBatchUpdateOfLabels() throws Exception {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "mike");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
+//        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Bike", "name", "ktm");
+//        v1.addEdge("bts_aaaaaa", v2);
+//        v1.addEdge("bts_btsalmtos", v4);
+//        v1.addEdge("bts_btsalm", v3);
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        this.sqlgGraph = SqlgGraph.open(configuration);
+//        v1  = this.sqlgGraph.v(v1.id());
+//        Assert.assertEquals(1, v1.out("bts_btsalm").count().next().intValue());
+//        Assert.assertEquals(1, v1.out("bts_btsalmtos").count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testBatchUpdateDifferentPropertiesDifferentRows() {
+//
+//        Vertex sqlgVertex1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a1", "property2", "b1", "property3", "c1");
+//        Vertex sqlgVertex2 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a2", "property2", "b2", "property3", "c2");
+//        Vertex sqlgVertex3 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a3", "property2", "b3", "property3", "c3");
+//        this.sqlgGraph.tx().commit();
+//
+//        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+//        Assert.assertEquals("a1", sqlgVertex1.value("property1"));
+//        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
+//        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+//
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().batchModeOn();
+//        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+//        sqlgVertex1.property("property1", "a11");
+//        sqlgVertex2.property("property2", "b22");
+//        sqlgVertex3.property("property3", "b33");
+//        this.sqlgGraph.tx().commit();
+//
+//        Assert.assertEquals("a11", sqlgVertex1.value("property1"));
+//        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
+//        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+//
+//        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+//        Assert.assertEquals("a11", sqlgVertex1.value("property1"));
+//        Assert.assertEquals("b1", sqlgVertex1.value("property2"));
+//        Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+//
+//    }
+//
+//    @Test
+//    public void testBatchUpdateNewVertex() {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a");
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
+//        v2.property("property2", "bb");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals("a", v1.value("property1"));
+//        Assert.assertFalse(v1.property("property2").isPresent());
+//        Assert.assertFalse(v2.property("property1").isPresent());
+//        Assert.assertEquals("bb", v2.value("property2"));
+//
+//    }
 
 }

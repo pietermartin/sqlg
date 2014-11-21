@@ -179,9 +179,6 @@ public class SqlgGraph implements Graph {
         sql.append(this.getSqlDialect().maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
         sql.append(".");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-
-//        this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS)
-
         sql.append(" WHERE ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
