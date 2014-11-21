@@ -6,6 +6,7 @@ import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
+import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.edges.TestEdgeCache;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
@@ -66,7 +67,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexCache.class,
         TestTinkerpopBug.class,
         TestLazyLoadSchema.class,
-        TestMultiThreadedBatch.class
+        TestMultiThreadedBatch.class,
+        TestCreateEdgeBetweenVertices.class
 })
 public class AllTest {
 }

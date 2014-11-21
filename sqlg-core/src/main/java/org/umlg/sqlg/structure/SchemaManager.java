@@ -800,17 +800,12 @@ public class SchemaManager {
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     String commaSeparatedLabels = resultSet.getString(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
-                    if (commaSeparatedLabels != null) {
-                        String[] schemaLabels = commaSeparatedLabels.split(LABEL_SEPARATOR);
-                        for (String schemaLabel : schemaLabels) {
-                            SchemaTable schemaLabelPair = SqlgUtil.parseLabel(schemaLabel, this.sqlDialect.getPublicSchema());
-                            labels.add(schemaLabelPair);
-                        }
-                        if (resultSet.next()) {
-                            throw new IllegalStateException("BUG: There can only be one row per vertex id!");
-                        }
+                    convertVertexLabelToSet(labels, commaSeparatedLabels);
+                    if (resultSet.next()) {
+                        throw new IllegalStateException("BUG: There can only be one row per vertex id!");
                     }
                 }
+
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -826,6 +821,16 @@ public class SchemaManager {
             return sqlgVertex.inLabelsForVertex;
         } else {
             return sqlgVertex.outLabelsForVertex;
+        }
+    }
+
+    void convertVertexLabelToSet(Set<SchemaTable> labels, String commaSeparatedLabels) throws SQLException {
+        if (commaSeparatedLabels != null) {
+            String[] schemaLabels = commaSeparatedLabels.split(LABEL_SEPARATOR);
+            for (String schemaLabel : schemaLabels) {
+                SchemaTable schemaLabelPair = SqlgUtil.parseLabel(schemaLabel, this.sqlDialect.getPublicSchema());
+                labels.add(schemaLabelPair);
+            }
         }
     }
 

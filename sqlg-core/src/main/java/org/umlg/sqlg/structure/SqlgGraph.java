@@ -21,9 +21,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.lang.reflect.Constructor;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Date: 2014/07/12
@@ -176,11 +174,14 @@ public class SqlgGraph implements Graph {
         if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, id);
         if (!(id instanceof Long)) throw new NoSuchElementException(id.toString());
 
-        SqlgVertex sqlGVertex = null;
+        SqlgVertex sqlgVertex = null;
         StringBuilder sql = new StringBuilder("SELECT * FROM ");
         sql.append(this.getSqlDialect().maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
         sql.append(".");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+
+//        this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS)
+
         sql.append(" WHERE ");
         sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
@@ -195,18 +196,32 @@ public class SqlgGraph implements Graph {
             Long idAsLong = evaluateToLong(id);
             preparedStatement.setLong(1, idAsLong);
             ResultSet resultSet = preparedStatement.executeQuery();
+            Set<SchemaTable> labels = new HashSet<>();
             while (resultSet.next()) {
                 String schema = resultSet.getString("VERTEX_SCHEMA");
                 String table = resultSet.getString("VERTEX_TABLE");
-                sqlGVertex = SqlgVertex.of(this, idAsLong, schema, table);
+                sqlgVertex = SqlgVertex.of(this, idAsLong, schema, table);
+                String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
+                this.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
+                sqlgVertex.inLabelsForVertex = new HashSet<>();
+                sqlgVertex.inLabelsForVertex.addAll(labels);
+                String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
+                labels.clear();
+                this.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
+                sqlgVertex.outLabelsForVertex = new HashSet<>();
+                sqlgVertex.outLabelsForVertex.addAll(labels);
+                if (resultSet.next()) {
+                    throw new IllegalStateException("SqlgGraph.v(id) may only return one result!");
+                }
+
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        if (sqlGVertex == null) {
+        if (sqlgVertex == null) {
             throw Graph.Exceptions.elementNotFound(Vertex.class, id);
         }
-        return sqlGVertex;
+        return sqlgVertex;
     }
 
     @Override
