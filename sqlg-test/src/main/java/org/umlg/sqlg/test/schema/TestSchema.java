@@ -81,6 +81,4 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(2, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
     }
 
-
-
 }

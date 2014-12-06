@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.mchange.v2.beans.BeansUtils;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -36,6 +35,7 @@ public class SqlgDataSource {
         ComboPooledDataSource cpds = new ComboPooledDataSource();
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);
+        cpds.setMaxPoolSize(100);
         if (!StringUtils.isEmpty(username)) {
             cpds.setUser(username);
         }
@@ -73,7 +73,10 @@ public class SqlgDataSource {
                 json.append("\"numConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
                 json.append("\"numBusyConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
                 json.append("\"numIdleConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
-                json.append("\"numUnclosedOrphanedConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\"");
+                json.append("\"numUnclosedOrphanedConnections\":\"").append(String.valueOf(comboPooledDataSource.getNumConnections())).append("\",");
+                json.append("\"numMinPoolSize\":\"").append(String.valueOf(comboPooledDataSource.getMinPoolSize())).append("\",");
+                json.append("\"numMaxPoolSize\":\"").append(String.valueOf(comboPooledDataSource.getMaxPoolSize())).append("\",");
+                json.append("\"numMaxIdleTime\":\"").append(String.valueOf(comboPooledDataSource.getMaxIdleTime())).append("\"");
                 json.append("}");
                 if (count++ < this.cpdss.size()) {
                     json.append(",");

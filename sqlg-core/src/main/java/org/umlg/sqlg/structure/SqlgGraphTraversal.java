@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.process.TraversalStrategies;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.strategy.GraphTraversalStrategyRegistry;
 import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.process.util.DefaultTraversalStrategies;

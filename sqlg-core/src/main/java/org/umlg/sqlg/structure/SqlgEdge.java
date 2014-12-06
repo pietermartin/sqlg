@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,13 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
+    }
+
+    @Override
+    public <V> Property<V> property(String key, V value) {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id());
+        this.sqlgGraph.tx().readWrite();
+        return super.property(key, value);
     }
 
     private Iterator<Vertex> internalGetVertices(Direction direction) {
@@ -311,11 +319,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         public <V> Iterator<Property<V>> propertyIterator(final String... propertyKeys) {
             return (Iterator) super.propertyIterator(propertyKeys);
         }
-
-//        @Override
-//        public <V> Iterator<Property<V>> hiddenPropertyIterator(final String... propertyKeys) {
-//            return (Iterator) super.hiddenPropertyIterator(propertyKeys);
-//        }
 
         @Override
         public Iterator<Vertex> vertexIterator(final Direction direction) {

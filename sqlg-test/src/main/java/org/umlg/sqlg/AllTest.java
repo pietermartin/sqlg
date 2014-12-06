@@ -19,6 +19,7 @@ import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
+import org.umlg.sqlg.test.vertex.TestRemovedVertex;
 import org.umlg.sqlg.test.vertex.TestTinkerpopBug;
 import org.umlg.sqlg.test.vertex.TestVertexCache;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
@@ -68,7 +69,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestTinkerpopBug.class,
         TestLazyLoadSchema.class,
         TestMultiThreadedBatch.class,
-        TestCreateEdgeBetweenVertices.class
+        TestCreateEdgeBetweenVertices.class,
+        TestRemovedVertex.class
 })
 public class AllTest {
 }

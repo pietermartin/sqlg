@@ -36,8 +36,8 @@ public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
 
     public void apply(final Traversal traversal, final TraversalEngine traversalEngine) {
 
-        if (traversal.getSteps().get(0) instanceof SqlgGraphStep) {
-            final SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        if (traversal.asAdmin().getSteps().get(0) instanceof SqlgGraphStep) {
+            final SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.asAdmin().getSteps().get(0);
             Step currentStep = sqlgGraphStep.getNextStep();
             while (true) {
                 if (currentStep == EmptyStep.instance() || TraversalHelper.isLabeled(currentStep)) break;
@@ -60,7 +60,7 @@ public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
 
         //TODO do has on edges
         Set<Step> toRemove = new HashSet<>();
-        for (Object step : traversal.getSteps()) {
+        for (Object step : traversal.asAdmin().getSteps()) {
             if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep)step).returnClass)) {
                 SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
                 Step currentStep = sqlgVertexStep.getNextStep();

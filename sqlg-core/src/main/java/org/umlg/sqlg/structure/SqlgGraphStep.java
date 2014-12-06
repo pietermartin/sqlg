@@ -159,7 +159,9 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
                     sql.append(" = b.");
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-
+                    sql.append(" ORDER BY ");
+                    sql.append("a.");
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
 
                     if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                         sql.append(";");

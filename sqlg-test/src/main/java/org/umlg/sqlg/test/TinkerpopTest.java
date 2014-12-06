@@ -1,41 +1,29 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.*;
-import com.tinkerpop.gremlin.algorithm.generator.CommunityGenerator;
+import com.tinkerpop.gremlin.AbstractGremlinTest;
+import com.tinkerpop.gremlin.FeatureRequirementSet;
+import com.tinkerpop.gremlin.LoadGraphWith;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
 import com.tinkerpop.gremlin.process.graph.step.map.match.Bindings;
-import com.tinkerpop.gremlin.process.marker.CapTraversal;
-import com.tinkerpop.gremlin.process.marker.CountTraversal;
 import com.tinkerpop.gremlin.process.util.MapHelper;
-import com.tinkerpop.gremlin.structure.*;
+import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Graph;
+import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.io.GraphReader;
 import com.tinkerpop.gremlin.structure.io.graphml.GraphMLReader;
 import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
-import com.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
-import com.tinkerpop.gremlin.structure.util.detached.DetachedProperty;
-import com.tinkerpop.gremlin.util.function.FunctionUtils;
-import org.apache.commons.configuration.Configuration;
-import org.javatuples.Pair;
-import org.junit.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.CLASSIC;
 import static com.tinkerpop.gremlin.LoadGraphWith.GraphData.MODERN;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 /**
@@ -43,97 +31,6 @@ import static org.junit.Assert.*;
  * Time: 6:32 PM
  */
 public class TinkerpopTest extends BaseTest {
-
-    @Test
-    @LoadGraphWith(CLASSIC)
-    public void shouldHaveSameTraversalReturnTypesForAllMethods() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = GraphMLReader.build().create();
-        try (final InputStream stream = new FileInputStream(new File("sqlg-test/src/main/resources/tinkerpop-classic.xml"))) {
-            reader.readGraph(stream, g);
-        }
-
-        final Set<String> allReturnTypes = new HashSet<>();
-        final List<Pair<String, Object>> vendorsClasses = Arrays.asList(
-                Pair.<String, Object>with("g.V Traversal", g.V()),
-                Pair.<String, Object>with("g.E Traversal", g.E()),
-                Pair.<String, Object>with("v.identity Traversal", g.V().next().identity()),
-                Pair.<String, Object>with("e.identity Traversal", g.E().next().identity()),
-                Pair.<String, Object>with("v", g.V().next()),
-                Pair.<String, Object>with("e", g.E().next()),
-                Pair.<String, Object>with("g.of()", g.of())
-        );
-        vendorsClasses.forEach(triplet -> {
-            final String situation = triplet.getValue0();
-            final Class vendorClass = triplet.getValue1().getClass();
-            final Set<String> returnTypes = new HashSet<>();
-            Arrays.asList(vendorClass.getMethods())
-                    .stream()
-                    .filter(m -> GraphTraversal.class.isAssignableFrom(m.getReturnType()))
-                    .filter(m -> !Modifier.isStatic(m.getModifiers()))
-                    .map(m -> getDeclaredVersion(m, vendorClass))
-                    .forEach(m -> {
-                        returnTypes.add(m.getReturnType().getCanonicalName());
-                        allReturnTypes.add(m.getReturnType().getCanonicalName());
-                    });
-            if (returnTypes.size() > 1) {
-                final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
-                if (!muted) System.out.println("FAILURE: " + vendorClass.getCanonicalName() + " methods do not return in full fluency for [" + situation + "]");
-                fail("The return types of all traversal methods should be the same to ensure proper fluency: " + returnTypes);
-            } else {
-                final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
-                if (!muted) System.out.println("SUCCESS: " + vendorClass.getCanonicalName() + " methods return in full fluency for [" + situation + "]");
-            }
-        });
-        if (allReturnTypes.size() > 1)
-            fail("All traversals possible do not maintain the same return types and thus, not fully fluent for entire graph system: " + allReturnTypes);
-    }
-
-    private static Method getDeclaredVersion(final Method method, final Class vendorClass) {
-        return Arrays.asList(vendorClass.getMethods())
-                .stream()
-                .filter(m -> !GraphTraversal.class.equals(m.getReturnType()))
-                .filter(m -> !Traversal.class.equals(m.getReturnType()))
-                .filter(m -> !CountTraversal.class.equals(m.getReturnType()))
-                .filter(m -> !CapTraversal.class.equals(m.getReturnType()))
-                        //.filter(m -> !Traversal.class.isAssignableFrom(m.getReturnType()))
-                .filter(m -> !Modifier.isStatic(m.getModifiers()))
-                .filter(m -> m.getName().equals(method.getName()))
-                .filter(m -> Arrays.asList(m.getParameterTypes()).toString().equals(Arrays.asList(method.getParameterTypes()).toString()))
-                .findAny().orElseGet(() -> {
-                    final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
-                    if (!muted) System.out.println("IGNORE IF TEST PASSES: Can not find native implementation of: " + method);
-                    return method;
-                });
-    }
-
-    //    @Test
-    @LoadGraphWith(MODERN)
-    public void g_v4_bothE_localLimitX2X_otherV_name() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
-            reader.readGraph(stream, g);
-        }
-
-        final Traversal<Vertex, String> traversal = get_g_v4_bothE_localLimitX2X_otherV_name(convertToVertexId("josh"));
-        printTraversalForm(traversal);
-        int counter = 0;
-        while (traversal.hasNext()) {
-            counter++;
-            final Object name = traversal.next();
-            System.out.println(name);
-//            assertTrue(name.equals("marko") || name.equals("ripple") || name.equals("lop"));
-        }
-        assertEquals(2, counter);
-        assertFalse(traversal.hasNext());
-    }
-
-    public Traversal<Vertex, String> get_g_v4_bothE_localLimitX2X_otherV_name(final Object v4Id) {
-        return this.sqlgGraph.v(v4Id).bothE().localLimit(2).inV().values("name");
-//        return this.sqlgGraph.v(v4Id).bothE().inV().values("name");
-//        return this.sqlgGraph.v(v4Id).bothE().inV();
-    }
 
     //    @Test
     @LoadGraphWith(MODERN)
@@ -202,32 +99,6 @@ public class TinkerpopTest extends BaseTest {
 
     public Traversal<Vertex, Object> get_g_V_hasXageX_propertiesXage_nameX_value() {
         return this.sqlgGraph.V().has("age").properties("age", "name").value();
-    }
-
-    //    @Test
-    @LoadGraphWith(LoadGraphWith.GraphData.MODERN)
-    public void shouldNotBeEqualsPropertiesAsThereIsDifferentValue() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
-            reader.readGraph(stream, g);
-        }
-        final Edge e = g.v(4).addEdge("created", g.v(convertToVertexId("josh")), "weight", 123.0001d);
-        assertFalse(DetachedProperty.detach(e.property("weight")).equals(DetachedProperty.detach(g.e(convertToEdgeId("josh", "created", "lop")).property("weight"))));
-    }
-
-//    @Test
-    public void shouldNotEvaluateToEqualDifferentId() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
-            reader.readGraph(stream, g);
-        }
-        Object joshCreatedLopEdgeId = convertToEdgeId("josh", "created", "lop");
-        final Vertex vOut = g.v(convertToVertexId("josh"));
-        final Vertex vIn = g.v(convertToVertexId("lop"));
-        final Edge e = vOut.addEdge("created", vIn, "weight", 0.4d);
-        assertFalse(DetachedEdge.detach(g.e(joshCreatedLopEdgeId)).equals(DetachedEdge.detach(e)));
     }
 
     //    @Test
@@ -417,7 +288,7 @@ public class TinkerpopTest extends BaseTest {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
         if (!muted) System.out.println("Testing: " + traversal);
-        traversal.applyStrategies(TraversalEngine.STANDARD); // TODO!!!!
+        traversal.asAdmin().applyStrategies(TraversalEngine.STANDARD); // TODO!!!!
         if (!muted) System.out.println("         " + traversal);
     }
 

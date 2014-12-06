@@ -144,4 +144,17 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
     }
 
+    @Test
+    public void testLoadSchemaSameTableDifferentSchema() throws Exception {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name1", "john");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Person", "name2", "john");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        v2 = this.sqlgGraph.v(v2.id());
+        //This fails if the columns are not loaded per schema and table
+        v2.property("name1", "joe");
+        this.sqlgGraph.tx().commit();
+    }
+
 }

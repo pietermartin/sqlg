@@ -70,7 +70,6 @@ public class SchemaManager {
 
         if (this.distributed) {
             this.hazelcastInstance = Hazelcast.newHazelcastInstance(configHazelcast(configuration));
-//            this.hazelcastInstance = Hazelcast.newHazelcastInstance();
             this.schemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
             this.labelSchemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
             this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
@@ -957,7 +956,7 @@ public class SchemaManager {
                 ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (tablesRs.next()) {
                     String table = tablesRs.getString(3);
-                    final Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
+                    Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
                     Set<String> foreignKeys = null;
                     //get the columns
                     String previousSchema = "";
@@ -967,6 +966,7 @@ public class SchemaManager {
                         this.localSchemas.put(schema, schema);
                         if (!previousSchema.equals(schema)) {
                             foreignKeys = new HashSet<>();
+                            uncommittedColumns = new ConcurrentHashMap<>();
                         }
                         previousSchema = schema;
                         String column = columnsRs.getString(4);

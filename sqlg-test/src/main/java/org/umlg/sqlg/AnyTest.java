@@ -10,6 +10,9 @@ import org.umlg.sqlg.test.hidden.TestHidden;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.pool.TestPoolStats;
 import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
+import org.umlg.sqlg.test.schema.TestLoadSchema;
+import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.vertex.TestRemovedVertex;
 
 /**
  * Date: 2014/07/16
@@ -17,7 +20,7 @@ import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TestRemovedVertex.class
 })
 public class AnyTest {
 }

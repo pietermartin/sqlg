@@ -77,6 +77,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
+        if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
         ElementHelper.validateLabel(label);
         if (label.contains("."))
             throw new IllegalStateException(String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", new Object[]{label}));
@@ -156,6 +158,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public <V> VertexProperty<V> property(final String key, final V value) {
+        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.tx().readWrite();
         return (VertexProperty) super.property(key, value);
@@ -899,7 +902,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnName(i);
             Object o = resultSet.getObject(columnName);
-            if (!columnName.equals("ID") && !Objects.isNull(o)) {
+            if (!columnName.equals("ID")
+                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
+                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
+                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
+                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
+                    && !Objects.isNull(o)) {
                 int type = resultSetMetaData.getColumnType(i);
                 switch (type) {
                     case Types.SMALLINT:
@@ -934,8 +942,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public GraphTraversal<Vertex, Vertex> start() {
-        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-        return (GraphTraversal) traversal.addStep(new StartStep<>(traversal, this));
+        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
+        return traversal.addStep(new StartStep<>(traversal, this));
     }
 
     @Override

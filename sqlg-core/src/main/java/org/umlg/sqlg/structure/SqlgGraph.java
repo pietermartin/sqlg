@@ -144,7 +144,7 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversal<Vertex, Vertex> V() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
+        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -153,7 +153,7 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversal<Edge, Edge> E() {
         this.tx().readWrite();
-        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
+        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this));
         traversal.sideEffects().setGraph(this);
         return traversal;
@@ -162,7 +162,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public <S> GraphTraversal<S, S> of() {
-        final GraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
+        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
         traversal.addStep(new StartStep<>(traversal));
         traversal.sideEffects().setGraph(this);
         return traversal;
