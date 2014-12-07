@@ -13,7 +13,7 @@ import java.util.Set;
  * Date: 2014/10/11
  * Time: 9:55 AM
  */
-public class SqlgHsqldbGremlinPlugin implements GremlinPlugin {
+public class SqlgPostgresGremlinPlugin implements GremlinPlugin {
 
     private static final String IMPORT = "import ";
     private static final String DOT_STAR = ".*";
@@ -24,7 +24,7 @@ public class SqlgHsqldbGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "tinkerpop.sqlg-hsqldb";
+        return "tinkerpop.sqlg-postgres";
     }
 
     @Override

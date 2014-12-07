@@ -15,11 +15,14 @@ import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.lang.reflect.Constructor;
+import java.net.URL;
 import java.sql.*;
 import java.util.*;
 
@@ -48,6 +51,18 @@ public class SqlgGraph implements Graph {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
         return (G) new SqlgGraph(configuration);
+    }
+
+    public static <G extends Graph> G open(final String pathToSqlgProperties) {
+        if (null == pathToSqlgProperties) throw Graph.Exceptions.argumentCanNotBeNull("pathToSqlgProperties");
+
+        Configuration configuration;
+        try {
+            configuration = new PropertiesConfiguration(pathToSqlgProperties);
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+        return open(configuration);
     }
 
     private SqlgGraph(final Configuration configuration) {
