@@ -15,7 +15,6 @@ import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
-import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
@@ -67,7 +66,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestEdgeCache.class,
         TestVertexCache.class,
         TestTinkerpopBug.class,
-        TestLazyLoadSchema.class,
+//        TestLazyLoadSchema.class,
         TestMultiThreadedBatch.class,
         TestCreateEdgeBetweenVertices.class,
         TestRemovedVertex.class

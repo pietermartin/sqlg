@@ -10,3 +10,4 @@ release.properties
 /.idea
 *.iml
 src/test/db/
+/sqlg-hsqldb/src/test/db/
