@@ -1,4 +1,4 @@
-sqlg
+Sqlg
 ====
 
 **Sqlg** is a implementation of [Tinkerpop3](https://github.com/tinkerpop/tinkerpop3) on a [RDBMS](http://en.wikipedia.org/wiki/Relational_database_management_system).
