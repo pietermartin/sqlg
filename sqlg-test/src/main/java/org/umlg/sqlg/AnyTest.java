@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TinkerpopTest;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
+import org.umlg.sqlg.test.doctests.TestForDocs;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.hidden.TestHidden;
 import org.umlg.sqlg.test.index.TestIndex;
@@ -20,7 +21,7 @@ import org.umlg.sqlg.test.vertex.TestRemovedVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRemovedVertex.class
+        TestForDocs.class
 })
 public class AnyTest {
 }

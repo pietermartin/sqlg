@@ -933,4 +933,20 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
     }
 
+
+    @Test
+    public void testPerformance1() {
+        this.sqlgGraph.tx().batchModeOn();
+        for (int i = 0; i < 1000000; i++) {
+            Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a" + i);
+            Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b" + i);
+            person1.addEdge("friend", person2, "context", 1);
+            if (i != 0 && i % 100000 == 0) {
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().batchModeOn();
+            }
+        }
+        this.sqlgGraph.tx().commit();
+    }
+
 }

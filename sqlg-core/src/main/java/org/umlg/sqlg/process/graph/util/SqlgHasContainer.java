@@ -31,9 +31,9 @@ public class SqlgHasContainer implements Serializable {
 
     public boolean test(final Element element) {
         if (null != this.value) {
-            if (this.key.equals(T.id))
+            if (this.key.equals(T.id.getAccessor()))
                 return this.predicate.test(element.id(), this.value);
-            else if (this.key.equals(T.label))
+            else if (this.key.equals(T.label.getAccessor()))
                 if (this.predicate == Compare.eq) {
                     SqlgElement sqlgElement = (SqlgElement)element;
                     SchemaTable labelSchemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());

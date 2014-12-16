@@ -31,7 +31,7 @@ public class SqlgDataSource {
         if (this.cpdss.get(connectURI) != null) {
             return;
         }
-        logger.info(String.format("Setting up datasource to %s for user %s", connectURI, username));
+        logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
         ComboPooledDataSource cpds = new ComboPooledDataSource();
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);

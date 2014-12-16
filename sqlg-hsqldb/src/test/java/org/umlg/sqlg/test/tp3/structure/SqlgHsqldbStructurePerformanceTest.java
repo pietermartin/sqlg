@@ -12,7 +12,6 @@ import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;
  */
 @RunWith(StructurePerformanceSuite.class)
 @StructurePerformanceSuite.GraphProviderClass(provider = SqlgHsqldbProvider.class, graph = SqlgGraph.class)
-//@StructurePerformanceSuite.GraphProviderClass(SqlgHsqldbProvider.class)
 public class SqlgHsqldbStructurePerformanceTest {
 
 }

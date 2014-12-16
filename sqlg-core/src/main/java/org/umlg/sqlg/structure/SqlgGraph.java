@@ -68,10 +68,10 @@ public class SqlgGraph implements Graph {
     private SqlgGraph(final Configuration configuration) {
         try {
             Class<?> sqlDialectClass = findSqlGDialect();
-            logger.debug(String.format("Initializing SqlG with %s dialect", sqlDialectClass.getSimpleName()));
+            logger.debug(String.format("Initializing Sqlg with %s dialect", sqlDialectClass.getSimpleName()));
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
-            this.implementForeignKeys = configuration.getBoolean("implementForeignKeys", false);
+            this.implementForeignKeys = configuration.getBoolean("implementForeignKeys", true);
             this.configuration = configuration;
         } catch (Exception e) {
             throw new RuntimeException(e);

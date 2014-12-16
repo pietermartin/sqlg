@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.index;
 
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.structure.Compare;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,6 +38,7 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", Compare.eq, "john50").count().next().intValue());
         Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
