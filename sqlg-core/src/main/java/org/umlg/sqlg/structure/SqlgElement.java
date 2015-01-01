@@ -125,11 +125,11 @@ public abstract class SqlgElement implements Element {
         return this.internalGetProperties().keySet();
     }
 
-    @Override
-    public Set<String> hiddenKeys() {
-        this.sqlgGraph.tx().readWrite();
-        return this.internalGetHiddens().keySet();
-    }
+//    @Override
+//    public Set<String> hiddenKeys() {
+//        this.sqlgGraph.tx().readWrite();
+//        return this.internalGetHiddens().keySet();
+//    }
 
     //TODO relook at hiddens, unnecessary looping and queries
     @Override
@@ -421,7 +421,7 @@ public abstract class SqlgElement implements Element {
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
         this.properties.entrySet().stream()
                 .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-                .filter(entry -> !Graph.Key.isHidden(entry.getKey()))
+//                .filter(entry -> !Graph.Key.isHidden(entry.getKey()))
                 .filter(entry -> !entry.getKey().equals("ID"))
                 .filter(entry -> entry.getValue()!=null)
                 .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
@@ -434,8 +434,9 @@ public abstract class SqlgElement implements Element {
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
 
         this.properties.entrySet().stream()
-                .filter(entry -> Graph.Key.isHidden(entry.getKey()))
-                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(Graph.Key.unHide(entry.getKey()))).findAny().isPresent())
+//                .filter(entry -> Graph.Key.isHidden(entry.getKey()))
+//                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(Graph.Key.unHide(entry.getKey()))).findAny().isPresent())
+                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
                         .filter(entry -> !entry.getKey().equals("ID"))
                         .filter(entry -> entry.getValue() != null)
                         .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));

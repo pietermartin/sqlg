@@ -1,12 +1,11 @@
 package org.umlg.sqlg.process.graph.util;
 
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.Compare;
 import com.tinkerpop.gremlin.structure.Contains;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.util.HasContainer;
-import org.apache.commons.lang3.tuple.Pair;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgElement;
 

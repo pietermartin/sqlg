@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -44,11 +43,6 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     @Override
     public boolean isPresent() {
         return this.value != null;
-    }
-
-    @Override
-    public boolean isHidden() {
-        return Graph.Key.isHidden(this.key);
     }
 
     @Override

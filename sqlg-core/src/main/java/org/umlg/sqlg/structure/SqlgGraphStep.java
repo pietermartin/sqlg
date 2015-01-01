@@ -4,9 +4,9 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraverserGenerator;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.util.TraversalMetrics;
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.HasContainer;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,27 +28,17 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     private SqlgGraph sqlgGraph;
     public final List<HasContainer> hasContainers = new ArrayList<>();
 
-    public SqlgGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlgGraph sqlgGraph) {
-        super(traversal, returnClass);
+    public SqlgGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlgGraph sqlgGraph, final Object... ids) {
+        super(traversal, sqlgGraph, returnClass, ids);
         this.sqlgGraph = sqlgGraph;
-    }
-
-    @Override
-    public void generateTraversers(final TraverserGenerator traverserGenerator) {
-        if (PROFILING_ENABLED) TraversalMetrics.start(this);
-        this.start = Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges();
-        super.generateTraversers(traverserGenerator);
-        if (PROFILING_ENABLED) TraversalMetrics.stop(this);
-    }
-
-    @Override
-    public void clear() {
-        this.starts.clear();
+        this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
     private Iterator<? extends Edge> edges() {
         Stream<? extends Edge> edgeStream;
-        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
+        if (this.ids != null && this.ids.length > 0) {
+            edgeStream = getEdges();
+        } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
@@ -69,12 +59,15 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             edgeStream = getEdges();
         }
         return edgeStream.filter(e -> HasContainer.testAll((Edge) e, this.hasContainers)).iterator();
-
     }
 
     private Iterator<? extends Vertex> vertices() {
         Stream<? extends Vertex> vertexStream;
-        if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
+        if (this.ids != null && this.ids.length > 0) {
+            //if ids are given assume it to be the most significant narrowing of vertices.
+            //i.e. has logic will be done in memory.
+            vertexStream = getVertices();
+        } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainers
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
@@ -98,11 +91,11 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Stream<? extends Vertex> getVertices() {
-        return StreamFactory.stream(this._vertices());
+        return StreamFactory.stream(this.sqlgGraph.vertexIterator(this.ids));
     }
 
     private Stream<? extends Edge> getEdges() {
-        return StreamFactory.stream(this._edges());
+        return StreamFactory.stream(this.sqlgGraph.edgeIterator(this.ids));
     }
 
     private Stream<? extends Vertex> getVerticesUsingLabel(String... labels) {
@@ -261,34 +254,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         return sqlGVertexes;
     }
 
-    private Iterable<? extends Vertex> _vertices() {
-        List<SqlgVertex> sqlGVertexes = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-        sql.append(".");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                long id = resultSet.getLong(1);
-                String schema = resultSet.getString(2);
-                String table = resultSet.getString(3);
-                SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, table);
-                sqlGVertexes.add(sqlGVertex);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return sqlGVertexes;
-    }
-
     private Iterable<? extends Edge> _edgesUsingLabel(String label) {
         Set<String> schemas;
         SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
@@ -361,35 +326,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        }
-        return sqlGEdges;
-    }
-
-    private Iterable<? extends Edge> _edges() {
-        List<SqlgEdge> sqlGEdges = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-        sql.append(".");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                long id = resultSet.getLong(1);
-                String schema = resultSet.getString(2);
-                String table = resultSet.getString(3);
-                SchemaTable schemaTablePair = SchemaTable.of(schema, table);
-                SqlgEdge sqlGEdge = new SqlgEdge(this.sqlgGraph, id, schemaTablePair.getSchema(), schemaTablePair.getTable());
-                sqlGEdges.add(sqlGEdge);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
         }
         return sqlGEdges;
     }
