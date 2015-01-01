@@ -310,4 +310,15 @@ public interface SqlDialect {
     public default boolean needForeignKeyIndex() {
         return false;
     }
+
+    public default String wrapVertexQuery(String query){
+        return "SELECT b.* FROM (" + query + ") a JOIN " +
+                getPublicSchema() +
+                "." +
+                maybeWrapInQoutes(SchemaManager.VERTICES) +
+                " b ON a." +
+                maybeWrapInQoutes("ID") +
+                " = b." +
+                maybeWrapInQoutes("ID");
+    }
 }

@@ -69,7 +69,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 //        TestLazyLoadSchema.class,
         TestMultiThreadedBatch.class,
         TestCreateEdgeBetweenVertices.class,
-        TestRemovedVertex.class
+        TestRemovedVertex.class,
 })
 public class AllTest {
 }

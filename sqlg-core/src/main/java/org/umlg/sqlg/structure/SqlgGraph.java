@@ -207,99 +207,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         GraphTraversal<Edge, Edge> t = this.E(id);
         return t.hasNext() ? t.next() : null;
     }
-//    @Override
-//    public Vertex v(final Object id) {
-//        this.tx().readWrite();
-//        if (null == id) throw Graph.Exceptions.elementNotFound(Vertex.class, id);
-//        if (!(id instanceof Long)) throw new NoSuchElementException(id.toString());
-//
-//        SqlgVertex sqlgVertex = null;
-//        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-//        sql.append(this.getSqlDialect().maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-//        sql.append(".");
-//        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-//        sql.append(" WHERE ");
-//        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append(" = ?");
-//        if (this.getSqlDialect().needsSemicolon()) {
-//            sql.append(";");
-//        }
-//        Connection conn = this.tx().getConnection();
-//        if (logger.isDebugEnabled()) {
-//            logger.debug(sql.toString());
-//        }
-//        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//            Long idAsLong = evaluateToLong(id);
-//            preparedStatement.setLong(1, idAsLong);
-//            ResultSet resultSet = preparedStatement.executeQuery();
-//            Set<SchemaTable> labels = new HashSet<>();
-//            while (resultSet.next()) {
-//                String schema = resultSet.getString("VERTEX_SCHEMA");
-//                String table = resultSet.getString("VERTEX_TABLE");
-//                sqlgVertex = SqlgVertex.of(this, idAsLong, schema, table);
-//                String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
-//                this.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
-//                sqlgVertex.inLabelsForVertex = new HashSet<>();
-//                sqlgVertex.inLabelsForVertex.addAll(labels);
-//                String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
-//                labels.clear();
-//                this.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
-//                sqlgVertex.outLabelsForVertex = new HashSet<>();
-//                sqlgVertex.outLabelsForVertex.addAll(labels);
-//                if (resultSet.next()) {
-//                    throw new IllegalStateException("SqlgGraph.v(id) may only return one result!");
-//                }
-//
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//        if (sqlgVertex == null) {
-//            throw Graph.Exceptions.elementNotFound(Vertex.class, id);
-//        }
-//        return sqlgVertex;
-//    }
-
-//    @Override
-//    public Edge e(final Object id) {
-//        this.tx().readWrite();
-//        if (null == id) throw Graph.Exceptions.elementNotFound(Edge.class, id);
-//        if (!(id instanceof Long)) throw new NoSuchElementException(id.toString());
-//
-//        SqlgEdge sqlGEdge = null;
-//        StringBuilder sql = new StringBuilder("SELECT * FROM ");
-//        sql.append(this.getSqlDialect().maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-//        sql.append(".");
-//        sql.append(this.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-//        sql.append(" WHERE ");
-//        sql.append(this.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
-//        sql.append(" = ?");
-//        if (this.getSqlDialect().needsSemicolon()) {
-//            sql.append(";");
-//        }
-//        Connection conn = this.tx().getConnection();
-//        if (logger.isDebugEnabled()) {
-//            logger.debug(sql.toString());
-//        }
-//        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//            Long idAsLong = evaluateToLong(id);
-//            preparedStatement.setLong(1, idAsLong);
-//            ResultSet resultSet = preparedStatement.executeQuery();
-//            while (resultSet.next()) {
-//                String schema = resultSet.getString("EDGE_SCHEMA");
-//                String table = resultSet.getString("EDGE_TABLE");
-//                sqlGEdge = new SqlgEdge(this, idAsLong, schema, table);
-//            }
-//            preparedStatement.close();
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//        if (sqlGEdge == null) {
-//            throw Graph.Exceptions.elementNotFound(Edge.class, id);
-//        }
-//        return sqlGEdge;
-//
-//    }
 
     @Override
     public GraphComputer compute(final Class... graphComputerClass) {
@@ -652,15 +559,14 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     /**
-     * This is executes a sql query and returns the result as a json string
+     * This is executes a sql query and returns the result as a json string.
      *
-     * @param query
-     * @return
+     * @param query The sql to execute.
+     * @return The query result as json.
      */
     public String query(String query) {
         try {
-            Connection conn = SqlgDataSource.INSTANCE.get(this.getJdbcUrl()).getConnection();
-            conn.setReadOnly(true);
+            Connection conn = this.tx().getConnection();
             ObjectNode result = this.mapper.createObjectNode();
             ArrayNode dataNode = this.mapper.createArrayNode();
             ArrayNode metaNode = this.mapper.createArrayNode();
@@ -688,13 +594,43 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             }
             result.put("data", dataNode);
             result.put("meta", metaNode);
-            conn.setReadOnly(false);
             return result.toString();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
             this.tx().rollback();
         }
+    }
+
+    /**
+     * Executes a the given sql query and returns the result as vertices.
+     * @param query The sql to execute.
+     * @return A List of Vertex
+     */
+    public List<Vertex> vertexQuery(String query) {
+        List<Vertex> sqlgVertices = new ArrayList<>();
+        try {
+            Connection conn = this.tx().getConnection();
+            Statement statement = conn.createStatement();
+            query = this.sqlDialect.wrapVertexQuery(query);
+            if (logger.isDebugEnabled()) {
+                logger.debug(query);
+            }
+            ResultSet resultSet = statement.executeQuery(query);
+            while (resultSet.next()) {
+                long id = resultSet.getLong("ID");
+                String schema = resultSet.getString(SchemaManager.VERTEX_SCHEMA);
+                String table = resultSet.getString(SchemaManager.VERTEX_TABLE);
+                SqlgVertex sqlgVertex = SqlgVertex.of(this, id, schema, table);
+                loadVertexAndLabels(sqlgVertices, resultSet, sqlgVertex);
+            }
+            return sqlgVertices;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            this.tx().rollback();
+        }
+
     }
 
     //indexing
@@ -783,17 +719,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         }
     }
 
-    private static Long evaluateToLong(final Object id) throws NumberFormatException {
-        Long longId;
-        if (id instanceof Long)
-            longId = (Long) id;
-        else if (id instanceof Number)
-            longId = ((Number) id).longValue();
-        else
-            longId = Double.valueOf(id.toString()).longValue();
-        return longId;
-    }
-
     boolean isImplementForeignKeys() {
         return implementForeignKeys;
     }
@@ -852,29 +777,33 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             try (Statement statement = conn.createStatement()) {
                 statement.execute(sql.toString());
                 ResultSet resultSet = statement.getResultSet();
-                Set<SchemaTable> labels = new HashSet<>();
                 while (resultSet.next()) {
                     long id = resultSet.getLong("ID");
-                    String schema = resultSet.getString("VERTEX_SCHEMA");
-                    String table = resultSet.getString("VERTEX_TABLE");
+                    String schema = resultSet.getString(SchemaManager.VERTEX_SCHEMA);
+                    String table = resultSet.getString(SchemaManager.VERTEX_TABLE);
                     SqlgVertex sqlgVertex = SqlgVertex.of(this, id, schema, table);
-                    String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
-                    this.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
-                    sqlgVertex.inLabelsForVertex = new HashSet<>();
-                    sqlgVertex.inLabelsForVertex.addAll(labels);
-                    String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
-                    labels.clear();
-                    this.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
-                    sqlgVertex.outLabelsForVertex = new HashSet<>();
-                    sqlgVertex.outLabelsForVertex.addAll(labels);
-                    sqlGVertexes.add(sqlgVertex);
-                    labels.clear();
+
+                    loadVertexAndLabels(sqlGVertexes, resultSet, sqlgVertex);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
         return sqlGVertexes;
+    }
+
+    void loadVertexAndLabels(List<Vertex> sqlGVertexes, ResultSet resultSet, SqlgVertex sqlgVertex) throws SQLException {
+        Set<SchemaTable> labels = new HashSet<>();
+        String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
+        this.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
+        sqlgVertex.inLabelsForVertex = new HashSet<>();
+        sqlgVertex.inLabelsForVertex.addAll(labels);
+        String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
+        labels.clear();
+        this.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
+        sqlgVertex.outLabelsForVertex = new HashSet<>();
+        sqlgVertex.outLabelsForVertex.addAll(labels);
+        sqlGVertexes.add(sqlgVertex);
     }
 
     private Iterable<Edge> _edges(final Object... edgeIds) {
