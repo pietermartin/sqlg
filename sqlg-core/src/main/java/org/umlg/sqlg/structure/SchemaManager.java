@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
+import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
@@ -51,6 +52,8 @@ public class SchemaManager {
     private Map<String, Set<String>> edgeForeignKeys;
     private Map<String, Set<String>> localEdgeForeignKeys = new HashMap<>();
     private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
+
+    private Map<String, Set<String>> localTableOutLabels;
 
     private Lock schemaLock;
     private SqlgGraph sqlgGraph;
@@ -117,6 +120,7 @@ public class SchemaManager {
                         this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                     }
                     this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+//                    this.localTableOutLabels.put(
                 }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
@@ -285,7 +289,7 @@ public class SchemaManager {
     }
 
     /**
-     * @param schema        The tables that the table for this edge will reside in.
+     * @param schema        The schema that the table for this edge will reside in.
      * @param table         The table for this edge
      * @param foreignKeyIn  The tables table pair of foreign key to the in vertex
      * @param foreignKeyOut The tables table pair of foreign key to the out vertex
@@ -773,7 +777,6 @@ public class SchemaManager {
     }
 
     public Set<SchemaTable> getLabelsForVertex(SqlgVertex sqlgVertex, boolean inDirection) {
-
         //the inLabelsForVertex and outLabelsForVertex sets are initialized to null to distinguish between having been loaded and having no labels
         if ((inDirection && sqlgVertex.inLabelsForVertex == null) || (!inDirection && sqlgVertex.outLabelsForVertex == null)) {
             Long id = (Long) sqlgVertex.id();
@@ -1091,6 +1094,28 @@ public class SchemaManager {
 
     public Map<String, Set<String>> getEdgeForeignKeys() {
         return this.localEdgeForeignKeys;
+    }
+
+    public String constructJoinBetweenVertexAndStep(SqlgVertex sqlgVertex, VertexStep step) {
+
+        SchemaTable schemaTable = sqlgVertex.getSchemaTable();
+        String[] edgeLabels = step.getEdgeLabels();
+
+
+
+        return "";
+
+    }
+
+    public void constructJoinBetweenTables(SchemaTable schemaTable1, SchemaTable schemaTable2) {
+
+    }
+
+    public List<SchemaTable> getAllOutLabelsFor(SchemaTable schemaTable) {
+
+
+        return null;
+
     }
 
     class SchemasMapEntryListener implements EntryListener<String, String> {

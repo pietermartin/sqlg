@@ -51,32 +51,33 @@ public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
             }
         }
 
-        //TODO do has on edges
-        Set<Step> toRemove = new HashSet<>();
-        for (Object step : traversal.asAdmin().getSteps()) {
-            if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).returnClass)) {
-                SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
-                Step currentStep = sqlgVertexStep.getNextStep();
-                while (true) {
-                    if (currentStep == EmptyStep.instance() || TraversalHelper.isLabeled(currentStep)) break;
-                    if (currentStep instanceof SqlgHasStep) {
-                        sqlgVertexStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
-                        toRemove.add(currentStep);
-                    } else if (currentStep instanceof IntervalStep) {
-                        sqlgVertexStep.hasContainers.add(((IntervalStep) currentStep).getHasContainers());
-                        toRemove.add(currentStep);
-                    } else if (currentStep instanceof IdentityStep) {
-                        // do nothing
-                    } else {
-                        break;
-                    }
-                    currentStep = currentStep.getNextStep();
-                }
-            }
-        }
-        for (Step stepToRemove : toRemove) {
-            TraversalHelper.removeStep(stepToRemove, traversal);
-        }
+        //Move this logic to SqlgVertexStepCompiler
+//        //TODO do has on edges
+//        Set<Step> toRemove = new HashSet<>();
+//        for (Object step : traversal.asAdmin().getSteps()) {
+//            if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).returnClass)) {
+//                SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
+//                Step currentStep = sqlgVertexStep.getNextStep();
+//                while (true) {
+//                    if (currentStep == EmptyStep.instance() || TraversalHelper.isLabeled(currentStep)) break;
+//                    if (currentStep instanceof SqlgHasStep) {
+//                        sqlgVertexStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
+//                        toRemove.add(currentStep);
+//                    } else if (currentStep instanceof IntervalStep) {
+//                        sqlgVertexStep.hasContainers.add(((IntervalStep) currentStep).getHasContainers());
+//                        toRemove.add(currentStep);
+//                    } else if (currentStep instanceof IdentityStep) {
+//                        // do nothing
+//                    } else {
+//                        break;
+//                    }
+//                    currentStep = currentStep.getNextStep();
+//                }
+//            }
+//        }
+//        for (Step stepToRemove : toRemove) {
+//            TraversalHelper.removeStep(stepToRemove, traversal);
+//        }
     }
 
     public static SqlGGraphStepStrategy instance() {

@@ -1,16 +1,18 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.security.krb5.SCDynamicStoreConfig;
 
 import java.sql.*;
 import java.util.*;
@@ -185,6 +187,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Iterator<Vertex> itty = internalGetVertices(hasContainers, direction, labels);
         return itty;
     }
+
+    public Iterator<Vertex> vertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+        this.sqlgGraph.tx().readWrite();
+        Iterator<Vertex> itty = internalGetVertices2(replacedSteps);
+        return itty;
+    }
+
 
     @Override
     public void remove() {
@@ -615,6 +624,43 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
+    /**
+     * Generate a query for the replaced steps.
+     * Each replaced step translates to a join and a section of the where clause.
+     *
+     * @param replacedSteps
+     * @return The results of the query
+     */
+    private Iterator<Vertex> internalGetVertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+        List<Vertex> vertices = new ArrayList<>();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM ");
+        int count = 1;
+        VertexStep previousStep = null;
+        for (Pair<Step, List<HasContainer>> replacedStep : replacedSteps) {
+            //For now assume the step is a VertexStep, This might change when implementing gremlin 'as'
+            VertexStep step = (VertexStep) replacedStep.getKey();
+            List<HasContainer> hasContainers = replacedStep.getValue();
+
+            if (count++ == 1) {
+                SchemaTable schemaTable = SchemaTable.of(this.schema, this.table);
+
+                String[] edgeLabels = step.getEdgeLabels();
+                //If edgeLabels are empty then all out edges must be retrieved
+                this.sqlgGraph.getSchemaManager().getAllOutLabelsFor(schemaTable);
+
+                this.sqlgGraph.getSchemaManager().constructJoinBetweenVertexAndStep(this, step);
+            } else {
+            }
+
+            previousStep = step;
+
+
+        }
+
+        return vertices.iterator();
+    }
+
     private Set<String> extractLabelsFromHasContainer(List<HasContainer> labelHasContainers) {
         Set<String> result = new HashSet<>();
         for (HasContainer hasContainer : labelHasContainers) {
@@ -626,7 +672,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     /**
      * filters the hasContainer on its key.
      *
-     * @param hasContainers all HasContainers mathich the key will be removed from this list
+     * @param hasContainers all HasContainers matching the key will be removed from this list
      * @param key
      * @return the HasContainers matching the key.
      */
