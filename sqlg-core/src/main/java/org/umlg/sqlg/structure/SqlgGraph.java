@@ -748,7 +748,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         boolean hasIds = vertexId.length > 0;
         boolean validIdExist = false;
         if (hasIds) {
-            sql.append("WHERE ");
+            sql.append(" WHERE ");
             sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
             sql.append(" IN (");
             int count = 1;

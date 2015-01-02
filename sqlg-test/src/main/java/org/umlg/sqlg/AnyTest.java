@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
+import org.umlg.sqlg.test.TinkerpopTest;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,7 @@ import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestEdgeToDifferentLabeledVertexes.class
+        TinkerpopTest.class
 })
 public class AnyTest {
 }
