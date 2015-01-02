@@ -10,6 +10,7 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.security.krb5.SCDynamicStoreConfig;
 
 import java.sql.*;
 import java.util.*;
@@ -181,8 +182,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     public Iterator<Vertex> vertices(List<HasContainer> hasContainers, Direction direction, String... labels) {
         this.sqlgGraph.tx().readWrite();
-        Iterator<SqlgVertex> itty = internalGetVertices(hasContainers, direction, labels);
-        return (Iterator)itty;
+        Iterator<Vertex> itty = internalGetVertices(hasContainers, direction, labels);
+        return itty;
     }
 
     @Override
@@ -345,14 +346,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     //TODO make this lazy
-    private Iterator<SqlgVertex> internalGetVertices(List<HasContainer> hasContainers, Direction direction, String... labels) {
+    private Iterator<Vertex> internalGetVertices(List<HasContainer> hasContainers, Direction direction, String... labels) {
 
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && this.sqlgGraph.tx().getBatchManager().vertexIsCached(this)) {
-            List<SqlgVertex> vertices = this.sqlgGraph.tx().getBatchManager().getVertices(this, direction, labels);
+            List<Vertex> vertices = this.sqlgGraph.tx().getBatchManager().getVertices(this, direction, labels);
             return vertices.stream().filter(v -> HasContainer.testAll(v, hasContainers)).iterator();
         } else {
 
-            List<SqlgVertex> vertices = new ArrayList<>();
+            List<Vertex> vertices = new ArrayList<>();
             List<HasContainer> labelHasContainers = filterHasContainerOnKey(hasContainers, T.label.getAccessor());
             Set<String> hasContainerLabels = extractLabelsFromHasContainer(labelHasContainers);
 
@@ -400,15 +401,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                         for (SchemaTable joinSchemaTable : tables) {
 
-                            StringBuilder sql = new StringBuilder("SELECT  ");
-                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
-                            sql.append(".");
-                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                            sql.append(".*, ");
-                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                            sql.append(".");
-                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-                            sql.append(".");
+                            StringBuilder sql = new StringBuilder("SELECT b.*, c.");
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
+                            sql.append(", c.");
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
+                            sql.append(", a.");
                             switch (d) {
                                 case IN:
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
@@ -419,33 +416,28 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
 
                                     //Need to join here on all of the out columns.
-                                    sql.append(" JOIN ");
+                                    sql.append(" a JOIN ");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
                                     sql.append(".");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                                    sql.append(" ON ");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                                    sql.append(".");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-                                    sql.append(".");
+                                    sql.append(" b ON a.");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-                                    sql.append(" = ");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
-                                    sql.append(".");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                                    sql.append(".");
+                                    sql.append(" = b.");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-
+                                    sql.append(" JOIN ");
+                                    sql.append(this.sqlgGraph.getSqlDialect().getPublicSchema());
+                                    sql.append(".");
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+                                    sql.append(" c ON b.");
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                                    sql.append(" = c.");
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
                                     sql.append(" WHERE ");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
                                     sql.append(" = ? ");
 
                                     for (HasContainer hasContainer : hasContainers) {
-                                        sql.append(" AND ");
-                                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
-                                        sql.append(".");
-                                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                                        sql.append(".");
+                                        sql.append(" AND b.");
                                         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
                                         if (!hasContainer.predicate.equals(Compare.eq)) {
                                             throw new IllegalStateException("Only equals is supported at the moment");
@@ -463,33 +455,28 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
 
                                     //Need to join here on all of the in columns.
-                                    sql.append(" JOIN ");
+                                    sql.append(" a JOIN ");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
                                     sql.append(".");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                                    sql.append(" ON ");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                                    sql.append(".");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-                                    sql.append(".");
+                                    sql.append(" b ON a.");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                                    sql.append(" = ");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
-                                    sql.append(".");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                                    sql.append(".");
+                                    sql.append(" = b.");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-
+                                    sql.append(" JOIN ");
+                                    sql.append(this.sqlgGraph.getSqlDialect().getPublicSchema());
+                                    sql.append(".");
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
+                                    sql.append(" c ON b.");
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+                                    sql.append(" = c.");
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
                                     sql.append(" WHERE ");
                                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
                                     sql.append(" = ? ");
 
                                     for (HasContainer hasContainer : hasContainers) {
-                                        sql.append(" AND ");
-                                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema()));
-                                        sql.append(".");
-                                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + joinSchemaTable.getTable()));
-                                        sql.append(".");
+                                        sql.append(" AND b.");
                                         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
                                         if (!hasContainer.predicate.equals(Compare.eq)) {
                                             throw new IllegalStateException("Only equals is supported at the moment");
@@ -592,37 +579,25 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                         }
 
                                     }
-                                    SqlgVertex sqlGVertex = null;
+                                    SqlgVertex sqlGVertex;
                                     switch (d) {
                                         case IN:
                                             sqlGVertex = SqlgVertex.of(this.sqlgGraph, outId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
                                             Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                             sqlGVertex.properties.clear();
                                             sqlGVertex.properties.putAll(keyValueMap);
-//                                            sqlGVertex = new SqlgVertex(
-//                                                    this.sqlG,
-//                                                    outId,
-//                                                    joinSchemaTable.getSchema(),
-//                                                    joinSchemaTable.getTable(),
-//                                                    keyValues.toArray());
+                                            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
                                             break;
                                         case OUT:
                                             sqlGVertex = SqlgVertex.of(this.sqlgGraph, inId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
                                             keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                             sqlGVertex.properties.clear();
                                             sqlGVertex.properties.putAll(keyValueMap);
-
-                                            sqlGVertex = new SqlgVertex(
-                                                    this.sqlgGraph,
-                                                    inId,
-                                                    joinSchemaTable.getSchema(),
-                                                    joinSchemaTable.getTable(),
-                                                    keyValues.toArray());
+                                            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
                                             break;
                                         case BOTH:
                                             throw new IllegalStateException("This should not be possible!");
                                     }
-                                    vertices.add(sqlGVertex);
                                 }
 
                             } catch (SQLException e) {

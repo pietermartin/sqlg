@@ -282,8 +282,8 @@ public class BatchManager {
         return false;
     }
 
-    public List<SqlgVertex> getVertices(SqlgVertex vertex, Direction direction, String[] labels) {
-        List<SqlgVertex> vertices = new ArrayList<>();
+    public List<Vertex> getVertices(SqlgVertex vertex, Direction direction, String[] labels) {
+        List<Vertex> vertices = new ArrayList<>();
         List<SqlgEdge> edges = getEdges(vertex, direction, labels);
         for (SqlgEdge sqlgEdge : edges) {
             switch (direction) {

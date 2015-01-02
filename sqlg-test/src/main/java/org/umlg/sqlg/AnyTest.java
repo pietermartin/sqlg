@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestQuery;
+import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.TestQuery;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestQuery.class
+        TestEdgeToDifferentLabeledVertexes.class
 })
 public class AnyTest {
 }
