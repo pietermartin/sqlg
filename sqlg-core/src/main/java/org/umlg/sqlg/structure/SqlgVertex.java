@@ -573,7 +573,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     List<Object> keyValues = new ArrayList<>();
                                     for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                         String columnName = resultSetMetaData.getColumnName(i);
-                                        if (!(columnName.equals("ID") || columnName.equals(SchemaManager.VERTEX_IN_LABELS) || columnName.equals(SchemaManager.VERTEX_OUT_LABELS) || inVertexColumnNames.contains(columnName) || outVertexColumnNames.contains(columnName))) {
+                                        if (!(columnName.equals("ID") ||
+                                                columnName.equals(SchemaManager.VERTEX_IN_LABELS) || columnName.equals(SchemaManager.VERTEX_OUT_LABELS) ||
+                                                inVertexColumnNames.contains(columnName) || outVertexColumnNames.contains(columnName))) {
                                             keyValues.add(columnName);
                                             keyValues.add(resultSet.getObject(columnName));
                                         }
