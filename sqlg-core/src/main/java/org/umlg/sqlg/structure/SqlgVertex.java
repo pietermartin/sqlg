@@ -108,11 +108,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 schemaTablePair.getTable(),
                 SchemaTable.of(
                         ((SqlgVertex) inVertex).schema,
-                        ((SqlgVertex) inVertex).table + SchemaManager.IN_VERTEX_COLUMN_END
+                        ((SqlgVertex) inVertex).table
                 ),
                 SchemaTable.of(
                         this.schema,
-                        this.table + SchemaManager.OUT_VERTEX_COLUMN_END
+                        this.table
                 ),
                 keyValues);
         this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable(this, this.schema, label, false);
