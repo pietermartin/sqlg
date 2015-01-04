@@ -609,20 +609,20 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     /**
-     * Executes a the given sql query and returns the result as vertices.
-     * @param query The sql to execute.
+     * Executes a the given sql sql and returns the result as vertices.
+     * @param sql The sql to execute.
      * @return A List of Vertex
      */
-    public List<Vertex> vertexQuery(String query) {
+    public List<Vertex> vertexQuery(String sql) {
         List<Vertex> sqlgVertices = new ArrayList<>();
         try {
             Connection conn = this.tx().getConnection();
             Statement statement = conn.createStatement();
-            query = this.sqlDialect.wrapVertexQuery(query);
+            sql = this.sqlDialect.wrapVertexQuery(sql);
             if (logger.isDebugEnabled()) {
-                logger.debug(query);
+                logger.debug(sql);
             }
-            ResultSet resultSet = statement.executeQuery(query);
+            ResultSet resultSet = statement.executeQuery(sql);
             while (resultSet.next()) {
                 long id = resultSet.getLong("ID");
                 String schema = resultSet.getString(SchemaManager.VERTEX_SCHEMA);
@@ -633,10 +633,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             return sqlgVertices;
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        } finally {
-            this.tx().rollback();
         }
-
     }
 
     //indexing
