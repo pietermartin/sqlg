@@ -1,6 +1,8 @@
 package org.umlg.sqlg.structure;
 
-import com.hazelcast.config.*;
+import com.hazelcast.config.Config;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.NetworkConfig;
 import com.hazelcast.core.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -352,19 +354,21 @@ public class SchemaManager {
                 //For each table capture its in and out labels
                 //This schema information is needed for compiling gremlin
                 //first do the in labels
-                Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.uncommittedTableLabels.get(foreignKeyIn);
+                SchemaTable foreignKeyInWithPrefix = SchemaTable.of(foreignKeyIn.getSchema(), SchemaManager.VERTEX_PREFIX + foreignKeyIn.getTable());
+                Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.uncommittedTableLabels.get(foreignKeyInWithPrefix);
                 if (labels == null) {
                     labels = Pair.of(new HashSet<>(), new HashSet<>());
-                    this.uncommittedTableLabels.put(foreignKeyIn, labels);
+                    this.uncommittedTableLabels.put(foreignKeyInWithPrefix, labels);
                 }
-                labels.getLeft().add(SchemaTable.of(schema, table));
+                labels.getLeft().add(SchemaTable.of(schema, prefixedTable));
                 //now the out labels
-                labels = this.uncommittedTableLabels.get(foreignKeyOut);
+                SchemaTable foreignKeyOutWithPrefix = SchemaTable.of(foreignKeyOut.getSchema(), SchemaManager.VERTEX_PREFIX + foreignKeyOut.getTable());
+                labels = this.uncommittedTableLabels.get(foreignKeyOutWithPrefix);
                 if (labels == null) {
                     labels = Pair.of(new HashSet<>(), new HashSet<>());
-                    this.uncommittedTableLabels.put(foreignKeyOut, labels);
+                    this.uncommittedTableLabels.put(foreignKeyOutWithPrefix, labels);
                 }
-                labels.getRight().add(SchemaTable.of(schema, table));
+                labels.getRight().add(SchemaTable.of(schema, prefixedTable));
             }
         }
         //ensure columns exist
@@ -513,19 +517,17 @@ public class SchemaManager {
                 //For each table capture its in and out labels
                 //This schema information is needed for compiling gremlin
                 //first do the in labels
-                Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.uncommittedTableLabels.get(vertexSchemaTable);
+                SchemaTable foreignKeyInWithPrefix = SchemaTable.of(vertexSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + vertexSchemaTable.getTable());
+                Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.uncommittedTableLabels.get(foreignKeyInWithPrefix);
                 if (labels == null) {
                     labels = Pair.of(new HashSet<>(), new HashSet<>());
-                    this.uncommittedTableLabels.put(vertexSchemaTable, labels);
+                    this.uncommittedTableLabels.put(foreignKeyInWithPrefix, labels);
                 }
-                labels.getLeft().add(SchemaTable.of(schema, table));
-                //now the out labels
-                labels = this.uncommittedTableLabels.get(vertexSchemaTable);
-                if (labels == null) {
-                    labels = Pair.of(new HashSet<>(), new HashSet<>());
-                    this.uncommittedTableLabels.put(vertexSchemaTable, labels);
+                if (in) {
+                    labels.getLeft().add(SchemaTable.of(schema, table));
+                } else {
+                    labels.getRight().add(SchemaTable.of(schema, table));
                 }
-                labels.getRight().add(SchemaTable.of(schema, table));
             }
         }
     }
@@ -1160,6 +1162,10 @@ public class SchemaManager {
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getLocalTableLabels() {
         return localTableLabels;
+    }
+
+    public Map<String, Map<String, PropertyType>> getLocalTables() {
+        return localTables;
     }
 
     class SchemasMapEntryListener implements EntryListener<String, String> {

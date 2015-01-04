@@ -14,13 +14,17 @@ public class TestGremlinCompile extends BaseTest {
 
     @Test
     public void testOutOut() {
-        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex c = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
         a.addEdge("outB", b);
         b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, a.out("outB").out("outC").count().next().intValue());
+        Assert.assertEquals(2, a.out().out().count().next().intValue());
     }
 }

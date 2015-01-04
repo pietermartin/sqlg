@@ -626,38 +626,72 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     /**
      * Generate a query for the replaced steps.
-     * Each replaced step translates to a join and a section of the where clause.
+     * Each replaced step translates to a join statement and a section of the where clause.
      *
      * @param replacedSteps
      * @return The results of the query
      */
     private Iterator<Vertex> internalGetVertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
         List<Vertex> vertices = new ArrayList<>();
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT * FROM ");
         int count = 1;
-        VertexStep previousStep = null;
+        String joinSql = "";
+        Set<SchemaTable> previousSchemaTables = null;
         for (Pair<Step, List<HasContainer>> replacedStep : replacedSteps) {
             //For now assume the step is a VertexStep, This might change when implementing gremlin 'as'
             VertexStep step = (VertexStep) replacedStep.getKey();
             List<HasContainer> hasContainers = replacedStep.getValue();
-
             if (count++ == 1) {
-                SchemaTable schemaTable = SchemaTable.of(this.schema, this.table);
-
-                String[] edgeLabels = step.getEdgeLabels();
-                //If edgeLabels are empty then all out edges must be retrieved
-                this.sqlgGraph.getSchemaManager().getAllOutLabelsFor(schemaTable);
-
-                this.sqlgGraph.getSchemaManager().constructJoinBetweenVertexAndStep(this, step);
+                SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
+                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinCompiler().constructJoinBetweenSchemaTableAndStep(schemaTable, step);
+                joinSql += sqlSchemaTables.getLeft();
+                previousSchemaTables = sqlSchemaTables.getRight();
             } else {
+                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinCompiler().constructJoinBetweenSchemaTablesAndStep(previousSchemaTables, step);
+                joinSql += sqlSchemaTables.getLeft();
+                previousSchemaTables = sqlSchemaTables.getRight();
+            }
+        }
+        String sql = this.sqlgGraph.getGremlinCompiler().constructFromClause(this, previousSchemaTables);
+        sql += joinSql;
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql += ";";
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+//            preparedStatement.setLong(1, this.primaryKey);
+//            int countHasContainers = 2;
+//            for (HasContainer hasContainer : hasContainers) {
+//                if (!hasContainer.predicate.equals(Compare.eq)) {
+//                    throw new IllegalStateException("Only equals is supported at present.");
+//                }
+//                Map<String, Object> keyValues = new HashMap<>();
+//                keyValues.put(hasContainer.key, hasContainer.value);
+//                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
+//            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                List<SqlgVertex> sqlgVertices = this.sqlgGraph.getGremlinCompiler().loadVertices(resultSet, previousSchemaTables);
+                List<Object> keyValues = new ArrayList<>();
+                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                    String columnName = resultSetMetaData.getColumnName(i);
+                    if (!columnName.equals("ID")) {
+                        keyValues.add(columnName);
+                        keyValues.add(resultSet.getObject(columnName));
+                    }
+                }
+//                Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
+//                sqlGVertex.properties.clear();
+//                sqlGVertex.properties.putAll(keyValueMap);
+//                this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
             }
 
-            previousStep = step;
-
-
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-
         return vertices.iterator();
     }
 
