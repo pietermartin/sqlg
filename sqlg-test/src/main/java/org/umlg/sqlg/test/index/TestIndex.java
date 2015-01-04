@@ -30,6 +30,31 @@ public class TestIndex extends BaseTest {
     }
 
     @Test
+    public void testIndexOnVertex2() throws SQLException {
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "dummy");
+        this.sqlgGraph.tx().commit();
+        for (int i = 0; i < 5000; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name", Compare.eq, "john50").count().next().intValue());
+
+        //Check if the index is being used
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        Statement statement = conn.createStatement();
+        if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
+            ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name\" = 'john50'");
+            Assert.assertTrue(rs.next());
+            String result = rs.getString(1);
+            System.out.println(result);
+            Assert.assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            statement.close();
+        }
+        this.sqlgGraph.tx().rollback();
+    }
+
+    @Test
     public void testIndexOnVertex() throws SQLException {
         this.sqlgGraph.createVertexLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
         this.sqlgGraph.tx().commit();
@@ -39,7 +64,9 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", Compare.eq, "john50").count().next().intValue());
-        Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+
+        //Check if the index is being used
+        Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
@@ -48,11 +75,11 @@ public class TestIndex extends BaseTest {
             System.out.println(result);
             Assert.assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
-            conn.close();
         }
+        this.sqlgGraph.tx().rollback();
     }
 
-    @Test
+//    @Test
     public void testIndexOnVertex1() throws SQLException {
         this.sqlgGraph.createVertexLabeledIndex("Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
         this.sqlgGraph.tx().commit();
