@@ -628,7 +628,8 @@ public class SqlgGraph implements Graph, Graph.Iterators {
                 String schema = resultSet.getString(SchemaManager.VERTEX_SCHEMA);
                 String table = resultSet.getString(SchemaManager.VERTEX_TABLE);
                 SqlgVertex sqlgVertex = SqlgVertex.of(this, id, schema, table);
-                loadVertexAndLabels(sqlgVertices, resultSet, sqlgVertex);
+                loadVertexAndLabels(resultSet, sqlgVertex);
+                sqlgVertices.add(sqlgVertex);
             }
             return sqlgVertices;
         } catch (SQLException e) {
@@ -786,7 +787,8 @@ public class SqlgGraph implements Graph, Graph.Iterators {
                     String table = resultSet.getString(SchemaManager.VERTEX_TABLE);
                     SqlgVertex sqlgVertex = SqlgVertex.of(this, id, schema, table);
 
-                    loadVertexAndLabels(sqlGVertexes, resultSet, sqlgVertex);
+                    loadVertexAndLabels(resultSet, sqlgVertex);
+                    sqlGVertexes.add(sqlgVertex);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -795,7 +797,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         return sqlGVertexes;
     }
 
-    void loadVertexAndLabels(List<Vertex> sqlGVertexes, ResultSet resultSet, SqlgVertex sqlgVertex) throws SQLException {
+    void loadVertexAndLabels(ResultSet resultSet, SqlgVertex sqlgVertex) throws SQLException {
         Set<SchemaTable> labels = new HashSet<>();
         String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
         this.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
@@ -806,7 +808,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         this.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
         sqlgVertex.outLabelsForVertex = new HashSet<>();
         sqlgVertex.outLabelsForVertex.addAll(labels);
-        sqlGVertexes.add(sqlgVertex);
     }
 
     private Iterable<Edge> _edges(final Object... edgeIds) {

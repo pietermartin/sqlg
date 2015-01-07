@@ -2,9 +2,11 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -21,20 +23,33 @@ public class GremlinCompiler {
         this.schemaManager = sqlgGraph.getSchemaManager();
     }
 
-    public List<SqlgVertex> loadVertices(ResultSet resultSet, Set<SchemaTable> previousSchemaTables) {
+    /**
+     * This will create SqlgVertex from the resultSet.
+     * Note that the nature of inner join queries on multiple tables creates duplicates.
+     * This method filters out duplicates.
+     *
+     * @param resultSet
+     * @param previousSchemaTables
+     * @param vertices
+     * @throws SQLException
+     */
+    public void loadVertices(ResultSet resultSet, Set<SchemaTable> previousSchemaTables, List<Vertex> vertices) throws SQLException {
         for (SchemaTable previousSchemaTable : previousSchemaTables) {
+            List<Object> keyValues = new ArrayList<>();
             String idProperty = previousSchemaTable.getSchema() + "." + previousSchemaTable.getTable() + "." + SchemaManager.ID;
+            Long id = resultSet.getLong(idProperty);
             Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(previousSchemaTable.toString());
             for (String propertyName : propertyTypeMap.keySet()) {
                 String property = previousSchemaTable.getSchema() + "." + previousSchemaTable.getTable() + "." + propertyName;
+                keyValues.add(property);
+                keyValues.add(resultSet.getObject(property));
             }
             Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
-            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, outId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
+            SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, previousSchemaTable.getSchema(), previousSchemaTable.getTable());
             sqlGVertex.properties.clear();
             sqlGVertex.properties.putAll(keyValueMap);
-            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
+            vertices.add(sqlGVertex);
         }
-        return null;
     }
 
     public String constructFromClause(SqlgVertex sqlgVertex, Set<SchemaTable> previousSchemaTables) {
@@ -67,6 +82,65 @@ public class GremlinCompiler {
         sql += ".";
         sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + sqlgVertex.table);
         return sql;
+    }
+
+    /**
+     * Constructs the label paths from the given schemaTable to the leaf vertex labels for the gremlin query.
+     * For each path Sqlg will execute a sql query. The union of the queries is the result the gremlin query.
+     * The vertex labels can be calculated from the steps.
+     *
+     * @param schemaTable
+     * @param replacedSteps
+     * @return a List of paths. Each path is itself a list of SchemaTables.
+     */
+    public List<List<SchemaTable>> calculateDistinctPathsToLeafVertices(SchemaTable schemaTable, List<VertexStep> replacedSteps) {
+        SchemaTableTree schemaTableTree = new SchemaTableTree(schemaTable);
+
+        for (VertexStep vertexStep : replacedSteps) {
+            String[] edgeLabels = vertexStep.getEdgeLabels();
+            Direction direction = vertexStep.getDirection();
+            Class elementClass = vertexStep.getReturnClass();
+
+            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getLocalTableLabels().get(schemaTable);
+            Set<SchemaTable> inLabels = labels.getLeft();
+            Set<SchemaTable> outLabels = labels.getRight();
+            Set<SchemaTable> inLabelsToTravers = new HashSet<>();
+            Set<SchemaTable> outLabelsToTravers = new HashSet<>();
+            switch (direction) {
+                case IN:
+                    inLabelsToTravers = edgeLabels.length > 0 ? filter(inLabels, edgeLabels) : inLabels;
+                    break;
+                case OUT:
+                    outLabelsToTravers = edgeLabels.length > 0 ? filter(outLabels, edgeLabels) : outLabels;
+                    break;
+                case BOTH:
+                    inLabelsToTravers = edgeLabels.length > 0 ? filter(inLabels, edgeLabels) : inLabels;
+                    outLabelsToTravers = edgeLabels.length > 0 ? filter(outLabels, edgeLabels) : outLabels;
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown direction " + direction.name());
+            }
+
+            //Each labelToTravers more than the first one forms a new distinct path
+            for (int i = 1; i < inLabelsToTravers.size() - 1; i++) {
+
+            }
+            int count = 1;
+            for (SchemaTable inLabelsToTraver : inLabelsToTravers) {
+                if (count == 1) {
+                    path.add(inLabelsToTraver);
+                } else {
+
+                }
+
+            }
+            for (SchemaTable outLabelsToTraver : outLabelsToTravers) {
+
+            }
+
+        }
+
+        return null;
     }
 
     public Pair<String, Set<SchemaTable>> constructJoinBetweenSchemaTablesAndStep(Set<SchemaTable> previousSchemaTables, VertexStep vertexStep) {
@@ -208,4 +282,13 @@ public class GremlinCompiler {
         return result;
     }
 
+    private static class SchemaTableTree {
+        SchemaTable parent;
+        SchemaTable schemaTable;
+        List<SchemaTable> children;
+
+        public SchemaTableTree(SchemaTable schemaTable) {
+            this.schemaTable = schemaTable;
+        }
+    }
 }

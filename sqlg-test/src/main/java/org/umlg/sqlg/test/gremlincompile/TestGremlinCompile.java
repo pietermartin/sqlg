@@ -21,8 +21,9 @@ public class TestGremlinCompile extends BaseTest {
         Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
         a.addEdge("outB", b);
         b.addEdge("outC", c);
+        b.addEdge("outC", c);
         b.addEdge("outD", d1);
-        b.addEdge("outD", d2);
+//        b.addEdge("outD", d2);
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals(2, a.out().out().count().next().intValue());

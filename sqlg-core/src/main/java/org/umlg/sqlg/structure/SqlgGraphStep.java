@@ -168,20 +168,8 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                             SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, schemaTable.getTable());
                             sqlGVertex.loadResultSet(resultSet);
 
-                            this.sqlgGraph.loadVertexAndLabels(sqlGVertexes, resultSet, sqlGVertex);
-
-//                            //Load the in and out labels
-//                            Set<SchemaTable> labels = new HashSet<>();
-//                            String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
-//                            this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
-//                            sqlGVertex.inLabelsForVertex = new HashSet<>();
-//                            sqlGVertex.inLabelsForVertex.addAll(labels);
-//                            String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
-//                            labels.clear();
-//                            this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
-//                            sqlGVertex.outLabelsForVertex = new HashSet<>();
-//                            sqlGVertex.outLabelsForVertex.addAll(labels);
-//                            sqlGVertexes.add(sqlGVertex);
+                            this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
+                            sqlGVertexes.add(sqlGVertex);
 
                             //Load the in and out labels
                             Set<SchemaTable> labels = new HashSet<>();
@@ -243,19 +231,8 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
                     sqlGVertex.loadResultSet(resultSet);
 
-                    this.sqlgGraph.loadVertexAndLabels(sqlGVertexes, resultSet, sqlGVertex);
-//                    //Load the in and out labels
-//                    Set<SchemaTable> labels = new HashSet<>();
-//                    String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
-//                    this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
-//                    sqlGVertex.inLabelsForVertex = new HashSet<>();
-//                    sqlGVertex.inLabelsForVertex.addAll(labels);
-//                    String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
-//                    labels.clear();
-//                    this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
-//                    sqlGVertex.outLabelsForVertex = new HashSet<>();
-//                    sqlGVertex.outLabelsForVertex.addAll(labels);
-//                    sqlGVertexes.add(sqlGVertex);
+                    this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
+                    sqlGVertexes.add(sqlGVertex);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

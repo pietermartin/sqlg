@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -597,14 +598,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                             Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                             sqlGVertex.properties.clear();
                                             sqlGVertex.properties.putAll(keyValueMap);
-                                            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
+                                            this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
+                                            vertices.add(sqlGVertex);
                                             break;
                                         case OUT:
                                             sqlGVertex = SqlgVertex.of(this.sqlgGraph, inId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
                                             keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                             sqlGVertex.properties.clear();
                                             sqlGVertex.properties.putAll(keyValueMap);
-                                            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
+                                            this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
+                                            vertices.add(sqlGVertex);
                                             break;
                                         case BOTH:
                                             throw new IllegalStateException("This should not be possible!");
@@ -633,15 +636,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      */
     private Iterator<Vertex> internalGetVertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
         List<Vertex> vertices = new ArrayList<>();
+
+
+        SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
+        this.sqlgGraph.getGremlinCompiler().calculateDistinctPathsToLeafVertices(schemaTable, replacedSteps.stream().map(r->r.getLeft()).collect(Collectors.toList()));
+
         int count = 1;
         String joinSql = "";
+        Set<SchemaTable> schemaTables = new HashSet<>();
         Set<SchemaTable> previousSchemaTables = null;
         for (Pair<Step, List<HasContainer>> replacedStep : replacedSteps) {
             //For now assume the step is a VertexStep, This might change when implementing gremlin 'as'
             VertexStep step = (VertexStep) replacedStep.getKey();
             List<HasContainer> hasContainers = replacedStep.getValue();
             if (count++ == 1) {
-                SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
                 Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinCompiler().constructJoinBetweenSchemaTableAndStep(schemaTable, step);
                 joinSql += sqlSchemaTables.getLeft();
                 previousSchemaTables = sqlSchemaTables.getRight();
@@ -650,8 +658,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 joinSql += sqlSchemaTables.getLeft();
                 previousSchemaTables = sqlSchemaTables.getRight();
             }
+            schemaTables.addAll(previousSchemaTables);
         }
-        String sql = this.sqlgGraph.getGremlinCompiler().constructFromClause(this, previousSchemaTables);
+        String sql = this.sqlgGraph.getGremlinCompiler().constructFromClause(this, schemaTables);
         sql += joinSql;
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql += ";";
@@ -674,19 +683,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                List<SqlgVertex> sqlgVertices = this.sqlgGraph.getGremlinCompiler().loadVertices(resultSet, previousSchemaTables);
-                List<Object> keyValues = new ArrayList<>();
-                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                    String columnName = resultSetMetaData.getColumnName(i);
-                    if (!columnName.equals("ID")) {
-                        keyValues.add(columnName);
-                        keyValues.add(resultSet.getObject(columnName));
-                    }
-                }
-//                Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
-//                sqlGVertex.properties.clear();
-//                sqlGVertex.properties.putAll(keyValueMap);
-//                this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
+                this.sqlgGraph.getGremlinCompiler().loadVertices(resultSet, previousSchemaTables, vertices);
             }
 
         } catch (SQLException e) {
