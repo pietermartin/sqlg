@@ -1,8 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -10,7 +8,6 @@ import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.security.krb5.SCDynamicStoreConfig;
 
 import java.sql.*;
 import java.util.*;
@@ -19,7 +16,7 @@ import java.util.*;
  * Date: 2014/07/12
  * Time: 5:42 AM
  */
-public class SqlgVertex extends SqlgElement implements Vertex {
+public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
     Set<SchemaTable> inLabelsForVertex = null;
@@ -918,38 +915,26 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> start() {
-        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-        return traversal.addStep(new StartStep<>(traversal, this));
+    public Vertex.Iterators iterators() {
+        return this;
     }
 
     @Override
-    public Vertex.Iterators iterators() {
-        return this.iterators;
+    public Iterator<Vertex> vertexIterator(final Direction direction, final String... labels) {
+        SqlgVertex.this.sqlgGraph.tx().readWrite();
+        return SqlgVertex.this.vertices(Collections.emptyList(), direction, labels);
     }
 
-    private final Vertex.Iterators iterators = new Iterators();
+    @Override
+    public Iterator<Edge> edgeIterator(final Direction direction, final String... labels) {
+        SqlgVertex.this.sqlgGraph.tx().readWrite();
+        return SqlgVertex.this.internalGetEdges(direction, labels);
+    }
 
-    protected class Iterators extends SqlgElement.Iterators implements Vertex.Iterators {
-
-        @Override
-        public Iterator<Vertex> vertexIterator(final Direction direction, final String... labels) {
-            SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.vertices(Collections.emptyList(), direction, labels);
-        }
-
-        @Override
-        public Iterator<Edge> edgeIterator(final Direction direction, final String... labels) {
-            SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.internalGetEdges(direction, labels);
-        }
-
-        @Override
-        public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
-            SqlgVertex.this.sqlgGraph.tx().readWrite();
-            return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
-        }
-
+    @Override
+    public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
+        SqlgVertex.this.sqlgGraph.tx().readWrite();
+        return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
     public void reset() {

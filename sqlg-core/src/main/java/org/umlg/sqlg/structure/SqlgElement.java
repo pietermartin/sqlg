@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  * Date: 2014/07/12
  * Time: 5:40 AM
  */
-public abstract class SqlgElement implements Element {
+public abstract class SqlgElement implements Element, Element.Iterators {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
@@ -410,7 +410,7 @@ public abstract class SqlgElement implements Element {
         this.properties.entrySet().stream()
                 .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
                 .filter(entry -> !entry.getKey().equals("ID"))
-                .filter(entry -> entry.getValue()!=null)
+                .filter(entry -> entry.getValue() != null)
                 .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
         return properties;
     }
@@ -423,7 +423,7 @@ public abstract class SqlgElement implements Element {
                 .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
 //                .filter(entry -> !Graph.Key.isHidden(entry.getKey()))
                 .filter(entry -> !entry.getKey().equals("ID"))
-                .filter(entry -> entry.getValue()!=null)
+                .filter(entry -> entry.getValue() != null)
                 .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
         return properties;
     }
@@ -434,24 +434,19 @@ public abstract class SqlgElement implements Element {
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
 
         this.properties.entrySet().stream()
-//                .filter(entry -> Graph.Key.isHidden(entry.getKey()))
-//                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(Graph.Key.unHide(entry.getKey()))).findAny().isPresent())
                 .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-                        .filter(entry -> !entry.getKey().equals("ID"))
-                        .filter(entry -> entry.getValue() != null)
-                        .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
+                .filter(entry -> !entry.getKey().equals("ID"))
+                .filter(entry -> entry.getValue() != null)
+                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
 
         return properties;
     }
 
-    protected class Iterators implements Element.Iterators {
 
-        @Override
-        public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
-            SqlgElement.this.sqlgGraph.tx().readWrite();
-            return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
-        }
-
+    @Override
+    public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
+        SqlgElement.this.sqlgGraph.tx().readWrite();
+        return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
 }

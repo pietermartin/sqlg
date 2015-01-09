@@ -4,7 +4,7 @@ import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
 import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
-import com.tinkerpop.gremlin.process.graph.step.filter.IntervalStep;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.util.EmptyStep;
@@ -21,18 +21,22 @@ import java.util.Set;
  * Date: 2014/07/12
  * Time: 5:45 AM
  */
-public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
+public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
 
-    private static final SqlGGraphStepStrategy INSTANCE = new SqlGGraphStepStrategy();
+    private static final SqlgGraphStepStrategy INSTANCE = new SqlgGraphStepStrategy();
 
-    private SqlGGraphStepStrategy() {
+    private SqlgGraphStepStrategy() {
     }
 
     public void apply(final Traversal traversal, final TraversalEngine traversalEngine) {
 
-        if (traversal.asAdmin().getSteps().get(0) instanceof SqlgGraphStep) {
-            final SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.asAdmin().getSteps().get(0);
-            Step currentStep = sqlgGraphStep.getNextStep();
+        final Step<?, ?> startStep = TraversalHelper.getStart(traversal);
+        if (startStep instanceof GraphStep) {
+            final GraphStep<?> originalGraphStep = (GraphStep) startStep;
+            final SqlgGraphStep<?> sqlgGraphStep = new SqlgGraphStep<>(originalGraphStep);
+            TraversalHelper.replaceStep(startStep, sqlgGraphStep, traversal);
+
+            Step<?, ?> currentStep = sqlgGraphStep.getNextStep();
             while (true) {
                 if (currentStep instanceof HasContainerHolder) {
                     sqlgGraphStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
@@ -62,9 +66,6 @@ public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
                     if (currentStep instanceof SqlgHasStep) {
                         sqlgVertexStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
                         toRemove.add(currentStep);
-                    } else if (currentStep instanceof IntervalStep) {
-                        sqlgVertexStep.hasContainers.add(((IntervalStep) currentStep).getHasContainers());
-                        toRemove.add(currentStep);
                     } else if (currentStep instanceof IdentityStep) {
                         // do nothing
                     } else {
@@ -79,7 +80,7 @@ public class SqlGGraphStepStrategy extends AbstractTraversalStrategy {
         }
     }
 
-    public static SqlGGraphStepStrategy instance() {
+    public static SqlgGraphStepStrategy instance() {
         return INSTANCE;
     }
 

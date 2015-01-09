@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.util.function.BiPredicate;
 
 /**
+ * Sqlg need to extend tinkerpop's HasContainer to support Sqlg schemas. i.e. the dot notation used in labels.
  * Date: 2014/08/15
  * Time: 8:25 PM
  */
