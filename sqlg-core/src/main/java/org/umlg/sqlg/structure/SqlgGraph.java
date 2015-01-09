@@ -37,7 +37,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
     private SchemaManager schemaManager;
-    private GremlinCompiler gremlinCompiler;
+    private GremlinParser gremlinParser;
     private SqlDialect sqlDialect;
     private String jdbcUrl;
     private ObjectMapper mapper = new ObjectMapper();
@@ -91,7 +91,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect, configuration);
         this.schemaManager.loadSchema();
-        this.gremlinCompiler = new GremlinCompiler(this);
+        this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportSchemas() && !this.schemaManager.schemaExist(this.sqlDialect.getPublicSchema())) {
             //This is for mariadb. Need to make sure a db called public exist
             this.schemaManager.createSchema(this.sqlDialect.getPublicSchema());
@@ -113,8 +113,8 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         return schemaManager;
     }
 
-    public GremlinCompiler getGremlinCompiler() {
-        return gremlinCompiler;
+    public GremlinParser getGremlinParser() {
+        return gremlinParser;
     }
 
     public SqlDialect getSqlDialect() {

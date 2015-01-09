@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -13,12 +14,12 @@ import java.util.*;
  * Date: 2015/01/03
  * Time: 1:06 PM
  */
-public class GremlinCompiler {
+public class GremlinParser {
 
     private SqlgGraph sqlgGraph;
     private SchemaManager schemaManager;
 
-    public GremlinCompiler(SqlgGraph sqlgGraph) {
+    public GremlinParser(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.schemaManager = sqlgGraph.getSchemaManager();
     }
@@ -93,54 +94,82 @@ public class GremlinCompiler {
      * @param replacedSteps
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
-    public List<List<SchemaTable>> calculateDistinctPathsToLeafVertices(SchemaTable schemaTable, List<VertexStep> replacedSteps) {
-        SchemaTableTree schemaTableTree = new SchemaTableTree(schemaTable);
+    public SchemaTableTree calculateDistinctPathsToLeafVertices(SchemaTable schemaTable, List<Step> replacedSteps) {
+        Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
+        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(schemaTable, 0);
+        schemaTableTrees.add(rootSchemaTableTree);
+        int depth = 1;
+        for (Step vertexStep : replacedSteps) {
+            schemaTableTrees = calculatePathForVertexStep(schemaTableTrees, (VertexStep) vertexStep, depth++);
+        }
+        System.out.println(rootSchemaTableTree.toString());
+        rootSchemaTableTree.postParse(replacedSteps.size());
+        System.out.println(rootSchemaTableTree.toString());
+        return rootSchemaTableTree;
+    }
 
-        for (VertexStep vertexStep : replacedSteps) {
+    private Set<SchemaTableTree> calculatePathForVertexStep(Set<SchemaTableTree> schemaTableTrees, VertexStep vertexStep, int depth) {
+        Set<SchemaTableTree> result = new HashSet<>();
+        for (SchemaTableTree schemaTableTree : schemaTableTrees) {
             String[] edgeLabels = vertexStep.getEdgeLabels();
             Direction direction = vertexStep.getDirection();
             Class elementClass = vertexStep.getReturnClass();
 
-            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getLocalTableLabels().get(schemaTable);
+            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getLocalTableLabels().get(schemaTableTree.getSchemaTable());
             Set<SchemaTable> inLabels = labels.getLeft();
             Set<SchemaTable> outLabels = labels.getRight();
-            Set<SchemaTable> inLabelsToTravers = new HashSet<>();
-            Set<SchemaTable> outLabelsToTravers = new HashSet<>();
+            Set<SchemaTable> inLabelsToTraversers = new HashSet<>();
+            Set<SchemaTable> outLabelsToTraversers = new HashSet<>();
             switch (direction) {
                 case IN:
-                    inLabelsToTravers = edgeLabels.length > 0 ? filter(inLabels, edgeLabels) : inLabels;
+                    inLabelsToTraversers = edgeLabels.length > 0 ? filter(inLabels, edgeLabels) : inLabels;
                     break;
                 case OUT:
-                    outLabelsToTravers = edgeLabels.length > 0 ? filter(outLabels, edgeLabels) : outLabels;
+                    outLabelsToTraversers = edgeLabels.length > 0 ? filter(outLabels, edgeLabels) : outLabels;
                     break;
                 case BOTH:
-                    inLabelsToTravers = edgeLabels.length > 0 ? filter(inLabels, edgeLabels) : inLabels;
-                    outLabelsToTravers = edgeLabels.length > 0 ? filter(outLabels, edgeLabels) : outLabels;
+                    inLabelsToTraversers = edgeLabels.length > 0 ? filter(inLabels, edgeLabels) : inLabels;
+                    outLabelsToTraversers = edgeLabels.length > 0 ? filter(outLabels, edgeLabels) : outLabels;
                     break;
                 default:
                     throw new IllegalStateException("Unknown direction " + direction.name());
             }
-
             //Each labelToTravers more than the first one forms a new distinct path
-            for (int i = 1; i < inLabelsToTravers.size() - 1; i++) {
+            for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, depth);
+                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, depth));
 
             }
-            int count = 1;
-            for (SchemaTable inLabelsToTraver : inLabelsToTravers) {
-                if (count == 1) {
-                    path.add(inLabelsToTraver);
-                } else {
-
-                }
-
+            for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, depth);
+                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, depth));
             }
-            for (SchemaTable outLabelsToTraver : outLabelsToTravers) {
-
-            }
-
         }
+        return result;
+    }
 
-        return null;
+    private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction, int depth) {
+        Set<SchemaTableTree> result = new HashSet<>();
+        Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getEdgeForeignKeys();
+        //join from the edge table to the incoming vertex table
+        Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
+        //Every foreignKey for the given direction must be joined on
+        for (String foreignKey : foreignKeys) {
+            String foreignKeySchema = foreignKey.split("\\.")[0];
+            String foreignKeyTable = foreignKey.split("\\.")[1];
+            if (direction == Direction.IN && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
+                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
+                        depth);
+                result.add(schemaTableTree1);
+            } else if (direction == Direction.OUT && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
+                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
+                        depth);
+                result.add(schemaTableTree1);
+            }
+        }
+        return result;
     }
 
     public Pair<String, Set<SchemaTable>> constructJoinBetweenSchemaTablesAndStep(Set<SchemaTable> previousSchemaTables, VertexStep vertexStep) {
@@ -282,13 +311,4 @@ public class GremlinCompiler {
         return result;
     }
 
-    private static class SchemaTableTree {
-        SchemaTable parent;
-        SchemaTable schemaTable;
-        List<SchemaTable> children;
-
-        public SchemaTableTree(SchemaTable schemaTable) {
-            this.schemaTable = schemaTable;
-        }
-    }
 }

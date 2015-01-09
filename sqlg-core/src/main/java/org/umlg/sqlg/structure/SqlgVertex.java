@@ -639,7 +639,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
 
         SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
-        this.sqlgGraph.getGremlinCompiler().calculateDistinctPathsToLeafVertices(schemaTable, replacedSteps.stream().map(r->r.getLeft()).collect(Collectors.toList()));
+        List<Step> vertexSteps = replacedSteps.stream().map(r->r.getLeft()).collect(Collectors.toList());
+        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().calculateDistinctPathsToLeafVertices(schemaTable, vertexSteps);
+        schemaTableTree.constructSql();
 
         int count = 1;
         String joinSql = "";
@@ -650,17 +652,17 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             VertexStep step = (VertexStep) replacedStep.getKey();
             List<HasContainer> hasContainers = replacedStep.getValue();
             if (count++ == 1) {
-                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinCompiler().constructJoinBetweenSchemaTableAndStep(schemaTable, step);
+                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinParser().constructJoinBetweenSchemaTableAndStep(schemaTable, step);
                 joinSql += sqlSchemaTables.getLeft();
                 previousSchemaTables = sqlSchemaTables.getRight();
             } else {
-                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinCompiler().constructJoinBetweenSchemaTablesAndStep(previousSchemaTables, step);
+                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinParser().constructJoinBetweenSchemaTablesAndStep(previousSchemaTables, step);
                 joinSql += sqlSchemaTables.getLeft();
                 previousSchemaTables = sqlSchemaTables.getRight();
             }
             schemaTables.addAll(previousSchemaTables);
         }
-        String sql = this.sqlgGraph.getGremlinCompiler().constructFromClause(this, schemaTables);
+        String sql = this.sqlgGraph.getGremlinParser().constructFromClause(this, schemaTables);
         sql += joinSql;
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql += ";";
@@ -683,7 +685,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                this.sqlgGraph.getGremlinCompiler().loadVertices(resultSet, previousSchemaTables, vertices);
+                this.sqlgGraph.getGremlinParser().loadVertices(resultSet, previousSchemaTables, vertices);
             }
 
         } catch (SQLException e) {
