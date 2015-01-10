@@ -1,16 +1,20 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -182,6 +186,13 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         Iterator<Vertex> itty = internalGetVertices(hasContainers, direction, labels);
         return itty;
     }
+
+    public Iterator<Vertex> vertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+        this.sqlgGraph.tx().readWrite();
+        Iterator<Vertex> itty = internalGetVertices2(replacedSteps);
+        return itty;
+    }
+
 
     @Override
     public void remove() {
@@ -585,14 +596,16 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                                             Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                             sqlGVertex.properties.clear();
                                             sqlGVertex.properties.putAll(keyValueMap);
-                                            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
+                                            this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
+                                            vertices.add(sqlGVertex);
                                             break;
                                         case OUT:
                                             sqlGVertex = SqlgVertex.of(this.sqlgGraph, inId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
                                             keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                             sqlGVertex.properties.clear();
                                             sqlGVertex.properties.putAll(keyValueMap);
-                                            this.sqlgGraph.loadVertexAndLabels(vertices, resultSet, sqlGVertex);
+                                            this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
+                                            vertices.add(sqlGVertex);
                                             break;
                                         case BOTH:
                                             throw new IllegalStateException("This should not be possible!");
@@ -612,6 +625,73 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         }
     }
 
+    /**
+     * Generate a query for the replaced steps.
+     * Each replaced step translates to a join statement and a section of the where clause.
+     *
+     * @param replacedSteps
+     * @return The results of the query
+     */
+    private Iterator<Vertex> internalGetVertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+        List<Vertex> vertices = new ArrayList<>();
+
+
+        SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
+        List<Step> vertexSteps = replacedSteps.stream().map(r->r.getLeft()).collect(Collectors.toList());
+        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().calculateDistinctPathsToLeafVertices(schemaTable, vertexSteps);
+        schemaTableTree.constructSql();
+
+        int count = 1;
+        String joinSql = "";
+        Set<SchemaTable> schemaTables = new HashSet<>();
+        Set<SchemaTable> previousSchemaTables = null;
+        for (Pair<Step, List<HasContainer>> replacedStep : replacedSteps) {
+            //For now assume the step is a VertexStep, This might change when implementing gremlin 'as'
+            VertexStep step = (VertexStep) replacedStep.getKey();
+            List<HasContainer> hasContainers = replacedStep.getValue();
+            if (count++ == 1) {
+                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinParser().constructJoinBetweenSchemaTableAndStep(schemaTable, step);
+                joinSql += sqlSchemaTables.getLeft();
+                previousSchemaTables = sqlSchemaTables.getRight();
+            } else {
+                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinParser().constructJoinBetweenSchemaTablesAndStep(previousSchemaTables, step);
+                joinSql += sqlSchemaTables.getLeft();
+                previousSchemaTables = sqlSchemaTables.getRight();
+            }
+            schemaTables.addAll(previousSchemaTables);
+        }
+        String sql = this.sqlgGraph.getGremlinParser().constructFromClause(this, schemaTables);
+        sql += joinSql;
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql += ";";
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+//            preparedStatement.setLong(1, this.primaryKey);
+//            int countHasContainers = 2;
+//            for (HasContainer hasContainer : hasContainers) {
+//                if (!hasContainer.predicate.equals(Compare.eq)) {
+//                    throw new IllegalStateException("Only equals is supported at present.");
+//                }
+//                Map<String, Object> keyValues = new HashMap<>();
+//                keyValues.put(hasContainer.key, hasContainer.value);
+//                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
+//            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet.next()) {
+                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                this.sqlgGraph.getGremlinParser().loadVertices(resultSet, previousSchemaTables, vertices);
+            }
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return vertices.iterator();
+    }
+
     private Set<String> extractLabelsFromHasContainer(List<HasContainer> labelHasContainers) {
         Set<String> result = new HashSet<>();
         for (HasContainer hasContainer : labelHasContainers) {
@@ -623,7 +703,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
     /**
      * filters the hasContainer on its key.
      *
-     * @param hasContainers all HasContainers mathich the key will be removed from this list
+     * @param hasContainers all HasContainers matching the key will be removed from this list
      * @param key
      * @return the HasContainers matching the key.
      */
