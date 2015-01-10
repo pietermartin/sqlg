@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.TraversalStrategies;
 import com.tinkerpop.gremlin.process.computer.GraphComputer;
 import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Vertex;
@@ -19,7 +19,9 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.process.graph.util.SqlgVertexStepStrategy;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 
 import java.lang.reflect.Constructor;
 import java.sql.*;
@@ -33,6 +35,15 @@ import java.util.*;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class SqlgGraph implements Graph, Graph.Iterators {
+
+    static {
+        try {
+            TraversalStrategies.GlobalCache.registerStrategies(Vertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(SqlgVertexStepStrategy.instance()));
+            TraversalStrategies.GlobalCache.registerStrategies(SqlgGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
+        } catch (final CloneNotSupportedException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+    }
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
@@ -166,23 +177,21 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         return vertex;
     }
 
-    @Override
-    public GraphTraversal<Vertex, Vertex> V(final Object... vertexIds) {
-        this.tx().readWrite();
-        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-        traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this, vertexIds));
-        traversal.sideEffects().setGraph(this);
-        return traversal;
-    }
-
-    @Override
-    public GraphTraversal<Edge, Edge> E(final Object... edgeIds) {
-        this.tx().readWrite();
-        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-        traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this, edgeIds));
-        traversal.sideEffects().setGraph(this);
-        return traversal;
-    }
+//    @Override
+//    public GraphTraversal<Vertex, Vertex> V(final Object... vertexIds) {
+//        this.tx().readWrite();
+//        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
+//        traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this, vertexIds));
+//        return traversal;
+//    }
+//
+//    @Override
+//    public GraphTraversal<Edge, Edge> E(final Object... edgeIds) {
+//        this.tx().readWrite();
+//        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
+//        traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this, edgeIds));
+//        return traversal;
+//    }
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
@@ -194,14 +203,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     public Iterator<Edge> edgeIterator(final Object... edgeIds) {
         this.tx().readWrite();
         return _edges(edgeIds).iterator();
-    }
-
-    @Override
-    public <S> GraphTraversal<S, S> of() {
-        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-        traversal.addStep(new StartStep<>(traversal));
-        traversal.sideEffects().setGraph(this);
-        return traversal;
     }
 
     public Vertex v(final Object id) {

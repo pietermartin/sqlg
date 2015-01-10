@@ -4,6 +4,7 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
+import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
@@ -26,9 +27,11 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     private SqlgGraph sqlgGraph;
     public final List<HasContainer> hasContainers = new ArrayList<>();
 
-    public SqlgGraphStep(final Traversal traversal, final Class<E> returnClass, final SqlgGraph sqlgGraph, final Object... ids) {
-        super(traversal, sqlgGraph, returnClass, ids);
-        this.sqlgGraph = sqlgGraph;
+    public SqlgGraphStep(final GraphStep<E> originalGraphStep) {
+        super(originalGraphStep.getTraversal(), originalGraphStep.getGraph(SqlgGraph.class), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
+        if (TraversalHelper.isLabeled(originalGraphStep))
+            this.setLabel(originalGraphStep.getLabel());
+        this.sqlgGraph = originalGraphStep.getGraph(SqlgGraph.class);
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
@@ -36,6 +39,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         Stream<? extends Edge> edgeStream;
         if (this.ids != null && this.ids.length > 0) {
             edgeStream = getEdges();
+        //TODO support all Compares
         } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
@@ -65,6 +69,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             //if ids are given assume it to be the most significant narrowing of vertices.
             //i.e. has logic will be done in memory.
             vertexStream = getVertices();
+        //TODO support all Compares
         } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainers
             final HasContainer hasContainer1 = this.hasContainers.get(0);

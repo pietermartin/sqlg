@@ -1,23 +1,37 @@
 package org.umlg.sqlg.test.tp3;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
+import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
+import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgDataSource;
+import org.umlg.sqlg.structure.*;
 
 import java.beans.PropertyVetoException;
 import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Date: 2014/07/13
  * Time: 5:57 PM
  */
 public class SqlgPostgresProvider extends AbstractGraphProvider {
+
+    private static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
+        add(SqlgEdge.class);
+        add(SqlgElement.class);
+        add(SqlgGraph.class);
+        add(SqlgProperty.class);
+        add(SqlgVertex.class);
+        add(SqlgVertexProperty.class);
+        add(DefaultGraphTraversal.class);
+        add(AnonymousGraphTraversal.Tokens.class);
+    }};
 
     @Override
     public Map<String, Object> getBaseConfiguration(final String graphName, final Class<?> test, final String testMethodName) {
@@ -76,6 +90,11 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Set<Class> getImplementations() {
+        return IMPLEMENTATIONS;
     }
 
 }

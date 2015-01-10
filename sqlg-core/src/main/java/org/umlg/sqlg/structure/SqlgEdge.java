@@ -13,7 +13,7 @@ import java.util.*;
  * Date: 2014/07/12
  * Time: 5:41 AM
  */
-public class SqlgEdge extends SqlgElement implements Edge {
+public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
 
     private Logger logger = LoggerFactory.getLogger(SqlgEdge.class.getName());
     private SqlgVertex inVertex;
@@ -308,23 +308,17 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     @Override
     public Edge.Iterators iterators() {
-        return this.iterators;
+        return this;
     }
 
-    private final Edge.Iterators iterators = new Iterators();
+    @Override
+    public <V> Iterator<Property<V>> propertyIterator(final String... propertyKeys) {
+        return (Iterator) super.propertyIterator(propertyKeys);
+    }
 
-    protected class Iterators extends SqlgElement.Iterators implements Edge.Iterators {
-
-        @Override
-        public <V> Iterator<Property<V>> propertyIterator(final String... propertyKeys) {
-            return (Iterator) super.propertyIterator(propertyKeys);
-        }
-
-        @Override
-        public Iterator<Vertex> vertexIterator(final Direction direction) {
-            SqlgEdge.this.sqlgGraph.tx().readWrite();
-            return internalGetVertices(direction);
-        }
-
+    @Override
+    public Iterator<Vertex> vertexIterator(final Direction direction) {
+        SqlgEdge.this.sqlgGraph.tx().readWrite();
+        return internalGetVertices(direction);
     }
 }
