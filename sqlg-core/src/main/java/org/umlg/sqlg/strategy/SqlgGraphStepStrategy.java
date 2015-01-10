@@ -7,15 +7,8 @@ import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
 import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
 import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
-import com.tinkerpop.gremlin.process.util.EmptyStep;
 import com.tinkerpop.gremlin.process.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Vertex;
-import org.umlg.sqlg.process.graph.util.SqlgHasStep;
-import org.umlg.sqlg.process.graph.util.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraphStep;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Date: 2014/07/12
@@ -55,29 +48,6 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
             }
         }
 
-        //TODO do has on edges
-        Set<Step> toRemove = new HashSet<>();
-        for (Object step : traversal.asAdmin().getSteps()) {
-            if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).returnClass)) {
-                SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
-                Step currentStep = sqlgVertexStep.getNextStep();
-                while (true) {
-                    if (currentStep == EmptyStep.instance() || TraversalHelper.isLabeled(currentStep)) break;
-                    if (currentStep instanceof SqlgHasStep) {
-                        sqlgVertexStep.hasContainers.add(((SqlgHasStep) currentStep).getHasContainer());
-                        toRemove.add(currentStep);
-                    } else if (currentStep instanceof IdentityStep) {
-                        // do nothing
-                    } else {
-                        break;
-                    }
-                    currentStep = currentStep.getNextStep();
-                }
-            }
-        }
-        for (Step stepToRemove : toRemove) {
-            TraversalHelper.removeStep(stepToRemove, traversal);
-        }
     }
 
     public static SqlgGraphStepStrategy instance() {

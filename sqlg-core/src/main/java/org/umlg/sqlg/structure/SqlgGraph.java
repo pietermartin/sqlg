@@ -19,7 +19,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.graph.util.SqlgHasStepStrategy;
 import org.umlg.sqlg.process.graph.util.SqlgVertexStepStrategy;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
@@ -39,7 +38,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
 
     static {
         try {
-//            TraversalStrategies.GlobalCache.registerStrategies(SqlgGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgHasStepStrategy.instance()));
             TraversalStrategies.GlobalCache.registerStrategies(Vertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(SqlgVertexStepStrategy.instance()));
             TraversalStrategies.GlobalCache.registerStrategies(SqlgGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
         } catch (final CloneNotSupportedException e) {

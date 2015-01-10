@@ -39,6 +39,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         Stream<? extends Edge> edgeStream;
         if (this.ids != null && this.ids.length > 0) {
             edgeStream = getEdges();
+        //TODO support all Compares
         } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
@@ -68,6 +69,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             //if ids are given assume it to be the most significant narrowing of vertices.
             //i.e. has logic will be done in memory.
             vertexStream = getVertices();
+        //TODO support all Compares
         } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainers
             final HasContainer hasContainer1 = this.hasContainers.get(0);
