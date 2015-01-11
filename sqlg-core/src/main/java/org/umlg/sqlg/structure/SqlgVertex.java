@@ -635,42 +635,17 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
     private Iterator<Vertex> internalGetVertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
         List<Vertex> vertices = new ArrayList<>();
 
-
         SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
-        List<Step> vertexSteps = replacedSteps.stream().map(r->r.getLeft()).collect(Collectors.toList());
-        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().calculateDistinctPathsToLeafVertices(schemaTable, vertexSteps);
-        schemaTableTree.constructSql();
-
-        int count = 1;
-        String joinSql = "";
-        Set<SchemaTable> schemaTables = new HashSet<>();
-        Set<SchemaTable> previousSchemaTables = null;
-        for (Pair<Step, List<HasContainer>> replacedStep : replacedSteps) {
-            //For now assume the step is a VertexStep, This might change when implementing gremlin 'as'
-            VertexStep step = (VertexStep) replacedStep.getKey();
-            List<HasContainer> hasContainers = replacedStep.getValue();
-            if (count++ == 1) {
-                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinParser().constructJoinBetweenSchemaTableAndStep(schemaTable, step);
-                joinSql += sqlSchemaTables.getLeft();
-                previousSchemaTables = sqlSchemaTables.getRight();
-            } else {
-                Pair<String, Set<SchemaTable>> sqlSchemaTables = this.sqlgGraph.getGremlinParser().constructJoinBetweenSchemaTablesAndStep(previousSchemaTables, step);
-                joinSql += sqlSchemaTables.getLeft();
-                previousSchemaTables = sqlSchemaTables.getRight();
+        List<Step> vertexSteps = replacedSteps.stream().map(r -> r.getLeft()).collect(Collectors.toList());
+        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, vertexSteps);
+        List<Pair<SchemaTable, String>> sqlStatements = schemaTableTree.constructSql();
+        for (Pair<SchemaTable, String> sqlPair : sqlStatements) {
+            Connection conn = this.sqlgGraph.tx().getConnection();
+            if (logger.isDebugEnabled()) {
+                logger.debug(sqlPair.getRight());
             }
-            schemaTables.addAll(previousSchemaTables);
-        }
-        String sql = this.sqlgGraph.getGremlinParser().constructFromClause(this, schemaTables);
-        sql += joinSql;
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql += ";";
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//            preparedStatement.setLong(1, this.primaryKey);
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
+                preparedStatement.setLong(1, this.primaryKey);
 //            int countHasContainers = 2;
 //            for (HasContainer hasContainer : hasContainers) {
 //                if (!hasContainer.predicate.equals(Compare.eq)) {
@@ -680,14 +655,15 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
 //                keyValues.put(hasContainer.key, hasContainer.value);
 //                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
 //            }
-            ResultSet resultSet = preparedStatement.executeQuery();
-            while (resultSet.next()) {
-                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                this.sqlgGraph.getGremlinParser().loadVertices(resultSet, previousSchemaTables, vertices);
-            }
+                ResultSet resultSet = preparedStatement.executeQuery();
+                while (resultSet.next()) {
+                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                    this.sqlgGraph.getGremlinParser().loadVertices(resultSet, sqlPair.getLeft(), vertices);
+                }
 
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
         return vertices.iterator();
     }
