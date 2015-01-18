@@ -46,49 +46,115 @@ public class SchemaTableTree {
      */
     List<Pair<SchemaTable, String>> constructSql() {
         List<Pair<SchemaTable, String>> result = new ArrayList<>();
-        List<Stack<SchemaTableTree>> distinctQueries = new ArrayList<>();
+        List<LinkedList<SchemaTableTree>> distinctQueries = new ArrayList<>();
         for (SchemaTableTree leafNode : this.leafNodes) {
             distinctQueries.add(constructQueryStackFromLeaf(leafNode));
         }
-        for (Stack<SchemaTableTree> distinctQueryStack : distinctQueries) {
+        for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
 
             //If the same element occurs multiple times in the stack then the sql needs to be different.
             //This is because the same element can not be joined on more than once in sql
             //The way to overcome this is  to break up the path in select sections with no duplicates and then join them together.
             if (duplicatesInStack(distinctQueryStack)) {
-                SchemaTable firstSchemaTable = distinctQueryStack.firstElement().getSchemaTable();
-                List<Stack<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
+                SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
+                List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
                 String singlePathSql = constructDuplicatePathSql(subQueryStacks);
-                result.add(Pair.of(firstSchemaTable, singlePathSql));
+                result.add(Pair.of(lastSchemaTable, singlePathSql));
             } else {
                 //If there are no duplicates in the path then one select statement will suffice.
-                SchemaTable firstSchemaTable = distinctQueryStack.firstElement().getSchemaTable();
-                String singlePathSql = constructSinglePathSql(true, true, distinctQueryStack, null);
+                SchemaTable firstSchemaTable = distinctQueryStack.getLast().getSchemaTable();
+                String singlePathSql = constructSinglePathSql(distinctQueryStack, null, null);
                 result.add(Pair.of(firstSchemaTable, singlePathSql));
             }
         }
         return result;
     }
 
-    private String constructDuplicatePathSql(List<Stack<SchemaTableTree>> subQueryStacks) {
+    /**
+     * Construct a sql statement for one original path to a leaf node.
+     * As the path contains the same label more than once it has been split into a List of Stacks.
+     *
+     * @param subQueryLinkedLists
+     * @return
+     */
+    private String constructDuplicatePathSql(List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String singlePathSql = "";
-        singlePathSql += "SELECT * ";
-        singlePathSql += " FROM ";
+        singlePathSql += "SELECT ";
+        singlePathSql += constructOuterFromClause(subQueryLinkedLists.get(subQueryLinkedLists.size() - 1).getLast().getSchemaTable(), subQueryLinkedLists.size());
+        singlePathSql += " FROM (";
         int count = 1;
-        for (Stack<SchemaTableTree> subQueryStack : subQueryStacks) {
-            boolean last = count == subQueryStacks.size();
-            SchemaTableTree toJoinOnNext = null;
+        SchemaTableTree lastOfPrevious = null;
+        for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
+            SchemaTableTree firstOfNext = null;
+            boolean last = count == subQueryLinkedLists.size();
             if (!last) {
-                Stack<SchemaTableTree> nextStack = subQueryStacks.get(count);
-                SchemaTableTree firstEqualsLastFromPrevious = nextStack.pop();
-                toJoinOnNext = nextStack.pop();
-                nextStack.push(toJoinOnNext);
-                nextStack.push(firstEqualsLastFromPrevious);
+                //this is to get the next SchemaTable to join to
+                LinkedList<SchemaTableTree> nextList = subQueryLinkedLists.get(count);
+                firstOfNext = nextList.getFirst();
             }
-            String sql = constructSinglePathSql(count++ == 1, last, subQueryStack, toJoinOnNext);
+            SchemaTableTree firstSchemaTableTree = subQueryLinkedList.getFirst();
+
+            String sql = constructSinglePathSql(subQueryLinkedList, lastOfPrevious, firstOfNext);
+            singlePathSql += sql;
+            if (count == 1) {
+                singlePathSql += ") a" + count++ + " INNER JOIN (";
+            } else {
+                //join the last with the first
+                singlePathSql += ") a" + count + " ON ";
+                singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
+                if (count++ < subQueryLinkedLists.size()) {
+                   singlePathSql += " INNER JOIN (";
+                }
+            }
+            lastOfPrevious = subQueryLinkedList.getLast();
             System.out.println(sql);
         }
         return singlePathSql;
+    }
+
+    private String constructOuterFromClause(SchemaTable schemaTable, int count) {
+        String sql = "a" + count + ".\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID + "\"";
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(schemaTable.toString());
+        if (propertyTypeMap.size() > 0) {
+            sql += ", ";
+        }
+        int propertyCount = 1;
+        for (String propertyName : propertyTypeMap.keySet()) {
+            sql += "a" + count + ".\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + propertyName + "\"";
+            if (propertyCount < propertyTypeMap.size()) {
+                sql += ",";
+            }
+        }
+        return sql;
+    }
+
+    private String constructSectionedJoin(SchemaTableTree fromSchemaTableTree, SchemaTableTree toSchemaTableTree, int count) {
+        if (toSchemaTableTree.direction == Direction.BOTH) {
+            throw new IllegalStateException("Direction may not be BOTH!");
+        }
+        String result;
+        if (fromSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            if (toSchemaTableTree.direction == Direction.OUT) {
+                result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                        toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
+            } else {
+                result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                        toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
+            }
+        } else {
+            if (toSchemaTableTree.direction == Direction.OUT) {
+                result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
+                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
+                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+            } else {
+                result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
+                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
+                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+            }
+        }
+        return result;
     }
 
     /**
@@ -101,57 +167,60 @@ public class SchemaTableTree {
      * The previous select needs to join onto the subsequent select. For this the from needs to select the appropriate
      * field for the join.
      *
-     * @param first              true if its the first call stack in the query
-     * @param last               true if its the last call stack in the query
      * @param distinctQueryStack
+     * @param lastOfPrevious
      * @return
      */
-    private String constructSinglePathSql(boolean first, boolean last, Stack<SchemaTableTree> distinctQueryStack, SchemaTableTree firstOfNextStack) {
+    private String constructSinglePathSql(LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
         String singlePathSql = "";
         singlePathSql += "SELECT ";
         //first is last and last is first in a Stack
-        SchemaTable firstSchemaTable = distinctQueryStack.lastElement().getSchemaTable();
-        SchemaTable lastSchemaTable = distinctQueryStack.firstElement().getSchemaTable();
-        singlePathSql += constructFromClause(first, last, firstSchemaTable, lastSchemaTable, firstOfNextStack);
+        SchemaTable firstSchemaTable = distinctQueryStack.getFirst().getSchemaTable();
+        SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
+        singlePathSql += constructFromClause(firstSchemaTable, lastSchemaTable, lastOfPrevious, firstOfNextStack);
         singlePathSql += " FROM ";
-        SchemaTableTree schemaTableTree = distinctQueryStack.pop();
-        singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
+        SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
+        singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTableTree.getSchemaTable().getSchema());
         singlePathSql += ".";
-        singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
-        SchemaTableTree previous = schemaTableTree;
-        while (!distinctQueryStack.isEmpty()) {
-            schemaTableTree = distinctQueryStack.pop();
+        singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTableTree.getSchemaTable().getTable());
+        SchemaTableTree previous = firstSchemaTableTree;
+        boolean skipFirst = true;
+        for (SchemaTableTree schemaTableTree : distinctQueryStack) {
+            if (skipFirst) {
+                skipFirst = false;
+                continue;
+            }
             singlePathSql += constructJoinBetweenSchemaTables(schemaTableTree.direction, previous.getSchemaTable(), schemaTableTree.getSchemaTable());
             previous = schemaTableTree;
         }
-        singlePathSql += " WHERE ";
-        singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
-        singlePathSql += ".";
-        singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable());
-        singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
-        singlePathSql += " = ?";
+        //lastOfPrevious is null for the first call in the call stack
+        if (lastOfPrevious == null) {
+            singlePathSql += " WHERE ";
+            singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
+            singlePathSql += ".";
+            singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable());
+            singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
+            singlePathSql += " = ? ";
+        }
         return singlePathSql;
     }
 
-    private List<Stack<SchemaTableTree>> splitIntoSubStacks(Stack<SchemaTableTree> distinctQueryStack) {
-        List<Stack<SchemaTableTree>> result = new ArrayList<>();
-        Stack<SchemaTableTree> subStack = new Stack<>();
-        result.add(subStack);
-        //iterate the stack, that iterates the stack in reverse order
-        SchemaTableTree previous = null;
+    private List<LinkedList<SchemaTableTree>> splitIntoSubStacks(LinkedList<SchemaTableTree> distinctQueryStack) {
+        List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
+        LinkedList<SchemaTableTree> subList = new LinkedList<>();
+        result.add(subList);
         Set<SchemaTable> alreadyVisited = new HashSet<>();
-        while (!distinctQueryStack.isEmpty()) {
-            SchemaTableTree schemaTableTree = distinctQueryStack.pop();
+        for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (!alreadyVisited.contains(schemaTableTree.getSchemaTable())) {
                 alreadyVisited.add(schemaTableTree.getSchemaTable());
-                subStack.add(0, schemaTableTree);
+                subList.add(schemaTableTree);
             } else {
-                subStack = new Stack<>();
-                subStack.add(0, previous);
-                subStack.add(0, schemaTableTree);
-                result.add(subStack);
+                alreadyVisited.clear();
+                subList = new LinkedList<>();
+                subList.add(schemaTableTree);
+                result.add(subList);
+                alreadyVisited.add(schemaTableTree.getSchemaTable());
             }
-            previous = schemaTableTree;
         }
         return result;
     }
@@ -162,7 +231,7 @@ public class SchemaTableTree {
      * @param distinctQueryStack
      * @return true is there are duplicates else false
      */
-    private boolean duplicatesInStack(Stack<SchemaTableTree> distinctQueryStack) {
+    private boolean duplicatesInStack(LinkedList<SchemaTableTree> distinctQueryStack) {
         Set<SchemaTable> alreadyVisited = new HashSet<>();
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (!alreadyVisited.contains(schemaTableTree.getSchemaTable())) {
@@ -174,78 +243,146 @@ public class SchemaTableTree {
         return false;
     }
 
-    private String constructFromClause(boolean first, boolean last, SchemaTable firstSchemaTable, SchemaTable lastSchemaTable, SchemaTableTree toJoinOnNext) {
-        String sql;
-        //no duplicate labels in the gremlin. i.e. return only the lastSchemaTable fields
-        if (first && last) {
-            if (toJoinOnNext != null) {
-                throw new IllegalStateException("toJoinOnNext SchemaTable must be null for a gremlin query with no duplicate labels: BUG");
-            }
-            sql = constructFromClause(lastSchemaTable, null);
-        } else if (first && !last) {
-            if (toJoinOnNext == null) {
-                throw new IllegalStateException("toJoinOnNext SchemaTable may not be null for a gremlin query with duplicate labels: BUG");
-            }
-            sql = constructFromClause(lastSchemaTable, toJoinOnNext);
-        } else if (!first && last) {
-            if (toJoinOnNext != null) {
-                throw new IllegalStateException("toJoinOnNext SchemaTable may not be null for a gremlin query with duplicate labels: BUG");
-            }
-            sql = constructFromClause(lastSchemaTable, null);
-        } else if (!first && !last) {
-            if (toJoinOnNext == null) {
-                throw new IllegalStateException("toJoinOnNext SchemaTable may not be null for a gremlin query with duplicate labels: BUG");
-            }
-            sql = constructFromClause(lastSchemaTable, toJoinOnNext);
-        } else {
-            throw new RuntimeException("asdasd");
+    /**
+     * Constructs the from clause with the required selected fields needed to make the join between the from and the toSchemaTable
+     *
+     * @param firstSchemaTable        This is the first SchemaTable in the current sql stack. If it is an Edge table then its foreign key
+     *                                field to the previous table needs to in the select clause in order for the join statement to
+     *                                reference it.
+     * @param lastSchemaTable         This is the label that
+     * @param previousSchemaTableTree
+     * @param nextSchemaTableTree     represents the table to join to. it is null for the last table as there is nothing to join to.  @return
+     */
+    private String constructFromClause(SchemaTable firstSchemaTable, SchemaTable lastSchemaTable, SchemaTableTree previousSchemaTableTree, SchemaTableTree nextSchemaTableTree) {
+        if (previousSchemaTableTree != null && previousSchemaTableTree.direction == Direction.BOTH) {
+            throw new IllegalStateException("Direction should never be BOTH");
         }
-        return sql;
-    }
+        if (nextSchemaTableTree != null && nextSchemaTableTree.direction == Direction.BOTH) {
+            throw new IllegalStateException("Direction should never be BOTH");
+        }
+        //The join is always between an edge and vertex or vertex and edge table.
+        if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)
+                && nextSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            throw new IllegalStateException("Join can not be between 2 vertex tables!");
+        }
+        if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)
+                && nextSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            throw new IllegalStateException("Join can not be between 2 edge tables!");
+        }
 
-    private String constructFromClause(SchemaTable lastSchemaTable, SchemaTableTree toJoinOnNext) {
-        String finalSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema());
-        finalSchemaTableName += ".";
-        finalSchemaTableName += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable());
-        String sql;
-        if (lastSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-            sql = finalSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
-            sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
-        } else {
-            if (toJoinOnNext.direction == Direction.OUT) {
-                sql = finalSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                        toJoinOnNext.getSchemaTable().getSchema() + "." + toJoinOnNext.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END);
-                sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
-                        toJoinOnNext.getSchemaTable().getSchema() + "." + toJoinOnNext.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
-            } else if (toJoinOnNext.direction == Direction.IN) {
-                sql = finalSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                        toJoinOnNext.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END);
-                sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
-                        toJoinOnNext.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+        if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)
+                && previousSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            throw new IllegalStateException("Join can not be between 2 vertex tables!");
+        }
+        if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)
+                && previousSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            throw new IllegalStateException("Join can not be between 2 edge tables!");
+        }
+
+        String sql = "";
+        boolean printedId = false;
+
+        if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            if (previousSchemaTableTree.direction == Direction.OUT) {
+                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END
+                        );
+                sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
+                        previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
             } else {
-                throw new IllegalStateException("Direction should never be BOTH");
+                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END
+                        );
+                sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
+                        previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
             }
+        } else if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
+            sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
+            printedId = firstSchemaTable == lastSchemaTable;
         }
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(lastSchemaTable.toString());
-        if (propertyTypeMap.size() > 0) {
-            sql += ", ";
+
+        if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            if (!sql.isEmpty()) {
+                sql += ", ";
+            }
+            if (nextSchemaTableTree.direction == Direction.OUT) {
+                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                nextSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END
+                        );
+                sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                        nextSchemaTableTree.getSchemaTable().getSchema() + "." +
+                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+            } else {
+                sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
+                        this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                                nextSchemaTableTree.getSchemaTable().getSchema() + "." +
+                                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END
+                        );
+                sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                        nextSchemaTableTree.getSchemaTable().getSchema() + "." +
+                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+            }
+        } else if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            if (!sql.isEmpty()) {
+                sql += ", ";
+            }
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
+                    this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
+            sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
+            printedId = firstSchemaTable == lastSchemaTable;
         }
-        int propertyCount = 1;
-        for (String propertyName : propertyTypeMap.keySet()) {
-            sql += finalSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
-            sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + propertyName + "\"";
-            if (propertyCount < propertyTypeMap.size()) {
-                sql += ",";
+
+        //The last schemaTableTree in the call stack as no nextSchemaTableTree.
+        //This last element's properties need to be returned.
+        if (nextSchemaTableTree == null) {
+            if (!sql.isEmpty()) {
+                sql += ", ";
+            }
+            String finalFromSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema());
+            finalFromSchemaTableName += ".";
+            finalFromSchemaTableName += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable());
+
+            Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(lastSchemaTable.toString());
+            if (!printedId) {
+                sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
+                sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
+                if (propertyTypeMap.size() > 0) {
+                    sql += ", ";
+                }
+            }
+            int propertyCount = 1;
+            for (String propertyName : propertyTypeMap.keySet()) {
+                sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
+                sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + propertyName + "\"";
+                if (propertyCount < propertyTypeMap.size()) {
+                    sql += ",";
+                }
             }
         }
         return sql;
     }
 
-    private Stack constructQueryStackFromLeaf(SchemaTableTree leafNode) {
-        Stack queryCallStack = new Stack();
+    private LinkedList<SchemaTableTree> constructQueryStackFromLeaf(SchemaTableTree leafNode) {
+        LinkedList<SchemaTableTree> queryCallStack = new LinkedList<>();
         SchemaTableTree node = leafNode;
         while (node != null) {
-            queryCallStack.push(node);
+            queryCallStack.add(0, node);
             node = node.parent;
         }
         return queryCallStack;

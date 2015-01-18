@@ -13,7 +13,7 @@ import org.umlg.sqlg.test.schema.TestCaptureSchemaTableEdges;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompile.class
+        TestCaptureSchemaTableEdges.class
 })
 public class AnyTest {
 }

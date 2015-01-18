@@ -129,10 +129,16 @@ public class SchemaManager {
                     this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                 }
                 for (SchemaTable schemaTable : this.uncommittedTableLabels.keySet()) {
-                    if (distributed) {
-                        this.tableLabels.put(schemaTable, this.uncommittedTableLabels.get(schemaTable));
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.localTableLabels.get(schemaTable);
+                    if (tableLabels == null) {
+                        tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
                     }
-                    this.localTableLabels.put(schemaTable, this.uncommittedTableLabels.get(schemaTable));
+                    tableLabels.getLeft().addAll(this.uncommittedTableLabels.get(schemaTable).getLeft());
+                    tableLabels.getRight().addAll(this.uncommittedTableLabels.get(schemaTable).getRight());
+                    if (distributed) {
+                        this.tableLabels.put(schemaTable, tableLabels);
+                    }
+                    this.localTableLabels.put(schemaTable, tableLabels);
                 }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
@@ -185,10 +191,16 @@ public class SchemaManager {
                         this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
                     }
                     for (SchemaTable schemaTable : this.uncommittedTableLabels.keySet()) {
-                        if (distributed) {
-                            this.tableLabels.put(schemaTable, this.uncommittedTableLabels.get(schemaTable));
+                        Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.localTableLabels.get(schemaTable);
+                        if (tableLabels == null) {
+                            tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
                         }
-                        this.localTableLabels.put(schemaTable, this.uncommittedTableLabels.get(schemaTable));
+                        tableLabels.getLeft().addAll(this.uncommittedTableLabels.get(schemaTable).getLeft());
+                        tableLabels.getRight().addAll(this.uncommittedTableLabels.get(schemaTable).getRight());
+                        if (distributed) {
+                            this.tableLabels.put(schemaTable, tableLabels);
+                        }
+                        this.localTableLabels.put(schemaTable, tableLabels);
                     }
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
