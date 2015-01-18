@@ -2,10 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
-import org.umlg.sqlg.test.TinkerpopTest;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompile;
-import org.umlg.sqlg.test.schema.TestCaptureSchemaTableEdges;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
 
 /**
  * Date: 2014/07/16
@@ -13,7 +11,7 @@ import org.umlg.sqlg.test.schema.TestCaptureSchemaTableEdges;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestCaptureSchemaTableEdges.class
+        TestGremlinCompileV.class
 })
 public class AnyTest {
 }

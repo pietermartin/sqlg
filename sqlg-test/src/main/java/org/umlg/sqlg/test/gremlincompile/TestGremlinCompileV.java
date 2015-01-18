@@ -14,7 +14,7 @@ import static org.junit.Assert.assertTrue;
  * Date: 2015/01/01
  * Time: 4:38 PM
  */
-public class TestGremlinCompile extends BaseTest {
+public class TestGremlinCompileV extends BaseTest {
 
     @Test
     public void testOutOut() {
@@ -48,6 +48,65 @@ public class TestGremlinCompile extends BaseTest {
         assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
     }
 
+    @Test
+    public void testOutOutWithLabels() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
+        a.addEdge("outB", b);
+        a.addEdge("outE", e);
+        b.addEdge("outC", c);
+        b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = a.out("outB", "outE").out("outC", "outD").toList();
+        assertEquals(4, vertices.size());
+        assertTrue(vertices.contains(c));
+        assertTrue(vertices.contains(d1));
+        assertTrue(vertices.contains(d2));
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.equals(c)) {
+                count++;
+            }
+        }
+        assertEquals(2, count);
+        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
+        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
+    }
+
+    @Test
+    public void testOutOutWithLabels2() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
+        a.addEdge("outB", b);
+        a.addEdge("outE", e);
+        b.addEdge("outC", c);
+        b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = a.out("outB").out("outC").toList();
+        assertEquals(2, vertices.size());
+        assertTrue(vertices.contains(c));
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.equals(c)) {
+                count++;
+            }
+        }
+        assertEquals(2, count);
+        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+    }
     @Test
     public void testInIn() {
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
@@ -138,6 +197,7 @@ public class TestGremlinCompile extends BaseTest {
 
         assertEquals(19, a1.out().in().out().count().next().intValue());
     }
+
     @Test
     public void testInOutToSelf() {
 

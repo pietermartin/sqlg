@@ -62,9 +62,9 @@ public class SchemaTableTree {
                 result.add(Pair.of(lastSchemaTable, singlePathSql));
             } else {
                 //If there are no duplicates in the path then one select statement will suffice.
-                SchemaTable firstSchemaTable = distinctQueryStack.getLast().getSchemaTable();
+                SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
                 String singlePathSql = constructSinglePathSql(distinctQueryStack, null, null);
-                result.add(Pair.of(firstSchemaTable, singlePathSql));
+                result.add(Pair.of(lastSchemaTable, singlePathSql));
             }
         }
         return result;

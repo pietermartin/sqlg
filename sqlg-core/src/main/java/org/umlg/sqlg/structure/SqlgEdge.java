@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

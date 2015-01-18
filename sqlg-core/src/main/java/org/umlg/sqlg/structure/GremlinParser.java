@@ -3,6 +3,8 @@ package org.umlg.sqlg.structure;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
+import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -31,10 +33,10 @@ public class GremlinParser {
      *
      * @param resultSet
      * @param schemaTable
-     * @param vertices
+     * @param elements
      * @throws SQLException
      */
-    public void loadVertices(ResultSet resultSet, SchemaTable schemaTable, List<Vertex> vertices) throws SQLException {
+    public void loadElements(ResultSet resultSet, SchemaTable schemaTable, List<Element> elements) throws SQLException {
         List<Object> keyValues = new ArrayList<>();
         String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
         Long id = resultSet.getLong(idProperty);
@@ -45,10 +47,15 @@ public class GremlinParser {
             keyValues.add(resultSet.getObject(property));
         }
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
-        SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
-        sqlGVertex.properties.clear();
-        sqlGVertex.properties.putAll(keyValueMap);
-        vertices.add(sqlGVertex);
+        SqlgElement sqlgElement;
+        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            sqlgElement = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
+        } else {
+            sqlgElement = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
+        }
+        sqlgElement.properties.clear();
+        sqlgElement.properties.putAll(keyValueMap);
+        elements.add(sqlgElement);
     }
 
     /**
@@ -107,7 +114,11 @@ public class GremlinParser {
             }
             for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, vertexStep.getDirection(), depth);
-                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, depth));
+                if (elementClass.isAssignableFrom(Edge.class)) {
+                    result.add(schemaTableTreeChild);
+                } else {
+                    result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, depth));
+                }
             }
         }
         return result;

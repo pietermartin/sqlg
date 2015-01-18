@@ -2,7 +2,6 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -187,9 +186,9 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         return itty;
     }
 
-    public Iterator<Vertex> vertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+    public Iterator<Element> vertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
-        Iterator<Vertex> itty = internalGetVertices2(replacedSteps);
+        Iterator<Element> itty = internalGetElements(replacedSteps);
         return itty;
     }
 
@@ -632,8 +631,8 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
      * @param replacedSteps
      * @return The results of the query
      */
-    private Iterator<Vertex> internalGetVertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
-        List<Vertex> vertices = new ArrayList<>();
+    private Iterator<Element> internalGetElements(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+        List<Element> vertices = new ArrayList<>();
 
         SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
         List<Step> vertexSteps = replacedSteps.stream().map(r -> r.getLeft()).collect(Collectors.toList());
@@ -646,21 +645,10 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
                 preparedStatement.setLong(1, this.primaryKey);
-//            int countHasContainers = 2;
-//            for (HasContainer hasContainer : hasContainers) {
-//                if (!hasContainer.predicate.equals(Compare.eq)) {
-//                    throw new IllegalStateException("Only equals is supported at present.");
-//                }
-//                Map<String, Object> keyValues = new HashMap<>();
-//                keyValues.put(hasContainer.key, hasContainer.value);
-//                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
-//            }
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
-                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                    this.sqlgGraph.getGremlinParser().loadVertices(resultSet, sqlPair.getLeft(), vertices);
+                    this.sqlgGraph.getGremlinParser().loadElements(resultSet, sqlPair.getLeft(), vertices);
                 }
-
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

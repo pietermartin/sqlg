@@ -1052,7 +1052,7 @@ public class SchemaManager {
                         if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                             foreignKeys.add(column);
                             this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
-                            SchemaTable schemaTable = SchemaTable.of(column.split("\\.")[0], column.split("\\.")[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
+                            SchemaTable schemaTable = SchemaTable.of(column.split("\\.")[0], SchemaManager.VERTEX_PREFIX + column.split("\\.")[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
                             Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(schemaTable);
                             if (labels == null) {
                                 labels = Pair.of(new HashSet<>(), new HashSet<>());
