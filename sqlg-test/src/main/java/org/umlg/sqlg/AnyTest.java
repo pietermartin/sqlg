@@ -16,7 +16,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchema.class
+        TestCaptureSchemaTableEdges.class
 })
 public class AnyTest {
 }
