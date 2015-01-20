@@ -1,11 +1,10 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.ResultSet;
@@ -67,13 +66,13 @@ public class GremlinParser {
      * @param replacedSteps
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
-    public SchemaTableTree parse(SchemaTable schemaTable, List<Step> replacedSteps) {
+    public SchemaTableTree parse(SchemaTable schemaTable, List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
         Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
         SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
         schemaTableTrees.add(rootSchemaTableTree);
         int depth = 1;
-        for (Step vertexStep : replacedSteps) {
-            schemaTableTrees = calculatePathForVertexStep(schemaTableTrees, (VertexStep) vertexStep, depth++);
+        for (Pair<VertexStep, List<HasContainer>> replacedStep : replacedSteps) {
+            schemaTableTrees = calculatePathForVertexStep(schemaTableTrees, replacedStep, depth++);
         }
         System.out.println(rootSchemaTableTree.toTreeString());
         rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
@@ -81,12 +80,13 @@ public class GremlinParser {
         return rootSchemaTableTree;
     }
 
-    private Set<SchemaTableTree> calculatePathForVertexStep(Set<SchemaTableTree> schemaTableTrees, VertexStep vertexStep, int depth) {
+    private Set<SchemaTableTree> calculatePathForVertexStep(Set<SchemaTableTree> schemaTableTrees, Pair<VertexStep, List<HasContainer>> replacedStep, int depth) {
         Set<SchemaTableTree> result = new HashSet<>();
         for (SchemaTableTree schemaTableTree : schemaTableTrees) {
-            String[] edgeLabels = vertexStep.getEdgeLabels();
-            Direction direction = vertexStep.getDirection();
-            Class elementClass = vertexStep.getReturnClass();
+            String[] edgeLabels = replacedStep.getLeft().getEdgeLabels();
+            Direction direction = replacedStep.getLeft().getDirection();
+            Class elementClass = replacedStep.getLeft().getReturnClass();
+            List<HasContainer> hasContainers = replacedStep.getRight();
 
             Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getLocalTableLabels().get(schemaTableTree.getSchemaTable());
             Set<SchemaTable> inLabels = labels.getLeft();
@@ -109,22 +109,22 @@ public class GremlinParser {
             }
             //Each labelToTravers more than the first one forms a new distinct path
             for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, vertexStep.getDirection(), depth);
-                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, depth));
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, direction, hasContainers, depth);
+                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, hasContainers, depth));
             }
             for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, vertexStep.getDirection(), depth);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, direction, hasContainers, depth);
                 if (elementClass.isAssignableFrom(Edge.class)) {
                     result.add(schemaTableTreeChild);
                 } else {
-                    result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, depth));
+                    result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, hasContainers, depth));
                 }
             }
         }
         return result;
     }
 
-    private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction, int depth) {
+    private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction, List<HasContainer> hasContainers, int depth) {
         Set<SchemaTableTree> result = new HashSet<>();
         Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
@@ -137,12 +137,14 @@ public class GremlinParser {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
                         SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
                         direction,
+                        hasContainers,
                         depth);
                 result.add(schemaTableTree1);
             } else if (direction == Direction.OUT && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
                         SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
                         direction,
+                        hasContainers,
                         depth);
                 result.add(schemaTableTree1);
             }

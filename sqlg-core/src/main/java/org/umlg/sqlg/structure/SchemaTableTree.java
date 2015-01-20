@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.Direction;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -20,15 +21,18 @@ public class SchemaTableTree {
     private SqlgGraph sqlgGraph;
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
+    private List<HasContainer> hasContainers;
 
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
+        this.hasContainers = new ArrayList<>();
     }
 
-    SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, int depth) {
+    SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, List<HasContainer> hasContainers, int depth) {
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, depth);
+        this.hasContainers = hasContainers;
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
         this.children.add(schemaTableTree);
@@ -103,7 +107,7 @@ public class SchemaTableTree {
                 singlePathSql += ") a" + count + " ON ";
                 singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
-                   singlePathSql += " INNER JOIN (";
+                    singlePathSql += " INNER JOIN (";
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();

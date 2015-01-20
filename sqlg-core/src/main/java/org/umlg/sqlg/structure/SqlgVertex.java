@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -186,7 +187,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         return itty;
     }
 
-    public Iterator<Element> vertices2(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+    public Iterator<Element> elements(List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         Iterator<Element> itty = internalGetElements(replacedSteps);
         return itty;
@@ -631,12 +632,11 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
      * @param replacedSteps
      * @return The results of the query
      */
-    private Iterator<Element> internalGetElements(List<Pair<Step, List<HasContainer>>> replacedSteps) {
+    private Iterator<Element> internalGetElements(List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
         List<Element> vertices = new ArrayList<>();
 
         SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
-        List<Step> vertexSteps = replacedSteps.stream().map(r -> r.getLeft()).collect(Collectors.toList());
-        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, vertexSteps);
+        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         List<Pair<SchemaTable, String>> sqlStatements = schemaTableTree.constructSql();
         for (Pair<SchemaTable, String> sqlPair : sqlStatements) {
             Connection conn = this.sqlgGraph.tx().getConnection();
