@@ -21,24 +21,24 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
     private SqlgGraphStepStrategy() {
     }
 
-    public void apply(final Traversal traversal, final TraversalEngine traversalEngine) {
-
+    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine traversalEngine) {
         final Step<?, ?> startStep = TraversalHelper.getStart(traversal);
         if (startStep instanceof GraphStep) {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             final SqlgGraphStep<?> sqlgGraphStep = new SqlgGraphStep<>(originalGraphStep);
-            TraversalHelper.replaceStep(startStep, sqlgGraphStep, traversal);
+            traversal.addStep(traversal.getSteps().indexOf(originalGraphStep), sqlgGraphStep);
+            traversal.removeStep(originalGraphStep);
 
             Step<?, ?> currentStep = sqlgGraphStep.getNextStep();
             while (true) {
                 if (currentStep instanceof HasContainerHolder) {
                     sqlgGraphStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
-                    if (TraversalHelper.isLabeled(currentStep)) {
+                    if (currentStep.getLabel().isPresent()) {
                         final IdentityStep identityStep = new IdentityStep<>(traversal);
-                        identityStep.setLabel(currentStep.getLabel());
+                        identityStep.setLabel(currentStep.getLabel().get());
                         TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                     }
-                    TraversalHelper.removeStep(currentStep, traversal);
+                    traversal.removeStep(currentStep);
                 } else if (currentStep instanceof IdentityStep) {
                     // do nothing
                 } else {
@@ -47,7 +47,6 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
                 currentStep = currentStep.getNextStep();
             }
         }
-
     }
 
     public static SqlgGraphStepStrategy instance() {

@@ -96,6 +96,9 @@ public class SqlgTransaction implements Transaction {
 
     @Override
     public void commit() {
+        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
+            throw Exceptions.transactionMustBeOpenToReadWrite();
+        }
         if (!isOpen())
             return;
 
@@ -127,6 +130,9 @@ public class SqlgTransaction implements Transaction {
 
     @Override
     public void rollback() {
+        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
+            throw Exceptions.transactionMustBeOpenToReadWrite();
+        }
         if (!isOpen())
             return;
         try {
