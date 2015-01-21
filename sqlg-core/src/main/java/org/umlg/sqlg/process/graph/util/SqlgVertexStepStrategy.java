@@ -27,37 +27,32 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
     }
 
     @Override
-    public void apply(final Traversal traversal, final TraversalEngine traversalEngine) {
+    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine traversalEngine) {
         List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
         vertexSteps.forEach(
-                (s) -> TraversalHelper.replaceStep(s, new SqlgVertexStep(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getLabel(), s.getEdgeLabels()), traversal)
+                (s) -> TraversalHelper.replaceStep(s, new SqlgVertexStep(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getEdgeLabels()), traversal)
         );
         //The HasSteps following directly after a VertexStep is merged into the SqlgVertexStep
-        Set<Step> toRemove = new HashSet<>();
-        for (Object step : traversal.asAdmin().getSteps()) {
-            if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).returnClass)) {
-                SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
-                Step currentStep = sqlgVertexStep.getNextStep();
-                while (true) {
-                    if (currentStep instanceof HasContainerHolder) {
-                        sqlgVertexStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
-                        if (TraversalHelper.isLabeled(currentStep)) {
-                            final IdentityStep identityStep = new IdentityStep<>(traversal);
-                            identityStep.setLabel(currentStep.getLabel());
-                            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-                        }
-                        toRemove.add(currentStep);
-                    } else if (currentStep instanceof IdentityStep) {
-                        // do nothing
-                    } else {
-                        break;
-                    }
-                    currentStep = currentStep.getNextStep();
-                }
+        SqlgVertexStep sqlgVertexStep = null;
+        Step<?, ?> currentStep = traversal.asAdmin().getSteps().get(0);
+        while (true) {
+            if (currentStep instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) currentStep).returnClass)) {
+                sqlgVertexStep = (SqlgVertexStep) currentStep;
             }
-        }
-        for (Step stepToRemove : toRemove) {
-            TraversalHelper.removeStep(stepToRemove, traversal);
+            if (currentStep != null && currentStep instanceof HasContainerHolder) {
+                sqlgVertexStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
+                if (currentStep.getLabel().isPresent()) {
+                    final IdentityStep identityStep = new IdentityStep<>(traversal);
+                    identityStep.setLabel(currentStep.getLabel().get());
+                    TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+                }
+                traversal.removeStep(currentStep);
+            } else if (currentStep instanceof IdentityStep) {
+                // do nothing
+            } else {
+                break;
+            }
+            currentStep = currentStep.getNextStep();
         }
     }
 

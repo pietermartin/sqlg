@@ -6,6 +6,7 @@ import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
 import org.umlg.sqlg.test.TestHas;
 import org.umlg.sqlg.test.TinkerpopTest;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompile;
+import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestCaptureSchemaTableEdges;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
@@ -16,7 +17,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestCaptureSchemaTableEdges.class
+        TestVertexOutWithHas.class
 })
 public class AnyTest {
 }

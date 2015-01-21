@@ -46,7 +46,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
         if (null != g) {
-            if (g.features().graph().supportsTransactions())
+            if (g.features().graph().supportsTransactions() && g.tx().isOpen())
                 g.tx().rollback();
             g.close();
         }

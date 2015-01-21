@@ -24,12 +24,11 @@ public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> im
     public Direction direction;
     public Class<E> returnClass;
 
-    public SqlgVertexStep(final Traversal traversal, final Class<E> returnClass, final Direction direction, String label, final String... edgeLabels) {
+    public SqlgVertexStep(final Traversal traversal, final Class<E> returnClass, final Direction direction, final String... edgeLabels) {
         super(traversal);
         this.direction = direction;
         this.edgeLabels = edgeLabels;
         this.returnClass = returnClass;
-        this.label = label;
         if (Vertex.class.isAssignableFrom(this.returnClass))
             this.setFunction(traverser -> {
                 if (this.hasContainers.isEmpty()) {
