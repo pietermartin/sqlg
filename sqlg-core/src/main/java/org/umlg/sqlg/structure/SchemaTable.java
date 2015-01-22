@@ -1,11 +1,18 @@
 package org.umlg.sqlg.structure;
 
+import com.hazelcast.nio.ObjectDataInput;
+import com.hazelcast.nio.ObjectDataOutput;
+import com.hazelcast.nio.serialization.DataSerializable;
+
+import java.io.IOException;
+import java.io.Serializable;
+
 /**
  * Date: 2014/08/17
  * Time: 7:20 AM
  */
 
-public class SchemaTable {
+public class SchemaTable  implements DataSerializable, Serializable {
     private String schema;
     private String table;
 
@@ -48,5 +55,17 @@ public class SchemaTable {
             return true;
         }
         return this.toString().equals(o.toString());
+    }
+
+    @Override
+    public void writeData(ObjectDataOutput out) throws IOException {
+        out.writeUTF(this.schema);
+        out.writeUTF(this.table);
+    }
+
+    @Override
+    public void readData(ObjectDataInput in) throws IOException {
+        this.schema = in.readUTF();
+        this.table = in.readUTF();
     }
 }
