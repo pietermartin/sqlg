@@ -1,11 +1,20 @@
 package org.umlg.sqlg.test.vertexout;
 
+import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.process.TraversalEngine;
+import com.tinkerpop.gremlin.process.graph.GraphTraversal;
+import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
+import com.tinkerpop.gremlin.process.util.EmptyStep;
+import com.tinkerpop.gremlin.process.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.internal.matchers.StartsWith;
+import org.umlg.sqlg.process.graph.util.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,6 +37,17 @@ public class TestVertexOutWithHas extends BaseTest {
         marko.addEdge("drives", ktm2);
         marko.addEdge("drives", ktm3);
         this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = marko.out("drives").<Vertex>has("name", "bmw");
+        traversal.asAdmin().applyStrategies(TraversalEngine.STANDARD);
+        final List<Step> temp = new ArrayList<>();
+        Step currentStep = TraversalHelper.getStart(traversal.asAdmin());
+        while (!(currentStep instanceof EmptyStep)) {
+            temp.add(currentStep);
+            currentStep = currentStep.getNextStep();
+        }
+        Assert.assertTrue(temp.get(0) instanceof StartStep);
+        Assert.assertTrue(temp.get(1) instanceof SqlgVertexStep);
+        Assert.assertEquals(2, temp.size());
         List<Vertex> drivesBmw = marko.out("drives").<Vertex>has("name", "bmw").toList();
         Assert.assertEquals(2L, drivesBmw.size(), 0);
         List<Vertex> drivesKtm = marko.out("drives").<Vertex>has("name", "ktm").toList();
