@@ -76,6 +76,7 @@ public class GremlinParser {
         }
         System.out.println(rootSchemaTableTree.toTreeString());
         rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
+        rootSchemaTableTree.removeNodesInvalidatedByHas();
         System.out.println(rootSchemaTableTree.toTreeString());
         return rootSchemaTableTree;
     }
@@ -85,7 +86,7 @@ public class GremlinParser {
         for (SchemaTableTree schemaTableTree : schemaTableTrees) {
             String[] edgeLabels = replacedStep.getLeft().getEdgeLabels();
             Direction direction = replacedStep.getLeft().getDirection();
-            Class elementClass = replacedStep.getLeft().getReturnClass();
+            Class<? extends Element> elementClass = replacedStep.getLeft().getReturnClass();
             List<HasContainer> hasContainers = replacedStep.getRight();
 
             Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getLocalTableLabels().get(schemaTableTree.getSchemaTable());
@@ -109,22 +110,22 @@ public class GremlinParser {
             }
             //Each labelToTravers more than the first one forms a new distinct path
             for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, direction, hasContainers, depth);
-                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, hasContainers, depth));
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, direction, elementClass, hasContainers, depth);
+                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, elementClass, hasContainers, depth));
             }
             for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, direction, hasContainers, depth);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, direction, elementClass, hasContainers, depth);
                 if (elementClass.isAssignableFrom(Edge.class)) {
                     result.add(schemaTableTreeChild);
                 } else {
-                    result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, hasContainers, depth));
+                    result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, outLabelsToTravers, Direction.OUT, elementClass, hasContainers, depth));
                 }
             }
         }
         return result;
     }
 
-    private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction, List<HasContainer> hasContainers, int depth) {
+    private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, int depth) {
         Set<SchemaTableTree> result = new HashSet<>();
         Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
@@ -137,6 +138,7 @@ public class GremlinParser {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
                         SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
                         direction,
+                        elementClass,
                         hasContainers,
                         depth);
                 result.add(schemaTableTree1);
@@ -144,6 +146,7 @@ public class GremlinParser {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
                         SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
                         direction,
+                        elementClass,
                         hasContainers,
                         depth);
                 result.add(schemaTableTree1);

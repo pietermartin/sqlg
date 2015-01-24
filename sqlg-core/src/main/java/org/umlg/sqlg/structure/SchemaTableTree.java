@@ -1,9 +1,11 @@
 package org.umlg.sqlg.structure;
 
+import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.swing.plaf.synth.SynthCheckBoxMenuItemUI;
 import java.util.*;
 
 /**
@@ -21,7 +23,7 @@ public class SchemaTableTree {
     private SqlgGraph sqlgGraph;
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
-    private List<HasContainer> hasContainers;
+    private List<HasContainer> hasContainers = new ArrayList<>();
 
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth) {
         this.sqlgGraph = sqlgGraph;
@@ -30,9 +32,12 @@ public class SchemaTableTree {
         this.hasContainers = new ArrayList<>();
     }
 
-    SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, List<HasContainer> hasContainers, int depth) {
+    SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, int depth) {
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, depth);
-        this.hasContainers = hasContainers;
+        if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) ||
+                (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
+            schemaTableTree.hasContainers = hasContainers;
+        }
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
         this.children.add(schemaTableTree);
@@ -448,21 +453,62 @@ public class SchemaTableTree {
             SchemaTableTree current = queue.remove();
             if (current.stepDepth < depth && current.children.isEmpty()) {
                 removeNode(current);
-            }
-            queue.addAll(current.children);
-            if (current.stepDepth == depth && current.children.isEmpty()) {
-                this.leafNodes.add(current);
+            } else {
+                queue.addAll(current.children);
+                if (current.stepDepth == depth && current.children.isEmpty()) {
+                    this.leafNodes.add(current);
+                }
             }
         }
     }
 
     private void removeNode(SchemaTableTree node) {
         SchemaTableTree parent = node.parent;
-        parent.children.remove(node);
-        //check if the parent has any other children. if not it too can be deleted. Follow this pattern recursively up.
-        if (parent.children.isEmpty()) {
-            removeNode(parent);
+        if (parent != null) {
+            parent.children.remove(node);
+            this.leafNodes.remove(node);
+            //check if the parent has any other children. if not it too can be deleted. Follow this pattern recursively up.
+            if (parent.children.isEmpty()) {
+                removeNode(parent);
+            }
         }
+    }
+
+    void removeNodesInvalidatedByHas() {
+        Queue<SchemaTableTree> queue = new LinkedList<>();
+        queue.add(this);
+        while (!queue.isEmpty()) {
+            SchemaTableTree current = queue.remove();
+            if (invalidateByHas(current)) {
+                removeNode(current);
+            } else {
+                queue.addAll(current.children);
+            }
+        }
+    }
+
+    private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
+        Set<HasContainer> toRemove = new HashSet<>();
+        for (HasContainer hasContainer : schemaTableTree.hasContainers) {
+            //Check if we are on a vertex or edge
+            SchemaTable hasContainerLabelSchemaTable;
+            if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+                hasContainerLabelSchemaTable = SqlgUtil.parseLabel(SchemaManager.VERTEX_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+            } else {
+                hasContainerLabelSchemaTable = SqlgUtil.parseLabel(SchemaManager.EDGE_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+            }
+            if (hasContainer.key.equals(T.label.getAccessor()) && hasContainer.predicate.equals(Compare.eq) &&
+                    !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
+                return true;
+            } else if (hasContainer.key.equals(T.label.getAccessor()) && hasContainer.predicate.equals(Compare.eq) &&
+                    hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
+
+                //remove the hasContainer as the query is already fulfilling it.
+                toRemove.add(hasContainer);
+            }
+        }
+        schemaTableTree.hasContainers.removeAll(toRemove);
+        return false;
     }
 
     @Override
@@ -483,9 +529,10 @@ public class SchemaTableTree {
         for (int i = 0; i < this.stepDepth; i++) {
             sb.append("\t");
         }
-        sb.append(this.schemaTable.toString()).append(" ").append(this.stepDepth);
+        sb.append(this.schemaTable.toString()).append(" ").append(this.stepDepth).append(" ").append(this.hasContainers.toString());
         for (SchemaTableTree child : children) {
             child.internalToString(sb);
         }
     }
+
 }
