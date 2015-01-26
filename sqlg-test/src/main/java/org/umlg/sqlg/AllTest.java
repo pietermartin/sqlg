@@ -9,6 +9,9 @@ import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.edges.TestEdgeCache;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.*;
@@ -71,7 +74,10 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestMultiThreadedBatch.class,
         TestCreateEdgeBetweenVertices.class,
         TestRemovedVertex.class,
-        TestCaptureSchemaTableEdges.class
+        TestCaptureSchemaTableEdges.class,
+        TestGremlinCompileWithHas.class,
+        TestGremlinCompileV.class,
+        TestGremlinCompileE.class
 })
 public class AllTest {
 }

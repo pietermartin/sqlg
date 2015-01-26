@@ -12,9 +12,9 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithHas.class,
-        TestGremlinCompileV.class,
-        TestGremlinCompileE.class
+        TestGremlinCompileWithHas.class
+//        TestGremlinCompileV.class,
+//        TestGremlinCompileE.class
 })
 public class AnyTest {
 }

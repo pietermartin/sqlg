@@ -19,12 +19,21 @@ public class TestGremlinCompileE extends BaseTest {
     public void testOutE() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Edge e = a1.addEdge("outB",b1);
+        Edge e = a1.addEdge("outB", b1);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, a1.outE().count().next().intValue());
         Assert.assertEquals(e, a1.outE().next());
     }
 
+    @Test
+    public void testInE() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Edge e = a1.addEdge("outB", b1);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, b1.inE().count().next().intValue());
+        Assert.assertEquals(e, b1.inE().next());
+    }
     @Test
     public void testEdgeOut() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");

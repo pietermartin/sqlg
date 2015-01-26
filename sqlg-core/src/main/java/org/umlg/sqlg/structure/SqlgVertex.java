@@ -645,6 +645,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
                 preparedStatement.setLong(1, this.primaryKey);
+                schemaTableTree.setParametersOnStatement(preparedStatement);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     this.sqlgGraph.getGremlinParser().loadElements(resultSet, sqlPair.getLeft(), vertices);

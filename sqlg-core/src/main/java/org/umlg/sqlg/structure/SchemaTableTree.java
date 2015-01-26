@@ -6,7 +6,10 @@ import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.lang3.tuple.Pair;
 
 import javax.swing.plaf.synth.SynthCheckBoxMenuItemUI;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Date: 2015/01/08
@@ -44,7 +47,7 @@ public class SchemaTableTree {
         return schemaTableTree;
     }
 
-    SchemaTable getSchemaTable() {
+    public SchemaTable getSchemaTable() {
         return schemaTable;
     }
 
@@ -211,6 +214,18 @@ public class SchemaTableTree {
             singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
             singlePathSql += " = ? ";
         }
+        //construct there where clause for the hasContainers
+        for (SchemaTableTree schemaTableTree : distinctQueryStack) {
+            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
+                singlePathSql += " AND ";
+                singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
+                singlePathSql += ".";
+                singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
+                singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.key);
+                singlePathSql += " = ?";
+            }
+        }
+
         return singlePathSql;
     }
 
@@ -535,4 +550,91 @@ public class SchemaTableTree {
         }
     }
 
+    public SchemaTableTree getParent() {
+        return parent;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public List<SchemaTableTree> getChildren() {
+        return children;
+    }
+
+    public List<SchemaTableTree> getLeafNodes() {
+        return leafNodes;
+    }
+
+    public List<HasContainer> getHasContainers() {
+        return hasContainers;
+    }
+
+    public int depth() {
+        AtomicInteger depth = new AtomicInteger();
+        walk(v -> {
+            if (v.stepDepth > depth.get()) {
+                depth.set(v.stepDepth);
+            }
+            return null;
+        });
+        return depth.incrementAndGet();
+    }
+
+    public int numberOfNodes() {
+        AtomicInteger count = new AtomicInteger();
+        walk(v -> {
+            count.getAndIncrement();
+            return null;
+        });
+        return count.get();
+    }
+
+    private void walk(Visitor v) {
+        v.visit(this);
+        this.children.forEach(c -> c.walk(v));
+    }
+
+    public SchemaTableTree schemaTableAtDepth(final int depth, final int number) {
+        AtomicInteger count = new AtomicInteger();
+        //Need to reset the count when the depth changes.
+        AtomicInteger depthCache = new AtomicInteger(depth);
+        return walkWithExit(
+                v -> {
+                    if (depthCache.get() != v.stepDepth) {
+                        depthCache.set(v.stepDepth);
+                        count.set(0);
+                    }
+                    return (count.getAndIncrement() == number && v.stepDepth == depth);
+                }
+        );
+    }
+
+    private SchemaTableTree walkWithExit(Visitor<Boolean> v) {
+        if (!v.visit(this)) {
+            for (SchemaTableTree child : children) {
+                return child.walkWithExit(v);
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Walk the tree and for each HasContainer set the parameter on the statement.
+     *
+     * @param preparedStatement
+     */
+    void setParametersOnStatement(final PreparedStatement preparedStatement) {
+        AtomicInteger parameterIndex = new AtomicInteger(2);
+        walk(schemaTableTree -> {
+            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
+                try {
+                    preparedStatement.setString(parameterIndex.getAndIncrement(), (String)hasContainer.value);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            return null;
+        });
+    }
 }

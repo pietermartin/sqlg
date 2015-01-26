@@ -111,7 +111,11 @@ public class GremlinParser {
             //Each labelToTravers more than the first one forms a new distinct path
             for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, direction, elementClass, hasContainers, depth);
-                result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, elementClass, hasContainers, depth));
+                if (elementClass.isAssignableFrom(Edge.class)) {
+                    result.add(schemaTableTreeChild);
+                } else {
+                    result.addAll(calculatePathFromEdgeToVertex(schemaTableTreeChild, inLabelsToTravers, Direction.IN, elementClass, hasContainers, depth));
+                }
             }
             for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, direction, elementClass, hasContainers, depth);

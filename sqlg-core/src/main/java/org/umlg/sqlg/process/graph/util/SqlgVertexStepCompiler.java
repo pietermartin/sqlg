@@ -31,4 +31,7 @@ public class SqlgVertexStepCompiler<E extends Element> extends FlatMapStep<Verte
         this.replacedSteps.add(stepPair);
     }
 
+    public List<Pair<VertexStep, List<HasContainer>>> getReplacedSteps() {
+        return replacedSteps;
+    }
 }
