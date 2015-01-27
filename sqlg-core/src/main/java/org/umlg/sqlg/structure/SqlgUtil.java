@@ -1,12 +1,11 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
 import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Vertex;
 import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import com.tinkerpop.gremlin.process.T.*;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -118,8 +117,8 @@ public class SqlgUtil {
                 if (key.equals(T.label) || keys.contains(key)) {
                     continue;
                 }
-                keys.add((String)key);
-                result.put((String)key, PropertyType.from(keyValue));
+                keys.add((String) key);
+                result.put((String) key, PropertyType.from(keyValue));
             }
         }
         return result;
@@ -139,8 +138,24 @@ public class SqlgUtil {
                 if (key.equals(T.label) || key.equals(T.id)) {
                     continue;
                 }
-                result.put((String)key, keyValue);
+                result.put((String) key, keyValue);
             }
+        }
+        return result;
+    }
+
+
+    public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
+        List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, Object> entry : keyValues.entries()) {
+            Object value = entry.getValue();
+            String key = entry.getKey();
+            //value
+            //skip the label as that is not a property but the table
+            if (key.equals(T.label)) {
+                continue;
+            }
+            result.add(ImmutablePair.of(PropertyType.from(value), value));
         }
         return result;
     }

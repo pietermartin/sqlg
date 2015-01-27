@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.Multimap;
 import com.tinkerpop.gremlin.structure.Element;
 import com.tinkerpop.gremlin.structure.Graph;
 import com.tinkerpop.gremlin.structure.Property;
@@ -14,10 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -337,70 +335,81 @@ public abstract class SqlgElement implements Element, Element.Iterators {
     }
 
     public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
-        for (ImmutablePair<PropertyType, Object> pair : SqlgUtil.transformToTypeAndValue(keyValues)) {
+        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
+        i = setKeyValueAsParameter(sqlgGraph, i, conn, preparedStatement, typeAndValues);
+        return i;
+    }
+
+    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, Multimap<String, Object> keyValues) throws SQLException {
+        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
+        return setKeyValueAsParameter(sqlgGraph, parameterStartIndex, conn, preparedStatement, typeAndValues);
+    }
+
+    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
+        for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
             switch (pair.left) {
                 case BOOLEAN:
-                    preparedStatement.setBoolean(i++, (Boolean) pair.right);
+                    preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
                     break;
                 case BYTE:
-                    preparedStatement.setByte(i++, (Byte) pair.right);
+                    preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
                     break;
                 case SHORT:
-                    preparedStatement.setShort(i++, (Short) pair.right);
+                    preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
                     break;
                 case INTEGER:
-                    preparedStatement.setInt(i++, (Integer) pair.right);
+                    preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
                     break;
                 case LONG:
-                    preparedStatement.setLong(i++, (Long) pair.right);
+                    preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
                     break;
                 case FLOAT:
-                    preparedStatement.setFloat(i++, (Float) pair.right);
+                    preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
                     break;
                 case DOUBLE:
-                    preparedStatement.setDouble(i++, (Double) pair.right);
+                    preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
                     break;
                 case STRING:
-                    preparedStatement.setString(i++, (String) pair.right);
+                    preparedStatement.setString(parameterStartIndex++, (String) pair.right);
                     break;
 
                 //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
                     java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, booleanArray);
+                    preparedStatement.setArray(parameterStartIndex++, booleanArray);
                     break;
                 case BYTE_ARRAY:
-                    preparedStatement.setBytes(i++, (byte[]) pair.right);
+                    preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
                     break;
                 case SHORT_ARRAY:
                     java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, shortArray);
+                    preparedStatement.setArray(parameterStartIndex++, shortArray);
                     break;
                 case INTEGER_ARRAY:
                     java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, intArray);
+                    preparedStatement.setArray(parameterStartIndex++, intArray);
                     break;
                 case LONG_ARRAY:
                     java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, longArray);
+                    preparedStatement.setArray(parameterStartIndex++, longArray);
                     break;
                 case FLOAT_ARRAY:
                     java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, floatArray);
+                    preparedStatement.setArray(parameterStartIndex++, floatArray);
                     break;
                 case DOUBLE_ARRAY:
                     java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, doubleArray);
+                    preparedStatement.setArray(parameterStartIndex++, doubleArray);
                     break;
                 case STRING_ARRAY:
                     java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(i++, stringArray);
+                    preparedStatement.setArray(parameterStartIndex++, stringArray);
                     break;
                 default:
                     throw new IllegalStateException("Unhandled type " + pair.left.name());
             }
         }
-        return i;
+        return parameterStartIndex;
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {

@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
@@ -9,6 +11,7 @@ import com.tinkerpop.gremlin.structure.util.ElementHelper;
 import com.tinkerpop.gremlin.structure.util.StringFactory;
 import com.tinkerpop.gremlin.util.StreamFactory;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -637,24 +640,36 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
 
         SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
         SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        List<Pair<SchemaTable, String>> sqlStatements = schemaTableTree.constructSql();
-        for (Pair<SchemaTable, String> sqlPair : sqlStatements) {
+        List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> sqlStatements = schemaTableTree.constructSql();
+        for (Triple<LinkedList<SchemaTableTree>, SchemaTable, String> sqlTriple : sqlStatements) {
             Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
-                logger.debug(sqlPair.getRight());
+                logger.debug(sqlTriple.getRight());
             }
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sqlTriple.getRight())) {
                 preparedStatement.setLong(1, this.primaryKey);
-                schemaTableTree.setParametersOnStatement(preparedStatement);
+                setParametersOnStatement(sqlTriple.getLeft(), conn, preparedStatement);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
-                    this.sqlgGraph.getGremlinParser().loadElements(resultSet, sqlPair.getLeft(), vertices);
+                    this.sqlgGraph.getGremlinParser().loadElements(resultSet, sqlTriple.getMiddle(), vertices);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
         return vertices.iterator();
+    }
+
+    private void setParametersOnStatement(LinkedList<SchemaTableTree> schemaTableTreeStack,Connection conn, PreparedStatement preparedStatement) throws SQLException {
+        //start the index at 2 as sql starts at 1 and the first is the id that is already set.
+        int parameterIndex = 2;
+        Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
+        for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
+            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
+                keyValueMap.put(hasContainer.key, hasContainer.value);
+            }
+        }
+        SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);
     }
 
     private Set<String> extractLabelsFromHasContainer(List<HasContainer> labelHasContainers) {

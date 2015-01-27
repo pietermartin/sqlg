@@ -4,6 +4,7 @@ import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.swing.plaf.synth.SynthCheckBoxMenuItemUI;
 import java.sql.PreparedStatement;
@@ -51,13 +52,17 @@ public class SchemaTableTree {
         return schemaTable;
     }
 
+//     * returns A separate sql statement for every leaf node.
+
     /**
-     * returns A separate sql statement for every leaf node.
      *
-     * @return a List of sql statements
+     * @return A Triple. SchemaTableTree is the root of the tree that formed the sql statement.
+     *                   It is needed to set the values in the where clause.
+     *                   SchemaTable is the element being returned.
+     *                   String is the sql.
      */
-    List<Pair<SchemaTable, String>> constructSql() {
-        List<Pair<SchemaTable, String>> result = new ArrayList<>();
+    List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> constructSql() {
+        List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> result = new ArrayList<>();
         List<LinkedList<SchemaTableTree>> distinctQueries = new ArrayList<>();
         for (SchemaTableTree leafNode : this.leafNodes) {
             distinctQueries.add(constructQueryStackFromLeaf(leafNode));
@@ -67,16 +72,15 @@ public class SchemaTableTree {
             //If the same element occurs multiple times in the stack then the sql needs to be different.
             //This is because the same element can not be joined on more than once in sql
             //The way to overcome this is  to break up the path in select sections with no duplicates and then join them together.
+            SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
             if (duplicatesInStack(distinctQueryStack)) {
-                SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
                 List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
                 String singlePathSql = constructDuplicatePathSql(subQueryStacks);
-                result.add(Pair.of(lastSchemaTable, singlePathSql));
+                result.add(Triple.of(distinctQueryStack, lastSchemaTable, singlePathSql));
             } else {
                 //If there are no duplicates in the path then one select statement will suffice.
-                SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
                 String singlePathSql = constructSinglePathSql(distinctQueryStack, null, null);
-                result.add(Pair.of(lastSchemaTable, singlePathSql));
+                result.add(Triple.of(distinctQueryStack, lastSchemaTable, singlePathSql));
             }
         }
         return result;
@@ -268,13 +272,13 @@ public class SchemaTableTree {
     }
 
     /**
-     * Constructs the from clause with the required selected fields needed to make the join between the from and the toSchemaTable
+     * Constructs the from clause with the required selected fields needed to make the join between the previous and the next SchemaTable
      *
      * @param firstSchemaTable        This is the first SchemaTable in the current sql stack. If it is an Edge table then its foreign key
      *                                field to the previous table needs to in the select clause in order for the join statement to
      *                                reference it.
-     * @param lastSchemaTable         This is the label that
-     * @param previousSchemaTableTree
+     * @param lastSchemaTable
+     * @param previousSchemaTableTree The previous schemaTableTree that will be joined to.
      * @param nextSchemaTableTree     represents the table to join to. it is null for the last table as there is nothing to join to.  @return
      */
     private String constructFromClause(SchemaTable firstSchemaTable, SchemaTable lastSchemaTable, SchemaTableTree previousSchemaTableTree, SchemaTableTree nextSchemaTableTree) {
@@ -306,6 +310,7 @@ public class SchemaTableTree {
         String sql = "";
         boolean printedId = false;
 
+        //join to the previous label/table
         if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
             if (previousSchemaTableTree.direction == Direction.OUT) {
                 sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
@@ -336,6 +341,7 @@ public class SchemaTableTree {
             printedId = firstSchemaTable == lastSchemaTable;
         }
 
+        //join to the next table/label
         if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
             if (!sql.isEmpty()) {
                 sql += ", ";
@@ -394,7 +400,7 @@ public class SchemaTableTree {
             for (String propertyName : propertyTypeMap.keySet()) {
                 sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
                 sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + propertyName + "\"";
-                if (propertyCount < propertyTypeMap.size()) {
+                if (propertyCount++ < propertyTypeMap.size()) {
                     sql += ",";
                 }
             }
@@ -629,7 +635,7 @@ public class SchemaTableTree {
         walk(schemaTableTree -> {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
                 try {
-                    preparedStatement.setString(parameterIndex.getAndIncrement(), (String)hasContainer.value);
+                    preparedStatement.setString(parameterIndex.getAndIncrement(), (String) hasContainer.value);
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
