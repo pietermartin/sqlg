@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
  * Date: 2014/07/16
@@ -12,9 +13,10 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithHas.class,
-        TestGremlinCompileV.class,
-        TestGremlinCompileE.class
+//        TestGremlinCompileWithHas.class,
+        TestGremlinCompileV.class
+//        TestGremlinCompileE.class,
+//        TestVertexOutWithHas.class
 })
 public class AnyTest {
 }

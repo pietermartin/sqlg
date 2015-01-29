@@ -137,7 +137,7 @@ public class SchemaTableTree {
         int propertyCount = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
             sql += "a" + count + ".\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + propertyName + "\"";
-            if (propertyCount < propertyTypeMap.size()) {
+            if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ",";
             }
         }
@@ -209,7 +209,7 @@ public class SchemaTableTree {
             singlePathSql += constructJoinBetweenSchemaTables(schemaTableTree.direction, previous.getSchemaTable(), schemaTableTree.getSchemaTable());
             previous = schemaTableTree;
         }
-        //lastOfPrevious is null for the first call in the call stack
+        //lastOfPrevious is null for the first call in the call staco it needs the id parameter in the where clause.
         if (lastOfPrevious == null) {
             singlePathSql += " WHERE ";
             singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
