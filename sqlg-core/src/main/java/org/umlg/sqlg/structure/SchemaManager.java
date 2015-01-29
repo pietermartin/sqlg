@@ -1162,6 +1162,10 @@ public class SchemaManager {
         return localTableLabels;
     }
 
+    public Map<String, Map<String, PropertyType>> getLocalTables() {
+        return localTables;
+    }
+
     class SchemasMapEntryListener implements EntryListener<String, String> {
 
         @Override
