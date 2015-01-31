@@ -1,8 +1,7 @@
 package org.umlg.sqlg.test;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
-import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
-import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
+import com.tinkerpop.gremlin.process.graph.traversal.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.structure.*;
@@ -30,7 +29,6 @@ public class SqlGProvider extends AbstractGraphProvider {
         add(SqlgVertex.class);
         add(SqlgVertexProperty.class);
         add(DefaultGraphTraversal.class);
-        add(AnonymousGraphTraversal.Tokens.class);
     }};
 
     @Override

@@ -1169,15 +1169,36 @@ public class SchemaManager {
     }
 
     public Map<String, Set<String>> getEdgeForeignKeys() {
-        return this.localEdgeForeignKeys;
+        return Collections.unmodifiableMap(this.localEdgeForeignKeys);
+    }
+
+    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+        Map<String, Set<String>> result = new HashMap<>();
+        result.putAll(this.localEdgeForeignKeys);
+        result.putAll(this.uncommittedEdgeForeignKeys);
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getLocalTableLabels() {
-        return localTableLabels;
+        return Collections.unmodifiableMap(localTableLabels);
+    }
+
+    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getAllTableLabels() {
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        result.putAll(localTableLabels);
+        result.putAll(uncommittedTableLabels);
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, Map<String, PropertyType>> getLocalTables() {
-        return localTables;
+        return Collections.unmodifiableMap(localTables);
+    }
+
+    public Map<String, Map<String, PropertyType>> getAllTables() {
+        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+        result.putAll(this.localTables);
+        result.putAll(this.uncommittedTables);
+        return result;
     }
 
     class SchemasMapEntryListener implements EntryListener<String, String> {

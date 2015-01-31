@@ -3,12 +3,12 @@ package org.umlg.sqlg.process.graph.util;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
-import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
+import com.tinkerpop.gremlin.process.graph.traversal.step.HasContainerHolder;
+import com.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.traversal.strategy.AbstractTraversalStrategy;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
+import com.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Compare;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -45,10 +45,10 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
                 if (previous == null) {
                     sqlgVertexStepCompiler = new SqlgVertexStepCompiler(traversal);
                     TraversalHelper.replaceStep(step, sqlgVertexStepCompiler, traversal);
-                    collectHasSteps(stepIterator, traversal, step, stepPair);
+                    collectHasSteps(stepIterator, traversal, stepPair);
                 } else {
                     traversal.removeStep(step);
-                    collectHasSteps(stepIterator, traversal, step, stepPair);
+                    collectHasSteps(stepIterator, traversal, stepPair);
                 }
                 previous = step;
                 sqlgVertexStepCompiler.addReplacedStep(stepPair);
@@ -58,7 +58,7 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
         }
     }
 
-    private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, Step step, Pair<Step<?, ?>, List<HasContainer>> stepPair) {
+    private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, Pair<Step<?, ?>, List<HasContainer>> stepPair) {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();

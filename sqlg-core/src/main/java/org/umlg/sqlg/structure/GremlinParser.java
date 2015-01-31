@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.process.graph.step.map.VertexStep;
+import com.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -39,7 +39,7 @@ public class GremlinParser {
         List<Object> keyValues = new ArrayList<>();
         String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
         Long id = resultSet.getLong(idProperty);
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(schemaTable.toString());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.toString());
         for (String propertyName : propertyTypeMap.keySet()) {
             String property = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + propertyName;
             keyValues.add(propertyName);
@@ -48,9 +48,9 @@ public class GremlinParser {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
         SqlgElement sqlgElement;
         if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-            sqlgElement = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
+            sqlgElement = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable().replace(SchemaManager.VERTEX_PREFIX, ""));
         } else {
-            sqlgElement = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
+            sqlgElement = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable().replace(SchemaManager.EDGE_PREFIX, ""));
         }
         sqlgElement.properties.clear();
         sqlgElement.properties.putAll(keyValueMap);
@@ -63,7 +63,7 @@ public class GremlinParser {
      * The vertex labels can be calculated from the steps.
      *
      * @param schemaTable
-     * @param replacedSteps
+     * @param replacedSteps The original VertexSteps and HasSteps that were replaced
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
     public SchemaTableTree parse(SchemaTable schemaTable, List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
@@ -89,7 +89,7 @@ public class GremlinParser {
             Class<? extends Element> elementClass = replacedStep.getLeft().getReturnClass();
             List<HasContainer> hasContainers = replacedStep.getRight();
 
-            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getLocalTableLabels().get(schemaTableTree.getSchemaTable());
+            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getAllTableLabels().get(schemaTableTree.getSchemaTable());
             Set<SchemaTable> inLabels = labels.getLeft();
             Set<SchemaTable> outLabels = labels.getRight();
             Set<SchemaTable> inLabelsToTraversers = new HashSet<>();
@@ -131,7 +131,7 @@ public class GremlinParser {
 
     private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, int depth) {
         Set<SchemaTableTree> result = new HashSet<>();
-        Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getEdgeForeignKeys();
+        Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getAllEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
         Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on

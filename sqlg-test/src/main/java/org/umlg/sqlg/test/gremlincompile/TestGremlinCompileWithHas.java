@@ -3,10 +3,9 @@ package org.umlg.sqlg.test.gremlincompile;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.graph.GraphTraversal;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.StartStep;
-import com.tinkerpop.gremlin.process.util.EmptyStep;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
+import com.tinkerpop.gremlin.process.graph.traversal.GraphTraversal;
+import com.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.StartStep;
+import com.tinkerpop.gremlin.process.traversal.step.EmptyStep;
 import com.tinkerpop.gremlin.structure.Compare;
 import com.tinkerpop.gremlin.structure.Contains;
 import com.tinkerpop.gremlin.structure.Edge;
@@ -51,7 +50,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
         traversal.asAdmin().applyStrategies(TraversalEngine.STANDARD);
         final List<Step> temp = new ArrayList<>();
-        Step currentStep = TraversalHelper.getStart(traversal.asAdmin());
+        Step currentStep = traversal.asAdmin().getStartStep();
         while (!(currentStep instanceof EmptyStep)) {
             temp.add(currentStep);
             currentStep = currentStep.getNextStep();
@@ -113,7 +112,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         GraphTraversal<Vertex, Vertex> gt = a1.out().has("name", Compare.eq, "b2");
         gt.asAdmin().applyStrategies(TraversalEngine.STANDARD);
         final List<Step> temp = new ArrayList<>();
-        Step currentStep = TraversalHelper.getStart(gt.asAdmin());
+        Step currentStep = gt.asAdmin().getStartStep();
         while (!(currentStep instanceof EmptyStep)) {
             temp.add(currentStep);
             currentStep = currentStep.getNextStep();

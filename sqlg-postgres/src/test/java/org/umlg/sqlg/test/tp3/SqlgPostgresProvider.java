@@ -1,8 +1,7 @@
 package org.umlg.sqlg.test.tp3;
 
 import com.tinkerpop.gremlin.AbstractGraphProvider;
-import com.tinkerpop.gremlin.process.graph.AnonymousGraphTraversal;
-import com.tinkerpop.gremlin.process.graph.util.DefaultGraphTraversal;
+import com.tinkerpop.gremlin.process.graph.traversal.DefaultGraphTraversal;
 import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -12,8 +11,8 @@ import java.beans.PropertyVetoException;
 import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -30,7 +29,6 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
         add(SqlgVertex.class);
         add(SqlgVertexProperty.class);
         add(DefaultGraphTraversal.class);
-        add(AnonymousGraphTraversal.Tokens.class);
     }};
 
     @Override

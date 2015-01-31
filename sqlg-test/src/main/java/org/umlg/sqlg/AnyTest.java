@@ -2,9 +2,11 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.vertex.TestVertexCache;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
@@ -13,10 +15,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestGremlinCompileWithHas.class,
-        TestGremlinCompileV.class
-//        TestGremlinCompileE.class,
-//        TestVertexOutWithHas.class
+        TestBatch.class
 })
 public class AnyTest {
 }

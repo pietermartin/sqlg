@@ -3,11 +3,11 @@ package org.umlg.sqlg.strategy;
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;
 import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.graph.marker.HasContainerHolder;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.graph.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.strategy.AbstractTraversalStrategy;
-import com.tinkerpop.gremlin.process.util.TraversalHelper;
+import com.tinkerpop.gremlin.process.graph.traversal.step.HasContainerHolder;
+import com.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.GraphStep;
+import com.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.IdentityStep;
+import com.tinkerpop.gremlin.process.graph.traversal.strategy.AbstractTraversalStrategy;
+import com.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.structure.SqlgGraphStep;
 
 /**
@@ -22,7 +22,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
     }
 
     public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine traversalEngine) {
-        final Step<?, ?> startStep = TraversalHelper.getStart(traversal);
+        final Step<?, ?> startStep = traversal.getStartStep();
         if (startStep instanceof GraphStep) {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             final SqlgGraphStep<?> sqlgGraphStep = new SqlgGraphStep<>(originalGraphStep);

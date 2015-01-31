@@ -53,6 +53,9 @@ public abstract class SqlgElement implements Element, Element.Iterators {
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+        if (table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX)) {
+            throw new IllegalStateException("SqlgElement.table may not be prefixed with " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        }
         this.sqlgGraph = sqlgGraph;
         this.primaryKey = id;
         this.schema = schema;

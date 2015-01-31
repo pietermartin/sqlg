@@ -3,10 +3,8 @@ package org.umlg.sqlg.structure;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.structure.*;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 
-import javax.swing.plaf.synth.SynthCheckBoxMenuItemUI;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
@@ -130,7 +128,7 @@ public class SchemaTableTree {
 
     private String constructOuterFromClause(SchemaTable schemaTable, int count) {
         String sql = "a" + count + ".\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID + "\"";
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(schemaTable.toString());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.toString());
         if (propertyTypeMap.size() > 0) {
             sql += ", ";
         }
@@ -209,6 +207,7 @@ public class SchemaTableTree {
             singlePathSql += constructJoinBetweenSchemaTables(schemaTableTree.direction, previous.getSchemaTable(), schemaTableTree.getSchemaTable());
             previous = schemaTableTree;
         }
+
         //lastOfPrevious is null for the first call in the call staco it needs the id parameter in the where clause.
         if (lastOfPrevious == null) {
             singlePathSql += " WHERE ";
@@ -218,10 +217,19 @@ public class SchemaTableTree {
             singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
             singlePathSql += " = ? ";
         }
+
+        //check if the 'where' has already been printed
+        boolean printedWhere = lastOfPrevious == null;
+
         //construct there where clause for the hasContainers
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                singlePathSql += " AND ";
+                if (!printedWhere) {
+                    printedWhere = true;
+                    singlePathSql += " WHERE ";
+                } else {
+                    singlePathSql += " AND ";
+                }
                 singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
                 singlePathSql += ".";
                 singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
@@ -381,18 +389,17 @@ public class SchemaTableTree {
         //The last schemaTableTree in the call stack as no nextSchemaTableTree.
         //This last element's properties need to be returned.
         if (nextSchemaTableTree == null) {
-            if (!sql.isEmpty()) {
+            Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTable.toString());
+            if (!sql.isEmpty() && !propertyTypeMap.isEmpty()) {
                 sql += ", ";
             }
             String finalFromSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema());
             finalFromSchemaTableName += ".";
             finalFromSchemaTableName += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable());
-
-            Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getLocalTables().get(lastSchemaTable.toString());
             if (!printedId) {
                 sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
                 sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
-                if (propertyTypeMap.size() > 0) {
+                if (!propertyTypeMap.isEmpty()) {
                     sql += ", ";
                 }
             }

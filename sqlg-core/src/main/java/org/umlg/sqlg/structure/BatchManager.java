@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.tinkerpop.gremlin.structure.Direction;
+import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -284,25 +285,25 @@ public class BatchManager {
 
     public List<Vertex> getVertices(SqlgVertex vertex, Direction direction, String[] labels) {
         List<Vertex> vertices = new ArrayList<>();
-        List<SqlgEdge> edges = getEdges(vertex, direction, labels);
-        for (SqlgEdge sqlgEdge : edges) {
+        List<Edge> edges = getEdges(vertex, direction, labels);
+        for (Edge sqlgEdge : edges) {
             switch (direction) {
                 case IN:
-                    vertices.add(sqlgEdge.getOutVertex());
+                    vertices.add(((SqlgEdge)sqlgEdge).getOutVertex());
                     break;
                 case OUT:
-                    vertices.add(sqlgEdge.getInVertex());
+                    vertices.add(((SqlgEdge)sqlgEdge).getInVertex());
                     break;
                 default:
-                    vertices.add(sqlgEdge.getInVertex());
-                    vertices.add(sqlgEdge.getOutVertex());
+                    vertices.add(((SqlgEdge)sqlgEdge).getInVertex());
+                    vertices.add(((SqlgEdge)sqlgEdge).getOutVertex());
             }
         }
         return vertices;
     }
 
-    public List<SqlgEdge> getEdges(SqlgVertex sqlgVertex, Direction direction, String... labels) {
-        List<SqlgEdge> result = new ArrayList<>();
+    public List<Edge> getEdges(SqlgVertex sqlgVertex, Direction direction, String... labels) {
+        List<Edge> result = new ArrayList<>();
         switch (direction) {
             case IN:
                 internalGetEdgesFromMap(this.vertexInEdgeCache, sqlgVertex, result, labels);
@@ -317,7 +318,7 @@ public class BatchManager {
         return result;
     }
 
-    private void internalGetEdgesFromMap(Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexEdgeCache, SqlgVertex sqlgVertex, List<SqlgEdge> result, String[] labels) {
+    private void internalGetEdgesFromMap(Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexEdgeCache, SqlgVertex sqlgVertex, List<Edge> result, String[] labels) {
         for (String label : labels) {
             Map<SchemaTable, List<SqlgEdge>> labeledEdgeMap = vertexEdgeCache.get(sqlgVertex);
             if (labeledEdgeMap != null) {
