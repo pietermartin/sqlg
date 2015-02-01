@@ -17,26 +17,24 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeed() {
         this.sqlgGraph.tx().batchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A");
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000000; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B");
             a.addEdge("outB", b);
-            for (int j = 0; j < 1000; j++) {
+            for (int j = 0; j < 1; j++) {
                 Vertex c = this.sqlgGraph.addVertex(T.label, "C");
                 b.addEdge("outC", c);
-                for (int k = 0; k < 100; k++) {
-                    Vertex d = this.sqlgGraph.addVertex(T.label, "D");
-                    c.addEdge("outD", d);
-                }
             }
-            this.sqlgGraph.tx().commit();
-            this.sqlgGraph.tx().batchModeOn();
-            System.out.println("inserted " + i);
+            if (i % 10000 == 0) {
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().batchModeOn();
+                System.out.println("inserted " + i);
+            }
         }
         this.sqlgGraph.tx().commit();
         System.out.println("done inserting");
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        Assert.assertEquals(10000000, a.out().out().out().count().next().intValue());
+        Assert.assertEquals(1000000, a.out().out().count().next().intValue());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
