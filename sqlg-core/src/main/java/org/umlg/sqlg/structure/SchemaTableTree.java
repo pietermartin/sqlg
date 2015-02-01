@@ -53,11 +53,10 @@ public class SchemaTableTree {
 //     * returns A separate sql statement for every leaf node.
 
     /**
-     *
      * @return A Triple. SchemaTableTree is the root of the tree that formed the sql statement.
-     *                   It is needed to set the values in the where clause.
-     *                   SchemaTable is the element being returned.
-     *                   String is the sql.
+     * It is needed to set the values in the where clause.
+     * SchemaTable is the element being returned.
+     * String is the sql.
      */
     List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> constructSql() {
         List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> result = new ArrayList<>();
@@ -121,7 +120,6 @@ public class SchemaTableTree {
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();
-            System.out.println(sql);
         }
         return singlePathSql;
     }
@@ -186,9 +184,7 @@ public class SchemaTableTree {
      * @return
      */
     private String constructSinglePathSql(LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
-        String singlePathSql = "";
-        singlePathSql += "SELECT ";
-        //first is last and last is first in a Stack
+        String singlePathSql = "SELECT ";
         SchemaTable firstSchemaTable = distinctQueryStack.getFirst().getSchemaTable();
         SchemaTable lastSchemaTable = distinctQueryStack.getLast().getSchemaTable();
         singlePathSql += constructFromClause(firstSchemaTable, lastSchemaTable, lastOfPrevious, firstOfNextStack);
@@ -471,7 +467,7 @@ public class SchemaTableTree {
      * Remove all leaf nodes that are not at the deepest level.
      * Those nodes are not to be included in the sql as they do not have enough incident edges.
      * i.e. The graph is not deep enough along those labels.
-     * <p>
+     * <p/>
      * This is done via a breath first traversal.
      */
     void removeAllButDeepestLeafNodes(int depth) {
@@ -649,5 +645,34 @@ public class SchemaTableTree {
             }
             return null;
         });
+    }
+
+    @Override
+    public int hashCode() {
+        if (this.parent != null) {
+            return (this.schemaTable.toString() + this.parent.toString()).hashCode();
+        } else {
+            return this.schemaTable.toString().hashCode();
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof SchemaTableTree)) {
+            return false;
+        }
+        if (o == this) {
+            return true;
+        }
+        SchemaTableTree other = (SchemaTableTree) o;
+        if (this.parent != null && other.parent == null) {
+            return false;
+        } else if (this.parent == null && other.parent != null) {
+            return false;
+        } else if (this.parent == null && other.parent == null) {
+            return this.schemaTable.equals(other.parent);
+        } else {
+            return this.parent.equals(other.parent) && this.schemaTable.equals(other.schemaTable);
+        }
     }
 }

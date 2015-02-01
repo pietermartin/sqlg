@@ -65,11 +65,11 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
         Assert.assertEquals(2, schemaTableTree.depth());
         Assert.assertEquals(3, schemaTableTree.numberOfNodes());
-        Assert.assertEquals(SchemaTable.of("public", "V_A"), schemaTableTree.schemaTableAtDepth(0, 0).getSchemaTable());
-        Assert.assertEquals(SchemaTable.of("public", "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
+        Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_A"), schemaTableTree.schemaTableAtDepth(0, 0).getSchemaTable());
+        Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
         Assert.assertTrue(schemaTableTree.schemaTableAtDepth(1, 1).getHasContainers().isEmpty());
 
-        Assert.assertEquals("public", schemaTableTree.getSchemaTable().getSchema());
+        Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema(), schemaTableTree.getSchemaTable().getSchema());
         Assert.assertEquals("V_A", schemaTableTree.getSchemaTable().getTable());
         Assert.assertEquals(3, a1.out().has(T.label, "B").count().next().intValue());
     }
@@ -127,8 +127,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
         Assert.assertEquals(2, schemaTableTree.depth());
         Assert.assertEquals(3, schemaTableTree.numberOfNodes());
-        Assert.assertEquals(SchemaTable.of("public", "V_A"), schemaTableTree.schemaTableAtDepth(0, 0).getSchemaTable());
-        Assert.assertEquals(SchemaTable.of("public", "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
+        Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_A"), schemaTableTree.schemaTableAtDepth(0, 0).getSchemaTable());
+        Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
         Assert.assertEquals(1, schemaTableTree.schemaTableAtDepth(1, 1).getHasContainers().size());
 
         Assert.assertEquals(1, a1.out().has("name", Compare.eq, "b2").count().next().intValue());

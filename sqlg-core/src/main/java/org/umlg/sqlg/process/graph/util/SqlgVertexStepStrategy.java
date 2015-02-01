@@ -10,12 +10,11 @@ import com.tinkerpop.gremlin.process.graph.traversal.strategy.AbstractTraversalS
 import com.tinkerpop.gremlin.process.graph.util.HasContainer;
 import com.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import com.tinkerpop.gremlin.structure.Compare;
+import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.tuple.Pair;
+import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.function.BiPredicate;
 
 /**
@@ -24,38 +23,72 @@ import java.util.function.BiPredicate;
  */
 public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
 
-    private static final SqlgVertexStepStrategy INSTANCE = new SqlgVertexStepStrategy();
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class);
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(Compare.eq);
+    private SqlgGraph sqlgGraph;
 
-    private SqlgVertexStepStrategy() {
+    public SqlgVertexStepStrategy(SqlgGraph sqlgGraph) {
+       this.sqlgGraph = sqlgGraph;
     }
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine traversalEngine) {
-        //Replace all consecutive VertexStep and HasStep with one step
-        List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
-        Step previous = null;
-        SqlgVertexStepCompiler sqlgVertexStepCompiler = null;
-        ListIterator<Step> stepIterator = steps.listIterator();
-        while (stepIterator.hasNext()) {
-            Step step = stepIterator.next();
-            if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
-                Pair<Step<?, ?>, List<HasContainer>> stepPair = Pair.of(step, new ArrayList<>());
-                if (previous == null) {
-                    sqlgVertexStepCompiler = new SqlgVertexStepCompiler(traversal);
-                    TraversalHelper.replaceStep(step, sqlgVertexStepCompiler, traversal);
-                    collectHasSteps(stepIterator, traversal, stepPair);
-                } else {
-                    traversal.removeStep(step);
-                    collectHasSteps(stepIterator, traversal, stepPair);
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+            List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
+            vertexSteps.forEach(
+                    (s) -> TraversalHelper.replaceStep(s, new SqlgVertexStep(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getEdgeLabels()), traversal)
+            );
+            //The HasSteps following directly after a VertexStep is merged into the SqlgVertexStep
+            Set<Step> toRemove = new HashSet<>();
+            for (Step<?, ?> step : traversal.asAdmin().getSteps()) {
+                if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).returnClass)) {
+                    SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
+                    Step<?, ?> currentStep = sqlgVertexStep.getNextStep();
+                    while (true) {
+                        if (currentStep instanceof HasContainerHolder) {
+                            sqlgVertexStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
+                            if (currentStep.getLabel().isPresent()) {
+                                final IdentityStep identityStep = new IdentityStep<>(traversal);
+                                identityStep.setLabel(currentStep.getLabel().get());
+                                TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+                            }
+                            toRemove.add(currentStep);
+                        } else if (currentStep instanceof IdentityStep) {
+                            // do nothing
+                        } else {
+                            break;
+                        }
+                        currentStep = currentStep.getNextStep();
+                    }
                 }
-                previous = step;
-                sqlgVertexStepCompiler.addReplacedStep(stepPair);
-            } else {
-                previous = null;
+            }
+            toRemove.forEach(traversal::removeStep);
+        } else {
+            //Replace all consecutive VertexStep and HasStep with one step
+            Step previous = null;
+            SqlgVertexStepCompiler sqlgVertexStepCompiler = null;
+            List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+            ListIterator<Step> stepIterator = steps.listIterator();
+            while (stepIterator.hasNext()) {
+                Step step = stepIterator.next();
+                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                    Pair<Step<?, ?>, List<HasContainer>> stepPair = Pair.of(step, new ArrayList<>());
+                    if (previous == null) {
+                        sqlgVertexStepCompiler = new SqlgVertexStepCompiler(traversal);
+                        TraversalHelper.replaceStep(step, sqlgVertexStepCompiler, traversal);
+                        collectHasSteps(stepIterator, traversal, stepPair);
+                    } else {
+                        traversal.removeStep(step);
+                        collectHasSteps(stepIterator, traversal, stepPair);
+                    }
+                    previous = step;
+                    sqlgVertexStepCompiler.addReplacedStep(stepPair);
+                } else {
+                    previous = null;
+                }
             }
         }
+
     }
 
     private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, Pair<Step<?, ?>, List<HasContainer>> stepPair) {
@@ -81,10 +114,6 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
                 break;
             }
         }
-    }
-
-    public static SqlgVertexStepStrategy instance() {
-        return INSTANCE;
     }
 
 }

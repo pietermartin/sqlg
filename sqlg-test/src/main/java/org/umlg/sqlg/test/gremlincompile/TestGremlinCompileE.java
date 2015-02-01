@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import com.tinkerpop.gremlin.process.T;
+import com.tinkerpop.gremlin.structure.Direction;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -8,6 +9,8 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2015/01/18
@@ -74,5 +77,27 @@ public class TestGremlinCompileE extends BaseTest {
         Assert.assertTrue(edges.contains(e6));
         Assert.assertTrue(edges.contains(e7));
         Assert.assertTrue(edges.contains(e8));
+    }
+
+    @Test
+    public void testBothEOnEdgeToSelf() {
+        final Vertex v1 = this.sqlgGraph.addVertex("name", "marko");
+        final Vertex v2 = this.sqlgGraph.addVertex("name", "puppy");
+        v1.addEdge("knows", v2, "since", 2010);
+        v1.addEdge("pets", v2);
+        v1.addEdge("walks", v2, "location", "arroyo");
+        v2.addEdge("knows", v1, "since", 2010);
+        assertEquals(4, v1.bothE().count().next().intValue());
+        assertEquals(4, v2.bothE().count().next().intValue());
+        v1.iterators().edgeIterator(Direction.BOTH).forEachRemaining(edge -> {
+            v1.addEdge("livesWith", v2);
+            v1.addEdge("walks", v2, "location", "river");
+            edge.remove();
+        });
+        assertEquals(8, v1.outE().count().next().intValue());
+        assertEquals(0, v2.outE().count().next().intValue());
+        v1.iterators().edgeIterator(Direction.BOTH).forEachRemaining(Edge::remove);
+        assertEquals(0, v1.bothE().count().next().intValue());
+        assertEquals(0, v2.bothE().count().next().intValue());
     }
 }

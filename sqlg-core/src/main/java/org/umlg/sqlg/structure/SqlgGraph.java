@@ -36,15 +36,6 @@ import java.util.*;
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 public class SqlgGraph implements Graph, Graph.Iterators {
 
-    static {
-        try {
-            TraversalStrategies.GlobalCache.registerStrategies(Vertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(SqlgVertexStepStrategy.instance()));
-            TraversalStrategies.GlobalCache.registerStrategies(SqlgGraph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
-        } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(e.getMessage(), e);
-        }
-    }
-
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
     private SchemaManager schemaManager;
@@ -61,7 +52,15 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         if (!configuration.containsKey("jdbc.url"))
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
-        return (G) new SqlgGraph(configuration);
+        SqlgGraph sqlgGraph = new SqlgGraph(configuration);
+        try {
+            TraversalStrategies.GlobalCache.getStrategies(Vertex.class).removeStrategies(SqlgVertexStepStrategy.class);
+            TraversalStrategies.GlobalCache.registerStrategies(Vertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
+            TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+        return (G)sqlgGraph;
     }
 
     public static <G extends Graph> G open(final String pathToSqlgProperties) {
@@ -176,22 +175,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         final SqlgVertex vertex = new SqlgVertex(this, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
         return vertex;
     }
-
-//    @Override
-//    public GraphTraversal<Vertex, Vertex> V(final Object... vertexIds) {
-//        this.tx().readWrite();
-//        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-//        traversal.addStep(new SqlgGraphStep(traversal, Vertex.class, this, vertexIds));
-//        return traversal;
-//    }
-//
-//    @Override
-//    public GraphTraversal<Edge, Edge> E(final Object... edgeIds) {
-//        this.tx().readWrite();
-//        final SqlgGraphTraversal traversal = new SqlgGraphTraversal<Object, Vertex>();
-//        traversal.addStep(new SqlgGraphStep(traversal, Edge.class, this, edgeIds));
-//        return traversal;
-//    }
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
@@ -611,6 +594,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
 
     /**
      * Executes a the given sql sql and returns the result as vertices.
+     *
      * @param sql The sql to execute.
      * @return A List of Vertex
      */

@@ -938,29 +938,8 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                     && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
                     && !columnName.equals(SchemaManager.VERTEX_TABLE)
                     && !Objects.isNull(o)) {
-                int type = resultSetMetaData.getColumnType(i);
-                switch (type) {
-                    case Types.SMALLINT:
-                        this.properties.put(columnName, ((Integer) o).shortValue());
-                        break;
-                    case Types.TINYINT:
-                        this.properties.put(columnName, ((Integer) o).byteValue());
-                        break;
-                    case Types.REAL:
-                        this.properties.put(columnName, ((Number) o).floatValue());
-                        break;
-                    case Types.DOUBLE:
-                        this.properties.put(columnName, ((Number) o).doubleValue());
-                        break;
-                    case Types.ARRAY:
-                        Array array = (Array) o;
-                        int baseType = array.getBaseType();
-                        Object[] objectArray = (Object[]) array.getArray();
-                        this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
-                        break;
-                    default:
-                        this.properties.put(columnName, o);
-                }
+
+                loadProperty(resultSetMetaData, i, columnName, o);
             }
         }
     }

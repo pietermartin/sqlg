@@ -413,7 +413,6 @@ public class SchemaManager {
                 }
             }
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-
                 Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                 if (schemas == null) {
                     this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
@@ -421,7 +420,6 @@ public class SchemaManager {
                     schemas.add(schema);
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
-
                 this.uncommittedTables.put(schema + "." + prefixedTable, columns);
                 createEdgeTable(schema, prefixedTable, columns);
             }
@@ -451,39 +449,40 @@ public class SchemaManager {
         return uncommitedColumns;
     }
 
-    void ensureColumnsExist(String schema, String table, ConcurrentHashMap<String, PropertyType> columns) {
-        Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, table);
-        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
-
+    void ensureColumnsExist(String schema, String prefixedTable, ConcurrentHashMap<String, PropertyType> columns) {
+        if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
+            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX );
+        }
+        Map<String, PropertyType> uncommittedColumns = internalGetColumn(schema, prefixedTable);
+        Objects.requireNonNull(uncommittedColumns, "Table must already be present in the cache!");
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
-
             String columnName = column.getKey();
             PropertyType columnType = column.getValue();
-
-            if (!uncommitedColumns.containsKey(columnName)) {
-                uncommitedColumns = internalGetColumn(schema, table);
+            if (!uncommittedColumns.containsKey(columnName)) {
+                uncommittedColumns = internalGetColumn(schema, prefixedTable);
             }
-            if (!uncommitedColumns.containsKey(columnName)) {
+            if (!uncommittedColumns.containsKey(columnName)) {
                 //Make sure the current thread/transaction owns the lock
                 if (!this.isLockedByCurrentThread()) {
                     this.schemaLock.lock();
                 }
-                if (!uncommitedColumns.containsKey(columnName)) {
-                    addColumn(schema, table, ImmutablePair.of(columnName, columnType));
-                    uncommitedColumns.put(columnName, columnType);
-                    this.uncommittedTables.put(schema + "." + table, uncommitedColumns);
+                if (!uncommittedColumns.containsKey(columnName)) {
+                    addColumn(schema, prefixedTable, ImmutablePair.of(columnName, columnType));
+                    uncommittedColumns.put(columnName, columnType);
+                    this.uncommittedTables.put(schema + "." + prefixedTable, uncommittedColumns);
                 }
             }
-
         }
-
     }
 
-    void ensureColumnExist(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
-        Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, table);
+    void ensureColumnExist(String schema, String prefixedTable, ImmutablePair<String, PropertyType> keyValue) {
+        if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
+            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX );
+        }
+        Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, prefixedTable);
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
         if (!uncommitedColumns.containsKey(keyValue.left)) {
-            uncommitedColumns = internalGetColumn(schema, table);
+            uncommitedColumns = internalGetColumn(schema, prefixedTable);
         }
         if (!uncommitedColumns.containsKey(keyValue.left)) {
             //Make sure the current thread/transaction owns the lock
@@ -491,20 +490,23 @@ public class SchemaManager {
                 this.schemaLock.lock();
             }
             if (!uncommitedColumns.containsKey(keyValue.left)) {
-                addColumn(schema, table, keyValue);
+                addColumn(schema, prefixedTable, keyValue);
                 uncommitedColumns.put(keyValue.left, keyValue.right);
-                this.uncommittedTables.put(schema + "." + table, uncommitedColumns);
+                this.uncommittedTables.put(schema + "." + prefixedTable, uncommitedColumns);
             }
         }
     }
 
-    private void ensureEdgeForeignKeysExist(String schema, String table, boolean in, SchemaTable vertexSchemaTable) {
-        Set<String> foreignKeys = this.localEdgeForeignKeys.get(schema + "." + table);
+    private void ensureEdgeForeignKeysExist(String schema, String prefixedTable, boolean in, SchemaTable vertexSchemaTable) {
+        if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
+            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX );
+        }
+        Set<String> foreignKeys = this.localEdgeForeignKeys.get(schema + "." + prefixedTable);
         Set<String> uncommittedForeignKeys;
         if (foreignKeys == null) {
-            uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + table);
+            uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + prefixedTable);
         } else {
-            uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + table);
+            uncommittedForeignKeys = this.uncommittedEdgeForeignKeys.get(schema + "." + prefixedTable);
             if (uncommittedForeignKeys != null) {
                 uncommittedForeignKeys.addAll(foreignKeys);
             } else {
@@ -512,7 +514,7 @@ public class SchemaManager {
             }
         }
         if (uncommittedForeignKeys == null) {
-            //This happens on edge indexes which creates the table with no foreign keys to vertices.
+            //This happens on edge indexes which creates the prefixedTable with no foreign keys to vertices.
             uncommittedForeignKeys = new HashSet<>();
         }
         SchemaTable foreignKey = SchemaTable.of(vertexSchemaTable.getSchema(), vertexSchemaTable.getTable() + (in ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
@@ -522,11 +524,11 @@ public class SchemaManager {
                 this.schemaLock.lock();
             }
             if (!uncommittedForeignKeys.contains(foreignKey)) {
-                addEdgeForeignKey(schema, table, foreignKey);
+                addEdgeForeignKey(schema, prefixedTable, foreignKey);
                 uncommittedForeignKeys.add(vertexSchemaTable.getSchema() + "." + foreignKey.getTable());
-                this.uncommittedEdgeForeignKeys.put(schema + "." + table, uncommittedForeignKeys);
+                this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, uncommittedForeignKeys);
 
-                //For each table capture its in and out labels
+                //For each prefixedTable capture its in and out labels
                 //This schema information is needed for compiling gremlin
                 //first do the in labels
                 SchemaTable foreignKeyInWithPrefix = SchemaTable.of(vertexSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + vertexSchemaTable.getTable());
@@ -536,9 +538,9 @@ public class SchemaManager {
                     this.uncommittedTableLabels.put(foreignKeyInWithPrefix, labels);
                 }
                 if (in) {
-                    labels.getLeft().add(SchemaTable.of(schema, table));
+                    labels.getLeft().add(SchemaTable.of(schema, prefixedTable));
                 } else {
-                    labels.getRight().add(SchemaTable.of(schema, table));
+                    labels.getRight().add(SchemaTable.of(schema, prefixedTable));
                 }
             }
         }
@@ -1058,10 +1060,15 @@ public class SchemaManager {
                                 labels = Pair.of(new HashSet<>(), new HashSet<>());
                                 this.localTableLabels.put(schemaTable, labels);
                             }
+//                            if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+//                                labels.getLeft().add(SchemaTable.of(schema, table.replace(SchemaManager.EDGE_PREFIX, "")));
+//                            } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+//                                labels.getRight().add(SchemaTable.of(schema, table.replace(SchemaManager.EDGE_PREFIX, "")));
+//                            }
                             if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                                labels.getLeft().add(SchemaTable.of(schema, table.replace(SchemaManager.EDGE_PREFIX, "")));
+                                labels.getLeft().add(SchemaTable.of(schema, table));
                             } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                                labels.getRight().add(SchemaTable.of(schema, table.replace(SchemaManager.EDGE_PREFIX, "")));
+                                labels.getRight().add(SchemaTable.of(schema, table));
                             }
                         }
                     }

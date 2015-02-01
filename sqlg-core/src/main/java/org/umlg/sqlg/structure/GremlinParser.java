@@ -8,6 +8,7 @@ import com.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -36,24 +37,29 @@ public class GremlinParser {
      * @throws SQLException
      */
     public void loadElements(ResultSet resultSet, SchemaTable schemaTable, List<Element> elements) throws SQLException {
-        List<Object> keyValues = new ArrayList<>();
         String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
         Long id = resultSet.getLong(idProperty);
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.toString());
-        for (String propertyName : propertyTypeMap.keySet()) {
-            String property = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + propertyName;
-            keyValues.add(propertyName);
-            keyValues.add(resultSet.getObject(property));
-        }
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
         SqlgElement sqlgElement;
         if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             sqlgElement = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable().replace(SchemaManager.VERTEX_PREFIX, ""));
         } else {
             sqlgElement = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable().replace(SchemaManager.EDGE_PREFIX, ""));
         }
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnName(i);
+            Object o = resultSet.getObject(columnName);
+            if (!columnName.equals("ID")
+                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
+                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
+                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
+                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
+                    && !Objects.isNull(o)) {
+
+                sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
+            }
+        }
         sqlgElement.properties.clear();
-        sqlgElement.properties.putAll(keyValueMap);
         elements.add(sqlgElement);
     }
 
@@ -74,10 +80,8 @@ public class GremlinParser {
         for (Pair<VertexStep, List<HasContainer>> replacedStep : replacedSteps) {
             schemaTableTrees = calculatePathForVertexStep(schemaTableTrees, replacedStep, depth++);
         }
-        System.out.println(rootSchemaTableTree.toTreeString());
         rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
         rootSchemaTableTree.removeNodesInvalidatedByHas();
-        System.out.println(rootSchemaTableTree.toTreeString());
         return rootSchemaTableTree;
     }
 
@@ -110,7 +114,7 @@ public class GremlinParser {
             }
             //Each labelToTravers more than the first one forms a new distinct path
             for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, direction, elementClass, hasContainers, depth);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, hasContainers, depth);
                 if (elementClass.isAssignableFrom(Edge.class)) {
                     result.add(schemaTableTreeChild);
                 } else {
@@ -118,7 +122,7 @@ public class GremlinParser {
                 }
             }
             for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, direction, elementClass, hasContainers, depth);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, hasContainers, depth);
                 if (elementClass.isAssignableFrom(Edge.class)) {
                     result.add(schemaTableTreeChild);
                 } else {

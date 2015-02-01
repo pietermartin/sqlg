@@ -68,7 +68,6 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
     @Override
     public void remove() {
         this.sqlgGraph.tx().readWrite();
-
         if (this.removed)
             throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
 
@@ -262,29 +261,7 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
                     !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                int type = resultSetMetaData.getColumnType(i);
-                switch (type) {
-                    case Types.SMALLINT:
-                        this.properties.put(columnName, ((Integer) o).shortValue());
-                        break;
-                    case Types.TINYINT:
-                        this.properties.put(columnName, ((Integer) o).byteValue());
-                        break;
-                    case Types.REAL:
-                        this.properties.put(columnName, ((Number) o).floatValue());
-                        break;
-                    case Types.DOUBLE:
-                        this.properties.put(columnName, ((Number) o).doubleValue());
-                        break;
-                    case Types.ARRAY:
-                        Array array = (Array) o;
-                        int baseType = array.getBaseType();
-                        Object[] objectArray = (Object[]) array.getArray();
-                        this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
-                        break;
-                    default:
-                        this.properties.put(columnName, o);
-                }
+                loadProperty(resultSetMetaData, i, columnName, o);
 
             }
             if (!Objects.isNull(o)) {
@@ -304,6 +281,7 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
         this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), inVertexColumnName.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, ""));
         this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), outVertexColumnName.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
     }
+
 
     @Override
     public Edge.Iterators iterators() {
