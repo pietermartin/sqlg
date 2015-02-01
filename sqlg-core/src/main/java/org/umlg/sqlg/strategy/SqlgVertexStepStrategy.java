@@ -1,4 +1,4 @@
-package org.umlg.sqlg.process.graph.util;
+package org.umlg.sqlg.strategy;
 
 import com.tinkerpop.gremlin.process.Step;
 import com.tinkerpop.gremlin.process.Traversal;

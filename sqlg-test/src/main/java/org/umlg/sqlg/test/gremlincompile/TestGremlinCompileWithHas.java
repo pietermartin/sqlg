@@ -12,7 +12,7 @@ import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.process.graph.util.SqlgVertexStepCompiler;
+import org.umlg.sqlg.strategy.SqlgVertexStepCompiler;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SchemaTableTree;

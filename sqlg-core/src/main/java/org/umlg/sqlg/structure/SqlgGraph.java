@@ -19,7 +19,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.graph.util.SqlgVertexStepStrategy;
+import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 
