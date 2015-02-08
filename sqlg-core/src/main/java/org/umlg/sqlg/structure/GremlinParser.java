@@ -93,9 +93,9 @@ public class GremlinParser {
             Class<? extends Element> elementClass = replacedStep.getLeft().getReturnClass();
             List<HasContainer> hasContainers = replacedStep.getRight();
 
-            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getAllTableLabels().get(schemaTableTree.getSchemaTable());
-            Set<SchemaTable> inLabels = labels.getLeft();
-            Set<SchemaTable> outLabels = labels.getRight();
+            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.schemaManager.getTableLabels(schemaTableTree.getSchemaTable());
+            Set<SchemaTable> inLabels = labels != null ? labels.getLeft() : new HashSet<>();
+            Set<SchemaTable> outLabels = labels != null ? labels.getRight() : new HashSet<>();
             Set<SchemaTable> inLabelsToTraversers = new HashSet<>();
             Set<SchemaTable> outLabelsToTraversers = new HashSet<>();
             switch (direction) {

@@ -1265,4 +1265,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
         return result;
     }
+
+    public boolean supportsClientInfo() {
+        return true;
+    }
 }

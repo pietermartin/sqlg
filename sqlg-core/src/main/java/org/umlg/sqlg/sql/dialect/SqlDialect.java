@@ -321,4 +321,8 @@ public interface SqlDialect {
                 " = b." +
                 maybeWrapInQoutes("ID");
     }
+
+    public default boolean supportsClientInfo() {
+        return false;
+    }
 }

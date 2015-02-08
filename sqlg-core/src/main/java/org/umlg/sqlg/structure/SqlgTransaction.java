@@ -87,6 +87,16 @@ public class SqlgTransaction implements Transaction {
             try {
                 Connection connection = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
+                if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
+                    connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
+                }
+                //Not supported by postgres, //TODO add dialect indirection
+//                connection.setClientInfo("ClientUser", "//TODO");
+//                try {
+//                    connection.setClientInfo("ClientHostname", InetAddress.getLocalHost().getHostAddress());
+//                } catch (UnknownHostException e) {
+//                    connection.setClientInfo("ClientHostname", "failed");
+//                }
                 threadLocalTx.set(TransactionCache.of(connection, new ArrayList<>(), new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);

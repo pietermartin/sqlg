@@ -3,9 +3,14 @@ package org.umlg.sqlg.test.schema;
 import com.tinkerpop.gremlin.process.T;
 import com.tinkerpop.gremlin.structure.Edge;
 import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Date: 2014/08/13
@@ -79,6 +84,34 @@ public class TestSchema extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Assert.assertEquals(2, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
+    }
+
+    @Test
+    public void testGetAllTableLabels() {
+        Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex address = this.sqlgGraph.addVertex(T.label, "Address");
+        person.addEdge("person_address", address);
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertTrue(this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"))!=null);
+
+        Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
+        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
+
+        Map<String, Set<String>> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
+        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car");
+        person.addEdge("drives", car);
+
+        Vertex pet = this.sqlgGraph.addVertex(T.label, "Pet");
+        person.addEdge("person_address", pet);
+
+        labels = this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
+        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
+
+        edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
+        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
     }
 
 }

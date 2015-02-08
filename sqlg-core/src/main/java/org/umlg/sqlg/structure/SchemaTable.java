@@ -12,9 +12,13 @@ import java.io.Serializable;
  * Time: 7:20 AM
  */
 
-public class SchemaTable  implements DataSerializable, Serializable {
+public class SchemaTable implements DataSerializable, Serializable {
     private String schema;
     private String table;
+
+    //Needed for Hazelcast
+    public SchemaTable() {
+    }
 
     public SchemaTable(String schema, String table) {
         this.schema = schema;

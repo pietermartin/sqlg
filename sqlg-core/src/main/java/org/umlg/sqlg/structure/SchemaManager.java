@@ -1,8 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.hazelcast.config.Config;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.*;
 import com.hazelcast.core.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -14,6 +12,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -72,6 +71,8 @@ public class SchemaManager {
     private static final String EDGE_FOREIGN_KEYS_HAZELCAST_MAP = "_edgeForeignKeys";
     private static final String TABLE_LABELS_HAZELCAST_MAP = "_tableLabels";
 
+    private static final int LOCK_TIMEOUT = 3;
+
     SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect, Configuration configuration) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
@@ -88,6 +89,7 @@ public class SchemaManager {
             ((IMap) this.labelSchemas).addEntryListener(new LabelSchemasMapEntryListener(), true);
             ((IMap) this.tables).addEntryListener(new TablesMapEntryListener(), true);
             ((IMap) this.edgeForeignKeys).addEntryListener(new EdgeForeignKeysMapEntryListener(), true);
+            ((IMap) this.tableLabels).addEntryListener(new TableLabelMapEntryListener(), true);
             this.schemaLock = this.hazelcastInstance.getLock("schemaLock");
         } else {
             this.schemaLock = new ReentrantLock();
@@ -227,6 +229,37 @@ public class SchemaManager {
             }
             join.getTcpIpConfig().setEnabled(true);
         }
+        NearCacheConfig nearCacheConfig = new NearCacheConfig();
+
+        MapConfig schemaMapConfig = new MapConfig();
+        schemaMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+//        schemaMapConfig.addEntryListenerConfig(new EntryListenerConfig(SchemasMapEntryListener.class.getName(), false, false));
+        schemaMapConfig.setNearCacheConfig(nearCacheConfig);
+        config.addMapConfig(schemaMapConfig);
+
+        MapConfig labelSchemasMapConfig = new MapConfig();
+        labelSchemasMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+//        labelSchemasMapConfig.addEntryListenerConfig(new EntryListenerConfig(LabelSchemasMapEntryListener.class.getName(), false, false));
+        labelSchemasMapConfig.setNearCacheConfig(nearCacheConfig);
+        config.addMapConfig(labelSchemasMapConfig);
+
+        MapConfig tableMapConfig = new MapConfig();
+        tableMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+//        tableMapConfig.addEntryListenerConfig(new EntryListenerConfig(TablesMapEntryListener.class.getName(), false, false));
+        tableMapConfig.setNearCacheConfig(nearCacheConfig);
+        config.addMapConfig(tableMapConfig);
+
+        MapConfig edgeForeignKeysMapConfig = new MapConfig();
+        edgeForeignKeysMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+//        edgeForeignKeysMapConfig.addEntryListenerConfig(new EntryListenerConfig(EdgeForeignKeysMapEntryListener.class.getName(), false, false));
+        edgeForeignKeysMapConfig.setNearCacheConfig(nearCacheConfig);
+        config.addMapConfig(edgeForeignKeysMapConfig);
+
+        MapConfig tableLabelMapConfig = new MapConfig();
+        tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+//        tableLabelMapConfig.addEntryListenerConfig(new EntryListenerConfig(TableLabelMapEntryListener.class.getName(), false, false));
+        tableLabelMapConfig.setNearCacheConfig(nearCacheConfig);
+        config.addMapConfig(tableLabelMapConfig);
         return config;
 
     }
@@ -273,7 +306,11 @@ public class SchemaManager {
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
-                this.schemaLock.lock();
+                try {
+                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
 
@@ -338,7 +375,11 @@ public class SchemaManager {
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
-                this.schemaLock.lock();
+                try {
+                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
                 if (!this.uncommittedSchemas.contains(schema)) {
@@ -404,7 +445,11 @@ public class SchemaManager {
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
-                this.schemaLock.lock();
+                try {
+                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
                 if (!this.uncommittedSchemas.contains(schema)) {
@@ -451,7 +496,7 @@ public class SchemaManager {
 
     void ensureColumnsExist(String schema, String prefixedTable, ConcurrentHashMap<String, PropertyType> columns) {
         if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
-            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX );
+            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
         Map<String, PropertyType> uncommittedColumns = internalGetColumn(schema, prefixedTable);
         Objects.requireNonNull(uncommittedColumns, "Table must already be present in the cache!");
@@ -464,7 +509,11 @@ public class SchemaManager {
             if (!uncommittedColumns.containsKey(columnName)) {
                 //Make sure the current thread/transaction owns the lock
                 if (!this.isLockedByCurrentThread()) {
-                    this.schemaLock.lock();
+                    try {
+                        this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 if (!uncommittedColumns.containsKey(columnName)) {
                     addColumn(schema, prefixedTable, ImmutablePair.of(columnName, columnType));
@@ -477,7 +526,7 @@ public class SchemaManager {
 
     void ensureColumnExist(String schema, String prefixedTable, ImmutablePair<String, PropertyType> keyValue) {
         if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
-            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX );
+            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
         Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, prefixedTable);
         Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
@@ -487,7 +536,11 @@ public class SchemaManager {
         if (!uncommitedColumns.containsKey(keyValue.left)) {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
-                this.schemaLock.lock();
+                try {
+                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             if (!uncommitedColumns.containsKey(keyValue.left)) {
                 addColumn(schema, prefixedTable, keyValue);
@@ -499,7 +552,7 @@ public class SchemaManager {
 
     private void ensureEdgeForeignKeysExist(String schema, String prefixedTable, boolean in, SchemaTable vertexSchemaTable) {
         if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
-            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX );
+            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
         Set<String> foreignKeys = this.localEdgeForeignKeys.get(schema + "." + prefixedTable);
         Set<String> uncommittedForeignKeys;
@@ -521,7 +574,11 @@ public class SchemaManager {
         if (!uncommittedForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
-                this.schemaLock.lock();
+                try {
+                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
             if (!uncommittedForeignKeys.contains(foreignKey)) {
                 addEdgeForeignKey(schema, prefixedTable, foreignKey);
@@ -1183,6 +1240,15 @@ public class SchemaManager {
         Map<String, Set<String>> result = new HashMap<>();
         result.putAll(this.localEdgeForeignKeys);
         result.putAll(this.uncommittedEdgeForeignKeys);
+        for (String schemaTable : this.uncommittedEdgeForeignKeys.keySet()) {
+            Set<String> foreignKeys = result.get(schemaTable);
+            if (foreignKeys == null) {
+                foreignKeys = new HashSet<>();
+            }
+            foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
+            foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
+            result.put(schemaTable, foreignKeys);
+        }
         return Collections.unmodifiableMap(result);
     }
 
@@ -1190,11 +1256,35 @@ public class SchemaManager {
         return Collections.unmodifiableMap(localTableLabels);
     }
 
-    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getAllTableLabels() {
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
-        result.putAll(localTableLabels);
-        result.putAll(uncommittedTableLabels);
-        return Collections.unmodifiableMap(result);
+    /**
+     * localTableLabels contains committed tables with its labels.
+     * uncommittedTableLabels contains uncommitted tables with its labels.
+     * However that table in uncommittedTableLabels may be committed with a new uncommitted label.
+     *
+     * @param schemaTable
+     * @return
+     */
+    public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
+        Pair<Set<SchemaTable>, Set<SchemaTable>> result = this.localTableLabels.get(schemaTable);
+        if (result == null) {
+            Pair<Set<SchemaTable>, Set<SchemaTable>> pair = this.uncommittedTableLabels.get(schemaTable);
+            if (pair != null) {
+                return Pair.of(Collections.unmodifiableSet(pair.getLeft()), Collections.unmodifiableSet(pair.getRight()));
+            } else {
+                return Pair.of(Collections.EMPTY_SET, Collections.EMPTY_SET);
+            }
+        } else {
+            Set<SchemaTable> left = new HashSet<>(result.getLeft());
+            Set<SchemaTable> right = new HashSet<>(result.getRight());
+            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedLabels = this.uncommittedTableLabels.get(schemaTable);
+            if (uncommittedLabels != null) {
+                left.addAll(uncommittedLabels.getLeft());
+                right.addAll(uncommittedLabels.getRight());
+            }
+            return Pair.of(
+                    Collections.unmodifiableSet(left),
+                    Collections.unmodifiableSet(right));
+        }
     }
 
     public Map<String, Map<String, PropertyType>> getLocalTables() {
@@ -1202,13 +1292,13 @@ public class SchemaManager {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+        Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         result.putAll(this.localTables);
         result.putAll(this.uncommittedTables);
         return result;
     }
 
-    class SchemasMapEntryListener implements EntryListener<String, String> {
+    public class SchemasMapEntryListener implements EntryListener<String, String> {
 
         @Override
         public void entryAdded(EntryEvent<String, String> event) {
@@ -1241,7 +1331,7 @@ public class SchemaManager {
         }
     }
 
-    class LabelSchemasMapEntryListener implements EntryListener<String, Set<String>> {
+    public class LabelSchemasMapEntryListener implements EntryListener<String, Set<String>> {
 
         @Override
         public void entryAdded(EntryEvent<String, Set<String>> event) {
@@ -1274,7 +1364,7 @@ public class SchemaManager {
         }
     }
 
-    class TablesMapEntryListener implements EntryListener<String, Map<String, PropertyType>> {
+    public class TablesMapEntryListener implements EntryListener<String, Map<String, PropertyType>> {
 
         @Override
         public void entryAdded(EntryEvent<String, Map<String, PropertyType>> event) {
@@ -1307,7 +1397,7 @@ public class SchemaManager {
         }
     }
 
-    class EdgeForeignKeysMapEntryListener implements EntryListener<String, Set<String>> {
+    public class EdgeForeignKeysMapEntryListener implements EntryListener<String, Set<String>> {
 
         @Override
         public void entryAdded(EntryEvent<String, Set<String>> event) {
@@ -1326,6 +1416,39 @@ public class SchemaManager {
 
         @Override
         public void entryEvicted(EntryEvent<String, Set<String>> event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapEvicted(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+
+        @Override
+        public void mapCleared(MapEvent event) {
+            throw new IllegalStateException("Should not happen!");
+        }
+    }
+
+    public class TableLabelMapEntryListener implements EntryListener<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> {
+
+        @Override
+        public void entryAdded(EntryEvent<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> event) {
+            SchemaManager.this.localTableLabels.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryRemoved(EntryEvent<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> event) {
+            SchemaManager.this.localTableLabels.remove(event.getKey());
+        }
+
+        @Override
+        public void entryUpdated(EntryEvent<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> event) {
+            SchemaManager.this.localTableLabels.put(event.getKey(), event.getValue());
+        }
+
+        @Override
+        public void entryEvicted(EntryEvent<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> event) {
             throw new IllegalStateException("Should not happen!");
         }
 
