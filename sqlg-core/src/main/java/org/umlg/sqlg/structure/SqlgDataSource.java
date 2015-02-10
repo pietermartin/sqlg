@@ -36,6 +36,7 @@ public class SqlgDataSource {
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);
         cpds.setMaxPoolSize(100);
+        cpds.setMaxIdleTime(300);
         if (!StringUtils.isEmpty(username)) {
             cpds.setUser(username);
         }
@@ -51,7 +52,7 @@ public class SqlgDataSource {
             if (remove != null) {
                 int numBusyConnections = remove.getNumBusyConnections();
                 if (numBusyConnections > 0) {
-//                    System.out.println("Open connection on calling close. " + numBusyConnections);
+                    logger.debug("Open connection on calling close. " + numBusyConnections);
                 }
             }
         } catch (SQLException e) {
