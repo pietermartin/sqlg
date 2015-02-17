@@ -21,7 +21,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestEmptyGraph.class
+        TestGremlinCompileV.class
 })
 public class AnyTest {
 }

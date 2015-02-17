@@ -144,26 +144,39 @@ public class SchemaTableTree {
         if (toSchemaTableTree.direction == Direction.BOTH) {
             throw new IllegalStateException("Direction may not be BOTH!");
         }
+        String rawToLabel;
+        if (toSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            rawToLabel = toSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            rawToLabel = toSchemaTableTree.getSchemaTable().getTable();
+        }
+        String rawFromLabel;
+        if (fromSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            rawFromLabel = fromSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            rawFromLabel = fromSchemaTableTree.getSchemaTable().getTable();
+        }
+
         String result;
         if (fromSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
             if (toSchemaTableTree.direction == Direction.OUT) {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                        toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                        toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
                 result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
             } else {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                        toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                        toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
                 result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
             }
         } else {
             if (toSchemaTableTree.direction == Direction.OUT) {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
                 result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
-                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
             } else {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
                 result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
-                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
             }
         }
         return result;
@@ -316,26 +329,30 @@ public class SchemaTableTree {
 
         //join to the previous label/table
         if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            if (!previousSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+                throw new IllegalStateException("Expected table to start with " + SchemaManager.VERTEX_PREFIX);
+            }
+            String rawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
             if (previousSchemaTableTree.direction == Direction.OUT) {
                 sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                                 previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END
+                                        rawLabel + SchemaManager.IN_VERTEX_COLUMN_END
                         );
                 sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
                         previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                        rawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
             } else {
                 sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                                 previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END
+                                        rawLabel + SchemaManager.OUT_VERTEX_COLUMN_END
                         );
                 sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
                         previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                        previousSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                        rawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
             }
         } else if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
@@ -347,6 +364,10 @@ public class SchemaTableTree {
 
         //join to the next table/label
         if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+            if (!nextSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+                throw new IllegalStateException("Expected table to start with " + SchemaManager.VERTEX_PREFIX);
+            }
+            String rawLabel = nextSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
             if (!sql.isEmpty()) {
                 sql += ", ";
             }
@@ -355,21 +376,21 @@ public class SchemaTableTree {
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                                 nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END
+                                        rawLabel + SchemaManager.IN_VERTEX_COLUMN_END
                         );
                 sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                         nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                        rawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
             } else {
                 sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
                         this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
                                 nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END
+                                        rawLabel + SchemaManager.OUT_VERTEX_COLUMN_END
                         );
                 sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                         nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                        nextSchemaTableTree.getSchemaTable().getTable().replace(SchemaManager.VERTEX_PREFIX, "") + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                        rawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
             }
         } else if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             if (!sql.isEmpty()) {
@@ -422,6 +443,18 @@ public class SchemaTableTree {
     }
 
     private String constructJoinBetweenSchemaTables(Direction direction, SchemaTable schemaTable, SchemaTable labelToTravers) {
+        String rawLabel;
+        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            rawLabel = schemaTable.getTable();
+        }
+        String rawLabelToTravers;
+        if (labelToTravers.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            rawLabelToTravers = labelToTravers.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            rawLabelToTravers = labelToTravers.getTable();
+        }
         String joinSql = " INNER JOIN ";
         if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             joinSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
@@ -439,7 +472,7 @@ public class SchemaTableTree {
             joinSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
             joinSql += ".";
             joinSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                    schemaTable.getSchema() + "." + schemaTable.getTable().replace(SchemaManager.VERTEX_PREFIX, "") +
+                    schemaTable.getSchema() + "." + rawLabel +
                             (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END)
             );
         } else {
@@ -452,7 +485,7 @@ public class SchemaTableTree {
             joinSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getTable());
             joinSql += ".";
             joinSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema() + "." +
-                    labelToTravers.getTable().replace(SchemaManager.VERTEX_PREFIX, "") + (direction == Direction.OUT ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
+                    rawLabelToTravers + (direction == Direction.OUT ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
             joinSql += " = ";
             joinSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
             joinSql += ".";

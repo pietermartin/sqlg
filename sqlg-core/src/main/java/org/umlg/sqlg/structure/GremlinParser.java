@@ -41,9 +41,14 @@ public class GremlinParser {
         Long id = resultSet.getLong(idProperty);
         SqlgElement sqlgElement;
         if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-            sqlgElement = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable().replace(SchemaManager.VERTEX_PREFIX, ""));
+            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+            sqlgElement = SqlgVertex.of(this.sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         } else {
-            sqlgElement = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable().replace(SchemaManager.EDGE_PREFIX, ""));
+            if (!schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+                throw new IllegalStateException("Expected table to start with " + SchemaManager.EDGE_PREFIX);
+            }
+            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+            sqlgElement = new SqlgEdge(this.sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         }
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
@@ -167,7 +172,10 @@ public class GremlinParser {
         Set<SchemaTable> result = new HashSet<>();
         List<String> edges = Arrays.asList(edgeLabels);
         for (SchemaTable label : labels) {
-            String rawLabel = label.getTable().replace(SchemaManager.EDGE_PREFIX, "");
+            if (!label.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+                throw new IllegalStateException("Expected label to start with " + SchemaManager.EDGE_PREFIX);
+            }
+            String rawLabel = label.getTable().substring(SchemaManager.EDGE_PREFIX.length());
             if (edges.contains(rawLabel)) {
                 result.add(label);
             }

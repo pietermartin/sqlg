@@ -1117,11 +1117,6 @@ public class SchemaManager {
                                 labels = Pair.of(new HashSet<>(), new HashSet<>());
                                 this.localTableLabels.put(schemaTable, labels);
                             }
-//                            if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-//                                labels.getLeft().add(SchemaTable.of(schema, table.replace(SchemaManager.EDGE_PREFIX, "")));
-//                            } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-//                                labels.getRight().add(SchemaTable.of(schema, table.replace(SchemaManager.EDGE_PREFIX, "")));
-//                            }
                             if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                                 labels.getLeft().add(SchemaTable.of(schema, table));
                             } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
