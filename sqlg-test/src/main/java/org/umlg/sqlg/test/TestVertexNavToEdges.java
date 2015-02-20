@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaManager;
 

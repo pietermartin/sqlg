@@ -1,7 +1,7 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Connection;

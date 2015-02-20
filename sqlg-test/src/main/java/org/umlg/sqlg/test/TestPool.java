@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.T;
 import org.junit.Test;
 
 /**

@@ -1,10 +1,10 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Property;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.io.Serializable;
 import java.sql.Connection;

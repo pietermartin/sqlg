@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.tp3.process;
 
-import com.tinkerpop.gremlin.process.ProcessStandardSuite;
+import org.apache.tinkerpop.gremlin.process.ProcessStandardSuite;
 import org.junit.runner.RunWith;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.tp3.SqlgPostgresProvider;

@@ -1,7 +1,7 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

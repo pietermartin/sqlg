@@ -1,15 +1,14 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.AbstractGremlinTest;
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.io.GraphReader;
-import com.tinkerpop.gremlin.structure.io.kryo.KryoReader;
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.Traversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.kryo.KryoReader;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -576,7 +575,7 @@ public class TinkerpopTest extends BaseTest {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
         if (!muted) System.out.println("Testing: " + traversal);
-        traversal.asAdmin().applyStrategies(TraversalEngine.STANDARD); // TODO!!!!
+//        traversal.asAdmin().applyStrategies(TraversalEngine.STANDARD); // TODO!!!!
         if (!muted) System.out.println("         " + traversal);
     }
 //

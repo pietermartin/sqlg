@@ -1,9 +1,9 @@
 package org.umlg.sqlg.test.schema;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

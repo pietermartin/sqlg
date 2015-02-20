@@ -3,25 +3,27 @@ package org.umlg.sqlg.structure;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.TraversalStrategies;
-import com.tinkerpop.gremlin.process.computer.GraphComputer;
-import com.tinkerpop.gremlin.process.graph.traversal.GraphTraversal;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
-import com.tinkerpop.gremlin.structure.util.FeatureDescriptor;
-import com.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.TraversalEngine;
+import org.apache.tinkerpop.gremlin.process.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
+import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
+import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 
 import java.lang.reflect.Constructor;
 import java.sql.*;
@@ -60,7 +62,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
-        return (G)sqlgGraph;
+        return (G) sqlgGraph;
     }
 
     public static <G extends Graph> G open(final String pathToSqlgProperties) {
@@ -177,6 +179,16 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     @Override
+    public void compute(Class<? extends GraphComputer> graphComputerClass) throws IllegalArgumentException {
+        throw Graph.Exceptions.graphComputerNotSupported();
+    }
+
+    @Override
+    public GraphComputer compute() {
+        throw Graph.Exceptions.graphComputerNotSupported();
+    }
+
+    @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
         this.tx().readWrite();
         return _vertices(vertexIds).iterator();
@@ -196,11 +208,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     public Edge e(final Object id) {
         GraphTraversal<Edge, Edge> t = this.E(id);
         return t.hasNext() ? t.next() : null;
-    }
-
-    @Override
-    public GraphComputer compute(final Class... graphComputerClass) {
-        throw Graph.Exceptions.graphComputerNotSupported();
     }
 
     @Override
@@ -548,6 +555,17 @@ public class SqlgGraph implements Graph, Graph.Iterators {
 
     }
 
+    @Override
+    public TraversalEngine engine() {
+        return StandardTraversalEngine.standard;
+    }
+
+    @Override
+    public void engine(final TraversalEngine traversalEngine) {
+        if (!traversalEngine.getClass().equals(StandardTraversalEngine.class))
+            throw Graph.Exceptions.traversalEngineNotSupported(traversalEngine);
+    }
+
     /**
      * This is executes a sql query and returns the result as a json string.
      *
@@ -847,4 +865,5 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         }
         return sqlGEdges;
     }
+
 }

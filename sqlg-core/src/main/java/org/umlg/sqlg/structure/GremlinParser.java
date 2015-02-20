@@ -1,10 +1,10 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
-import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.ResultSet;

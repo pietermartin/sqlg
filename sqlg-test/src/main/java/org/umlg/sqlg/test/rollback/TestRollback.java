@@ -1,8 +1,6 @@
 package org.umlg.sqlg.test.rollback;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Transaction;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;

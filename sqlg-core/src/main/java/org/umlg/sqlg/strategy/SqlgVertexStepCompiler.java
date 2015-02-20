@@ -1,14 +1,15 @@
 package org.umlg.sqlg.strategy;
 
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.graph.traversal.step.map.FlatMapStep;
-import com.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
-import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.traversal.step.Reversible;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.strategy.StrategyVertex;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.Traversal;
+import org.apache.tinkerpop.gremlin.process.Traverser;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Reversible;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.strategy.StrategyVertex;
 import org.umlg.sqlg.structure.SqlgVertex;
 
 import java.util.ArrayList;
@@ -25,14 +26,16 @@ public class SqlgVertexStepCompiler<E extends Element> extends FlatMapStep<Verte
 
     public SqlgVertexStepCompiler(final Traversal.Admin traversal) {
         super(traversal);
-        this.setFunction(traverser -> {
-            Vertex v = traverser.get();
-            if (v instanceof StrategyVertex) {
-                return (Iterator<E>) ((SqlgVertex)((StrategyVertex) traverser.get()).getBaseVertex()).elements(this.replacedSteps);
-            } else {
-                return (Iterator<E>) ((SqlgVertex) traverser.get()).elements(this.replacedSteps);
-            }
-        });
+    }
+
+    @Override
+    protected Iterator<E> flatMap(Traverser.Admin<Vertex> traverser) {
+        Vertex v = traverser.get();
+        if (v instanceof StrategyVertex) {
+            return (Iterator<E>) ((SqlgVertex)((StrategyVertex) traverser.get()).getBaseVertex()).elements(this.replacedSteps);
+        } else {
+            return (Iterator<E>) ((SqlgVertex) traverser.get()).elements(this.replacedSteps);
+        }
     }
 
     public void addReplacedStep(Pair<VertexStep, List<HasContainer>> stepPair) {

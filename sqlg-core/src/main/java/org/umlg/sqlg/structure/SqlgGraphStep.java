@@ -1,10 +1,10 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.GraphStep;
-import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.structure.*;
-import com.tinkerpop.gremlin.util.StreamFactory;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

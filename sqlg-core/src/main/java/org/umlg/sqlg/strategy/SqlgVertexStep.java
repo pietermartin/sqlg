@@ -1,13 +1,14 @@
 package org.umlg.sqlg.strategy;
 
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.graph.traversal.step.map.FlatMapStep;
-import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.traversal.step.Reversible;
-import com.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Direction;
-import com.tinkerpop.gremlin.structure.Element;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.Traversal;
+import org.apache.tinkerpop.gremlin.process.Traverser;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Reversible;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.structure.SqlgVertex;
 
 import java.util.*;
@@ -29,16 +30,6 @@ public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> im
         this.direction = direction;
         this.edgeLabels = edgeLabels;
         this.returnClass = returnClass;
-        if (Vertex.class.isAssignableFrom(this.returnClass))
-            this.setFunction(traverser -> {
-                if (this.hasContainers.isEmpty()) {
-                    return (Iterator<E>) ((SqlgVertex)traverser.get()).vertices(Collections.emptyList(), this.direction, this.edgeLabels);
-                } else {
-                    return (Iterator<E>) ((SqlgVertex)traverser.get()).vertices(hasContainers, this.direction, this.edgeLabels);
-                }
-            });
-        else
-            this.setFunction(traverser -> (Iterator<E>) traverser.get().iterators().edgeIterator(this.direction, this.edgeLabels));
     }
 
     public String toString() {
@@ -47,4 +38,16 @@ public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> im
                 TraversalHelper.makeStepString(this, this.direction, this.returnClass.getSimpleName().toLowerCase());
     }
 
+    @Override
+    protected Iterator<E> flatMap(Traverser.Admin<Vertex> traverser) {
+        if (Vertex.class.isAssignableFrom(this.returnClass)) {
+            if (this.hasContainers.isEmpty()) {
+                return (Iterator<E>) ((SqlgVertex) traverser.get()).vertices(Collections.emptyList(), this.direction, this.edgeLabels);
+            } else {
+                return (Iterator<E>) ((SqlgVertex) traverser.get()).vertices(hasContainers, this.direction, this.edgeLabels);
+            }
+        } else {
+            return (Iterator<E>) traverser.get().iterators().edgeIterator(this.direction, this.edgeLabels);
+        }
+    }
 }

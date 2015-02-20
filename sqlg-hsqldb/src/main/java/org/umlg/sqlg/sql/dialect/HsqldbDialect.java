@@ -1,9 +1,9 @@
 package org.umlg.sqlg.sql.dialect;
 
-import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;

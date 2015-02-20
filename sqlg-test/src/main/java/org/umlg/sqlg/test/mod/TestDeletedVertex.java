@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.mod;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;

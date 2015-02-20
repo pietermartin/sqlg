@@ -1,17 +1,17 @@
 package org.umlg.sqlg.test;
 
-import com.tinkerpop.gremlin.structure.Transaction;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgDataSource;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;

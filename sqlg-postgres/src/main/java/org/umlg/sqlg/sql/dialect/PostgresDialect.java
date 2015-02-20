@@ -1,11 +1,11 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import com.tinkerpop.gremlin.structure.Property;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
 import org.slf4j.Logger;

@@ -1,9 +1,9 @@
 package org.umlg.sqlg.test.tp3;
 
-import com.tinkerpop.gremlin.AbstractGraphProvider;
-import com.tinkerpop.gremlin.process.graph.traversal.DefaultGraphTraversal;
-import com.tinkerpop.gremlin.structure.Graph;
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 

@@ -1,16 +1,13 @@
 package org.umlg.sqlg.test.multithread;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Edge;
-import com.tinkerpop.gremlin.structure.Graph;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;

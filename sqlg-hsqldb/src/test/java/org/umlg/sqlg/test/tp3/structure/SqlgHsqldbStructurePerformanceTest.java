@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.tp3.structure;
 
-import com.tinkerpop.gremlin.structure.StructurePerformanceSuite;
+import org.apache.tinkerpop.gremlin.structure.StructurePerformanceSuite;
 import org.junit.runner.RunWith;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.tp3.SqlgHsqldbProvider;

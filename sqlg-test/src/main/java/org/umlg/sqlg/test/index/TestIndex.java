@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.index;
 
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Compare;
-import com.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.structure.Compare;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgDataSource;

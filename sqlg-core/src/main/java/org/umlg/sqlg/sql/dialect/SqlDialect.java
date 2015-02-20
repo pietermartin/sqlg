@@ -3,7 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.T;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;

@@ -1,9 +1,9 @@
 package org.umlg.sqlg.groovy.plugin;
 
-import com.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
-import com.tinkerpop.gremlin.groovy.plugin.IllegalEnvironmentException;
-import com.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
-import com.tinkerpop.gremlin.groovy.plugin.PluginInitializationException;
+import org.apache.tinkerpop.gremlin.groovy.plugin.GremlinPlugin;
+import org.apache.tinkerpop.gremlin.groovy.plugin.IllegalEnvironmentException;
+import org.apache.tinkerpop.gremlin.groovy.plugin.PluginAcceptor;
+import org.apache.tinkerpop.gremlin.groovy.plugin.PluginInitializationException;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.HashSet;

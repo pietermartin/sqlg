@@ -1,8 +1,7 @@
 package org.umlg.sqlg.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.tinkerpop.gremlin.process.T
-import com.tinkerpop.gremlin.structure.Vertex
+import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.junit.Assume
 import org.junit.Test
 

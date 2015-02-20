@@ -1,17 +1,17 @@
 package org.umlg.sqlg.strategy;
 
-import com.tinkerpop.gremlin.process.Step;
-import com.tinkerpop.gremlin.process.Traversal;
-import com.tinkerpop.gremlin.process.TraversalEngine;
-import com.tinkerpop.gremlin.process.graph.traversal.step.HasContainerHolder;
-import com.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
-import com.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.IdentityStep;
-import com.tinkerpop.gremlin.process.graph.traversal.strategy.AbstractTraversalStrategy;
-import com.tinkerpop.gremlin.process.graph.util.HasContainer;
-import com.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import com.tinkerpop.gremlin.structure.Compare;
-import com.tinkerpop.gremlin.structure.Vertex;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.Step;
+import org.apache.tinkerpop.gremlin.process.Traversal;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Compare;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.*;
@@ -28,16 +28,24 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
     private SqlgGraph sqlgGraph;
 
     public SqlgVertexStepStrategy(SqlgGraph sqlgGraph) {
-       this.sqlgGraph = sqlgGraph;
+        this.sqlgGraph = sqlgGraph;
     }
 
     @Override
-    public void apply(final Traversal.Admin<?, ?> traversal, final TraversalEngine traversalEngine) {
+    public void apply(final Traversal.Admin<?, ?> traversal) {
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
+
             vertexSteps.forEach(
-                    (s) -> TraversalHelper.replaceStep(s, new SqlgVertexStep(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getEdgeLabels()), traversal)
+                    (s) -> {
+                        SqlgVertexStep<Vertex> insertStep = new SqlgVertexStep<Vertex>(s.getTraversal(), s.getReturnClass(), s.getDirection(), s.getEdgeLabels());
+                        TraversalHelper.replaceStep(
+                                s,
+                                insertStep,
+                                traversal);
+                    }
             );
+
             //The HasSteps following directly after a VertexStep is merged into the SqlgVertexStep
             Set<Step> toRemove = new HashSet<>();
             for (Step<?, ?> step : traversal.asAdmin().getSteps()) {
@@ -95,10 +103,10 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof HasContainerHolder && ((HasContainerHolder)currentStep).getHasContainers().size() != 1) {
+            if (currentStep instanceof HasContainerHolder && ((HasContainerHolder) currentStep).getHasContainers().size() != 1) {
                 throw new IllegalStateException("Only handle HasContainderHolder with one HasContainer: BUG");
             }
-            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder)currentStep).getHasContainers().get(0).predicate)) {
+            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
                 if (currentStep.getLabel().isPresent()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     identityStep.setLabel(currentStep.getLabel().get());

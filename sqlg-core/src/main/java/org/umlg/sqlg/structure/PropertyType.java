@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Property;
 
 import java.util.HashMap;
 import java.util.Map;

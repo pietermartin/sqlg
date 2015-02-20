@@ -2,9 +2,9 @@ package org.umlg.sqlg.structure;
 
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
-import com.tinkerpop.gremlin.process.T;
-import com.tinkerpop.gremlin.structure.Vertex;
-import com.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 
 import java.lang.reflect.Array;

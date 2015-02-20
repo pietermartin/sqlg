@@ -2,18 +2,9 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatch;
-import org.umlg.sqlg.test.graph.TestEmptyGraph;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileGraphV;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
-import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
-import org.umlg.sqlg.test.schema.TestCaptureSchemaTableEdges;
-import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
-import org.umlg.sqlg.test.schema.TestLoadSchema;
-import org.umlg.sqlg.test.schema.TestSchema;
-import org.umlg.sqlg.test.vertex.TestVertexCache;
-import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
  * Date: 2014/07/16
@@ -21,7 +12,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileV.class
+        TestGremlinCompileGraphV.class
 })
 public class AnyTest {
 }
