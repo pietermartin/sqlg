@@ -7,6 +7,8 @@ import org.junit.Test
 
 import static org.junit.Assert.*
 
+import org.apache.tinkerpop.gremlin.process.T;
+
 /**
  * Created by pieter on 2014/07/31.
  */

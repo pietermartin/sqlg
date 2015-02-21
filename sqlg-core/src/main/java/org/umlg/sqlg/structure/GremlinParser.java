@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -16,7 +17,7 @@ import java.util.*;
  * Date: 2015/01/03
  * Time: 1:06 PM
  */
-public class GremlinParser {
+public class GremlinParser<E extends Element> {
 
     private SqlgGraph sqlgGraph;
     private SchemaManager schemaManager;
@@ -77,12 +78,12 @@ public class GremlinParser {
      * @param replacedSteps The original VertexSteps and HasSteps that were replaced
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
-    public SchemaTableTree parse(SchemaTable schemaTable, List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
+    public SchemaTableTree parse(SchemaTable schemaTable, List<Pair<VertexStep<E>, List<HasContainer>>> replacedSteps) {
         Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
         SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
         schemaTableTrees.add(rootSchemaTableTree);
         int depth = 1;
-        for (Pair<VertexStep, List<HasContainer>> replacedStep : replacedSteps) {
+        for (Pair<VertexStep<E>, List<HasContainer>> replacedStep : replacedSteps) {
             schemaTableTrees = calculatePathForVertexStep(schemaTableTrees, replacedStep, depth++);
         }
         rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
@@ -90,7 +91,7 @@ public class GremlinParser {
         return rootSchemaTableTree;
     }
 
-    private Set<SchemaTableTree> calculatePathForVertexStep(Set<SchemaTableTree> schemaTableTrees, Pair<VertexStep, List<HasContainer>> replacedStep, int depth) {
+    private Set<SchemaTableTree> calculatePathForVertexStep(Set<SchemaTableTree> schemaTableTrees, Pair<VertexStep<E>, List<HasContainer>> replacedStep, int depth) {
         Set<SchemaTableTree> result = new HashSet<>();
         for (SchemaTableTree schemaTableTree : schemaTableTrees) {
             String[] edgeLabels = replacedStep.getLeft().getEdgeLabels();

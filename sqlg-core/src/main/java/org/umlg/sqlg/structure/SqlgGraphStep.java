@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  */
 public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
-    private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
+    private Logger logger = LoggerFactory.getLogger(SqlgGraphStep.class.getName());
     private SqlgGraph sqlgGraph;
     public final List<HasContainer> hasContainers = new ArrayList<>();
 

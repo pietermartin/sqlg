@@ -58,7 +58,7 @@ public class SchemaTableTree {
      * SchemaTable is the element being returned.
      * String is the sql.
      */
-    List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> constructSql() {
+    public List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> constructSql() {
         List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> result = new ArrayList<>();
         List<LinkedList<SchemaTableTree>> distinctQueries = new ArrayList<>();
         for (SchemaTableTree leafNode : this.leafNodes) {

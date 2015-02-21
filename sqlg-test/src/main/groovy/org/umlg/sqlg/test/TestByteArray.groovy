@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.junit.Assert
 import org.junit.Test
 
+import org.apache.tinkerpop.gremlin.process.T;
 /**
  * Created by pieter on 2014/08/03.
  */
