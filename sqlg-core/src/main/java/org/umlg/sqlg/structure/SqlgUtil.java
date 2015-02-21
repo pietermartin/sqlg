@@ -193,4 +193,10 @@ public class SqlgUtil {
         }
         return outputArray;
     }
+
+    public static void validateIds(Object[] vertexIds) {
+        for (Object vertexId : vertexIds) {
+            RecordId.validateId(vertexId);
+        }
+    }
 }

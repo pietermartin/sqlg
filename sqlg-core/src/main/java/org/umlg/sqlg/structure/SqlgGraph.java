@@ -108,8 +108,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             //This is for mariadb. Need to make sure a db called public exist
             this.schemaManager.createSchema(this.sqlDialect.getPublicSchema());
         }
-        this.schemaManager.ensureGlobalVerticesTableExist();
-        this.schemaManager.ensureGlobalEdgesTableExist();
         this.tx().commit();
     }
 
@@ -190,6 +188,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
 
     @Override
     public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
+        SqlgUtil.validateIds(vertexIds);
         this.tx().readWrite();
         return _vertices(vertexIds).iterator();
     }

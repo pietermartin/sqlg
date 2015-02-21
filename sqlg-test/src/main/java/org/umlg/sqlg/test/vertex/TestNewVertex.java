@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.vertex;
 
 import org.apache.tinkerpop.gremlin.process.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -11,11 +12,19 @@ import org.umlg.sqlg.test.BaseTest;
  */
 public class TestNewVertex extends BaseTest {
 
+    //    @Test
+//    public void testNewVertexDoesNotQueryLabels() {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
+//        v1.addEdge("friend", v2, "weight", 1);
+//        this.sqlgGraph.tx().commit();
+//    }
+
     @Test
-    public void testNewVertexDoesNotQueryLabels() {
+    public void testNewVertex() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
-        v1.addEdge("friend", v2, "weight", 1);
         this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.V().count().next().intValue());
     }
 }

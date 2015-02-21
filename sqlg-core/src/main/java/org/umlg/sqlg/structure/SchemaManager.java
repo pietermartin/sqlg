@@ -268,36 +268,6 @@ public class SchemaManager {
         return sqlDialect;
     }
 
-    /**
-     * VERTICES table holds a reference to every vertex.
-     * This is to help implement g.v(id) and g.V()
-     * This call is not thread safe as it is only called on startup.
-     */
-    void ensureGlobalVerticesTableExist() {
-        try {
-            if (!verticesExist()) {
-                createVerticesTable();
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * EDGES table holds a reference to every edge.
-     * This is to help implement g.e(id) and g.E()
-     * This call is not thread safe as it is only called on startup.
-     */
-    void ensureGlobalEdgesTableExist() {
-        try {
-            if (!edgesExist()) {
-                createEdgesTable();
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
         Objects.requireNonNull(schema, "Given tables must not be null");
         Objects.requireNonNull(table, "Given table must not be null");
@@ -609,10 +579,6 @@ public class SchemaManager {
         }
     }
 
-    private boolean verticesExist() throws SQLException {
-        return tableExist(this.sqlDialect.getPublicSchema(), SchemaManager.VERTICES);
-    }
-
     private void createVerticesTable() throws SQLException {
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
@@ -647,10 +613,6 @@ public class SchemaManager {
         }
     }
 
-    private boolean edgesExist() throws SQLException {
-        return tableExist(this.sqlDialect.getPublicSchema(), SchemaManager.EDGES);
-    }
-
     private void createEdgesTable() throws SQLException {
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
@@ -678,7 +640,6 @@ public class SchemaManager {
     }
 
     private void createVertexTable(String schema, String tableName, Map<String, PropertyType> columns) {
-        this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
         sql.append(".");
@@ -686,13 +647,8 @@ public class SchemaManager {
         sql.append(" (");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
-        sql.append(this.sqlDialect.getPrimaryKeyType());
-        if (this.sqlgGraph.isImplementForeignKeys()) {
-            sql.append(" REFERENCES ");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-            sql.append(".");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
-        }
+        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
+//        sql.append(this.sqlDialect.getPrimaryKeyType());
         if (columns.size() > 0) {
             sql.append(", ");
         }
