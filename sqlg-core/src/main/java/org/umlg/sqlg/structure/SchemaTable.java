@@ -72,4 +72,8 @@ public class SchemaTable implements DataSerializable, Serializable {
         this.schema = in.readUTF();
         this.table = in.readUTF();
     }
+
+    public boolean isVertexTable() {
+        return this.table.startsWith(SchemaManager.VERTEX_PREFIX);
+    }
 }

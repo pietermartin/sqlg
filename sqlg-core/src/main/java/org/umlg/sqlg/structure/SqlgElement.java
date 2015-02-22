@@ -25,8 +25,9 @@ public abstract class SqlgElement implements Element, Element.Iterators {
 
     protected String schema;
     protected String table;
-    protected final SqlgGraph sqlgGraph;
     protected long primaryKey;
+    protected RecordId recordId;
+    protected final SqlgGraph sqlgGraph;
     protected Map<String, Object> properties = new HashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     protected boolean removed = false;
@@ -39,16 +40,6 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
 
-    public SqlgElement(SqlgGraph sqlgGraph, Long id, String label) {
-        this.sqlgGraph = sqlgGraph;
-        this.primaryKey = id;
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlgGraph.getSqlDialect().getPublicSchema());
-        this.schema = schemaTable.getSchema();
-        this.table = schemaTable.getTable();
-        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-    }
-
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         if (table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX)) {
             throw new IllegalStateException("SqlgElement.table may not be prefixed with " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
@@ -57,6 +48,7 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         this.primaryKey = id;
         this.schema = schema;
         this.table = table;
+        this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), this.primaryKey);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
         sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
@@ -84,7 +76,14 @@ public abstract class SqlgElement implements Element, Element.Iterators {
 
     @Override
     public Object id() {
-        return primaryKey;
+//        StringBuilder result = new StringBuilder();
+//        result.append(this.schema);
+//        result.append(".");
+//        result.append(this.table);
+//        result.append(RecordId.RECORD_ID_DELIMITER);
+//        result.append(this.primaryKey);
+//        return result.toString();
+        return this.recordId;
     }
 
     @Override
@@ -109,7 +108,7 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(1, (Long) this.id());
+            preparedStatement.setLong(1, ((RecordId) this.id()).getId());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -217,7 +216,7 @@ public abstract class SqlgElement implements Element, Element.Iterators {
                 Map<String, Object> keyValue = new HashMap<>();
                 keyValue.put(key, value);
                 setKeyValuesAsParameter(this.sqlgGraph, 1, conn, preparedStatement, keyValue);
-                preparedStatement.setLong(2, (Long) this.id());
+                preparedStatement.setLong(2, ((RecordId) this.id()).getId());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
             } catch (SQLException e) {
@@ -483,4 +482,6 @@ public abstract class SqlgElement implements Element, Element.Iterators {
                 this.properties.put(columnName, o);
         }
     }
+
+    abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 }

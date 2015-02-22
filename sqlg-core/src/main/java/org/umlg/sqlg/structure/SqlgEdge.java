@@ -133,15 +133,11 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
-
-        long edgeId = insertGlobalEdge();
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
         sql.append(" (");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-        sql.append(", ");
         int i = 1;
         for (String column : keyValueMap.keySet()) {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
@@ -155,7 +151,7 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.inVertex.schema + "." + this.inVertex.table + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(", ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SchemaManager.OUT_VERTEX_COLUMN_END));
-        sql.append(") VALUES (?, ");
+        sql.append(") VALUES (");
         i = 1;
         for (String column : keyValueMap.keySet()) {
             sql.append("?");
@@ -176,48 +172,24 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
         }
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.setLong(i++, edgeId);
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             i = setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
             preparedStatement.setLong(i++, this.inVertex.primaryKey);
             preparedStatement.setLong(i++, this.outVertex.primaryKey);
             preparedStatement.executeUpdate();
-            this.primaryKey = edgeId;
+            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                this.primaryKey = generatedKeys.getLong(1);
+                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), this.primaryKey);
+            } else {
+                throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
+            }
         }
 
     }
 
     private void internalBatchAddEdge(Map<String, Object> keyValueMap) {
         this.sqlgGraph.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
-    }
-
-    private long insertGlobalEdge() throws SQLException {
-        long edgeId;
-        StringBuilder sql = new StringBuilder("INSERT INTO ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-        sql.append(".");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-        sql.append(" (");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_SCHEMA"));
-        sql.append(", ");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("EDGE_TABLE"));
-        sql.append(") VALUES (?, ?)");
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, this.schema);
-            preparedStatement.setString(2, this.table);
-            preparedStatement.executeUpdate();
-            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-            if (generatedKeys.next()) {
-                edgeId = generatedKeys.getLong(1);
-            } else {
-                throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.EDGES);
-            }
-        }
-        return edgeId;
     }
 
     @Override

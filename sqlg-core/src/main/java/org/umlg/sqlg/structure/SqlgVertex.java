@@ -42,13 +42,9 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         }
     }
 
-    public SqlgVertex(SqlgGraph sqlgGraph, Long id, String label) {
-        super(sqlgGraph, id, label);
-    }
-
     public static SqlgVertex of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         if (!sqlgGraph.tx().isInBatchMode()) {
-            return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, id, schema, table);
+            return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, RecordId.from(SchemaTable.of(schema, table), id));
         } else {
             return new SqlgVertex(sqlgGraph, id, schema, table);
         }
@@ -64,12 +60,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
      */
     SqlgVertex(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
-    }
-
-    private SqlgVertex(SqlgGraph sqlgGraph, Long id, String schema, String table, Object... keyValues) {
-        super(sqlgGraph, id, schema, table);
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
-        this.properties.putAll(keyValueMap);
     }
 
     public Edge addEdgeWithMap(String label, Vertex inVertex, Map<String, Object> keyValues) {
@@ -114,8 +104,8 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                         this.table
                 ),
                 keyValues);
-        this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable(this, this.schema, label, false);
-        this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable((SqlgVertex) inVertex, this.schema, label, true);
+//        this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable(this, this.schema, label, false);
+//        this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable((SqlgVertex) inVertex, this.schema, label, true);
         final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
         return edge;
     }
@@ -390,26 +380,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                 edges.next().remove();
             }
             super.remove();
-            StringBuilder sql = new StringBuilder("DELETE FROM ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-            sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-            sql.append(" WHERE ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
-            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            Connection conn = this.sqlgGraph.tx().getConnection();
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, (Long) this.id());
-                preparedStatement.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
         }
 
     }
@@ -434,40 +404,31 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {
-//        long vertexId = insertGlobalVertex();
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
-        sql.append(" (");
-//        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
         int i = 1;
-//        if (keyValueMap.size() > 0) {
-//            sql.append(", ");
-//        } else {
-            sql.append(" ");
-//        }
-        for (String column : keyValueMap.keySet()) {
-            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(column));
-            if (i++ < keyValueMap.size()) {
-                sql.append(", ");
+        if (!keyValueMap.isEmpty()) {
+            sql.append(" ( ");
+            for (String column : keyValueMap.keySet()) {
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(column));
+                if (i++ < keyValueMap.size()) {
+                    sql.append(", ");
+                }
             }
-        }
-//        sql.append(") VALUES (?");
-        sql.append(") VALUES ( ");
-//        if (keyValueMap.size() > 0) {
-//            sql.append(", ");
-//        } else {
-//            sql.append(" ");
-//        }
-        i = 1;
-        for (String column : keyValueMap.keySet()) {
-            sql.append("?");
-            if (i++ < keyValueMap.size()) {
-                sql.append(", ");
+            sql.append(") VALUES ( ");
+            i = 1;
+            for (String column : keyValueMap.keySet()) {
+                sql.append("?");
+                if (i++ < keyValueMap.size()) {
+                    sql.append(", ");
+                }
             }
+            sql.append(")");
+        } else {
+            sql.append(" DEFAULT VALUES");
         }
-        sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
@@ -477,13 +438,12 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-//            preparedStatement.setLong(i++, vertexId);
             setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-//            this.primaryKey = vertexId;
             if (generatedKeys.next()) {
                 this.primaryKey = generatedKeys.getLong(1);
+                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), this.primaryKey);
             } else {
                 throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
             }
@@ -491,37 +451,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             throw new RuntimeException(e);
         }
     }
-
-//    private long insertGlobalVertex() {
-//        long vertexId;
-//        StringBuilder sql = new StringBuilder("INSERT INTO ");
-//        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-//        sql.append(".");
-//        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-//        sql.append(" (");
-//        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("VERTEX_SCHEMA"));
-//        sql.append(", ");
-//        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("VERTEX_TABLE"));
-//        sql.append(") VALUES (?, ?)");
-//        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-//            sql.append(";");
-//        }
-//        Connection conn = this.sqlgGraph.tx().getConnection();
-//        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-//            preparedStatement.setString(1, this.schema);
-//            preparedStatement.setString(2, this.table);
-//            preparedStatement.executeUpdate();
-//            ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-//            if (generatedKeys.next()) {
-//                vertexId = generatedKeys.getLong(1);
-//            } else {
-//                throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//        return vertexId;
-//    }
 
     private void retainLabels(Set<SchemaTable> vertexLabels, String... labels) {
         Set<SchemaTable> toRemove = new HashSet<>();

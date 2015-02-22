@@ -16,7 +16,7 @@ public class TransactionCache {
     private Connection connection;
     private List<ElementPropertyRollback> elementPropertyRollbackFunctions;
     private BatchManager batchManager;
-    private Map<Long, SqlgVertex> vertexCache = new HashMap<>();
+    private Map<RecordId, SqlgVertex> vertexCache = new HashMap<>();
     //true if a schema modification statement has been executed.
     //it is important to know this as schema modification creates exclusive locks.
     //In particular it locks querying the schema itself.
@@ -48,14 +48,6 @@ public class TransactionCache {
         return this.batchManager;
     }
 
-    void putSqlgVertex(SqlgVertex sqlgVertex) {
-        this.vertexCache.put((Long)sqlgVertex.id(), sqlgVertex);
-    }
-
-    SqlgVertex getSqlgVertex(Long id) {
-        return this.vertexCache.get(id);
-    }
-
     void clear() {
         this.elementPropertyRollbackFunctions.clear();
         this.batchManager.clear();
@@ -67,19 +59,19 @@ public class TransactionCache {
         }
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, Long id, String schema, String table) {
-        if (!this.vertexCache.containsKey(id)) {
-            SqlgVertex sqlgVertex = new SqlgVertex(sqlgGraph, id, schema, table);
-            this.vertexCache.put(id, sqlgVertex);
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
+        if (!this.vertexCache.containsKey(recordId)) {
+            SqlgVertex sqlgVertex = new SqlgVertex(sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable());
+            this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {
-            return this.vertexCache.get(id);
+            return this.vertexCache.get(recordId);
         }
     }
 
     SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
         if (!this.vertexCache.containsKey(sqlgVertex.id())) {
-            this.vertexCache.put((Long) sqlgVertex.id(), sqlgVertex);
+            this.vertexCache.put((RecordId)sqlgVertex.id(), sqlgVertex);
             return sqlgVertex;
         } else {
             return this.vertexCache.get(sqlgVertex.id());
@@ -90,7 +82,7 @@ public class TransactionCache {
         if (this.vertexCache.containsKey(sqlgVertex.id())) {
             throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
         } else {
-            this.vertexCache.put((Long) sqlgVertex.id(), sqlgVertex);
+            this.vertexCache.put((RecordId) sqlgVertex.id(), sqlgVertex);
         }
     }
 

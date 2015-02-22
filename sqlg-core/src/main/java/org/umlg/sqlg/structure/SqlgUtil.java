@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -194,9 +193,4 @@ public class SqlgUtil {
         return outputArray;
     }
 
-    public static void validateIds(Object[] vertexIds) {
-        for (Object vertexId : vertexIds) {
-            RecordId.validateId(vertexId);
-        }
-    }
 }

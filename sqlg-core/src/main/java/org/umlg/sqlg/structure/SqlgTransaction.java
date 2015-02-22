@@ -251,8 +251,8 @@ public class SqlgTransaction implements Transaction {
         return this;
     }
 
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, Long id, String schema, String table) {
-        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, id, schema, table);
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
+        return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, recordId);
     }
 
     //Called for vertices that exist but are not yet in the transaction cache
