@@ -15,15 +15,6 @@ import org.apache.tinkerpop.gremlin.process.T;
 class TestQuery extends BaseTest {
 
     @Test
-    public void testQueryV() {
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.addVertex(T.label, "Person");
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.vertexQuery("select * from \"V_Person\"");
-        assertEquals(2, vertices.size());
-    }
-
-    @Test
     public void testQuery() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());

@@ -66,8 +66,12 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         }
     }
 
-    SchemaTable getSchemaTable() {
+    SchemaTable getSchemaTableNoPrefix() {
         return SchemaTable.of(this.getSchema(), this.getTable());
+    }
+
+    SchemaTable getSchemaTablePrefixed() {
+        return SchemaTable.of(this.getSchema(), SchemaManager.VERTEX_PREFIX + this.getTable());
     }
 
     public void setInternalPrimaryKey(Long id) {

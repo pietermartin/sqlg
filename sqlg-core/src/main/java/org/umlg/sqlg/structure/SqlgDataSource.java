@@ -36,7 +36,7 @@ public class SqlgDataSource {
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);
         cpds.setMaxPoolSize(100);
-        cpds.setMaxIdleTime(300);
+        cpds.setMaxIdleTime(500);
         if (!StringUtils.isEmpty(username)) {
             cpds.setUser(username);
         }

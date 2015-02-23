@@ -177,20 +177,20 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             Set<SchemaTable> inVertexLabels = new HashSet<>();
             Set<SchemaTable> outVertexLabels = new HashSet<>();
             if (direction == Direction.IN) {
-                inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getLabelsForVertex(this, true));
+                inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
                 if (labels.length > 0) {
                     retainLabels(inVertexLabels, labels);
                 }
                 directions.add(direction);
             } else if (direction == Direction.OUT) {
-                outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getLabelsForVertex(this, false));
+                outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getRight());
                 if (labels.length > 0) {
                     retainLabels(outVertexLabels, labels);
                 }
                 directions.add(direction);
             } else {
-                inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getLabelsForVertex(this, true));
-                outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getLabelsForVertex(this, false));
+                inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
+                outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getRight());
                 if (labels.length > 0) {
                     retainLabels(inVertexLabels, labels);
                     retainLabels(outVertexLabels, labels);
@@ -200,145 +200,145 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             }
             for (Direction d : directions) {
                 for (SchemaTable schemaTable : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
-                    if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable())) {
-                        StringBuilder sql = new StringBuilder("SELECT * FROM ");
+//                    if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), schemaTable.getTable())) {
+                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                    switch (d) {
+                        case IN:
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                            sql.append(".");
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getTable()));
+                            sql.append(" WHERE ");
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
+                            sql.append(" = ?");
+                            break;
+                        case OUT:
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+                            sql.append(".");
+                            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getTable()));
+                            sql.append(" WHERE ");
+                            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
+                            sql.append(" = ?");
+                            break;
+                        case BOTH:
+                            throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                    }
+                    if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    Connection conn = this.sqlgGraph.tx().getConnection();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         switch (d) {
                             case IN:
-                                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                                sql.append(".");
-                                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-                                sql.append(" WHERE ");
-                                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
-                                sql.append(" = ?");
+                                preparedStatement.setLong(1, this.primaryKey);
                                 break;
                             case OUT:
-                                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
-                                sql.append(".");
-                                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
-                                sql.append(" WHERE ");
-                                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
-                                sql.append(" = ?");
+                                preparedStatement.setLong(1, this.primaryKey);
                                 break;
                             case BOTH:
                                 throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
                         }
-                        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        Connection conn = this.sqlgGraph.tx().getConnection();
-                        if (logger.isDebugEnabled()) {
-                            logger.debug(sql.toString());
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        while (resultSet.next()) {
+                            Set<String> inVertexColumnNames = new HashSet<>();
+                            Set<String> outVertexColumnNames = new HashSet<>();
+                            String inVertexColumnName = "";
+                            String outVertexColumnName = "";
+                            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                            for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                                String columnName = resultSetMetaData.getColumnName(i);
+                                if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                                    inVertexColumnNames.add(columnName);
+                                } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                                    outVertexColumnNames.add(columnName);
+                                }
+                            }
+                            if (inVertexColumnNames.isEmpty() || outVertexColumnNames.isEmpty()) {
+                                throw new IllegalStateException("BUG: in or out vertex id not set!!!!");
+                            }
+
+                            Long edgeId = resultSet.getLong("ID");
+                            Long inId = null;
+                            Long outId = null;
+
+                            //Only one in out pair should ever be set per row
+                            for (String inColumnName : inVertexColumnNames) {
+                                if (inId != null) {
+                                    Long tempInId = resultSet.getLong(inColumnName);
+                                    if (!resultSet.wasNull()) {
+                                        throw new IllegalStateException("Multiple in columns are set in vertex row!");
+                                    }
+                                } else {
+                                    Long tempInId = resultSet.getLong(inColumnName);
+                                    if (!resultSet.wasNull()) {
+                                        inId = tempInId;
+                                        inVertexColumnName = inColumnName;
+                                    }
+                                }
+                            }
+                            for (String outColumnName : outVertexColumnNames) {
+                                if (outId != null) {
+                                    Long tempOutId = resultSet.getLong(outColumnName);
+                                    if (!resultSet.wasNull()) {
+                                        throw new IllegalStateException("Multiple out columns are set in vertex row!");
+                                    }
+                                } else {
+                                    Long tempOutId = resultSet.getLong(outColumnName);
+                                    if (!resultSet.wasNull()) {
+                                        outId = tempOutId;
+                                        outVertexColumnName = outColumnName;
+                                    }
+                                }
+                            }
+                            if (inVertexColumnName.isEmpty() || outVertexColumnName.isEmpty()) {
+                                throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
+                            }
+                            SchemaTable inSchemaTable = SqlgUtil.parseLabel(inVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                            SchemaTable outSchemaTable = SqlgUtil.parseLabel(outVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+
+                            List<Object> keyValues = new ArrayList<>();
+                            for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+                                String columnName = resultSetMetaData.getColumnName(i);
+                                if (!((columnName.equals("ID") || columnName.equals(inVertexColumnNames) || columnName.equals(outVertexColumnNames)))) {
+                                    keyValues.add(columnName);
+                                    keyValues.add(resultSet.getObject(columnName));
+                                }
+                            }
+                            SqlgEdge sqlGEdge = null;
                             switch (d) {
                                 case IN:
-                                    preparedStatement.setLong(1, this.primaryKey);
+                                    sqlGEdge = new SqlgEdge(
+                                            this.sqlgGraph,
+                                            edgeId,
+                                            schemaTable.getSchema(),
+                                            schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()),
+                                            this,
+                                            SqlgVertex.of(this.sqlgGraph, outId, outSchemaTable.getSchema(), outSchemaTable.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
+                                            keyValues.toArray());
                                     break;
                                 case OUT:
-                                    preparedStatement.setLong(1, this.primaryKey);
+                                    sqlGEdge = new SqlgEdge(
+                                            this.sqlgGraph,
+                                            edgeId,
+                                            schemaTable.getSchema(),
+                                            schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()),
+                                            SqlgVertex.of(this.sqlgGraph, inId, inSchemaTable.getSchema(), inSchemaTable.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
+                                            this,
+                                            keyValues.toArray());
                                     break;
                                 case BOTH:
-                                    throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                                    throw new IllegalStateException("This should not be possible!");
                             }
-
-                            ResultSet resultSet = preparedStatement.executeQuery();
-                            while (resultSet.next()) {
-                                Set<String> inVertexColumnNames = new HashSet<>();
-                                Set<String> outVertexColumnNames = new HashSet<>();
-                                String inVertexColumnName = "";
-                                String outVertexColumnName = "";
-                                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                                    String columnName = resultSetMetaData.getColumnName(i);
-                                    if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                                        inVertexColumnNames.add(columnName);
-                                    } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                                        outVertexColumnNames.add(columnName);
-                                    }
-                                }
-                                if (inVertexColumnNames.isEmpty() || outVertexColumnNames.isEmpty()) {
-                                    throw new IllegalStateException("BUG: in or out vertex id not set!!!!");
-                                }
-
-                                Long edgeId = resultSet.getLong("ID");
-                                Long inId = null;
-                                Long outId = null;
-
-                                //Only one in out pair should ever be set per row
-                                for (String inColumnName : inVertexColumnNames) {
-                                    if (inId != null) {
-                                        Long tempInId = resultSet.getLong(inColumnName);
-                                        if (!resultSet.wasNull()) {
-                                            throw new IllegalStateException("Multiple in columns are set in vertex row!");
-                                        }
-                                    } else {
-                                        Long tempInId = resultSet.getLong(inColumnName);
-                                        if (!resultSet.wasNull()) {
-                                            inId = tempInId;
-                                            inVertexColumnName = inColumnName;
-                                        }
-                                    }
-                                }
-                                for (String outColumnName : outVertexColumnNames) {
-                                    if (outId != null) {
-                                        Long tempOutId = resultSet.getLong(outColumnName);
-                                        if (!resultSet.wasNull()) {
-                                            throw new IllegalStateException("Multiple out columns are set in vertex row!");
-                                        }
-                                    } else {
-                                        Long tempOutId = resultSet.getLong(outColumnName);
-                                        if (!resultSet.wasNull()) {
-                                            outId = tempOutId;
-                                            outVertexColumnName = outColumnName;
-                                        }
-                                    }
-                                }
-                                if (inVertexColumnName.isEmpty() || outVertexColumnName.isEmpty()) {
-                                    throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
-                                }
-                                SchemaTable inSchemaTable = SqlgUtil.parseLabel(inVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                                SchemaTable outSchemaTable = SqlgUtil.parseLabel(outVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
-
-                                List<Object> keyValues = new ArrayList<>();
-                                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                                    String columnName = resultSetMetaData.getColumnName(i);
-                                    if (!((columnName.equals("ID") || columnName.equals(inVertexColumnNames) || columnName.equals(outVertexColumnNames)))) {
-                                        keyValues.add(columnName);
-                                        keyValues.add(resultSet.getObject(columnName));
-                                    }
-                                }
-                                SqlgEdge sqlGEdge = null;
-                                switch (d) {
-                                    case IN:
-                                        sqlGEdge = new SqlgEdge(
-                                                this.sqlgGraph,
-                                                edgeId,
-                                                schemaTable.getSchema(),
-                                                schemaTable.getTable(),
-                                                this,
-                                                SqlgVertex.of(this.sqlgGraph, outId, outSchemaTable.getSchema(), outSchemaTable.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
-                                                keyValues.toArray());
-                                        break;
-                                    case OUT:
-                                        sqlGEdge = new SqlgEdge(
-                                                this.sqlgGraph,
-                                                edgeId,
-                                                schemaTable.getSchema(),
-                                                schemaTable.getTable(),
-                                                SqlgVertex.of(this.sqlgGraph, inId, inSchemaTable.getSchema(), inSchemaTable.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
-                                                this,
-                                                keyValues.toArray());
-                                        break;
-                                    case BOTH:
-                                        throw new IllegalStateException("This should not be possible!");
-                                }
-                                edges.add(sqlGEdge);
-                            }
-
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
+                            edges.add(sqlGEdge);
                         }
+
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
                     }
+//                    }
                 }
             }
             return edges.iterator();
@@ -457,7 +457,10 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         for (SchemaTable schemaTable : vertexLabels) {
             boolean retain = false;
             for (String label : labels) {
-                if (schemaTable.getTable().equals(label)) {
+                if (label.startsWith(SchemaManager.EDGE_PREFIX)) {
+                    throw new IllegalStateException("labels may not start with " + SchemaManager.EDGE_PREFIX);
+                }
+                if (schemaTable.getTable().equals(SchemaManager.EDGE_PREFIX + label)) {
                     retain = true;
                     break;
                 }

@@ -126,7 +126,7 @@ public class BatchManager {
     }
 
     public boolean updateVertexCacheWithEdgeLabel(SqlgVertex vertex, SchemaTable schemaTable, boolean inDirection) {
-        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertices = this.vertexCache.get(vertex.getSchemaTable());
+        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertices = this.vertexCache.get(vertex.getSchemaTableNoPrefix());
         if (vertices != null) {
             Triple<String, String, Map<String, Object>> triple = vertices.getRight().get(vertex);
             if (triple != null) {

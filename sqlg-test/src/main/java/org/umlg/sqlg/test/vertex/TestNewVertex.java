@@ -7,6 +7,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.NoSuchElementException;
+
 /**
  * Date: 2014/10/04
  * Time: 10:17 AM
@@ -32,5 +34,13 @@ public class TestNewVertex extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, this.sqlgGraph.V().count().next().intValue());
+    }
+
+    @Test(expected = NoSuchElementException.class)
+    public void testInvalidId() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.V("asdasdasd").next();
     }
 }

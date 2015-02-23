@@ -2,9 +2,8 @@ package org.umlg.sqlg.test.mod;
 
 import org.apache.tinkerpop.gremlin.process.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
@@ -13,14 +12,14 @@ import org.umlg.sqlg.test.BaseTest;
  */
 public class TestDeletedVertex extends BaseTest {
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testDeletedVertex() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "pieter");
         this.sqlgGraph.tx().close();
         v1.remove();
         this.sqlgGraph.tx().commit();
-        SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, ((RecordId)v1.id()).getId(), "public", "Person");
-        sqlGVertex.property("name");
+        Assert.assertFalse(this.sqlgGraph.V(v1.id()).hasNext());
+        Assert.assertTrue(this.sqlgGraph.V(v2.id()).hasNext());
     }
 }

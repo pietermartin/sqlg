@@ -74,26 +74,6 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeEdge(this.schema, this.table, this);
         } else {
-            StringBuilder sql = new StringBuilder("DELETE FROM ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-            sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-            sql.append(" WHERE ");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
-            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            Connection conn = this.sqlgGraph.tx().getConnection();
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, (Long) this.id());
-                preparedStatement.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
             super.remove();
         }
 

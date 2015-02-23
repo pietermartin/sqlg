@@ -9,6 +9,7 @@ import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.edges.TestEdgeCache;
 import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
+import org.umlg.sqlg.test.edges.TestOutE;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
@@ -62,7 +63,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestIndex.class,
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
-        TestBatch.class,
+//        TestBatch.class,
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
@@ -80,7 +81,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGremlinCompileWithHas.class,
         TestGremlinCompileV.class,
         TestGremlinCompileE.class,
-        TestEmptyGraph.class
+        TestEmptyGraph.class,
+        TestOutE.class
 })
 public class AllTest {
 }

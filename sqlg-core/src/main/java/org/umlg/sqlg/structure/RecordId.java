@@ -1,21 +1,36 @@
 package org.umlg.sqlg.structure;
 
-import org.apache.commons.lang3.tuple.Pair;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoSerializable;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Date: 2015/02/21
  * Time: 8:50 PM
  */
-public class RecordId {
+public class RecordId implements KryoSerializable {
 
     public final static String RECORD_ID_DELIMITER = ":::";
     private SchemaTable schemaTable;
     private Long id;
+
+    //For Kryo
+    public RecordId() {
+    }
 
     private RecordId(SchemaTable schemaTable, Long id) {
         this.schemaTable = schemaTable;
@@ -113,6 +128,85 @@ public class RecordId {
             return this.id.equals(otherRecordId.getId());
         } else {
             return false;
+        }
+    }
+
+    @Override
+    public void write(Kryo kryo, Output output) {
+        output.writeString(this.getSchemaTable().getSchema().toString());
+        output.writeString(this.getSchemaTable().getTable().toString());
+        output.writeLong(this.getId());
+    }
+
+    @Override
+    public void read(Kryo kryo, Input input) {
+        this.schemaTable = schemaTable.of(input.readString(), input.readString());
+        this.id = input.readLong();
+    }
+
+    static class CustomIdJacksonSerializer extends StdSerializer<RecordId> {
+        public CustomIdJacksonSerializer() {
+            super(RecordId.class);
+        }
+
+        @Override
+        public void serialize(final RecordId customId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
+                throws IOException {
+            ser(customId, jsonGenerator, false);
+        }
+
+        @Override
+        public void serializeWithType(final RecordId customId, final JsonGenerator jsonGenerator,
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
+            ser(customId, jsonGenerator, true);
+        }
+
+        private void ser(final RecordId recordId, final JsonGenerator jsonGenerator, final boolean includeType) throws IOException {
+            jsonGenerator.writeStartObject();
+
+            if (includeType)
+                jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
+
+            SchemaTable schemaTable = recordId.getSchemaTable();
+            jsonGenerator.writeObjectField("schema", schemaTable.getSchema());
+            jsonGenerator.writeObjectField("table", schemaTable.getTable());
+            jsonGenerator.writeObjectField("id", recordId.getId().toString());
+            jsonGenerator.writeEndObject();
+        }
+    }
+
+    static class CustomIdJacksonDeserializer extends StdDeserializer<RecordId> {
+        public CustomIdJacksonDeserializer() {
+            super(RecordId.class);
+        }
+
+        @Override
+        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+            String schema = null;
+            String table = null;
+            Long id = null;
+            while (!jsonParser.getCurrentToken().isStructEnd()) {
+                if (jsonParser.getText().equals("schema")) {
+                    jsonParser.nextToken();
+                    schema = jsonParser.getText();
+                } else if (jsonParser.getText().equals("table")) {
+                    jsonParser.nextToken();
+                    table = jsonParser.getText();
+                } else if (jsonParser.getText().equals("id")) {
+                    jsonParser.nextToken();
+                    id = Long.valueOf(jsonParser.getText());
+                } else
+                    jsonParser.nextToken();
+            }
+
+            if (!Optional.ofNullable(schema).isPresent())
+                throw deserializationContext.mappingException("Could not deserialze RecordId: 'schema' is required");
+            if (!Optional.ofNullable(table).isPresent())
+                throw deserializationContext.mappingException("Could not deserialze RecordId: 'table' is required");
+            if (!Optional.ofNullable(id).isPresent())
+                throw deserializationContext.mappingException("Could not deserialze RecordId: 'id' is required");
+
+            return new RecordId(SchemaTable.of(schema, table), id);
         }
     }
 }

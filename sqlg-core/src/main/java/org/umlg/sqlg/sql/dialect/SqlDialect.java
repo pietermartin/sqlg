@@ -311,17 +311,6 @@ public interface SqlDialect {
         return false;
     }
 
-    public default String wrapVertexQuery(String query){
-        return "SELECT b.* FROM (" + query + ") a JOIN " +
-                getPublicSchema() +
-                "." +
-                maybeWrapInQoutes(SchemaManager.VERTICES) +
-                " b ON a." +
-                maybeWrapInQoutes("ID") +
-                " = b." +
-                maybeWrapInQoutes("ID");
-    }
-
     public default boolean supportsClientInfo() {
         return false;
     }

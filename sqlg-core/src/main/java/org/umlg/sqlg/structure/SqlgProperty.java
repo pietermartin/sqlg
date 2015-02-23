@@ -75,7 +75,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 PropertyType propertyType = PropertyType.from(value);
                 preparedStatement.setNull(1, this.sqlgGraph.getSqlDialect().propertyTypeToJavaSqlType(propertyType));
-                preparedStatement.setLong(2, (Long) this.element.id());
+                preparedStatement.setLong(2, ((RecordId) this.element.id()).getId());
                 int numberOfRowsUpdated = preparedStatement.executeUpdate();
                 if (numberOfRowsUpdated != 1) {
                     throw new IllegalStateException("Remove property failed!");
