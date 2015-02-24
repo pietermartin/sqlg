@@ -144,8 +144,8 @@ public class RecordId implements KryoSerializable {
         this.id = input.readLong();
     }
 
-    static class CustomIdJacksonSerializer extends StdSerializer<RecordId> {
-        public CustomIdJacksonSerializer() {
+    static class RecordIdJacksonSerializer extends StdSerializer<RecordId> {
+        public RecordIdJacksonSerializer() {
             super(RecordId.class);
         }
 

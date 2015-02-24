@@ -31,9 +31,9 @@ public class TestGetById extends BaseTest {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Edge friendEdge = marko.addEdge("friend", john);
-        Edge famliyEdge = marko.addEdge("family", john);
+        Edge familyEdge = marko.addEdge("family", john);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(friendEdge, this.sqlgGraph.e(friendEdge.id()));
-        Assert.assertEquals(famliyEdge, this.sqlgGraph.e(famliyEdge.id()));
+        Assert.assertEquals(familyEdge, this.sqlgGraph.e(familyEdge.id()));
     }
 }

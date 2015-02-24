@@ -13,6 +13,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -277,7 +278,9 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
                 try {
-                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                    if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                        throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + table);
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -346,7 +349,9 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
                 try {
-                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                    if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                        throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + table);
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -416,7 +421,9 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
                 try {
-                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                    if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                        throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + table);
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -480,7 +487,9 @@ public class SchemaManager {
                 //Make sure the current thread/transaction owns the lock
                 if (!this.isLockedByCurrentThread()) {
                     try {
-                        this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                        if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                            throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + prefixedTable);
+                        }
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -507,7 +516,9 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
                 try {
-                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                    if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                        throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + prefixedTable);
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -545,7 +556,9 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             if (!this.isLockedByCurrentThread()) {
                 try {
-                    this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS);
+                    if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                        throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + prefixedTable);
+                    }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }

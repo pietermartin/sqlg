@@ -38,6 +38,8 @@ public class TestLazyLoadSchema extends BaseTest {
     public void testLazyLoadTableViaVertexHas() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+        Thread.sleep(1000);
         //add a vertex in the old, the new should only see it after a commit
         this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
@@ -50,6 +52,8 @@ public class TestLazyLoadSchema extends BaseTest {
     public void testLazyLoadTableViaVertexHasWithKey() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+        Thread.sleep(1000);
         //add a vertex in the old, the new should only see it after a commit
         this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
@@ -62,6 +66,8 @@ public class TestLazyLoadSchema extends BaseTest {
     public void testLazyLoadTableViaVertexHasWithKeyMissingColumn() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+        Thread.sleep(1000);
         //add a vertex in the old, the new should only see it after a commit
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
@@ -85,6 +91,8 @@ public class TestLazyLoadSchema extends BaseTest {
     public void testLazyLoadTableViaVertexCreation() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+        Thread.sleep(1000);
         //add a vertex in the old, the new should only see it after a commit
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
@@ -97,6 +105,7 @@ public class TestLazyLoadSchema extends BaseTest {
     public void testLazyLoadTableViaEdgeCreation() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        Thread.sleep(1000);
         //add a vertex in the old, the new should only see it after a commit
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
@@ -119,6 +128,8 @@ public class TestLazyLoadSchema extends BaseTest {
     public void testLazyLoadTableViaEdgesHas() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+        Thread.sleep(1000);
         //add a vertex in the old, the new should only see it after a commit
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
@@ -129,7 +140,6 @@ public class TestLazyLoadSchema extends BaseTest {
         Assert.assertEquals(1, sqlgGraph1.E().count().next().intValue());
         Assert.assertEquals(1, sqlgGraph1.E().has(T.label, "friend").count().next().intValue());
         Assert.assertEquals(2, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
-        sqlgGraph1.close();
     }
 
     @Test
@@ -137,6 +147,8 @@ public class TestLazyLoadSchema extends BaseTest {
 
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+        Thread.sleep(1000);
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
         v1.addEdge("friend", v2);

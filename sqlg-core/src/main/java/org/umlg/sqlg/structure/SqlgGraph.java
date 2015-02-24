@@ -194,7 +194,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             List<RecordId> recordIds = RecordId.from(vertexIds);
             Iterable<Vertex> vertexIterable = elements(true, recordIds);
             return vertexIterable.iterator();
-        } catch (IllegalArgumentException e) {
+        } catch (SqlgExceptions.InvalidIdException e) {
             return Collections.emptyIterator();
         }
     }
@@ -206,7 +206,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             List<RecordId> recordIds = RecordId.from(edgeIds);
             Iterable<Edge> edgeIterable = elements(false, recordIds);
             return edgeIterable.iterator();
-        } catch (IllegalArgumentException e) {
+        } catch (SqlgExceptions.InvalidIdException e) {
             return Collections.emptyIterator();
         }
     }
@@ -736,51 +736,54 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             Map<SchemaTable, List<Long>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
             for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
                 SchemaTable schemaTable = schemaTableListEntry.getKey();
-                List<Long> schemaTableIds = schemaTableListEntry.getValue();
-                StringBuilder sql = new StringBuilder("SELECT * FROM ");
-                sql.append("\"");
-                sql.append(schemaTable.getSchema());
-                sql.append("\".\"");
-                if (returnVertices) {
-                    sql.append(SchemaManager.VERTEX_PREFIX);
-                } else {
-                    sql.append(SchemaManager.EDGE_PREFIX);
-                }
-                sql.append(schemaTable.getTable());
-                sql.append("\" WHERE ");
-                sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-                sql.append(" IN (");
-                int count = 1;
-                for (Long id : schemaTableIds) {
-                    sql.append(id.toString());
-                    if (count++ < schemaTableIds.size()) {
-                        sql.append(",");
+                String tableName = (returnVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
+                if (this.getSchemaManager().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
+                    List<Long> schemaTableIds = schemaTableListEntry.getValue();
+                    StringBuilder sql = new StringBuilder("SELECT * FROM ");
+                    sql.append("\"");
+                    sql.append(schemaTable.getSchema());
+                    sql.append("\".\"");
+                    if (returnVertices) {
+                        sql.append(SchemaManager.VERTEX_PREFIX);
+                    } else {
+                        sql.append(SchemaManager.EDGE_PREFIX);
                     }
-                }
-                sql.append(")");
-                if (this.getSqlDialect().needsSemicolon()) {
-                    sql.append(";");
-                }
-                Connection conn = this.tx().getConnection();
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sql.toString());
-                }
-                try (Statement statement = conn.createStatement()) {
-                    statement.execute(sql.toString());
-                    ResultSet resultSet = statement.getResultSet();
-                    while (resultSet.next()) {
-                        long id = resultSet.getLong("ID");
-                        SqlgElement sqlgElement;
-                        if (returnVertices) {
-                            sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable());
-                        } else {
-                            sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable());
+                    sql.append(schemaTable.getTable());
+                    sql.append("\" WHERE ");
+                    sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+                    sql.append(" IN (");
+                    int count = 1;
+                    for (Long id : schemaTableIds) {
+                        sql.append(id.toString());
+                        if (count++ < schemaTableIds.size()) {
+                            sql.append(",");
                         }
-                        sqlgElement.loadResultSet(resultSet);
-                        sqlGVertexes.add((T) sqlgElement);
                     }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
+                    sql.append(")");
+                    if (this.getSqlDialect().needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    Connection conn = this.tx().getConnection();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
+                    try (Statement statement = conn.createStatement()) {
+                        statement.execute(sql.toString());
+                        ResultSet resultSet = statement.getResultSet();
+                        while (resultSet.next()) {
+                            long id = resultSet.getLong("ID");
+                            SqlgElement sqlgElement;
+                            if (returnVertices) {
+                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable());
+                            } else {
+                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable());
+                            }
+                            sqlgElement.loadResultSet(resultSet);
+                            sqlGVertexes.add((T) sqlgElement);
+                        }
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         } else {
@@ -823,19 +826,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             }
         }
         return sqlGVertexes;
-    }
-
-    void loadVertexAndLabels(ResultSet resultSet, SqlgVertex sqlgVertex) throws SQLException {
-        Set<SchemaTable> labels = new HashSet<>();
-        String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
-        this.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
-        sqlgVertex.inLabelsForVertex = new HashSet<>();
-        sqlgVertex.inLabelsForVertex.addAll(labels);
-        String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
-        labels.clear();
-        this.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
-        sqlgVertex.outLabelsForVertex = new HashSet<>();
-        sqlgVertex.outLabelsForVertex.addAll(labels);
     }
 
     @Override

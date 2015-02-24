@@ -34,28 +34,11 @@ public class SqlgIo extends DefaultIo implements Graph.Io {
     }
 
     @Override
-    public GraphSONReader.Builder graphSONReader() {
-//        final SimpleModule module = new SimpleModule();
-//        module.addSerializer(RecordId.class, new RecordId.CustomIdJacksonSerializer());
-//        module.addDeserializer(RecordId.class, new RecordId.CustomIdJacksonDeserializer());
-//        return GraphSONReader.build().mapper(graphSONMapper().addCustomModule(module).embedTypes(true).create());
-        return GraphSONReader.build().mapper(graphSONMapper().create());
-    }
-
-    @Override
-    public GraphSONWriter.Builder graphSONWriter() {
-//        final SimpleModule module = new SimpleModule();
-//        module.addSerializer(RecordId.class, new RecordId.CustomIdJacksonSerializer());
-//        module.addDeserializer(RecordId.class, new RecordId.CustomIdJacksonDeserializer());
-//        return GraphSONWriter.build().mapper(graphSONMapper().addCustomModule(module).embedTypes(true).create());
-        return GraphSONWriter.build().mapper(graphSONMapper().create());
-    }
-
-    @Override
     public GraphSONMapper.Builder graphSONMapper() {
         final SimpleModule module = new SimpleModule();
-        module.addSerializer(RecordId.class, new RecordId.CustomIdJacksonSerializer());
+        module.addSerializer(RecordId.class, new RecordId.RecordIdJacksonSerializer());
         module.addDeserializer(RecordId.class, new RecordId.CustomIdJacksonDeserializer());
+//        return GraphSONMapper.build().addCustomModule(module);
         return GraphSONMapper.build().addCustomModule(module).embedTypes(true);
     }
 
