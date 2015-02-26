@@ -274,8 +274,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 if (count++ < vertexOutInLabelMap.size()) {
                     sql.append(",        \n");
                 }
-                //clear the label cache as it is not updated in batch mode
-                sqlgVertex.reset();
             }
             sql.append("\n) AS v(id, \"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\")");
             sql.append("\nWHERE a.\"ID\" = v.id");
@@ -401,8 +399,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 if (count++ < vertexPropertyCache.size()) {
                     sql.append(",\n\t");
                 }
-                //clear the label cache as it is not updated in batch mode
-                sqlgVertex.reset();
             }
             sql.append("\n) AS v(id, ");
             count = 1;

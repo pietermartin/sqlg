@@ -171,9 +171,11 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
         this.sqlgGraph.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
     }
 
+    //TODO this needs optimizing, an edge created in the transaction need not go to the db to load itself again
     @Override
     protected void load() {
-        if (this.properties.isEmpty()) {
+        //recordId can be null when in batchMode
+        if (recordId != null && this.properties.isEmpty()) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");

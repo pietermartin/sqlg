@@ -234,31 +234,25 @@ public class SchemaManager {
 
         MapConfig schemaMapConfig = new MapConfig();
         schemaMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-//        schemaMapConfig.addEntryListenerConfig(new EntryListenerConfig(SchemasMapEntryListener.class.getName(), false, false));
         schemaMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(schemaMapConfig);
 
         MapConfig labelSchemasMapConfig = new MapConfig();
         labelSchemasMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-//        labelSchemasMapConfig.addEntryListenerConfig(new EntryListenerConfig(LabelSchemasMapEntryListener.class.getName(), false, false));
         labelSchemasMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(labelSchemasMapConfig);
 
         MapConfig tableMapConfig = new MapConfig();
-        tableMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-//        tableMapConfig.addEntryListenerConfig(new EntryListenerConfig(TablesMapEntryListener.class.getName(), false, false));
         tableMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableMapConfig);
 
         MapConfig edgeForeignKeysMapConfig = new MapConfig();
         edgeForeignKeysMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-//        edgeForeignKeysMapConfig.addEntryListenerConfig(new EntryListenerConfig(EdgeForeignKeysMapEntryListener.class.getName(), false, false));
         edgeForeignKeysMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(edgeForeignKeysMapConfig);
 
         MapConfig tableLabelMapConfig = new MapConfig();
         tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-//        tableLabelMapConfig.addEntryListenerConfig(new EntryListenerConfig(TableLabelMapEntryListener.class.getName(), false, false));
         tableLabelMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableLabelMapConfig);
         return config;
@@ -592,66 +586,6 @@ public class SchemaManager {
         }
     }
 
-    private void createVerticesTable() throws SQLException {
-        StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
-        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-        sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
-        sql.append(" (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append(" ");
-        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
-        sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_SCHEMA));
-        sql.append(" VARCHAR(255) NOT NULL, ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_TABLE));
-        sql.append(" VARCHAR(255) NOT NULL, ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
-        sql.append(" ");
-        sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
-        sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
-        sql.append(" ");
-        sql.append(this.sqlDialect.propertyTypeToSqlDefinition(PropertyType.STRING));
-        sql.append(")");
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        }
-    }
-
-    private void createEdgesTable() throws SQLException {
-        StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
-        sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-        sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.EDGES));
-        sql.append(" (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append(" ");
-        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
-        sql.append(", ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(EDGE_SCHEMA));
-        sql.append(" VARCHAR(255), ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(EDGE_TABLE));
-        sql.append(" VARCHAR(255))");
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        }
-    }
-
     private void createVertexTable(String schema, String tableName, Map<String, PropertyType> columns) {
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
@@ -661,7 +595,6 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
-//        sql.append(this.sqlDialect.getPrimaryKeyType());
         if (columns.size() > 0) {
             sql.append(", ");
         }
@@ -699,7 +632,6 @@ public class SchemaManager {
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
-//        sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         if (columns.size() > 0) {
             sql.append(", ");
@@ -788,7 +720,6 @@ public class SchemaManager {
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
         sql.append(" ");
-//        sql.append(this.sqlDialect.getPrimaryKeyType());
         sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
         if (columns.size() > 0) {
             sql.append(", ");
@@ -814,120 +745,6 @@ public class SchemaManager {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-//    public void addEdgeLabelToVerticesTable(SqlgVertex sqlgVertex, String schema, String table, boolean inDirection) {
-//        Long id = (Long) sqlgVertex.id();
-//        SchemaTable schemaTable = SchemaTable.of(schema, table);
-//
-//        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-//            this.sqlgGraph.tx().getBatchManager().updateVertexCacheWithEdgeLabel(sqlgVertex, schemaTable, inDirection);
-//        } else {
-//            Set<SchemaTable> labelSet = getLabelsForVertex(sqlgVertex, inDirection);
-//            if (!labelSet.contains(schemaTable)) {
-//                labelSet.add(schemaTable);
-//
-//                StringBuilder sql = new StringBuilder("UPDATE ");
-//                sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-//                sql.append(".");
-//                sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
-//                sql.append(" SET ");
-//                sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
-//                sql.append(" = ?");
-//                sql.append(" WHERE ");
-//                sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-//                sql.append(" = ?");
-//                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-//                    sql.append(";");
-//                }
-//                if (logger.isDebugEnabled()) {
-//                    logger.debug(sql.toString());
-//                }
-//                Connection conn = this.sqlgGraph.tx().getConnection();
-//                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                    //varchar here must be lowercase
-//                    int count = 1;
-//                    StringBuilder sb = new StringBuilder();
-//                    for (SchemaTable l : labelSet) {
-//                        sb.append(l.getSchema());
-//                        sb.append(".");
-//                        sb.append(l.getTable());
-//                        if (count++ < labelSet.size()) {
-//                            sb.append(LABEL_SEPARATOR);
-//                        }
-//                    }
-//                    preparedStatement.setString(1, sb.toString());
-//                    preparedStatement.setLong(2, id);
-//                    int numberOfRowsUpdated = preparedStatement.executeUpdate();
-//                    if (numberOfRowsUpdated != 1) {
-//                        throw new IllegalStateException(String.format("Only one row should ever be updated! #updated = %d", new Integer[]{numberOfRowsUpdated}));
-//                    }
-//                } catch (SQLException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//    }
-
-    public Set<SchemaTable> getLabelsForVertex(SqlgVertex sqlgVertex, boolean inDirection) {
-
-        //the inLabelsForVertex and outLabelsForVertex sets are initialized to null to distinguish between having been loaded and having no labels
-        if ((inDirection && sqlgVertex.inLabelsForVertex == null) || (!inDirection && sqlgVertex.outLabelsForVertex == null)) {
-            Long id = (Long) sqlgVertex.id();
-            Set<SchemaTable> labels = new HashSet<>();
-            StringBuilder sql = new StringBuilder("SELECT ");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS));
-            sql.append(" FROM ");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()));
-            sql.append(".");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(SchemaManager.VERTICES));
-            sql.append(" WHERE ");
-            sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-            sql.append(" = ?");
-            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            Connection conn = this.sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, id);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    String commaSeparatedLabels = resultSet.getString(inDirection ? SchemaManager.VERTEX_IN_LABELS : SchemaManager.VERTEX_OUT_LABELS);
-                    convertVertexLabelToSet(labels, commaSeparatedLabels);
-                    if (resultSet.next()) {
-                        throw new IllegalStateException("BUG: There can only be one row per vertex id!");
-                    }
-                }
-
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-            if (inDirection) {
-                sqlgVertex.inLabelsForVertex = new HashSet<>();
-                sqlgVertex.inLabelsForVertex.addAll(labels);
-            } else {
-                sqlgVertex.outLabelsForVertex = new HashSet<>();
-                sqlgVertex.outLabelsForVertex.addAll(labels);
-            }
-        }
-        if (inDirection) {
-            return sqlgVertex.inLabelsForVertex;
-        } else {
-            return sqlgVertex.outLabelsForVertex;
-        }
-    }
-
-    void convertVertexLabelToSet(Set<SchemaTable> labels, String commaSeparatedLabels) throws SQLException {
-        if (commaSeparatedLabels != null) {
-            String[] schemaLabels = commaSeparatedLabels.split(LABEL_SEPARATOR);
-            for (String schemaLabel : schemaLabels) {
-                SchemaTable schemaLabelPair = SqlgUtil.parseLabel(schemaLabel, this.sqlDialect.getPublicSchema());
-                labels.add(schemaLabelPair);
-            }
         }
     }
 

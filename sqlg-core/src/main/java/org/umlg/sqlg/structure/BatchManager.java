@@ -1,11 +1,10 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.util.*;
@@ -123,84 +122,6 @@ public class BatchManager {
         this.sqlDialect.flushRemovedEdges(this.sqlgGraph, this.removeEdgeCache);
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
         return verticesRange;
-    }
-
-    public boolean updateVertexCacheWithEdgeLabel(SqlgVertex vertex, SchemaTable schemaTable, boolean inDirection) {
-        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertices = this.vertexCache.get(vertex.getSchemaTableNoPrefix());
-        if (vertices != null) {
-            Triple<String, String, Map<String, Object>> triple = vertices.getRight().get(vertex);
-            if (triple != null) {
-                if (inDirection) {
-                    //vertex = inVertex
-                    //keep outLabels untouched, update inLabels
-                    vertices.getRight().put(vertex, Triple.of(triple.getLeft(), updateVertexLabels(triple.getMiddle(), schemaTable), triple.getRight()));
-                    vertex.inLabelsForVertex.add(schemaTable);
-                } else {
-                    //vertex = outVertex
-                    //keep inLabels untouched, update outLabels
-                    vertices.getRight().put(vertex, Triple.of(updateVertexLabels(triple.getLeft(), schemaTable), triple.getMiddle(), triple.getRight()));
-                    vertex.outLabelsForVertex.add(schemaTable);
-                }
-                return true;
-            }
-        } else {
-            if (inDirection) {
-                Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
-                if (outInLabel == null) {
-                    Set<SchemaTable> currentInLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, true);
-                    Set<SchemaTable> currentOutLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, false);
-                    String inLabels = schemaTablesToString(currentInLabels);
-                    String outLabels = schemaTablesToString(currentOutLabels);
-                    this.vertexOutInLabelCache.put(vertex, Pair.of(outLabels, updateVertexLabels(inLabels, schemaTable)));
-                } else {
-                    this.vertexOutInLabelCache.put(vertex, Pair.of(outInLabel.getLeft(), updateVertexLabels(outInLabel.getRight(), schemaTable)));
-                }
-                vertex.inLabelsForVertex.add(schemaTable);
-            } else {
-                Pair<String, String> outInLabel = this.vertexOutInLabelCache.get(vertex);
-                if (outInLabel == null) {
-                    Set<SchemaTable> currentInLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, true);
-                    Set<SchemaTable> currentOutLabels = this.sqlgGraph.getSchemaManager().getLabelsForVertex(vertex, false);
-                    String inLabels = schemaTablesToString(currentInLabels);
-                    String outLabels = schemaTablesToString(currentOutLabels);
-                    this.vertexOutInLabelCache.put(vertex, Pair.of(updateVertexLabels(outLabels, schemaTable), inLabels));
-                } else {
-                    this.vertexOutInLabelCache.put(vertex, Pair.of(updateVertexLabels(outInLabel.getLeft(), schemaTable), outInLabel.getRight()));
-                }
-                vertex.outLabelsForVertex.add(schemaTable);
-            }
-        }
-        return false;
-    }
-
-    private String schemaTablesToString(Set<SchemaTable> schemaTables) {
-        StringBuilder sb = new StringBuilder();
-        int count = 1;
-        for (SchemaTable schemaTable : schemaTables) {
-            sb.append(schemaTable.toString());
-            if (count++ < schemaTables.size()) {
-                sb.append(SchemaManager.LABEL_SEPARATOR);
-            }
-        }
-        String result = sb.toString();
-        if (StringUtils.isEmpty(result)) {
-            return null;
-        } else {
-            return result;
-        }
-    }
-
-    private String updateVertexLabels(String currentLabel, SchemaTable schemaTable) {
-        if (StringUtils.isEmpty(currentLabel) || currentLabel.equals(this.sqlDialect.getBatchNull())) {
-            return schemaTable.toString();
-        } else if (currentLabel.equals(schemaTable.toString()) ||
-                currentLabel.startsWith(schemaTable.toString() + SchemaManager.LABEL_SEPARATOR) ||
-                currentLabel.contains(SchemaManager.LABEL_SEPARATOR + schemaTable.toString() + SchemaManager.LABEL_SEPARATOR) ||
-                currentLabel.endsWith(SchemaManager.LABEL_SEPARATOR + schemaTable.toString())) {
-            return currentLabel;
-        } else {
-            return currentLabel + SchemaManager.LABEL_SEPARATOR + schemaTable.toString();
-        }
     }
 
     public boolean updateProperty(SqlgElement sqlgElement, String key, Object value) {

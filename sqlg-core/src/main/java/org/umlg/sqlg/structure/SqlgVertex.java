@@ -23,8 +23,6 @@ import java.util.*;
 public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
-    Set<SchemaTable> inLabelsForVertex = null;
-    Set<SchemaTable> outLabelsForVertex = null;
 
     /**
      * Called from SqlG.addVertex
@@ -104,8 +102,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                         this.table
                 ),
                 keyValues);
-//        this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable(this, this.schema, label, false);
-//        this.sqlgGraph.getSchemaManager().addEdgeLabelToVerticesTable((SqlgVertex) inVertex, this.schema, label, true);
         final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
         return edge;
     }
@@ -200,7 +196,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             }
             for (Direction d : directions) {
                 for (SchemaTable schemaTable : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
-//                    if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), schemaTable.getTable())) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
                     switch (d) {
                         case IN:
@@ -338,7 +333,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
                     }
-//                    }
                 }
             }
             return edges.iterator();
@@ -394,9 +388,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         }
         //Cache the properties
         this.properties.putAll(keyValueMap);
-        //its a new vertex so we know it has no labels
-        this.inLabelsForVertex = new HashSet<>();
-        this.outLabelsForVertex = new HashSet<>();
     }
 
     private void internalBatchAddVertex(Map<String, Object> keyValueMap) {
@@ -526,9 +517,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                     for (SchemaTable joinSchemaTable : tables) {
 
                         StringBuilder sql = new StringBuilder("SELECT b.*");
-//                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_IN_LABELS));
-//                        sql.append(", c.");
-//                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_OUT_LABELS));
                         sql.append(", a.");
                         switch (d) {
                             case IN:
@@ -696,7 +684,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                                         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                         sqlGVertex.properties.clear();
                                         sqlGVertex.properties.putAll(keyValueMap);
-//                                        this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
                                         vertices.add(sqlGVertex);
                                         break;
                                     case OUT:
@@ -704,7 +691,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                                         keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
                                         sqlGVertex.properties.clear();
                                         sqlGVertex.properties.putAll(keyValueMap);
-//                                        this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
                                         vertices.add(sqlGVertex);
                                         break;
                                     case BOTH:
@@ -887,17 +873,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
     public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
         return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
-    }
-
-    public void reset() {
-        if (this.inLabelsForVertex != null) {
-            this.inLabelsForVertex.clear();
-        }
-        if (this.outLabelsForVertex != null) {
-            this.outLabelsForVertex.clear();
-        }
-        this.inLabelsForVertex = null;
-        this.outLabelsForVertex = null;
     }
 
     private Set<SchemaTable> transformToOutSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
