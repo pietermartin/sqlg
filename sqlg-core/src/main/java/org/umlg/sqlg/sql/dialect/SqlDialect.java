@@ -3,17 +3,20 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.tinkerpop.gremlin.process.T;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.T;
 import org.umlg.sqlg.structure.*;
 
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
 
 public interface SqlDialect {
 
@@ -22,10 +25,6 @@ public interface SqlDialect {
     public Configuration getConfiguration();
 
     Set<String> getDefaultSchemas();
-
-    public default long getSequenceStart() {
-        return 1L;
-    }
 
     PropertyType sqlTypeToPropertyType(int sqlType, String typeName);
 

@@ -175,8 +175,8 @@ public class RecordId implements KryoSerializable {
         }
     }
 
-    static class CustomIdJacksonDeserializer extends StdDeserializer<RecordId> {
-        public CustomIdJacksonDeserializer() {
+    static class RecordIdJacksonDeserializer extends StdDeserializer<RecordId> {
+        public RecordIdJacksonDeserializer() {
             super(RecordId.class);
         }
 

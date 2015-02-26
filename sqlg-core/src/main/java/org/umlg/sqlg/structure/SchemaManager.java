@@ -503,7 +503,7 @@ public class SchemaManager {
         }
     }
 
-    void ensureColumnExist(String schema, String prefixedTable, ImmutablePair<String, PropertyType> keyValue) {
+    public void ensureColumnExist(String schema, String prefixedTable, ImmutablePair<String, PropertyType> keyValue) {
         if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
             throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }

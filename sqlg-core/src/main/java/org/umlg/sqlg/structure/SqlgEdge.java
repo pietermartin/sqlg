@@ -154,13 +154,12 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             i = setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
-            preparedStatement.setLong(i++, this.inVertex.primaryKey);
-            preparedStatement.setLong(i++, this.outVertex.primaryKey);
+            preparedStatement.setLong(i++, this.inVertex.recordId.getId());
+            preparedStatement.setLong(i++, this.outVertex.recordId.getId());
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
-                this.primaryKey = generatedKeys.getLong(1);
-                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), this.primaryKey);
+                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
             } else {
                 throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
             }
@@ -190,7 +189,7 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, this.primaryKey);
+                preparedStatement.setLong(1, this.recordId.getId());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     loadResultSet(resultSet);

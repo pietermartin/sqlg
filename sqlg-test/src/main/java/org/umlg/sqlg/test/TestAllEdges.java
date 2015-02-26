@@ -12,15 +12,15 @@ import org.junit.Test;
  */
 public class TestAllEdges extends BaseTest {
 
-//    @Test
-//    public void testAllEdges() {
-//        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-//        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-//        marko.addEdge("friend", john);
-//        marko.addEdge("family", john);
-//        this.sqlgGraph.tx().commit();
-//        Assert.assertEquals(2L, this.sqlgGraph.E().count().next(), 0);
-//    }
+    @Test
+    public void testAllEdges() {
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        marko.addEdge("friend", john);
+        marko.addEdge("family", john);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2L, this.sqlgGraph.E().count().next(), 0);
+    }
 
     @Test
     public void shouldNotGetConcurrentModificationException() {

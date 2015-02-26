@@ -86,11 +86,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public long getSequenceStart() {
-        return 0L;
-    }
-
-    @Override
     public boolean supportsTransactionalSchema() {
         return false;
     }

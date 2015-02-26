@@ -25,7 +25,6 @@ public abstract class SqlgElement implements Element, Element.Iterators {
 
     protected String schema;
     protected String table;
-    protected long primaryKey;
     protected RecordId recordId;
     protected final SqlgGraph sqlgGraph;
     protected Map<String, Object> properties = new HashMap<>();
@@ -45,10 +44,9 @@ public abstract class SqlgElement implements Element, Element.Iterators {
             throw new IllegalStateException("SqlgElement.table may not be prefixed with " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
         }
         this.sqlgGraph = sqlgGraph;
-        this.primaryKey = id;
         this.schema = schema;
         this.table = table;
-        this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), this.primaryKey);
+        this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
         sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
     }
@@ -74,19 +72,12 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         return SchemaTable.of(this.getSchema(), SchemaManager.VERTEX_PREFIX + this.getTable());
     }
 
-    public void setInternalPrimaryKey(Long id) {
-        this.primaryKey = id;
+    public void setInternalPrimaryKey(RecordId recordId) {
+        this.recordId = recordId;
     }
 
     @Override
     public Object id() {
-//        StringBuilder result = new StringBuilder();
-//        result.append(this.schema);
-//        result.append(".");
-//        result.append(this.table);
-//        result.append(RecordId.RECORD_ID_DELIMITER);
-//        result.append(this.primaryKey);
-//        return result.toString();
         return this.recordId;
     }
 
@@ -125,12 +116,6 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         this.sqlgGraph.tx().readWrite();
         return this.internalGetProperties().keySet();
     }
-
-//    @Override
-//    public Set<String> hiddenKeys() {
-//        this.sqlgGraph.tx().readWrite();
-//        return this.internalGetHiddens().keySet();
-//    }
 
     //TODO relook at hiddens, unnecessary looping and queries
     @Override

@@ -20,9 +20,9 @@ public class TestForeignKeyIndexPerformance extends BaseTest {
     public void testForeignKeyPerformance() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         this.sqlgGraph.tx().batchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         for (int i = 0; i < 10000; i++) {
-            v1.addEdge("car", this.sqlgGraph.addVertex(T.label, "Car"));
+            v1.addEdge("car", this.sqlgGraph.addVertex(T.label, "Car", "dummy", "a"));
         }
         this.sqlgGraph.tx().commit();
 

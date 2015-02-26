@@ -232,10 +232,10 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         switch (d) {
                             case IN:
-                                preparedStatement.setLong(1, this.primaryKey);
+                                preparedStatement.setLong(1, this.recordId.getId());
                                 break;
                             case OUT:
-                                preparedStatement.setLong(1, this.primaryKey);
+                                preparedStatement.setLong(1, this.recordId.getId());
                                 break;
                             case BOTH:
                                 throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
@@ -442,8 +442,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
-                this.primaryKey = generatedKeys.getLong(1);
-                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), this.primaryKey);
+                this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
             } else {
                 throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
             }
@@ -607,10 +606,10 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                             switch (d) {
                                 case IN:
-                                    preparedStatement.setLong(1, this.primaryKey);
+                                    preparedStatement.setLong(1, this.recordId.getId());
                                     break;
                                 case OUT:
-                                    preparedStatement.setLong(1, this.primaryKey);
+                                    preparedStatement.setLong(1, this.recordId.getId());
                                     break;
                                 case BOTH:
                                     throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
@@ -741,7 +740,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                 logger.debug(sqlTriple.getRight());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sqlTriple.getRight())) {
-                preparedStatement.setLong(1, this.primaryKey);
+                preparedStatement.setLong(1, this.recordId.getId());
                 setParametersOnStatement(sqlTriple.getLeft(), conn, preparedStatement);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
@@ -832,12 +831,12 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                 logger.debug(sql.toString());
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.setLong(1, this.primaryKey);
+                preparedStatement.setLong(1, this.recordId.getId());
                 ResultSet resultSet = preparedStatement.executeQuery();
                 if (resultSet.next()) {
                     loadResultSet(resultSet);
                 } else {
-                    throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.primaryKey}));
+                    throw new IllegalStateException(String.format("Vertex with label %s and id %d does exist.", new Object[]{this.schema + "." + this.table, this.recordId.getId()}));
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
