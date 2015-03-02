@@ -661,39 +661,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             throw new RuntimeException(e);
                         }
                     }
-
-//                    StringBuilder sql = new StringBuilder("DELETE FROM ");
-//                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
-//                    sql.append(".");
-//                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-//                    sql.append(" WHERE ");
-//                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//                    sql.append(" in (");
-//
-//                    int count = 1;
-//                    for (SqlgEdge edge : flattenedEdges) {
-//                        sql.append("?");
-//                        if (count++ < flattenedEdges.size()) {
-//                            sql.append(",");
-//                        }
-//                    }
-//                    sql.append(")");
-//                    if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-//                        sql.append(";");
-//                    }
-//                    if (logger.isDebugEnabled()) {
-//                        logger.debug(sql.toString());
-//                    }
-//                    Connection conn = sqlgGraph.tx().getConnection();
-//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                        count = 1;
-//                        for (SqlgEdge edge : flattenedEdges) {
-//                            preparedStatement.setLong(count++, (Long) edge.id());
-//                        }
-//                        preparedStatement.executeUpdate();
-//                    } catch (SQLException e) {
-//                        throw new RuntimeException(e);
-//                    }
                 }
             }
         }
@@ -706,7 +673,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     private InputStream mapToEdge_InputStream(Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
-//        Long start = endHigh - edgeCache.size() + 1;
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
