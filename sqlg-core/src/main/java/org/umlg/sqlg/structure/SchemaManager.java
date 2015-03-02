@@ -238,21 +238,22 @@ public class SchemaManager {
         config.addMapConfig(schemaMapConfig);
 
         MapConfig labelSchemasMapConfig = new MapConfig();
-        labelSchemasMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+        labelSchemasMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
         labelSchemasMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(labelSchemasMapConfig);
 
         MapConfig tableMapConfig = new MapConfig();
+        tableMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
         tableMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableMapConfig);
 
         MapConfig edgeForeignKeysMapConfig = new MapConfig();
-        edgeForeignKeysMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+        edgeForeignKeysMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
         edgeForeignKeysMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(edgeForeignKeysMapConfig);
 
         MapConfig tableLabelMapConfig = new MapConfig();
-        tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+        tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLE_LABELS_HAZELCAST_MAP);
         tableLabelMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableLabelMapConfig);
         return config;
