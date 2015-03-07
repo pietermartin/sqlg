@@ -144,16 +144,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     sql.append(".");
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
                     sql.append(" a ");
-
-                    //JOINS to VERTICES to preload the in and out edges labels
-//                    sql.append(" a JOIN ");
-//                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-//                    sql.append(".");
-//                    sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-//                    sql.append(" b ON a.");
-//                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//                    sql.append(" = b.");
-//                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
                     sql.append(" ORDER BY ");
                     sql.append("a.");
                     sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
@@ -171,21 +161,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                             long id = resultSet.getLong(1);
                             SqlgVertex sqlGVertex = SqlgVertex.of(this.sqlgGraph, id, schema, schemaTable.getTable());
                             sqlGVertex.loadResultSet(resultSet);
-
-//                            this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
                             sqlGVertexes.add(sqlGVertex);
-
-//                            //Load the in and out labels
-//                            Set<SchemaTable> labels = new HashSet<>();
-//                            String inCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_IN_LABELS);
-//                            this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, inCommaSeparatedLabels);
-//                            sqlGVertex.inLabelsForVertex = new HashSet<>();
-//                            sqlGVertex.inLabelsForVertex.addAll(labels);
-//                            String outCommaSeparatedLabels = resultSet.getString(SchemaManager.VERTEX_OUT_LABELS);
-//                            labels.clear();
-//                            this.sqlgGraph.getSchemaManager().convertVertexLabelToSet(labels, outCommaSeparatedLabels);
-//                            sqlGVertex.outLabelsForVertex = new HashSet<>();
-//                            sqlGVertex.outLabelsForVertex.addAll(labels);
                         }
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -197,7 +173,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _verticesUsingLabeledIndex(String label, String key, Object value) {
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
         //Check that the table and column exist
         List<Vertex> sqlGVertexes = new ArrayList<>();
         if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()) &&
@@ -285,7 +261,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Iterable<? extends Edge> _edgesUsingLabeledIndex(String label, String key, Object value) {
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
-        SchemaTable schemaTable = SqlgUtil.parseLabel(label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
         if (this.sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable()) &&
                 this.sqlgGraph.getSchemaManager().columnExists(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable(), key)) {
             StringBuilder sql = new StringBuilder("SELECT * FROM ");

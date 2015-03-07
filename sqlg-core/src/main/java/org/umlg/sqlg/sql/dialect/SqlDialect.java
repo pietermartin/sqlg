@@ -313,4 +313,25 @@ public interface SqlDialect {
     public default boolean supportsClientInfo() {
         return false;
     }
+
+    public default void validateSchemaName(String schema) {
+    }
+
+    public default void validateTableName(String table) {
+    }
+
+    public default void validateColumnName(String column) {
+    }
+
+    public default int getMinimumSchemaNameLength() {
+        return Integer.MAX_VALUE;
+    }
+
+    public default int getMinimumTableNameLength() {
+        return Integer.MAX_VALUE;
+    }
+
+    public default int getMinimumColumnNameLength() {
+        return Integer.MAX_VALUE;
+    }
 }

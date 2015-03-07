@@ -40,23 +40,6 @@ public class SqlgUtil {
         return result;
     }
 
-    public static SchemaTable parseLabel(final String label, String defaultSchema) {
-        Objects.requireNonNull(label, "label may not be null!");
-        String[] schemaLabel = label.split("\\.");
-        final String schema;
-        final String table;
-        if (schemaLabel.length > 2) {
-            throw new IllegalStateException(String.format("label may only contain one '.', indicating schema.table, %s", new Object[]{label}));
-        }
-        if (schemaLabel.length == 2) {
-            schema = schemaLabel[0];
-            table = schemaLabel[1];
-        } else {
-            schema = defaultSchema;
-            table = label;
-        }
-        return SchemaTable.of(schema, table);
-    }
 
     public static SchemaTable parseLabel(final String label) {
         Objects.requireNonNull(label, "label may not be null!");

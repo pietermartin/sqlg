@@ -219,9 +219,9 @@ public class SqlgEdge extends SqlgElement implements Edge, Edge.Iterators {
             }
             if (!Objects.isNull(o)) {
                 if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                    inVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    inVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
                 } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                    outVertexColumnName = SqlgUtil.parseLabel(columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    outVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
                 }
             }
         }

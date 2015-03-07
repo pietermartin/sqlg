@@ -170,7 +170,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             }
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.tx().readWrite();
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
         final SqlgVertex vertex = new SqlgVertex(this, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
@@ -644,7 +644,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             }
         }
         this.tx().readWrite();
-        SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.getSchemaManager().createVertexIndex(schemaTablePair, dummykeyValues);
     }
 
@@ -665,7 +665,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             }
         }
         this.tx().readWrite();
-        SchemaTable schemaTablePair = SqlgUtil.parseLabel(label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.getSchemaManager().createEdgeIndex(schemaTablePair, dummykeyValues);
     }
 
@@ -683,7 +683,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
         long count = 0;
         Set<String> tables = this.getSchemaManager().getLocalTables().keySet();
         for (String table : tables) {
-            SchemaTable schemaTable = SqlgUtil.parseLabel(table, this.getSqlDialect().getPublicSchema());
+            SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
             if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
                 StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM ");
                 sql.append("\"");
@@ -790,7 +790,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             //TODO use a union query
             Set<String> tables = this.getSchemaManager().getAllTables().keySet();
             for (String table : tables) {
-                SchemaTable schemaTable = SqlgUtil.parseLabel(table, this.getSqlDialect().getPublicSchema());
+                SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
                 if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
                     sql.append("\"");

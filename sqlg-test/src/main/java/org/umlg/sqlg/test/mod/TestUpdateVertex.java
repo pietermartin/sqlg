@@ -1,5 +1,9 @@
 package org.umlg.sqlg.test.mod;
 
+import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
+import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
@@ -8,67 +12,31 @@ import org.umlg.sqlg.test.BaseTest;
  */
 public class TestUpdateVertex extends BaseTest {
 
-//    @Test
-//    public void testUpdateVertex() {
-//        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-//        Assert.assertEquals("john", v.value("name"));
-//        v.property("name", "joe");
-//        Assert.assertEquals("joe", v.value("name"));
-//        this.sqlgGraph.tx().commit();
-//        Assert.assertEquals("joe", v.value("name"));
-//    }
-//
-//    @Test
-//    public void testPropertyIsPresent() {
-//        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-//        Assert.assertTrue(v.property("name").isPresent());
-//    }
-//
-//    @Test
-//    public void shouldNotCallBaseFunctionThusNotRemovingTheVertex() throws Exception {
-//        Graph g = this.sqlgGraph;
-//        final StrategyWrappedGraph swg = new StrategyWrappedGraph(g);
-//
-//        // create an ad-hoc strategy that only marks a vertex as "deleted" and removes all edges and properties
-//        // but doesn't actually blow it away
-//        swg.getStrategy().setGraphStrategy(new GraphStrategy() {
-//            @Override
-//            public UnaryOperator<Supplier<Void>> getRemoveVertexStrategy(final Strategy.Context<StrategyWrappedVertex> ctx) {
-//                return (t) -> () -> {
-//                    final Vertex v = ctx.getCurrent().getBaseVertex();
-//                    v.bothE().remove();
-//                    v.properties().forEachRemaining(Property::remove);
-//                    v.property("deleted", true);
-//                    return null;
-//                };
-//            }
-//        });
-//
-//        final Vertex toRemove = g.addVertex("name", "pieter");
-//        toRemove.addEdge("likes", g.addVertex("feature", "Strategy"));
-//
-//        assertEquals(1, toRemove.properties().count().next(), 0);
-//        assertEquals(new Long(1), toRemove.bothE().count().next());
-//        assertFalse(toRemove.property("deleted").isPresent());
-//
-//        swg.v(toRemove.id()).remove();
-//
-//        final Vertex removed = g.v(toRemove.id());
-//        assertNotNull(removed);
-//        assertEquals(1, removed.properties().count().next(), 0);
-//        assertEquals(new Long(0), removed.bothE().count().next());
-//        assertTrue(toRemove.property("deleted").isPresent());
-//    }
-//
-//    @Test
-//    public void testLoadPropertiesOnUpdate() {
-//        Vertex vertex = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a", "property2", "b");
-//        this.sqlgGraph.tx().commit();
-//
-//        vertex = this.sqlgGraph.v(vertex.id());
-//        vertex.property("property1", "aa");
-//        Assert.assertEquals("b", vertex.value("property2"));
-//
-//    }
+    @Test
+    public void testUpdateVertex() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        Assert.assertEquals("john", v.value("name"));
+        v.property("name", "joe");
+        Assert.assertEquals("joe", v.value("name"));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("joe", v.value("name"));
+    }
+
+    @Test
+    public void testPropertyIsPresent() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        Assert.assertTrue(v.property("name").isPresent());
+    }
+
+    @Test
+    public void testLoadPropertiesOnUpdate() {
+        Vertex vertex = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a", "property2", "b");
+        this.sqlgGraph.tx().commit();
+
+        vertex = this.sqlgGraph.v(vertex.id());
+        vertex.property("property1", "aa");
+        Assert.assertEquals("b", vertex.value("property2"));
+
+    }
 
 }

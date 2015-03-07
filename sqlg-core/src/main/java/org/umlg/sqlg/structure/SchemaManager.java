@@ -886,10 +886,12 @@ public class SchemaManager {
                         }
                         previousSchema = schema;
                         String column = columnsRs.getString(4);
-                        int columnType = columnsRs.getInt(5);
-                        String typeName = columnsRs.getString("TYPE_NAME");
-                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                        uncommittedColumns.put(column, propertyType);
+                        if (!column.equals(SchemaManager.ID)) {
+                            int columnType = columnsRs.getInt(5);
+                            String typeName = columnsRs.getString("TYPE_NAME");
+                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                            uncommittedColumns.put(column, propertyType);
+                        }
                         this.localTables.put(schema + "." + table, uncommittedColumns);
                         Set<String> schemas = this.localLabelSchemas.get(table);
                         if (schemas == null) {
@@ -1076,10 +1078,10 @@ public class SchemaManager {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
-        Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
+        Map<String, Map<String, PropertyType>> result = new HashMap<>();
         result.putAll(this.localTables);
         result.putAll(this.uncommittedTables);
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
     public class SchemasMapEntryListener implements EntryListener<String, String> {

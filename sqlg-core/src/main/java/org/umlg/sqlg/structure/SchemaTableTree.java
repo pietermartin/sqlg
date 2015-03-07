@@ -1,9 +1,9 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.T;
 import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.commons.lang3.tuple.Triple;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -550,9 +550,9 @@ public class SchemaTableTree {
             //Check if we are on a vertex or edge
             SchemaTable hasContainerLabelSchemaTable;
             if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                hasContainerLabelSchemaTable = SqlgUtil.parseLabel(SchemaManager.VERTEX_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
             } else {
-                hasContainerLabelSchemaTable = SqlgUtil.parseLabel(SchemaManager.EDGE_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
             }
             if (hasContainer.key.equals(T.label.getAccessor()) && hasContainer.predicate.equals(Compare.eq) &&
                     !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {

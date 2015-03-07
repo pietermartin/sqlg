@@ -6,6 +6,7 @@ import com.hazelcast.nio.serialization.DataSerializable;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Date: 2014/08/17
@@ -20,7 +21,7 @@ public class SchemaTable implements DataSerializable, Serializable {
     public SchemaTable() {
     }
 
-    public SchemaTable(String schema, String table) {
+    private SchemaTable(String schema, String table) {
         this.schema = schema;
         this.table = table;
     }
@@ -35,6 +36,23 @@ public class SchemaTable implements DataSerializable, Serializable {
 
     public static SchemaTable of(String schema, String table) {
         return new SchemaTable(schema, table);
+    }
+
+    public static SchemaTable from(SqlgGraph sqlgGraph, final String label, String defaultSchema) {
+        Objects.requireNonNull(label, "label may not be null!");
+        String[] schemaLabel = label.split("\\.");
+        final String schema;
+        final String table;
+        if (schemaLabel.length > 1) {
+            schema = schemaLabel[0];
+            table = label.substring(schema.length() + 1);
+        } else {
+            schema = defaultSchema;
+            table = label;
+        }
+        sqlgGraph.getSqlDialect().validateSchemaName(schema);
+        sqlgGraph.getSqlDialect().validateTableName(table);
+        return SchemaTable.of(schema, table);
     }
 
     @Override

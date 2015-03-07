@@ -953,6 +953,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void validateProperty(Object key, Object value) {
+        if (key instanceof String && ((String)key).length() > 63) {
+            validateColumnName((String)key);
+        }
         if (value instanceof String) {
             return;
         }
@@ -1060,5 +1063,35 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     public boolean supportsClientInfo() {
         return true;
+    }
+
+    public void validateSchemaName(String schema) {
+        if (schema.length() > getMinimumSchemaNameLength()) {
+            throw SqlgExceptions.invalidSchemaName("Postgresql schema names can only be 63 characters. " + schema + " exceeds that");
+        }
+    }
+
+    public void validateTableName(String table) {
+        if (table.length() > getMinimumTableNameLength()) {
+            throw SqlgExceptions.invalidTableName("Postgresql table names can only be 63 characters. " + table + " exceeds that");
+        }
+    }
+
+    public void validateColumnName(String column) {
+        if (column.length() > getMinimumColumnNameLength()) {
+            throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + " exceeds that");
+        }
+    }
+
+    public int getMinimumSchemaNameLength() {
+        return 63;
+    }
+
+    public int getMinimumTableNameLength() {
+        return 63;
+    }
+
+    public int getMinimumColumnNameLength() {
+        return 63;
     }
 }

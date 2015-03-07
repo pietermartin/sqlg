@@ -291,8 +291,8 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
                             if (inVertexColumnName.isEmpty() || outVertexColumnName.isEmpty()) {
                                 throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
                             }
-                            SchemaTable inSchemaTable = SqlgUtil.parseLabel(inVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                            SchemaTable outSchemaTable = SqlgUtil.parseLabel(outVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                            SchemaTable inSchemaTable = SchemaTable.from(this.sqlgGraph, inVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                            SchemaTable outSchemaTable = SchemaTable.from(this.sqlgGraph, outVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
 
                             List<Object> keyValues = new ArrayList<>();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {

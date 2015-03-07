@@ -8,6 +8,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -260,11 +261,23 @@ public class TestGremlinCompileV extends BaseTest {
     }
 
     @Test
-    public void testEmptyTraaversal() {
+    public void testEmptyTraversal() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "B");
         v1.addEdge("ab", v2);
         this.sqlgGraph.tx().commit();
         v1.out("test");
+    }
+
+    @Test
+    public void testOutOutToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a2");
+        a1.addEdge("hierarchyParent_hierarchy", a2);
+        this.sqlgGraph.tx().commit();
+        assertTrue(a1.out().hasNext());
+        assertFalse(a2.out().hasNext());
+        assertFalse(a1.in().hasNext());
+        assertTrue(a2.in().hasNext());
     }
 }
