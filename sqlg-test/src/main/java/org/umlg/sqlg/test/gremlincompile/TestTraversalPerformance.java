@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("done inserting");
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        Assert.assertEquals(1000000, a.out().out().count().next().intValue());
+        Assert.assertEquals(1000000, vertexTraversal(a).out().out().count().next().intValue());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }

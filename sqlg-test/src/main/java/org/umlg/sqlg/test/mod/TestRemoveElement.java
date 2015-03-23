@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -19,10 +19,10 @@ public class TestRemoveElement extends BaseTest {
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3L, this.sqlgGraph.V().count().next(), 0);
+        Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0);
         marko.remove();
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2L, this.sqlgGraph.V().count().next(), 0);
+        Assert.assertEquals(2L, this.sqlgGraph.traversal().V().count().next(), 0);
     }
 
     @Test
@@ -33,11 +33,11 @@ public class TestRemoveElement extends BaseTest {
         Edge edge1 = marko.addEdge("friend", john);
         Edge edge2 =marko.addEdge("friend", peter);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3L, this.sqlgGraph.V().count().next(), 0);
-        Assert.assertEquals(2L, marko.out("friend").count().next(), 0);
+        Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(2L, vertexTraversal(marko).out("friend").count().next(), 0);
         edge1.remove();
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3L, this.sqlgGraph.V().count().next(), 0);
-        Assert.assertEquals(1L, marko.out("friend").count().next(), 0);
+        Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(1L, vertexTraversal(marko).out("friend").count().next(), 0);
     }
 }

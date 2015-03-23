@@ -1,13 +1,10 @@
 package org.umlg.sqlg.test
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.junit.Assume
 import org.junit.Test
 
 import static org.junit.Assert.*
-
-import org.apache.tinkerpop.gremlin.process.T;
 
 /**
  * Created by pieter on 2014/07/31.
@@ -24,7 +21,7 @@ class TestQuery extends BaseTest {
         this.sqlgGraph.addVertex("Person", [name     : "Marko", ageI: 40, ageL: 40L, ageF: 40F, ageD: 40D, ageS: (short) 1,
                                             nameArray: arrStr]);
         this.sqlgGraph.tx().commit()
-        assertEquals(2, this.sqlgGraph.V().count().next());
+        assertEquals(2, this.sqlgGraph.traversal().V().count().next());
         String json = this.sqlgGraph.query("select * from \"V_Person\"");
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> jsonAsMap = mapper.readValue(json, Map.class);

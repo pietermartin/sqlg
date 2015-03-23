@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.index;
 
 import org.apache.commons.lang.time.StopWatch;
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -28,7 +28,7 @@ public class TestForeignKeyIndexPerformance extends BaseTest {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        List<Vertex> cars = v1.out("car").toList();
+        List<Vertex> cars = vertexTraversal(v1).out("car").toList();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
         Assert.assertEquals(10000, cars.size());

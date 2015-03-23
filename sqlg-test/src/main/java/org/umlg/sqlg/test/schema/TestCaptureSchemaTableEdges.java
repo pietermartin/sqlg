@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;

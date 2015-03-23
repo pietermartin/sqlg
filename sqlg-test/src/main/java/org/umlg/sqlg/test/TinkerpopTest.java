@@ -1,14 +1,12 @@
 package org.umlg.sqlg.test;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.kryo.KryoReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +28,7 @@ public class TinkerpopTest extends BaseTest {
     @Test
     public void g_v1_outXcreatedX_valueMap() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader initreader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
+        final GraphReader initreader = GryoReader.build().workingDirectory(File.separator + "tmp").create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
             initreader.readGraph(stream, g);
         }
@@ -46,7 +44,7 @@ public class TinkerpopTest extends BaseTest {
     }
 
     public Traversal<Vertex, Map<String, List<String>>> get_g_v1_outXcreatedX_valueMap(final Object v1Id) {
-        return this.sqlgGraph.V(v1Id).out("created").valueMap();
+        return this.sqlgGraph.traversal().V(v1Id).out("created").valueMap();
     }
 
     public Object convertToVertexId(final String vertexName) {
@@ -66,14 +64,14 @@ public class TinkerpopTest extends BaseTest {
 
     public Vertex convertToVertex(final Graph g, final String vertexName) {
         // all test graphs have "name" as a unique id which makes it easy to hardcode this...works for now
-        return ((Vertex) g.V().has("name", vertexName).next());
+        return (g.traversal().V().has("name", vertexName).next());
     }
 
 //    @Test
     public void g_e7_hasXlabelXknowsX() throws IOException {
         //System.out.println(convertToEdgeId("marko", "knows", "vadas"));
         Graph g = this.sqlgGraph;
-        final GraphReader initreader = KryoReader.build().workingDirectory(File.separator + "tmp").create();
+        final GraphReader initreader = GryoReader.build().workingDirectory(File.separator + "tmp").create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
             initreader.readGraph(stream, g);
         }
@@ -89,7 +87,7 @@ public class TinkerpopTest extends BaseTest {
     }
 
     public Traversal<Edge, Edge> get_g_e7_hasXlabelXknowsX(final Object e7Id) {
-        return this.sqlgGraph.E(e7Id).has(T.label, "knows");
+        return this.sqlgGraph.traversal().E(e7Id).has(T.label, "knows");
     }
 
     //    @Test
@@ -126,19 +124,19 @@ public class TinkerpopTest extends BaseTest {
     }
 
     private static void assertToyGraph(final Graph g1, final boolean assertDouble, final boolean lossyForId, final boolean assertSpecificLabel) {
-        assertEquals(new Long(6), g1.V().count().next());
-        assertEquals(new Long(6), g1.E().count().next());
+        assertEquals(new Long(6), g1.traversal().V().count().next());
+        assertEquals(new Long(6), g1.traversal().E().count().next());
 
-        final Vertex v1 = (Vertex) g1.V().has("name", "marko").next();
+        final Vertex v1 = (Vertex) g1.traversal().V().has("name", "marko").next();
         assertEquals(29, v1.<Integer>value("age").intValue());
         assertEquals(2, v1.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v1.label());
         assertId(g1, lossyForId, v1, 1);
 
-        final List<Edge> v1Edges = v1.bothE().toList();
+        final List<Edge> v1Edges = g1.traversal().V(v1.id()).bothE().toList();
         assertEquals(3, v1Edges.size());
         v1Edges.forEach(e -> {
-            if (e.inV().values("name").next().equals("vadas")) {
+            if (g1.traversal().E(e.id()).inV().values("name").next().equals("vadas")) {
                 assertEquals("knows", e.label());
                 if (assertDouble)
                     assertEquals(0.5d, e.value("weight"), 0.0001d);
@@ -146,7 +144,7 @@ public class TinkerpopTest extends BaseTest {
                     assertEquals(0.5f, e.value("weight"), 0.0001f);
                 assertEquals(1, e.keys().size());
                 assertId(g1, lossyForId, e, 7);
-            } else if (e.inV().values("name").next().equals("josh")) {
+            } else if (g1.traversal().E(e.id()).inV().values("name").next().equals("josh")) {
                 assertEquals("knows", e.label());
                 if (assertDouble)
                     assertEquals(1.0, e.value("weight"), 0.0001d);
@@ -154,7 +152,7 @@ public class TinkerpopTest extends BaseTest {
                     assertEquals(1.0f, e.value("weight"), 0.0001f);
                 assertEquals(1, e.keys().size());
                 assertId(g1, lossyForId, e, 8);
-            } else if (e.inV().values("name").next().equals("lop")) {
+            } else if (g1.traversal().E(e.id()).inV().values("name").next().equals("lop")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(0.4d, e.value("weight"), 0.0001d);
@@ -167,16 +165,16 @@ public class TinkerpopTest extends BaseTest {
             }
         });
 
-        final Vertex v2 = (Vertex) g1.V().has("name", "vadas").next();
+        final Vertex v2 = (Vertex) g1.traversal().V().has("name", "vadas").next();
         assertEquals(27, v2.<Integer>value("age").intValue());
         assertEquals(2, v2.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v2.label());
         assertId(g1, lossyForId, v2, 2);
 
-        final List<Edge> v2Edges = v2.bothE().toList();
+        final List<Edge> v2Edges = g1.traversal().V(v2.id()).bothE().toList();
         assertEquals(1, v2Edges.size());
         v2Edges.forEach(e -> {
-            if (e.outV().values("name").next().equals("marko")) {
+            if (g1.traversal().E(e.id()).outV().values("name").next().equals("marko")) {
                 assertEquals("knows", e.label());
                 if (assertDouble)
                     assertEquals(0.5d, e.value("weight"), 0.0001d);
@@ -189,16 +187,16 @@ public class TinkerpopTest extends BaseTest {
             }
         });
 
-        final Vertex v3 = (Vertex) g1.V().has("name", "lop").next();
+        final Vertex v3 = (Vertex) g1.traversal().V().has("name", "lop").next();
         assertEquals("java", v3.<String>value("lang"));
         assertEquals(2, v2.keys().size());
         assertEquals(assertSpecificLabel ? "software" : Vertex.DEFAULT_LABEL, v3.label());
         assertId(g1, lossyForId, v3, 3);
 
-        final List<Edge> v3Edges = v3.bothE().toList();
+        final List<Edge> v3Edges = g1.traversal().V(v3.id()).bothE().toList();
         assertEquals(3, v3Edges.size());
         v3Edges.forEach(e -> {
-            if (e.outV().values("name").next().equals("peter")) {
+            if (g1.traversal().E(e.id()).outV().values("name").next().equals("peter")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(0.2d, e.value("weight"), 0.0001d);
@@ -206,7 +204,7 @@ public class TinkerpopTest extends BaseTest {
                     assertEquals(0.2f, e.value("weight"), 0.0001f);
                 assertEquals(1, e.keys().size());
                 assertId(g1, lossyForId, e, 12);
-            } else if (e.outV().next().value("name").equals("josh")) {
+            } else if (g1.traversal().E(e.id()).outV().next().value("name").equals("josh")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(0.4d, e.value("weight"), 0.0001d);
@@ -214,7 +212,7 @@ public class TinkerpopTest extends BaseTest {
                     assertEquals(0.4f, e.value("weight"), 0.0001f);
                 assertEquals(1, e.keys().size());
                 assertId(g1, lossyForId, e, 11);
-            } else if (e.outV().values("name").next().equals("marko")) {
+            } else if (g1.traversal().E(e.id()).outV().values("name").next().equals("marko")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(0.4d, e.value("weight"), 0.0001d);
@@ -227,16 +225,16 @@ public class TinkerpopTest extends BaseTest {
             }
         });
 
-        final Vertex v4 = (Vertex) g1.V().has("name", "josh").next();
+        final Vertex v4 = (Vertex) g1.traversal().V().has("name", "josh").next();
         assertEquals(32, v4.<Integer>value("age").intValue());
         assertEquals(2, v4.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v4.label());
         assertId(g1, lossyForId, v4, 4);
 
-        final List<Edge> v4Edges = v4.bothE().toList();
+        final List<Edge> v4Edges = g1.traversal().V(v4.id()).bothE().toList();
         assertEquals(3, v4Edges.size());
         v4Edges.forEach(e -> {
-            if (e.inV().values("name").next().equals("ripple")) {
+            if (e.inVertex().values("name").next().equals("ripple")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(1.0d, e.value("weight"), 0.0001d);
@@ -244,7 +242,7 @@ public class TinkerpopTest extends BaseTest {
                     assertEquals(1.0f, e.value("weight"), 0.0001f);
                 assertEquals(1, e.keys().size());
                 assertId(g1, lossyForId, e, 10);
-            } else if (e.inV().values("name").next().equals("lop")) {
+            } else if (e.inVertex().values("name").next().equals("lop")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(0.4d, e.value("weight"), 0.0001d);
@@ -252,7 +250,7 @@ public class TinkerpopTest extends BaseTest {
                     assertEquals(0.4f, e.value("weight"), 0.0001f);
                 assertEquals(1, e.keys().size());
                 assertId(g1, lossyForId, e, 11);
-            } else if (e.outV().values("name").next().equals("marko")) {
+            } else if (e.outVertex().values("name").next().equals("marko")) {
                 assertEquals("knows", e.label());
                 if (assertDouble)
                     assertEquals(1.0d, e.value("weight"), 0.0001d);
@@ -265,16 +263,16 @@ public class TinkerpopTest extends BaseTest {
             }
         });
 
-        final Vertex v5 = (Vertex) g1.V().has("name", "ripple").next();
+        final Vertex v5 = (Vertex) g1.traversal().V().has("name", "ripple").next();
         assertEquals("java", v5.<String>value("lang"));
         assertEquals(2, v5.keys().size());
         assertEquals(assertSpecificLabel ? "software" : Vertex.DEFAULT_LABEL, v5.label());
         assertId(g1, lossyForId, v5, 5);
 
-        final List<Edge> v5Edges = v5.bothE().toList();
+        final List<Edge> v5Edges = IteratorUtils.list(v5.edges(Direction.BOTH));
         assertEquals(1, v5Edges.size());
         v5Edges.forEach(e -> {
-            if (e.outV().values("name").next().equals("josh")) {
+            if (e.outVertex().values("name").next().equals("josh")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(1.0d, e.value("weight"), 0.0001d);
@@ -287,16 +285,16 @@ public class TinkerpopTest extends BaseTest {
             }
         });
 
-        final Vertex v6 = (Vertex) g1.V().has("name", "peter").next();
+        final Vertex v6 = (Vertex) g1.traversal().V().has("name", "peter").next();
         assertEquals(35, v6.<Integer>value("age").intValue());
         assertEquals(2, v6.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v6.label());
         assertId(g1, lossyForId, v6, 6);
 
-        final List<Edge> v6Edges = v6.bothE().toList();
+        final List<Edge> v6Edges = IteratorUtils.list(v6.edges(Direction.BOTH));
         assertEquals(1, v6Edges.size());
         v6Edges.forEach(e -> {
-            if (e.inV().values("name").next().equals("lop")) {
+            if (e.inVertex().values("name").next().equals("lop")) {
                 assertEquals("created", e.label());
                 if (assertDouble)
                     assertEquals(0.2d, e.value("weight"), 0.0001d);
@@ -381,11 +379,11 @@ public class TinkerpopTest extends BaseTest {
 //    }
 //
 //    public Traversal<Vertex, Object> get_g_V_hasXageX_propertiesXname_ageX_value() {
-//        return this.sqlgGraph.V().has("age").properties("name", "age").value();
+//        return this.sqlgGraph.traversal().V().has("age").properties("name", "age").value();
 //    }
 //
 //    public Traversal<Vertex, Object> get_g_V_hasXageX_propertiesXage_nameX_value() {
-//        return this.sqlgGraph.V().has("age").properties("age", "name").value();
+//        return this.sqlgGraph.traversal().V().has("age").properties("age", "name").value();
 //    }
 //
 //    //    @Test
@@ -459,7 +457,7 @@ public class TinkerpopTest extends BaseTest {
 ////    }
 //
 //    public Traversal<Vertex, Map<String, String>> a() {
-//        return this.sqlgGraph.V().match("a",
+//        return this.sqlgGraph.traversal().V().match("a",
 //                this.sqlgGraph.of().as("a").out("created").as("b"),
 //                this.sqlgGraph.of().as("b").in("created").as("c"))
 //                .where("a", Compare.neq, "c")
@@ -467,7 +465,7 @@ public class TinkerpopTest extends BaseTest {
 //    }
 //
 //    public Traversal<Vertex, Map<String, String>> b() {
-//        return this.sqlgGraph.V().match("a",
+//        return this.sqlgGraph.traversal().V().match("a",
 //                this.sqlgGraph.of().as("a").out("created").as("b"))
 ////                .where("a", T.neq, "c")
 //                .select(Arrays.asList("a", "b"), v -> ((Vertex) v).value("name"));
@@ -568,7 +566,7 @@ public class TinkerpopTest extends BaseTest {
 
     //josh created lop
     public Object convertToEdgeId(final Graph g, final String outVertexName, String edgeLabel, final String inVertexName) {
-        return ((Edge) g.V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).back("e").next()).id();
+        return ((Edge) g.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).back("e").next()).id();
     }
 
     public void printTraversalForm(final Traversal traversal) {

@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Contains;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -26,7 +26,7 @@ public class TestHasLabel extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(8, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
+        Assert.assertEquals(8, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
     }
 
     @Test
@@ -34,8 +34,8 @@ public class TestHasLabel extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(0, this.sqlgGraph.V().has(T.label, "Animal").count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
+        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Animal").count().next(), 0);
     }
 
     @Test
@@ -49,10 +49,10 @@ public class TestHasLabel extends BaseTest {
         a.addEdge("knows", c);
         a.addEdge("created", d);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(4, this.sqlgGraph.V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(2, this.sqlgGraph.E().has(T.label, Contains.within, Arrays.asList("knows")).count().next(), 0);
-        Assert.assertEquals(2, this.sqlgGraph.E().has(T.label, Contains.within, Arrays.asList("created")).count().next(), 0);
-        Assert.assertEquals(4, this.sqlgGraph.E().has(T.label, Contains.within, Arrays.asList("knows", "created")).count().next(), 0);
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, Contains.within, Arrays.asList("knows")).count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, Contains.within, Arrays.asList("created")).count().next(), 0);
+        Assert.assertEquals(4, this.sqlgGraph.traversal().E().has(T.label, Contains.within, Arrays.asList("knows", "created")).count().next(), 0);
     }
 
 }

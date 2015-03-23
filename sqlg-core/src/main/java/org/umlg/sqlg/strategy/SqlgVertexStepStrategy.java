@@ -1,16 +1,15 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.Step;
-import org.apache.tinkerpop.gremlin.process.Traversal;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.IdentityStep;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Compare;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.structure.SqlgGraph;
 
@@ -79,7 +78,8 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
             ListIterator<Step> stepIterator = steps.listIterator();
             while (stepIterator.hasNext()) {
                 Step step = stepIterator.next();
-                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                //the label check is to ignore any 'as('x')' gremlin for now
+                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass()) && !step.getLabel().isPresent()) {
                     Pair<Step<?, ?>, List<HasContainer>> stepPair = Pair.of(step, new ArrayList<>());
                     if (previous == null) {
                         sqlgVertexStepCompiler = new SqlgVertexStepCompiler(traversal);

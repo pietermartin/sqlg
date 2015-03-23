@@ -1,9 +1,9 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.GraphStep;
-import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -29,11 +29,11 @@ public class SqlgGraphStepCompiled<E extends Element> extends GraphStep<E> {
     private SqlgGraph sqlgGraph;
 
     public SqlgGraphStepCompiled(final GraphStep<E> originalGraphStep) {
-        super(originalGraphStep.getTraversal(), originalGraphStep.getGraph(SqlgGraph.class), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
+        super(originalGraphStep.getTraversal(), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
         if (originalGraphStep.getLabel().isPresent())
             this.setLabel(originalGraphStep.getLabel().get());
 
-        this.sqlgGraph = originalGraphStep.getGraph(SqlgGraph.class);
+        this.sqlgGraph = (SqlgGraph)originalGraphStep.getTraversal().getGraph().get();
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
@@ -94,6 +94,6 @@ public class SqlgGraphStepCompiled<E extends Element> extends GraphStep<E> {
 //    }
 
     private Stream<? extends Vertex> getVertices() {
-        return StreamFactory.stream(this.sqlgGraph.vertexIterator(this.ids));
+        return StreamFactory.stream(this.sqlgGraph.vertices(this.ids));
     }
 }

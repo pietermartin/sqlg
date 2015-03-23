@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,7 +19,7 @@ public class TestDeletedVertex extends BaseTest {
         this.sqlgGraph.tx().close();
         v1.remove();
         this.sqlgGraph.tx().commit();
-        Assert.assertFalse(this.sqlgGraph.V(v1.id()).hasNext());
-        Assert.assertTrue(this.sqlgGraph.V(v2.id()).hasNext());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(v1.id()).hasNext());
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v2.id()).hasNext());
     }
 }

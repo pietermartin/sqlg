@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,9 +22,9 @@ public class TestEdgeToDifferentLabeledVertexes extends BaseTest {
         v1.addEdge("label1", v2);
         v1.addEdge("label1", v3);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, v1.out().count().next(), 0);
+        Assert.assertEquals(2, vertexTraversal(v1).out().count().next(), 0);
         Set<String> names = new HashSet();
-        v1.out().forEachRemaining(
+        vertexTraversal(v1).out().forEachRemaining(
                v -> names.add(v.<String>property("name").value())
         );
         Assert.assertTrue(names.contains("b"));

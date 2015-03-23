@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -20,7 +20,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new boolean[]{true, false, true, false, true});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) v.property("age").value()));
     }
 
@@ -29,7 +29,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new short[]{1, 2, 3, 4, 5});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) v.property("age").value()));
     }
 
@@ -38,7 +38,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new int[]{1, 2, 3, 4, 5});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) v.property("age").value()));
     }
 
@@ -47,7 +47,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new long[]{1, 2, 3, 4, 5});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) v.property("age").value()));
     }
 
@@ -56,7 +56,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new float[]{1f, 2f, 3f, 4f, 5f});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new float[]{1, 2, 3, 4, 5}, (float[]) v.property("age").value()));
     }
 
@@ -65,7 +65,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new double[]{1d, 2d, 3d, 4d, 5d});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) v.property("age").value()));
     }
 
@@ -74,7 +74,7 @@ public class TestArrayProperties extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
         this.sqlgGraph.addVertex(T.label, "Person", "age", new String[]{"a", "b", "c", "d", "e"});
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         Assert.assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) v.property("age").value()));
     }
 

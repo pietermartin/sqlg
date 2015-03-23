@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.mod;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
@@ -113,13 +113,13 @@ public class TestVertexCreation extends BaseTest {
     public void testAndColumns() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name1", "marko");
         this.sqlgGraph.tx().commit();
-        assertEquals(1, this.sqlgGraph.V().count().next(), 0);
+        assertEquals(1, this.sqlgGraph.traversal().V().count().next(), 0);
         assertEquals(v1, this.sqlgGraph.v(v1.id()));
-        assertEquals(1, v1.properties().count().next(), 0);
+        assertEquals(1, vertexTraversal(v1).properties().count().next(), 0);
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name2", "john");
-        assertEquals(2, this.sqlgGraph.V().count().next(), 0);
+        assertEquals(2, this.sqlgGraph.traversal().V().count().next(), 0);
         assertEquals(v2, this.sqlgGraph.v(v2.id()));
-        assertEquals(1, v2.properties().count().next(), 0);
+        assertEquals(1, vertexTraversal(v2).properties().count().next(), 0);
     }
 
 }

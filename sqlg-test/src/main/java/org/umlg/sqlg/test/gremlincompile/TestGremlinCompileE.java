@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -24,8 +24,8 @@ public class TestGremlinCompileE extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         Edge e = a1.addEdge("outB", b1);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, a1.outE().count().next().intValue());
-        Assert.assertEquals(e, a1.outE().next());
+        Assert.assertEquals(1, vertexTraversal(a1).outE().count().next().intValue());
+        Assert.assertEquals(e, vertexTraversal(a1).outE().next());
     }
 
     @Test
@@ -34,18 +34,19 @@ public class TestGremlinCompileE extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         Edge e = a1.addEdge("outB", b1);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, b1.inE().count().next().intValue());
-        Assert.assertEquals(e, b1.inE().next());
+        Assert.assertEquals(1, vertexTraversal(b1).inE().count().next().intValue());
+        Assert.assertEquals(e, vertexTraversal(b1).inE().next());
     }
+
     @Test
     public void testEdgeOut() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Edge e = a1.addEdge("outB",b1);
+        Edge e = a1.addEdge("outB", b1);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(a1, e.outV().next());
-        Assert.assertEquals(1, e.outV().outE().count().next().intValue());
-        Assert.assertEquals(e, e.outV().outE().next());
+        Assert.assertEquals(a1, edgeTraversal(e).outV().next());
+        Assert.assertEquals(1, edgeTraversal(e).outV().outE().count().next().intValue());
+        Assert.assertEquals(e, edgeTraversal(e).outV().outE().next());
     }
 
     @Test
@@ -69,8 +70,8 @@ public class TestGremlinCompileE extends BaseTest {
         Edge e8 = b1.addEdge("outC", c6);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(6, a1.out().outE().count().next().intValue());
-        List<Edge> edges = a1.out().outE().toList();
+        Assert.assertEquals(6, vertexTraversal(a1).out().outE().count().next().intValue());
+        List<Edge> edges = vertexTraversal(a1).out().outE().toList();
         Assert.assertTrue(edges.contains(e3));
         Assert.assertTrue(edges.contains(e4));
         Assert.assertTrue(edges.contains(e5));
@@ -87,17 +88,17 @@ public class TestGremlinCompileE extends BaseTest {
         v1.addEdge("pets", v2);
         v1.addEdge("walks", v2, "location", "arroyo");
         v2.addEdge("knows", v1, "since", 2010);
-        assertEquals(4, v1.bothE().count().next().intValue());
-        assertEquals(4, v2.bothE().count().next().intValue());
-        v1.iterators().edgeIterator(Direction.BOTH).forEachRemaining(edge -> {
+        assertEquals(4, vertexTraversal(v1).bothE().count().next().intValue());
+        assertEquals(4, vertexTraversal(v2).bothE().count().next().intValue());
+        v1.edges(Direction.BOTH).forEachRemaining(edge -> {
             v1.addEdge("livesWith", v2);
             v1.addEdge("walks", v2, "location", "river");
             edge.remove();
         });
-        assertEquals(8, v1.outE().count().next().intValue());
-        assertEquals(0, v2.outE().count().next().intValue());
-        v1.iterators().edgeIterator(Direction.BOTH).forEachRemaining(Edge::remove);
-        assertEquals(0, v1.bothE().count().next().intValue());
-        assertEquals(0, v2.bothE().count().next().intValue());
+        assertEquals(8, vertexTraversal(v1).outE().count().next().intValue());
+        assertEquals(0, vertexTraversal(v2).outE().count().next().intValue());
+        v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);
+        assertEquals(0, vertexTraversal(v1).bothE().count().next().intValue());
+        assertEquals(0, vertexTraversal(v2).bothE().count().next().intValue());
     }
 }

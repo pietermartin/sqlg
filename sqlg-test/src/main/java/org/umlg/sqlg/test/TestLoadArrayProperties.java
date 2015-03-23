@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -38,7 +38,7 @@ public class TestLoadArrayProperties extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
+        Iterator<Vertex> iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -51,7 +51,7 @@ public class TestLoadArrayProperties extends BaseTest {
 
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        iter = this.sqlgGraph.V().has(T.label, "Person");
+        iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -83,7 +83,7 @@ public class TestLoadArrayProperties extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
+        Iterator<Vertex> iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
@@ -95,7 +95,7 @@ public class TestLoadArrayProperties extends BaseTest {
 
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        iter = this.sqlgGraph.V().has(T.label, "Person");
+        iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         v = iter.next();
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));

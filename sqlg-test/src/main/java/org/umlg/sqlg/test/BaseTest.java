@@ -3,7 +3,10 @@ package org.umlg.sqlg.test;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -136,6 +139,19 @@ public abstract class BaseTest {
     public void after() throws Exception {
         this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.COMMIT);
         this.sqlgGraph.close();
+    }
+
+    protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
+        return this.sqlgGraph.traversal().fromV(v);
+    }
+
+    protected GraphTraversal<Vertex, Vertex> vertexTraversal2(Vertex v) {
+        return this.sqlgGraph.traversal().fromV(v);
+    }
+
+    protected GraphTraversal<Edge, Edge> edgeTraversal(Edge e) {
+        return this.sqlgGraph.traversal().E(e.id());
+
     }
 
     protected void assertDb(String table, int numberOfRows) {

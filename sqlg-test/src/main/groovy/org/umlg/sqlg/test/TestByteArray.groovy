@@ -4,7 +4,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.junit.Assert
 import org.junit.Test
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+
 /**
  * Created by pieter on 2014/08/03.
  */
@@ -16,7 +17,7 @@ class TestByteArray extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex("Person", [name: 'pieter', bytea: bytea]);
         this.sqlgGraph.tx().commit()
 
-        Vertex v2 = this.sqlgGraph.V().has(T.label, "Person").next();
+        Vertex v2 = this.sqlgGraph.traversal().V().has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertArrayEquals(bytea, v2.property("bytea").value());
     }

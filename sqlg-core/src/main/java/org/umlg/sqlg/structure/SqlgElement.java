@@ -19,7 +19,7 @@ import java.util.stream.Stream;
  * Date: 2014/07/12
  * Time: 5:40 AM
  */
-public abstract class SqlgElement implements Element, Element.Iterators {
+public abstract class SqlgElement implements Element {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
@@ -439,9 +439,8 @@ public abstract class SqlgElement implements Element, Element.Iterators {
         return properties;
     }
 
-
     @Override
-    public <V> Iterator<? extends Property<V>> propertyIterator(final String... propertyKeys) {
+    public <V> Iterator<? extends Property<V>> properties(final String... propertyKeys) {
         SqlgElement.this.sqlgGraph.tx().readWrite();
         return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }

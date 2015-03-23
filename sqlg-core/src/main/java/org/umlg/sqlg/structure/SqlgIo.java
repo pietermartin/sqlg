@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.io.DefaultIo;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.kryo.KryoMapper;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoMapper;
 
 /**
  * Date: 2015/02/23
@@ -17,8 +17,8 @@ public class SqlgIo extends DefaultIo implements Graph.Io {
     }
 
     @Override
-    public KryoMapper.Builder kryoMapper() {
-        return KryoMapper.build().addCustom(RecordId.class);
+    public GryoMapper.Builder gryoMapper() {
+        return GryoMapper.build().addCustom(RecordId.class);
     }
 
     @Override
@@ -26,8 +26,8 @@ public class SqlgIo extends DefaultIo implements Graph.Io {
         final SimpleModule module = new SimpleModule();
         module.addSerializer(RecordId.class, new RecordId.RecordIdJacksonSerializer());
         module.addDeserializer(RecordId.class, new RecordId.RecordIdJacksonDeserializer());
-        return GraphSONMapper.build().addCustomModule(module);
-//        return GraphSONMapper.build().addCustomModule(module).embedTypes(true);
+//        return GraphSONMapper.build().addCustomModule(module);
+        return GraphSONMapper.build().addCustomModule(module).embedTypes(true);
     }
 
 }

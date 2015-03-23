@@ -63,7 +63,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestIndex.class,
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
-        TestBatch.class,
+//        TestBatch.class,
         TestForeignKeyIndexPerformance.class,
         TestMultiThreadedBatch.class,
         TestRemoveEdge.class,

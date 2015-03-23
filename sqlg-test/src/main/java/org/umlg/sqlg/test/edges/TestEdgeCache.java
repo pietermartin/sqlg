@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.edges;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -17,7 +17,7 @@ public class TestEdgeCache extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         v1.addEdge("friend", v2);
-        Assert.assertEquals(1, v1.out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(v1).out("friend").count().next().intValue());
         this.sqlgGraph.tx().commit();
     }
 }

@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.remove;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -27,6 +27,6 @@ public class TestRemoveEdge extends BaseTest {
         edge2.remove();
         edge3.remove();
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
+        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
     }
 }

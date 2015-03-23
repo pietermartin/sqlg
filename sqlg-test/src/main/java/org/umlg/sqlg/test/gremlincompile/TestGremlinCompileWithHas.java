@@ -1,10 +1,10 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.Step;
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.sideEffect.StartStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.EmptyStep;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.structure.Compare;
 import org.apache.tinkerpop.gremlin.structure.Contains;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -45,7 +45,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         a1.addEdge("outC", c3);
         this.sqlgGraph.tx().commit();
 
-        GraphTraversal<Vertex, Vertex> traversal = a1.out().has(T.label, "B");
+        GraphTraversal<Vertex, Vertex> traversal = vertexTraversal(a1).out().has(T.label, "B");
 
         traversal.asAdmin().applyStrategies();
         final List<Step> temp = new ArrayList<>();
@@ -70,7 +70,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
         Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema(), schemaTableTree.getSchemaTable().getSchema());
         Assert.assertEquals("V_A", schemaTableTree.getSchemaTable().getTable());
-        Assert.assertEquals(3, a1.out().has(T.label, "B").count().next().intValue());
+        Assert.assertEquals(3, vertexTraversal(a1).out().has(T.label, "B").count().next().intValue());
     }
 
     @Test
@@ -93,8 +93,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
         d1.addEdge("outB", b4);
         b4.addEdge("outC", c1);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(4, c1.in().in().count().next().intValue());
-        Assert.assertEquals(3, c1.in().in().has(T.label, "A").count().next().intValue());
+        Assert.assertEquals(4, vertexTraversal(c1).in().in().count().next().intValue());
+        Assert.assertEquals(3, vertexTraversal(c1).in().in().has(T.label, "A").count().next().intValue());
     }
 
     @Test
@@ -108,7 +108,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         a1.addEdge("outB", b3);
         this.sqlgGraph.tx().commit();
 
-        GraphTraversal<Vertex, Vertex> gt = a1.out().has("name", Compare.eq, "b2");
+        GraphTraversal<Vertex, Vertex> gt = vertexTraversal(a1).out().has("name", Compare.eq, "b2");
         gt.asAdmin().applyStrategies();
         final List<Step> temp = new ArrayList<>();
         Step currentStep = gt.asAdmin().getStartStep();
@@ -130,7 +130,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
         Assert.assertEquals(1, schemaTableTree.schemaTableAtDepth(1, 1).getHasContainers().size());
 
-        Assert.assertEquals(1, a1.out().has("name", Compare.eq, "b2").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", Compare.eq, "b2").count().next().intValue());
     }
 
     @Test
@@ -162,10 +162,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         b3.addEdge("outC", c9);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, a1.out().has("name", "b1").out().has("name", "c1").count().next().intValue());
-        Assert.assertEquals(c1, a1.out().has("name", "b1").out().has("name", "c1").next());
-        Assert.assertEquals(1, a1.out().has("name", "b2").out().has("name", "c5").count().next().intValue());
-        Assert.assertEquals(c5, a1.out().has("name", "b2").out().has("name", "c5").next());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b1").out().has("name", "c1").count().next().intValue());
+        Assert.assertEquals(c1, vertexTraversal(a1).out().has("name", "b1").out().has("name", "c1").next());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b2").out().has("name", "c5").count().next().intValue());
+        Assert.assertEquals(c5, vertexTraversal(a1).out().has("name", "b2").out().has("name", "c5").next());
     }
 
     @Test
@@ -197,11 +197,11 @@ public class TestGremlinCompileWithHas extends BaseTest {
         b3.addEdge("outC", c9);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, a1.out().has("name", "b1").out().has("name", "c1").count().next().intValue());
-        Assert.assertEquals(c1, a1.out().has("name", "b1").out().has("name", "c1").next());
-        Assert.assertEquals(1, a1.out().has("name", "b2").out().has("name", "c5").count().next().intValue());
-        Assert.assertEquals(2, a1.out().has("name", "b2").has("name", "b2").out().has("name", Contains.within, Arrays.asList("c5", "c6")).count().next().intValue());
-        Assert.assertEquals(1, a1.out().has("name", "b2").has("name", "b2").out().has("name", Compare.eq, "c5").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b1").out().has("name", "c1").count().next().intValue());
+        Assert.assertEquals(c1, vertexTraversal(a1).out().has("name", "b1").out().has("name", "c1").next());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b2").out().has("name", "c5").count().next().intValue());
+        Assert.assertEquals(2, vertexTraversal(a1).out().has("name", "b2").has("name", "b2").out().has("name", Contains.within, Arrays.asList("c5", "c6")).count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b2").has("name", "b2").out().has("name", Compare.eq, "c5").count().next().intValue());
     }
 
     @Test
@@ -216,13 +216,13 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Edge e3 = v3.addEdge("label3", v4);
         sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, v2.inE().count().next(), 1);
-        Assert.assertEquals(e1, v2.inE().next());
-        Assert.assertEquals(1L, e1.inV().count().next(), 0);
-        Assert.assertEquals(v2, e1.inV().next());
-        Assert.assertEquals(0L, e1.outV().inE().count().next(), 0);
-        Assert.assertEquals(1L, e2.inV().count().next(), 0);
-        Assert.assertEquals(v3, e2.inV().next());
+        Assert.assertEquals(1, vertexTraversal(v2).inE().count().next(), 1);
+        Assert.assertEquals(e1, vertexTraversal(v2).inE().next());
+        Assert.assertEquals(1L, edgeTraversal(e1).inV().count().next(), 0);
+        Assert.assertEquals(v2, edgeTraversal(e1).inV().next());
+        Assert.assertEquals(0L, edgeTraversal(e1).outV().inE().count().next(), 0);
+        Assert.assertEquals(1L, edgeTraversal(e2).inV().count().next(), 0);
+        Assert.assertEquals(v3, edgeTraversal(e2).inV().next());
     }
 
     @Test
@@ -239,18 +239,18 @@ public class TestGremlinCompileWithHas extends BaseTest {
         marko.addEdge("drives", ktm2);
         marko.addEdge("drives", ktm3);
         this.sqlgGraph.tx().commit();
-        List<Vertex> drivesBmw = marko.out("drives").<Vertex>has("name", "bmw").toList();
+        List<Vertex> drivesBmw = vertexTraversal(marko).out("drives").<Vertex>has("name", "bmw").toList();
         Assert.assertEquals(2L, drivesBmw.size(), 0);
-        List<Vertex> drivesKtm = marko.out("drives").<Vertex>has("name", "ktm").toList();
+        List<Vertex> drivesKtm = vertexTraversal(marko).out("drives").<Vertex>has("name", "ktm").toList();
         Assert.assertEquals(3L, drivesKtm.size(), 0);
 
-        List<Vertex> cc600 = marko.out("drives").<Vertex>has("cc", 600).toList();
+        List<Vertex> cc600 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 600).toList();
         Assert.assertEquals(1L, cc600.size(), 0);
-        List<Vertex> cc800 = marko.out("drives").<Vertex>has("cc", 800).toList();
+        List<Vertex> cc800 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 800).toList();
         Assert.assertEquals(1L, cc800.size(), 0);
-        List<Vertex> cc200 = marko.out("drives").<Vertex>has("cc", 200).toList();
+        List<Vertex> cc200 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 200).toList();
         Assert.assertEquals(2L, cc200.size(), 0);
-        List<Vertex> cc400 = marko.out("drives").<Vertex>has("cc", 400).toList();
+        List<Vertex> cc400 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 400).toList();
         Assert.assertEquals(1L, cc400.size(), 0);
     }
 }

@@ -1,8 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -10,7 +8,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.net.URL;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -34,7 +31,7 @@ public class TestAllVertices extends BaseTest {
 
 
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(4L, this.sqlgGraph.V().count().next(), 0);
+        Assert.assertEquals(4L, this.sqlgGraph.traversal().V().count().next(), 0);
     }
 
     @Test
@@ -48,7 +45,7 @@ public class TestAllVertices extends BaseTest {
         c.addEdge("aaa", b);
         d.addEdge("aaa", b);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertexes = this.sqlgGraph.V().both().toList();
+        List<Vertex> vertexes = this.sqlgGraph.traversal().V().both().toList();
         System.out.println(vertexes.toString());
         Assert.assertEquals(8, vertexes.size());
     }
@@ -63,7 +60,7 @@ public class TestAllVertices extends BaseTest {
 
         g = SqlgGraph.open(configuration);
         try {
-            g.iterators().vertexIterator(oid).next();
+            g.vertices(oid).next();
             fail("Vertex should not be found as close behavior was set to rollback");
         } catch (Exception ex) {
             validateException(Graph.Exceptions.elementNotFound(Vertex.class, oid), ex);

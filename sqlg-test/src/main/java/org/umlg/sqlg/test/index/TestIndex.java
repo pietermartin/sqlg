@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.index;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Compare;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -37,8 +37,8 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name", "john50").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name", Compare.eq, "john50").count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", Compare.eq, "john50").count().next().intValue());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -62,8 +62,8 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", Compare.eq, "john50").count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", Compare.eq, "john50").count().next().intValue());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -87,7 +87,7 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
         Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
@@ -117,7 +117,7 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.tx().commit();
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.E().has(T.label, "Schema0.edge").has("name1", "n500").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").has("name1", "n500").count().next(), 0);
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
             Statement statement = conn.createStatement();

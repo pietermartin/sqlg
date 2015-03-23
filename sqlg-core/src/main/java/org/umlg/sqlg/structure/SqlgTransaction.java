@@ -1,17 +1,16 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.structure.util.AbstractTransaction;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -19,7 +18,7 @@ import java.util.function.Function;
  * Date: 2014/07/12
  * Time: 2:18 PM
  */
-public class SqlgTransaction implements Transaction {
+public class SqlgTransaction extends AbstractTransaction {
 
     private Consumer<Transaction> readWriteConsumer;
     private Consumer<Transaction> closeConsumer;
@@ -34,14 +33,101 @@ public class SqlgTransaction implements Transaction {
     };
 
 
-    SqlgTransaction(SqlgGraph sqlgGraph) {
-        this.sqlgGraph = sqlgGraph;
+    public SqlgTransaction(Graph sqlgGraph) {
+        super(sqlgGraph);
+        this.sqlgGraph = (SqlgGraph)sqlgGraph;
+//
+//        // auto transaction behavior
+//        readWriteConsumer = READ_WRITE_BEHAVIOR.AUTO;
+//
+//        // commit on close
+//        closeConsumer = CLOSE_BEHAVIOR.COMMIT;
+    }
 
-        // auto transaction behavior
-        readWriteConsumer = READ_WRITE_BEHAVIOR.AUTO;
+    @Override
+    protected void doOpen() {
+        if (isOpen())
+            throw Transaction.Exceptions.transactionAlreadyOpen();
+        else {
+            try {
+                Connection connection = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+                connection.setAutoCommit(false);
+                if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
+                    connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
+                }
+                //Not supported by postgres, //TODO add dialect indirection
+//                connection.setClientInfo("ClientUser", "//TODO");
+//                try {
+//                    connection.setClientInfo("ClientHostname", InetAddress.getLocalHost().getHostAddress());
+//                } catch (UnknownHostException e) {
+//                    connection.setClientInfo("ClientHostname", "failed");
+//                }
+                threadLocalTx.set(TransactionCache.of(connection, new ArrayList<>(), new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
-        // commit on close
-        closeConsumer = CLOSE_BEHAVIOR.COMMIT;
+    @Override
+    protected void doCommit() throws TransactionException {
+        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
+            throw Exceptions.transactionMustBeOpenToReadWrite();
+        }
+        if (!isOpen())
+            return;
+
+        try {
+            if (this.threadLocalTx.get().getBatchManager().isBatchModeOn()) {
+                this.threadLocalTx.get().getBatchManager().flush();
+            }
+            Connection connection = threadLocalTx.get().getConnection();
+            connection.commit();
+            connection.setAutoCommit(true);
+            if (this.afterCommitFunction != null) {
+                this.afterCommitFunction.doAfterCommit();
+            }
+            connection.close();
+        } catch (Exception e) {
+            this.rollback();
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            } else {
+                throw new RuntimeException(e);
+            }
+        } finally {
+            if (this.threadLocalTx.get() != null) {
+                this.threadLocalTx.get().clear();
+                this.threadLocalTx.remove();
+            }
+        }
+    }
+
+    @Override
+    protected void doRollback() throws TransactionException {
+        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
+            throw Exceptions.transactionMustBeOpenToReadWrite();
+        }
+        if (!isOpen())
+            return;
+        try {
+            Connection connection = threadLocalTx.get().getConnection();
+            connection.rollback();
+            if (this.afterRollbackFunction != null) {
+                this.afterRollbackFunction.doAfterRollback();
+            }
+            for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback()) {
+                elementPropertyRollback.clearProperties();
+            }
+            connection.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (threadLocalTx.get() != null) {
+                threadLocalTx.get().clear();
+                threadLocalTx.remove();
+            }
+        }
     }
 
     public void batchModeOn() {
@@ -77,92 +163,6 @@ public class SqlgTransaction implements Transaction {
             readWrite();
         }
         return this.threadLocalTx.get().getConnection();
-    }
-
-    @Override
-    public void open() {
-        if (isOpen())
-            throw Transaction.Exceptions.transactionAlreadyOpen();
-        else {
-            try {
-                Connection connection = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
-                connection.setAutoCommit(false);
-                if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
-                    connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
-                }
-                //Not supported by postgres, //TODO add dialect indirection
-//                connection.setClientInfo("ClientUser", "//TODO");
-//                try {
-//                    connection.setClientInfo("ClientHostname", InetAddress.getLocalHost().getHostAddress());
-//                } catch (UnknownHostException e) {
-//                    connection.setClientInfo("ClientHostname", "failed");
-//                }
-                threadLocalTx.set(TransactionCache.of(connection, new ArrayList<>(), new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    @Override
-    public void commit() {
-        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
-            throw Exceptions.transactionMustBeOpenToReadWrite();
-        }
-        if (!isOpen())
-            return;
-
-        try {
-            if (this.threadLocalTx.get().getBatchManager().isBatchModeOn()) {
-                this.threadLocalTx.get().getBatchManager().flush();
-            }
-            Connection connection = threadLocalTx.get().getConnection();
-            connection.commit();
-            connection.setAutoCommit(true);
-            if (this.afterCommitFunction != null) {
-                this.afterCommitFunction.doAfterCommit();
-            }
-            connection.close();
-        } catch (Exception e) {
-            this.rollback();
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
-        } finally {
-            if (this.threadLocalTx.get() != null) {
-                this.threadLocalTx.get().clear();
-                this.threadLocalTx.remove();
-            }
-        }
-    }
-
-    @Override
-    public void rollback() {
-        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
-            throw Exceptions.transactionMustBeOpenToReadWrite();
-        }
-        if (!isOpen())
-            return;
-        try {
-            Connection connection = threadLocalTx.get().getConnection();
-            connection.rollback();
-            if (this.afterRollbackFunction != null) {
-                this.afterRollbackFunction.doAfterRollback();
-            }
-            for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback()) {
-                elementPropertyRollback.clearProperties();
-            }
-            connection.close();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (threadLocalTx.get() != null) {
-                threadLocalTx.get().clear();
-                threadLocalTx.remove();
-            }
-        }
     }
 
     public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
@@ -215,41 +215,56 @@ public class SqlgTransaction implements Transaction {
     }
 
     @Override
-    public <R> Workload<R> submit(final Function<Graph, R> work) {
-        return new Workload<>(this.sqlgGraph, work);
-    }
-
-    @Override
-    public <G extends Graph> G create() {
-        throw Transaction.Exceptions.threadedTransactionsNotSupported();
-    }
-
-    @Override
     public boolean isOpen() {
         return (threadLocalTx.get() != null);
     }
-
-    @Override
-    public void readWrite() {
-        this.readWriteConsumer.accept(this);
-    }
-
-    @Override
-    public void close() {
-        this.closeConsumer.accept(this);
-    }
-
-    @Override
-    public Transaction onReadWrite(final Consumer<Transaction> consumer) {
-        this.readWriteConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onReadWriteBehaviorCannotBeNull);
-        return this;
-    }
-
-    @Override
-    public Transaction onClose(final Consumer<Transaction> consumer) {
-        this.closeConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onCloseBehaviorCannotBeNull);
-        return this;
-    }
+//    @Override
+//    public <R> Workload<R> submit(final Function<Graph, R> work) {
+//        return new Workload<>(this.sqlgGraph, work);
+//    }
+//
+//    @Override
+//    public <G extends Graph> G create() {
+//        throw Transaction.Exceptions.threadedTransactionsNotSupported();
+//    }
+//
+//
+//    @Override
+//    public void readWrite() {
+//        this.readWriteConsumer.accept(this);
+//    }
+//
+//    @Override
+//    public void close() {
+//        this.closeConsumer.accept(this);
+//    }
+//
+//    @Override
+//    public Transaction onReadWrite(final Consumer<Transaction> consumer) {
+//        this.readWriteConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onReadWriteBehaviorCannotBeNull);
+//        return this;
+//    }
+//
+//    @Override
+//    public Transaction onClose(final Consumer<Transaction> consumer) {
+//        this.closeConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onCloseBehaviorCannotBeNull);
+//        return this;
+//    }
+//
+//    @Override
+//    public void addTransactionListener(Consumer<Status> listener) {
+//
+//    }
+//
+//    @Override
+//    public void removeTransactionListener(Consumer<Status> listener) {
+//
+//    }
+//
+//    @Override
+//    public void clearTransactionListeners() {
+//
+//    }
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, recordId);

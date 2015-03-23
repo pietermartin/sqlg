@@ -4,9 +4,9 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -20,7 +20,7 @@ import java.util.*;
  * Date: 2014/07/12
  * Time: 5:42 AM
  */
-public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators {
+public class SqlgVertex extends SqlgElement implements Vertex {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
@@ -152,6 +152,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         return (VertexProperty) super.property(key, value);
     }
 
+
     @Override
     protected <V> SqlgProperty<V> instantiateProperty(String key, V value) {
         return new SqlgVertexProperty<>(this.sqlgGraph, this, key, value);
@@ -162,7 +163,7 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         return VertexProperty.empty();
     }
 
-    private Iterator<Edge> edges(Direction direction, String... labels) {
+    private Iterator<Edge> internalEdges(Direction direction, String... labels) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && this.sqlgGraph.tx().getBatchManager().vertexIsCached(this)) {
             List<Edge> edges = this.sqlgGraph.tx().getBatchManager().getEdges(this, direction, labels);
@@ -368,8 +369,8 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
         } else {
-            //Remove all edges
-            Iterator<Edge> edges = this.edges(Direction.BOTH);
+            //Remove all internalEdges
+            Iterator<Edge> edges = this.internalEdges(Direction.BOTH);
             while (edges.hasNext()) {
                 edges.next().remove();
             }
@@ -377,7 +378,6 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         }
 
     }
-
 
     private void insertVertex(Object... keyValues) {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
@@ -847,30 +847,21 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         }
     }
 
-    @Override
-    public String toString() {
-        return StringFactory.vertexString(this);
-    }
 
     @Override
-    public Vertex.Iterators iterators() {
-        return this;
-    }
-
-    @Override
-    public Iterator<Vertex> vertexIterator(final Direction direction, final String... labels) {
+    public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
-        return SqlgVertex.this.vertices(Collections.emptyList(), direction, labels);
+        return SqlgVertex.this.internalEdges(direction, edgeLabels);
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(final Direction direction, final String... labels) {
+    public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
-        return SqlgVertex.this.edges(direction, labels);
+        return SqlgVertex.this.vertices(Collections.emptyList(), direction, edgeLabels);
     }
 
     @Override
-    public <V> Iterator<VertexProperty<V>> propertyIterator(final String... propertyKeys) {
+    public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
         return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
@@ -893,4 +884,8 @@ public class SqlgVertex extends SqlgElement implements Vertex, Vertex.Iterators 
         return result;
     }
 
+    @Override
+    public String toString() {
+        return StringFactory.vertexString(this);
+    }
 }

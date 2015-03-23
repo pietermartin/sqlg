@@ -1,15 +1,13 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2015/01/01
@@ -32,7 +30,7 @@ public class TestGremlinCompileV extends BaseTest {
         b.addEdge("outD", d1);
         b.addEdge("outD", d2);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = a.out().out().toList();
+        List<Vertex> vertices = vertexTraversal(a).out().out().toList();
         assertEquals(4, vertices.size());
         assertTrue(vertices.contains(c));
         assertTrue(vertices.contains(d1));
@@ -64,7 +62,7 @@ public class TestGremlinCompileV extends BaseTest {
         b.addEdge("outD", d1);
         b.addEdge("outD", d2);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = a.out("outB", "outE").out("outC", "outD").toList();
+        List<Vertex> vertices = vertexTraversal(a).out("outB", "outE").out("outC", "outD").toList();
         assertEquals(4, vertices.size());
         assertTrue(vertices.contains(c));
         assertTrue(vertices.contains(d1));
@@ -96,7 +94,7 @@ public class TestGremlinCompileV extends BaseTest {
         b.addEdge("outD", d1);
         b.addEdge("outD", d2);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = a.out("outB").out("outC").toList();
+        List<Vertex> vertices = vertexTraversal(a).out("outB").out("outC").toList();
         assertEquals(2, vertices.size());
         assertTrue(vertices.contains(c));
         int count = 0;
@@ -124,8 +122,8 @@ public class TestGremlinCompileV extends BaseTest {
         b.addEdge("outD", d1);
         b.addEdge("outD", d2);
         this.sqlgGraph.tx().commit();
-        assertEquals(1, d1.in().in().count().next().intValue());
-        assertEquals(a, d1.in().in().next());
+        assertEquals(1, vertexTraversal(d1).in().in().count().next().intValue());
+        assertEquals(a, vertexTraversal(d1).in().in().next());
     }
 
     @Test
@@ -144,7 +142,7 @@ public class TestGremlinCompileV extends BaseTest {
         c2.addEdge("c_outB", b2);
         c3.addEdge("c_outB", b3);
         this.sqlgGraph.tx().commit();
-        assertEquals(6, a1.out().in().count().next().intValue());
+        assertEquals(6, vertexTraversal(a1).out().in().count().next().intValue());
 
         Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
         Vertex e2 = this.sqlgGraph.addVertex(T.label, "E", "name", "e2");
@@ -162,7 +160,7 @@ public class TestGremlinCompileV extends BaseTest {
         c3.addEdge("outE", e7);
         this.sqlgGraph.tx().commit();
 
-        assertEquals(19, a1.out().in().out().count().next().intValue());
+        assertEquals(19, vertexTraversal(a1).out().in().out().count().next().intValue());
     }
 
     @Test
@@ -197,7 +195,7 @@ public class TestGremlinCompileV extends BaseTest {
         c3.addEdge("outE", e7);
         this.sqlgGraph.tx().commit();
 
-        assertEquals(19, a1.out().in().out().count().next().intValue());
+        assertEquals(19, vertexTraversal(a1).out().in().out().count().next().intValue());
     }
 
     @Test
@@ -216,8 +214,8 @@ public class TestGremlinCompileV extends BaseTest {
         b2.addEdge("knownBy", a4);
 
         this.sqlgGraph.tx().commit();
-        assertEquals(1, a1.out().out().count().next().intValue());
-        assertEquals(a2, a1.out().out().next());
+        assertEquals(1, vertexTraversal(a1).out().out().count().next().intValue());
+        assertEquals(a2, vertexTraversal(a1).out().out().next());
     }
 
     @Test
@@ -231,8 +229,8 @@ public class TestGremlinCompileV extends BaseTest {
         c1.addEdge("cOutB", b2);
         this.sqlgGraph.tx().commit();
 
-        assertEquals(1, a1.out().out().out().count().next().intValue());
-        assertEquals(b2, a1.out().out().out().next());
+        assertEquals(1, vertexTraversal(a1).out().out().out().count().next().intValue());
+        assertEquals(b2, vertexTraversal(a1).out().out().out().next());
     }
 
     @Test
@@ -241,7 +239,7 @@ public class TestGremlinCompileV extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         a1.addEdge("aOutB", b1);
         this.sqlgGraph.tx().commit();
-        assertEquals(1, a1.out().in().count().next().intValue());
+        assertEquals(1, vertexTraversal(a1).out().in().count().next().intValue());
     }
 
     @Test
@@ -257,7 +255,7 @@ public class TestGremlinCompileV extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        assertEquals(9, a1.out().in().out().count().next().intValue());
+        assertEquals(9, vertexTraversal(a1).out().in().out().count().next().intValue());
     }
 
     @Test
@@ -266,7 +264,7 @@ public class TestGremlinCompileV extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "B");
         v1.addEdge("ab", v2);
         this.sqlgGraph.tx().commit();
-        v1.out("test");
+        vertexTraversal(v1).out("test");
     }
 
     @Test
@@ -275,9 +273,9 @@ public class TestGremlinCompileV extends BaseTest {
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a2");
         a1.addEdge("hierarchyParent_hierarchy", a2);
         this.sqlgGraph.tx().commit();
-        assertTrue(a1.out().hasNext());
-        assertFalse(a2.out().hasNext());
-        assertFalse(a1.in().hasNext());
-        assertTrue(a2.in().hasNext());
+        assertTrue(vertexTraversal(a1).out().hasNext());
+        assertFalse(vertexTraversal(a2).out().hasNext());
+        assertFalse(vertexTraversal(a1).in().hasNext());
+        assertTrue(vertexTraversal(a2).in().hasNext());
     }
 }

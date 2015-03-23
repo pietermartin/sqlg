@@ -4,6 +4,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
+import java.util.Iterator;
+
 /**
  * Date: 2014/09/10
  * Time: 8:39 PM
@@ -30,7 +32,7 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
     }
 
     @Override
-    public Iterators iterators() {
+    public <U> Iterator<Property<U>> properties(String... propertyKeys) {
         throw VertexProperty.Exceptions.metaPropertiesNotSupported();
     }
 

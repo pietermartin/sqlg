@@ -1,10 +1,9 @@
 package org.umlg.sqlg.strategy;
 
-import org.apache.tinkerpop.gremlin.process.Traversal;
-import org.apache.tinkerpop.gremlin.process.Traverser;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.step.map.FlatMapStep;
-import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.step.Reversible;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -17,7 +16,7 @@ import java.util.*;
  * Date: 2014/08/15
  * Time: 8:10 PM
  */
-public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> implements Reversible {
+public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> {
 
     public final List<HasContainer> hasContainers = new ArrayList<>();
 
@@ -47,7 +46,7 @@ public class SqlgVertexStep<E extends Element> extends FlatMapStep<Vertex, E> im
                 return (Iterator<E>) ((SqlgVertex) traverser.get()).vertices(hasContainers, this.direction, this.edgeLabels);
             }
         } else {
-            return (Iterator<E>) traverser.get().iterators().edgeIterator(this.direction, this.edgeLabels);
+            return (Iterator<E>) traverser.get().edges(this.direction, this.edgeLabels);
         }
     }
 }

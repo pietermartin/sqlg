@@ -2,7 +2,7 @@ package org.umlg.sqlg.test.schema;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -43,8 +43,8 @@ public class TestLazyLoadSchema extends BaseTest {
         //add a vertex in the old, the new should only see it after a commit
         this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, sqlgGraph1.V().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
         sqlgGraph1.close();
     }
 
@@ -57,8 +57,8 @@ public class TestLazyLoadSchema extends BaseTest {
         //add a vertex in the old, the new should only see it after a commit
         this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, sqlgGraph1.V().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.V().has(T.label, "Person").has("name", "a").count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
         sqlgGraph1.close();
     }
 
@@ -71,9 +71,9 @@ public class TestLazyLoadSchema extends BaseTest {
         //add a vertex in the old, the new should only see it after a commit
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, sqlgGraph1.V().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.V().has(T.label, "Person").has("name", "a").count().next().intValue());
-        Vertex v11 = sqlgGraph1.V().has(T.label, "Person").<Vertex>has("name", "a").next();
+        Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
+        Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").<Vertex>has("name", "a").next();
         Assert.assertFalse(v11.property("surname").isPresent());
         //the next alter will lock if this transaction is still active
         sqlgGraph1.tx().rollback();
@@ -120,7 +120,7 @@ public class TestLazyLoadSchema extends BaseTest {
         v11.addEdge("friend", v12);
         sqlgGraph1.tx().commit();
 
-        Assert.assertEquals(1, v11.out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(v11).out("friend").count().next().intValue());
         sqlgGraph1.close();
     }
 
@@ -135,11 +135,11 @@ public class TestLazyLoadSchema extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
         v1.addEdge("friend", v2);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.E().has(T.label, "friend").count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
 
-        Assert.assertEquals(1, sqlgGraph1.E().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.E().has(T.label, "friend").count().next().intValue());
-        Assert.assertEquals(2, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
+        Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
     }
 
     @Test
@@ -156,12 +156,12 @@ public class TestLazyLoadSchema extends BaseTest {
 
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");
         Vertex v4 = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
-        Assert.assertEquals(1, this.sqlgGraph.E().has(T.label, "friend").count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, sqlgGraph1.E().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.E().has(T.label, "friend").count().next().intValue());
-        Assert.assertEquals(2, sqlgGraph1.V().has(T.label, "Person").count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
+        Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
 
         sqlgGraph1.close();
     }

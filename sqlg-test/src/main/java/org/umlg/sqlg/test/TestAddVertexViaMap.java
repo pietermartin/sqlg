@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -25,7 +25,7 @@ public class TestAddVertexViaMap extends BaseTest {
         map.put("name3", "p3");
         Vertex v1 = this.sqlgGraph.addVertex("Person", map);
         this.sqlgGraph.tx().commit();
-        Vertex v2 = this.sqlgGraph.V().<Vertex>has(T.label, "Person").next();
+        Vertex v2 = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").next();
         Assert.assertEquals(v1, v2);
         Assert.assertEquals("p1", v2.property("name1").value());
         Assert.assertEquals("p2", v2.property("name2").value());
@@ -51,7 +51,7 @@ public class TestAddVertexViaMap extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> markos = this.sqlgGraph.V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
+        List<Vertex> markos = this.sqlgGraph.traversal().V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
         if (markos.isEmpty()) {
             markos.get(0).property("name", "marko2");
         }

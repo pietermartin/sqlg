@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -19,7 +19,7 @@ public class TestAllEdges extends BaseTest {
         marko.addEdge("friend", john);
         marko.addEdge("family", john);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2L, this.sqlgGraph.E().count().next(), 0);
+        Assert.assertEquals(2L, this.sqlgGraph.traversal().E().count().next(), 0);
     }
 
     @Test
@@ -29,17 +29,17 @@ public class TestAllEdges extends BaseTest {
             v.addEdge("friend", v);
         }
 
-        Assert.assertEquals(25, this.sqlgGraph.E().count().next().intValue());
-        Assert.assertEquals(25, this.sqlgGraph.V().count().next().intValue());
+        Assert.assertEquals(25, this.sqlgGraph.traversal().E().count().next().intValue());
+        Assert.assertEquals(25, this.sqlgGraph.traversal().V().count().next().intValue());
         this.sqlgGraph.tx().commit();
 
-        for (Edge e : this.sqlgGraph.E().toList()) {
+        for (Edge e : this.sqlgGraph.traversal().E().toList()) {
             e.remove();
             this.sqlgGraph.tx().commit();
         }
 
-        Assert.assertEquals(0, this.sqlgGraph.E().count().next().intValue());
-        Assert.assertEquals(25, this.sqlgGraph.V().count().next().intValue());
+        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
+        Assert.assertEquals(25, this.sqlgGraph.traversal().V().count().next().intValue());
         this.sqlgGraph.tx().commit();
     }
 }

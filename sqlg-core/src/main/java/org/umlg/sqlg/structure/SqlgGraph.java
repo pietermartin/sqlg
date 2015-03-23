@@ -7,12 +7,9 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.TraversalEngine;
-import org.apache.tinkerpop.gremlin.process.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -37,7 +34,7 @@ import java.util.*;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
-public class SqlgGraph implements Graph, Graph.Iterators {
+public class SqlgGraph implements Graph {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
@@ -56,13 +53,9 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
-        try {
-            TraversalStrategies.GlobalCache.getStrategies(Vertex.class).removeStrategies(SqlgVertexStepStrategy.class);
-            TraversalStrategies.GlobalCache.registerStrategies(Vertex.class, TraversalStrategies.GlobalCache.getStrategies(Vertex.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
-            TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+        TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgVertexStepStrategy.class);
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
         return (G) sqlgGraph;
     }
 
@@ -133,11 +126,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     @Override
-    public Iterators iterators() {
-        return this;
-    }
-
-    @Override
     public Configuration configuration() {
         return this.configuration;
     }
@@ -178,7 +166,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     @Override
-    public void compute(Class<? extends GraphComputer> graphComputerClass) throws IllegalArgumentException {
+    public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
         throw Graph.Exceptions.graphComputerNotSupported();
     }
 
@@ -188,7 +176,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     @Override
-    public Iterator<Vertex> vertexIterator(final Object... vertexIds) {
+    public Iterator<Vertex> vertices(Object... vertexIds) {
         this.tx().readWrite();
         try {
             List<RecordId> recordIds = RecordId.from(vertexIds);
@@ -200,7 +188,7 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     @Override
-    public Iterator<Edge> edgeIterator(final Object... edgeIds) {
+    public Iterator<Edge> edges(Object... edgeIds) {
         this.tx().readWrite();
         try {
             List<RecordId> recordIds = RecordId.from(edgeIds);
@@ -212,12 +200,12 @@ public class SqlgGraph implements Graph, Graph.Iterators {
     }
 
     public Vertex v(final Object id) {
-        GraphTraversal<Vertex, Vertex> t = this.V(id);
+        Iterator<Vertex> t = this.vertices(id);
         return t.hasNext() ? t.next() : null;
     }
 
     public Edge e(final Object id) {
-        GraphTraversal<Edge, Edge> t = this.E(id);
+        Iterator<Edge> t = this.edges(id);
         return t.hasNext() ? t.next() : null;
     }
 
@@ -564,17 +552,6 @@ public class SqlgGraph implements Graph, Graph.Iterators {
             }
         }
 
-    }
-
-    @Override
-    public TraversalEngine engine() {
-        return StandardTraversalEngine.standard;
-    }
-
-    @Override
-    public void engine(final TraversalEngine traversalEngine) {
-        if (!traversalEngine.getClass().equals(StandardTraversalEngine.class))
-            throw Graph.Exceptions.traversalEngineNotSupported(traversalEngine);
     }
 
     /**

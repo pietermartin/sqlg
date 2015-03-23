@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.batch;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -60,8 +60,8 @@ public class TestMultiThreadedBatch extends BaseTest {
         Assert.assertEquals(100, tables.size());
         for (Integer i : tables) {
             Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
-            Assert.assertEquals(20000, this.sqlgGraph.V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
-            List<Vertex> persons = this.sqlgGraph.V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
+            Assert.assertEquals(20000, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
+            List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
             for (Vertex v : persons) {
                 Assert.assertEquals(i, v.value("name"));
             }

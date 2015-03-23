@@ -1,8 +1,8 @@
 package org.umlg.sqlg.structure;
 
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.graph.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 
 import java.sql.PreparedStatement;

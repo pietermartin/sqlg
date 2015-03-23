@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.junit.Test;
 
 /**
@@ -17,7 +17,7 @@ public class TestPool extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         for (int i = 0; i < 1000; i++) {
-            this.sqlgGraph.V().has(T.label, "Person").hasNext();
+            this.sqlgGraph.traversal().V().has(T.label, "Person").hasNext();
         }
     }
 }

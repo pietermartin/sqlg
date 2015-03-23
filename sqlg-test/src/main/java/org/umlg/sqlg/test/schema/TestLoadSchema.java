@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.schema;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -25,7 +25,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex vv = this.sqlgGraph.V(v.id()).next();
+        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
         Assert.assertFalse(vv.property("ID").isPresent());
         Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of("public", "V_Person").toString());
         Assert.assertFalse(propertyTypeMap.containsKey("ID"));
@@ -38,10 +38,10 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex v = this.sqlgGraph.V().next();
+        Vertex v = this.sqlgGraph.traversal().V().next();
         v.property("surname", "b");
         this.sqlgGraph.tx().rollback();
-        v = this.sqlgGraph.V().next();
+        v = this.sqlgGraph.traversal().V().next();
         v.property("surname", "b");
         this.sqlgGraph.tx().commit();
     }
@@ -52,7 +52,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
+        Iterator<Vertex> iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertArrayEquals(new byte[]{1,2,3,4}, v.<byte[]>property("byteArray").value());
@@ -65,7 +65,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
-        Iterator<Vertex> iter = this.sqlgGraph.V().has(T.label, "Person");
+        Iterator<Vertex> iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
         Assert.assertTrue(iter.hasNext());
         Vertex v = iter.next();
         Assert.assertEquals(true, v.property("aBoolean").value());
@@ -89,10 +89,10 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Test2.Product", "aBoolean", true, "aShort", (short) 1,
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test1.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test2.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test1.Product").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.V().has(T.label, "Test2.Product").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test1.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test2.Person").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test1.Product").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test2.Product").count().next(), 0);
 
     }
 
@@ -124,7 +124,7 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(2D, v2.property("bDouble").value());
         Assert.assertEquals("bbbbbbbbbbbbb", v2.property("bString").value());
 
-        Iterator<Edge> edgeIter = v1.outE("edgeTest");
+        Iterator<Edge> edgeIter = vertexTraversal(v1).outE("edgeTest");
         Assert.assertTrue(edgeIter.hasNext());
         Edge e = edgeIter.next();
         Assert.assertEquals(true, e.property("cBoolean").value());
@@ -155,7 +155,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
 
-        Assert.assertEquals(1, this.sqlgGraph.v(realBscWE.id()).in("workspaceElement").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
         Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
         Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
     }

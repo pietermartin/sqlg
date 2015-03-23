@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.graph;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,6 +16,6 @@ public class TestEmptyGraph extends BaseTest {
     public void testQueryEmptyGraph() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "Root");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(0,root.outE("lala").count().next().intValue());
+        Assert.assertEquals(0, vertexTraversal(root).outE("lala").count().next().intValue());
     }
 }

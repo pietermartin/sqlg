@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.T;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -36,7 +36,7 @@ public class TestGremlinCompileGraphV extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> bs = this.sqlgGraph.V().has(T.label, "A").out("b").toList();
+        List<Vertex> bs = this.sqlgGraph.traversal().V().has(T.label, "A").out("b").toList();
         Assert.assertEquals(8, bs.size());
     }
 }

@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.vertex;
 
-import org.apache.tinkerpop.gremlin.process.T;
-import org.apache.tinkerpop.gremlin.process.graph.traversal.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,7 +21,7 @@ public class TestTinkerpopBug extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> gt = this.sqlgGraph.V().has(T.label, "Person");
+        GraphTraversal<Vertex, Vertex> gt = this.sqlgGraph.traversal().V().has(T.label, "Person");
         assertTrue(gt.hasNext());
         Assert.assertEquals(3, gt.count().next().intValue());
     }

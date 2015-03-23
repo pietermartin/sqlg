@@ -1,10 +1,11 @@
 package org.umlg.sqlg;
 
+import org.apache.tinkerpop.gremlin.structure.BatchTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
-import org.umlg.sqlg.test.schema.TestLoadSchema;
-import org.umlg.sqlg.test.vertex.TestVertexLabelSize;
+import org.umlg.sqlg.test.vertex.TestNewVertex;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +13,7 @@ import org.umlg.sqlg.test.vertex.TestVertexLabelSize;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLoadSchema.class
+        TestBatch.class
 })
 public class AnyTest {
 }
