@@ -1,10 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.KryoSerializable;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,6 +9,10 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.shaded.kryo.Kryo;
+import org.apache.tinkerpop.shaded.kryo.KryoSerializable;
+import org.apache.tinkerpop.shaded.kryo.io.Input;
+import org.apache.tinkerpop.shaded.kryo.io.Output;
 
 import java.io.IOException;
 import java.util.*;
@@ -109,7 +108,7 @@ public class RecordId implements KryoSerializable {
 
     @Override
     public int hashCode() {
-        return this.schemaTable.hashCode() + this.id.hashCode();
+        return (this.schemaTable + this.id.toString()).hashCode();
     }
 
     @Override
@@ -124,17 +123,13 @@ public class RecordId implements KryoSerializable {
             return false;
         }
         RecordId otherRecordId = (RecordId) other;
-        if (this.schemaTable.equals(otherRecordId.getSchemaTable())) {
-            return this.id.equals(otherRecordId.getId());
-        } else {
-            return false;
-        }
+        return this.schemaTable.equals(otherRecordId.getSchemaTable()) && this.id.equals(otherRecordId.getId());
     }
 
     @Override
     public void write(Kryo kryo, Output output) {
-        output.writeString(this.getSchemaTable().getSchema().toString());
-        output.writeString(this.getSchemaTable().getTable().toString());
+        output.writeString(this.getSchemaTable().getSchema());
+        output.writeString(this.getSchemaTable().getTable());
         output.writeLong(this.getId());
     }
 
@@ -163,14 +158,9 @@ public class RecordId implements KryoSerializable {
 
         private void ser(final RecordId recordId, final JsonGenerator jsonGenerator, final boolean includeType) throws IOException {
             jsonGenerator.writeStartObject();
-
             if (includeType)
                 jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
-
-            SchemaTable schemaTable = recordId.getSchemaTable();
-            jsonGenerator.writeObjectField("schema", schemaTable.getSchema());
-            jsonGenerator.writeObjectField("table", schemaTable.getTable());
-            jsonGenerator.writeObjectField("id", recordId.getId().toString());
+            jsonGenerator.writeObjectField("id", recordId.toString());
             jsonGenerator.writeEndObject();
         }
     }
@@ -182,31 +172,23 @@ public class RecordId implements KryoSerializable {
 
         @Override
         public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
-            String schema = null;
-            String table = null;
-            Long id = null;
+            RecordId id = null;
             while (!jsonParser.getCurrentToken().isStructEnd()) {
-                if (jsonParser.getText().equals("schema")) {
+                if (jsonParser.getText().equals("id")) {
                     jsonParser.nextToken();
-                    schema = jsonParser.getText();
-                } else if (jsonParser.getText().equals("table")) {
-                    jsonParser.nextToken();
-                    table = jsonParser.getText();
-                } else if (jsonParser.getText().equals("id")) {
-                    jsonParser.nextToken();
-                    id = Long.valueOf(jsonParser.getText());
+                    id = RecordId.from(jsonParser.getText());
                 } else
                     jsonParser.nextToken();
             }
-
-            if (!Optional.ofNullable(schema).isPresent())
-                throw deserializationContext.mappingException("Could not deserialze RecordId: 'schema' is required");
-            if (!Optional.ofNullable(table).isPresent())
-                throw deserializationContext.mappingException("Could not deserialze RecordId: 'table' is required");
-            if (!Optional.ofNullable(id).isPresent())
-                throw deserializationContext.mappingException("Could not deserialze RecordId: 'id' is required");
-
-            return new RecordId(SchemaTable.of(schema, table), id);
+            return id;
+//            if (!Optional.ofNullable(schema).isPresent())
+//                throw deserializationContext.mappingException("Could not deserialze RecordId: 'schema' is required");
+//            if (!Optional.ofNullable(table).isPresent())
+//                throw deserializationContext.mappingException("Could not deserialze RecordId: 'table' is required");
+//            if (!Optional.ofNullable(id).isPresent())
+//                throw deserializationContext.mappingException("Could not deserialze RecordId: 'id' is required");
+//
+//            return new RecordId(SchemaTable.of(schema, table), id);
         }
     }
 }

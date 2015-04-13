@@ -326,6 +326,12 @@ public class SqlgGraph implements Graph {
         }
 
         public class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
+
+            @Override
+            public boolean supportsUserSuppliedIds() {
+                return false;
+            }
+
             @Override
             public boolean supportsMapValues() {
                 return false;

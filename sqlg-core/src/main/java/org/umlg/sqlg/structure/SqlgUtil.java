@@ -134,10 +134,17 @@ public class SqlgUtil {
             String key = entry.getKey();
             //value
             //skip the label as that is not a property but the table
-            if (key.equals(T.label)) {
+            if (key.equals(T.label.getAccessor())) {
                 continue;
             }
-            result.add(ImmutablePair.of(PropertyType.from(value), value));
+            if (key.equals(T.id.getAccessor())) {
+                if (!(value instanceof RecordId)) {
+                    throw new IllegalStateException(T.id.getAccessor() + " must be of type RecordId");
+                }
+                result.add(ImmutablePair.of(PropertyType.LONG, ((RecordId)value).getId()));
+            } else {
+                result.add(ImmutablePair.of(PropertyType.from(value), value));
+            }
         }
         return result;
     }

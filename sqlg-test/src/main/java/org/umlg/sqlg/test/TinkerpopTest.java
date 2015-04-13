@@ -67,24 +67,24 @@ public class TinkerpopTest extends BaseTest {
         return (g.traversal().V().has("name", vertexName).next());
     }
 
-//    @Test
-    public void g_e7_hasXlabelXknowsX() throws IOException {
-        //System.out.println(convertToEdgeId("marko", "knows", "vadas"));
-        Graph g = this.sqlgGraph;
-        final GraphReader initreader = GryoReader.build().workingDirectory(File.separator + "tmp").create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
-            initreader.readGraph(stream, g);
-        }
-        assertModernGraph(g, true, false);
-        Traversal<Edge, Edge> traversal = get_g_e7_hasXlabelXknowsX(convertToEdgeId("marko", "knows", "vadas"));
-        printTraversalForm(traversal);
-        int counter = 0;
-        while (traversal.hasNext()) {
-            counter++;
-            assertEquals("knows", traversal.next().label());
-        }
-        assertEquals(1, counter);
-    }
+////    @Test
+//    public void g_e7_hasXlabelXknowsX() throws IOException {
+//        //System.out.println(convertToEdgeId("marko", "knows", "vadas"));
+//        Graph g = this.sqlgGraph;
+//        final GraphReader initreader = GryoReader.build().workingDirectory(File.separator + "tmp").create();
+//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
+//            initreader.readGraph(stream, g);
+//        }
+//        assertModernGraph(g, true, false);
+//        Traversal<Edge, Edge> traversal = get_g_e7_hasXlabelXknowsX(convertToEdgeId("marko", "knows", "vadas"));
+//        printTraversalForm(traversal);
+//        int counter = 0;
+//        while (traversal.hasNext()) {
+//            counter++;
+//            assertEquals("knows", traversal.next().label());
+//        }
+//        assertEquals(1, counter);
+//    }
 
     public Traversal<Edge, Edge> get_g_e7_hasXlabelXknowsX(final Object e7Id) {
         return this.sqlgGraph.traversal().E(e7Id).has(T.label, "knows");
@@ -560,15 +560,6 @@ public class TinkerpopTest extends BaseTest {
 //    }
 //
 //
-    public Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
-        return convertToEdgeId(this.sqlgGraph, outVertexName, edgeLabel, inVertexName);
-    }
-
-    //josh created lop
-    public Object convertToEdgeId(final Graph g, final String outVertexName, String edgeLabel, final String inVertexName) {
-        return ((Edge) g.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).back("e").next()).id();
-    }
-
     public void printTraversalForm(final Traversal traversal) {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 

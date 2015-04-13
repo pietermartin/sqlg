@@ -152,6 +152,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return (VertexProperty) super.property(key, value);
     }
 
+    @Override
+    public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
+        if (keyValues.length > 0)
+            throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+
+        return property(key, value);
+    }
+
 
     @Override
     protected <V> SqlgProperty<V> instantiateProperty(String key, V value) {

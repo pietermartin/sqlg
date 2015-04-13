@@ -22,15 +22,15 @@ import java.util.stream.Stream;
 public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStep.class.getName());
-//    private SqlgGraph sqlgGraph;
     public final List<HasContainer> hasContainers = new ArrayList<>();
 
     public SqlgGraphStep(final GraphStep<E> originalGraphStep) {
         super(originalGraphStep.getTraversal(), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
         if (originalGraphStep.getLabel().isPresent())
             this.setLabel(originalGraphStep.getLabel().get());
-//        this.sqlgGraph = (SqlgGraph)originalGraphStep.getTraversal().getGraph().get();
-        this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
+
+        if ((this.ids.length == 0 || !(this.ids[0] instanceof Element)))
+            this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
 
     private Iterator<? extends Edge> edges() {

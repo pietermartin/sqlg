@@ -11,7 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.strategy.SqlgVertexStepCompiler;
+import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SchemaTableTree;
@@ -27,6 +27,23 @@ import java.util.List;
  * Time: 6:22 AM
  */
 public class TestGremlinCompileWithHas extends BaseTest {
+
+    @Test
+    public void testHasLabelOut() {
+        SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
+        SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("outB", b1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().both().has(T.label, "B");
+        printTraversalForm(traversal);
+        List<Vertex> softwares = traversal.toList();
+        Assert.assertEquals(1, softwares.size());
+        for (Vertex software : softwares) {
+            if (!software.label().equals("B")) {
+                Assert.fail("expected label B found " + software.label());
+            }
+        }
+    }
 
     @Test
     public void testSingleCompileWithHasLabelOut() {
@@ -55,8 +72,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
             currentStep = currentStep.getNextStep();
         }
         Assert.assertTrue(temp.get(0) instanceof StartStep);
-        Assert.assertTrue(temp.get(1) instanceof SqlgVertexStepCompiler);
-        SqlgVertexStepCompiler sqlgVertexStepCompiler = (SqlgVertexStepCompiler) temp.get(1);
+        Assert.assertTrue(temp.get(1) instanceof SqlgVertexStepCompiled);
+        SqlgVertexStepCompiled sqlgVertexStepCompiler = (SqlgVertexStepCompiled) temp.get(1);
         Assert.assertEquals(2, temp.size());
 
         SchemaTable schemaTable = SchemaTable.of(a1.getSchema(), SchemaManager.VERTEX_PREFIX + a1.getTable());
@@ -117,8 +134,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
             currentStep = currentStep.getNextStep();
         }
         Assert.assertTrue(temp.get(0) instanceof StartStep);
-        Assert.assertTrue(temp.get(1) instanceof SqlgVertexStepCompiler);
-        SqlgVertexStepCompiler sqlgVertexStepCompiler = (SqlgVertexStepCompiler) temp.get(1);
+        Assert.assertTrue(temp.get(1) instanceof SqlgVertexStepCompiled);
+        SqlgVertexStepCompiled sqlgVertexStepCompiler = (SqlgVertexStepCompiled) temp.get(1);
         Assert.assertEquals(2, temp.size());
 
         SchemaTable schemaTable = SchemaTable.of(a1.getSchema(), SchemaManager.VERTEX_PREFIX + a1.getTable());

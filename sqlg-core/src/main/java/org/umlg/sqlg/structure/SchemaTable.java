@@ -57,15 +57,12 @@ public class SchemaTable implements DataSerializable, Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(this.schema);
-        sb.append(".");
-        sb.append(this.table);
-        return sb.toString();
+        return this.schema + "." + this.table;
     }
 
     @Override
     public int hashCode() {
-        return toString().hashCode();
+        return (this.schema + this.table).hashCode();
     }
 
     @Override
@@ -76,7 +73,8 @@ public class SchemaTable implements DataSerializable, Serializable {
         if (o == this) {
             return true;
         }
-        return this.toString().equals(o.toString());
+        SchemaTable other = (SchemaTable)o;
+        return this.schema.equals(other.schema) && this.table.equals(other.table);
     }
 
     @Override

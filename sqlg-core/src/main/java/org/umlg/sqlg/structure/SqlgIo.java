@@ -26,7 +26,6 @@ public class SqlgIo extends DefaultIo implements Graph.Io {
         final SimpleModule module = new SimpleModule();
         module.addSerializer(RecordId.class, new RecordId.RecordIdJacksonSerializer());
         module.addDeserializer(RecordId.class, new RecordId.RecordIdJacksonDeserializer());
-//        return GraphSONMapper.build().addCustomModule(module);
         return GraphSONMapper.build().addCustomModule(module).embedTypes(true);
     }
 

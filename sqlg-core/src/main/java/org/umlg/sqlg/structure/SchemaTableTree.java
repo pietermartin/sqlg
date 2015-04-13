@@ -38,7 +38,7 @@ public class SchemaTableTree {
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, depth);
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
-            schemaTableTree.hasContainers = hasContainers;
+            schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
         }
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
@@ -242,7 +242,11 @@ public class SchemaTableTree {
                 singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
                 singlePathSql += ".";
                 singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
-                singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.key);
+                if (hasContainer.key.equals(T.id.getAccessor())) {
+                    singlePathSql += ".\"ID\"";
+                } else {
+                    singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.key);
+                }
                 singlePathSql += " = ?";
             }
         }

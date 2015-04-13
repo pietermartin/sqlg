@@ -3,6 +3,7 @@ package org.umlg.sqlg.strategy;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
@@ -16,7 +17,10 @@ import org.umlg.sqlg.structure.SqlgGraphStep;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Date: 2014/07/12
@@ -134,4 +138,8 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
         return INSTANCE;
     }
 
+    @Override
+    public Set<Class<? extends TraversalStrategy>> applyPrior() {
+        return Stream.of(SqlgVertexStepStrategy.class).collect(Collectors.toSet());
+    }
 }

@@ -256,11 +256,7 @@ public class BatchManager {
 
     public boolean vertexIsCached(SqlgVertex vertex) {
         Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> map = this.vertexCache.get(SchemaTable.of(vertex.getSchema(), vertex.getTable()));
-        if (map != null) {
-            return map.getRight().containsKey(vertex);
-        } else {
-            return false;
-        }
+        return map != null && map.getRight().containsKey(vertex);
     }
 
     public void clear() {

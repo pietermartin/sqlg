@@ -27,7 +27,8 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph = SqlgGraph.open(configuration);
         Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
         Assert.assertFalse(vv.property("ID").isPresent());
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of("public", "V_Person").toString());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
         Assert.assertFalse(propertyTypeMap.containsKey("ID"));
         this.sqlgGraph.tx().rollback();
     }

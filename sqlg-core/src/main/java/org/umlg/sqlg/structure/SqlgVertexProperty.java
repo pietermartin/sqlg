@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 
 import java.util.Iterator;
 
@@ -36,4 +37,8 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
         throw VertexProperty.Exceptions.metaPropertiesNotSupported();
     }
 
+    @Override
+    public boolean equals(final Object object) {
+        return ElementHelper.areEqual(this, object);
+    }
 }

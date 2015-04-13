@@ -289,7 +289,6 @@ public abstract class SqlgElement implements Element {
         throw new IllegalArgumentException(
                 String.format("%s[] is not a supported property value type",
                         value.getClass().getComponentType().getName()));
-
     }
 
     private <T> T copy(Object[] value, T target) {
@@ -418,7 +417,6 @@ public abstract class SqlgElement implements Element {
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
         this.properties.entrySet().stream()
                 .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-//                .filter(entry -> !Graph.Key.isHidden(entry.getKey()))
                 .filter(entry -> !entry.getKey().equals("ID"))
                 .filter(entry -> entry.getValue() != null)
                 .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
