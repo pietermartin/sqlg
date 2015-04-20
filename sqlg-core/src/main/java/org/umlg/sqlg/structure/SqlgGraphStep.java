@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Date: 2014/07/12
@@ -104,25 +105,29 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     private Stream<? extends Vertex> getVerticesUsingLabel(String... labels) {
         Stream<? extends Vertex> vertices = Stream.empty();
         for (String label : labels) {
-            vertices = Stream.concat(vertices, StreamFactory.stream(this._verticesUsingLabel(label)));
+            Iterable<? extends Vertex> iterable = this._verticesUsingLabel(label);
+            Stream<? extends Vertex> targetStream = StreamSupport.stream(iterable.spliterator(), false);
+            vertices = Stream.concat(vertices, targetStream);
         }
         return vertices;
     }
 
     private Stream<? extends Vertex> getVerticesUsingLabeledIndex(String label, String key, Object value) {
-        return StreamFactory.stream(this._verticesUsingLabeledIndex(label, key, value));
+        return StreamSupport.stream(this._verticesUsingLabeledIndex(label, key, value).spliterator(), false);
     }
 
     private Stream<? extends Edge> getEdgesUsingLabel(String... labels) {
         Stream<? extends Edge> edges = Stream.empty();
         for (String label : labels) {
-            edges = Stream.concat(edges, StreamFactory.stream(this._edgesUsingLabel(label)));
+            Iterable<? extends Edge> iterable = this._edgesUsingLabel(label);
+            Stream<? extends Edge> targetStream = StreamSupport.stream(iterable.spliterator(), false);
+            edges = Stream.concat(edges, targetStream);
         }
         return edges;
     }
 
     private Stream<? extends Edge> getEdgesUsingLabeledIndex(String label, String key, Object value) {
-        return StreamFactory.stream(this._edgesUsingLabeledIndex(label, key, value));
+        return StreamSupport.stream(this._edgesUsingLabeledIndex(label, key, value).spliterator(), false);
     }
 
     private Iterable<? extends Vertex> _verticesUsingLabel(String label) {

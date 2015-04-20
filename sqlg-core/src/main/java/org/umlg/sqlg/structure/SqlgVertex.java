@@ -153,6 +153,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
+    public <V> VertexProperty<V> property(String key, V value, Object... keyValues) {
+        throw VertexProperty.Exceptions.metaPropertiesNotSupported();
+    }
+
+    @Override
     public <V> VertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
         if (keyValues.length > 0)
             throw VertexProperty.Exceptions.metaPropertiesNotSupported();

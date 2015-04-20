@@ -1,11 +1,9 @@
 package org.umlg.sqlg.structure;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
@@ -15,7 +13,10 @@ import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Date: 2015/02/21
@@ -45,9 +46,9 @@ public class RecordId implements KryoSerializable {
         return new RecordId(schemaTable, id);
     }
 
-    public static List<RecordId> from(Object... vertexId) {
-        List<RecordId> result = new ArrayList<>(vertexId.length);
-        for (Object o : vertexId) {
+    public static List<RecordId> from(Object... elementId) {
+        List<RecordId> result = new ArrayList<>(elementId.length);
+        for (Object o : elementId) {
             if (o instanceof RecordId) {
                 result.add((RecordId) o);
             } else {
@@ -146,49 +147,34 @@ public class RecordId implements KryoSerializable {
 
         @Override
         public void serialize(final RecordId customId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
-                throws IOException {
+                throws IOException, JsonGenerationException {
             ser(customId, jsonGenerator, false);
         }
 
         @Override
-        public void serializeWithType(final RecordId customId, final JsonGenerator jsonGenerator,
-                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
-            ser(customId, jsonGenerator, true);
+        public void serializeWithType(final RecordId recordId, final JsonGenerator jsonGenerator,
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+            ser(recordId, jsonGenerator, true);
         }
 
         private void ser(final RecordId recordId, final JsonGenerator jsonGenerator, final boolean includeType) throws IOException {
-            jsonGenerator.writeStartObject();
-            if (includeType)
+            if (includeType) {
+                // when the type is included add "class" as a key and then try to utilize as much of the
+                // default serialization provided by jackson data-bind as possible.  for example, write
+                // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
+                // to write it out with the type.  in this way, data-bind should be able to deserialize
+                // it back when types are embedded.
+                jsonGenerator.writeStartObject();
                 jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
-            jsonGenerator.writeObjectField("id", recordId.toString());
-            jsonGenerator.writeEndObject();
-        }
-    }
-
-    static class RecordIdJacksonDeserializer extends StdDeserializer<RecordId> {
-        public RecordIdJacksonDeserializer() {
-            super(RecordId.class);
-        }
-
-        @Override
-        public RecordId deserialize(final JsonParser jsonParser, final DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
-            RecordId id = null;
-            while (!jsonParser.getCurrentToken().isStructEnd()) {
-                if (jsonParser.getText().equals("id")) {
-                    jsonParser.nextToken();
-                    id = RecordId.from(jsonParser.getText());
-                } else
-                    jsonParser.nextToken();
+                jsonGenerator.writeObjectField("schemaTable", recordId.getSchemaTable());
+                jsonGenerator.writeObjectField("id", recordId.getId());
+                jsonGenerator.writeEndObject();
+            } else {
+                // when types are not embedded, stringify or resort to JSON primitive representations of the
+                // type so that non-jvm languages can better interoperate with the TinkerPop stack.
+                jsonGenerator.writeString(recordId.toString());
             }
-            return id;
-//            if (!Optional.ofNullable(schema).isPresent())
-//                throw deserializationContext.mappingException("Could not deserialze RecordId: 'schema' is required");
-//            if (!Optional.ofNullable(table).isPresent())
-//                throw deserializationContext.mappingException("Could not deserialze RecordId: 'table' is required");
-//            if (!Optional.ofNullable(id).isPresent())
-//                throw deserializationContext.mappingException("Could not deserialze RecordId: 'id' is required");
-//
-//            return new RecordId(SchemaTable.of(schema, table), id);
         }
     }
+
 }

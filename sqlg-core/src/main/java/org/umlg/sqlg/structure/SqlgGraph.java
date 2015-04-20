@@ -26,6 +26,7 @@ import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Date: 2014/07/12
@@ -178,27 +179,36 @@ public class SqlgGraph implements Graph {
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
         this.tx().readWrite();
-        try {
-            List<RecordId> recordIds = RecordId.from(vertexIds);
-            Iterable<Vertex> vertexIterable = elements(true, recordIds);
-            return vertexIterable.iterator();
-        } catch (SqlgExceptions.InvalidIdException e) {
-            return Collections.emptyIterator();
-        }
+        return createElementIterator(Vertex.class, vertexIds);
     }
 
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
         this.tx().readWrite();
-        try {
-            List<RecordId> recordIds = RecordId.from(edgeIds);
-            Iterable<Edge> edgeIterable = elements(false, recordIds);
-            return edgeIterable.iterator();
-        } catch (SqlgExceptions.InvalidIdException e) {
-            return Collections.emptyIterator();
-        }
+        return createElementIterator(Edge.class, edgeIds);
     }
 
+    private <T extends Element> Iterator<T> createElementIterator(final Class<T> clazz, final Object... ids) {
+        if (0 == ids.length) {
+            return (Iterator<T>) elements(Vertex.class.isAssignableFrom(clazz), Collections.EMPTY_LIST).iterator();
+        } else {
+            if (clazz.isAssignableFrom(ids[0].getClass())) {
+                // based on the first item assume all vertices in the argument list
+                if (!Stream.of(ids).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
+                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+
+                return Stream.of(ids).map(id -> (T) id).iterator();
+            } else {
+                final Class<?> firstClass = ids[0].getClass();
+                if (!Stream.of(ids).map(Object::getClass).allMatch(firstClass::equals))
+                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+
+                List<RecordId> recordIds = RecordId.from(ids);
+                Iterable<T> elementIterable = elements(Vertex.class.isAssignableFrom(clazz), recordIds);
+                return elementIterable.iterator();
+            }
+        }
+    }
     public Vertex v(final Object id) {
         Iterator<Vertex> t = this.vertices(id);
         return t.hasNext() ? t.next() : null;
@@ -311,6 +321,21 @@ public class SqlgGraph implements Graph {
             public VertexPropertyFeatures properties() {
                 return new SqlGVertexPropertyFeatures();
             }
+
+            /**
+             * Determines if an {@link Element} has numeric identifiers as their internal representation.
+             */
+            public boolean supportsNumericIds() {
+                return false;
+            }
+
+            /**
+             * Determines if an {@link Element} any Java object is a suitable identifier.  Note that this
+             * setting can only return true if {@link #supportsUserSuppliedIds()} is true.
+             */
+            public boolean supportsAnyIds() {
+                return false;
+            }
         }
 
         public class SqlEdgeFeatures implements EdgeFeatures {
@@ -322,6 +347,21 @@ public class SqlgGraph implements Graph {
             @Override
             public EdgePropertyFeatures properties() {
                 return new SqlEdgePropertyFeatures();
+            }
+
+            /**
+             * Determines if an {@link Element} has numeric identifiers as their internal representation.
+             */
+            public boolean supportsNumericIds() {
+                return false;
+            }
+
+            /**
+             * Determines if an {@link Element} any Java object is a suitable identifier.  Note that this
+             * setting can only return true if {@link #supportsUserSuppliedIds()} is true.
+             */
+            public boolean supportsAnyIds() {
+                return false;
             }
         }
 
@@ -395,6 +435,15 @@ public class SqlgGraph implements Graph {
             @Override
             public boolean supportsStringArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+            }
+
+            /**
+             * Determines if an {@link Element} any Java object is a suitable identifier.  Note that this
+             * setting can only return true if {@link #supportsUserSuppliedIds()} is true.
+             */
+            @FeatureDescriptor(name = FEATURE_ANY_IDS)
+            public boolean supportsAnyIds() {
+                return false;
             }
 
         }
@@ -714,7 +763,7 @@ public class SqlgGraph implements Graph {
     }
 
     private <T extends Element> Iterable<T> elements(boolean returnVertices, final List<RecordId> elementIds) {
-        List<T> sqlGVertexes = new ArrayList<>();
+        List<T> sqlgElements = new ArrayList<>();
         if (elementIds.size() > 0) {
             Map<SchemaTable, List<Long>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
             for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
@@ -762,7 +811,7 @@ public class SqlgGraph implements Graph {
                                 sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable());
                             }
                             sqlgElement.loadResultSet(resultSet);
-                            sqlGVertexes.add((T) sqlgElement);
+                            sqlgElements.add((T) sqlgElement);
                         }
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -800,7 +849,7 @@ public class SqlgGraph implements Graph {
                                 sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
                             }
                             sqlgElement.loadResultSet(resultSet);
-                            sqlGVertexes.add((T) sqlgElement);
+                            sqlgElements.add((T) sqlgElement);
                         }
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -808,7 +857,7 @@ public class SqlgGraph implements Graph {
                 }
             }
         }
-        return sqlGVertexes;
+        return sqlgElements;
     }
 
     @Override
