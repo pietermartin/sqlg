@@ -1012,7 +1012,7 @@ public class SchemaManager {
     }
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
-        Map<String, Set<String>> allForeignKeys = new HashMap<>();
+        Map<String, Set<String>> allForeignKeys = new ConcurrentHashMap<>();
         allForeignKeys.putAll(this.localEdgeForeignKeys);
         allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
         return allForeignKeys.get(schemaTable);
@@ -1023,7 +1023,7 @@ public class SchemaManager {
     }
 
     //TODO think about this  synchronization
-    public synchronized Map<String, Set<String>> getAllEdgeForeignKeys() {
+    public Map<String, Set<String>> getAllEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
         result.putAll(this.localEdgeForeignKeys);
         result.putAll(this.uncommittedEdgeForeignKeys);
