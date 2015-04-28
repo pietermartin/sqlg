@@ -325,7 +325,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                             schemaTable.getSchema(),
                                             schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()),
                                             this,
-                                            SqlgVertex.of(this.sqlgGraph, outId, outSchemaTable.getSchema(), outSchemaTable.getTable().replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
+                                            SqlgVertex.of(this.sqlgGraph, outId, outSchemaTable.getSchema(), SqlgUtil.removeTrailingOutId(outSchemaTable.getTable())),
                                             keyValues.toArray());
                                     break;
                                 case OUT:
@@ -334,7 +334,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                             edgeId,
                                             schemaTable.getSchema(),
                                             schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()),
-                                            SqlgVertex.of(this.sqlgGraph, inId, inSchemaTable.getSchema(), inSchemaTable.getTable().replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
+                                            SqlgVertex.of(this.sqlgGraph, inId, inSchemaTable.getSchema(), SqlgUtil.removeTrailingInId(inSchemaTable.getTable())),
                                             this,
                                             keyValues.toArray());
                                     break;
@@ -790,14 +790,32 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return toRemove;
     }
 
+    private Set<SchemaTable> transformToOutSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
+        Set<SchemaTable> result = new HashSet<>();
+        for (String edgeForeignKey : edgeForeignKeys) {
+            String[] schemaTableArray = edgeForeignKey.split("\\.");
+            String schema = schemaTableArray[0];
+            String table = schemaTableArray[1];
+
+            if (table.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                table = table.substring(0, table.length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
+                if (labels.isEmpty() || labels.contains(table)) {
+                    result.add(SchemaTable.of(schema, table));
+                }
+            }
+
+        }
+        return result;
+    }
+
     private Set<SchemaTable> transformToInSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
         Set<SchemaTable> result = new HashSet<>();
         for (String edgeForeignKey : edgeForeignKeys) {
             String[] schemaTableArray = edgeForeignKey.split("\\.");
             String schema = schemaTableArray[0];
             String table = schemaTableArray[1];
-            if (table.endsWith("_IN_ID")) {
-                table = table.substring(0, table.length() - 6);
+            if (table.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                table = table.substring(0, table.length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
                 if (labels.isEmpty() || labels.contains(table)) {
                     result.add(SchemaTable.of(schema, table));
                 }
@@ -879,23 +897,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
-    private Set<SchemaTable> transformToOutSchemaTables(Set<String> edgeForeignKeys, Set<String> labels) {
-        Set<SchemaTable> result = new HashSet<>();
-        for (String edgeForeignKey : edgeForeignKeys) {
-            String[] schemaTableArray = edgeForeignKey.split("\\.");
-            String schema = schemaTableArray[0];
-            String table = schemaTableArray[1];
-
-            if (table.endsWith("_OUT_ID")) {
-                table = table.substring(0, table.length() - 7);
-                if (labels.isEmpty() || labels.contains(table)) {
-                    result.add(SchemaTable.of(schema, table));
-                }
-            }
-
-        }
-        return result;
-    }
 
     @Override
     public String toString() {

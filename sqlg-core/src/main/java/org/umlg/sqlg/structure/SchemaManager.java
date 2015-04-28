@@ -36,8 +36,8 @@ public class SchemaManager {
     public static final String EDGE_SCHEMA = "EDGE_SCHEMA";
     public static final String EDGE_TABLE = "EDGE_TABLE";
     public static final String LABEL_SEPARATOR = ":::";
-    public static final String IN_VERTEX_COLUMN_END = "_IN_ID";
-    public static final String OUT_VERTEX_COLUMN_END = "_OUT_ID";
+    public static final String IN_VERTEX_COLUMN_END = "_I";
+    public static final String OUT_VERTEX_COLUMN_END = "_O";
 
     private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();
@@ -1079,7 +1079,7 @@ public class SchemaManager {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+        Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         result.putAll(this.localTables);
         result.putAll(this.uncommittedTables);
         return Collections.unmodifiableMap(result);

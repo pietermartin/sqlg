@@ -2,9 +2,7 @@ package org.umlg.sqlg.test.tp3;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
@@ -34,7 +32,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
     }};
 
     @Override
-    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
+    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName) {
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
@@ -97,8 +95,8 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
         return IMPLEMENTATIONS;
     }
 
-    @Override
-    public Object convertId(final Object id, final Class<? extends Element> c) {
-        return "jippo.jippo" + SchemaManager.LABEL_SEPARATOR + id.toString();
-    }
+//    @Override
+//    public Object convertId(final Object id, final Class<? extends Element> c) {
+//        return "jippo.jippo" + SchemaManager.LABEL_SEPARATOR + id.toString();
+//    }
 }

@@ -141,7 +141,7 @@ public class SqlgUtil {
                 if (!(value instanceof RecordId)) {
                     throw new IllegalStateException(T.id.getAccessor() + " must be of type RecordId");
                 }
-                result.add(ImmutablePair.of(PropertyType.LONG, ((RecordId)value).getId()));
+                result.add(ImmutablePair.of(PropertyType.LONG, ((RecordId) value).getId()));
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
             }
@@ -181,6 +181,22 @@ public class SqlgUtil {
             outputArray[i] = Array.get(val, i);
         }
         return outputArray;
+    }
+
+    public static String removeTrailingInId(String foreignKey) {
+        if (foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+            return foreignKey.substring(0, foreignKey.length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
+        } else {
+            return foreignKey;
+        }
+    }
+
+    public static String removeTrailingOutId(String foreignKey) {
+        if (foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+            return foreignKey.substring(0, foreignKey.length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
+        } else {
+            return foreignKey;
+        }
     }
 
 }

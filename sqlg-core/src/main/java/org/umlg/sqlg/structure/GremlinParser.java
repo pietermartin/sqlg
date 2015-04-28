@@ -149,7 +149,7 @@ public class GremlinParser<E extends Element> {
             String foreignKeyTable = foreignKey.split("\\.")[1];
             if (direction == Direction.IN && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
-                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.OUT_VERTEX_COLUMN_END, "")),
+                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable)),
                         direction,
                         elementClass,
                         hasContainers,
@@ -157,7 +157,7 @@ public class GremlinParser<E extends Element> {
                 result.add(schemaTableTree1);
             } else if (direction == Direction.OUT && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
-                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + foreignKeyTable.replace(SchemaManager.IN_VERTEX_COLUMN_END, "")),
+                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable)),
                         direction,
                         elementClass,
                         hasContainers,
