@@ -826,7 +826,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     protected void load() {
-
         //if in batch mode only load vertexes that are not new.
         //new vertexes have no id, impossible to load, but then all its properties are already cached.
         if ((!this.sqlgGraph.tx().isInBatchMode() && this.properties.isEmpty()) ||
