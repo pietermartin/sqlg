@@ -1077,7 +1077,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
+    @Override
     public void validateColumnName(String column) {
+        super.validateColumnName(column);
         if (column.length() > getMinimumColumnNameLength()) {
             throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + " exceeds that");
         }

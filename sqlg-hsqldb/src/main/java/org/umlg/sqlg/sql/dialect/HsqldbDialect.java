@@ -364,4 +364,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     }
 
+    @Override
+    public void validateColumnName(String column) {
+        super.validateColumnName(column);
+    }
 }
