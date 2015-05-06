@@ -36,8 +36,8 @@ public class SchemaManager {
     public static final String EDGE_SCHEMA = "EDGE_SCHEMA";
     public static final String EDGE_TABLE = "EDGE_TABLE";
     public static final String LABEL_SEPARATOR = ":::";
-    public static final String IN_VERTEX_COLUMN_END = "_I";
-    public static final String OUT_VERTEX_COLUMN_END = "_O";
+    public static final String IN_VERTEX_COLUMN_END = "__I";
+    public static final String OUT_VERTEX_COLUMN_END = "__O";
 
     private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();
@@ -48,11 +48,11 @@ public class SchemaManager {
     private Map<String, Set<String>> uncommittedLabelSchemas = new ConcurrentHashMap<>();
 
     private Map<String, Map<String, PropertyType>> tables;
-    private Map<String, Map<String, PropertyType>> localTables = new HashMap<>();
+    private Map<String, Map<String, PropertyType>> localTables = new ConcurrentHashMap<>();
     private Map<String, Map<String, PropertyType>> uncommittedTables = new ConcurrentHashMap<>();
 
     private Map<String, Set<String>> edgeForeignKeys;
-    private Map<String, Set<String>> localEdgeForeignKeys = new HashMap<>();
+    private Map<String, Set<String>> localEdgeForeignKeys = new ConcurrentHashMap<>();
     private Map<String, Set<String>> uncommittedEdgeForeignKeys = new ConcurrentHashMap<>();
 
     //tableLabels is a map of every vertex's schemaTable together with its in and out edge schemaTables
