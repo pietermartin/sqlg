@@ -24,19 +24,24 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.*;
 import java.util.function.BiPredicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Date: 2014/08/15
  * Time: 7:34 PM
  */
-public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
+public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class);
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(Compare.eq);
     private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
+
+    private static final Set<Class<? extends TraversalStrategy>> PRIORS = new HashSet<>();
+
+    static {
+        PRIORS.add(PartitionStrategy.class);
+        PRIORS.add(SubgraphStrategy.class);
+    }
 
     public SqlgVertexStepStrategy(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
@@ -66,9 +71,9 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
                     while (true) {
                         if (currentStep instanceof HasContainerHolder) {
                             sqlgVertexStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
-                            if (currentStep.getLabel().isPresent()) {
+                            if (!currentStep.getLabels().isEmpty()) {
                                 final IdentityStep identityStep = new IdentityStep<>(traversal);
-                                identityStep.setLabel(currentStep.getLabel().get());
+                                currentStep.getLabels().forEach(identityStep::addLabel);
                                 TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                             }
                             toRemove.add(currentStep);
@@ -93,7 +98,7 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
                 //the label check is to ignore any 'as('x')' gremlin for now
                 //if there is path() steps then the optimizations can not be used.
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
-                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass()) && !step.getLabel().isPresent()) {
+                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass()) && step.getLabels().isEmpty()) {
                     if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
                         Pair<Step<?, ?>, List<HasContainer>> stepPair = Pair.of(step, new ArrayList<>());
                         if (previous == null) {
@@ -130,9 +135,9 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
                 throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
             }
             if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
-                if (currentStep.getLabel().isPresent()) {
+                if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
-                    identityStep.setLabel(currentStep.getLabel().get());
+                    currentStep.getLabels().forEach(identityStep::addLabel);
                     TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                 }
                 iterator.remove();
@@ -147,8 +152,8 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy {
         }
     }
 
-    @Override
-    public Set<Class<? extends TraversalStrategy>> applyPrior() {
-        return Stream.of(PartitionStrategy.class, SubgraphStrategy.class).collect(Collectors.toSet());
-    }
+//    @Override
+//    public Set<Class<? extends TraversalStrategy.OptimizationStrategy>> applyPrior() {
+//        return Stream.of(PartitionStrategy.class, SubgraphStrategy.class).collect(Collectors.toSet());
+//    }
 }

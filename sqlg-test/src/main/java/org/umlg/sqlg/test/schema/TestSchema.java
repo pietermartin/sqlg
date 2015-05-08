@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,11 +44,6 @@ public class TestSchema extends BaseTest {
                     Assert.assertEquals(tom, edgeTraversal(a).inV().next());
                 }
         );
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V().<Vertex>has(
-                T.label,
-                (a, b) -> ((String) a).endsWith((String) b),
-                "Person"
-        ).count().next(), 0);
         Assert.assertEquals(1, vertexTraversal(john).out("friend").has("name", "Tom").count().next(), 0);
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA1.Person").count().next(), 0);

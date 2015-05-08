@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -27,9 +26,9 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
 
     public SqlgGraphStep(final GraphStep<E> originalGraphStep) {
         super(originalGraphStep.getTraversal(), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
-        if (originalGraphStep.getLabel().isPresent())
-            this.setLabel(originalGraphStep.getLabel().get());
-
+        if (!originalGraphStep.getLabels().isEmpty()) {
+            originalGraphStep.getLabels().forEach(this::addLabel);
+        }
         if ((this.ids.length == 0 || !(this.ids[0] instanceof Element)))
             this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
     }
@@ -191,16 +190,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
             sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
-            //join to VERTICES to get the in and out labels
             sql.append(" a ");
-//            sql.append(" a JOIN ");
-//            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-//            sql.append(".");
-//            sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-//            sql.append(" b ON a.");
-//            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//            sql.append(" = b.");
-//            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" WHERE a.");
             sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
@@ -220,7 +210,6 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
                     long id = resultSet.getLong(1);
                     SqlgVertex sqlGVertex = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), schemaTable.getTable());
                     sqlGVertex.loadResultSet(resultSet);
-//                    this.sqlgGraph.loadVertexAndLabels(resultSet, sqlGVertex);
                     sqlGVertexes.add(sqlGVertex);
                 }
             } catch (SQLException e) {

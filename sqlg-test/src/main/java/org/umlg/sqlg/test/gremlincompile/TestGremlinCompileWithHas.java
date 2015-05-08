@@ -1,13 +1,12 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
-import org.apache.tinkerpop.gremlin.structure.Compare;
-import org.apache.tinkerpop.gremlin.structure.Contains;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.P;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -125,7 +124,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         a1.addEdge("outB", b3);
         this.sqlgGraph.tx().commit();
 
-        GraphTraversal<Vertex, Vertex> gt = vertexTraversal(a1).out().has("name", Compare.eq, "b2");
+        GraphTraversal<Vertex, Vertex> gt = vertexTraversal(a1).out().has("name", P.eq("b2"));
         gt.asAdmin().applyStrategies();
         final List<Step> temp = new ArrayList<>();
         Step currentStep = gt.asAdmin().getStartStep();
@@ -147,7 +146,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
         Assert.assertEquals(1, schemaTableTree.schemaTableAtDepth(1, 1).getHasContainers().size());
 
-        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", Compare.eq, "b2").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", P.eq("b2")).count().next().intValue());
     }
 
     @Test
@@ -217,8 +216,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b1").out().has("name", "c1").count().next().intValue());
         Assert.assertEquals(c1, vertexTraversal(a1).out().has("name", "b1").out().has("name", "c1").next());
         Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b2").out().has("name", "c5").count().next().intValue());
-        Assert.assertEquals(2, vertexTraversal(a1).out().has("name", "b2").has("name", "b2").out().has("name", Contains.within, Arrays.asList("c5", "c6")).count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b2").has("name", "b2").out().has("name", Compare.eq, "c5").count().next().intValue());
+        Assert.assertEquals(2, vertexTraversal(a1).out().has("name", "b2").has("name", "b2").out().has("name", P.within(Arrays.asList("c5", "c6"))).count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(a1).out().has("name", "b2").has("name", "b2").out().has("name", P.eq("c5")).count().next().intValue());
     }
 
     @Test

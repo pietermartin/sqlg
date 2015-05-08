@@ -26,7 +26,7 @@ import java.util.stream.Stream;
  * Date: 2014/07/12
  * Time: 5:45 AM
  */
-public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
+public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     private static final SqlgGraphStepStrategy INSTANCE = new SqlgGraphStepStrategy();
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class);
@@ -35,6 +35,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
     private SqlgGraphStepStrategy() {
     }
 
+    @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         final Step<?, ?> startStep = traversal.getStartStep();
         if (startStep instanceof GraphStep) {
@@ -47,9 +48,9 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
             while (true) {
                 if (currentStep instanceof HasContainerHolder) {
                     sqlgGraphStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
-                    if (currentStep.getLabel().isPresent()) {
+                    if (!currentStep.getLabels().isEmpty()) {
                         final IdentityStep identityStep = new IdentityStep<>(traversal);
-                        identityStep.setLabel(currentStep.getLabel().get());
+                        currentStep.getLabels().forEach(identityStep::addLabel);
                         TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                     }
                     traversal.removeStep(currentStep);
@@ -93,9 +94,9 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
                 throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
             }
             if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
-                if (currentStep.getLabel().isPresent()) {
+                if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
-                    identityStep.setLabel(currentStep.getLabel().get());
+                    currentStep.getLabels().forEach(identityStep::addLabel);
                     TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                 }
                 iterator.remove();
@@ -117,9 +118,9 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
                 throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
             }
             if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
-                if (currentStep.getLabel().isPresent()) {
+                if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
-                    identityStep.setLabel(currentStep.getLabel().get());
+                    currentStep.getLabels().forEach(identityStep::addLabel);
                     TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                 }
                 iterator.remove();
@@ -139,7 +140,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy {
     }
 
     @Override
-    public Set<Class<? extends TraversalStrategy>> applyPrior() {
+    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(SqlgVertexStepStrategy.class).collect(Collectors.toSet());
     }
 }

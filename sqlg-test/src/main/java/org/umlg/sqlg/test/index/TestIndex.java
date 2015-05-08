@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.index;
 
-import org.apache.tinkerpop.gremlin.process.traversal.T;
-import org.apache.tinkerpop.gremlin.structure.Compare;
+import org.apache.tinkerpop.gremlin.structure.P;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", "john50").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", Compare.eq, "john50").count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", P.eq("john50")).count().next().intValue());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -63,7 +63,7 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", Compare.eq, "john50").count().next().intValue());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", P.eq("john50")).count().next().intValue());
 
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();

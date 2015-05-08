@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.index;
 
 import org.apache.commons.lang.time.StopWatch;
-import org.apache.tinkerpop.gremlin.process.traversal.T;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;

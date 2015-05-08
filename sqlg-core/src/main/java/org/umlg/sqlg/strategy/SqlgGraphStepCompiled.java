@@ -30,8 +30,9 @@ public class SqlgGraphStepCompiled<E extends Element> extends GraphStep<E> {
 
     public SqlgGraphStepCompiled(final GraphStep<E> originalGraphStep) {
         super(originalGraphStep.getTraversal(), originalGraphStep.getReturnClass(), originalGraphStep.getIds());
-        if (originalGraphStep.getLabel().isPresent())
-            this.setLabel(originalGraphStep.getLabel().get());
+        if (!originalGraphStep.getLabels().isEmpty()) {
+            originalGraphStep.getLabels().forEach(this::addLabel);
+        }
 
         this.sqlgGraph = (SqlgGraph)originalGraphStep.getTraversal().getGraph().get();
         this.setIteratorSupplier(() -> (Iterator<E>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));

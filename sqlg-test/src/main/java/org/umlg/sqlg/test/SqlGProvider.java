@@ -2,6 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
+import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.umlg.sqlg.structure.*;
@@ -32,7 +33,7 @@ public class SqlGProvider extends AbstractGraphProvider {
     }};
 
     @Override
-    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName) {
+    public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.driver", "org.postgresql.xa.PGXADataSource");
