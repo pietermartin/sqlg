@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
@@ -28,9 +29,11 @@ public class TinkerpopTest extends BaseTest {
     @Test
     public void g_v1_outXcreatedX_valueMap() throws IOException {
         Graph g = this.sqlgGraph;
-        final GraphReader initreader = GryoReader.build().workingDirectory(File.separator + "tmp").create();
+        final GraphReader gryoReader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.gio")) {
-            initreader.readGraph(stream, g);
+            gryoReader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
         final Traversal<Vertex, Map<String, List<String>>> traversal = get_g_v1_outXcreatedX_valueMap(convertToVertexId("marko"));

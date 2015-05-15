@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.After;
 import org.junit.Assert;
@@ -22,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgIoRegistry;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -251,7 +251,11 @@ public abstract class BaseTest {
 //            Assert.fail(e.getMessage());
 //        }
         try {
-            this.sqlgGraph.io(new SqlgIoRegistry().find("")).readGryo("/home/pieter/Downloads/incubator-tinkerpop/gremlin-test/src/main/resources/org/apache/tinkerpop/gremlin/structure/io/gryo/grateful-dead.kryo");
+            final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo");
+            final GraphReader gryoReader = GryoReader.build()
+                    .mapper(this.sqlgGraph.io(GryoIo.build()).mapper().create())
+                    .create();
+            gryoReader.readGraph(stream, this.sqlgGraph);
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }

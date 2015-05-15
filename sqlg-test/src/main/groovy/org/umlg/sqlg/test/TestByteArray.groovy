@@ -1,10 +1,9 @@
 package org.umlg.sqlg.test
 
+import org.apache.tinkerpop.gremlin.structure.T
 import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.junit.Assert
 import org.junit.Test
-
-import org.apache.tinkerpop.gremlin.process.traversal.T;
 
 /**
  * Created by pieter on 2014/08/03.
