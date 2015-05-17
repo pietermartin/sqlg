@@ -138,10 +138,13 @@ public class SqlgUtil {
                 continue;
             }
             if (key.equals(T.id.getAccessor())) {
+                RecordId id;
                 if (!(value instanceof RecordId)) {
-                    throw new IllegalStateException(T.id.getAccessor() + " must be of type RecordId");
+                    id = RecordId.from(value);
+                } else {
+                    id = (RecordId)value;
                 }
-                result.add(ImmutablePair.of(PropertyType.LONG, ((RecordId) value).getId()));
+                result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
             }

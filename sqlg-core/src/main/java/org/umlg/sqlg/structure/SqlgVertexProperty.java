@@ -41,4 +41,5 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);
     }
+
 }

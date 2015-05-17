@@ -1,11 +1,24 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetrics;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -15,232 +28,232 @@ import static org.junit.Assert.*;
  */
 public class TestGremlinCompileV extends BaseTest {
 
-//    @Test
-//    public void testOutOut() {
-//        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
-//        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
-//        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
-//        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
-//        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
-//        a.addEdge("outB", b);
-//        a.addEdge("outE", e);
-//        b.addEdge("outC", c);
-//        b.addEdge("outC", c);
-//        b.addEdge("outD", d1);
-//        b.addEdge("outD", d2);
-//        this.sqlgGraph.tx().commit();
-//        List<Vertex> vertices = vertexTraversal(a).out().out().toList();
-//        assertEquals(4, vertices.size());
-//        assertTrue(vertices.contains(c));
-//        assertTrue(vertices.contains(d1));
-//        assertTrue(vertices.contains(d2));
-//        int count = 0;
-//        for (Vertex vertex : vertices) {
-//            if (vertex.equals(c)) {
-//                count++;
-//            }
-//        }
-//        assertEquals(2, count);
-//        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
-//        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
-//        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
-//    }
-//
-//    @Test
-//    public void testOutOutWithLabels() {
-//        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
-//        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
-//        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
-//        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
-//        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
-//        a.addEdge("outB", b);
-//        a.addEdge("outE", e);
-//        b.addEdge("outC", c);
-//        b.addEdge("outC", c);
-//        b.addEdge("outD", d1);
-//        b.addEdge("outD", d2);
-//        this.sqlgGraph.tx().commit();
-//        List<Vertex> vertices = vertexTraversal(a).out("outB", "outE").out("outC", "outD").toList();
-//        assertEquals(4, vertices.size());
-//        assertTrue(vertices.contains(c));
-//        assertTrue(vertices.contains(d1));
-//        assertTrue(vertices.contains(d2));
-//        int count = 0;
-//        for (Vertex vertex : vertices) {
-//            if (vertex.equals(c)) {
-//                count++;
-//            }
-//        }
-//        assertEquals(2, count);
-//        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
-//        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
-//        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
-//    }
-//
-//    @Test
-//    public void testOutOutWithLabels2() {
-//        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
-//        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
-//        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
-//        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
-//        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
-//        a.addEdge("outB", b);
-//        a.addEdge("outE", e);
-//        b.addEdge("outC", c);
-//        b.addEdge("outC", c);
-//        b.addEdge("outD", d1);
-//        b.addEdge("outD", d2);
-//        this.sqlgGraph.tx().commit();
-//        List<Vertex> vertices = vertexTraversal(a).out("outB").out("outC").toList();
-//        assertEquals(2, vertices.size());
-//        assertTrue(vertices.contains(c));
-//        int count = 0;
-//        for (Vertex vertex : vertices) {
-//            if (vertex.equals(c)) {
-//                count++;
-//            }
-//        }
-//        assertEquals(2, count);
-//        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
-//    }
-//
-//    @Test
-//    public void testInIn() {
-//        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
-//        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
-//        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
-//        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
-//        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
-//        a.addEdge("outB", b);
-//        a.addEdge("outE", e);
-//        b.addEdge("outC", c);
-//        b.addEdge("outC", c);
-//        b.addEdge("outD", d1);
-//        b.addEdge("outD", d2);
-//        this.sqlgGraph.tx().commit();
-//        assertEquals(1, vertexTraversal(d1).in().in().count().next().intValue());
-//        assertEquals(a, vertexTraversal(d1).in().in().next());
-//    }
-//
-//    @Test
-//    public void testInOutInOut() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-//        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
-//        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
-//        a1.addEdge("a_outB", b1);
-//        a1.addEdge("a_outB", b2);
-//        a1.addEdge("a_outB", b3);
-//        c1.addEdge("c_outB", b1);
-//        c2.addEdge("c_outB", b2);
-//        c3.addEdge("c_outB", b3);
-//        this.sqlgGraph.tx().commit();
-//        assertEquals(6, vertexTraversal(a1).out().in().count().next().intValue());
-//
-//        Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
-//        Vertex e2 = this.sqlgGraph.addVertex(T.label, "E", "name", "e2");
-//        Vertex e3 = this.sqlgGraph.addVertex(T.label, "E", "name", "e3");
-//        Vertex e4 = this.sqlgGraph.addVertex(T.label, "E", "name", "e4");
-//        Vertex e5 = this.sqlgGraph.addVertex(T.label, "E", "name", "e5");
-//        Vertex e6 = this.sqlgGraph.addVertex(T.label, "E", "name", "e6");
-//        Vertex e7 = this.sqlgGraph.addVertex(T.label, "E", "name", "e7");
-//        c1.addEdge("outE", e1);
-//        c2.addEdge("outE", e2);
-//        c2.addEdge("outE", e3);
-//        c2.addEdge("outE", e4);
-//        c3.addEdge("outE", e5);
-//        c3.addEdge("outE", e6);
-//        c3.addEdge("outE", e7);
-//        this.sqlgGraph.tx().commit();
-//
-//        assertEquals(19, vertexTraversal(a1).out().in().out().count().next().intValue());
-//    }
-//
-//    @Test
-//    public void testInOutInOut3() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-//        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
-//        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
-//        Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
-//        Vertex e2 = this.sqlgGraph.addVertex(T.label, "E", "name", "e2");
-//        Vertex e3 = this.sqlgGraph.addVertex(T.label, "E", "name", "e3");
-//        Vertex e4 = this.sqlgGraph.addVertex(T.label, "E", "name", "e4");
-//        Vertex e5 = this.sqlgGraph.addVertex(T.label, "E", "name", "e5");
-//        Vertex e6 = this.sqlgGraph.addVertex(T.label, "E", "name", "e6");
-//        Vertex e7 = this.sqlgGraph.addVertex(T.label, "E", "name", "e7");
-//
-//        a1.addEdge("a_outB", b1);
-//        a1.addEdge("a_outB", b2);
-//        a1.addEdge("a_outB", b3);
-//        c1.addEdge("c_outB", b1);
-//        c2.addEdge("c_outB", b2);
-//        c3.addEdge("c_outB", b3);
-//        c1.addEdge("outE", e1);
-//        c2.addEdge("outE", e2);
-//        c2.addEdge("outE", e3);
-//        c2.addEdge("outE", e4);
-//        c3.addEdge("outE", e5);
-//        c3.addEdge("outE", e6);
-//        c3.addEdge("outE", e7);
-//        this.sqlgGraph.tx().commit();
-//
-//        assertEquals(19, vertexTraversal(a1).out().in().out().count().next().intValue());
-//    }
-//
-//    @Test
-//    public void testInOutToSelf() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        a1.addEdge("knows", b1);
-//        b1.addEdge("knownBy", a2);
-//
-//        //and another
-//        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
-//        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        a3.addEdge("knows", b2);
-//        b2.addEdge("knownBy", a4);
-//
-//        this.sqlgGraph.tx().commit();
-//        assertEquals(1, vertexTraversal(a1).out().out().count().next().intValue());
-//        assertEquals(a2, vertexTraversal(a1).out().out().next());
-//    }
-//
-//    @Test
-//    public void testOutOutOutToSelf() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        a1.addEdge("aOutB", b1);
-//        b1.addEdge("bOutC", c1);
-//        c1.addEdge("cOutB", b2);
-//        this.sqlgGraph.tx().commit();
-//
-//        assertEquals(1, vertexTraversal(a1).out().out().out().count().next().intValue());
-//        assertEquals(b2, vertexTraversal(a1).out().out().out().next());
-//    }
-//
-//    @Test
-//    public void testOutInToSelf() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        a1.addEdge("aOutB", b1);
-//        this.sqlgGraph.tx().commit();
-//        assertEquals(1, vertexTraversal(a1).out().in().count().next().intValue());
-//    }
+    @Test
+    public void testOutOut() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
+        a.addEdge("outB", b);
+        a.addEdge("outE", e);
+        b.addEdge("outC", c);
+        b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = vertexTraversal(a).out().out().toList();
+        assertEquals(4, vertices.size());
+        assertTrue(vertices.contains(c));
+        assertTrue(vertices.contains(d1));
+        assertTrue(vertices.contains(d2));
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.equals(c)) {
+                count++;
+            }
+        }
+        assertEquals(2, count);
+        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
+        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
+    }
+
+    @Test
+    public void testOutOutWithLabels() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
+        a.addEdge("outB", b);
+        a.addEdge("outE", e);
+        b.addEdge("outC", c);
+        b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = vertexTraversal(a).out("outB", "outE").out("outC", "outD").toList();
+        assertEquals(4, vertices.size());
+        assertTrue(vertices.contains(c));
+        assertTrue(vertices.contains(d1));
+        assertTrue(vertices.contains(d2));
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.equals(c)) {
+                count++;
+            }
+        }
+        assertEquals(2, count);
+        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
+        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
+    }
+
+    @Test
+    public void testOutOutWithLabels2() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
+        a.addEdge("outB", b);
+        a.addEdge("outE", e);
+        b.addEdge("outC", c);
+        b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = vertexTraversal(a).out("outB").out("outC").toList();
+        assertEquals(2, vertices.size());
+        assertTrue(vertices.contains(c));
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            if (vertex.equals(c)) {
+                count++;
+            }
+        }
+        assertEquals(2, count);
+        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+    }
+
+    @Test
+    public void testInIn() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "nAmE", "c");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "NAME", "d2");
+        Vertex e = this.sqlgGraph.addVertex(T.label, "E", "NAME", "e");
+        a.addEdge("outB", b);
+        a.addEdge("outE", e);
+        b.addEdge("outC", c);
+        b.addEdge("outC", c);
+        b.addEdge("outD", d1);
+        b.addEdge("outD", d2);
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, vertexTraversal(d1).in().in().count().next().intValue());
+        assertEquals(a, vertexTraversal(d1).in().in().next());
+    }
+
+    @Test
+    public void testInOutInOut() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        a1.addEdge("a_outB", b1);
+        a1.addEdge("a_outB", b2);
+        a1.addEdge("a_outB", b3);
+        c1.addEdge("c_outB", b1);
+        c2.addEdge("c_outB", b2);
+        c3.addEdge("c_outB", b3);
+        this.sqlgGraph.tx().commit();
+        assertEquals(6, vertexTraversal(a1).out().in().count().next().intValue());
+
+        Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
+        Vertex e2 = this.sqlgGraph.addVertex(T.label, "E", "name", "e2");
+        Vertex e3 = this.sqlgGraph.addVertex(T.label, "E", "name", "e3");
+        Vertex e4 = this.sqlgGraph.addVertex(T.label, "E", "name", "e4");
+        Vertex e5 = this.sqlgGraph.addVertex(T.label, "E", "name", "e5");
+        Vertex e6 = this.sqlgGraph.addVertex(T.label, "E", "name", "e6");
+        Vertex e7 = this.sqlgGraph.addVertex(T.label, "E", "name", "e7");
+        c1.addEdge("outE", e1);
+        c2.addEdge("outE", e2);
+        c2.addEdge("outE", e3);
+        c2.addEdge("outE", e4);
+        c3.addEdge("outE", e5);
+        c3.addEdge("outE", e6);
+        c3.addEdge("outE", e7);
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(19, vertexTraversal(a1).out().in().out().count().next().intValue());
+    }
+
+    @Test
+    public void testInOutInOut3() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
+        Vertex e2 = this.sqlgGraph.addVertex(T.label, "E", "name", "e2");
+        Vertex e3 = this.sqlgGraph.addVertex(T.label, "E", "name", "e3");
+        Vertex e4 = this.sqlgGraph.addVertex(T.label, "E", "name", "e4");
+        Vertex e5 = this.sqlgGraph.addVertex(T.label, "E", "name", "e5");
+        Vertex e6 = this.sqlgGraph.addVertex(T.label, "E", "name", "e6");
+        Vertex e7 = this.sqlgGraph.addVertex(T.label, "E", "name", "e7");
+
+        a1.addEdge("a_outB", b1);
+        a1.addEdge("a_outB", b2);
+        a1.addEdge("a_outB", b3);
+        c1.addEdge("c_outB", b1);
+        c2.addEdge("c_outB", b2);
+        c3.addEdge("c_outB", b3);
+        c1.addEdge("outE", e1);
+        c2.addEdge("outE", e2);
+        c2.addEdge("outE", e3);
+        c2.addEdge("outE", e4);
+        c3.addEdge("outE", e5);
+        c3.addEdge("outE", e6);
+        c3.addEdge("outE", e7);
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(19, vertexTraversal(a1).out().in().out().count().next().intValue());
+    }
+
+    @Test
+    public void testInOutToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("knows", b1);
+        b1.addEdge("knownBy", a2);
+
+        //and another
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        a3.addEdge("knows", b2);
+        b2.addEdge("knownBy", a4);
+
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, vertexTraversal(a1).out().out().count().next().intValue());
+        assertEquals(a2, vertexTraversal(a1).out().out().next());
+    }
+
+    @Test
+    public void testOutOutOutToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        a1.addEdge("aOutB", b1);
+        b1.addEdge("bOutC", c1);
+        c1.addEdge("cOutB", b2);
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(1, vertexTraversal(a1).out().out().out().count().next().intValue());
+        assertEquals(b2, vertexTraversal(a1).out().out().out().next());
+    }
+
+    @Test
+    public void testOutInToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("aOutB", b1);
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, vertexTraversal(a1).out().in().count().next().intValue());
+    }
 
     @Test
     public void testInOutInOut2() {
@@ -258,24 +271,93 @@ public class TestGremlinCompileV extends BaseTest {
         assertEquals(9, vertexTraversal(a1).out().in().out().count().next().intValue());
     }
 
+    @Test
+    public void testEmptyTraversal() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "B");
+        v1.addEdge("ab", v2);
+        this.sqlgGraph.tx().commit();
+        vertexTraversal(v1).out("test");
+    }
+
+    @Test
+    public void testOutOutToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a2");
+        a1.addEdge("hierarchyParent_hierarchy", a2);
+        this.sqlgGraph.tx().commit();
+        assertTrue(vertexTraversal(a1).out().hasNext());
+        assertFalse(vertexTraversal(a2).out().hasNext());
+        assertFalse(vertexTraversal(a1).in().hasNext());
+        assertTrue(vertexTraversal(a2).in().hasNext());
+    }
+
+    @Test
+    public void g_V_both_both_count() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        final Traversal<Vertex, Long> traversal = get_g_V_both_both_count(g.traversal());
+        printTraversalForm(traversal);
+        assertEquals(new Long(1406914), traversal.next());
+        assertFalse(traversal.hasNext());
+    }
+
+    public Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
+        return g.V().both().both().count();
+    }
+
+    //Fails as it is asserting TinkerGraph metrics
 //    @Test
-//    public void testEmptyTraversal() {
-//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
-//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "B");
-//        v1.addEdge("ab", v2);
-//        this.sqlgGraph.tx().commit();
-//        vertexTraversal(v1).out("test");
-//    }
-//
-//    @Test
-//    public void testOutOutToSelf() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a1");
-//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "name", "a2");
-//        a1.addEdge("hierarchyParent_hierarchy", a2);
-//        this.sqlgGraph.tx().commit();
-//        assertTrue(vertexTraversal(a1).out().hasNext());
-//        assertFalse(vertexTraversal(a2).out().hasNext());
-//        assertFalse(vertexTraversal(a1).in().hasNext());
-//        assertTrue(vertexTraversal(a2).in().hasNext());
-//    }
+    public void g_V_out_out_modern_profile() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+
+        final Traversal<Vertex, StandardTraversalMetrics> traversal = get_g_V_out_out_profile(g.traversal());
+        System.out.println(g.traversal().V().out().out().count().next());
+        printTraversalForm(traversal);
+
+        traversal.iterate();
+
+        final TraversalMetrics traversalMetrics = traversal.asAdmin().getSideEffects().<TraversalMetrics>get(TraversalMetrics.METRICS_KEY).get();
+        traversalMetrics.toString(); // ensure no exceptions are thrown
+
+        Metrics metrics = traversalMetrics.getMetrics(0);
+        assertEquals(6, metrics.getCount(TraversalMetrics.TRAVERSER_COUNT_ID).longValue());
+        assertEquals(6, metrics.getCount(TraversalMetrics.ELEMENT_COUNT_ID).longValue());
+        assertTrue("Percent duration should be positive.", (Double) metrics.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY) > 0);
+        assertTrue("Times should be positive.", metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+
+        metrics = traversalMetrics.getMetrics(1);
+        assertEquals(6, metrics.getCount(TraversalMetrics.ELEMENT_COUNT_ID).longValue());
+        assertNotEquals(0, metrics.getCount(TraversalMetrics.TRAVERSER_COUNT_ID).longValue());
+        assertTrue("Percent duration should be positive.", (Double) metrics.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY) > 0);
+        assertTrue("Times should be positive.", metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+
+        metrics = traversalMetrics.getMetrics(2);
+        assertEquals(2, metrics.getCount(TraversalMetrics.ELEMENT_COUNT_ID).longValue());
+        assertNotEquals(0, metrics.getCount(TraversalMetrics.TRAVERSER_COUNT_ID).longValue());
+        assertTrue("Percent duration should be positive.", (Double) metrics.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY) > 0);
+        assertTrue("Times should be positive.", metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
+
+        double totalPercentDuration = 0;
+        for (Metrics m : traversalMetrics.getMetrics()) {
+            totalPercentDuration += (Double) m.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY);
+        }
+        assertEquals(100, totalPercentDuration, 0.000001);
+    }
+
+    public Traversal<Vertex, StandardTraversalMetrics> get_g_V_out_out_profile(GraphTraversalSource g) {
+        return (Traversal) g.V().out().out().profile();
+    }
 }

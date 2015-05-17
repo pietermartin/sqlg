@@ -43,6 +43,12 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<artifactId>hamcrest-core</artifactId>-->
+                    <!--<groupId>org.hamcrest</groupId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
         </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>

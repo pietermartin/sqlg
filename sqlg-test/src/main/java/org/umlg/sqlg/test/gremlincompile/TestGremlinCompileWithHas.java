@@ -1,13 +1,17 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.P;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
+import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
@@ -17,6 +21,8 @@ import org.umlg.sqlg.structure.SchemaTableTree;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -268,5 +274,96 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(2L, cc200.size(), 0);
         List<Vertex> cc400 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 400).toList();
         Assert.assertEquals(1L, cc400.size(), 0);
+    }
+
+    @Test
+    public void testHasWithStringIds() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_hasIdX2X(g.traversal(), convertToVertexId("marko").toString(), convertToVertexId("vadas").toString());
+        assert_g_VX1X_out_hasXid_2X(traversal);
+    }
+
+    @Test
+    public void testHas() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        final Object id2 = convertToVertexId("vadas");
+        final Object id3 = convertToVertexId("lop");
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId("marko"), id2.toString(), id3.toString());
+        assert_g_VX1X_out_hasXid_2_3X(id2, id3, traversal);
+    }
+
+    @Test
+    public void g_VX1X_out_hasXid_2AsString_3AsStringX() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        final Object id2 = convertToVertexId("vadas");
+        final Object id3 = convertToVertexId("lop");
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId("marko"), id2.toString(), id3.toString());
+        assert_g_VX1X_out_hasXid_2_3X(id2, id3, traversal);
+    }
+
+    @Test
+    public void g_VX1X_outE_hasXweight_inside_0_06X_inV() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_outE_hasXweight_inside_0_06X_inV(g.traversal(), convertToVertexId("marko"));
+        printTraversalForm(traversal);
+        while (traversal.hasNext()) {
+            Vertex vertex = traversal.next();
+            Assert.assertTrue(vertex.value("name").equals("vadas") || vertex.value("name").equals("lop"));
+        }
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+    public Traversal<Vertex, Vertex> get_g_VX1X_outE_hasXweight_inside_0_06X_inV(GraphTraversalSource g, final Object v1Id) {
+        return g.V(v1Id).outE().has("weight", P.inside(0.0d, 0.6d)).inV();
+    }
+
+    public Traversal<Vertex, Vertex> get_g_VX1X_out_hasIdX2_3X(GraphTraversalSource g, final Object v1Id, final Object v2Id, final Object v3Id) {
+        return g.V(v1Id).out().hasId(v2Id, v3Id);
+    }
+
+    private void assert_g_VX1X_out_hasXid_2X(final Traversal<Vertex, Vertex> traversal) {
+        printTraversalForm(traversal);
+        Assert.assertTrue(traversal.hasNext());
+        Assert.assertEquals(convertToVertexId("vadas"), traversal.next().id());
+    }
+
+    public Traversal<Vertex, Vertex> get_g_VX1X_out_hasIdX2X(GraphTraversalSource g, final Object v1Id, final Object v2Id) {
+        return g.V(v1Id).out().hasId(v2Id);
+    }
+
+    protected void assert_g_VX1X_out_hasXid_2_3X(Object id2, Object id3, Traversal<Vertex, Vertex> traversal) {
+        printTraversalForm(traversal);
+        Assert.assertTrue(traversal.hasNext());
+        Assert.assertThat(traversal.next().id(), CoreMatchers.anyOf(CoreMatchers.is(id2), CoreMatchers.is(id3)));
+        Assert.assertThat(traversal.next().id(), CoreMatchers.anyOf(CoreMatchers.is(id2), CoreMatchers.is(id3)));
+        Assert.assertFalse(traversal.hasNext());
     }
 }

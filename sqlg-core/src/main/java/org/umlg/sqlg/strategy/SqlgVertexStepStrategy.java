@@ -131,9 +131,9 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof HasContainerHolder && ((HasContainerHolder) currentStep).getHasContainers().size() != 1) {
-                throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
-            }
+//            if (currentStep instanceof HasContainerHolder && ((HasContainerHolder) currentStep).getHasContainers().size() != 1) {
+//                throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
+//            }
             if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
@@ -152,8 +152,4 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
         }
     }
 
-//    @Override
-//    public Set<Class<? extends TraversalStrategy.OptimizationStrategy>> applyPrior() {
-//        return Stream.of(PartitionStrategy.class, SubgraphStrategy.class).collect(Collectors.toSet());
-//    }
 }

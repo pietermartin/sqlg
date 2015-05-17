@@ -10,6 +10,9 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.io.Io;
+import org.apache.tinkerpop.gremlin.structure.io.IoCore;
+import org.apache.tinkerpop.gremlin.structure.io.IoRegistry;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -233,6 +236,11 @@ public class SqlgGraph implements Graph {
         SqlgDataSource.INSTANCE.close(this.getJdbcUrl());
     }
 
+    @Override
+    public <I extends Io> I io(final Io.Builder<I> builder) {
+        return (I) builder.graph(this).registry(new SqlgIoRegistry()).create();
+    }
+
     public String toString() {
         return StringFactory.graphString(this, "SqlGraph");
     }
@@ -331,6 +339,16 @@ public class SqlgGraph implements Graph {
              */
             public boolean supportsAnyIds() {
                 return false;
+            }
+
+            /**
+             * Gets the {@link VertexProperty.Cardinality} for a key.  By default, this method will return
+             * {@link VertexProperty.Cardinality#list}.  Implementations that employ a schema can consult it to
+             * determine the {@link VertexProperty.Cardinality}.  Those that do no have a schema can return their
+             * default {@link VertexProperty.Cardinality} for every key.
+             */
+            public VertexProperty.Cardinality getCardinality(final String key) {
+                return VertexProperty.Cardinality.single;
             }
         }
 

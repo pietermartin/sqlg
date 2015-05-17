@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 
@@ -49,8 +48,6 @@ public class SchemaTableTree {
     public SchemaTable getSchemaTable() {
         return schemaTable;
     }
-
-//     * returns A separate sql statement for every leaf node.
 
     /**
      * @return A Triple. SchemaTableTree is the root of the tree that formed the sql statement.
@@ -411,16 +408,20 @@ public class SchemaTableTree {
         //This last element's properties need to be returned.
         if (nextSchemaTableTree == null) {
             Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTable.toString());
-            if (!sql.isEmpty() && !propertyTypeMap.isEmpty()) {
-                sql += ", ";
-            }
             String finalFromSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema());
             finalFromSchemaTableName += ".";
             finalFromSchemaTableName += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable());
             if (!printedId) {
+                if (!sql.isEmpty()) {
+                    sql += ", ";
+                }
                 sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
                 sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
                 if (!propertyTypeMap.isEmpty()) {
+                    sql += ", ";
+                }
+            } else {
+                if (!sql.isEmpty() && !propertyTypeMap.isEmpty()) {
                     sql += ", ";
                 }
             }
@@ -665,36 +666,28 @@ public class SchemaTableTree {
         return this;
     }
 
-    /**
-     * Walk the tree and for each HasContainer set the parameter on the statement.
-     *
-     * @param preparedStatement
-     */
-    void setParametersOnStatement(final PreparedStatement preparedStatement) {
-        AtomicInteger parameterIndex = new AtomicInteger(2);
-        walk(schemaTableTree -> {
-            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                try {
-                    preparedStatement.setString(parameterIndex.getAndIncrement(), (String) hasContainer.value);
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            return null;
-        });
-    }
-
     @Override
     public int hashCode() {
         if (this.parent != null) {
-            return (this.schemaTable.toString() + this.parent.toString()).hashCode();
+            if (this.direction == null) {
+                return (this.schemaTable.toString() + this.parent.toString()).hashCode();
+            } else {
+                return (this.schemaTable.toString() + this.direction.name() + this.parent.toString()).hashCode();
+            }
         } else {
-            return this.schemaTable.toString().hashCode();
+            if (this.direction == null) {
+                return this.schemaTable.toString().hashCode();
+            } else {
+                return (this.schemaTable.toString() + this.direction.name()).hashCode();
+            }
         }
     }
 
     @Override
     public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
         if (!(o instanceof SchemaTableTree)) {
             return false;
         }
@@ -702,7 +695,9 @@ public class SchemaTableTree {
             return true;
         }
         SchemaTableTree other = (SchemaTableTree) o;
-        if (this.parent != null && other.parent == null) {
+        if (this.direction != other.direction) {
+            return false;
+        } else if (this.parent != null && other.parent == null) {
             return false;
         } else if (this.parent == null && other.parent != null) {
             return false;
