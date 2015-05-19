@@ -2,8 +2,10 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.TestSetProperty;
+import org.umlg.sqlg.test.TinkerpopTest;
+import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
+import org.umlg.sqlg.test.vertex.TestNewVertex;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +13,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileV.class
+        TestLazyLoadSchema.class
 })
 public class AnyTest {
 }

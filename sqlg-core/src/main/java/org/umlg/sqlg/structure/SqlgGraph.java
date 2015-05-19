@@ -34,6 +34,14 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest$Traversals",
+        method = "g_V_out_out_profile_modern",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest$Traversals",
+        method = "g_V_out_out_profile_grateful",
+        reason = "Assertions are TinkerGraph specific.")
 public class SqlgGraph implements Graph {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
@@ -326,27 +334,17 @@ public class SqlgGraph implements Graph {
                 return new SqlGVertexPropertyFeatures();
             }
 
-            /**
-             * Determines if an {@link Element} has numeric identifiers as their internal representation.
-             */
+            @Override
             public boolean supportsNumericIds() {
                 return false;
             }
 
-            /**
-             * Determines if an {@link Element} any Java object is a suitable identifier.  Note that this
-             * setting can only return true if {@link #supportsUserSuppliedIds()} is true.
-             */
+            @Override
             public boolean supportsAnyIds() {
                 return false;
             }
 
-            /**
-             * Gets the {@link VertexProperty.Cardinality} for a key.  By default, this method will return
-             * {@link VertexProperty.Cardinality#list}.  Implementations that employ a schema can consult it to
-             * determine the {@link VertexProperty.Cardinality}.  Those that do no have a schema can return their
-             * default {@link VertexProperty.Cardinality} for every key.
-             */
+            @Override
             public VertexProperty.Cardinality getCardinality(final String key) {
                 return VertexProperty.Cardinality.single;
             }
@@ -363,17 +361,12 @@ public class SqlgGraph implements Graph {
                 return new SqlEdgePropertyFeatures();
             }
 
-            /**
-             * Determines if an {@link Element} has numeric identifiers as their internal representation.
-             */
+            @Override
             public boolean supportsNumericIds() {
                 return false;
             }
 
-            /**
-             * Determines if an {@link Element} any Java object is a suitable identifier.  Note that this
-             * setting can only return true if {@link #supportsUserSuppliedIds()} is true.
-             */
+            @Override
             public boolean supportsAnyIds() {
                 return false;
             }
@@ -408,6 +401,11 @@ public class SqlgGraph implements Graph {
 
             @Override
             public boolean supportsByteValues() {
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteValues();
+            }
+
+            @FeatureDescriptor(name = FEATURE_ANY_IDS)
+            public boolean supportsAnyIds() {
                 return false;
             }
 
@@ -451,14 +449,6 @@ public class SqlgGraph implements Graph {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
             }
 
-            /**
-             * Determines if an {@link Element} any Java object is a suitable identifier.  Note that this
-             * setting can only return true if {@link #supportsUserSuppliedIds()} is true.
-             */
-            @FeatureDescriptor(name = FEATURE_ANY_IDS)
-            public boolean supportsAnyIds() {
-                return false;
-            }
 
         }
 

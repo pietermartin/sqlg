@@ -318,6 +318,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public boolean supportsByteValues() {
+        return true;
+    }
+
+    @Override
     public boolean supportsFloatArrayValues() {
         return false;
     }

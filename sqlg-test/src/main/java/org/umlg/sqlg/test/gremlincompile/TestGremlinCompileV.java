@@ -3,9 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.util.Metrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetrics;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -18,7 +16,6 @@ import org.umlg.sqlg.test.BaseTest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -309,52 +306,6 @@ public class TestGremlinCompileV extends BaseTest {
 
     public Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
         return g.V().both().both().count();
-    }
-
-    //Fails as it is asserting TinkerGraph metrics
-//    @Test
-    public void g_V_out_out_modern_profile() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
-        assertModernGraph(g, true, false);
-
-        final Traversal<Vertex, StandardTraversalMetrics> traversal = get_g_V_out_out_profile(g.traversal());
-        System.out.println(g.traversal().V().out().out().count().next());
-        printTraversalForm(traversal);
-
-        traversal.iterate();
-
-        final TraversalMetrics traversalMetrics = traversal.asAdmin().getSideEffects().<TraversalMetrics>get(TraversalMetrics.METRICS_KEY).get();
-        traversalMetrics.toString(); // ensure no exceptions are thrown
-
-        Metrics metrics = traversalMetrics.getMetrics(0);
-        assertEquals(6, metrics.getCount(TraversalMetrics.TRAVERSER_COUNT_ID).longValue());
-        assertEquals(6, metrics.getCount(TraversalMetrics.ELEMENT_COUNT_ID).longValue());
-        assertTrue("Percent duration should be positive.", (Double) metrics.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY) > 0);
-        assertTrue("Times should be positive.", metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
-
-        metrics = traversalMetrics.getMetrics(1);
-        assertEquals(6, metrics.getCount(TraversalMetrics.ELEMENT_COUNT_ID).longValue());
-        assertNotEquals(0, metrics.getCount(TraversalMetrics.TRAVERSER_COUNT_ID).longValue());
-        assertTrue("Percent duration should be positive.", (Double) metrics.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY) > 0);
-        assertTrue("Times should be positive.", metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
-
-        metrics = traversalMetrics.getMetrics(2);
-        assertEquals(2, metrics.getCount(TraversalMetrics.ELEMENT_COUNT_ID).longValue());
-        assertNotEquals(0, metrics.getCount(TraversalMetrics.TRAVERSER_COUNT_ID).longValue());
-        assertTrue("Percent duration should be positive.", (Double) metrics.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY) > 0);
-        assertTrue("Times should be positive.", metrics.getDuration(TimeUnit.MICROSECONDS) > 0);
-
-        double totalPercentDuration = 0;
-        for (Metrics m : traversalMetrics.getMetrics()) {
-            totalPercentDuration += (Double) m.getAnnotation(TraversalMetrics.PERCENT_DURATION_KEY);
-        }
-        assertEquals(100, totalPercentDuration, 0.000001);
     }
 
     public Traversal<Vertex, StandardTraversalMetrics> get_g_V_out_out_profile(GraphTraversalSource g) {

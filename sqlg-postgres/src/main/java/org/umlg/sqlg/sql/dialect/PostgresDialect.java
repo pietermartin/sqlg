@@ -42,7 +42,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Set<String> getDefaultSchemas() {
-        return new HashSet<>(Arrays.asList("pg_catalog", "public"));
+        return new HashSet<>(Arrays.asList("pg_catalog", "public", "information_schema"));
     }
 
     @Override

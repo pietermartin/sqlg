@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.NoSuchElementException;
@@ -28,19 +29,19 @@ public class TestNewVertex extends BaseTest {
         Assert.assertEquals(e1, this.sqlgGraph.traversal().E(e1.id()).next());
     }
 
-//    @Test
-//    public void testNewVertex() {
-//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
-//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
-//        this.sqlgGraph.tx().commit();
-//        Assert.assertEquals(2, this.sqlgGraph.traversal().V().count().next().intValue());
-//    }
-//
-//    @Test(expected = NoSuchElementException.class)
-//    public void testInvalidId() {
-//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
-//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
-//        this.sqlgGraph.tx().commit();
-//        this.sqlgGraph.traversal().V("asdasdasd").next();
-//    }
+    @Test
+    public void testNewVertex() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().count().next().intValue());
+    }
+
+    @Test(expected = SqlgExceptions.InvalidIdException.class)
+    public void testInvalidId() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john2");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.traversal().V("asdasdasd").next();
+    }
 }

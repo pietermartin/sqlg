@@ -63,6 +63,10 @@ public interface SqlDialect {
         return true;
     }
 
+    public default boolean supportsByteValues() {
+        return false;
+    }
+
     public default boolean supportsTransactionalSchema() {
         return true;
     }
@@ -334,4 +338,6 @@ public interface SqlDialect {
     public default int getMinimumColumnNameLength() {
         return Integer.MAX_VALUE;
     }
+
+
 }
