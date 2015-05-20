@@ -15,10 +15,14 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Date: 2014/07/16
@@ -184,6 +188,76 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) {
+        try {
+            int countKeys = 1;
+            for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
+                if (countKeys > 1 && countKeys <= keyValueMap.size()) {
+                    out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                }
+                countKeys++;
+                Object value = entry.getValue();
+                if (value == null) {
+                    out.write(getBatchNull().getBytes());
+                } else {
+                    out.write(value.toString().getBytes());
+                }
+            }
+            out.write("\n".getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void copyIn(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap, InputStream inputStream) {
+        ExecutorService es = Executors.newFixedThreadPool(1);
+        String sql = constructCompleteCopyCommandSql(sqlgGraph, vertex, keyValueMap);
+        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        try {
+            Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
+            Object[] arg = new Object[]{};
+            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
+            es.submit(new PostgresCopyInRunnable(sqlgGraph, copyManager, sql, inputStream));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        es.shutdown();
+    }
+
+    private String constructCompleteCopyCommandSql(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("COPY ");
+        sql.append(maybeWrapInQoutes(vertex.getSchema()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + vertex.getTable()));
+        sql.append(" (");
+        if (keyValueMap.isEmpty()) {
+            //copy command needs at least one field.
+            //check if the dummy field exist, if not create it
+            sqlgGraph.getSchemaManager().ensureColumnExist(
+                    vertex.getSchema(),
+                    SchemaManager.VERTEX_PREFIX + vertex.getTable(),
+                    ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
+            sql.append(maybeWrapInQoutes("_copy_dummy"));
+        } else {
+            int count = 1;
+            for (String key : keyValueMap.keySet()) {
+                if (count > 1 && count <= keyValueMap.size()) {
+                    sql.append(", ");
+                }
+                count++;
+                sql.append(maybeWrapInQoutes(key));
+            }
+        }
+        sql.append(")");
+        sql.append(" FROM stdin DELIMITER '");
+        sql.append(COPY_COMMAND_SEPARATOR);
+        sql.append("';");
+        return sql.toString();
     }
 
     @Override
@@ -953,8 +1027,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void validateProperty(Object key, Object value) {
-        if (key instanceof String && ((String)key).length() > 63) {
-            validateColumnName((String)key);
+        if (key instanceof String && ((String) key).length() > 63) {
+            validateColumnName((String) key);
         }
         if (value instanceof String) {
             return;

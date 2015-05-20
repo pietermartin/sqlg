@@ -81,6 +81,7 @@ public class SqlgTransaction extends AbstractTransaction {
             if (this.threadLocalTx.get().getBatchManager().isBatchModeOn()) {
                 this.threadLocalTx.get().getBatchManager().flush();
             }
+            Thread.sleep(1000);
             Connection connection = threadLocalTx.get().getConnection();
             connection.commit();
             connection.setAutoCommit(true);

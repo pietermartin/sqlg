@@ -32,9 +32,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param table
      * @param keyValues
      */
-    public SqlgVertex(SqlgGraph sqlgGraph, String schema, String table, Object... keyValues) {
+    public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Object... keyValues) {
         super(sqlgGraph, schema, table);
-        insertVertex(keyValues);
+        insertVertex(complete, keyValues);
         if (!sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().add(this);
         }
@@ -65,8 +65,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return addEdge(label, inVertex, parameters);
     }
 
+    public Edge addCompleteEdge(String label, Vertex inVertex, Object... keyValues) {
+        return addEdgeInternal(true, label, inVertex, keyValues);
+    }
+
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
+        return addEdgeInternal(false, label, inVertex, keyValues);
+    }
+
+    private Edge addEdgeInternal(boolean complete, String label, Vertex inVertex, Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
         ElementHelper.validateLabel(label);
@@ -102,7 +110,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         this.table
                 ),
                 keyValues);
-        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
+        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, complete, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
         return edge;
     }
 
@@ -392,10 +400,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     }
 
-    private void insertVertex(Object... keyValues) {
+    private void insertVertex(boolean complete, Object... keyValues) {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(keyValueMap);
+            internalBatchAddVertex(complete, keyValueMap);
         } else {
             internalAddVertex(keyValueMap);
         }
@@ -403,8 +411,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         this.properties.putAll(keyValueMap);
     }
 
-    private void internalBatchAddVertex(Map<String, Object> keyValueMap) {
-        this.sqlgGraph.tx().getBatchManager().addVertex(this, keyValueMap);
+    private void internalBatchAddVertex(boolean complete, Map<String, Object> keyValueMap) {
+        this.sqlgGraph.tx().getBatchManager().addVertex(complete, this, keyValueMap);
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {

@@ -9,6 +9,9 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.Array;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -283,6 +286,10 @@ public interface SqlDialect {
     }
 
     Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache);
+
+    void copyIn(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap, InputStream inputStream);
+
+    void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException;
 
     void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache);
 

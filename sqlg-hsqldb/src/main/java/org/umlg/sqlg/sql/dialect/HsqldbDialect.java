@@ -6,6 +6,9 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -47,6 +50,16 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void copyIn(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap, InputStream inputStream) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 

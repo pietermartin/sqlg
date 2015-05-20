@@ -11,8 +11,6 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
-import org.apache.tinkerpop.gremlin.structure.io.IoCore;
-import org.apache.tinkerpop.gremlin.structure.io.IoRegistry;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -138,6 +136,12 @@ public class SqlgGraph implements Graph {
         return this.configuration;
     }
 
+    /**
+     * Convenience method
+     * @param label The vertex's label
+     * @param keyValues The attribute map.
+     * @return
+     */
     public Vertex addVertex(String label, Map<String, Object> keyValues) {
         Map<Object, Object> tmp = new HashMap<>(keyValues);
         tmp.put(T.label, label);
@@ -146,6 +150,39 @@ public class SqlgGraph implements Graph {
 
     @Override
     public Vertex addVertex(Object... keyValues) {
+        validateVertexKeysValues(keyValues);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        this.tx().readWrite();
+        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+    }
+
+    /**
+     * Only to be called when batchMode is on
+     * @param label
+     * @param keyValues
+     * @return
+     */
+    public Vertex addCompleteVertex(String label, Map<String, Object> keyValues) {
+        if (!this.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
+        }
+        Map<Object, Object> tmp = new HashMap<>(keyValues);
+        tmp.put(T.label, label);
+        return addCompleteVertex(SqlgUtil.mapTokeyValues(tmp));
+    }
+
+    private Vertex addCompleteVertex(Object... keyValues) {
+        validateVertexKeysValues(keyValues);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        this.tx().readWrite();
+        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+    }
+
+    private void validateVertexKeysValues(Object[] keyValues) {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
@@ -165,12 +202,6 @@ public class SqlgGraph implements Graph {
 
             }
         }
-        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
-        this.tx().readWrite();
-        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
-        final SqlgVertex vertex = new SqlgVertex(this, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
-        return vertex;
     }
 
     @Override

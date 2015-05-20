@@ -19,7 +19,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     private SqlgVertex outVertex;
 
     /**
-     * This is called when creating a new edge. from vin.addEdge(label, vout)
+     * This is called when creating a new edge. from inVertex.addEdge(label, outVertex)
      *
      * @param sqlgGraph
      * @param schema
@@ -28,23 +28,40 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param outVertex
      * @param keyValues
      */
-    public SqlgEdge(SqlgGraph sqlgGraph, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+    public SqlgEdge(SqlgGraph sqlgGraph, boolean complete, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
         super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         try {
-            insertEdge(keyValues);
+            insertEdge(complete, keyValues);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * This is used when loading a vertex incident edges.
+     * @param sqlgGraph
+     * @param id
+     * @param schema
+     * @param table
+     * @param inVertex
+     * @param outVertex
+     * @param keyValues
+     */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
         super(sqlgGraph, id, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
     }
 
+    /**
+     * This is for loading edges directly.
+     * @param sqlgGraph
+     * @param id
+     * @param schema
+     * @param table
+     */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
     }
@@ -101,10 +118,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         return StringFactory.edgeString(this);
     }
 
-    protected void insertEdge(Object... keyValues) throws SQLException {
+    protected void insertEdge(boolean complete, Object... keyValues) throws SQLException {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddEdge(keyValueMap);
+            internalBatchAddEdge(complete, keyValueMap);
         } else {
             internalAddEdge(keyValueMap);
         }
@@ -167,8 +184,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     }
 
-    private void internalBatchAddEdge(Map<String, Object> keyValueMap) {
-        this.sqlgGraph.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
+    private void internalBatchAddEdge(boolean complete, Map<String, Object> keyValueMap) {
+        this.sqlgGraph.tx().getBatchManager().addEdge(complete, this, this.outVertex, this.inVertex, keyValueMap);
     }
 
     //TODO this needs optimizing, an edge created in the transaction need not go to the db to load itself again
