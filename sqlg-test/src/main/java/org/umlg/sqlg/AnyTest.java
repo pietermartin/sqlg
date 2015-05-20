@@ -15,8 +15,8 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchCompleteVertex.class,
-        TestBatch.class
+        TestBatchCompleteVertex.class
+//        TestBatch.class
 })
 public class AnyTest {
 }
