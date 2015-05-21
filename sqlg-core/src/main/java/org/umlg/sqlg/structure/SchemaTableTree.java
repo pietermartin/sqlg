@@ -1,11 +1,10 @@
 package org.umlg.sqlg.structure;
 
 import org.apache.commons.lang3.tuple.Triple;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -239,10 +238,10 @@ public class SchemaTableTree {
                 singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
                 singlePathSql += ".";
                 singlePathSql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
-                if (hasContainer.key.equals(T.id.getAccessor())) {
+                if (hasContainer.getKey().equals(T.id.getAccessor())) {
                     singlePathSql += ".\"ID\"";
                 } else {
-                    singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.key);
+                    singlePathSql += "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
                 }
                 singlePathSql += " = ?";
             }
@@ -555,14 +554,14 @@ public class SchemaTableTree {
             //Check if we are on a vertex or edge
             SchemaTable hasContainerLabelSchemaTable;
             if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
             } else {
-                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.value.toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
             }
-            if (hasContainer.key.equals(T.label.getAccessor()) && hasContainer.predicate.equals(Compare.eq) &&
+            if (hasContainer.getKey().equals(T.label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq) &&
                     !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
                 return true;
-            } else if (hasContainer.key.equals(T.label.getAccessor()) && hasContainer.predicate.equals(Compare.eq) &&
+            } else if (hasContainer.getKey().equals(T.label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq) &&
                     hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
 
                 //remove the hasContainer as the query is already fulfilling it.

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
@@ -11,7 +12,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentitySt
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Compare;
 import org.umlg.sqlg.structure.SqlgGraphStep;
 
 import java.util.Arrays;
@@ -93,7 +93,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
             if (currentStep instanceof HasContainerHolder && ((HasContainerHolder) currentStep).getHasContainers().size() != 1) {
                 throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
             }
-            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
+            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).getBiPredicate())) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(identityStep::addLabel);
@@ -117,7 +117,7 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
             if (currentStep instanceof HasContainerHolder && ((HasContainerHolder) currentStep).getHasContainers().size() != 1) {
                 throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
             }
-            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).predicate)) {
+            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).getBiPredicate())) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(identityStep::addLabel);

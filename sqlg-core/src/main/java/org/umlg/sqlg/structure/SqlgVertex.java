@@ -4,7 +4,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
-import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -555,8 +555,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                                 for (HasContainer hasContainer : hasContainers) {
                                     sql.append(" AND b.");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
-                                    if (!hasContainer.predicate.equals(Compare.eq)) {
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().hasContainerKeyToColumn(hasContainer.getKey())));
+                                    if (!hasContainer.getBiPredicate().equals(Compare.eq)) {
                                         throw new IllegalStateException("Only equals is supported at the moment");
                                     }
                                     sql.append(" = ?");
@@ -586,8 +586,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                                 for (HasContainer hasContainer : hasContainers) {
                                     sql.append(" AND b.");
-                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().hasContainerKeyToColumn(hasContainer.key)));
-                                    if (!hasContainer.predicate.equals(Compare.eq)) {
+                                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().hasContainerKeyToColumn(hasContainer.getKey())));
+                                    if (!hasContainer.getBiPredicate().equals(Compare.eq)) {
                                         throw new IllegalStateException("Only equals is supported at the moment");
                                     }
                                     sql.append(" = ?");
@@ -617,11 +617,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             }
                             int countHasContainers = 2;
                             for (HasContainer hasContainer : hasContainers) {
-                                if (!hasContainer.predicate.equals(Compare.eq)) {
+                                if (!hasContainer.getBiPredicate().equals(Compare.eq)) {
                                     throw new IllegalStateException("Only equals is supported at present.");
                                 }
                                 Map<String, Object> keyValues = new HashMap<>();
-                                keyValues.put(hasContainer.key, hasContainer.value);
+                                keyValues.put(hasContainer.getKey(), hasContainer.getValue());
                                 SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
                             }
                             ResultSet resultSet = preparedStatement.executeQuery();
@@ -758,7 +758,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                keyValueMap.put(hasContainer.key, hasContainer.value);
+                keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
             }
         }
         SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);
@@ -767,7 +767,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     private Set<String> extractLabelsFromHasContainer(List<HasContainer> labelHasContainers) {
         Set<String> result = new HashSet<>();
         for (HasContainer hasContainer : labelHasContainers) {
-            result.add((String) hasContainer.value);
+            result.add((String) hasContainer.getValue());
         }
         return result;
     }
@@ -782,7 +782,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     private List<HasContainer> filterHasContainerOnKey(List<HasContainer> hasContainers, String key) {
         List<HasContainer> toRemove = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.key.equals(key)) {
+            if (hasContainer.getKey().equals(key)) {
                 toRemove.add(hasContainer);
             }
         }

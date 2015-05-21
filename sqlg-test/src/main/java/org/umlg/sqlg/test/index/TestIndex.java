@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.index;
 
-import org.apache.tinkerpop.gremlin.structure.P;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;

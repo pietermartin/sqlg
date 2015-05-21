@@ -1,8 +1,13 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.StreamFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,22 +42,22 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
         Stream<? extends Edge> edgeStream;
         if (this.ids != null && this.ids.length > 0) {
             edgeStream = getEdges();
-        //TODO support all Compares
-        } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
+            //TODO support all Compares
+        } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).getKey().equals(T.label.getAccessor()) && this.hasContainers.get(1).getBiPredicate().equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainer
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
             this.hasContainers.remove(hasContainer1);
             this.hasContainers.remove(hasContainer2);
-            edgeStream = getEdgesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
-        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
+            edgeStream = getEdgesUsingLabeledIndex((String) hasContainer1.getValue(), hasContainer2.getKey(), hasContainer2.getValue());
+        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).getKey().equals(T.label.getAccessor())) {
             HasContainer hasContainer = this.hasContainers.get(0);
             //Scenario 2, using label only for search
-            if (hasContainer.predicate == Contains.within || hasContainer.predicate == Contains.without) {
-                final List<String> labels = (List<String>) hasContainer.value;
+            if (hasContainer.getBiPredicate() == Contains.within || hasContainer.getBiPredicate() == Contains.without) {
+                final List<String> labels = (List<String>) hasContainer.getValue();
                 edgeStream = getEdgesUsingLabel(labels.toArray(new String[labels.size()]));
             } else {
-                edgeStream = getEdgesUsingLabel((String) hasContainer.value);
+                edgeStream = getEdgesUsingLabel((String) hasContainer.getValue());
             }
             this.hasContainers.remove(hasContainer);
         } else {
@@ -67,22 +72,22 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
             //if ids are given assume it to be the most significant narrowing of vertices.
             //i.e. has logic will be done in memory.
             vertexStream = getVertices();
-        //TODO support all Compares
-        } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).key.equals(T.label.getAccessor()) && this.hasContainers.get(1).predicate.equals(Compare.eq)) {
+            //TODO support all Compares
+        } else if (this.hasContainers.size() > 1 && this.hasContainers.get(0).getKey().equals(T.label.getAccessor()) && this.hasContainers.get(1).getBiPredicate().equals(Compare.eq)) {
             //Scenario 1, using labeled index via 2 HasContainers
             final HasContainer hasContainer1 = this.hasContainers.get(0);
             final HasContainer hasContainer2 = this.hasContainers.get(1);
             this.hasContainers.remove(hasContainer1);
             this.hasContainers.remove(hasContainer2);
-            vertexStream = getVerticesUsingLabeledIndex((String) hasContainer1.value, hasContainer2.key, hasContainer2.value);
-        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).key.equals(T.label.getAccessor())) {
+            vertexStream = getVerticesUsingLabeledIndex((String) hasContainer1.getValue(), hasContainer2.getKey(), hasContainer2.getValue());
+        } else if (this.hasContainers.size() > 0 && this.hasContainers.get(0).getKey().equals(T.label.getAccessor())) {
             //Scenario 2, using label only for search
             HasContainer hasContainer = this.hasContainers.get(0);
-            if (hasContainer.predicate == Contains.within || hasContainer.predicate == Contains.without) {
-                final List<String> labels = (List<String>) hasContainer.value;
+            if (hasContainer.getBiPredicate() == Contains.within || hasContainer.getBiPredicate() == Contains.without) {
+                final List<String> labels = (List<String>) hasContainer.getValue();
                 vertexStream = getVerticesUsingLabel(labels.toArray(new String[labels.size()]));
             } else {
-                vertexStream = getVerticesUsingLabel((String) hasContainer.value);
+                vertexStream = getVerticesUsingLabel((String) hasContainer.getValue());
             }
             this.hasContainers.remove(hasContainer);
         } else {
@@ -92,12 +97,12 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Stream<? extends Vertex> getVertices() {
-        SqlgGraph sqlgGraph = (SqlgGraph)this.getTraversal().getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) this.getTraversal().getGraph().get();
         return StreamFactory.stream(sqlgGraph.vertices(this.ids));
     }
 
     private Stream<? extends Edge> getEdges() {
-        SqlgGraph sqlgGraph = (SqlgGraph)this.getTraversal().getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) this.getTraversal().getGraph().get();
         return StreamFactory.stream(sqlgGraph.edges(this.ids));
     }
 
@@ -130,7 +135,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _verticesUsingLabel(String label) {
-        SqlgGraph sqlgGraph = (SqlgGraph)this.getTraversal().getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) this.getTraversal().getGraph().get();
         Set<String> schemas;
         SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
         if (schemaTable.getSchema() == null) {
@@ -180,7 +185,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Vertex> _verticesUsingLabeledIndex(String label, String key, Object value) {
-        SqlgGraph sqlgGraph = (SqlgGraph)this.getTraversal().getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) this.getTraversal().getGraph().get();
         SchemaTable schemaTable = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
         //Check that the table and column exist
         List<Vertex> sqlGVertexes = new ArrayList<>();
@@ -220,7 +225,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Edge> _edgesUsingLabel(String label) {
-        SqlgGraph sqlgGraph = (SqlgGraph)this.getTraversal().getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) this.getTraversal().getGraph().get();
         Set<String> schemas;
         SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(label);
         if (schemaTable.getSchema() == null) {
@@ -259,7 +264,7 @@ public class SqlgGraphStep<E extends Element> extends GraphStep<E> {
     }
 
     private Iterable<? extends Edge> _edgesUsingLabeledIndex(String label, String key, Object value) {
-        SqlgGraph sqlgGraph = (SqlgGraph)this.getTraversal().getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) this.getTraversal().getGraph().get();
         List<SqlgEdge> sqlGEdges = new ArrayList<>();
         SchemaTable schemaTable = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
         if (sqlgGraph.getSchemaManager().tableExist(schemaTable.getSchema(), SchemaManager.EDGE_PREFIX + schemaTable.getTable()) &&
