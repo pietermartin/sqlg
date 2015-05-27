@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Array;
 import java.sql.*;

@@ -1,10 +1,14 @@
-package org.umlg.sqlg.structure;
+package org.umlg.sqlg.util;
 
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.SchemaTable;
 
 import java.lang.reflect.Array;
 import java.util.*;

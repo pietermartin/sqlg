@@ -11,6 +11,7 @@ import org.apache.tinkerpop.shaded.kryo.Kryo;
 import org.apache.tinkerpop.shaded.kryo.KryoSerializable;
 import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
