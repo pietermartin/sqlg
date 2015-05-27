@@ -600,7 +600,10 @@ public class SchemaManager {
             sql.append(", ");
         }
         int i = 1;
-        for (String column : columns.keySet()) {
+        //This is to make the columns sorted
+        List<String> keys = new ArrayList<>(columns.keySet());
+        Collections.sort(keys);
+        for (String column : keys) {
             PropertyType propertyType = columns.get(column);
             //Columns map 1 to 1 to property keys and are case sensitive
             sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
@@ -638,7 +641,10 @@ public class SchemaManager {
             sql.append(", ");
         }
         int i = 1;
-        for (String column : columns.keySet()) {
+        //This is to make the columns sorted
+        List<String> keys = new ArrayList<>(columns.keySet());
+        Collections.sort(keys);
+        for (String column : keys) {
             PropertyType propertyType = columns.get(column);
             //Columns map 1 to 1 to property keys and are case sensitive
             sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
@@ -656,25 +662,27 @@ public class SchemaManager {
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
 
         //foreign key definition start
-        sql.append(", ");
-        sql.append("FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-        sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema()));
-        sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getTable()));
-        sql.append(" (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append("), ");
-        sql.append(" FOREIGN KEY (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-        sql.append(") REFERENCES ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema()));
-        sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getTable()));
-        sql.append(" (");
-        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-        sql.append(")");
+        if (this.sqlgGraph.isImplementForeignKeys()) {
+            sql.append(", ");
+            sql.append("FOREIGN KEY (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+            sql.append(") REFERENCES ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema()));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyIn.getTable()));
+            sql.append(" (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+            sql.append("), ");
+            sql.append(" FOREIGN KEY (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+            sql.append(") REFERENCES ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyOut.getSchema()));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + foreignKeyOut.getTable()));
+            sql.append(" (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+            sql.append(")");
+        }
         //foreign key definition end
 
         sql.append(")");

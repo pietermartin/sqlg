@@ -916,7 +916,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(1000000, this.sqlgGraph.traversal().E().count().next().intValue());
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().batchModeOn();
-        vertexTraversal(v1).outE("test").remove();
+        vertexTraversal(v1).outE("test").forEachRemaining(Edge::remove);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1000001, this.sqlgGraph.traversal().V().count().next().intValue());
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
