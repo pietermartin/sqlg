@@ -112,7 +112,7 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
                         previous = step;
                         sqlgVertexStepCompiled.addReplacedStep(stepPair);
                     } else {
-                        logger.warn("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+                        logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
                     }
                 } else {
                     previous = null;

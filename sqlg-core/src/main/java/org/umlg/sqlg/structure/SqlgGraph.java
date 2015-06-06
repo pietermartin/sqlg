@@ -41,6 +41,10 @@ import java.util.stream.Stream;
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest$Traversals",
         method = "g_V_out_out_profile_grateful",
         reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "Takes too long")
 public class SqlgGraph implements Graph {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
