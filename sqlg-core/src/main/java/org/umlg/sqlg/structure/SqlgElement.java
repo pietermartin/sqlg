@@ -14,6 +14,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.lang.reflect.Array;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -28,7 +29,8 @@ public abstract class SqlgElement implements Element {
     protected String table;
     protected RecordId recordId;
     protected final SqlgGraph sqlgGraph;
-    protected Map<String, Object> properties = new HashMap<>();
+    //Multiple threads can access the same element
+    protected Map<String, Object> properties = new ConcurrentHashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     protected boolean removed = false;
 
