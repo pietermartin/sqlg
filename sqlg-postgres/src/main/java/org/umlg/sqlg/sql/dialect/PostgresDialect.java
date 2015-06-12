@@ -442,7 +442,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
 
-                dropForeignKeys(sqlgGraph, schemaTable);
+                //This is causing dead locks under load
+//                dropForeignKeys(sqlgGraph, schemaTable);
 
                 List<SqlgVertex> vertices = schemaVertices.getValue();
                 int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
@@ -544,7 +545,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 }
 
-                createForeignKeys(sqlgGraph, schemaTable);
+//                createForeignKeys(sqlgGraph, schemaTable);
 
             }
         }
