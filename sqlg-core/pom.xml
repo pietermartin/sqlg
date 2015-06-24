@@ -40,10 +40,4 @@
             <version>18.0</version>
         </dependency>
 	</dependencies>
-    <!--<repositories>-->
-        <!--<repository>-->
-            <!--<id>apache-snapshot</id>-->
-            <!--<url>https://repository.apache.org/content/groups/snapshots/</url>-->
-        <!--</repository>-->
-    <!--</repositories>-->
 </project>

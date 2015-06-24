@@ -2,10 +2,7 @@ package org.umlg.sqlg.strategy;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.Compare;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
@@ -28,7 +25,9 @@ import java.util.function.BiPredicate;
 /**
  * Date: 2014/08/15
  * Time: 7:34 PM
+ *
  */
+//TODO optimize Order step as that is used in UMLG for Sequences
 public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class);
@@ -124,16 +123,17 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
 
     private boolean mayNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
-        return toCome.stream().anyMatch(s -> s.getClass().equals(PathStep.class) || s.getClass().equals(TreeStep.class) || s.getClass().equals(TreeSideEffectStep.class));
+        return toCome.stream().anyMatch(s ->
+                s.getClass().equals(PathStep.class) ||
+                        s.getClass().equals(TreeStep.class) ||
+                        s.getClass().equals(TreeSideEffectStep.class) ||
+                        s.getClass().equals(Order.class));
     }
 
     private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, Pair<Step<?, ?>, List<HasContainer>> stepPair) {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-//            if (currentStep instanceof HasContainerHolder && ((HasContainerHolder) currentStep).getHasContainers().size() != 1) {
-//                throw new IllegalStateException("Only handle HasContainerHolder with one HasContainer: BUG");
-//            }
             if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).getBiPredicate())) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);

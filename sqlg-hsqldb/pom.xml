@@ -1,16 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.umlg</groupId>
-		<artifactId>sqlg</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
-	</parent>
-	<artifactId>sqlg-hsqldb</artifactId>
-	<name>sqlg-hsqldb</name>
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.umlg</groupId>
+        <artifactId>sqlg</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>sqlg-hsqldb</artifactId>
+    <name>sqlg-hsqldb</name>
 
-	<dependencies>
+    <!--<repositories>-->
+        <!--<repository>-->
+            <!--<releases>-->
+                <!--<enabled>false</enabled>-->
+            <!--</releases>-->
+            <!--<snapshots>-->
+                <!--<enabled>true</enabled>-->
+                <!--<updatePolicy>always</updatePolicy>-->
+                <!--<checksumPolicy>fail</checksumPolicy>-->
+            <!--</snapshots>-->
+            <!--<id>hsqldb_snapshots</id>-->
+            <!--<name>HyperSQL Snapshots</name>-->
+            <!--<url>http://hsqldb.org/repos</url>-->
+            <!--<layout>default</layout>-->
+        <!--</repository>-->
+    <!--</repositories>-->
+
+    <dependencies>
         <dependency>
             <groupId>org.umlg</groupId>
             <artifactId>sqlg-core</artifactId>
@@ -19,12 +36,13 @@
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
             <version>2.3.2</version>
+            <!--<version>SNAPSHOT</version>-->
         </dependency>
         <dependency>
             <groupId>org.umlg</groupId>
             <artifactId>sqlg-test</artifactId>
             <scope>test</scope>
         </dependency>
-	</dependencies>
+    </dependencies>
 
 </project>

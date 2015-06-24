@@ -61,28 +61,6 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
                 }
                 currentStep = currentStep.getNextStep();
             }
-
-//            final GraphStep<?> originalGraphStep = (GraphStep) startStep;
-//            final SqlgGraphStepCompiled sqlgGraphStep = new SqlgGraphStepCompiled<>(originalGraphStep);
-//            traversal.addStep(traversal.getSteps().indexOf(originalGraphStep), sqlgGraphStep);
-//            traversal.removeStep(originalGraphStep);
-//
-//            //Replace all consecutive HasStep and VertexStep with one step
-//            List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
-//            ListIterator<Step> stepIterator = steps.listIterator();
-//
-//            //this first step will always be the GraphStep, collect all immediately following hasSteps
-//            collectImmediateHasSteps(sqlgGraphStep, stepIterator, traversal);
-//
-//            while (stepIterator.hasNext()) {
-//                Step<?, ?> step = stepIterator.next();
-//                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
-//                    Pair<Step<?, ?>, List<HasContainer>> stepPair = Pair.of(step, new ArrayList<>());
-//                    traversal.removeStep(step);
-//                    collectHasSteps(stepIterator, traversal, stepPair);
-//                    sqlgGraphStep.addReplacedStep(stepPair);
-//                }
-//            }
         }
     }
 

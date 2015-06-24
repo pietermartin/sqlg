@@ -686,8 +686,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     if (!(columnName.equals("ID") ||
                                             columnName.equals(SchemaManager.VERTEX_IN_LABELS) || columnName.equals(SchemaManager.VERTEX_OUT_LABELS) ||
                                             inVertexColumnNames.contains(columnName) || outVertexColumnNames.contains(columnName))) {
-                                        keyValues.add(columnName);
-                                        keyValues.add(resultSet.getObject(columnName));
+                                        //this values end up in SqlElement.properties.
+                                        //Its a ConcurrentHashMap which does not allow null key or value
+                                        Object object = resultSet.getObject(columnName);
+                                        if (object != null) {
+                                            keyValues.add(columnName);
+                                            keyValues.add(object);
+                                        }
                                     }
 
                                 }

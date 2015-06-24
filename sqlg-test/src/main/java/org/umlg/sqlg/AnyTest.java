@@ -17,7 +17,7 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestForeignKeysAreOptional.class
+        TestBatch.class
 })
 public class AnyTest {
 }

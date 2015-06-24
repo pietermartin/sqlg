@@ -16,8 +16,9 @@ import org.umlg.sqlg.structure.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.sql.*;
+import java.sql.Array;
 import java.util.*;
 
 /**
@@ -819,6 +820,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     Object value = triple.getRight().get(key);
                     if (value == null) {
                         sb.append(getBatchNull());
+                    } else if (value.getClass().isArray()) {
+                        sb.append("{");
+                        int length = java.lang.reflect.Array.getLength(value);
+                        for (int i = 0; i < length; i++) {
+                            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                            sb.append(valueOfArray);
+                            if (i < length - 1) {
+                                sb.append(",");
+                            }
+                        }
+                        sb.append("}");
                     } else {
                         sb.append(value.toString());
                     }
@@ -954,8 +966,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void validateProperty(Object key, Object value) {
-        if (key instanceof String && ((String)key).length() > 63) {
-            validateColumnName((String)key);
+        if (key instanceof String && ((String) key).length() > 63) {
+            validateColumnName((String) key);
         }
         if (value instanceof String) {
             return;
