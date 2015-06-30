@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -70,6 +70,7 @@ public class TestGremlinCompileE extends BaseTest {
         Edge e8 = b1.addEdge("outC", c6);
         this.sqlgGraph.tx().commit();
 
+        Assert.assertEquals(2, vertexTraversal(a1).outE().count().next().intValue());
         Assert.assertEquals(6, vertexTraversal(a1).out().outE().count().next().intValue());
         List<Edge> edges = vertexTraversal(a1).out().outE().toList();
         Assert.assertTrue(edges.contains(e3));

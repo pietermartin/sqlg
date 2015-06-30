@@ -8,9 +8,7 @@ import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.mod.*;
@@ -80,7 +78,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGremlinCompileE.class,
         TestEmptyGraph.class,
         TestOutE.class,
-        TestForeignKeysAreOptional.class
+        TestForeignKeysAreOptional.class,
+        TestGremlinCompileWithAs.class,
+        TestGremlinCompileWithInOutV.class
 })
 public class AllTest {
 }

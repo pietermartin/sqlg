@@ -1,11 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -359,20 +354,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return internalGetVertices(hasContainers, direction, labels);
     }
 
-    /**
-     * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
-     * This is only called when not in BatchMode
-     *
-     * @param replacedSteps The original VertexStep and HasSteps that were replaced.
-     * @return The result of the query.
-     */
-    public Iterator<Element> elements(List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
-        this.sqlgGraph.tx().readWrite();
-        Iterator<Element> itty = internalGetElements(replacedSteps);
-        return itty;
-    }
-
-
     @Override
     public void remove() {
         this.sqlgGraph.tx().readWrite();
@@ -390,7 +371,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             }
             super.remove();
         }
-
     }
 
     private void insertVertex(Object... keyValues) {
@@ -727,49 +707,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    /**
-     * Generate a query for the replaced steps.
-     * Each replaced step translates to a join statement and a section of the where clause.
-     *
-     * @param replacedSteps
-     * @return The results of the query
-     */
-    private Iterator<Element> internalGetElements(List<Pair<VertexStep, List<HasContainer>>> replacedSteps) {
-        List<Element> elements = new ArrayList<>();
-        SchemaTable schemaTable = SchemaTable.of(this.schema, SchemaManager.VERTEX_PREFIX + this.table);
-        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        List<Triple<LinkedList<SchemaTableTree>, SchemaTable, String>> sqlStatements = schemaTableTree.constructSql();
-        for (Triple<LinkedList<SchemaTableTree>, SchemaTable, String> sqlTriple : sqlStatements) {
-            Connection conn = this.sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sqlTriple.getRight());
-            }
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sqlTriple.getRight())) {
-                preparedStatement.setLong(1, this.recordId.getId());
-                setParametersOnStatement(sqlTriple.getLeft(), conn, preparedStatement);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                while (resultSet.next()) {
-                    this.sqlgGraph.getGremlinParser().loadElements(resultSet, sqlTriple.getMiddle(), elements);
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        return elements.iterator();
-    }
-
-    private void setParametersOnStatement(LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement) throws SQLException {
-        //start the index at 2 as sql starts at 1 and the first is the id that is already set.
-        int parameterIndex = 2;
-        Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
-        for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
-            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
-            }
-        }
-        SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);
-    }
-
     private Set<String> extractLabelsFromHasContainer(List<HasContainer> labelHasContainers) {
         Set<String> result = new HashSet<>();
         for (HasContainer hasContainer : labelHasContainers) {
@@ -902,6 +839,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
+    SchemaTable getSchemaTablePrefixed() {
+        return SchemaTable.of(this.getSchema(), SchemaManager.VERTEX_PREFIX + this.getTable());
+    }
 
     @Override
     public String toString() {

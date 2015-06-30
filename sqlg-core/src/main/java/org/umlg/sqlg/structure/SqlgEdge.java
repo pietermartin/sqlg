@@ -247,4 +247,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
         SqlgEdge.this.sqlgGraph.tx().readWrite();
         return internalGetVertices(direction);
     }
+
+    @Override
+    SchemaTable getSchemaTablePrefixed() {
+        return SchemaTable.of(this.getSchema(), SchemaManager.EDGE_PREFIX + this.getTable());
+    }
 }
