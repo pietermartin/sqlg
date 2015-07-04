@@ -85,7 +85,7 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
                 //the label check is to ignore any 'as('x')' gremlin for now
                 //if there is path() steps then the optimizations can not be used.
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
-                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass()) && stepHasNoLabels(step)) {
+                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass()) /* && stepHasNoLabels(step) */ ) {
 //                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                     if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
                         ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (FlatMapStep<?, ?>) step, new ArrayList<>());

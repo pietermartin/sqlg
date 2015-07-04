@@ -84,20 +84,26 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (this.inVertex == null) {
             load();
         }
-        return inVertex;
+        return this.inVertex;
     }
 
     public SqlgVertex getOutVertex() {
         if (this.outVertex == null) {
             load();
         }
-        return outVertex;
+        return this.outVertex;
     }
 
     @Override
     public String toString() {
         if (this.inVertex == null) {
             load();
+        }
+        if (this.inVertex== null) {
+            System.out.println("inVertex is null");
+        }
+        if (this.outVertex== null) {
+            System.out.println("outVertex is null");
         }
         return StringFactory.edgeString(this);
     }

@@ -98,7 +98,7 @@ public class ReplacedStep<S, E> {
 
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
-            SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth);
+            SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, this.step.getLabels());
             if (elementClass.isAssignableFrom(Edge.class)) {
                 result.add(schemaTableTreeChild);
             } else {
@@ -106,7 +106,7 @@ public class ReplacedStep<S, E> {
             }
         }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
-            SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth);
+            SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, this.step.getLabels());
             if (elementClass.isAssignableFrom(Edge.class)) {
                 result.add(schemaTableTreeChild);
             } else {
@@ -163,7 +163,9 @@ public class ReplacedStep<S, E> {
                         Vertex.class,
                         this.hasContainers,
                         this.depth,
-                        true);
+                        true,
+                        this.step.getLabels()
+                );
                 result.add(schemaTableTreeChild);
             }
             if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
@@ -173,7 +175,9 @@ public class ReplacedStep<S, E> {
                         Vertex.class,
                         this.hasContainers,
                         this.depth,
-                        true);
+                        true,
+                        this.step.getLabels()
+                );
                 result.add(schemaTableTreeChild);
             }
         }
@@ -196,7 +200,9 @@ public class ReplacedStep<S, E> {
                         direction,
                         Vertex.class,
                         this.hasContainers,
-                        this.depth);
+                        this.depth,
+                        this.step.getLabels()
+                );
                 result.add(schemaTableTree1);
             } else if (direction == Direction.OUT && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
@@ -204,7 +210,9 @@ public class ReplacedStep<S, E> {
                         direction,
                         Vertex.class,
                         this.hasContainers,
-                        this.depth);
+                        this.depth,
+                        this.step.getLabels()
+                );
                 result.add(schemaTableTree1);
             }
         }
