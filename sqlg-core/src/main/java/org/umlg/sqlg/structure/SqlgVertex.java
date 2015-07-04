@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -799,6 +800,26 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
+            }
+        }
+    }
+
+    void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnName(i);
+            Object o = resultSet.getObject(columnName);
+            if (columnName.startsWith(schemaTableTree.reducedLabels())) {
+                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+                if (!name.equals("ID")
+                        && !name.equals(SchemaManager.VERTEX_IN_LABELS)
+                        && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
+                        && !name.equals(SchemaManager.VERTEX_SCHEMA)
+                        && !name.equals(SchemaManager.VERTEX_TABLE)
+                        && !Objects.isNull(o)) {
+
+                    loadProperty(resultSetMetaData, i, name, o);
+                }
             }
         }
     }

@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -98,12 +99,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
     public String toString() {
         if (this.inVertex == null) {
             load();
-        }
-        if (this.inVertex== null) {
-            System.out.println("inVertex is null");
-        }
-        if (this.outVertex== null) {
-            System.out.println("outVertex is null");
         }
         return StringFactory.edgeString(this);
     }
@@ -206,6 +201,38 @@ public class SqlgEdge extends SqlgElement implements Edge {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnName(i);
+            Object o = resultSet.getObject(columnName);
+            //only load the labeled columns
+            if (columnName.startsWith(schemaTableTree.reducedLabels())) {
+                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+                if (!name.equals("ID") &&
+                        !Objects.isNull(o) &&
+                        !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
+                        !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+
+                    loadProperty(resultSetMetaData, i, name, o);
+
+                }
+                if (!Objects.isNull(o)) {
+                    if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                        Long inId = resultSet.getLong(columnName);
+                        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, schemaTableTree.getSchemaTable().getSchema(), schemaTableTree.getSchemaTable().getTable().replace(SchemaManager.EDGE_PREFIX, ""));
+                    } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                        Long outId = resultSet.getLong(columnName);
+                        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, schemaTableTree.getSchemaTable().getSchema(), schemaTableTree.getSchemaTable().getTable().replace(SchemaManager.EDGE_PREFIX, ""));
+                    }
+                }
+            }
+        }
+        if (this.inVertex == null || this.outVertex == null) {
+            throw new IllegalStateException("in or out vertex id not set!!!!");
         }
     }
 

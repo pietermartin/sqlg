@@ -2,6 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.TestAllVertices;
 import org.umlg.sqlg.test.gremlincompile.*;
 
 /**
@@ -13,9 +14,10 @@ import org.umlg.sqlg.test.gremlincompile.*;
 //        TestGremlinCompileE.class,
 //        TestGremlinCompileGraphV.class,
 //        TestGremlinCompileV.class,
-        TestGremlinCompileWithAs.class
+//        TestGremlinCompileWithAs.class,
 //        TestGremlinCompileWithHas.class,
 //        TestGremlinCompileWithInOutV.class
+        TestAllVertices.class
 })
 public class AnyTest {
 }

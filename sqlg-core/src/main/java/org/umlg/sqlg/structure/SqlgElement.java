@@ -539,6 +539,7 @@ public abstract class SqlgElement implements Element {
         }
     }
 
+    abstract void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
     abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
     /**
@@ -635,23 +636,24 @@ public abstract class SqlgElement implements Element {
                 } else {
                     sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                 }
-                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                    String columnName = resultSetMetaData.getColumnName(i);
-                    Object o = resultSet.getObject(columnName);
-                    if (columnName.startsWith(schemaTableTree.reducedLabels() + ".")) {
-                        sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
-                    }
-//                    if (!columnName.equals("ID")
-//                            && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
-//                            && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
-//                            && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
-//                            && !columnName.equals(SchemaManager.VERTEX_TABLE)
-//                            && !Objects.isNull(o)) {
+                sqlgElement.loadLabeledResultSet(resultSet, schemaTableTree);
+//                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+//                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+//                    String columnName = resultSetMetaData.getColumnName(i);
+//                    Object o = resultSet.getObject(columnName);
+//                    if (columnName.startsWith(schemaTableTree.reducedLabels() + ".")) {
+//                        String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+//                        if (!name.equals("ID")
+//                                && !name.equals(SchemaManager.VERTEX_IN_LABELS)
+//                                && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
+//                                && !name.equals(SchemaManager.VERTEX_SCHEMA)
+//                                && !name.equals(SchemaManager.VERTEX_TABLE)
+//                                && !Objects.isNull(o)) {
 //
-//                        sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
+//                            sqlgElement.loadProperty(resultSetMetaData, i, name, o);
+//                        }
 //                    }
-                }
+//                }
                 schemaTableTree.getLabels().forEach(l->result.put(l, sqlgElement));
             }
         }
