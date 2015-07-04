@@ -9,8 +9,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Date: 2015/01/19
@@ -37,27 +36,48 @@ public class TestGremlinCompileWithAs extends BaseTest {
                 .as("B")
                 .select("e", "B");
         List<Map<String, Element>> result = traversal.toList();
+        Collections.sort(result, (o1, o2) -> o1.get("e").<String>value("edgeName").compareTo(o2.get("e").<String>value("edgeName")));
         Assert.assertEquals(4, result.size());
 
-        Assert.assertEquals(e1, result.get(0).get("e"));
-        Assert.assertEquals("edge1", result.get(0).get("e").value("edgeName"));
-        Assert.assertEquals(b1, result.get(0).get("B"));
-        Assert.assertEquals("b1", result.get(0).get("B").value("name"));
+        Edge queryE0 = (Edge) result.get(0).get("e");
+        Vertex queryB0 = (Vertex) result.get(0).get("B");
+        Assert.assertEquals(e1, queryE0);
+        Assert.assertEquals("b1", queryE0.inVertex().value("name"));
+        Assert.assertEquals("a1", queryE0.outVertex().value("name"));
+        Assert.assertEquals("edge1", queryE0.value("edgeName"));
+        Assert.assertEquals(b1, queryB0);
+        Assert.assertEquals("b1", queryB0.value("name"));
 
-        Assert.assertEquals(e2, result.get(1).get("e"));
-        Assert.assertEquals("edge2", result.get(1).get("e").value("edgeName"));
-        Assert.assertEquals(b2, result.get(1).get("B"));
-        Assert.assertEquals("b2", result.get(1).get("B").value("name"));
+        Element queryE2 = result.get(1).get("e");
+        Element queryB2 = result.get(1).get("B");
+        Assert.assertEquals(e2, queryE2);
+        Assert.assertEquals("edge2", queryE2.value("edgeName"));
+        Assert.assertEquals(b2, queryB2);
+        Assert.assertEquals("b2", queryB2.value("name"));
 
-        Assert.assertEquals(e3, result.get(2).get("e"));
-        Assert.assertEquals("edge3", result.get(2).get("e").value("edgeName"));
-        Assert.assertEquals(b3, result.get(2).get("B"));
-        Assert.assertEquals("b3", result.get(2).get("B").value("name"));
+        Element queryE3 = result.get(2).get("e");
+        Element queryB3 = result.get(2).get("B");
+        Assert.assertEquals(e3, queryE3);
+        Assert.assertEquals("edge3", queryE3.value("edgeName"));
+        Assert.assertEquals(b3, queryB3);
+        Assert.assertEquals("b3", queryB3.value("name"));
 
-        Assert.assertEquals(e4, result.get(3).get("e"));
-        Assert.assertEquals("edge4", result.get(3).get("e").value("edgeName"));
-        Assert.assertEquals(b4, result.get(3).get("B"));
-        Assert.assertEquals("b4", result.get(3).get("B").value("name"));
+        Element queryE4 = result.get(3).get("e");
+        Element queryB4 = result.get(3).get("B");
+        Assert.assertEquals(e4, queryE4);
+        Assert.assertEquals("edge4", queryE4.value("edgeName"));
+        Assert.assertEquals(b4, queryB4);
+        Assert.assertEquals("b4", queryB4.value("name"));
+
+        final List<Edge> a1Edges = this.sqlgGraph.traversal().V(a1.id()).bothE().toList();
+        Assert.assertEquals(4, a1Edges.size());
+        List<String> names = new ArrayList<>(Arrays.asList("b1", "b2", "b3", "b4"));
+        for (Edge a1Edge : a1Edges) {
+            names.remove(a1Edge.inVertex().<String>value("name"));
+            Assert.assertEquals("a1", a1Edge.outVertex().<String>value("name"));
+        }
+        Assert.assertTrue(names.isEmpty());
+
     }
 
     @Test
@@ -83,6 +103,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
                 .as("x")
                 .select("x");
         List<Vertex> result = traversal.toList();
+        Collections.sort(result, (o1, o2) -> o1.<String>value("name").compareTo(o2.<String>value("name")));
         Assert.assertEquals(2, result.size());
 
         Assert.assertEquals(c1, result.get(0));

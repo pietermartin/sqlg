@@ -119,7 +119,7 @@ public class SchemaTableTree {
     private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String singlePathSql = "";
         singlePathSql += "SELECT ";
-        singlePathSql += constructOuterFromClause(sqlgGraph, subQueryLinkedLists.get(subQueryLinkedLists.size() - 1).getLast().getSchemaTable(), subQueryLinkedLists.size());
+        singlePathSql += constructOuterFromClause(sqlgGraph, subQueryLinkedLists.get(subQueryLinkedLists.size() - 1).getLast(), subQueryLinkedLists.size());
         singlePathSql += " FROM (";
         int count = 1;
         SchemaTableTree lastOfPrevious = null;
@@ -150,19 +150,25 @@ public class SchemaTableTree {
         return singlePathSql;
     }
 
-    private static String constructOuterFromClause(SqlgGraph sqlgGraph, SchemaTable schemaTable, int count) {
-        String sql = "a" + count + ".\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID + "\"";
-        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.toString());
+    private static String constructOuterFromClause(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, int count) {
+        String sql = "a" + count + ".\"" + schemaTableTree.getSchemaTable().getSchema() + "." + schemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
+        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.toString());
         if (propertyTypeMap.size() > 0) {
             sql += ", ";
         }
         int propertyCount = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
-            sql += "a" + count + ".\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + propertyName + "\"";
+            sql += "a" + count + ".\"" + schemaTableTree.getSchemaTable().getSchema() + "." + schemaTableTree.getSchemaTable().getTable() + "." + propertyName + "\"";
             if (propertyCount++ < propertyTypeMap.size()) {
-                sql += ",";
+                sql += ", ";
             }
         }
+
+        if (schemaTableTree.getSchemaTable().isEdgeTable()) {
+            sql += ", ";
+            sql = printEdgeInOutVertexIdOuterFromClauseFor(sqlgGraph, schemaTableTree, "a" + count, sql);
+        }
+
         return sql;
     }
 
@@ -482,9 +488,21 @@ public class SchemaTableTree {
         //The last schemaTableTree in the call stack as no nextSchemaTableTree.
         //This last element's properties need to be returned.
         if (nextSchemaTableTree == null) {
-            sql = printIDFromClauseFor(sqlgGraph, lastSchemaTableTree, sql);
-            sql += ", ";
+            if (!printedId) {
+                sql = printIDFromClauseFor(sqlgGraph, lastSchemaTableTree, sql);
+            }
+            Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+            if (!propertyTypeMap.isEmpty()) {
+                sql += ", ";
+            }
             sql = printFromClauseFor(sqlgGraph, lastSchemaTableTree, sql, printedId);
+
+            if (lastSchemaTableTree.getSchemaTable().isEdgeTable()) {
+                sql += ", ";
+                //This is to prevent selecting the same column twice.
+                //if first = last then the foreign key has already been printed, however the other direction stil needs to be printed
+                sql = printEdgeInOutVertexIdFromClauseFor(sqlgGraph, firstSchemaTableTree, lastSchemaTableTree, sql);
+            }
             //all labeled step's properties also need to be returned
             List<SchemaTableTree> labeledSteps = firstSchemaTableTree.getLabeledSteps();
             if (!labeledSteps.isEmpty()) {
@@ -493,14 +511,14 @@ public class SchemaTableTree {
             int count = 1;
             for (SchemaTableTree labelledStep : labeledSteps) {
                 sql = printLabeledIDFromClauseFor(sqlgGraph, labelledStep, sql);
-                Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(labelledStep.getSchemaTable().toString());
+                propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(labelledStep.getSchemaTable().toString());
                 if (!propertyTypeMap.isEmpty()) {
                     sql += ", ";
                 }
                 sql = printLabeledFromClauseFor(sqlgGraph, labelledStep, sql, false);
                 if (!labelledStep.getSchemaTable().isVertexTable()) {
                     sql += ", ";
-                    sql = printLabeledEdgeInOutVertexIdFromClauseFor(sqlgGraph, labelledStep, sql, false);
+                    sql = printLabeledEdgeInOutVertexIdFromClauseFor(sqlgGraph, labelledStep, sql);
                 }
                 if (count++ < labeledSteps.size()) {
                     sql += ", ";
@@ -569,7 +587,53 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String printLabeledEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql, boolean printedId) {
+    private static String printEdgeInOutVertexIdOuterFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String prepend, String sql) {
+        Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
+
+        Set<String> edgeForeignKeys = sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        int propertyCount = 1;
+        for (String edgeForeignKey : edgeForeignKeys) {
+            sql += prepend;
+            sql += ".\"";
+            sql += lastSchemaTableTree.aliasPropertyName(edgeForeignKey);
+            sql += "\"";
+            if (propertyCount < edgeForeignKeys.size()) {
+                sql += ", ";
+            }
+            propertyCount++;
+        }
+        return sql;
+    }
+
+    private static String printEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, SchemaTableTree lastSchemaTableTree, String sql) {
+        Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
+
+        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
+        finalFromSchemaTableName += ".";
+        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
+
+        Set<String> edgeForeignKeys = sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        int propertyCount = 1;
+        for (String edgeForeignKey : edgeForeignKeys) {
+            if (firstSchemaTableTree == null || !firstSchemaTableTree.equals(lastSchemaTableTree) ||
+                    firstSchemaTableTree.getDirection() != getDirectionForForeignKey(edgeForeignKey)) {
+
+                sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
+                sql += " AS \"";
+                sql += lastSchemaTableTree.aliasPropertyName(edgeForeignKey);
+                sql += "\", ";
+            }
+            propertyCount++;
+        }
+        sql = sql.substring(0, sql.length() - 2);
+        return sql;
+    }
+
+    private static Direction getDirectionForForeignKey(String edgeForeignKey) {
+        return edgeForeignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
+    }
+
+    private static String printLabeledEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql) {
         Preconditions.checkState(!lastSchemaTableTree.getSchemaTable().isVertexTable());
 
         String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
@@ -588,22 +652,6 @@ public class SchemaTableTree {
             }
         }
         return sql;
-
-//        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-//        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-//        finalFromSchemaTableName += ".";
-//        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
-//        int propertyCount = 1;
-//        for (String propertyName : propertyTypeMap.keySet()) {
-//            sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
-//            sql += " AS \"";
-//            sql += lastSchemaTableTree.labeledAliasPropertyName(propertyName);
-//            sql += "\"";
-//            if (propertyCount++ < propertyTypeMap.size()) {
-//                sql += ",";
-//            }
-//        }
-//        return sql;
     }
 
     public String aliasId() {

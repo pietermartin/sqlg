@@ -100,6 +100,10 @@ public class SchemaTable implements DataSerializable, Serializable {
         return this.table.startsWith(SchemaManager.VERTEX_PREFIX);
     }
 
+    public boolean isEdgeTable() {
+        return !isVertexTable();
+    }
+
     static class SchemaTableJacksonSerializer extends StdSerializer<SchemaTable> {
         public SchemaTableJacksonSerializer() {
             super(SchemaTable.class);

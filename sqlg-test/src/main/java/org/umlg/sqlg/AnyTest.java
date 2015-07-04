@@ -3,6 +3,8 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TestAllVertices;
+import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
+import org.umlg.sqlg.test.TestVertexNavToEdges;
 import org.umlg.sqlg.test.gremlincompile.*;
 
 /**
@@ -17,7 +19,8 @@ import org.umlg.sqlg.test.gremlincompile.*;
 //        TestGremlinCompileWithAs.class,
 //        TestGremlinCompileWithHas.class,
 //        TestGremlinCompileWithInOutV.class
-        TestAllVertices.class
+        TestGremlinCompileWithHas.class,
+        TestGremlinCompileWithAs.class
 })
 public class AnyTest {
 }

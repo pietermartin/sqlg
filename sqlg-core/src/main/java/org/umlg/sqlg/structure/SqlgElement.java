@@ -539,6 +539,7 @@ public abstract class SqlgElement implements Element {
         }
     }
 
+    abstract void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
     abstract void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
     abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
@@ -568,7 +569,7 @@ public abstract class SqlgElement implements Element {
         }
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnName(i);
+            String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID")
                     && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
@@ -605,21 +606,23 @@ public abstract class SqlgElement implements Element {
             String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
             sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         }
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnName(i);
-            Object o = resultSet.getObject(columnName);
-            if (!columnName.equals("ID")
-                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
-                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
-                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
-                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
-                    && !Objects.isNull(o)) {
-
-                sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
-            }
-        }
+        sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
         return (E) sqlgElement;
+//        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+//        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+//            String columnName = resultSetMetaData.getColumnLabel(i);
+//            Object o = resultSet.getObject(columnName);
+//            if (!columnName.equals("ID")
+//                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
+//                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
+//                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
+//                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
+//                    && !Objects.isNull(o)) {
+//
+//                sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
+//            }
+//        }
+//        return (E) sqlgElement;
     }
 
     private static Map<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
@@ -639,7 +642,7 @@ public abstract class SqlgElement implements Element {
                 sqlgElement.loadLabeledResultSet(resultSet, schemaTableTree);
 //                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 //                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-//                    String columnName = resultSetMetaData.getColumnName(i);
+//                    String columnName = resultSetMetaData.getColumnLabel(i);
 //                    Object o = resultSet.getObject(columnName);
 //                    if (columnName.startsWith(schemaTableTree.reducedLabels() + ".")) {
 //                        String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);

@@ -255,7 +255,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             String outVertexColumnName = "";
                             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                                String columnName = resultSetMetaData.getColumnName(i);
+                                String columnName = resultSetMetaData.getColumnLabel(i);
                                 if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                                     inVertexColumnNames.add(columnName);
                                 } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
@@ -614,7 +614,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 String outVertexColumnName = "";
                                 ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-                                    String columnName = resultSetMetaData.getColumnName(i);
+                                    String columnName = resultSetMetaData.getColumnLabel(i);
                                     if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                                         inVertexColumnNames.add(columnName);
                                     } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
@@ -804,10 +804,28 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
+    void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnLabel(i);
+            Object o = resultSet.getObject(columnName);
+            String name = schemaTableTree.propertyNameFromAlias(columnName);
+            if (!name.equals("ID")
+                    && !name.equals(SchemaManager.VERTEX_IN_LABELS)
+                    && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
+                    && !name.equals(SchemaManager.VERTEX_SCHEMA)
+                    && !name.equals(SchemaManager.VERTEX_TABLE)
+                    && !Objects.isNull(o)) {
+
+                loadProperty(resultSetMetaData, i, name, o);
+            }
+        }
+    }
+
     void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnName(i);
+            String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
             if (columnName.startsWith(schemaTableTree.reducedLabels())) {
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
@@ -827,7 +845,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     void loadResultSet(ResultSet resultSet) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnName(i);
+            String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID")
                     && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)

@@ -644,7 +644,7 @@ public class SqlgGraph implements Graph {
                 int numColumns = rsmd.getColumnCount();
                 ObjectNode obj = this.mapper.createObjectNode();
                 for (int i = 1; i < numColumns + 1; i++) {
-                    String columnName = rsmd.getColumnName(i);
+                    String columnName = rsmd.getColumnLabel(i);
                     Object o = rs.getObject(columnName);
                     int type = rsmd.getColumnType(i);
                     this.sqlDialect.putJsonObject(obj, columnName, type, o);

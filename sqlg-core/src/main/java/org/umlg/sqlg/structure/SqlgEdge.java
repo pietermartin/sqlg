@@ -204,13 +204,48 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+        SchemaTable inVertexColumnName;
+        SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnName(i);
+            String columnName = resultSetMetaData.getColumnLabel(i);
+            Object o = resultSet.getObject(columnName);
+            String name = schemaTableTree.propertyNameFromAlias(columnName);
+            if (!name.equals("ID") &&
+                    !Objects.isNull(o) &&
+                    !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
+                    !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+
+                loadProperty(resultSetMetaData, i, name, o);
+
+            }
+            if (!Objects.isNull(o)) {
+                if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                    inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    Long inId = resultSet.getLong(columnName);
+                    this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+                } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                    outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    Long outId = resultSet.getLong(columnName);
+                    this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+                }
+            }
+        }
+        if (this.inVertex == null || this.outVertex == null) {
+            throw new IllegalStateException("in or out vertex id not set!!!!");
+        }
+    }
+
+    void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+        SchemaTable inVertexColumnName;
+        SchemaTable outVertexColumnName;
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+            String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
             //only load the labeled columns
-            if (columnName.startsWith(schemaTableTree.reducedLabels())) {
+            if (columnName.startsWith(schemaTableTree.reducedLabels() + ".")) {
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
@@ -218,15 +253,15 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
                     loadProperty(resultSetMetaData, i, name, o);
-
-                }
-                if (!Objects.isNull(o)) {
+                } else if (!Objects.isNull(o)) {
                     if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                        inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
                         Long inId = resultSet.getLong(columnName);
-                        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, schemaTableTree.getSchemaTable().getSchema(), schemaTableTree.getSchemaTable().getTable().replace(SchemaManager.EDGE_PREFIX, ""));
+                        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
                     } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                        outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
                         Long outId = resultSet.getLong(columnName);
-                        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, schemaTableTree.getSchemaTable().getSchema(), schemaTableTree.getSchemaTable().getTable().replace(SchemaManager.EDGE_PREFIX, ""));
+                        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
                     }
                 }
             }
@@ -241,7 +276,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         SchemaTable outVertexColumnName = null;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnName(i);
+            String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID") &&
                     !Objects.isNull(o) &&
