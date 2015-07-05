@@ -110,4 +110,24 @@ public class TestGremlinCompileWithAs extends BaseTest {
         Assert.assertEquals(c2, result.get(1));
 
     }
+
+    @Test
+    public void testAsWithDuplicatePaths() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a2");
+        Edge e1 = a1.addEdge("friend", a2, "weight", 5);
+        this.sqlgGraph.tx().commit();
+
+        GraphTraversal<Vertex,Map<String,Element>> gt = this.sqlgGraph.traversal()
+                .V(a1)
+                .outE().as("e")
+                .inV()
+                .in().as("v")
+                .select("e","v");
+
+        List<Map<String,Element>> result = gt.toList();
+        Assert.assertEquals(1, result.size());
+        Assert.assertEquals(e1, result.get(0).get("e"));
+        Assert.assertEquals(a1, result.get(0).get("v"));
+    }
 }

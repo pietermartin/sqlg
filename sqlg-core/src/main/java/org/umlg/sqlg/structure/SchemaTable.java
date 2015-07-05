@@ -104,6 +104,14 @@ public class SchemaTable implements DataSerializable, Serializable {
         return !isVertexTable();
     }
 
+    public String getUnprefixedTable() {
+        if (isVertexTable()) {
+            return getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            return getTable().substring(SchemaManager.EDGE_PREFIX.length());
+        }
+    }
+
     static class SchemaTableJacksonSerializer extends StdSerializer<SchemaTable> {
         public SchemaTableJacksonSerializer() {
             super(SchemaTable.class);

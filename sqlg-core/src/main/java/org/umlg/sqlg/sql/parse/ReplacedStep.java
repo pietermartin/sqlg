@@ -98,18 +98,20 @@ public class ReplacedStep<S, E> {
 
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
-            SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, this.step.getLabels());
             if (elementClass.isAssignableFrom(Edge.class)) {
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, this.step.getLabels());
                 result.add(schemaTableTreeChild);
             } else {
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, inLabelsToTravers, Direction.IN));
             }
         }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
-            SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, this.step.getLabels());
             if (elementClass.isAssignableFrom(Edge.class)) {
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, this.step.getLabels());
                 result.add(schemaTableTreeChild);
             } else {
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, outLabelsToTravers, Direction.OUT));
             }
         }

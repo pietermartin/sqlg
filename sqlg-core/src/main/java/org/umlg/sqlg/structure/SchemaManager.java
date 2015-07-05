@@ -72,7 +72,7 @@ public class SchemaManager {
     private static final String EDGE_FOREIGN_KEYS_HAZELCAST_MAP = "_edgeForeignKeys";
     private static final String TABLE_LABELS_HAZELCAST_MAP = "_tableLabels";
 
-    private static final int LOCK_TIMEOUT = 3;
+    private static final int LOCK_TIMEOUT = 5;
 
     SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect, Configuration configuration) {
         this.sqlgGraph = sqlgGraph;

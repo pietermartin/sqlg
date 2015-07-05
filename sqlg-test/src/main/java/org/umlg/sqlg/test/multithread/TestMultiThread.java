@@ -6,12 +6,15 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
@@ -22,13 +25,17 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestMultiThread extends BaseTest {
 
+    private Logger logger = LoggerFactory.getLogger(TestMultiThread.class.getName());
+
     @Test
-    public void shouldExecuteWithCompetingThreads() {
+    public void shouldExecuteWithCompetingThreads() throws InterruptedException {
         final Graph graph = this.sqlgGraph;
         int totalThreads = 250;
+//        int totalThreads = 200;
         final AtomicInteger vertices = new AtomicInteger(0);
         final AtomicInteger edges = new AtomicInteger(0);
         final AtomicInteger completedThreads = new AtomicInteger(0);
+        CountDownLatch countDownLatch = new CountDownLatch(totalThreads);
         for (int i = 0; i < totalThreads; i++) {
             new Thread() {
                 @Override
@@ -64,15 +71,14 @@ public class TestMultiThread extends BaseTest {
                             }
                         }
                     }
+                    countDownLatch.countDown();
                     completedThreads.getAndAdd(1);
+                    logger.info("shouldExecuteWithCompetingThreads " + completedThreads.get());
                 }
             }.start();
         }
-
-        while (completedThreads.get() < totalThreads) {
-        }
-
-        assertEquals(completedThreads.get(), 250);
+        countDownLatch.await();
+        assertEquals(completedThreads.get(), totalThreads);
         assertVertexEdgeCounts(vertices.get(), edges.get());
     }
 

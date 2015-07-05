@@ -119,7 +119,8 @@ public class SchemaTableTree {
     private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String singlePathSql = "";
         singlePathSql += "SELECT ";
-        singlePathSql += constructOuterFromClause(sqlgGraph, subQueryLinkedLists.get(subQueryLinkedLists.size() - 1).getLast(), subQueryLinkedLists.size());
+        LinkedList<SchemaTableTree> schemaTableTrees = subQueryLinkedLists.get(subQueryLinkedLists.size() - 1);
+        singlePathSql += constructOuterFromClause(subQueryLinkedLists);
         singlePathSql += " FROM (";
         int count = 1;
         SchemaTableTree lastOfPrevious = null;
@@ -150,25 +151,46 @@ public class SchemaTableTree {
         return singlePathSql;
     }
 
-    private static String constructOuterFromClause(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, int count) {
-        String sql = "a" + count + ".\"" + schemaTableTree.getSchemaTable().getSchema() + "." + schemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.toString());
+    private static String constructOuterFromClause(List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+        String result = "";
+        int countOuter = 1;
+        for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
+            int countInner = 1;
+            for (SchemaTableTree schemaTableTree : subQueryLinkedList) {
+                if (!schemaTableTree.getLabels().isEmpty()) {
+                    result = schemaTableTree.printLabeledOuterFromClause(result, countOuter);
+                    result += ", ";
+                }
+                if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
+                    //last entry, always print this
+                    result += schemaTableTree.printOuterFromClause(countOuter);
+                    result += ", ";
+                }
+                countInner++;
+            }
+            countOuter++;
+        }
+        result = result.substring(0, result.length() - 2);
+        return result;
+    }
+
+    private String printOuterFromClause(int count) {
+        String sql = "a" + count + ".\"" + this.getSchemaTable().getSchema() + "." + this.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
+        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.toString());
         if (propertyTypeMap.size() > 0) {
             sql += ", ";
         }
         int propertyCount = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
-            sql += "a" + count + ".\"" + schemaTableTree.getSchemaTable().getSchema() + "." + schemaTableTree.getSchemaTable().getTable() + "." + propertyName + "\"";
+            sql += "a" + count + ".\"" + this.getSchemaTable().getSchema() + "." + this.getSchemaTable().getTable() + "." + propertyName + "\"";
             if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ", ";
             }
         }
-
-        if (schemaTableTree.getSchemaTable().isEdgeTable()) {
+        if (this.getSchemaTable().isEdgeTable()) {
             sql += ", ";
-            sql = printEdgeInOutVertexIdOuterFromClauseFor(sqlgGraph, schemaTableTree, "a" + count, sql);
+            sql = printEdgeInOutVertexIdOuterFromClauseFor("a" + count, sql);
         }
-
         return sql;
     }
 
@@ -245,7 +267,6 @@ public class SchemaTableTree {
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTableTree lastSchemaTableTree = distinctQueryStack.getLast();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
-        SchemaTable lastSchemaTable = lastSchemaTableTree.getSchemaTable();
         singlePathSql += constructFromClause(sqlgGraph, firstSchemaTableTree, lastSchemaTableTree, lastOfPrevious, firstOfNextStack);
         singlePathSql += " FROM ";
         singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTableTree.getSchemaTable().getSchema());
@@ -462,6 +483,13 @@ public class SchemaTableTree {
                     sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                             nextSchemaTableTree.getSchemaTable().getSchema() + "." +
                             rawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+
+                    //if labeled, print all the properties
+                    if (!lastSchemaTableTree.getLabels().isEmpty()) {
+                        sql += ", ";
+                        sql = lastSchemaTableTree.printLabeledFromClause(sql);
+                    }
+
                 } else {
                     sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
                             sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
@@ -503,28 +531,62 @@ public class SchemaTableTree {
                 //if first = last then the foreign key has already been printed, however the other direction stil needs to be printed
                 sql = printEdgeInOutVertexIdFromClauseFor(sqlgGraph, firstSchemaTableTree, lastSchemaTableTree, sql);
             }
-            //all labeled step's properties also need to be returned
-            List<SchemaTableTree> labeledSteps = firstSchemaTableTree.getLabeledSteps();
-            if (!labeledSteps.isEmpty()) {
+
+            sql = constructAllLabeledFromClause(sqlgGraph, firstSchemaTableTree, sql);
+
+        }
+        return sql;
+    }
+
+    private String printLabeledOuterFromClause(String sql, int counter) {
+        sql = printLabeledIDOuterFromClauseFor(this, sql, counter);
+        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
+        if (!propertyTypeMap.isEmpty()) {
+            sql += ", ";
+        }
+        sql = printLabeledOuterFromClauseFor(sqlgGraph, this, sql, counter);
+        if (this.getSchemaTable().isEdgeTable()) {
+            sql += ", ";
+            sql = printLabeledEdgeInOutVertexIdOuterFromClauseFor(sql, counter);
+        }
+        return sql;
+    }
+
+    private String printLabeledFromClause(String sql) {
+        sql = printLabeledIDFromClauseFor(sqlgGraph, this, sql);
+        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
+        if (!propertyTypeMap.isEmpty()) {
+            sql += ", ";
+        }
+        sql = printLabeledFromClauseFor(sqlgGraph, this, sql);
+        if (this.getSchemaTable().isEdgeTable()) {
+            sql += ", ";
+            sql = printLabeledEdgeInOutVertexIdFromClauseFor(sql);
+        }
+        return sql;
+    }
+
+    private static String constructAllLabeledFromClause(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, String sql) {
+        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap;//all labeled step's properties also need to be returned
+        List<SchemaTableTree> labeledSteps = firstSchemaTableTree.getLabeledSteps();
+        if (!labeledSteps.isEmpty()) {
+            sql += ", ";
+        }
+        int count = 1;
+        for (SchemaTableTree labelledStep : labeledSteps) {
+            sql = printLabeledIDFromClauseFor(sqlgGraph, labelledStep, sql);
+            propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(labelledStep.getSchemaTable().toString());
+            if (!propertyTypeMap.isEmpty()) {
                 sql += ", ";
             }
-            int count = 1;
-            for (SchemaTableTree labelledStep : labeledSteps) {
-                sql = printLabeledIDFromClauseFor(sqlgGraph, labelledStep, sql);
-                propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(labelledStep.getSchemaTable().toString());
-                if (!propertyTypeMap.isEmpty()) {
-                    sql += ", ";
-                }
-                sql = printLabeledFromClauseFor(sqlgGraph, labelledStep, sql, false);
-                if (!labelledStep.getSchemaTable().isVertexTable()) {
-                    sql += ", ";
-                    sql = printLabeledEdgeInOutVertexIdFromClauseFor(sqlgGraph, labelledStep, sql);
-                }
-                if (count++ < labeledSteps.size()) {
-                    sql += ", ";
-                }
+            sql = printLabeledFromClauseFor(sqlgGraph, labelledStep, sql);
+            if (labelledStep.getSchemaTable().isEdgeTable()) {
+                sql += ", ";
+                sql = labelledStep.printLabeledEdgeInOutVertexIdFromClauseFor(sql);
             }
-
+            if (count++ < labeledSteps.size()) {
+                sql += ", ";
+            }
         }
         return sql;
     }
@@ -561,6 +623,13 @@ public class SchemaTableTree {
         return sql;
     }
 
+    private static String printLabeledIDOuterFromClauseFor(SchemaTableTree lastSchemaTableTree, String sql, int counter) {
+        sql += " a" + counter + ".\"";
+        sql += lastSchemaTableTree.labeledAliasId();
+        sql += "\"";
+        return sql;
+    }
+
     private static String printLabeledIDFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql) {
         String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
         finalFromSchemaTableName += ".";
@@ -572,30 +641,48 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String printLabeledFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql, boolean printedId) {
+    private static String printLabeledOuterFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql, int counter) {
+        Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+        int count = 1;
+        for (String propertyName : propertyTypeMap.keySet()) {
+            sql += " a" + counter + ".";
+            sql += "\"";
+            sql += lastSchemaTableTree.labeledAliasPropertyName(propertyName);
+            sql += "\"";
+            if (count++ < propertyTypeMap.size()) {
+                sql += ", ";
+            }
+        }
+        return sql;
+    }
+
+    private static String printLabeledFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql) {
         Map<String, org.umlg.sqlg.structure.PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
         finalFromSchemaTableName += ".";
         finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
-        int propertyCount = 1;
+        int count = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
             sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
             sql += " AS \"";
             sql += lastSchemaTableTree.labeledAliasPropertyName(propertyName);
             sql += "\"";
+            if (count++ < propertyTypeMap.size()) {
+                sql += ", ";
+            }
         }
         return sql;
     }
 
-    private static String printEdgeInOutVertexIdOuterFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String prepend, String sql) {
-        Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
+    private String printEdgeInOutVertexIdOuterFromClauseFor(String prepend, String sql) {
+        Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
-        Set<String> edgeForeignKeys = sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
         int propertyCount = 1;
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += prepend;
             sql += ".\"";
-            sql += lastSchemaTableTree.aliasPropertyName(edgeForeignKey);
+            sql += this.aliasPropertyName(edgeForeignKey);
             sql += "\"";
             if (propertyCount < edgeForeignKeys.size()) {
                 sql += ", ";
@@ -633,19 +720,35 @@ public class SchemaTableTree {
         return edgeForeignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
     }
 
-    private static String printLabeledEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql) {
-        Preconditions.checkState(!lastSchemaTableTree.getSchemaTable().isVertexTable());
+    private String printLabeledEdgeInOutVertexIdOuterFromClauseFor(String sql, int counter) {
+        Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
-        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-        finalFromSchemaTableName += ".";
-        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
-
-        Set<String> edgeForeignKeys = sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
         int propertyCount = 1;
         for (String edgeForeignKey : edgeForeignKeys) {
-            sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
+            sql += " a" + counter + ".";
+            sql += "\"";
+            sql += this.labeledAliasPropertyName(edgeForeignKey);
+            sql += "\"";
+            if (propertyCount++ < edgeForeignKeys.size()) {
+                sql += ", ";
+            }
+        }
+        return sql;
+    }
+    private String printLabeledEdgeInOutVertexIdFromClauseFor(String sql) {
+        Preconditions.checkState(this.getSchemaTable().isEdgeTable());
+
+        String finalFromSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
+        finalFromSchemaTableName += ".";
+        finalFromSchemaTableName += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable());
+
+        Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
+        int propertyCount = 1;
+        for (String edgeForeignKey : edgeForeignKeys) {
+            sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
             sql += " AS \"";
-            sql += lastSchemaTableTree.labeledAliasPropertyName(edgeForeignKey);
+            sql += this.labeledAliasPropertyName(edgeForeignKey);
             sql += "\"";
             if (propertyCount++ < edgeForeignKeys.size()) {
                 sql += ", ";
