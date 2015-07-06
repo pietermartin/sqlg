@@ -122,7 +122,7 @@ public class ReplacedStep<S, E> {
         Set<SchemaTable> idFilteredResult = new HashSet<>(inLabelsToTraversers);
         //Filter out labels if their is a hasContainer on the id field
         for (HasContainer idHasContainer : getIdHasContainer()) {
-            SchemaTable hasContainerSchemaTable = RecordId.from(idHasContainer.getValue()).getSchemaTable();
+            SchemaTable hasContainerSchemaTable = RecordId.from(idHasContainer.getValue().toString()).getSchemaTable();
             hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.EDGE_PREFIX + hasContainerSchemaTable.getTable());
             for (SchemaTable schemaTable : inLabelsToTraversers) {
                 if (!schemaTable.equals(hasContainerSchemaTable)) {
@@ -137,7 +137,7 @@ public class ReplacedStep<S, E> {
         Set<SchemaTableTree> idFilteredResult = new HashSet<>(inLabelsToTraversers);
         //Filter out labels if their is a hasContainer on the id field
         for (HasContainer idHasContainer : getIdHasContainer()) {
-            SchemaTable hasContainerSchemaTable = RecordId.from(idHasContainer.getValue()).getSchemaTable();
+            SchemaTable hasContainerSchemaTable = RecordId.from(idHasContainer.getValue().toString()).getSchemaTable();
             hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + hasContainerSchemaTable.getTable());
             for (SchemaTableTree schemaTableTree : inLabelsToTraversers) {
                 if (!schemaTableTree.getSchemaTable().equals(hasContainerSchemaTable)) {

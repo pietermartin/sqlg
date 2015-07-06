@@ -24,7 +24,8 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
 //        TestGremlinCompileWithHas.class,
 //        TestGremlinCompileWithAs.class
 //        TestLoadEdge.class
-        TestMultiThread.class
+//        TestMultiThread.class,
+        TestGremlinCompileWithHas.class
 })
 public class AnyTest {
 }
