@@ -2,6 +2,10 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.Scope.local;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.unfold;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -38,7 +42,7 @@ import java.util.*;
 public class TestGremlinCompileWithHas extends BaseTest {
 
     @Test
-    public void g_V_hasXinXcreatedX_count_isXgte_2XX_valuesXnameX() throws IOException {
+    public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X() throws IOException {
         Graph g = this.sqlgGraph;
         final GraphReader reader = GryoReader.build()
                 .mapper(g.io(GryoIo.build()).mapper().create())
@@ -47,22 +51,53 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(
-                        in("created")
-                                .count()
-                                .is(
-                                        P.gte(2l)
-                                )
-                )
-                .values("name");
+//        final Traversal<Vertex, List<String>> traversal =  g.traversal()
+        final Traversal<Vertex, List<Vertex>> traversal =  g.traversal()
+                .V().as("a")
+                .out().as("a")
+                .out().as("a")
+                .select("a");
+//        .<List<String>>select("a");
+//                .by(unfold().values("name").fold())
+//                .range(local, 1, 2);
+
         printTraversalForm(traversal);
-        Assert.assertTrue(traversal.hasNext());
-        Assert.assertEquals("lop", traversal.next());
-        Assert.assertFalse(traversal.hasNext());
+        int counter = 0;
+        while (traversal.hasNext()) {
+//            final List<String> s = traversal.next();
+            final List<Vertex> s = traversal.next();
+            Assert.assertEquals("josh", s);
+            counter++;
+        }
+        Assert.assertEquals(2, counter);
     }
 
+//    @Test
+//    public void g_V_hasXinXcreatedX_count_isXgte_2XX_valuesXnameX() throws IOException {
+//        Graph g = this.sqlgGraph;
+//        final GraphReader reader = GryoReader.build()
+//                .mapper(g.io(GryoIo.build()).mapper().create())
+//                .create();
+//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+//            reader.readGraph(stream, g);
+//        }
+//        assertModernGraph(g, true, false);
+//        final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
+//                .V()
+//                .where(
+//                        in("created")
+//                                .count()
+//                                .is(
+//                                        P.gte(2l)
+//                                )
+//                )
+//                .values("name");
+//        printTraversalForm(traversal);
+//        Assert.assertTrue(traversal.hasNext());
+//        Assert.assertEquals("lop", traversal.next());
+//        Assert.assertFalse(traversal.hasNext());
+//    }
+//
 //    @Test
 //    public void g_VX1X_out_hasXid_2X() throws IOException {
 //        Graph g = this.sqlgGraph;

@@ -18,7 +18,7 @@ import java.util.*;
  */
 public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep<S, E> {
 
-    private B_O_P_S_SE_SL_Traverser head = null;
+    private Traverser.Admin<S> head = null;
     private Iterator<Pair<E, Map<String, Object>>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
 
@@ -35,13 +35,15 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 Map<String, Object> labeledObjects = next.getRight();
                 //split before setting the path.
                 //This is because the labels must be set on a unique path for every iteration.
-                B_O_P_S_SE_SL_Traverser split = (B_O_P_S_SE_SL_Traverser) this.head.split(e, this);
+                Traverser.Admin<E> split = this.head.split(e, this);
                 for (String label : labeledObjects.keySet()) {
-                    split.setPath(split.path().extend(labeledObjects.get(label), new HashSet<>(Arrays.asList(label))));
+                    //If there are labels then it must be a B_O_P_S_SE_SL_Traverser
+                    B_O_P_S_SE_SL_Traverser b_o_p_s_se_sl_traverser = (B_O_P_S_SE_SL_Traverser)split;
+                    b_o_p_s_se_sl_traverser.setPath(split.path().extend(labeledObjects.get(label), new HashSet<>(Collections.singletonList(label))));
                 }
                 return split;
             } else {
-                this.head = (B_O_P_S_SE_SL_Traverser) this.starts.next();
+                this.head = this.starts.next();
                 this.iterator = this.flatMapCustom(this.head);
             }
         }
@@ -49,12 +51,11 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
     @Override
     public Set<String> getLabels() {
-        return Collections.EMPTY_SET;
+        return new HashSet<>();
     }
 
     protected Iterator<Pair<E, Map<String, Object>>> flatMapCustom(Traverser.Admin<S> traverser) {
-        Iterator<Pair<E, Map<String, Object>>> iter = traverser.get().elements(Collections.unmodifiableList(this.replacedSteps));
-        return iter;
+        return traverser.get().elements(Collections.unmodifiableList(this.replacedSteps));
     }
 
     @Override
@@ -68,9 +69,9 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         this.replacedSteps.add(replacedStep);
     }
 
-    public List<ReplacedStep<S, E>> getReplacedSteps() {
-        return Collections.unmodifiableList(replacedSteps);
-    }
+//    public List<ReplacedStep<S, E>> getReplacedSteps() {
+//        return Collections.unmodifiableList(replacedSteps);
+//    }
 
     @Override
     public void reset() {
