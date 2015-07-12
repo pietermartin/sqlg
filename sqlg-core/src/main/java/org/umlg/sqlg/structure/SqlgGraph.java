@@ -101,9 +101,7 @@ public class SqlgGraph implements Graph {
             this.jdbcUrl = configuration.getString("jdbc.url");
             SqlgDataSource.INSTANCE.setupDataSource(
                     sqlDialect.getJdbcDriver(),
-                    configuration.getString("jdbc.url"),
-                    configuration.getString("jdbc.username"),
-                    configuration.getString("jdbc.password"));
+                    configuration);
             this.sqlDialect.prepareDB(SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -223,6 +221,7 @@ public class SqlgGraph implements Graph {
             }
         }
     }
+
     public Vertex v(final Object id) {
         Iterator<Vertex> t = this.vertices(id);
         return t.hasNext() ? t.next() : null;

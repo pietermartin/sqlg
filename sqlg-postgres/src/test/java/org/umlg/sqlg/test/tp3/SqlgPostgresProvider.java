@@ -61,9 +61,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
         try {
             SqlgDataSource.INSTANCE.setupDataSource(
                     sqlDialect.getJdbcDriver(),
-                    configuration.getString("jdbc.url"),
-                    configuration.getString("jdbc.username"),
-                    configuration.getString("jdbc.password"));
+                    configuration);
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
