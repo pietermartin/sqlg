@@ -6,6 +6,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.Scope.local;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.unfold;
+
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -51,26 +52,48 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-//        final Traversal<Vertex, List<String>> traversal =  g.traversal()
-        final Traversal<Vertex, List<Vertex>> traversal =  g.traversal()
+        final Traversal<Vertex, String> traversal = g.traversal()
                 .V().as("a")
                 .out().as("a")
                 .out().as("a")
-                .select("a");
-//        .<List<String>>select("a");
-//                .by(unfold().values("name").fold())
-//                .range(local, 1, 2);
-
+                .<List<String>>select("a")
+                .by(unfold().values("name").fold())
+                .range(local, 1, 2);
         printTraversalForm(traversal);
         int counter = 0;
         while (traversal.hasNext()) {
-//            final List<String> s = traversal.next();
-            final List<Vertex> s = traversal.next();
+            final String s = traversal.next();
             Assert.assertEquals("josh", s);
             counter++;
         }
         Assert.assertEquals(2, counter);
     }
+
+//    @Test
+//    public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X_Simple() throws IOException {
+//        Graph g = this.sqlgGraph;
+//        final GraphReader reader = GryoReader.build()
+//                .mapper(g.io(GryoIo.build()).mapper().create())
+//                .create();
+//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+//            reader.readGraph(stream, g);
+//        }
+//        assertModernGraph(g, true, false);
+//        final Traversal<Vertex, List<Vertex>> traversal = g.traversal()
+//                .V().as("a")
+//                .out().as("a")
+//                .out().as("a")
+//                .select("a");
+//        printTraversalForm(traversal);
+//        int counter = 0;
+//        while (traversal.hasNext()) {
+//            final List<Vertex> s = traversal.next();
+//            Assert.assertEquals(3, s.size());
+//            System.out.println(s);
+//            counter++;
+//        }
+//        Assert.assertEquals(2, counter);
+//    }
 
 //    @Test
 //    public void g_V_hasXinXcreatedX_count_isXgte_2XX_valuesXnameX() throws IOException {

@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -231,7 +232,7 @@ public abstract class SqlgElement implements Element {
      * @param replacedSteps The original VertexStep and HasSteps that were replaced.
      * @return The result of the query.
 //     */
-    public <S, E> Iterator<Pair<E, Map<String, Object>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
+    public <S, E> Iterator<Pair<E, Multimap<String, Object>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
 //    public <S, E> Iterator<E> elements(List<ReplacedStep<S, E>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         return internalGetElements(replacedSteps);
@@ -244,13 +245,13 @@ public abstract class SqlgElement implements Element {
      * @param replacedSteps
      * @return The results of the query
      */
-    private <S, E> Iterator<Pair<E, Map<String, Object>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
+    private <S, E> Iterator<Pair<E, Multimap<String, Object>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
 //    private <S, E> Iterator<E> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         List<E> elements = new ArrayList<>();
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-        SqlgCompiledResultIterator<Pair<E, Map<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
+        SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
         for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
             Connection conn = this.sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
@@ -263,7 +264,7 @@ public abstract class SqlgElement implements Element {
                 while (resultSet.next()) {
                     //TODO sort out generics
 //                    loadElements(this.sqlgGraph, resultSet, sqlPair.getLeft().getLast().getSchemaTable(), (List<Element>) elements);
-                    Pair<E, Map<String, Object>> result = loadElementsXXX(this.sqlgGraph, resultSet, sqlPair.getLeft());
+                    Pair<E, Multimap<String, Object>> result = loadElementsXXX(this.sqlgGraph, resultSet, sqlPair.getLeft());
                     resultIterator.add(result);
                 }
             } catch (SQLException e) {
@@ -585,9 +586,9 @@ public abstract class SqlgElement implements Element {
         elements.add(sqlgElement);
     }
 
-    private static <E> Pair<E, Map<String, Object>> loadElementsXXX(SqlgGraph sqlgGraph, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    private static <E> Pair<E, Multimap<String, Object>> loadElementsXXX(SqlgGraph sqlgGraph, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         //First load all labeled entries from the resultSet
-        Map<String, Object> labeledResult = loadLabeledElements(sqlgGraph, resultSet, schemaTableTreeStack);
+        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, resultSet, schemaTableTreeStack);
         E e = loadElements(sqlgGraph, resultSet, schemaTableTreeStack);
         return Pair.of(e, labeledResult);
         //TODO why is it being cleared just after loading it??????
@@ -625,8 +626,8 @@ public abstract class SqlgElement implements Element {
 //        return (E) sqlgElement;
     }
 
-    private static Map<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        Map<String, Object> result = new HashMap<>();
+    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+        Multimap<String, Object> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
 //                String idProperty = schemaTableTree.getSchemaTable().getSchema() + "." + schemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID;

@@ -1,5 +1,6 @@
 package org.umlg.sqlg.strategy;
 
+import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -19,7 +20,7 @@ import java.util.*;
 public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep<S, E> {
 
     private Traverser.Admin<S> head = null;
-    private Iterator<Pair<E, Map<String, Object>>> iterator = EmptyIterator.instance();
+    private Iterator<Pair<E, Multimap<String, Object>>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
 
     public SqlgVertexStepCompiled(final Traversal.Admin traversal) {
@@ -30,16 +31,19 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     protected Traverser<E> processNextStart() {
         while (true) {
             if (this.iterator.hasNext()) {
-                Pair<E, Map<String, Object>> next = this.iterator.next();
+                Pair<E, Multimap<String, Object>> next = this.iterator.next();
                 E e = next.getLeft();
-                Map<String, Object> labeledObjects = next.getRight();
+                Multimap<String, Object> labeledObjects = next.getRight();
                 //split before setting the path.
                 //This is because the labels must be set on a unique path for every iteration.
                 Traverser.Admin<E> split = this.head.split(e, this);
                 for (String label : labeledObjects.keySet()) {
                     //If there are labels then it must be a B_O_P_S_SE_SL_Traverser
                     B_O_P_S_SE_SL_Traverser b_o_p_s_se_sl_traverser = (B_O_P_S_SE_SL_Traverser)split;
-                    b_o_p_s_se_sl_traverser.setPath(split.path().extend(labeledObjects.get(label), new HashSet<>(Collections.singletonList(label))));
+                    Collection<Object> labeledElements = labeledObjects.get(label);
+                    for (Object labeledElement : labeledElements) {
+                        b_o_p_s_se_sl_traverser.setPath(split.path().extend(labeledElement, Collections.singleton(label)));
+                    }
                 }
                 return split;
             } else {
@@ -54,7 +58,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         return new HashSet<>();
     }
 
-    protected Iterator<Pair<E, Map<String, Object>>> flatMapCustom(Traverser.Admin<S> traverser) {
+    protected Iterator<Pair<E, Multimap<String, Object>>> flatMapCustom(Traverser.Admin<S> traverser) {
         return traverser.get().elements(Collections.unmodifiableList(this.replacedSteps));
     }
 

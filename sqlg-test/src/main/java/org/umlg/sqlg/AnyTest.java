@@ -18,10 +18,10 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
 //        TestGremlinCompileE.class,
 //        TestGremlinCompileGraphV.class,
 //        TestGremlinCompileV.class,
-        TestGremlinCompileWithAs.class
+//        TestGremlinCompileWithAs.class
 //        TestGremlinCompileWithInOutV.class,
 //        TestLoadEdge.class,
-//        TestGremlinCompileWithHas.class
+        TestGremlinCompileWithHas.class
 })
 public class AnyTest {
 }
