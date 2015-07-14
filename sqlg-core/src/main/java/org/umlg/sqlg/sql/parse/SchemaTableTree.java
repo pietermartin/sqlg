@@ -512,6 +512,9 @@ public class SchemaTableTree {
                     sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
                     sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
             sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
+
+            sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
+
             printedId = firstSchemaTable == lastSchemaTable;
         }
 
@@ -940,6 +943,11 @@ public class SchemaTableTree {
 
                 //remove the hasContainer as the query is already fulfilling it.
                 toRemove.add(hasContainer);
+            } else {
+                //check if the hasContainer is for a property that exists, if not remove this node from the query tree
+                if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
+                    return true;
+                }
             }
         }
         schemaTableTree.hasContainers.removeAll(toRemove);
