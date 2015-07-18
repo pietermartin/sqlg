@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TestSetProperty;
 import org.umlg.sqlg.test.TinkerpopTest;
 import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
 import org.umlg.sqlg.test.batch.TestSpeed;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.edges.TestForeignKeysAreOptional;
@@ -17,7 +18,7 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TestBatchCompleteVertex.class
 })
 public class AnyTest {
 }

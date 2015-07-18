@@ -49,7 +49,7 @@ public class TestBatchCompleteVertex extends BaseTest {
         Assert.assertEquals(1000000l, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
     }
 
-    //    @Test
+//        @Test
     public void testMilRegularVertex() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
