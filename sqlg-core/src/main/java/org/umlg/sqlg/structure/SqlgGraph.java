@@ -151,6 +151,9 @@ public class SqlgGraph implements Graph {
      * @return
      */
     public Vertex addVertex(String label, Map<String, Object> keyValues) {
+        if (this.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addVertex. Please use addCompleteVertex");
+        }
         Map<Object, Object> tmp = new HashMap<>(keyValues);
         tmp.put(T.label, label);
         return addVertex(SqlgUtil.mapTokeyValues(tmp));
@@ -158,6 +161,9 @@ public class SqlgGraph implements Graph {
 
     @Override
     public Vertex addVertex(Object... keyValues) {
+        if (this.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addVertex. Please use addCompleteVertex");
+        }
         validateVertexKeysValues(keyValues);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
