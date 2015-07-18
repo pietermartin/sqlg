@@ -27,6 +27,18 @@ public class TestBatchCompleteVertex extends BaseTest {
     }
 
     @Test
+    public void testDoubleAddCompleteVertex(){
+        Map<String, Object> keyValue = new LinkedHashMap<>();
+        for (int j = 0; j < 100; j++) {
+            keyValue.put("name" + j, "aaaaaaaaaa" + j);
+        }
+        this.sqlgGraph.tx().batchModeOn(true);
+        this.sqlgGraph.addCompleteVertex("Person", keyValue);
+        this.sqlgGraph.addCompleteVertex("Persons", keyValue);
+        this.sqlgGraph.tx().commit();
+    }
+
+//    @Test
     public void testMilCompleteVertex() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
