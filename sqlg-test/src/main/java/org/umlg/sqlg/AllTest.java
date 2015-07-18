@@ -4,13 +4,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.TestBatch;
-import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
 import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
-import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
-import org.umlg.sqlg.test.edges.TestEdgeCache;
-import org.umlg.sqlg.test.edges.TestEdgeSchemaCreation;
-import org.umlg.sqlg.test.edges.TestOutE;
+import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileE;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
@@ -64,7 +60,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestIndex.class,
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
-//        TestBatch.class,
+        TestBatch.class,
         TestForeignKeyIndexPerformance.class,
         TestMultiThreadedBatch.class,
         TestRemoveEdge.class,
@@ -84,7 +80,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGremlinCompileE.class,
         TestEmptyGraph.class,
         TestOutE.class,
-        TestBatchCompleteVertex.class
+        TestForeignKeysAreOptional.class
 })
 public class AllTest {
 }

@@ -31,7 +31,7 @@ public enum PropertyType {
     private String javaClassName;
     private static final Map<String, PropertyType> javaClassNameToEnum = new HashMap<>();
 
-    private PropertyType(String javaClassName) {
+    PropertyType(String javaClassName) {
         this.javaClassName = javaClassName;
     }
 

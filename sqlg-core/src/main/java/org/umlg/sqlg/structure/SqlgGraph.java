@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Constructor;
 import java.sql.*;
@@ -40,6 +41,14 @@ import java.util.stream.Stream;
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest$Traversals",
         method = "g_V_out_out_profile_grateful",
         reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest$Traversals",
+        method = "testProfileStrategyCallback",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "Takes too long")
 public class SqlgGraph implements Graph {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
@@ -83,7 +92,7 @@ public class SqlgGraph implements Graph {
             logger.debug(String.format("Initializing Sqlg with %s dialect", sqlDialectClass.getSimpleName()));
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
-            this.implementForeignKeys = configuration.getBoolean("implementForeignKeys", true);
+            this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
             this.configuration = configuration;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -92,9 +101,7 @@ public class SqlgGraph implements Graph {
             this.jdbcUrl = configuration.getString("jdbc.url");
             SqlgDataSource.INSTANCE.setupDataSource(
                     sqlDialect.getJdbcDriver(),
-                    configuration.getString("jdbc.url"),
-                    configuration.getString("jdbc.username"),
-                    configuration.getString("jdbc.password"));
+                    configuration);
             this.sqlDialect.prepareDB(SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -247,6 +254,7 @@ public class SqlgGraph implements Graph {
             }
         }
     }
+
     public Vertex v(final Object id) {
         Iterator<Vertex> t = this.vertices(id);
         return t.hasNext() ? t.next() : null;

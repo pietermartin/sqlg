@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.batch;
 
 import org.apache.commons.lang.time.StopWatch;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -15,9 +16,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -916,7 +915,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(1000000, this.sqlgGraph.traversal().E().count().next().intValue());
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().batchModeOn();
-        vertexTraversal(v1).outE("test").remove();
+        vertexTraversal(v1).outE("test").forEachRemaining(Edge::remove);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1000001, this.sqlgGraph.traversal().V().count().next().intValue());
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
@@ -954,15 +953,68 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testBatchEdgeLoadPRoperty() {
+    public void testBatchEdgeLoadProperty() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
         this.sqlgGraph.tx().commit();
-
         this.sqlgGraph.tx().batchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD");
         Edge edgeToRoot = root.addEdge("edgeToRoot", god);
         edgeToRoot.property("className", "thisthatandanother");
         this.sqlgGraph.tx().commit();
+    }
+
+    @Test
+    public void testBatchArrayString() {
+        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new String[]{"name1", "name2"});
+        this.sqlgGraph.tx().commit();
+        god = this.sqlgGraph.traversal().V(god.id()).next();
+        Iterator<Object> array = god.values("array");
+        Assert.assertTrue(array.hasNext());
+        Object o = array.next();
+        Assert.assertTrue(o instanceof String[]);
+        List<String> list = Arrays.asList((String[]) o);
+        Assert.assertEquals(2, list.size());
+        Assert.assertTrue(list.contains("name1"));
+        Assert.assertTrue(list.contains("name2"));
+    }
+
+    @Test
+    public void testBatchArrayInteger() {
+        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new int[]{1, 2});
+        this.sqlgGraph.tx().commit();
+        god = this.sqlgGraph.traversal().V(god.id()).next();
+        Iterator<Object> array = god.values("array");
+        Assert.assertTrue(array.hasNext());
+        Object o = array.next();
+        Assert.assertTrue(o instanceof int[]);
+        List<Integer> list = Arrays.asList(ArrayUtils.toObject((int[]) o));
+        Assert.assertEquals(2, list.size());
+        Assert.assertTrue(list.contains(1));
+        Assert.assertTrue(list.contains(2));
+    }
+
+    @Test
+    public void testBatchArrayDouble() {
+        Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new double[]{1, 2});
+        this.sqlgGraph.tx().commit();
+        god = this.sqlgGraph.traversal().V(god.id()).next();
+        Iterator<Object> array = god.values("array");
+        Assert.assertTrue(array.hasNext());
+        Object o = array.next();
+        Assert.assertTrue(o instanceof double[]);
+        List<Double> list = Arrays.asList(ArrayUtils.toObject((double[]) o));
+        Assert.assertEquals(2, list.size());
+        Assert.assertTrue(list.contains(1d));
+        Assert.assertTrue(list.contains(2d));
     }
 
 }

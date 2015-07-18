@@ -1,6 +1,8 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,14 @@ public class SqlgDataSource {
         return this.cpdss.get(jdbcUrl);
     }
 
-    public void setupDataSource(String driver, String connectURI, String username, String password) throws PropertyVetoException {
+    public void setupDataSource(String driver, final Configuration configuration) throws PropertyVetoException {
+        Preconditions.checkState(configuration.containsKey("jdbc.url"));
+        Preconditions.checkState(configuration.containsKey("jdbc.username"));
+        Preconditions.checkState(configuration.containsKey("jdbc.password"));
+        String connectURI = configuration.getString("jdbc.url");
+        String username = configuration.getString("jdbc.username");
+        String password = configuration.getString("jdbc.password");
+
         if (this.cpdss.get(connectURI) != null) {
             return;
         }
@@ -35,8 +44,8 @@ public class SqlgDataSource {
         ComboPooledDataSource cpds = new ComboPooledDataSource();
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);
-        cpds.setMaxPoolSize(100);
-        cpds.setMaxIdleTime(500);
+        cpds.setMaxPoolSize(configuration.getInt("maxPoolSize", 100));
+        cpds.setMaxIdleTime(configuration.getInt("maxIdleTime", 500));
         if (!StringUtils.isEmpty(username)) {
             cpds.setUser(username);
         }

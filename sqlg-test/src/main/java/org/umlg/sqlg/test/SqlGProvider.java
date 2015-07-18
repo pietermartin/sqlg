@@ -53,9 +53,7 @@ public class SqlGProvider extends AbstractGraphProvider {
         try {
             SqlgDataSource.INSTANCE.setupDataSource(
                     configuration.getString("jdbc.driver"),
-                    configuration.getString("jdbc.url"),
-                    configuration.getString("jdbc.username"),
-                    configuration.getString("jdbc.password"));
+                    configuration);
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
