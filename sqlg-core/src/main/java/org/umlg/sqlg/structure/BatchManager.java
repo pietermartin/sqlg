@@ -163,6 +163,7 @@ public class BatchManager {
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
         this.completeVertexCache.values().forEach(o -> {
             try {
+                o.flush();
                 o.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
