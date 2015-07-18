@@ -145,7 +145,8 @@ public class SqlgGraph implements Graph {
 
     /**
      * Convenience method
-     * @param label The vertex's label
+     *
+     * @param label     The vertex's label
      * @param keyValues The attribute map.
      * @return
      */
@@ -167,6 +168,7 @@ public class SqlgGraph implements Graph {
 
     /**
      * Only to be called when batchMode is on
+     *
      * @param label
      * @param keyValues
      * @return
@@ -175,12 +177,21 @@ public class SqlgGraph implements Graph {
         if (!this.tx().isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
         }
+        if (!this.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteVertex");
+        }
         Map<Object, Object> tmp = new HashMap<>(keyValues);
         tmp.put(T.label, label);
         return addCompleteVertex(SqlgUtil.mapTokeyValues(tmp));
     }
 
     private Vertex addCompleteVertex(Object... keyValues) {
+        if (!this.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
+        }
+        if (!this.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteVertex");
+        }
         validateVertexKeysValues(keyValues);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());

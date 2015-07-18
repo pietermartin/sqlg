@@ -21,7 +21,12 @@ public class BatchManager {
     //This is postgres's default copy command null value
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
-    private boolean batchModeOn = false;
+
+    public enum BatchModeType {
+        NONE, NORMAL, COMPLETE
+    }
+
+    private BatchModeType batchModeType = BatchModeType.NONE;
 
     //map per label/keys, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache = new LinkedHashMap<>();
@@ -47,12 +52,28 @@ public class BatchManager {
         this.sqlDialect = sqlDialect;
     }
 
-    public boolean isBatchModeOn() {
-        return batchModeOn;
+    public boolean isBatchModeNormal() {
+        return this.batchModeType == BatchModeType.NORMAL;
+    }
+
+    public boolean isBatchModeComplete() {
+        return this.batchModeType == BatchModeType.COMPLETE;
+    }
+
+    public boolean isBatchModeOn(){
+        return (this.batchModeType == BatchModeType.NORMAL) || (this.batchModeType == BatchModeType.COMPLETE);
+    }
+
+    public void batchModeOn(boolean completeBatchModeOn) {
+        if (completeBatchModeOn == true) {
+            this.batchModeType = BatchModeType.COMPLETE;
+        } else {
+            this.batchModeType = BatchModeType.NORMAL;
+        }
     }
 
     public void batchModeOn() {
-        this.batchModeOn = true;
+        batchModeOn(false);
     }
 
     public synchronized void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
@@ -71,6 +92,7 @@ public class BatchManager {
             try {
                 PipedOutputStream out = this.completeVertexCache.get(schemaTable);
                 if (out == null) {
+                    //Cache outputStream per Table.
                     out = new PipedOutputStream();
                     this.completeVertexCache.put(schemaTable, out);
                     this.sqlDialect.copyIn(this.sqlgGraph, vertex, keyValueMap, new PipedInputStream(out));

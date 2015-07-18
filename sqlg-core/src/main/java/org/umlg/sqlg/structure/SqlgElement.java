@@ -38,8 +38,10 @@ public abstract class SqlgElement implements Element {
         this.sqlgGraph = sqlgGraph;
         this.schema = schema;
         this.table = table;
-        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        if(!sqlgGraph.tx().isInBatchModeComplete()){
+            this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        }
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -50,8 +52,10 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
-        this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        if(!sqlgGraph.tx().isInBatchModeComplete()){
+            this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
+            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        }
     }
 
     @Override

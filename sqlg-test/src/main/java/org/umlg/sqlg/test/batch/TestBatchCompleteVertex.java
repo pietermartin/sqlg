@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class TestBatchCompleteVertex extends BaseTest {
 
-//    @Test
+    //    @Test
     public void testCompleteVertex() {
         this.sqlgGraph.tx().batchModeOn();
         Map<String, Object> keyValue = new LinkedHashMap<>();
@@ -30,26 +30,26 @@ public class TestBatchCompleteVertex extends BaseTest {
     public void testMilCompleteVertex() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().batchModeOn(true);
         for (int i = 1; i < 1000001; i++) {
             Map<String, Object> keyValue = new LinkedHashMap<>();
-            for (int j = 0; j < 10; j++) {
-                keyValue.put("name" + j, "a" + i);
+            for (int j = 0; j < 100; j++) {
+                keyValue.put("name" + j, "aaaaaaaaaa" + i);
             }
             this.sqlgGraph.addCompleteVertex("Person", keyValue);
 //            if (i % 250000 == 0) {
 //                this.sqlgGraph.tx().commit();
-//                this.sqlgGraph.tx().batchModeOn();
+//                this.sqlgGraph.tx().batchModeOn(true);
 //                System.out.println(i);
 //            }
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
-        Assert.assertEquals(1000000l, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
+//        Assert.assertEquals(1000000l, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
     }
 
-//        @Test
+    //        @Test
     public void testMilRegularVertex() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -63,7 +63,7 @@ public class TestBatchCompleteVertex extends BaseTest {
             if (i % 100000 == 0) {
                 this.sqlgGraph.tx().commit();
                 this.sqlgGraph.tx().batchModeOn();
-                System.out.println(i);
+//                System.out.println(i);
             }
         }
         this.sqlgGraph.tx().commit();

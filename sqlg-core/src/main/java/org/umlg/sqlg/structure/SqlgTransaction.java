@@ -131,6 +131,18 @@ public class SqlgTransaction extends AbstractTransaction {
         }
     }
 
+    public void batchModeOn(boolean completeBatchModeOn) {
+        if (this.sqlgGraph.features().supportsBatchMode()) {
+            if (isOpen()) {
+                throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
+            }
+            readWrite();
+            threadLocalTx.get().getBatchManager().batchModeOn(completeBatchModeOn);
+        } else {
+            throw new IllegalStateException("Batch mode not supported!");
+        }
+    }
+
     public void batchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             if (isOpen()) {
@@ -145,6 +157,14 @@ public class SqlgTransaction extends AbstractTransaction {
 
     public boolean isInBatchMode() {
         return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeOn();
+    }
+
+    public boolean isInBatchModeNormal() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeNormal();
+    }
+
+    public boolean isInBatchModeComplete() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeComplete();
     }
 
     public BatchManager getBatchManager() {
