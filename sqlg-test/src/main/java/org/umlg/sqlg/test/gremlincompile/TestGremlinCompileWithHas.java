@@ -1,5 +1,8 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.Scope.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -36,6 +39,23 @@ import java.util.stream.Collectors;
  * Time: 6:22 AM
  */
 public class TestGremlinCompileWithHas extends BaseTest {
+
+    @Test
+    public void g_VX1AsStringX_out_hasXid_2AsStringX() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(convertToVertexId("marko")).out().hasId(convertToVertexId("vadas"));
+        printTraversalForm(traversal);
+        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(true));
+        Assert.assertEquals(convertToVertexId("vadas"), traversal.next().id());
+        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
+    }
 
     @Test
     public void g_VX4X_out_asXhereX_hasXlang_javaX_selectXhereX_name() throws IOException {

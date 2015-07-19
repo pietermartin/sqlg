@@ -73,9 +73,10 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         this.replacedSteps.add(replacedStep);
     }
 
-//    public List<ReplacedStep<S, E>> getReplacedSteps() {
-//        return Collections.unmodifiableList(replacedSteps);
-//    }
+    //This is only used in tests, think about, delete?
+    public List<ReplacedStep<S, E>> getReplacedSteps() {
+        return Collections.unmodifiableList(replacedSteps);
+    }
 
     @Override
     public void reset() {

@@ -943,7 +943,7 @@ public class SchemaTableTree {
 
                 //remove the hasContainer as the query is already fulfilling it.
                 toRemove.add(hasContainer);
-            } else {
+            } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
                 //check if the hasContainer is for a property that exists, if not remove this node from the query tree
                 if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                     return true;

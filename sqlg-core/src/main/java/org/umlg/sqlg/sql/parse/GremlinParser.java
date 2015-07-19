@@ -1,14 +1,11 @@
 package org.umlg.sqlg.sql.parse;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -18,11 +15,9 @@ import java.util.Set;
 public class GremlinParser<S extends Element, E extends Element> {
 
     private SqlgGraph sqlgGraph;
-    private SchemaManager schemaManager;
 
     public GremlinParser(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
-        this.schemaManager = sqlgGraph.getSchemaManager();
     }
 
 
@@ -47,8 +42,5 @@ public class GremlinParser<S extends Element, E extends Element> {
         rootSchemaTableTree.removeNodesInvalidatedByHas();
         return rootSchemaTableTree;
     }
-
-
-
 
 }
