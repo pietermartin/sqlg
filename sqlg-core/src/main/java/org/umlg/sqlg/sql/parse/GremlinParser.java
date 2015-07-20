@@ -22,6 +22,29 @@ public class GremlinParser<S extends Element, E extends Element> {
 
 
     /**
+     * This is for the GraphStep
+     * The first replacedStep has the starting SchemaTable is the starting point
+     * @param replacedSteps
+     * @return
+     */
+    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
+        ReplacedStep startReplacedStep = replacedSteps.remove(0);
+        Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph);
+        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
+            schemaTableTrees.add(rootSchemaTableTree);
+            for (ReplacedStep<S, E> replacedStep : replacedSteps) {
+                //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
+                schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+            }
+            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size() + 1);
+            rootSchemaTableTree.removeNodesInvalidatedByHas();
+        }
+        return rootSchemaTableTrees;
+
+    }
+
+    /**
      * Constructs the label paths from the given schemaTable to the leaf vertex labels for the gremlin query.
      * For each path Sqlg will execute a sql query. The union of the queries is the result the gremlin query.
      * The vertex labels can be calculated from the steps.

@@ -3,13 +3,12 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
@@ -22,27 +21,22 @@ import java.util.stream.Collectors;
 public class ReplacedStep<S, E> {
 
     private SchemaManager schemaManager;
-    private FlatMapStep<S, E> step;
+    private AbstractStep<S, E> step;
     private List<HasContainer> hasContainers;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
 
-    public static <S, E> ReplacedStep from(SchemaManager schemaManager, FlatMapStep<S, E> flatMapStep, List<HasContainer> hasContainers) {
+    public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, List<HasContainer> hasContainers) {
         ReplacedStep replacedStep = new ReplacedStep<>();
-        replacedStep.step = flatMapStep;
+        replacedStep.step = step;
         replacedStep.hasContainers = hasContainers;
         replacedStep.schemaManager = schemaManager;
         return replacedStep;
     }
 
-    public FlatMapStep<S, E> getStep() {
-        return step;
-    }
-
     public List<HasContainer> getHasContainers() {
         return hasContainers;
     }
-
 
     public Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
         if (this.step instanceof VertexStep) {
@@ -60,7 +54,7 @@ public class ReplacedStep<S, E> {
     }
 
     private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree) {
-        Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable());
+        Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found");
 
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.schemaManager.getTableLabels(schemaTableTree.getSchemaTable());
@@ -218,8 +212,7 @@ public class ReplacedStep<S, E> {
                 result.add(schemaTableTree1);
             }
         }
-        Set<SchemaTableTree> filteredResult = filterVertexOnIdHasContainers(result);
-        return filteredResult;
+        return filterVertexOnIdHasContainers(result);
     }
 
     public Set<SchemaTableTree> calculatePathForStep(Set<SchemaTableTree> schemaTableTrees) {
@@ -261,5 +254,21 @@ public class ReplacedStep<S, E> {
     @Override
     public String toString() {
         return this.step.toString() + " :: " + this.hasContainers.toString();
+    }
+
+    public boolean isGraphStep() {
+        return this.step instanceof GraphStep;
+    }
+
+    public Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
+        Set<SchemaTableTree> result = new HashSet<>();
+        this.hasContainers.stream().filter(h->h.getKey().equals(T.label.getAccessor())).map(h->h.getValue()).forEach(label->{
+            SchemaTable schemaTable = SchemaTable.from(sqlgGraph, SchemaManager.VERTEX_PREFIX + label, sqlgGraph.getSqlDialect().getPublicSchema());
+            SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
+            schemaTableTree.setHasContainers(this.hasContainers);
+            schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
+            result.add(schemaTableTree);
+        });
+        return result;
     }
 }

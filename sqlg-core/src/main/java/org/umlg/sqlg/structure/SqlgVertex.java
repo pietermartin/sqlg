@@ -424,7 +424,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
+            SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
@@ -604,7 +604,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 }
                                 Map<String, Object> keyValues = new HashMap<>();
                                 keyValues.put(hasContainer.getKey(), hasContainer.getValue());
-                                SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
+                                SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
                             }
                             ResultSet resultSet = preparedStatement.executeQuery();
                             while (resultSet.next()) {
@@ -804,7 +804,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    @Override
+    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
@@ -822,7 +823,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    @Override
+    public void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
@@ -842,7 +844,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    void loadResultSet(ResultSet resultSet) throws SQLException {
+    @Override
+    public void loadResultSet(ResultSet resultSet) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);

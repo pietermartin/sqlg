@@ -155,7 +155,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            i = setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
+            i = SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
             preparedStatement.setLong(i++, this.inVertex.recordId.getId());
             preparedStatement.setLong(i++, this.outVertex.recordId.getId());
             preparedStatement.executeUpdate();
@@ -204,7 +204,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    @Override
+    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         SchemaTable inVertexColumnName;
         SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -237,7 +238,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    @Override
+    public void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         SchemaTable inVertexColumnName;
         SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -271,7 +273,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    void loadResultSet(ResultSet resultSet) throws SQLException {
+    @Override
+    public void loadResultSet(ResultSet resultSet) throws SQLException {
         SchemaTable inVertexColumnName = null;
         SchemaTable outVertexColumnName = null;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();

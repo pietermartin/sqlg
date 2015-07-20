@@ -1,13 +1,13 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -16,17 +16,17 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.*;
-import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Date: 2014/08/15
  * Time: 7:34 PM
  */
 //TODO optimize Order step as that is used in UMLG for Sequences
-public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
+public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
-    private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(Compare.eq);
     private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
@@ -36,6 +36,7 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
+        //TODO why is this id statement here????
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
 
@@ -82,11 +83,8 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
             ListIterator<Step> stepIterator = steps.listIterator();
             while (stepIterator.hasNext()) {
                 Step step = stepIterator.next();
-                //the label check is to ignore any 'as('x')' gremlin for now
-                //if there is path() steps then the optimizations can not be used.
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
-                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass()) /* && stepHasNoLabels(step) */ ) {
-//                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                     if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
                         ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (FlatMapStep<?, ?>) step, new ArrayList<>());
                         if (previous == null) {
@@ -110,40 +108,8 @@ public class SqlgVertexStepStrategy extends AbstractTraversalStrategy<TraversalS
 
     }
 
-    private boolean stepHasNoLabels(Step step) {
-        return step.getLabels().isEmpty();
+    @Override
+    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
+        return Stream.of(SqlgGraphStepStrategy.class).collect(Collectors.toSet());
     }
-
-    private boolean mayNotBeOptimized(List<Step> steps, int index) {
-        List<Step> toCome = steps.subList(index, steps.size());
-        return toCome.stream().anyMatch(s ->
-                s.getClass().equals(PathStep.class) ||
-                        s.getClass().equals(TreeStep.class) ||
-                        s.getClass().equals(TreeSideEffectStep.class) ||
-                        s.getClass().equals(Order.class) ||
-                        (s.getClass().equals(HasStep.class) && !s.getLabels().isEmpty()));
-    }
-
-    private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> stepPair) {
-        //Collect the hasSteps
-        while (iterator.hasNext()) {
-            Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).getBiPredicate())) {
-                if (!currentStep.getLabels().isEmpty()) {
-                    final IdentityStep identityStep = new IdentityStep<>(traversal);
-                    currentStep.getLabels().forEach(identityStep::addLabel);
-                    TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-                }
-                iterator.remove();
-                traversal.removeStep(currentStep);
-                stepPair.getHasContainers().addAll(((HasContainerHolder) currentStep).getHasContainers());
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing
-            } else {
-                iterator.previous();
-                break;
-            }
-        }
-    }
-
 }

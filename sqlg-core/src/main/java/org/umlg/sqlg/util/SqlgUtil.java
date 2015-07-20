@@ -1,16 +1,22 @@
 package org.umlg.sqlg.util;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.structure.*;
 
 import java.lang.reflect.Array;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +50,140 @@ public class SqlgUtil {
         return result;
     }
 
+    public static <E> Pair<E, Multimap<String, Object>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+        //First load all labeled entries from the resultSet
+        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, resultSet, schemaTableTreeStack);
+        E e = loadElements(sqlgGraph, resultSet, schemaTableTreeStack);
+        return Pair.of(e, labeledResult);
+        //TODO why is it being cleared just after loading it??????
+//        sqlgElement.properties.clear();
+    }
+
+    private static <E> E loadElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+        SchemaTable schemaTable = schemaTableTreeStack.getLast().getSchemaTable();
+        String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
+        Long id = resultSet.getLong(idProperty);
+        SqlgElement sqlgElement;
+        if (schemaTable.isVertexTable()) {
+            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+        } else {
+            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+        }
+        sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
+        return (E) sqlgElement;
+    }
+
+    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+        Multimap<String, Object> result = ArrayListMultimap.create();
+        for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
+            if (!schemaTableTree.getLabels().isEmpty()) {
+                String idProperty = schemaTableTree.labeledAliasId();
+                Long id = resultSet.getLong(idProperty);
+                SqlgElement sqlgElement;
+                String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+                if (schemaTableTree.getSchemaTable().isVertexTable()) {
+                    sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                } else {
+                    sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                }
+                sqlgElement.loadLabeledResultSet(resultSet, schemaTableTree);
+                schemaTableTree.getLabels().forEach(l->result.put(l, sqlgElement));
+            }
+        }
+        return result;
+    }
+
+    public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement) throws SQLException {
+        //start the index at 2 as sql starts at 1 and the first is the id that is already set.
+        int parameterIndex = 2;
+        Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
+        for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
+            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
+                keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
+            }
+        }
+        SqlgUtil.setKeyValuesAsParameter(sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);
+    }
+
+    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
+        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
+        i = setKeyValueAsParameter(sqlgGraph, i, conn, preparedStatement, typeAndValues);
+        return i;
+    }
+
+    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, Multimap<String, Object> keyValues) throws SQLException {
+        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
+        return setKeyValueAsParameter(sqlgGraph, parameterStartIndex, conn, preparedStatement, typeAndValues);
+    }
+
+    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
+        for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
+            switch (pair.left) {
+                case BOOLEAN:
+                    preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
+                    break;
+                case BYTE:
+                    preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
+                    break;
+                case SHORT:
+                    preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
+                    break;
+                case INTEGER:
+                    preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
+                    break;
+                case LONG:
+                    preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
+                    break;
+                case FLOAT:
+                    preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
+                    break;
+                case DOUBLE:
+                    preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
+                    break;
+                case STRING:
+                    preparedStatement.setString(parameterStartIndex++, (String) pair.right);
+                    break;
+
+                //TODO the array properties are hardcoded according to postgres's jdbc driver
+                case BOOLEAN_ARRAY:
+                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, booleanArray);
+                    break;
+                case BYTE_ARRAY:
+                    preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
+                    break;
+                case SHORT_ARRAY:
+                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, shortArray);
+                    break;
+                case INTEGER_ARRAY:
+                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, intArray);
+                    break;
+                case LONG_ARRAY:
+                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, longArray);
+                    break;
+                case FLOAT_ARRAY:
+                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, floatArray);
+                    break;
+                case DOUBLE_ARRAY:
+                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, doubleArray);
+                    break;
+                case STRING_ARRAY:
+                    java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, stringArray);
+                    break;
+                default:
+                    throw new IllegalStateException("Unhandled type " + pair.left.name());
+            }
+        }
+        return parameterStartIndex;
+    }
 
     public static SchemaTable parseLabel(final String label) {
         Objects.requireNonNull(label, "label may not be null!");

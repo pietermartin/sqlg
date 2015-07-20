@@ -71,7 +71,8 @@ public class SqlgGraph implements Graph {
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgVertexStepStrategy.class);
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(SqlgGraphStepStrategy.instance()));
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy(sqlgGraph)));
+
         return (G) sqlgGraph;
     }
 

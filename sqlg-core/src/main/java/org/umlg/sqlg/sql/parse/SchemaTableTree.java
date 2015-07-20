@@ -25,13 +25,20 @@ public class SchemaTableTree {
     private SchemaTableTree parent;
     //The root node does not have a direction. For the other nodes it indicates the direction from its parent to it.
     private Direction direction;
-    private boolean isEdgeVertexStep;
+    private STEP_TYPE stepType;
     private List<SchemaTableTree> children = new ArrayList<>();
     private SqlgGraph sqlgGraph;
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
     private Set<String> labels;
+
+
+    enum STEP_TYPE {
+        GRAPH_STEP,
+        VERTEX_STEP,
+        EDGE_VERTEX_STEP
+    }
 
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth) {
         this.sqlgGraph = sqlgGraph;
@@ -58,7 +65,7 @@ public class SchemaTableTree {
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
         this.children.add(schemaTableTree);
-        schemaTableTree.isEdgeVertexStep = isEdgeVertexStep;
+        schemaTableTree.stepType = isEdgeVertexStep ? STEP_TYPE.EDGE_VERTEX_STEP : STEP_TYPE.VERTEX_STEP;
         schemaTableTree.labels = labels;
         return schemaTableTree;
     }
@@ -214,7 +221,7 @@ public class SchemaTableTree {
 
         String result;
         if (fromSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
-            if (toSchemaTableTree.isEdgeVertexStep) {
+            if (toSchemaTableTree.isEdgeVertexStep()) {
                 if (toSchemaTableTree.direction == Direction.OUT) {
                     result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
                             toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
@@ -284,7 +291,7 @@ public class SchemaTableTree {
         }
 
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
-        if (lastOfPrevious == null) {
+        if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             singlePathSql += " WHERE ";
             singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
             singlePathSql += ".";
@@ -452,7 +459,7 @@ public class SchemaTableTree {
                 sql += ", ";
             }
             if (nextSchemaTableTree.direction == Direction.OUT) {
-                if (nextSchemaTableTree.isEdgeVertexStep) {
+                if (nextSchemaTableTree.isEdgeVertexStep()) {
                     sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
                             sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
                             sqlgGraph.getSqlDialect().maybeWrapInQoutes(
@@ -478,7 +485,7 @@ public class SchemaTableTree {
                     sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
                 }
             } else {
-                if (nextSchemaTableTree.isEdgeVertexStep) {
+                if (nextSchemaTableTree.isEdgeVertexStep()) {
                     sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
                             sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
                             sqlgGraph.getSqlDialect().maybeWrapInQoutes(
@@ -860,7 +867,7 @@ public class SchemaTableTree {
             joinSql += ".";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getTable());
             joinSql += ".";
-            if (labelToTraversTree.isEdgeVertexStep) {
+            if (labelToTraversTree.isEdgeVertexStep()) {
                 joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema() + "." +
                         rawLabelToTravers + (labelToTraversTree.getDirection() == Direction.OUT ? SchemaManager.OUT_VERTEX_COLUMN_END : SchemaManager.IN_VERTEX_COLUMN_END));
             } else {
@@ -976,7 +983,7 @@ public class SchemaTableTree {
                 .append(this.stepDepth).append(" ")
                 .append(this.hasContainers.toString()).append(" ")
                 .append(this.direction != null ? this.direction.toString() : "").append(" ")
-                .append("isVertexStep = ").append(this.isEdgeVertexStep)
+                .append("isVertexStep = ").append(this.isEdgeVertexStep())
                 .append(" labels = ").append(this.labels);
         for (SchemaTableTree child : children) {
             child.internalToString(sb);
@@ -993,6 +1000,10 @@ public class SchemaTableTree {
 
     public List<HasContainer> getHasContainers() {
         return hasContainers;
+    }
+
+    public void setHasContainers(List<HasContainer> hasContainers) {
+        this.hasContainers = hasContainers;
     }
 
     public int depth() {
@@ -1099,5 +1110,13 @@ public class SchemaTableTree {
 
     public Set<String> getLabels() {
         return labels;
+    }
+
+    public boolean isEdgeVertexStep() {
+        return this.stepType == STEP_TYPE.EDGE_VERTEX_STEP;
+    }
+
+    void setStepType(STEP_TYPE stepType) {
+        this.stepType = stepType;
     }
 }

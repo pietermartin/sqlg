@@ -1,11 +1,8 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -233,7 +230,6 @@ public abstract class SqlgElement implements Element {
      * @return The result of the query.
 //     */
     public <S, E> Iterator<Pair<E, Multimap<String, Object>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
-//    public <S, E> Iterator<E> elements(List<ReplacedStep<S, E>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         return internalGetElements(replacedSteps);
     }
@@ -246,8 +242,6 @@ public abstract class SqlgElement implements Element {
      * @return The results of the query
      */
     private <S, E> Iterator<Pair<E, Multimap<String, Object>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
-//    private <S, E> Iterator<E> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
-        List<E> elements = new ArrayList<>();
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
@@ -259,34 +253,18 @@ public abstract class SqlgElement implements Element {
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
                 preparedStatement.setLong(1, this.recordId.getId());
-                setParametersOnStatement(sqlPair.getLeft(), conn, preparedStatement);
+                SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
-                    //TODO sort out generics
-//                    loadElements(this.sqlgGraph, resultSet, sqlPair.getLeft().getLast().getSchemaTable(), (List<Element>) elements);
-                    Pair<E, Multimap<String, Object>> result = loadElementsXXX(this.sqlgGraph, resultSet, sqlPair.getLeft());
+                    Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSet, sqlPair.getLeft());
                     resultIterator.add(result);
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         }
-//        return elements.iterator();
         return resultIterator;
     }
-
-    private void setParametersOnStatement(LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement) throws SQLException {
-        //start the index at 2 as sql starts at 1 and the first is the id that is already set.
-        int parameterIndex = 2;
-        Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
-        for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
-            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
-            }
-        }
-        SqlgElement.setKeyValuesAsParameter(this.sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);
-    }
-
 
     @Override
     public boolean equals(final Object object) {
@@ -337,7 +315,7 @@ public abstract class SqlgElement implements Element {
                 case Types.TINYINT:
                     return copyToTinyInt((Integer[]) value, new byte[value.length]);
                 case Types.SMALLINT:
-                    return copyToSmallInt((Integer[]) value, new short[value.length]);
+                    return copyToSmallInt(value, new short[value.length]);
                 default:
                     return copy(value, new int[value.length]);
             }
@@ -540,75 +518,34 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    abstract void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
-    abstract void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
-    abstract void loadResultSet(ResultSet resultSet) throws SQLException;
+    public abstract void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
+    public abstract void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
+    public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
-    /**
-     * This will create SqlgVertex from the resultSet.
-     * Note that the nature of inner join queries on multiple tables creates duplicates.
-     * This method filters out duplicates.
-     *
-     * @param resultSet
-     * @param schemaTable
-     * @param elements
-     * @throws SQLException
-     */
-    private static void loadElements(SqlgGraph sqlgGraph, ResultSet resultSet, SchemaTable schemaTable, List<Element> elements) throws SQLException {
-        String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
-        Long id = resultSet.getLong(idProperty);
-        SqlgElement sqlgElement;
-        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-        } else {
-            if (!schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
-                throw new IllegalStateException("Expected table to start with " + SchemaManager.EDGE_PREFIX);
-            }
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
-            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-        }
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnLabel(i);
-            Object o = resultSet.getObject(columnName);
-            if (!columnName.equals("ID")
-                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
-                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
-                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
-                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
-                    && !Objects.isNull(o)) {
-
-                sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
-            }
-        }
-        sqlgElement.properties.clear();
-        elements.add(sqlgElement);
-    }
-
-    private static <E> Pair<E, Multimap<String, Object>> loadElementsXXX(SqlgGraph sqlgGraph, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        //First load all labeled entries from the resultSet
-        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, resultSet, schemaTableTreeStack);
-        E e = loadElements(sqlgGraph, resultSet, schemaTableTreeStack);
-        return Pair.of(e, labeledResult);
-        //TODO why is it being cleared just after loading it??????
-//        sqlgElement.properties.clear();
-    }
-
-    private static <E> E loadElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        SchemaTable schemaTable = schemaTableTreeStack.getLast().getSchemaTable();
-        String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
-        Long id = resultSet.getLong(idProperty);
-        SqlgElement sqlgElement;
-        if (schemaTable.isVertexTable()) {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-        } else {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
-            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-        }
-        sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
-        return (E) sqlgElement;
+//    /**
+//     * This will create SqlgVertex from the resultSet.
+//     * Note that the nature of inner join queries on multiple tables creates duplicates.
+//     * This method filters out duplicates.
+//     *
+//     * @param resultSet
+//     * @param schemaTable
+//     * @param elements
+//     * @throws SQLException
+//     */
+//    private static void loadElements(SqlgGraph sqlgGraph, ResultSet resultSet, SchemaTable schemaTable, List<Element> elements) throws SQLException {
+//        String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
+//        Long id = resultSet.getLong(idProperty);
+//        SqlgElement sqlgElement;
+//        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+//            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+//            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+//        } else {
+//            if (!schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
+//                throw new IllegalStateException("Expected table to start with " + SchemaManager.EDGE_PREFIX);
+//            }
+//            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+//            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+//        }
 //        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 //        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
 //            String columnName = resultSetMetaData.getColumnLabel(i);
@@ -623,44 +560,8 @@ public abstract class SqlgElement implements Element {
 //                sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
 //            }
 //        }
-//        return (E) sqlgElement;
-    }
+//        sqlgElement.properties.clear();
+//        elements.add(sqlgElement);
+//    }
 
-    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        Multimap<String, Object> result = ArrayListMultimap.create();
-        for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
-            if (!schemaTableTree.getLabels().isEmpty()) {
-//                String idProperty = schemaTableTree.getSchemaTable().getSchema() + "." + schemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID;
-                String idProperty = schemaTableTree.labeledAliasId();
-                Long id = resultSet.getLong(idProperty);
-                SqlgElement sqlgElement;
-                String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-                if (schemaTableTree.getSchemaTable().isVertexTable()) {
-                    sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                } else {
-                    sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                }
-                sqlgElement.loadLabeledResultSet(resultSet, schemaTableTree);
-//                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-//                for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-//                    String columnName = resultSetMetaData.getColumnLabel(i);
-//                    Object o = resultSet.getObject(columnName);
-//                    if (columnName.startsWith(schemaTableTree.reducedLabels() + ".")) {
-//                        String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-//                        if (!name.equals("ID")
-//                                && !name.equals(SchemaManager.VERTEX_IN_LABELS)
-//                                && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
-//                                && !name.equals(SchemaManager.VERTEX_SCHEMA)
-//                                && !name.equals(SchemaManager.VERTEX_TABLE)
-//                                && !Objects.isNull(o)) {
-//
-//                            sqlgElement.loadProperty(resultSetMetaData, i, name, o);
-//                        }
-//                    }
-//                }
-                schemaTableTree.getLabels().forEach(l->result.put(l, sqlgElement));
-            }
-        }
-        return result;
-    }
 }

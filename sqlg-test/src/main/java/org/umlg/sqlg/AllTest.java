@@ -80,7 +80,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestOutE.class,
         TestForeignKeysAreOptional.class,
         TestGremlinCompileWithAs.class,
-        TestGremlinCompileWithInOutV.class
+        TestGremlinCompileWithInOutV.class,
+        TestGremlinCompileGraphStep.class
 })
 public class AllTest {
 }
