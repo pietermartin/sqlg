@@ -70,8 +70,9 @@ public class SqlgGraph implements Graph {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
-        //TODO why is this remove here?????
+        //The removals are here for unit test, as its stored statically
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgVertexStepStrategy.class);
+        TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgGraphStepStrategy.class);
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy(sqlgGraph)));
 

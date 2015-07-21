@@ -268,11 +268,12 @@ public class ReplacedStep<S, E> {
 
     public Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
         Set<SchemaTableTree> result = new HashSet<>();
-        this.hasContainers.stream().filter(h->h.getKey().equals(T.label.getAccessor())).map(h->h.getValue()).forEach(label->{
+        this.hasContainers.stream().filter(h->h.getKey().equals(T.label.getAccessor())).map(HasContainer::getValue).forEach(label->{
             SchemaTable schemaTable = SchemaTable.from(sqlgGraph, SchemaManager.VERTEX_PREFIX + label, sqlgGraph.getSqlDialect().getPublicSchema());
             SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
             schemaTableTree.setHasContainers(this.hasContainers);
             schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
+            schemaTableTree.labels = ReplacedStep.this.labels;
             result.add(schemaTableTree);
         });
         return result;

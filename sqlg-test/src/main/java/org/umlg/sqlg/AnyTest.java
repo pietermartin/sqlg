@@ -15,14 +15,14 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestGremlinCompileE.class,
-//        TestGremlinCompileGraphV.class,
-//        TestGremlinCompileV.class,
-//        TestGremlinCompileWithAs.class
-//        TestGremlinCompileWithInOutV.class,
-//        TestLoadEdge.class,
-//        TestGremlinCompileWithHas.class
-//        TestGremlinCompileGraphStep.class
+        TestGremlinCompileE.class,
+        TestGremlinCompileGraphV.class,
+        TestGremlinCompileV.class,
+        TestGremlinCompileWithAs.class,
+        TestGremlinCompileWithInOutV.class,
+        TestLoadEdge.class,
+        TestGremlinCompileWithHas.class,
+        TestGremlinCompileGraphStep.class,
         TestGremlinCompileWithAs.class
 })
 public class AnyTest {

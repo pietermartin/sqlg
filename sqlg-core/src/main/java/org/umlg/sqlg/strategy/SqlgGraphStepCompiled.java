@@ -42,9 +42,9 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         this.sqlgGraph = sqlgGraph;
         if ((this.ids.length == 0 || !(this.ids[0] instanceof Element))) {
             if (Vertex.class.isAssignableFrom(this.returnClass)) {
-                this.iteratorSupplier = this::vertices;
+                this.iteratorSupplier = this::elements;
             } else {
-                this.iteratorSupplier = this::edges;
+                this.iteratorSupplier = this::elements;
             }
         }
     }
@@ -72,7 +72,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         return null;
     }
 
-    private Iterator<Pair<E, Multimap<String, Object>>> vertices() {
+    private Iterator<Pair<E, Multimap<String, Object>>> elements() {
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);

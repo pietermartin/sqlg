@@ -48,16 +48,17 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         GraphTraversalSource g = this.sqlgGraph.traversal();
         List<Vertex> vertexes = g.V().hasLabel("A").out("ab").toList();
         Assert.assertEquals(9, vertexes.size());
-        for (Vertex vertex : vertexes) {
-            System.out.println(vertex);
-        }
         Assert.assertEquals(9, vertexes.size());
         Assert.assertTrue(vertexes.containsAll(Arrays.asList(b11, b12, b13, b21, b22, b23, b31, b32, b33)));
 
-//        GraphTraversal<Vertex, Map<String, Vertex>> gt = g.V().hasLabel("A").as("a").out("ab").as("b").select("a", "b");
-//        List<Map<String, Vertex>> list = gt.toList();
-//        Assert.assertEquals(9, list.size());
-//        Assert.assertEquals(b1, list.get(0).get("b"));
-//        Assert.assertEquals(c1, list.get(0).get("c"));
+        GraphTraversal<Vertex, Map<String, Vertex>> gt = g.V().hasLabel("A").as("a").out("ab").as("b").select("a", "b");
+        List<Map<String, Vertex>> list = gt.toList();
+        Assert.assertEquals(9, list.size());
+        Assert.assertEquals(a1, list.get(0).get("a"));
+        Assert.assertEquals(b11, list.get(0).get("b"));
+        Assert.assertEquals(a1, list.get(1).get("a"));
+        Assert.assertEquals(b12, list.get(1).get("b"));
+        Assert.assertEquals(a3, list.get(8).get("a"));
+        Assert.assertEquals(b33, list.get(8).get("b"));
     }
 }
