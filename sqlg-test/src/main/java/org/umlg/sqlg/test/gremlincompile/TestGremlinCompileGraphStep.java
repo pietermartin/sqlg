@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pieter on 2015/07/19.
@@ -44,14 +45,19 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         a3.addEdge("ab", b33);
 
         this.sqlgGraph.tx().commit();
-        GraphTraversalSource gt = this.sqlgGraph.traversal();
-//        Assert.assertTrue(gt.V(a1).out("ab").toList().containsAll(Arrays.asList(b11, b12, b13)));
-        List<Vertex> vertexes = gt.V().hasLabel("A").out("ab").toList();
+        GraphTraversalSource g = this.sqlgGraph.traversal();
+        List<Vertex> vertexes = g.V().hasLabel("A").out("ab").toList();
         Assert.assertEquals(9, vertexes.size());
         for (Vertex vertex : vertexes) {
             System.out.println(vertex);
         }
         Assert.assertEquals(9, vertexes.size());
         Assert.assertTrue(vertexes.containsAll(Arrays.asList(b11, b12, b13, b21, b22, b23, b31, b32, b33)));
+
+//        GraphTraversal<Vertex, Map<String, Vertex>> gt = g.V().hasLabel("A").as("a").out("ab").as("b").select("a", "b");
+//        List<Map<String, Vertex>> list = gt.toList();
+//        Assert.assertEquals(9, list.size());
+//        Assert.assertEquals(b1, list.get(0).get("b"));
+//        Assert.assertEquals(c1, list.get(0).get("c"));
     }
 }

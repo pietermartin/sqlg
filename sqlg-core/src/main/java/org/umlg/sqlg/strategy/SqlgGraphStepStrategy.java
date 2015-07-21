@@ -63,6 +63,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                         }
                         previous = step;
                         sqlgGraphStepCompiled.addReplacedStep(replacedStep);
+
                     } else {
                         logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
                     }

@@ -6,6 +6,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
@@ -13,7 +14,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
+import org.umlg.sqlg.structure.SqlgElement;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.Connection;
@@ -27,7 +30,7 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep<S> {
+public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
 
     protected Supplier<Iterator<Pair<E, Multimap<String, Object>>>> iteratorSupplier;
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
@@ -43,7 +46,6 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
             } else {
                 this.iteratorSupplier = this::edges;
             }
-//            this.setIteratorSupplier(() -> (Iterator<S>) (Vertex.class.isAssignableFrom(this.returnClass) ? this.vertices() : this.edges()));
         }
     }
 
@@ -52,16 +54,20 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         if (this.first) {
             this.start = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
             if (null != this.start) {
-                if (this.start instanceof Iterator)
-                    this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
-                else
-                    this.starts.add(this.getTraversal().getTraverserGenerator().generate((S) this.start, this, 1l));
+                this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
             }
             this.first = false;
         }
-        return this.starts.next();
+        Traverser.Admin<S> traverser = this.starts.next();
+        return traverser;
     }
 
+    @Override
+    public Set<TraverserRequirement> getRequirements() {
+        return EnumSet.of(TraverserRequirement.OBJECT);
+    }
+
+    //TODO
     private Iterator<Pair<E, Multimap<String, Object>>> edges() {
         return null;
     }
