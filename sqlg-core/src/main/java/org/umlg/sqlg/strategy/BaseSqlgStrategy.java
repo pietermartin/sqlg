@@ -29,23 +29,22 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 s.getClass().equals(PathStep.class) ||
                         s.getClass().equals(TreeStep.class) ||
                         s.getClass().equals(TreeSideEffectStep.class) ||
-                        s.getClass().equals(Order.class) ||
-                        (s.getClass().equals(HasStep.class) && !s.getLabels().isEmpty()));
+                        s.getClass().equals(Order.class));
     }
 
-    protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> stepPair) {
+    protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
             if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).getBiPredicate())) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
-                    currentStep.getLabels().forEach(identityStep::addLabel);
+                    currentStep.getLabels().forEach(replacedStep::addLabel);
                     TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                 }
                 iterator.remove();
                 traversal.removeStep(currentStep);
-                stepPair.getHasContainers().addAll(((HasContainerHolder) currentStep).getHasContainers());
+                replacedStep.getHasContainers().addAll(((HasContainerHolder) currentStep).getHasContainers());
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {

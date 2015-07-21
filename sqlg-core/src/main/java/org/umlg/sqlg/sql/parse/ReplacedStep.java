@@ -22,6 +22,7 @@ public class ReplacedStep<S, E> {
 
     private SchemaManager schemaManager;
     private AbstractStep<S, E> step;
+    private Set<String> labels;
     private List<HasContainer> hasContainers;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
@@ -29,6 +30,7 @@ public class ReplacedStep<S, E> {
     public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, List<HasContainer> hasContainers) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = step;
+        replacedStep.labels = new HashSet<>(step.getLabels());
         replacedStep.hasContainers = hasContainers;
         replacedStep.schemaManager = schemaManager;
         return replacedStep;
@@ -36,6 +38,10 @@ public class ReplacedStep<S, E> {
 
     public List<HasContainer> getHasContainers() {
         return hasContainers;
+    }
+
+    public void addLabel(String label) {
+        this.labels.add(label);
     }
 
     public Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
@@ -93,7 +99,7 @@ public class ReplacedStep<S, E> {
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, this.step.getLabels());
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, this.labels);
                 result.add(schemaTableTreeChild);
             } else {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, Collections.EMPTY_SET);
@@ -102,7 +108,7 @@ public class ReplacedStep<S, E> {
         }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, this.step.getLabels());
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, this.labels);
                 result.add(schemaTableTreeChild);
             } else {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, Collections.EMPTY_SET);
@@ -160,7 +166,7 @@ public class ReplacedStep<S, E> {
                         this.hasContainers,
                         this.depth,
                         true,
-                        this.step.getLabels()
+                        this.labels
                 );
                 result.add(schemaTableTreeChild);
             }
@@ -172,7 +178,7 @@ public class ReplacedStep<S, E> {
                         this.hasContainers,
                         this.depth,
                         true,
-                        this.step.getLabels()
+                        this.labels
                 );
                 result.add(schemaTableTreeChild);
             }
@@ -197,7 +203,7 @@ public class ReplacedStep<S, E> {
                         Vertex.class,
                         this.hasContainers,
                         this.depth,
-                        this.step.getLabels()
+                        this.labels
                 );
                 result.add(schemaTableTree1);
             } else if (direction == Direction.OUT && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
@@ -207,7 +213,7 @@ public class ReplacedStep<S, E> {
                         Vertex.class,
                         this.hasContainers,
                         this.depth,
-                        this.step.getLabels()
+                        this.labels
                 );
                 result.add(schemaTableTree1);
             }

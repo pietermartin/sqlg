@@ -4,7 +4,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
@@ -13,11 +12,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.SqlgGraphStep;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Date: 2014/07/12
@@ -43,12 +42,17 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             SqlgGraphStepCompiled sqlgGraphStepCompiled = null;
             List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
             ListIterator<Step> stepIterator = steps.listIterator();
+            boolean first = true;
             while (stepIterator.hasNext()) {
                 Step step = stepIterator.next();
+                if (first && ((GraphStep) step).getIds().length > 0) {
+                    first = false;
+                    continue;
+                }
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
                 if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                     if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
-                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep)step, new ArrayList<>());
+                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, new ArrayList<>());
                         if (previous == null) {
                             sqlgGraphStepCompiled = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, originalGraphStep.getReturnClass(), originalGraphStep.getIds());
                             TraversalHelper.replaceStep(step, sqlgGraphStepCompiled, traversal);
