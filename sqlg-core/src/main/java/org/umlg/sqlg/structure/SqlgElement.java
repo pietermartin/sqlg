@@ -253,7 +253,7 @@ public abstract class SqlgElement implements Element {
             }
             try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
                 preparedStatement.setLong(1, this.recordId.getId());
-                SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement);
+                SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 2);
                 ResultSet resultSet = preparedStatement.executeQuery();
                 while (resultSet.next()) {
                     Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSet, sqlPair.getLeft());

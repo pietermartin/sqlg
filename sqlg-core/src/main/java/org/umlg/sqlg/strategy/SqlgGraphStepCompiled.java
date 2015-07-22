@@ -41,11 +41,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         super(traversal, returnClass, ids);
         this.sqlgGraph = sqlgGraph;
         if ((this.ids.length == 0 || !(this.ids[0] instanceof Element))) {
-            if (Vertex.class.isAssignableFrom(this.returnClass)) {
-                this.iteratorSupplier = this::elements;
-            } else {
-                this.iteratorSupplier = this::elements;
-            }
+            this.iteratorSupplier = this::elements;
         }
     }
 
@@ -67,11 +63,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         return EnumSet.of(TraverserRequirement.OBJECT);
     }
 
-    //TODO
-    private Iterator<Pair<E, Multimap<String, Object>>> edges() {
-        return null;
-    }
-
     private Iterator<Pair<E, Multimap<String, Object>>> elements() {
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
@@ -85,7 +76,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                     logger.debug(sqlPair.getRight());
                 }
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
-                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement);
+                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 1);
                     ResultSet resultSet = preparedStatement.executeQuery();
                     while (resultSet.next()) {
                         Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSet, sqlPair.getLeft());

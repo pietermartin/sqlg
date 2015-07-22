@@ -1,5 +1,6 @@
 package org.umlg.sqlg.sql.parse;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -29,7 +30,9 @@ public class GremlinParser<S extends Element, E extends Element> {
      */
     public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
         ReplacedStep startReplacedStep = replacedSteps.remove(0);
+        Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must ne a GraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph);
+        Set<SchemaTableTree> toRemove = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
             schemaTableTrees.add(rootSchemaTableTree);
@@ -38,8 +41,13 @@ public class GremlinParser<S extends Element, E extends Element> {
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
             rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size() + 1);
-            rootSchemaTableTree.removeNodesInvalidatedByHas();
+            //TODO think about how to remove the root node itself
+            boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
+            if (remove) {
+                toRemove.add(rootSchemaTableTree);
+            }
         }
+        rootSchemaTableTrees.removeAll(toRemove);
         return rootSchemaTableTrees;
 
     }

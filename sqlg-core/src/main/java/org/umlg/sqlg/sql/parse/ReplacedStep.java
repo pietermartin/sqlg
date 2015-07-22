@@ -12,7 +12,9 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Date: 2015/06/27
@@ -267,15 +269,39 @@ public class ReplacedStep<S, E> {
     }
 
     public Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
+        Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for GraphStep");
+        GraphStep graphStep = (GraphStep) this.step;
         Set<SchemaTableTree> result = new HashSet<>();
-        this.hasContainers.stream().filter(h->h.getKey().equals(T.label.getAccessor())).map(HasContainer::getValue).forEach(label->{
-            SchemaTable schemaTable = SchemaTable.from(sqlgGraph, SchemaManager.VERTEX_PREFIX + label, sqlgGraph.getSqlDialect().getPublicSchema());
-            SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
-            schemaTableTree.setHasContainers(this.hasContainers);
-            schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
-            schemaTableTree.labels = ReplacedStep.this.labels;
-            result.add(schemaTableTree);
-        });
+        List<HasContainer> hasContainerWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
+        List<HasContainer> hasContainerWithLabel = this.hasContainers.stream().filter(h -> h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
+        if (hasContainerWithLabel.isEmpty()) {
+            //this means all vertices or edges
+            sqlgGraph.getSchemaManager().getAllTables().forEach((t, p) -> {
+                if ((graphStep.getReturnClass().isAssignableFrom(Vertex.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
+                        (graphStep.getReturnClass().isAssignableFrom(Edge.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
+                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, t, sqlgGraph.getSqlDialect().getPublicSchema());
+                    SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
+                    schemaTableTree.setHasContainers(hasContainerWithoutLabel);
+                    schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
+                    schemaTableTree.labels = ReplacedStep.this.labels;
+                    result.add(schemaTableTree);
+                }
+            });
+        } else {
+            hasContainerWithLabel.forEach(h -> {
+                //check if the table exist
+                String label = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + h.getValue();
+                SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
+                if (sqlgGraph.getSchemaManager().getAllTables().containsKey(schemaTableForLabel.toString())) {
+                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
+                    SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
+                    schemaTableTree.setHasContainers(hasContainerWithoutLabel);
+                    schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
+                    schemaTableTree.labels = ReplacedStep.this.labels;
+                    result.add(schemaTableTree);
+                }
+            });
+        }
         return result;
     }
 }

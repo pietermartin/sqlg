@@ -300,7 +300,7 @@ public class SchemaTableTree {
         }
 
         //check if the 'where' has already been printed
-        boolean printedWhere = lastOfPrevious == null;
+        boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
 
         //construct there where clause for the hasContainers
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
@@ -918,16 +918,21 @@ public class SchemaTableTree {
         }
     }
 
-    void removeNodesInvalidatedByHas() {
-        Queue<SchemaTableTree> queue = new LinkedList<>();
-        queue.add(this);
-        while (!queue.isEmpty()) {
-            SchemaTableTree current = queue.remove();
-            if (invalidateByHas(current)) {
-                removeNode(current);
-            } else {
-                queue.addAll(current.children);
+    boolean removeNodesInvalidatedByHas() {
+        if (invalidateByHas(this)) {
+            return true;
+        } else {
+            Queue<SchemaTableTree> queue = new LinkedList<>();
+            queue.add(this);
+            while (!queue.isEmpty()) {
+                SchemaTableTree current = queue.remove();
+                if (invalidateByHas(current)) {
+                    removeNode(current);
+                } else {
+                    queue.addAll(current.children);
+                }
             }
+            return false;
         }
     }
 

@@ -4,6 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TestAllVertices;
 import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
+import org.umlg.sqlg.test.TestHas;
 import org.umlg.sqlg.test.TestVertexNavToEdges;
 import org.umlg.sqlg.test.edges.TestLoadEdge;
 import org.umlg.sqlg.test.gremlincompile.*;
@@ -22,8 +23,10 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
         TestGremlinCompileWithInOutV.class,
         TestLoadEdge.class,
         TestGremlinCompileWithHas.class,
+        TestGremlinCompileWithAs.class,
         TestGremlinCompileGraphStep.class,
-        TestGremlinCompileWithAs.class
+        TestAllVertices.class,
+        TestHas.class
 })
 public class AnyTest {
 }
