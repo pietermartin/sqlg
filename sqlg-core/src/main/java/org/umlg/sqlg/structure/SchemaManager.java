@@ -1008,13 +1008,15 @@ public class SchemaManager {
 
     Set<String> getSchemasForTable(String table) {
         Set<String> labels = this.localLabelSchemas.get(table);
-        Set<String> uncommittedLabels = this.uncommittedLabelSchemas.get(table);
         Set<String> result = new HashSet<>();
         if (labels != null) {
             result.addAll(labels);
         }
-        if (uncommittedLabels != null) {
-            result.addAll(uncommittedLabels);
+        if (this.isLockedByCurrentThread()) {
+            Set<String> uncommittedLabels = this.uncommittedLabelSchemas.get(table);
+            if (uncommittedLabels != null) {
+                result.addAll(uncommittedLabels);
+            }
         }
         return result;
     }
@@ -1022,7 +1024,9 @@ public class SchemaManager {
     Set<String> getEdgeForeignKeys(String schemaTable) {
         Map<String, Set<String>> allForeignKeys = new ConcurrentHashMap<>();
         allForeignKeys.putAll(this.localEdgeForeignKeys);
-        allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
+        if (this.isLockedByCurrentThread()) {
+            allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
+        }
         return allForeignKeys.get(schemaTable);
     }
 
@@ -1030,19 +1034,20 @@ public class SchemaManager {
         return Collections.unmodifiableMap(this.localEdgeForeignKeys);
     }
 
-    //TODO think about this  synchronization
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
         result.putAll(this.localEdgeForeignKeys);
-        result.putAll(this.uncommittedEdgeForeignKeys);
-        for (String schemaTable : this.uncommittedEdgeForeignKeys.keySet()) {
-            Set<String> foreignKeys = result.get(schemaTable);
-            if (foreignKeys == null) {
-                foreignKeys = new HashSet<>();
+        if (this.isLockedByCurrentThread()) {
+            result.putAll(this.uncommittedEdgeForeignKeys);
+            for (String schemaTable : this.uncommittedEdgeForeignKeys.keySet()) {
+                Set<String> foreignKeys = result.get(schemaTable);
+                if (foreignKeys == null) {
+                    foreignKeys = new HashSet<>();
+                }
+                foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
+                foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
+                result.put(schemaTable, foreignKeys);
             }
-            foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
-            foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
-            result.put(schemaTable, foreignKeys);
         }
         return Collections.unmodifiableMap(result);
     }
@@ -1062,19 +1067,22 @@ public class SchemaManager {
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
         Pair<Set<SchemaTable>, Set<SchemaTable>> result = this.localTableLabels.get(schemaTable);
         if (result == null) {
-            Pair<Set<SchemaTable>, Set<SchemaTable>> pair = this.uncommittedTableLabels.get(schemaTable);
-            if (pair != null) {
-                return Pair.of(Collections.unmodifiableSet(pair.getLeft()), Collections.unmodifiableSet(pair.getRight()));
-            } else {
-                return Pair.of(Collections.EMPTY_SET, Collections.EMPTY_SET);
+            if (this.isLockedByCurrentThread()) {
+                Pair<Set<SchemaTable>, Set<SchemaTable>> pair = this.uncommittedTableLabels.get(schemaTable);
+                if (pair != null) {
+                    return Pair.of(Collections.unmodifiableSet(pair.getLeft()), Collections.unmodifiableSet(pair.getRight()));
+                }
             }
+            return Pair.of(Collections.EMPTY_SET, Collections.EMPTY_SET);
         } else {
             Set<SchemaTable> left = new HashSet<>(result.getLeft());
             Set<SchemaTable> right = new HashSet<>(result.getRight());
-            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedLabels = this.uncommittedTableLabels.get(schemaTable);
-            if (uncommittedLabels != null) {
-                left.addAll(uncommittedLabels.getLeft());
-                right.addAll(uncommittedLabels.getRight());
+            if (this.isLockedByCurrentThread()) {
+                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedLabels = this.uncommittedTableLabels.get(schemaTable);
+                if (uncommittedLabels != null) {
+                    left.addAll(uncommittedLabels.getLeft());
+                    right.addAll(uncommittedLabels.getRight());
+                }
             }
             return Pair.of(
                     Collections.unmodifiableSet(left),
@@ -1089,7 +1097,9 @@ public class SchemaManager {
     public Map<String, Map<String, PropertyType>> getAllTables() {
         Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         result.putAll(this.localTables);
-        result.putAll(this.uncommittedTables);
+        if (this.isLockedByCurrentThread()) {
+            result.putAll(this.uncommittedTables);
+        }
         return Collections.unmodifiableMap(result);
     }
 
