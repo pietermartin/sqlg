@@ -732,43 +732,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             throw new RuntimeException(e);
                         }
                     }
-
-//                    StringBuilder sql = new StringBuilder("DELETE FROM ");
-//                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
-//                    sql.append(".");
-//                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGES));
-//                    sql.append(" WHERE ");
-//                    sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//                    sql.append(" in (");
-//
-//                    int count = 1;
-//                    for (SqlgEdge edge : flattenedEdges) {
-//                        sql.append("?");
-//                        if (count++ < flattenedEdges.size()) {
-//                            sql.append(",");
-//                        }
-//                    }
-//                    sql.append(")");
-//                    if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-//                        sql.append(";");
-//                    }
-//                    if (logger.isDebugEnabled()) {
-//                        logger.debug(sql.toString());
-//                    }
-//                    Connection conn = sqlgGraph.tx().getConnection();
-//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                        count = 1;
-//                        for (SqlgEdge edge : flattenedEdges) {
-//                            preparedStatement.setLong(count++, (Long) edge.id());
-//                        }
-//                        preparedStatement.executeUpdate();
-//                    } catch (SQLException e) {
-//                        throw new RuntimeException(e);
-//                    }
                 }
             }
         }
-
     }
 
     @Override
@@ -777,7 +743,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     private InputStream mapToEdge_InputStream(Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
-//        Long start = endHigh - edgeCache.size() + 1;
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
@@ -790,7 +755,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             int countKeys = 1;
             for (String key : triple.getRight().keySet()) {
                 Object value = triple.getRight().get(key);
-                sb.append(value.toString());
+                sb.append(escapeSpecialCharacters(value.toString()));
                 if (countKeys < triple.getRight().size()) {
                     sb.append(COPY_COMMAND_SEPARATOR);
                 }
@@ -825,14 +790,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         int length = java.lang.reflect.Array.getLength(value);
                         for (int i = 0; i < length; i++) {
                             String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                            sb.append(valueOfArray);
+                            sb.append(escapeSpecialCharacters(valueOfArray));
                             if (i < length - 1) {
                                 sb.append(",");
                             }
                         }
                         sb.append("}");
                     } else {
-                        sb.append(value.toString());
+                        sb.append(escapeSpecialCharacters(value.toString()));
                     }
                 }
             } else {
@@ -843,6 +808,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         }
         return new ByteArrayInputStream(sb.toString().getBytes());
+    }
+
+    //In particular, the following characters must be preceded by a backslash if they appear as part of a column value:
+    //backslash itself, newline, carriage return, and the current delimiter character.
+    private String escapeSpecialCharacters(String s) {
+        s = s.replace("\\", "\\\\");
+        s = s.replace("\n", "\\\\n");
+        s = s.replace("\r", "\\\\r");
+        s = s.replace("\t", "\\\\t");
+        return s;
     }
 
     @Override
