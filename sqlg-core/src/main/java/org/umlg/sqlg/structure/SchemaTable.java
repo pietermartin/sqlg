@@ -1,8 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
@@ -80,7 +78,7 @@ public class SchemaTable implements DataSerializable, Serializable {
         if (o == this) {
             return true;
         }
-        SchemaTable other = (SchemaTable)o;
+        SchemaTable other = (SchemaTable) o;
         return this.schema.equals(other.schema) && this.table.equals(other.table);
     }
 
@@ -104,14 +102,6 @@ public class SchemaTable implements DataSerializable, Serializable {
         return !isVertexTable();
     }
 
-    public String getUnprefixedTable() {
-        if (isVertexTable()) {
-            return getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-        } else {
-            return getTable().substring(SchemaManager.EDGE_PREFIX.length());
-        }
-    }
-
     static class SchemaTableJacksonSerializer extends StdSerializer<SchemaTable> {
         public SchemaTableJacksonSerializer() {
             super(SchemaTable.class);
@@ -119,13 +109,13 @@ public class SchemaTable implements DataSerializable, Serializable {
 
         @Override
         public void serialize(final SchemaTable schemaTable, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
-                throws IOException, JsonGenerationException {
+                throws IOException {
             ser(schemaTable, jsonGenerator, false);
         }
 
         @Override
         public void serializeWithType(final SchemaTable schemaTable, final JsonGenerator jsonGenerator,
-                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
             ser(schemaTable, jsonGenerator, true);
         }
 

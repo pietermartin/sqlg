@@ -1,10 +1,13 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -809,28 +812,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            Object o = resultSet.getObject(columnName);
-            String name = schemaTableTree.propertyNameFromAlias(columnName);
-            if (!name.equals("ID")
-                    && !name.equals(SchemaManager.VERTEX_IN_LABELS)
-                    && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
-                    && !name.equals(SchemaManager.VERTEX_SCHEMA)
-                    && !name.equals(SchemaManager.VERTEX_TABLE)
-                    && !Objects.isNull(o)) {
-
-                loadProperty(resultSetMetaData, i, name, o);
-            }
-        }
-    }
-
-    @Override
-    public void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnLabel(i);
-            Object o = resultSet.getObject(columnName);
-            if (columnName.startsWith(schemaTableTree.reducedLabels())) {
-                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+            if (columnName.split("\\.").length < 4) {
+                String name = schemaTableTree.propertyNameFromAlias(columnName);
+                Object o = resultSet.getObject(columnName);
                 if (!name.equals("ID")
                         && !name.equals(SchemaManager.VERTEX_IN_LABELS)
                         && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
@@ -842,6 +826,55 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 }
             }
         }
+    }
+
+    @Override
+    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
+        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+        Multimap<String, Integer> toRemove = ArrayListMultimap.create();
+        for (String columnName : columnMap.keySet()) {
+            Collection<Integer> columnCounts = columnMap.get(columnName);
+            Integer columnCount = columnCounts.iterator().next();
+            if (schemaTableTree.containsLabelledColumn(columnName)) {
+                Object o = resultSet.getObject(columnCount);
+                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+                if (!name.equals("ID")
+                        && !name.equals(SchemaManager.VERTEX_IN_LABELS)
+                        && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
+                        && !name.equals(SchemaManager.VERTEX_SCHEMA)
+                        && !name.equals(SchemaManager.VERTEX_TABLE)
+                        && !Objects.isNull(o)) {
+
+                    toRemove.put(columnName, columnCount);
+                    loadProperty(resultSetMetaData, columnCount, name, o);
+                }
+            }
+        }
+        for (String columnName : toRemove.keySet()) {
+            Collection<Integer> columnCountsToRemove = toRemove.get(columnName);
+            Collection<Integer> columnCounts = columnMap.get(columnName);
+            for (Integer columnCountToRemove : columnCountsToRemove) {
+                columnCounts.remove(columnCountToRemove);
+            }
+        }
+
+//        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+//        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
+//            String columnName = resultSetMetaData.getColumnLabel(i);
+//            Object o = resultSet.getObject(i);
+//            if (columnName.startsWith(schemaTableTree.reducedLabels())) {
+//                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+//                if (!name.equals("ID")
+//                        && !name.equals(SchemaManager.VERTEX_IN_LABELS)
+//                        && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
+//                        && !name.equals(SchemaManager.VERTEX_SCHEMA)
+//                        && !name.equals(SchemaManager.VERTEX_TABLE)
+//                        && !Objects.isNull(o)) {
+//
+//                    loadProperty(resultSetMetaData, i, name, o);
+//                }
+//            }
+//        }
     }
 
     @Override

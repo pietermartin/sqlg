@@ -228,7 +228,8 @@ public abstract class SqlgElement implements Element {
      *
      * @param replacedSteps The original VertexStep and HasSteps that were replaced.
      * @return The result of the query.
-//     */
+     * //
+     */
     public <S, E> Iterator<Pair<E, Multimap<String, Object>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         return internalGetElements(replacedSteps);
@@ -255,8 +256,9 @@ public abstract class SqlgElement implements Element {
                 preparedStatement.setLong(1, this.recordId.getId());
                 SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 2);
                 ResultSet resultSet = preparedStatement.executeQuery();
+                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                 while (resultSet.next()) {
-                    Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSet, sqlPair.getLeft());
+                    Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
                     resultIterator.add(result);
                 }
             } catch (SQLException e) {
@@ -519,7 +521,9 @@ public abstract class SqlgElement implements Element {
     }
 
     public abstract void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
-    public abstract void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
+
+    public abstract void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException;
+
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
 //    /**

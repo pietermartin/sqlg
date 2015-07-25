@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -211,25 +212,28 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            Object o = resultSet.getObject(columnName);
-            String name = schemaTableTree.propertyNameFromAlias(columnName);
-            if (!name.equals("ID") &&
-                    !Objects.isNull(o) &&
-                    !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
-                    !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+            String[] splittedColumn = columnName.split("\\.");
+            if (splittedColumn.length < 4 || (splittedColumn.length == 4 && (splittedColumn[3].endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || splittedColumn[3].endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)))) {
+                Object o = resultSet.getObject(columnName);
+                String name = schemaTableTree.propertyNameFromAlias(columnName);
+                if (!name.equals("ID") &&
+                        !Objects.isNull(o) &&
+                        !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
+                        !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                loadProperty(resultSetMetaData, i, name, o);
+                    loadProperty(resultSetMetaData, i, name, o);
 
-            }
-            if (!Objects.isNull(o)) {
-                if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                    inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                    Long inId = resultSet.getLong(columnName);
-                    this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
-                } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                    outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                    Long outId = resultSet.getLong(columnName);
-                    this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+                }
+                if (!Objects.isNull(o)) {
+                    if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                        inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                        Long inId = resultSet.getLong(columnName);
+                        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+                    } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                        outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                        Long outId = resultSet.getLong(columnName);
+                        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+                    }
                 }
             }
         }
@@ -239,7 +243,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
-    public void loadLabeledResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
         SchemaTable inVertexColumnName;
         SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();

@@ -13,10 +13,7 @@ import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.*;
 
 import java.lang.reflect.Array;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,19 +47,27 @@ public class SqlgUtil {
         return result;
     }
 
-    public static <E> Pair<E, Multimap<String, Object>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    public static <E> Pair<E, Multimap<String, Object>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         //First load all labeled entries from the resultSet
-        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, resultSet, schemaTableTreeStack);
-        E e = loadElements(sqlgGraph, resultSet, schemaTableTreeStack);
+        Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
+        Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
+        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+            columnMap1.put(resultSetMetaData.getColumnName(columnCount), columnCount);
+            columnMap2.put(resultSetMetaData.getColumnName(columnCount), columnCount);
+        }
+        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
+        E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
         return Pair.of(e, labeledResult);
-        //TODO why is it being cleared just after loading it??????
-//        sqlgElement.properties.clear();
     }
 
-    private static <E> E loadElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    private static <E> E loadElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         SchemaTable schemaTable = schemaTableTreeStack.getLast().getSchemaTable();
         String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
-        Long id = resultSet.getLong(idProperty);
+        Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
+        Integer columnCount = propertyColumnsCounts.iterator().next();
+        Long id = resultSet.getLong(columnCount);
+        //Need to be removed so as not to load it again
+        propertyColumnsCounts.remove(columnCount);
         SqlgElement sqlgElement;
         if (schemaTable.isVertexTable()) {
             String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
@@ -75,12 +80,16 @@ public class SqlgUtil {
         return (E) sqlgElement;
     }
 
-    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         Multimap<String, Object> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
-                Long id = resultSet.getLong(idProperty);
+                Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
+                Integer columnCount = propertyColumnsCounts.iterator().next();
+                Long id = resultSet.getLong(columnCount);
+                //Need to be removed so as not to load it again
+                propertyColumnsCounts.remove(columnCount);
                 SqlgElement sqlgElement;
                 String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
                 if (schemaTableTree.getSchemaTable().isVertexTable()) {
@@ -88,7 +97,7 @@ public class SqlgUtil {
                 } else {
                     sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                 }
-                sqlgElement.loadLabeledResultSet(resultSet, schemaTableTree);
+                sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
                 schemaTableTree.getLabels().forEach(l->result.put(l, sqlgElement));
             }
         }

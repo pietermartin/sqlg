@@ -19,10 +19,7 @@ import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -78,12 +75,16 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
                     SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 1);
                     ResultSet resultSet = preparedStatement.executeQuery();
+                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                     while (resultSet.next()) {
-                        Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSet, sqlPair.getLeft());
+                        Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
                         resultIterator.add(result);
                     }
-                } catch (SQLException e) {
+                } catch (Exception e) {
+                    e.printStackTrace();
                     throw new RuntimeException(e);
+//                } catch (SQLException e) {
+//                    throw new RuntimeException(e);
                 }
             }
         }
