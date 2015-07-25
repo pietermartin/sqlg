@@ -279,6 +279,7 @@ public class ReplacedStep<S, E> {
             sqlgGraph.getSchemaManager().getAllTables().forEach((t, p) -> {
                 if ((graphStep.getReturnClass().isAssignableFrom(Vertex.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
                         (graphStep.getReturnClass().isAssignableFrom(Edge.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
+
                     SchemaTable schemaTable = SchemaTable.from(sqlgGraph, t, sqlgGraph.getSqlDialect().getPublicSchema());
                     SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
@@ -291,11 +292,10 @@ public class ReplacedStep<S, E> {
             hasContainerWithLabel.forEach(h -> {
                 //check if the table exist
                 SchemaTable schemaTableForLabel = SqlgUtil.parseLabelMaybeNoSchema((String) h.getValue());
-//                String label = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + h.getValue();
-//                SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
+                String table = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTableForLabel.getTable();
+                schemaTableForLabel = SchemaTable.from(sqlgGraph, schemaTableForLabel.getSchema() == null ? table : schemaTableForLabel.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
                 if (sqlgGraph.getSchemaManager().getAllTables().containsKey(schemaTableForLabel.toString())) {
-                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, schemaTableForLabel.toString(), sqlgGraph.getSqlDialect().getPublicSchema());
-                    SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
+                    SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTableForLabel, 1);
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
                     schemaTableTree.labels = ReplacedStep.this.labels;
