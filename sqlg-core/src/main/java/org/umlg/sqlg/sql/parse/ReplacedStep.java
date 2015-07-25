@@ -290,10 +290,11 @@ public class ReplacedStep<S, E> {
         } else {
             hasContainerWithLabel.forEach(h -> {
                 //check if the table exist
-                String label = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + h.getValue();
-                SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
+                SchemaTable schemaTableForLabel = SqlgUtil.parseLabelMaybeNoSchema((String) h.getValue());
+//                String label = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + h.getValue();
+//                SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
                 if (sqlgGraph.getSchemaManager().getAllTables().containsKey(schemaTableForLabel.toString())) {
-                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, label, sqlgGraph.getSqlDialect().getPublicSchema());
+                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, schemaTableForLabel.toString(), sqlgGraph.getSqlDialect().getPublicSchema());
                     SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
