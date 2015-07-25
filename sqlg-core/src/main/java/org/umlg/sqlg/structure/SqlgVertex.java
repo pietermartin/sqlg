@@ -838,7 +838,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (schemaTableTree.containsLabelledColumn(columnName)) {
                 Object o = resultSet.getObject(columnCount);
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-                if (!name.equals("ID")
+                if (!name.endsWith("ID")
                         && !name.equals(SchemaManager.VERTEX_IN_LABELS)
                         && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
                         && !name.equals(SchemaManager.VERTEX_SCHEMA)

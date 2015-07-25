@@ -9,6 +9,7 @@ import org.umlg.sqlg.test.TestVertexNavToEdges;
 import org.umlg.sqlg.test.edges.TestLoadEdge;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
+import org.umlg.sqlg.test.schema.TestLoadSchema;
 
 /**
  * Date: 2014/07/16
@@ -16,17 +17,7 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestGremlinCompileE.class,
-//        TestGremlinCompileGraphV.class,
-//        TestGremlinCompileV.class,
-//        TestGremlinCompileWithAs.class,
-//        TestGremlinCompileWithInOutV.class,
-//        TestLoadEdge.class,
-        TestGremlinCompileWithHas.class
-//        TestGremlinCompileWithAs.class
-//        TestGremlinCompileGraphStep.class
-//        TestAllVertices.class,
-//        TestHas.class
+        TestLoadSchema.class
 })
 public class AnyTest {
 }

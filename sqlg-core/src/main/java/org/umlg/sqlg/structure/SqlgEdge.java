@@ -250,8 +250,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
-            //only load the labeled columns
-            if (columnName.startsWith(schemaTableTree.reducedLabels() + ".")) {
+            if (schemaTableTree.containsLabelledColumn(columnName)) {
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
