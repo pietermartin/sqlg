@@ -1,15 +1,21 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +24,53 @@ import java.util.Map;
  * Created by pieter on 2015/07/19.
  */
 public class TestGremlinCompileGraphStep extends BaseTest {
+
+    @Test
+    public void g_VX1X_outEXknowsX_hasXweight_1X_asXhereX_inV_hasXname_joshX_selectXhereX() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        Object v1Id = convertToVertexId("marko");
+        final List<Traversal<Vertex, Edge>> traversals = Arrays.asList(
+                g.traversal().V(v1Id).outE("knows").as("here").has("weight", 1.0d).as("fake").inV().has("name", "josh").<Edge>select("here")
+        );
+        traversals.forEach(traversal -> {
+            printTraversalForm(traversal);
+            Assert.assertTrue(traversal.hasNext());
+            Assert.assertTrue(traversal.hasNext());
+            final Edge edge = traversal.next();
+            Assert.assertEquals("knows", edge.label());
+            Assert.assertEquals(1.0d, edge.<Double>value("weight"), 0.00001d);
+            Assert.assertFalse(traversal.hasNext());
+            Assert.assertFalse(traversal.hasNext());
+        });
+    }
+
+    @Test
+    public void g_V_localXinEXknowsX_limitX2XX_outV_name() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        final Traversal<Vertex, String> traversal = g.traversal().V().local(inE("knows").limit(2)).outV().values("name");
+        printTraversalForm(traversal);
+        int counter = 0;
+        while (traversal.hasNext()) {
+            counter++;
+            Assert.assertEquals(traversal.next(), "marko");
+        }
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, counter);
+    }
 
     @Test
     public void testCompileGraphStep() {
@@ -29,9 +82,11 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         Vertex b11 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b12 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b13 = this.sqlgGraph.addVertex(T.label, "B");
+
         Vertex b21 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b22 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b23 = this.sqlgGraph.addVertex(T.label, "B");
+
         Vertex b31 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b32 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b33 = this.sqlgGraph.addVertex(T.label, "B");
@@ -39,9 +94,11 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         a1.addEdge("ab", b11);
         a1.addEdge("ab", b12);
         a1.addEdge("ab", b13);
+
         a2.addEdge("ab", b21);
         a2.addEdge("ab", b22);
         a2.addEdge("ab", b23);
+
         a3.addEdge("ab", b31);
         a3.addEdge("ab", b32);
         a3.addEdge("ab", b33);
@@ -64,12 +121,20 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         GraphTraversal<Vertex, Map<String, Vertex>> gt = g.V().hasLabel("A").as("a").out("ab").as("b").select("a", "b");
         List<Map<String, Vertex>> list = gt.toList();
         Assert.assertEquals(9, list.size());
-        Assert.assertEquals(a1, list.get(0).get("a"));
-        Assert.assertEquals(b11, list.get(0).get("b"));
-        Assert.assertEquals(a1, list.get(1).get("a"));
-        Assert.assertEquals(b12, list.get(1).get("b"));
-        Assert.assertEquals(a3, list.get(8).get("a"));
-        Assert.assertEquals(b33, list.get(8).get("b"));
+        for (int i = 0; i < 9; i++) {
+            Vertex a = list.get(i).get("a");
+            Vertex b = list.get(i).get("b");
+            Assert.assertTrue(a.equals(a1) || a.equals(a2) || a.equals(a3));
+            if (a.equals(a1)) {
+                Assert.assertTrue(b.equals(b11) || b.equals(b12) || b.equals(b13));
+            } else if (a.equals(a2)) {
+                Assert.assertTrue(b.equals(b21) || b.equals(b22) || b.equals(b23));
+            } else if (a.equals(a3)) {
+                Assert.assertTrue(b.equals(b31) || b.equals(b32) || b.equals(b33));
+            } else {
+                Assert.fail();
+            }
+        }
     }
 
     @Test

@@ -74,13 +74,13 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRemovedVertex.class,
         TestCaptureSchemaTableEdges.class,
         TestGremlinCompileWithHas.class,
-        TestGremlinCompileV.class,
         TestGremlinCompileE.class,
         TestEmptyGraph.class,
         TestOutE.class,
         TestForeignKeysAreOptional.class,
         TestGremlinCompileWithAs.class,
         TestGremlinCompileWithInOutV.class,
+        TestGremlinCompileV.class,
         TestGremlinCompileGraphStep.class
 })
 public class AllTest {

@@ -34,16 +34,26 @@ public class SchemaTableTree {
     Set<String> labels;
 
     public boolean containsLabelledColumn(String columnName) {
-        String[] splittedColumn = columnName.split("\\.");
-        //Only check labelled columns
-        if ((splittedColumn.length == 4 || splittedColumn.length == 5) && this.reducedLabels().equals(splittedColumn[0])) {
-            String schema = splittedColumn[1];
-            String table = splittedColumn[2];
+        if (columnName.startsWith(this.reducedLabels())) {
+            String column = columnName.substring(this.reducedLabels().length() + 1);
+            String[] splittedColumn = column.split("\\.");
+            String schema = splittedColumn[0];
+            String table = splittedColumn[1];
             Preconditions.checkState(table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX),"SchemaTableTree.containsColumn table must be prefixed! table = " + table);
             return schema.equals(this.schemaTable.getSchema()) && table.equals(this.schemaTable.getTable());
         } else {
             return false;
         }
+//        String[] splittedColumn = columnName.split("\\.");
+//        //Only check labelled columns
+//        if ((splittedColumn.length == 4 || splittedColumn.length == 5) && this.reducedLabels().equals(splittedColumn[0])) {
+//            String schema = splittedColumn[1];
+//            String table = splittedColumn[2];
+//            Preconditions.checkState(table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX),"SchemaTableTree.containsColumn table must be prefixed! table = " + table);
+//            return schema.equals(this.schemaTable.getSchema()) && table.equals(this.schemaTable.getTable());
+//        } else {
+//            return false;
+//        }
     }
 
     enum STEP_TYPE {

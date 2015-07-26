@@ -1,8 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 import static org.apache.tinkerpop.gremlin.process.traversal.Scope.*;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.not;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -41,6 +40,28 @@ import java.util.stream.Collectors;
 public class TestGremlinCompileWithHas extends BaseTest {
 
     @Test
+    public void g_V_asXaX_out_asXbX_selectXa_bX_byXnameX() throws IOException {
+        Graph g = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(g.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, g);
+        }
+        assertModernGraph(g, true, false);
+        GraphTraversal traversal = g.traversal().V().as("a").out().aggregate("x").as("b").<String>select("a", "b").by("name");
+        printTraversalForm(traversal);
+        final List<Map<String, String>> expected = makeMapList(2,
+                "a", "marko", "b", "lop",
+                "a", "marko", "b", "vadas",
+                "a", "marko", "b", "josh",
+                "a", "josh", "b", "ripple",
+                "a", "josh", "b", "lop",
+                "a", "peter", "b", "lop");
+        checkResults(expected, traversal);
+    }
+
+    @Test
     public void g_VX1AsStringX_out_hasXid_2AsStringX() throws IOException {
         Graph g = this.sqlgGraph;
         final GraphReader reader = GryoReader.build()
@@ -68,7 +89,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
         assertModernGraph(g, true, false);
         Object vertexId = convertToVertexId("josh");
-        final Traversal<Vertex, String> traversal =  g.traversal().V(vertexId)
+        final Traversal<Vertex, String> traversal = g.traversal().V(vertexId)
                 .out().as("here")
                 .has("lang", "java")
                 .select("here").values("name");
@@ -111,7 +132,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
     public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
         final List<T> results = traversal.toList();
         Assert.assertFalse(traversal.hasNext());
-        if(expectedResults.size() != results.size()) {
+        if (expectedResults.size() != results.size()) {
             System.err.println("Expected results: " + expectedResults);
             System.err.println("Actual results:   " + results);
             Assert.assertEquals("Checking result size", expectedResults.size(), results.size());
@@ -183,20 +204,6 @@ public class TestGremlinCompileWithHas extends BaseTest {
                 .<List<String>>select("a")
                 .by(unfold().values("name").fold())
                 .range(local, 1, 2);
-
-//        final Traversal<Vertex, List<String>> traversal = g.traversal()
-//                .V().as("a")
-//                .out().as("a")
-//                .out().as("a")
-//                .<List<String>>select("a");
-////                .by(unfold().values("name").fold());
-////                .by(unfold());
-//        List<List<String>> result = traversal.toList();
-//        printTraversalForm(traversal);
-//        for (Object s: result) {
-//            Assert.assertEquals(3, s.size());
-//            Assert.assertTrue(s.get(0) instanceof Vertex);
-//        }
         int counter = 0;
         while (traversal.hasNext()) {
             final String s = traversal.next();

@@ -48,6 +48,18 @@ import java.util.stream.Stream;
         method = "testProfileStrategyCallback",
         reason = "Assertions are TinkerGraph specific.")
 @Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest",
+        method = "g_V_repeat_both_modern_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONTest",
+        method = "shouldSerializeTraversalMetrics",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
+        reason = "Takes too long")
+@Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Takes too long")

@@ -4,7 +4,7 @@ import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_S_SE_SL_Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -12,11 +12,11 @@ import java.util.Collections;
 /**
  * Created by pieter on 2015/07/20.
  */
-public class SqlGraphStepTraverser<T> extends B_LP_O_S_SE_SL_Traverser<T> {
+public class SqlGraphStepWithPathTraverser<T> extends B_LP_O_P_S_SE_SL_Traverser<T> {
 
     private Multimap<String, Object> labeledObjects;
 
-    public SqlGraphStepTraverser(final T t, Multimap<String, Object> labeledObjects, final Step<T, ?> step, final long initialBulk) {
+    public SqlGraphStepWithPathTraverser(final T t, Multimap<String, Object> labeledObjects, final Step<T, ?> step, final long initialBulk) {
         super(t, step, initialBulk);
         this.labeledObjects = labeledObjects;
         if (!this.labeledObjects.isEmpty()) {

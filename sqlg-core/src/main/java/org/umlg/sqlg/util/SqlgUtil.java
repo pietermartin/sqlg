@@ -52,8 +52,8 @@ public class SqlgUtil {
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-            columnMap1.put(resultSetMetaData.getColumnName(columnCount), columnCount);
-            columnMap2.put(resultSetMetaData.getColumnName(columnCount), columnCount);
+            columnMap1.put(resultSetMetaData.getColumnLabel(columnCount), columnCount);
+            columnMap2.put(resultSetMetaData.getColumnLabel(columnCount), columnCount);
         }
         Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
         E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
