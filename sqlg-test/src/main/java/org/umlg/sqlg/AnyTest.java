@@ -2,14 +2,15 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.*;
+import org.umlg.sqlg.test.TestSetProperty;
+import org.umlg.sqlg.test.TinkerpopTest;
+import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestSpeed;
+import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.edges.TestForeignKeysAreOptional;
-import org.umlg.sqlg.test.edges.TestLoadEdge;
-import org.umlg.sqlg.test.edges.TestOutE;
-import org.umlg.sqlg.test.gremlincompile.*;
-import org.umlg.sqlg.test.multithread.TestMultiThread;
-import org.umlg.sqlg.test.schema.TestLoadSchema;
-import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
+import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
+import org.umlg.sqlg.test.vertex.TestNewVertex;
 
 /**
  * Date: 2014/07/16
@@ -17,7 +18,7 @@ import org.umlg.sqlg.test.schema.TestSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithHas.class,
+        TestTraversalPerformance.class
 })
 public class AnyTest {
 }
