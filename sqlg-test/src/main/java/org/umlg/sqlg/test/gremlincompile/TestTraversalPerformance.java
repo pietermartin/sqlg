@@ -7,11 +7,29 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.List;
+
 /**
  * Date: 2015/02/01
  * Time: 11:48 AM
  */
 public class TestTraversalPerformance extends BaseTest {
+
+    @Test
+    public void test() {
+        for (int i = 0; i < 10000; i++) {
+            Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+            a.addEdge("ab", b);
+        }
+        this.sqlgGraph.tx().commit();
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").out().toList();
+        Assert.assertEquals(10000, vertices.size());
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
 
     @Test
     public void testSpeed() {
