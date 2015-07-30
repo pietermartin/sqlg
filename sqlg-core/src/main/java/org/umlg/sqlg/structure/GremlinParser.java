@@ -65,7 +65,8 @@ public class GremlinParser<E extends Element> {
                 sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
             }
         }
-        sqlgElement.properties.clear();
+        //Why is this here
+//        sqlgElement.properties.clear();
         elements.add(sqlgElement);
     }
 
