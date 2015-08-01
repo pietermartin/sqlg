@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.umlg.sqlg.process.SqlgLabelledPathTraverser;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgElement;
 
@@ -38,11 +39,11 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 //This is because the labels must be set on a unique path for every iteration.
                 Traverser.Admin<E> split = this.head.split(e, this);
                 for (String label : labeledObjects.keySet()) {
-                    //If there are labels then it must be a B_LP_O_P_S_SE_SL_Traverser
-                    B_LP_O_P_S_SE_SL_Traverser b_o_p_s_se_sl_traverser = (B_LP_O_P_S_SE_SL_Traverser)split;
+                    //If there are labels then it must be a SqlgLabelledPathTraverser
+                    SqlgLabelledPathTraverser sqlgLabelledPathTraverser = (SqlgLabelledPathTraverser)split;
                     Collection<Object> labeledElements = labeledObjects.get(label);
                     for (Object labeledElement : labeledElements) {
-                        b_o_p_s_se_sl_traverser.setPath(split.path().extend(labeledElement, Collections.singleton(label)));
+                        sqlgLabelledPathTraverser.setPath(split.path().extend(labeledElement, Collections.singleton(label)));
                     }
                 }
                 return split;

@@ -73,7 +73,6 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                     }
                 } else {
                     break;
-//                    previous = null;
                 }
             }
         }

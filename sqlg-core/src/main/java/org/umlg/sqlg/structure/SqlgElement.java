@@ -70,11 +70,6 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    SchemaTable getSchemaTableNoPrefix() {
-        return SchemaTable.of(this.getSchema(), this.getTable());
-    }
-
-
     public void setInternalPrimaryKey(RecordId recordId) {
         this.recordId = recordId;
     }
@@ -525,47 +520,5 @@ public abstract class SqlgElement implements Element {
     public abstract void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException;
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
-
-//    /**
-//     * This will create SqlgVertex from the resultSet.
-//     * Note that the nature of inner join queries on multiple tables creates duplicates.
-//     * This method filters out duplicates.
-//     *
-//     * @param resultSet
-//     * @param schemaTable
-//     * @param elements
-//     * @throws SQLException
-//     */
-//    private static void loadElements(SqlgGraph sqlgGraph, ResultSet resultSet, SchemaTable schemaTable, List<Element> elements) throws SQLException {
-//        String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
-//        Long id = resultSet.getLong(idProperty);
-//        SqlgElement sqlgElement;
-//        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-//            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-//            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-//        } else {
-//            if (!schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
-//                throw new IllegalStateException("Expected table to start with " + SchemaManager.EDGE_PREFIX);
-//            }
-//            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
-//            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
-//        }
-//        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-//        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-//            String columnName = resultSetMetaData.getColumnLabel(i);
-//            Object o = resultSet.getObject(columnName);
-//            if (!columnName.equals("ID")
-//                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
-//                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
-//                    && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
-//                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
-//                    && !Objects.isNull(o)) {
-//
-//                sqlgElement.loadProperty(resultSetMetaData, i, columnName, o);
-//            }
-//        }
-//        sqlgElement.properties.clear();
-//        elements.add(sqlgElement);
-//    }
 
 }

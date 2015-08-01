@@ -7,7 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -857,24 +856,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 columnCounts.remove(columnCountToRemove);
             }
         }
-
-//        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-//        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-//            String columnName = resultSetMetaData.getColumnLabel(i);
-//            Object o = resultSet.getObject(i);
-//            if (columnName.startsWith(schemaTableTree.reducedLabels())) {
-//                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-//                if (!name.equals("ID")
-//                        && !name.equals(SchemaManager.VERTEX_IN_LABELS)
-//                        && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
-//                        && !name.equals(SchemaManager.VERTEX_SCHEMA)
-//                        && !name.equals(SchemaManager.VERTEX_TABLE)
-//                        && !Objects.isNull(o)) {
-//
-//                    loadProperty(resultSetMetaData, i, name, o);
-//                }
-//            }
-//        }
     }
 
     @Override
@@ -894,7 +875,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             }
         }
     }
-
 
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {

@@ -81,10 +81,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                         resultIterator.add(result);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
                     throw new RuntimeException(e);
-//                } catch (SQLException e) {
-//                    throw new RuntimeException(e);
                 }
             }
         }

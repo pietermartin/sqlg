@@ -12,7 +12,7 @@ import java.util.Collections;
 /**
  * Created by pieter on 2015/07/20.
  */
-public class SqlGraphStepTraverser<T> extends B_LP_O_S_SE_SL_Traverser<T> {
+public class SqlGraphStepTraverser<T> extends B_LP_O_S_SE_SL_Traverser<T> implements SqlgLabelledPathTraverser {
 
     private Multimap<String, Object> labeledObjects;
 
@@ -39,4 +39,8 @@ public class SqlGraphStepTraverser<T> extends B_LP_O_S_SE_SL_Traverser<T> {
         this.path = localPath;
     }
 
+    @Override
+    public void setPath(Path path) {
+        this.path = path;
+    }
 }

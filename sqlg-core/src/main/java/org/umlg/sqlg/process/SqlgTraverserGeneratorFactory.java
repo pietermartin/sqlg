@@ -27,7 +27,12 @@ public class SqlgTraverserGeneratorFactory implements TraverserGeneratorFactory 
                 return SqlgGraphStepTraverserGenerator.instance();
             }
         } else {
-            return traverserGenerator;
+            if (traverserGenerator instanceof B_LP_O_P_S_SE_SL_TraverserGenerator) {
+                return SqlgGraphStepWithPathTraverserGenerator.instance();
+            } else {
+                return SqlgGraphStepTraverserGenerator.instance();
+            }
+//            return traverserGenerator;
         }
 
     }
