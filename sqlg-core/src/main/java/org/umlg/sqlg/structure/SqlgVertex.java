@@ -803,6 +803,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+        } else {
+//            logger.warn("debugging cm!!!!!, load not called");
         }
     }
 
