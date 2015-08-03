@@ -342,7 +342,9 @@ public class SchemaTableTree {
                 } else {
                     singlePathSql += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
                 }
-                singlePathSql += " = ?";
+                WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                singlePathSql += " " + whereClause.toSql();
+                singlePathSql += " ?";
             }
         }
 

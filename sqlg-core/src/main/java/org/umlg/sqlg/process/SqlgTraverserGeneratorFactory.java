@@ -32,7 +32,6 @@ public class SqlgTraverserGeneratorFactory implements TraverserGeneratorFactory 
             } else {
                 return SqlgGraphStepTraverserGenerator.instance();
             }
-//            return traverserGenerator;
         }
 
     }
