@@ -1,5 +1,6 @@
 package org.umlg.sqlg.strategy;
 
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
@@ -7,7 +8,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 
@@ -15,6 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Created by pieter on 2015/07/19.
@@ -37,7 +41,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof HasContainerHolder && SUPPORTED_BI_PREDICATE.contains(((HasContainerHolder) currentStep).getHasContainers().get(0).getBiPredicate())) {
+            if (currentStep instanceof HasContainerHolder &&
+                    (isSingleBiPredicate(((HasContainerHolder) currentStep).getHasContainers()) ||
+                            isBetween(((HasContainerHolder) currentStep).getHasContainers()))) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(replacedStep::addLabel);
@@ -52,6 +58,24 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 iterator.previous();
                 break;
             }
+        }
+    }
+
+    private boolean isSingleBiPredicate(List<HasContainer> hasContainers) {
+        if (hasContainers.size() == 1) {
+            return SUPPORTED_BI_PREDICATE.contains(hasContainers.get(0).getBiPredicate());
+        } else {
+            return false;
+        }
+    }
+
+    private boolean isBetween(List<HasContainer> hasContainers) {
+        if (hasContainers.size() == 2) {
+            HasContainer hasContainer1 = hasContainers.get(0);
+            HasContainer hasContainer2 = hasContainers.get(1);
+            return hasContainer1.getBiPredicate().equals(Compare.gte) && hasContainer2.getBiPredicate().equals(Compare.lt);
+        } else {
+            return false;
         }
     }
 }
