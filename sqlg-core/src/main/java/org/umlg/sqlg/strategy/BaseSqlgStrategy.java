@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEf
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
+import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 
@@ -43,7 +44,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
             Step<?, ?> currentStep = iterator.next();
             if (currentStep instanceof HasContainerHolder &&
                     (isSingleBiPredicate(((HasContainerHolder) currentStep).getHasContainers()) ||
-                            isBetween(((HasContainerHolder) currentStep).getHasContainers()))) {
+                            isBetween(((HasContainerHolder) currentStep).getHasContainers()) ||
+                            isInside(((HasContainerHolder) currentStep).getHasContainers()) ||
+                            isOutside(((HasContainerHolder) currentStep).getHasContainers()))) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(replacedStep::addLabel);
@@ -74,6 +77,31 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
             HasContainer hasContainer1 = hasContainers.get(0);
             HasContainer hasContainer2 = hasContainers.get(1);
             return hasContainer1.getBiPredicate().equals(Compare.gte) && hasContainer2.getBiPredicate().equals(Compare.lt);
+        } else {
+            return false;
+        }
+    }
+
+    private boolean isInside(List<HasContainer> hasContainers) {
+        if (hasContainers.size() == 2) {
+            HasContainer hasContainer1 = hasContainers.get(0);
+            HasContainer hasContainer2 = hasContainers.get(1);
+            return hasContainer1.getBiPredicate().equals(Compare.gt) && hasContainer2.getBiPredicate().equals(Compare.lt);
+        } else {
+            return false;
+        }
+    }
+
+    private <V> boolean isOutside(List<HasContainer> hasContainers) {
+        if (hasContainers.size() == 1 && hasContainers.get(0).getPredicate() instanceof OrP) {
+            OrP<V> orP = (OrP) hasContainers.get(0).getPredicate();
+            if (orP.getPredicates().size() == 2) {
+                P<V> predicate1 = orP.getPredicates().get(0);
+                P<V> predicate2 = orP.getPredicates().get(1);
+                return predicate1.getBiPredicate().equals(Compare.lt) && predicate2.getBiPredicate().equals(Compare.gt);
+            } else {
+                return false;
+            }
         } else {
             return false;
         }

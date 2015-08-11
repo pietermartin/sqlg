@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.structure.*;
 
 import java.lang.reflect.Array;
@@ -110,7 +111,8 @@ public class SqlgUtil {
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
+                WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                whereClause.putKeyValueMap(hasContainer, keyValueMap);
             }
         }
         SqlgUtil.setKeyValuesAsParameter(sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -39,7 +40,7 @@ public class SchemaTableTree {
             String[] splittedColumn = column.split("\\.");
             String schema = splittedColumn[0];
             String table = splittedColumn[1];
-            Preconditions.checkState(table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX),"SchemaTableTree.containsColumn table must be prefixed! table = " + table);
+            Preconditions.checkState(table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX), "SchemaTableTree.containsColumn table must be prefixed! table = " + table);
             return schema.equals(this.schemaTable.getSchema()) && table.equals(this.schemaTable.getTable());
         } else {
             return false;
@@ -324,31 +325,29 @@ public class SchemaTableTree {
 
         //check if the 'where' has already been printed
         boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
+        MutableBoolean mutableWhere = new MutableBoolean(printedWhere);
 
-        //construct there where clause for the hasContainers
+        //construct the where clause for the hasContainers
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
-            for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                if (!printedWhere) {
-                    printedWhere = true;
-                    singlePathSql += " WHERE ";
-                } else {
-                    singlePathSql += " AND ";
-                }
-                singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema());
-                singlePathSql += ".";
-                singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable());
-                if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                    singlePathSql += ".\"ID\"";
-                } else {
-                    singlePathSql += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-                }
-                WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                singlePathSql += " " + whereClause.toSql();
-                singlePathSql += " ?";
-            }
+            singlePathSql += schemaTableTree.toWhereClause(sqlgGraph, mutableWhere);
         }
 
         return singlePathSql;
+    }
+
+    private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
+        String result = "";
+        for (HasContainer hasContainer : this.getHasContainers()) {
+            if (!printedWhere.booleanValue()) {
+                printedWhere.setTrue();
+                result += " WHERE (";
+            } else {
+                result += " AND (";
+            }
+            WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+            result += " " + whereClause.toSql(sqlgGraph, this, hasContainer) + ")";
+        }
+        return result;
     }
 
     private static List<LinkedList<SchemaTableTree>> splitIntoSubStacks(LinkedList<SchemaTableTree> distinctQueryStack) {
@@ -951,6 +950,7 @@ public class SchemaTableTree {
             queue.add(this);
             while (!queue.isEmpty()) {
                 SchemaTableTree current = queue.remove();
+                removeObsoleteHasContainers(current);
                 if (invalidateByHas(current)) {
                     removeNode(current);
                 } else {
@@ -961,32 +961,45 @@ public class SchemaTableTree {
         }
     }
 
-    private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
+    private void removeObsoleteHasContainers(SchemaTableTree schemaTableTree) {
         Set<HasContainer> toRemove = new HashSet<>();
-        for (HasContainer hasContainer : schemaTableTree.hasContainers) {
-            //Check if we are on a vertex or edge
-            SchemaTable hasContainerLabelSchemaTable;
-            if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
-            } else {
-                hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+        schemaTableTree.hasContainers.forEach(hasContainer -> {
+            if (hasContainer.getKey().equals(T.label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
+                SchemaTable hasContainerLabelSchemaTable;
+                if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+                    hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                } else {
+                    hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                }
+                if (hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
+                    toRemove.add(hasContainer);
+                }
             }
-            if (hasContainer.getKey().equals(T.label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq) &&
-                    !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
-                return true;
-            } else if (hasContainer.getKey().equals(T.label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq) &&
-                    hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
+        });
+        schemaTableTree.hasContainers.removeAll(toRemove);
+    }
 
-                //remove the hasContainer as the query is already fulfilling it.
-                toRemove.add(hasContainer);
+    private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
+        for (HasContainer hasContainer : schemaTableTree.hasContainers) {
+            if (hasContainer.getKey().equals(T.label.getAccessor())) {
+                //Check if we are on a vertex or edge
+                SchemaTable hasContainerLabelSchemaTable;
+                if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+                    hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                } else {
+                    hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                }
+                if (hasContainer.getBiPredicate().equals(Compare.eq) && !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
+                    return true;
+                }
             } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
                 //check if the hasContainer is for a property that exists, if not remove this node from the query tree
                 if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                     return true;
                 }
+
             }
         }
-        schemaTableTree.hasContainers.removeAll(toRemove);
         return false;
     }
 
