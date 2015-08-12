@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.structure.SchemaManager;
@@ -997,10 +998,23 @@ public class SchemaTableTree {
                 if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                     return true;
                 }
-
+                //Check if it is a Contains.within with a empty list of values
+                if (hasEmptyWithin(hasContainer)) {
+                    return true;
+                }
+            } else if (hasEmptyWithin(hasContainer)) {
+                return true;
             }
         }
         return false;
+    }
+
+    private boolean hasEmptyWithin(HasContainer hasContainer) {
+        if (hasContainer.getBiPredicate() == Contains.within) {
+            return ((List)hasContainer.getPredicate().getValue()).isEmpty();
+        } else {
+            return false;
+        }
     }
 
     @Override

@@ -21,7 +21,7 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithHas.class
+        TestGremlinCompileWhere.class
 })
 public class AnyTest {
 }
