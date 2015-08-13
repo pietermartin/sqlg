@@ -368,13 +368,50 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
         } else {
             //Remove all internalEdges
-            Iterator<Edge> edges = this.internalEdges(Direction.BOTH);
-            while (edges.hasNext()) {
-                edges.next().remove();
+            Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed());
+            //in edges
+            for (SchemaTable schemaTable : foreignKeys.getLeft()) {
+                deleteEdgesWithInKey(schemaTable, this.id());
+            }
+            //out edges
+            for (SchemaTable schemaTable : foreignKeys.getRight()) {
+                deleteEdgesWithOutKey(schemaTable, this.id());
             }
             super.remove();
         }
     }
+
+    private void deleteEdgesWithOutKey(SchemaTable edgeSchemaTable, Object id) {
+        deleteEdges(Direction.OUT, edgeSchemaTable);
+    }
+
+    private void deleteEdgesWithInKey(SchemaTable edgeSchemaTable, Object id) {
+        deleteEdges(Direction.IN, edgeSchemaTable);
+    }
+
+    private void deleteEdges(Direction direction, SchemaTable edgeSchemaTable) {
+        StringBuilder sql = new StringBuilder("DELETE FROM ");
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getSchema()));
+        sql.append(".");
+        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getTable()));
+        sql.append(" WHERE ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? SchemaManager.OUT_VERTEX_COLUMN_END : SchemaManager.IN_VERTEX_COLUMN_END)));
+        sql.append(" = ?");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.setLong(1, ((RecordId) this.id()).getId());
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     private void insertVertex(Object... keyValues) {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
