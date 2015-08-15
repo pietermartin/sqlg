@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;
@@ -64,6 +65,10 @@ public class WhereClause {
             P p2 = orP.getPredicates().get(1);
             result += " or " + prefix + key + compareToSql((Compare) p2.getBiPredicate());
             return result;
+        } else if (p.getBiPredicate() instanceof Text) {
+            result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            result += textContainsToSql((Text) p.getBiPredicate());
+            return result;
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
     }
@@ -110,6 +115,21 @@ public class WhereClause {
         return result;
     }
 
+    private static String textContainsToSql(Text text) {
+        String result;
+        switch (text) {
+            case contains:
+                result = " like ?";
+                break;
+            case ncontains:
+                result = " not like ?";
+                break;
+            default:
+                throw new RuntimeException("Unknown Contains " + text.name());
+        }
+        return result;
+    }
+
     public void putKeyValueMap(HasContainer hasContainer, Multimap<String, Object> keyValueMap) {
         if (p instanceof OrP) {
             OrP<?> orP = (OrP) p;
@@ -123,6 +143,8 @@ public class WhereClause {
             for (Object value : values) {
                 keyValueMap.put(hasContainer.getKey(), value);
             }
+        } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains) {
+            keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue() + "%");
         } else {
             keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
         }

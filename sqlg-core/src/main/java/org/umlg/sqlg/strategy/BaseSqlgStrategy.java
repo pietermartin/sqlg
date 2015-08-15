@@ -14,6 +14,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 
 import java.util.Arrays;
@@ -48,7 +49,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             isBetween(((HasContainerHolder) currentStep).getHasContainers()) ||
                             isInside(((HasContainerHolder) currentStep).getHasContainers()) ||
                             isOutside(((HasContainerHolder) currentStep).getHasContainers()) ||
-                            isWithinOut(((HasContainerHolder) currentStep).getHasContainers()))) {
+                            isWithinOut(((HasContainerHolder) currentStep).getHasContainers()) ||
+                            isTextContains(((HasContainerHolder) currentStep).getHasContainers()))) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(replacedStep::addLabel);
@@ -112,8 +114,17 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     private boolean isWithinOut(List<HasContainer> hasContainers) {
         return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
                 !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
-                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
                 (hasContainers.get(0).getBiPredicate() == Contains.without || hasContainers.get(0).getBiPredicate() == Contains.within));
+    }
+
+    private boolean isTextContains(List<HasContainer> hasContainers) {
+        return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
+                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
+                (hasContainers.get(0).getBiPredicate() == Text.contains ||
+                        hasContainers.get(0).getBiPredicate() == Text.ncontains
+//                        hasContainers.get(0).getBiPredicate() == Text.containsCIS ||
+//                        hasContainers.get(0).getBiPredicate() == Text.ncontainsCIS
+                ));
     }
 
 }
