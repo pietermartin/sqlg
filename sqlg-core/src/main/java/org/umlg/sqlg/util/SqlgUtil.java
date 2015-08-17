@@ -48,21 +48,22 @@ public class SqlgUtil {
         return result;
     }
 
-    public static <E> Pair<E, Multimap<String, Object>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    public static <E> Pair<E, Multimap<String, Object>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, Map<String, String> aliasMap, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-            columnMap1.put(resultSetMetaData.getColumnLabel(columnCount), columnCount);
-            columnMap2.put(resultSetMetaData.getColumnLabel(columnCount), columnCount);
+            columnMap1.put(aliasMap.get(resultSetMetaData.getColumnLabel(columnCount)), columnCount);
+            columnMap2.put(aliasMap.get(resultSetMetaData.getColumnLabel(columnCount)), columnCount);
         }
-        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
-        E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
+        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, aliasMap, columnMap1, resultSet, schemaTableTreeStack);
+        E e = loadElements(sqlgGraph, aliasMap, columnMap2, resultSet, schemaTableTreeStack);
         return Pair.of(e, labeledResult);
     }
 
-    private static <E> E loadElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    private static <E> E loadElements(SqlgGraph sqlgGraph, Map<String,String> aliasMap, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         SchemaTable schemaTable = schemaTableTreeStack.getLast().getSchemaTable();
+//        String idProperty = "\"" + schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID + "\"";
         String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
         Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
         Integer columnCount = propertyColumnsCounts.iterator().next();
@@ -77,11 +78,11 @@ public class SqlgUtil {
             String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
             sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         }
-        sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
+        sqlgElement.loadResultSet(resultSet, aliasMap, schemaTableTreeStack.getLast());
         return (E) sqlgElement;
     }
 
-    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, Map<String, String> aliasMap, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         Multimap<String, Object> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
@@ -98,8 +99,8 @@ public class SqlgUtil {
                 } else {
                     sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                 }
-                sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
-                schemaTableTree.getLabels().forEach(l->result.put(l, sqlgElement));
+                sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree, aliasMap);
+                schemaTableTree.getLabels().forEach(l -> result.put(l, sqlgElement));
             }
         }
         return result;
@@ -297,7 +298,7 @@ public class SqlgUtil {
                 if (!(value instanceof RecordId)) {
                     id = RecordId.from(value);
                 } else {
-                    id = (RecordId)value;
+                    id = (RecordId) value;
                 }
                 result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
             } else {

@@ -2,6 +2,7 @@ package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -66,7 +67,8 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
         for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
+            Map<String, String> aliasMap = new HashMap<>();
+            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql(aliasMap, new MutableInt(1));
             for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
                 Connection conn = this.sqlgGraph.tx().getConnection();
                 if (logger.isDebugEnabled()) {
@@ -77,7 +79,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                     ResultSet resultSet = preparedStatement.executeQuery();
                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                     while (resultSet.next()) {
-                        Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
+                        Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, aliasMap, resultSetMetaData, resultSet, sqlPair.getLeft());
                         resultIterator.add(result);
                     }
                 } catch (Exception e) {
