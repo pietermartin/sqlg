@@ -82,7 +82,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGremlinCompileWithInOutV.class,
         TestGremlinCompileV.class,
         TestGremlinCompileGraphStep.class,
-        TestGremlinCompileWhere.class
+        TestGremlinCompileWhere.class,
+        TestColumnNameTranslation.class
 })
 public class AllTest {
 }

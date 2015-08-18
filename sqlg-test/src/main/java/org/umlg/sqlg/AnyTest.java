@@ -8,10 +8,7 @@ import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestSpeed;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
 import org.umlg.sqlg.test.edges.TestForeignKeysAreOptional;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithAs;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
-import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
+import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
 
@@ -21,7 +18,7 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWhere.class
+        TestColumnNameTranslation.class
 })
 public class AnyTest {
 }
