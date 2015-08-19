@@ -36,12 +36,6 @@ public class SqlgTransaction extends AbstractTransaction {
     public SqlgTransaction(Graph sqlgGraph) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph)sqlgGraph;
-//
-//        // auto transaction behavior
-//        readWriteConsumer = READ_WRITE_BEHAVIOR.AUTO;
-//
-//        // commit on close
-//        closeConsumer = CLOSE_BEHAVIOR.COMMIT;
     }
 
     @Override

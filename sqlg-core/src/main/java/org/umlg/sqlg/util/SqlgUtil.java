@@ -52,9 +52,12 @@ public class SqlgUtil {
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
+        //Translate the columns back from alias to meaningful column headings
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-            columnMap1.put(resultSetMetaData.getColumnLabel(columnCount), columnCount);
-            columnMap2.put(resultSetMetaData.getColumnLabel(columnCount), columnCount);
+            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+            String unaliased = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnLabel);
+            columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
+            columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
         }
         Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
         E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
