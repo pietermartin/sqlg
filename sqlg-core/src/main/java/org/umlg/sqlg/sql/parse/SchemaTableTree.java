@@ -205,7 +205,7 @@ public class SchemaTableTree {
             }
             lastOfPrevious = subQueryLinkedList.getLast();
         }
-        LinkedList<SchemaTableTree> schemaTableTrees = subQueryLinkedLists.get(subQueryLinkedLists.size() - 1);
+//        LinkedList<SchemaTableTree> schemaTableTrees = subQueryLinkedLists.get(subQueryLinkedLists.size() - 1);
         String result = "SELECT " + constructOuterFromClause(subQueryLinkedLists);
         return result + singlePathSql;
     }
@@ -303,12 +303,14 @@ public class SchemaTableTree {
         } else {
             if (toSchemaTableTree.direction == Direction.OUT) {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
-                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+//                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
+//                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasVertexColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel) + "\"";
             } else {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
-                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+//                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
+//                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasVertexColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel) + "\"";
             }
         }
         return result;
@@ -485,9 +487,11 @@ public class SchemaTableTree {
                                 previousSchemaTableTree.getSchemaTable().getSchema() + "." +
                                         previousRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END
                         );
-                sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
-                        previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                        previousRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+//                sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
+//                        previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+//                        previousRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+
+                sql += " AS \"" + firstSchemaTableTree.calculatedAliasVertexColumnEnd(previousSchemaTableTree, firstSchemaTableTree.direction) + "\"";
             } else {
                 sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
                         sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
@@ -495,9 +499,11 @@ public class SchemaTableTree {
                                 previousSchemaTableTree.getSchemaTable().getSchema() + "." +
                                         previousRawLabel + SchemaManager.IN_VERTEX_COLUMN_END
                         );
-                sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
-                        previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                        previousRawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+//                sql += " AS \"" + firstSchemaTable.getSchema() + "." + firstSchemaTable.getTable() + "." +
+//                        previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+//                        previousRawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+
+                sql += " AS \"" + firstSchemaTableTree.calculatedAliasVertexColumnEnd(previousSchemaTableTree, firstSchemaTableTree.direction) + "\"";
             }
         } else if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
@@ -608,6 +614,7 @@ public class SchemaTableTree {
         }
         return sql;
     }
+
 
     private String printLabeledOuterFromClause(String sql, int counter) {
         sql += " a" + counter + ".\"" + this.labeledMappedAliasId() + "\"";
@@ -749,7 +756,8 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += prepend;
             sql += ".\"";
-            sql += this.aliasPropertyName(edgeForeignKey);
+//            sql += this.aliasPropertyName(edgeForeignKey);
+            sql += this.mappedAliasPropertyName(edgeForeignKey);
             sql += "\"";
             if (propertyCount < edgeForeignKeys.size()) {
                 sql += ", ";
@@ -774,7 +782,7 @@ public class SchemaTableTree {
 
                 sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
                 sql += " AS \"";
-                sql += lastSchemaTableTree.aliasPropertyName(edgeForeignKey);
+                sql += lastSchemaTableTree.calculateAliasPropertyName(edgeForeignKey);
                 sql += "\", ";
             }
             propertyCount++;
@@ -795,7 +803,8 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += " a" + counter + ".";
             sql += "\"";
-            sql += this.labeledAliasPropertyName(edgeForeignKey);
+//            sql += this.labeledAliasPropertyName(edgeForeignKey);
+            sql += this.labeledMappedAliasPropertyName(edgeForeignKey);
             sql += "\"";
             if (propertyCount++ < edgeForeignKeys.size()) {
                 sql += ", ";
@@ -816,7 +825,8 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
             sql += " AS \"";
-            sql += this.labeledAliasPropertyName(edgeForeignKey);
+//            sql += this.labeledAliasPropertyName(edgeForeignKey);
+            sql += this.calculateLabeledAliasPropertyName(edgeForeignKey);
             sql += "\"";
             if (propertyCount++ < edgeForeignKeys.size()) {
                 sql += ", ";
@@ -835,14 +845,6 @@ public class SchemaTableTree {
         threadLocalColumnNameAliasMap.get().put(result, alias);
         threadLocalAliasColumnNameMap.get().put(alias, result);
         return alias;
-    }
-
-    public String aliasPropertyName(String propertyName) {
-        return getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
-    }
-
-    public String propertyNameFromAlias(String alias) {
-        return alias.replace(getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + ".", "");
     }
 
     public String calculateLabeledAliasId() {
@@ -871,20 +873,62 @@ public class SchemaTableTree {
         return alias;
     }
 
-    public String labeledAliasPropertyName(String propertyName) {
-        String labels = reducedLabels();
-        return labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
+    private String calculatedAliasVertexColumnEnd(SchemaTableTree previousSchemaTableTree, Direction direction) {
+        String previousRawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + previousSchemaTableTree.getSchemaTable().getSchema() +
+                "." + previousRawLabel +
+                (direction ==  Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
+        String alias = rootAliasAndIncrement();
+        threadLocalColumnNameAliasMap.get().put(result, alias);
+        threadLocalAliasColumnNameMap.get().put(alias, result);
+        return alias;
+    }
+
+    public String mappedAliasVertexColumnEnd(SchemaTableTree previousSchemaTableTree, Direction direction, String rawFromLabel) {
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." +
+                        previousSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
+        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        return strings.get(strings.size() - 1);
     }
 
     public String labeledMappedAliasPropertyName(String propertyName) {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
-        return ((List<String>) threadLocalColumnNameAliasMap.get().get(result)).remove(0);
+        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        return strings.remove(0);
     }
 
     public String mappedAliasPropertyName(String propertyName) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
-        return ((List<String>) threadLocalColumnNameAliasMap.get().get(result)).remove(0);
+        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        return strings.get(strings.size() - 1);
+    }
+
+    public String labeledMappedAliasId() {
+        String labels = reducedLabels();
+        String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
+        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        return strings.remove(0);
+    }
+
+    public String mappedAliasId() {
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
+        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        return strings.get(strings.size()-1);
+    }
+
+    public String propertyNameFromAlias(String alias) {
+        return alias.replace(getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + ".", "");
+    }
+
+    public String aliasPropertyName(String propertyName) {
+        return getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
+    }
+
+
+    public String labeledAliasPropertyName(String propertyName) {
+        String labels = reducedLabels();
+        return labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
     }
 
     public String labeledAliasId() {
@@ -892,29 +936,6 @@ public class SchemaTableTree {
         return labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
     }
 
-    public String labeledMappedAliasId() {
-        String labels = reducedLabels();
-        String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        return ((List<String>) threadLocalColumnNameAliasMap.get().get(result)).remove(0);
-    }
-
-    public String mappedAliasId() {
-        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
-//        if (strings.size()==1) {
-        //Always return the last in the list. This is because this method is called for crossSectionJoin.
-        //The value to join is placed in the list just before this is called, so its the last element
-        //The last value is used for the outer join as that always prints the last values in the tree
-            return strings.get(strings.size()-1);
-//        } else {
-//            return strings.remove(0);
-//        }
-    }
-
-//    public String mappedAliasIdAndRemove() {
-//        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-//        return ((List<String>) threadLocalColumnNameAliasMap.get().get(result)).remove(0);
-//    }
 
     private String rootAliasAndIncrement() {
         return "alias" + rootSchemaTableTree().rootAliasCounter++;

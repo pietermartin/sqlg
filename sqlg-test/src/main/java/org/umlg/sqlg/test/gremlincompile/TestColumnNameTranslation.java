@@ -11,11 +11,29 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Date: 2015/08/17
  * Time: 5:10 PM
  */
 public class TestColumnNameTranslation extends BaseTest {
+
+    @Test
+    public void testInOutInOut2() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+
+        a1.addEdge("a_outB", b1);
+        a1.addEdge("a_outB", b2);
+        a1.addEdge("a_outB", b3);
+
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(9, vertexTraversal(a1).out().in().out().count().next().intValue());
+    }
 
     @Test
     public void testNameWithMultipleSameLabel() {
@@ -39,7 +57,7 @@ public class TestColumnNameTranslation extends BaseTest {
         Assert.assertEquals(3, result.size());
         Object o1 = result.get(0).get("a");
         Assert.assertTrue(o1 instanceof List);
-        List<Vertex> ass = (List)o1;
+        List<Vertex> ass = (List) o1;
         Assert.assertEquals(a1, ass.get(0));
         Assert.assertEquals("a1", ass.get(0).value("name"));
         Assert.assertEquals(b1, ass.get(1));
@@ -93,15 +111,15 @@ public class TestColumnNameTranslation extends BaseTest {
         Assert.assertEquals(e1, result.get(5).get("ab"));
 
         Assert.assertEquals(b1, result.get(0).get("B"));
-        Assert.assertEquals("b1", ((Vertex)result.get(0).get("B")).value("name"));
+        Assert.assertEquals("b1", ((Vertex) result.get(0).get("B")).value("name"));
         Assert.assertEquals(b1, result.get(1).get("B"));
-        Assert.assertEquals("b1", ((Vertex)result.get(1).get("B")).value("name"));
+        Assert.assertEquals("b1", ((Vertex) result.get(1).get("B")).value("name"));
         Assert.assertEquals(b1, result.get(2).get("B"));
         Assert.assertEquals("b1", ((Vertex) result.get(2).get("B")).value("name"));
         Assert.assertEquals(b1, result.get(3).get("B"));
-        Assert.assertEquals("b1", ((Vertex)result.get(3).get("B")).value("name"));
+        Assert.assertEquals("b1", ((Vertex) result.get(3).get("B")).value("name"));
         Assert.assertEquals(b1, result.get(4).get("B"));
-        Assert.assertEquals("b1", ((Vertex)result.get(4).get("B")).value("name"));
+        Assert.assertEquals("b1", ((Vertex) result.get(4).get("B")).value("name"));
         Assert.assertEquals(b1, result.get(5).get("B"));
         Assert.assertEquals("b1", ((Vertex) result.get(5).get("B")).value("name"));
 
@@ -185,7 +203,7 @@ public class TestColumnNameTranslation extends BaseTest {
         Assert.assertTrue(cds.isEmpty());
     }
 
-    //    @Test
+    @Test
     public void testLongName() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "AAAAAAAAAAAAAAAAAAAAAAAAA");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "BBBBBBBBBBBBBBBBBBBBBBBBB");
