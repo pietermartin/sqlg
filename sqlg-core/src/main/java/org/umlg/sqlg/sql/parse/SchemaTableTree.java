@@ -243,7 +243,8 @@ public class SchemaTableTree {
         }
         int propertyCount = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
-            sql += "a" + count + ".\"" + this.getSchemaTable().getSchema() + "." + this.getSchemaTable().getTable() + "." + propertyName + "\"";
+//            sql += "a" + count + ".\"" + this.getSchemaTable().getSchema() + "." + this.getSchemaTable().getTable() + "." + propertyName + "\"";
+            sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyName) + "\"";
             if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ", ";
             }
@@ -685,7 +686,8 @@ public class SchemaTableTree {
         for (String propertyName : propertyTypeMap.keySet()) {
             sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
             sql += " AS \"";
-            sql += lastSchemaTableTree.aliasPropertyName(propertyName);
+//            sql += lastSchemaTableTree.aliasPropertyName(propertyName);
+            sql += lastSchemaTableTree.calculateAliasPropertyName(propertyName);
             sql += "\"";
             if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ",";
@@ -861,6 +863,14 @@ public class SchemaTableTree {
         return alias;
     }
 
+    public String calculateAliasPropertyName(String propertyName) {
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
+        String alias = rootAliasAndIncrement();
+        threadLocalColumnNameAliasMap.get().put(result, alias);
+        threadLocalAliasColumnNameMap.get().put(alias, result);
+        return alias;
+    }
+
     public String labeledAliasPropertyName(String propertyName) {
         String labels = reducedLabels();
         return labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
@@ -869,6 +879,11 @@ public class SchemaTableTree {
     public String labeledMappedAliasPropertyName(String propertyName) {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
+        return ((List<String>) threadLocalColumnNameAliasMap.get().get(result)).remove(0);
+    }
+
+    public String mappedAliasPropertyName(String propertyName) {
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
         return ((List<String>) threadLocalColumnNameAliasMap.get().get(result)).remove(0);
     }
 
