@@ -254,7 +254,7 @@ public class TestGremlinCompileWhere extends BaseTest {
     }
 
     @Test
-    public void testTexContainsCIS() {
+    public void testTextContainsCIS() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
         this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
         this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -269,6 +269,98 @@ public class TestGremlinCompileWhere extends BaseTest {
         Assert.assertEquals(0, vertices.size());
         vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.containsCIS("OHN")).toList();
         Assert.assertEquals(1, vertices.size());
+    }
+
+    @Test
+    public void testTextNContainsCIS() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.ncontainsCIS("A")).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.ncontainsCIS("AAA")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.ncontainsCIS("ABC")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.ncontainsCIS("ACD")).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.ncontainsCIS("OHN")).toList();
+        Assert.assertEquals(2, vertices.size());
+    }
+
+    @Test
+    public void testTextStartsWith() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.startsWith("a")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.startsWith("aaa")).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.startsWith("abc")).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.startsWith("acd")).toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.startsWith("ohn")).toList();
+        Assert.assertEquals(0, vertices.size());
+    }
+
+    @Test
+    public void testTextNStartsWith() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nstartsWith("a")).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nstartsWith("aaa")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nstartsWith("abc")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nstartsWith("acd")).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nstartsWith("ohn")).toList();
+        Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
+    public void testTextEndsWith() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.endsWith("a")).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.endsWith("aaa")).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.endsWith("abc")).toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.endsWith("acd")).toList();
+        Assert.assertEquals(0, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.endsWith("ohn")).toList();
+        Assert.assertEquals(1, vertices.size());
+    }
+
+    @Test
+    public void testTextNEndsWith() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nendsWith("a")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nendsWith("aaa")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nendsWith("abc")).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nendsWith("acd")).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nendsWith("ohn")).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.nendsWith("D")).toList();
+        Assert.assertEquals(3, vertices.size());
     }
 
 }

@@ -121,9 +121,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
                 !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
                 (hasContainers.get(0).getBiPredicate() == Text.contains ||
-                        hasContainers.get(0).getBiPredicate() == Text.ncontains
-//                        hasContainers.get(0).getBiPredicate() == Text.containsCIS ||
-//                        hasContainers.get(0).getBiPredicate() == Text.ncontainsCIS
+                        hasContainers.get(0).getBiPredicate() == Text.ncontains ||
+                        hasContainers.get(0).getBiPredicate() == Text.containsCIS ||
+                        hasContainers.get(0).getBiPredicate() == Text.ncontainsCIS ||
+                        hasContainers.get(0).getBiPredicate() == Text.startsWith ||
+                        hasContainers.get(0).getBiPredicate() == Text.nstartsWith ||
+                        hasContainers.get(0).getBiPredicate() == Text.endsWith ||
+                        hasContainers.get(0).getBiPredicate() == Text.nendsWith
                 ));
     }
 

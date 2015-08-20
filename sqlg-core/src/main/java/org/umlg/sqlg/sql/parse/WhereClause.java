@@ -67,7 +67,7 @@ public class WhereClause {
             return result;
         } else if (p.getBiPredicate() instanceof Text) {
             result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            result += textContainsToSql((Text) p.getBiPredicate());
+            result += textToSql((Text) p.getBiPredicate());
             return result;
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
@@ -115,13 +115,31 @@ public class WhereClause {
         return result;
     }
 
-    private static String textContainsToSql(Text text) {
+    private static String textToSql(Text text) {
         String result;
         switch (text) {
             case contains:
                 result = " like ?";
                 break;
             case ncontains:
+                result = " not like ?";
+                break;
+            case containsCIS:
+                result = " ilike ?";
+                break;
+            case ncontainsCIS:
+                result = " not ilike ?";
+                break;
+            case startsWith:
+                result = " like ?";
+                break;
+            case nstartsWith:
+                result = " not like ?";
+                break;
+            case endsWith:
+                result = " like ?";
+                break;
+            case nendsWith:
                 result = " not like ?";
                 break;
             default:
@@ -143,8 +161,13 @@ public class WhereClause {
             for (Object value : values) {
                 keyValueMap.put(hasContainer.getKey(), value);
             }
-        } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains) {
+        } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains ||
+                p.getBiPredicate() == Text.containsCIS || p.getBiPredicate() == Text.ncontainsCIS) {
             keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue() + "%");
+        } else if (p.getBiPredicate() == Text.startsWith || p.getBiPredicate() == Text.nstartsWith) {
+            keyValueMap.put(hasContainer.getKey(), hasContainer.getValue() + "%");
+        } else if (p.getBiPredicate() == Text.endsWith || p.getBiPredicate() == Text.nendsWith) {
+            keyValueMap.put(hasContainer.getKey(), "%" + hasContainer.getValue());
         } else {
             keyValueMap.put(hasContainer.getKey(), hasContainer.getValue());
         }
