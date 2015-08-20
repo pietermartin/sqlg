@@ -1,7 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -239,28 +239,33 @@ public abstract class SqlgElement implements Element {
      * @return The results of the query
      */
     private <S, E> Iterator<Pair<E, Multimap<String, Object>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
+        Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
+        Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        Map<String, String> aliasMap = new HashMap<>();
-        List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql(aliasMap, new MutableInt(1));
+        List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
-        for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
-            Connection conn = this.sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sqlPair.getRight());
-            }
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
-                preparedStatement.setLong(1, this.recordId.getId());
-                SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 2);
-                ResultSet resultSet = preparedStatement.executeQuery();
-                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                while (resultSet.next()) {
-                    Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, aliasMap, resultSetMetaData, resultSet, sqlPair.getLeft());
-                    resultIterator.add(result);
+        try {
+            for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
+                Connection conn = this.sqlgGraph.tx().getConnection();
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sqlPair.getRight());
                 }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
+                    preparedStatement.setLong(1, this.recordId.getId());
+                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 2);
+                    ResultSet resultSet = preparedStatement.executeQuery();
+                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                    while (resultSet.next()) {
+                        Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
+                        resultIterator.add(result);
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
             }
+        } finally {
+            schemaTableTree.resetThreadVars();
         }
         return resultIterator;
     }
@@ -517,9 +522,9 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    public abstract void loadResultSet(ResultSet resultSet, Map<String,String> aliasMap, SchemaTableTree schemaTableTree) throws SQLException;
+    public abstract void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
 
-    public abstract void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree, Map<String, String> aliasMap) throws SQLException;
+    public abstract void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException;
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 

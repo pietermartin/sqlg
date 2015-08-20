@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.*;
+import org.umlg.sqlg.test.TestSetProperty;
+import org.umlg.sqlg.test.TinkerpopTest;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestSpeed;
 import org.umlg.sqlg.test.edges.TestCreateEdgeBetweenVertices;
@@ -17,7 +18,7 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithAs.class
+        TestColumnNameTranslation.class
 })
 public class AnyTest {
 }

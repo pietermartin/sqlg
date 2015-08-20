@@ -847,13 +847,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    public void loadResultSet(ResultSet resultSet, Map<String,String> aliasMap, SchemaTableTree schemaTableTree) throws SQLException {
+    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            String[] splittedColumn = aliasMap.get(columnName).split("\\.");
-            if (splittedColumn.length < 4) {
-                String name = schemaTableTree.propertyNameFromAlias(aliasMap.get(columnName));
+            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+            if (properName == null) {
+                properName = columnName;
+            }
+            if (properName.split("\\.").length < 4) {
+                String name = schemaTableTree.propertyNameFromAlias(properName);
                 Object o = resultSet.getObject(columnName);
                 if (!name.equals("ID")
                         && !name.equals(SchemaManager.VERTEX_IN_LABELS)
@@ -869,16 +872,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree, Map<String, String> aliasMap) throws SQLException {
+    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         Multimap<String, Integer> toRemove = ArrayListMultimap.create();
         for (String columnName : columnMap.keySet()) {
-            String properName = aliasMap.get(columnName);
             Collection<Integer> columnCounts = columnMap.get(columnName);
             Integer columnCount = columnCounts.iterator().next();
-            if (schemaTableTree.containsLabelledColumn(properName)) {
+            if (schemaTableTree.containsLabelledColumn(columnName)) {
                 Object o = resultSet.getObject(columnCount);
-                String name = schemaTableTree.propertyNameFromLabeledAlias(properName);
+                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
                 if (!name.endsWith("ID")
                         && !name.equals(SchemaManager.VERTEX_IN_LABELS)
                         && !name.equals(SchemaManager.VERTEX_OUT_LABELS)

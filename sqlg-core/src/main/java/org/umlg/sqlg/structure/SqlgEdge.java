@@ -206,16 +206,20 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
-    public void loadResultSet(ResultSet resultSet, Map<String, String> aliasMap, SchemaTableTree schemaTableTree) throws SQLException {
+    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
         SchemaTable inVertexColumnName;
         SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            String[] splittedColumn = aliasMap.get(columnName).split("\\.");
+            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+            if (properName == null) {
+                properName = columnName;
+            }
+            String[] splittedColumn = properName.split("\\.");
             if (splittedColumn.length < 4 || (splittedColumn.length == 4 && (splittedColumn[3].endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || splittedColumn[3].endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)))) {
                 Object o = resultSet.getObject(columnName);
-                String name = schemaTableTree.propertyNameFromAlias(aliasMap.get(columnName));
+                String name = schemaTableTree.propertyNameFromAlias(properName);
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
@@ -243,17 +247,19 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree, Map<String, String> aliasMap) throws SQLException {
+    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
         SchemaTable inVertexColumnName;
         SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = aliasMap.get(columnName);
+            String properName = schemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+            if (properName == null) {
+                properName = columnName;
+            }
             Object o = resultSet.getObject(columnName);
             if (schemaTableTree.containsLabelledColumn(properName)) {
                 String name = schemaTableTree.propertyNameFromLabeledAlias(properName);
-
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&

@@ -2,14 +2,12 @@ package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +18,10 @@ import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -64,27 +65,32 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     private Iterator<Pair<E, Multimap<String, Object>>> elements() {
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
+        Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
+        Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
         for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
-            Map<String, String> aliasMap = new HashMap<>();
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql(aliasMap, new MutableInt(1));
-            for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
-                Connection conn = this.sqlgGraph.tx().getConnection();
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sqlPair.getRight());
-                }
-                try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
-                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 1);
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                    while (resultSet.next()) {
-                        Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, aliasMap, resultSetMetaData, resultSet, sqlPair.getLeft());
-                        resultIterator.add(result);
+            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
+            try {
+                for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
+                    Connection conn = this.sqlgGraph.tx().getConnection();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sqlPair.getRight());
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
+                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 1);
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                        while (resultSet.next()) {
+                            Pair<E, Multimap<String, Object>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
+                            resultIterator.add(result);
+                        }
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
+            } finally {
+                schemaTableTree.resetThreadVars();
             }
         }
         return resultIterator;
