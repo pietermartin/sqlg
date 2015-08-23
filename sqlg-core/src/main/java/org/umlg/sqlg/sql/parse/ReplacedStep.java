@@ -6,15 +6,18 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.umlg.sqlg.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.Comparators;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Date: 2015/06/27
@@ -26,20 +29,26 @@ public class ReplacedStep<S, E> {
     private AbstractStep<S, E> step;
     private Set<String> labels;
     private List<HasContainer> hasContainers;
+    private List<ElementValueComparator> comparators;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
 
-    public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, List<HasContainer> hasContainers) {
+    public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = step;
         replacedStep.labels = new HashSet<>(step.getLabels());
-        replacedStep.hasContainers = hasContainers;
+        replacedStep.hasContainers = new ArrayList<>();
+        replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
         return replacedStep;
     }
 
     public List<HasContainer> getHasContainers() {
         return hasContainers;
+    }
+
+    public List<ElementValueComparator> getComparators() {
+        return comparators;
     }
 
     public void addLabel(String label) {
@@ -101,19 +110,19 @@ public class ReplacedStep<S, E> {
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, this.labels);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.comparators, this.depth, this.labels);
                 result.add(schemaTableTreeChild);
             } else {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.depth, Collections.EMPTY_SET);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.comparators, this.depth, Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, inLabelsToTravers, Direction.IN));
             }
         }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, this.labels);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.comparators, this.depth, this.labels);
                 result.add(schemaTableTreeChild);
             } else {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.depth, Collections.EMPTY_SET);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.comparators, this.depth, Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, outLabelsToTravers, Direction.OUT));
             }
         }
@@ -166,6 +175,7 @@ public class ReplacedStep<S, E> {
                         Direction.OUT,
                         Vertex.class,
                         this.hasContainers,
+                        this.comparators,
                         this.depth,
                         true,
                         this.labels
@@ -178,6 +188,7 @@ public class ReplacedStep<S, E> {
                         Direction.IN,
                         Vertex.class,
                         this.hasContainers,
+                        this.comparators,
                         this.depth,
                         true,
                         this.labels
@@ -204,6 +215,7 @@ public class ReplacedStep<S, E> {
                         direction,
                         Vertex.class,
                         this.hasContainers,
+                        this.comparators,
                         this.depth,
                         this.labels
                 );
@@ -214,6 +226,7 @@ public class ReplacedStep<S, E> {
                         direction,
                         Vertex.class,
                         this.hasContainers,
+                        this.comparators,
                         this.depth,
                         this.labels
                 );
@@ -283,6 +296,7 @@ public class ReplacedStep<S, E> {
                     SchemaTable schemaTable = SchemaTable.from(sqlgGraph, t, sqlgGraph.getSqlDialect().getPublicSchema());
                     SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTable, 1);
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
+                    schemaTableTree.setComparators(this.comparators);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
                     schemaTableTree.labels = ReplacedStep.this.labels;
                     result.add(schemaTableTree);
@@ -297,6 +311,7 @@ public class ReplacedStep<S, E> {
                 if (sqlgGraph.getSchemaManager().getAllTables().containsKey(schemaTableForLabel.toString())) {
                     SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTableForLabel, 1);
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
+                    schemaTableTree.setComparators(this.comparators);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
                     schemaTableTree.labels = ReplacedStep.this.labels;
                     result.add(schemaTableTree);

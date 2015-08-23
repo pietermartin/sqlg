@@ -18,7 +18,7 @@ import org.umlg.sqlg.test.vertex.TestNewVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWhere.class
+        TestOrderBy.class
 })
 public class AnyTest {
 }

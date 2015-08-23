@@ -1,18 +1,12 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.Text;
-import org.umlg.sqlg.structure.SqlgProperty;
 import org.umlg.sqlg.test.BaseTest;
-import org.umlg.sqlg.test.SqlGProvider;
 
 import java.util.Collections;
 import java.util.List;

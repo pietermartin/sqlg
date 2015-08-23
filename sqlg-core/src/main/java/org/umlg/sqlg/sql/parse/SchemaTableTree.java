@@ -7,8 +7,11 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.util.Comparators;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -35,6 +38,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
+    private List<ElementValueComparator> comparators = new ArrayList<>();
     Set<String> labels;
 
     //This counter must only ever be used on the root node of the schema table tree
@@ -95,6 +99,7 @@ public class SchemaTableTree {
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
+        this.comparators = new ArrayList<>();
         this.labels = new HashSet<>();
     }
 
@@ -103,6 +108,7 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
+            List<ElementValueComparator> comparators,
             int depth,
             boolean isEdgeVertexStep,
             Set<String> labels) {
@@ -111,6 +117,7 @@ public class SchemaTableTree {
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
+            schemaTableTree.comparators = new ArrayList<>(comparators);
         }
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
@@ -120,8 +127,8 @@ public class SchemaTableTree {
         return schemaTableTree;
     }
 
-    public SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, int depth, Set<String> labels) {
-        return addChild(schemaTable, direction, elementClass, hasContainers, depth, false, labels);
+    public SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, List<ElementValueComparator> comparators, int depth, Set<String> labels) {
+        return addChild(schemaTable, direction, elementClass, hasContainers, comparators, depth, false, labels);
     }
 
     public SchemaTable getSchemaTable() {
@@ -362,11 +369,17 @@ public class SchemaTableTree {
 
         //check if the 'where' has already been printed
         boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
+        boolean printedOrderBy = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
         MutableBoolean mutableWhere = new MutableBoolean(printedWhere);
+        MutableBoolean mutableOrderBy = new MutableBoolean(printedOrderBy);
 
         //construct the where clause for the hasContainers
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             singlePathSql += schemaTableTree.toWhereClause(sqlgGraph, mutableWhere);
+        }
+        //construct the order by clause for the comparators
+        for (SchemaTableTree schemaTableTree : distinctQueryStack) {
+            singlePathSql += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy);
         }
 
         return singlePathSql;
@@ -383,6 +396,31 @@ public class SchemaTableTree {
             }
             WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
             result += " " + whereClause.toSql(sqlgGraph, this, hasContainer) + ")";
+        }
+        return result;
+    }
+
+    private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
+        String result = "";
+        for (ElementValueComparator comparator: this.getComparators()) {
+            if (!printedWhere.booleanValue()) {
+                printedWhere.setTrue();
+                result += " ORDER BY ";
+            } else {
+                result += " , ";
+            }
+//            result += " " + comparators.toString() + ")";
+            String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
+            prefix += ".";
+            prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable());
+            result += " " + prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(comparator.getPropertyKey());
+            if (comparator.getValueComparator() == Order.incr) {
+                result += " ASC";
+            } else if (comparator.getValueComparator() == Order.decr) {
+                result += " DESC";
+            } else {
+                throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValueComparator().toString());
+            }
         }
         return result;
     }
@@ -1173,6 +1211,8 @@ public class SchemaTableTree {
         sb.append(this.schemaTable.toString()).append(" ")
                 .append(this.stepDepth).append(" ")
                 .append(this.hasContainers.toString()).append(" ")
+                .append("Comparators = ")
+                .append(this.comparators.toString()).append(" ")
                 .append(this.direction != null ? this.direction.toString() : "").append(" ")
                 .append("isVertexStep = ").append(this.isEdgeVertexStep())
                 .append(" labels = ").append(this.labels);
@@ -1195,6 +1235,14 @@ public class SchemaTableTree {
 
     public void setHasContainers(List<HasContainer> hasContainers) {
         this.hasContainers = hasContainers;
+    }
+
+    public List<ElementValueComparator> getComparators() {
+        return comparators;
+    }
+
+    public void setComparators(List<ElementValueComparator> comparators) {
+        this.comparators = comparators;
     }
 
     public int depth() {

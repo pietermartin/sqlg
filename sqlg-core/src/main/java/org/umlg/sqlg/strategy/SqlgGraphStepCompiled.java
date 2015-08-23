@@ -35,6 +35,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
+    private Set<SchemaTableTree> rootSchemaTableTree;
 
     public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final Object... ids) {
         super(traversal, returnClass, ids);
@@ -63,13 +64,13 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     }
 
     private Iterator<Pair<E, Multimap<String, Object>>> elements() {
-        Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
-        Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
+//        Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
+//        Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
-        Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
+//        Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
-        for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
+        for (SchemaTableTree schemaTableTree : this.rootSchemaTableTree) {
             List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
             try {
                 for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
@@ -102,4 +103,13 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         this.replacedSteps.add(replacedStep);
     }
 
+    void parse() {
+        Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
+        Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
+        this.rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
+    }
+
+    public Set<SchemaTableTree> getRootSchemaTableTree() {
+        return rootSchemaTableTree;
+    }
 }

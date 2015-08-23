@@ -4,10 +4,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
@@ -59,6 +61,26 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 iterator.remove();
                 traversal.removeStep(currentStep);
                 replacedStep.getHasContainers().addAll(((HasContainerHolder) currentStep).getHasContainers());
+            } else if (currentStep instanceof IdentityStep) {
+                // do nothing
+            } else {
+                iterator.previous();
+                break;
+            }
+        }
+    }
+
+    protected void collectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+        //Collect the OrderGlobalSteps
+        while (iterator.hasNext()) {
+            Step<?, ?> currentStep = iterator.next();
+            if (currentStep instanceof OrderGlobalStep
+                    && ((OrderGlobalStep) currentStep).getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
+                    && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
+                    ((ElementValueComparator) c).getValueComparator() == Order.decr))) {
+                iterator.remove();
+                traversal.removeStep(currentStep);
+                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {
