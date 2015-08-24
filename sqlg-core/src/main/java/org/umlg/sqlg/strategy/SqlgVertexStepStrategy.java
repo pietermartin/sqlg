@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -28,11 +27,10 @@ import java.util.stream.Stream;
 public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
-    private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgVertexStepStrategy(SqlgGraph sqlgGraph) {
-        this.sqlgGraph = sqlgGraph;
+        super(sqlgGraph);
     }
 
     @Override
@@ -79,6 +77,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         } else {
             //Replace all consecutive VertexStep and HasStep with one step
             Step previous = null;
+            ReplacedStep<?, ?> lastReplacedStep = null;
             SqlgVertexStepCompiled sqlgVertexStepCompiled = null;
             List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
             ListIterator<Step> stepIterator = steps.listIterator();
@@ -92,19 +91,27 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
                             sqlgVertexStepCompiled = new SqlgVertexStepCompiled(traversal);
                             TraversalHelper.replaceStep(step, sqlgVertexStepCompiled, traversal);
                             collectHasSteps(stepIterator, traversal, replacedStep);
-                            collectOrderGlobalSteps(stepIterator, traversal, replacedStep);
                         } else {
                             traversal.removeStep(step);
                             collectHasSteps(stepIterator, traversal, replacedStep);
-                            collectOrderGlobalSteps(stepIterator, traversal, replacedStep);
                         }
                         previous = step;
+                        lastReplacedStep = replacedStep;
                         sqlgVertexStepCompiled.addReplacedStep(replacedStep);
                     } else {
                         logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
                     }
                 } else {
+                    if (lastReplacedStep != null) {
+                        //TODO optimize this, to not parse if there are no OrderGlobalSteps
+                        //TODO this is not going to work, can not parse the gremlin before knowing what the start vertex is
+//                        sqlgVertexStepCompiled.parseForStrategy();
+//                        if (sqlgVertexStepCompiled.isForMultipleQueries()) {
+//                            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+//                        }
+                    }
                     previous = null;
+                    lastReplacedStep = null;
                 }
             }
         }

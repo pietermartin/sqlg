@@ -60,6 +60,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     }
 
     protected Iterator<Pair<E, Multimap<String, Object>>> flatMapCustom(Traverser.Admin<S> traverser) {
+        //for the OrderGlobalStep we'll need to remove the step here
         return traverser.get().elements(Collections.unmodifiableList(this.replacedSteps));
     }
 

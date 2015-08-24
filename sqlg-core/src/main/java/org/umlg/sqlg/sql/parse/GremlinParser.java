@@ -21,6 +21,12 @@ public class GremlinParser<S extends Element, E extends Element> {
         this.sqlgGraph = sqlgGraph;
     }
 
+    public Set<SchemaTableTree> parseForStrategy(List<ReplacedStep<S, E>> replacedSteps) {
+        ReplacedStep startReplacedStep = replacedSteps.get(0);
+        Set<SchemaTableTree> result = parse(replacedSteps);
+        replacedSteps.add(0, startReplacedStep);
+        return result;
+    }
 
     /**
      * This is for the GraphStep

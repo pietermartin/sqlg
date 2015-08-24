@@ -4,7 +4,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
@@ -26,11 +25,10 @@ import java.util.ListIterator;
 public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
-    private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgGraphStepStrategy(SqlgGraph sqlgGraph) {
-        this.sqlgGraph = sqlgGraph;
+        super(sqlgGraph);
     }
 
     @Override
@@ -40,6 +38,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             final GraphStep<?> originalGraphStep = (GraphStep) startStep;
             //Replace all consecutive VertexStep and HasStep with one step
             Step previous = null;
+            ReplacedStep<?, ?> lastReplacedStep = null;
             SqlgGraphStepCompiled sqlgGraphStepCompiled = null;
             List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
             ListIterator<Step> stepIterator = steps.listIterator();
@@ -59,10 +58,6 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                             sqlgGraphStepCompiled.addReplacedStep(replacedStep);
                             TraversalHelper.replaceStep(step, sqlgGraphStepCompiled, traversal);
                             collectHasSteps(stepIterator, traversal, replacedStep);
-                            sqlgGraphStepCompiled.parse();
-                            if (sqlgGraphStepCompiled.getRootSchemaTableTree().size() == 1) {
-                                collectOrderGlobalSteps(stepIterator, traversal, replacedStep);
-                            }
                             if (originalGraphStep.getIds().length > 0) {
                                 //will get optimize via SqlgVertexStepStrategy
                                 break;
@@ -71,25 +66,25 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                             sqlgGraphStepCompiled.addReplacedStep(replacedStep);
                             traversal.removeStep(step);
                             collectHasSteps(stepIterator, traversal, replacedStep);
-                            sqlgGraphStepCompiled.parse();
-                            if (sqlgGraphStepCompiled.getRootSchemaTableTree().size() == 1) {
-                                collectOrderGlobalSteps(stepIterator, traversal, replacedStep);
-                            }
                         }
                         previous = step;
-//                        sqlgGraphStepCompiled.addReplacedStep(replacedStep);
-
+                        lastReplacedStep = replacedStep;
                     } else {
                         logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
                     }
                 } else {
+                    if (lastReplacedStep != null) {
+                        //TODO optimize this, to not parse if there are no OrderGlobalSteps
+                        sqlgGraphStepCompiled.parseForStrategy();
+                        if (!sqlgGraphStepCompiled.isForMultipleQueries()) {
+                            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+                        }
+                    }
                     break;
                 }
             }
-//            if (sqlgGraphStepCompiled != null) {
-//                sqlgGraphStepCompiled.parse();
-//            }
         }
     }
+
 
 }

@@ -6,11 +6,14 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
@@ -18,6 +21,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,8 +34,13 @@ import java.util.function.Predicate;
  */
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
+    protected SqlgGraph sqlgGraph;
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
+
+    public BaseSqlgStrategy(SqlgGraph sqlgGraph) {
+        this.sqlgGraph = sqlgGraph;
+    }
 
     protected boolean mayNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
@@ -70,14 +79,26 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    protected void collectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+    protected void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+        //Collect the OrderGlobalSteps
+        if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
+            iterator.remove();
+            traversal.removeStep(step);
+            replacedStep.getComparators().addAll(((OrderGlobalStep)step).getComparators());
+        } else {
+            collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
+        }
+    }
+
+    private void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof OrderGlobalStep
-                    && ((OrderGlobalStep) currentStep).getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
-                    && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
-                    ((ElementValueComparator) c).getValueComparator() == Order.decr))) {
+            if (currentStep instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) currentStep)) {
+                iterator.remove();
+                traversal.removeStep(currentStep);
+                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
+            } else if (currentStep instanceof OrderGlobalStep && isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep)) {
                 iterator.remove();
                 traversal.removeStep(currentStep);
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
@@ -88,6 +109,70 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 break;
             }
         }
+    }
+
+    private boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
+        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
+                && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
+                ((ElementValueComparator) c).getValueComparator() == Order.decr));
+    }
+
+    private boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
+        for (Object o : orderGlobalStep.getComparators()) {
+            if (o instanceof TraversalComparator) {
+                TraversalComparator traversalComparator = (TraversalComparator) o;
+                List<Step> traversalComparatorSteps = traversalComparator.getTraversal().getSteps();
+                return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
+            } else {
+                return false;
+            }
+        }
+        if (orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator)) {
+        } else {
+            return false;
+        }
+        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator
+                && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
+                ((ElementValueComparator) c).getValueComparator() == Order.decr));
+    }
+
+//    protected void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+//        //Collect the OrderGlobalSteps
+//        while (iterator.hasNext()) {
+//            Step<?, ?> currentStep = iterator.next();
+//            if (currentStep instanceof OrderGlobalStep
+//                    && ((OrderGlobalStep) currentStep).getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
+//                    && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
+//                    ((ElementValueComparator) c).getValueComparator() == Order.decr))) {
+//                iterator.remove();
+//                traversal.removeStep(currentStep);
+//                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
+//            } else if (currentStep instanceof IdentityStep) {
+//                // do nothing
+//            } else {
+//                iterator.previous();
+//                break;
+//            }
+//        }
+//    }
+
+    protected boolean hasOrderGlobalSteps(ListIterator<Step> iterator) {
+        //Collect the OrderGlobalSteps
+        while (iterator.hasNext()) {
+            Step<?, ?> currentStep = iterator.next();
+            if (currentStep instanceof OrderGlobalStep
+                    && ((OrderGlobalStep) currentStep).getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
+                    && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
+                    ((ElementValueComparator) c).getValueComparator() == Order.decr))) {
+                return true;
+            } else if (currentStep instanceof IdentityStep) {
+                // do nothing
+            } else {
+                iterator.previous();
+                return false;
+            }
+        }
+        return false;
     }
 
     private boolean isSingleBiPredicate(List<HasContainer> hasContainers) {

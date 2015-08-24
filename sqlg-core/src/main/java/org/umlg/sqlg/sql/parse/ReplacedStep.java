@@ -29,7 +29,7 @@ public class ReplacedStep<S, E> {
     private AbstractStep<S, E> step;
     private Set<String> labels;
     private List<HasContainer> hasContainers;
-    private List<ElementValueComparator> comparators;
+    private List<Comparator> comparators;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
 
@@ -47,7 +47,7 @@ public class ReplacedStep<S, E> {
         return hasContainers;
     }
 
-    public List<ElementValueComparator> getComparators() {
+    public List<Comparator> getComparators() {
         return comparators;
     }
 

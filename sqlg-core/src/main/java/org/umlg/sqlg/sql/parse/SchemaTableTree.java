@@ -5,11 +5,15 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.log4j.lf5.PassingLogRecordFilter;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.Comparators;
 import org.umlg.sqlg.structure.SchemaManager;
@@ -19,6 +23,7 @@ import org.umlg.sqlg.structure.Visitor;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +43,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
-    private List<ElementValueComparator> comparators = new ArrayList<>();
+    private List<Comparator> comparators = new ArrayList<>();
     Set<String> labels;
 
     //This counter must only ever be used on the root node of the schema table tree
@@ -47,14 +52,14 @@ public class SchemaTableTree {
 
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
-    public static final ThreadLocal<Multimap<String,String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String,String>>() {
-        protected Multimap<String,String> initialValue() {
+    public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
+        protected Multimap<String, String> initialValue() {
             return ArrayListMultimap.create();
         }
     };
     //This contains the generated alias as key and the columnName as value
-    public static final ThreadLocal<Map<String,String>> threadLocalAliasColumnNameMap = new ThreadLocal<Map<String,String>>() {
-        protected Map<String,String> initialValue() {
+    public static final ThreadLocal<Map<String, String>> threadLocalAliasColumnNameMap = new ThreadLocal<Map<String, String>>() {
+        protected Map<String, String> initialValue() {
             return new HashMap<>();
         }
     };
@@ -108,7 +113,7 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
-            List<ElementValueComparator> comparators,
+            List<Comparator> comparators,
             int depth,
             boolean isEdgeVertexStep,
             Set<String> labels) {
@@ -127,7 +132,7 @@ public class SchemaTableTree {
         return schemaTableTree;
     }
 
-    public SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, List<ElementValueComparator> comparators, int depth, Set<String> labels) {
+    public SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, List<Comparator> comparators, int depth, Set<String> labels) {
         return addChild(schemaTable, direction, elementClass, hasContainers, comparators, depth, false, labels);
     }
 
@@ -402,30 +407,70 @@ public class SchemaTableTree {
 
     private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
         String result = "";
-        for (ElementValueComparator comparator: this.getComparators()) {
+        for (Comparator comparator : this.getComparators()) {
             if (!printedWhere.booleanValue()) {
                 printedWhere.setTrue();
                 result += " ORDER BY ";
             } else {
                 result += " , ";
             }
-//            result += " " + comparators.toString() + ")";
-            String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
-            prefix += ".";
-            prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable());
-            result += " " + prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(comparator.getPropertyKey());
-            if (comparator.getValueComparator() == Order.incr) {
-                result += " ASC";
-            } else if (comparator.getValueComparator() == Order.decr) {
-                result += " DESC";
-            } else {
-                throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValueComparator().toString());
+            if (comparator instanceof ElementValueComparator) {
+                ElementValueComparator elementValueComparator = (ElementValueComparator) comparator;
+                String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
+                prefix += ".";
+                prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable());
+                result += " " + prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(elementValueComparator.getPropertyKey());
+                if (elementValueComparator.getValueComparator() == Order.incr) {
+                    result += " ASC";
+                } else if (elementValueComparator.getValueComparator() == Order.decr) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
+                }
+            } else if (comparator instanceof TraversalComparator) {
+                TraversalComparator traversalComparator = (TraversalComparator)comparator;
+                Preconditions.checkState(traversalComparator.getTraversal().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
+                Preconditions.checkState(traversalComparator.getTraversal().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
+                SelectOneStep selectOneStep = (SelectOneStep)traversalComparator.getTraversal().getSteps().get(0);
+                Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
+                Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
+                Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+                System.out.println(selectOneStep);
+                //need to find the schemaTable that the select is for.
+                //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
+                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String)selectOneStep.getScopeKeys().iterator().next());
+                String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(selectSchemaTableTree.getSchemaTable().getSchema());
+                prefix += ".";
+                prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(selectSchemaTableTree.getSchemaTable().getTable());
+                result += " " + prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(((ElementValueTraversal)selectOneStep.getLocalChildren().get(0)).getPropertyKey());
+                if (traversalComparator.getComparator() == Order.incr) {
+                    result += " ASC";
+                } else if (traversalComparator.getComparator() == Order.decr) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + traversalComparator.getComparator().toString());
+                }
             }
         }
         return result;
     }
 
-    private static List<LinkedList<SchemaTableTree>> splitIntoSubStacks(LinkedList<SchemaTableTree> distinctQueryStack) {
+    private SchemaTableTree findSelectSchemaTable(String select) {
+        return this.walkUp((t)->t.contains(select));
+    }
+
+    private SchemaTableTree walkUp(Predicate<Set<String>> predicate) {
+        if (predicate.test(this.labels)) {
+            return this;
+        }
+        if (this.parent != null) {
+            return this.parent.walkUp(predicate);
+        }
+        return null;
+    }
+
+    private static List<LinkedList<SchemaTableTree>> splitIntoSubStacks
+            (LinkedList<SchemaTableTree> distinctQueryStack) {
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
         LinkedList<SchemaTableTree> subList = new LinkedList<>();
         result.add(subList);
@@ -451,6 +496,7 @@ public class SchemaTableTree {
      * @param distinctQueryStack
      * @return true is there are duplicates else false
      */
+
     private static boolean duplicatesInStack(LinkedList<SchemaTableTree> distinctQueryStack) {
         Set<SchemaTable> alreadyVisited = new HashSet<>();
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
@@ -915,7 +961,7 @@ public class SchemaTableTree {
         String previousRawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + previousSchemaTableTree.getSchemaTable().getSchema() +
                 "." + previousRawLabel +
-                (direction ==  Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
+                (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
         String alias = rootAliasAndIncrement();
         threadLocalColumnNameAliasMap.get().put(result, alias);
         threadLocalAliasColumnNameMap.get().put(alias, result);
@@ -924,7 +970,7 @@ public class SchemaTableTree {
 
     public String mappedAliasVertexColumnEnd(SchemaTableTree previousSchemaTableTree, Direction direction, String rawFromLabel) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." +
-                        previousSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
+                previousSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
         List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
         return strings.get(strings.size() - 1);
     }
@@ -952,7 +998,7 @@ public class SchemaTableTree {
     public String mappedAliasId() {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
         List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
-        return strings.get(strings.size()-1);
+        return strings.get(strings.size() - 1);
     }
 
     public String propertyNameFromAlias(String alias) {
@@ -986,7 +1032,6 @@ public class SchemaTableTree {
             return this;
         }
     }
-
 
 
     public String propertyNameFromLabeledAlias(String alias) {
@@ -1237,11 +1282,11 @@ public class SchemaTableTree {
         this.hasContainers = hasContainers;
     }
 
-    public List<ElementValueComparator> getComparators() {
+    public List<Comparator> getComparators() {
         return comparators;
     }
 
-    public void setComparators(List<ElementValueComparator> comparators) {
+    public void setComparators(List<Comparator> comparators) {
         this.comparators = comparators;
     }
 
