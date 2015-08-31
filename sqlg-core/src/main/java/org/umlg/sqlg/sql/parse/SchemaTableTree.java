@@ -67,7 +67,7 @@ public class SchemaTableTree {
     public void resetThreadVars() {
         threadLocalAliasColumnNameMap.remove();
         threadLocalColumnNameAliasMap.remove();
-        rootAliasCounter = 1;
+        this.rootAliasCounter = 1;
     }
 
     public boolean containsLabelledColumn(String columnName) {
@@ -374,7 +374,8 @@ public class SchemaTableTree {
 
         //check if the 'where' has already been printed
         boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
-        boolean printedOrderBy = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
+//        boolean printedOrderBy = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
+        boolean printedOrderBy = false;
         MutableBoolean mutableWhere = new MutableBoolean(printedWhere);
         MutableBoolean mutableOrderBy = new MutableBoolean(printedOrderBy);
 
@@ -405,11 +406,11 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
+    private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy) {
         String result = "";
         for (Comparator comparator : this.getComparators()) {
-            if (!printedWhere.booleanValue()) {
-                printedWhere.setTrue();
+            if (!printedOrderBy.booleanValue()) {
+                printedOrderBy.setTrue();
                 result += " ORDER BY ";
             } else {
                 result += " , ";

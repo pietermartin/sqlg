@@ -21,11 +21,10 @@ public class SqlgGraphStepWithPathTraverserGenerator implements TraverserGenerat
             TraverserRequirement.OBJECT,
             TraverserRequirement.BULK,
             TraverserRequirement.SINGLE_LOOP,
+            TraverserRequirement.LABELED_PATH,
             TraverserRequirement.PATH,
             TraverserRequirement.SACK,
-            TraverserRequirement.SIDE_EFFECTS
-            //TODO add in custom requirement
-    );
+            TraverserRequirement.SIDE_EFFECTS);
 
     private SqlgGraphStepWithPathTraverserGenerator() {
     }

@@ -6,10 +6,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.apache.tinkerpop.gremlin.structure.util.Comparators;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -71,7 +69,7 @@ public class ReplacedStep<S, E> {
     }
 
     private Set<SchemaTableTree> appendPathForVertexStep(SchemaTableTree schemaTableTree) {
-        Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found");
+        Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found " + schemaTableTree.getSchemaTable().getTable());
 
         Set<SchemaTableTree> result = new HashSet<>();
         Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.schemaManager.getTableLabels(schemaTableTree.getSchemaTable());
@@ -281,6 +279,14 @@ public class ReplacedStep<S, E> {
         return this.step instanceof GraphStep;
     }
 
+    public boolean isVertexStep() {
+        return this.step instanceof VertexStep;
+    }
+
+    public boolean isEdgeVertexStep() {
+        return this.step instanceof EdgeVertexStep;
+    }
+
     public Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for GraphStep");
         GraphStep graphStep = (GraphStep) this.step;
@@ -319,5 +325,9 @@ public class ReplacedStep<S, E> {
             });
         }
         return result;
+    }
+
+    public AbstractStep<S, E> getStep() {
+        return step;
     }
 }

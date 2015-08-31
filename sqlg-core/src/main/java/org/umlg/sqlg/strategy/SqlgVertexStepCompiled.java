@@ -1,16 +1,25 @@
 package org.umlg.sqlg.strategy;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.umlg.sqlg.process.SqlgLabelledPathTraverser;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgElement;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.*;
 
@@ -23,6 +32,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     private Traverser.Admin<S> head = null;
     private Iterator<Pair<E, Multimap<String, Object>>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
+    private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
     public SqlgVertexStepCompiled(final Traversal.Admin traversal) {
         super(traversal);
@@ -40,7 +50,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 Traverser.Admin<E> split = this.head.split(e, this);
                 for (String label : labeledObjects.keySet()) {
                     //If there are labels then it must be a SqlgLabelledPathTraverser
-                    SqlgLabelledPathTraverser sqlgLabelledPathTraverser = (SqlgLabelledPathTraverser)split;
+                    SqlgLabelledPathTraverser sqlgLabelledPathTraverser = (SqlgLabelledPathTraverser) split;
                     Collection<Object> labeledElements = labeledObjects.get(label);
                     for (Object labeledElement : labeledElements) {
                         sqlgLabelledPathTraverser.setPath(split.path().extend(labeledElement, Collections.singleton(label)));
@@ -61,7 +71,26 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
     protected Iterator<Pair<E, Multimap<String, Object>>> flatMapCustom(Traverser.Admin<S> traverser) {
         //for the OrderGlobalStep we'll need to remove the step here
-        return traverser.get().elements(Collections.unmodifiableList(this.replacedSteps));
+        S s = traverser.get();
+        SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
+        List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        ListIterator<Step> stepIterator = steps.listIterator();
+        boolean afterThis = false;
+        while (stepIterator.hasNext()) {
+            Step step = stepIterator.next();
+            //only interested what happens after this step
+            if (afterThis) {
+                parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
+                if (!isForMultipleQueries()) {
+                    BaseSqlgStrategy.collectOrderGlobalSteps(step, stepIterator, traversal, this.replacedSteps.get(0));
+                }
+            }
+
+            if (step == this) {
+                afterThis = true;
+            }
+        }
+        return s.elements(Collections.unmodifiableList(this.replacedSteps));
     }
 
     @Override
@@ -89,5 +118,25 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     @Override
     public Set<TraverserRequirement> getRequirements() {
         return EnumSet.of(TraverserRequirement.PATH);
+    }
+
+    void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        this.parsedForStrategySql.clear();
+        Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
+        Preconditions.checkState(
+                this.replacedSteps.get(0).isVertexStep() ||
+                        this.replacedSteps.get(0).isEdgeVertexStep()
+                , "The first step must a VertexStep or EdgeVertexStep found " + this.replacedSteps.get(0).getStep().getClass().toString());
+        SchemaTableTree schemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
+        List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
+        try {
+            this.parsedForStrategySql.put(schemaTableTree, sqlStatements);
+        } finally {
+            schemaTableTree.resetThreadVars();
+        }
+    }
+
+    boolean isForMultipleQueries() {
+        return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 1;
     }
 }

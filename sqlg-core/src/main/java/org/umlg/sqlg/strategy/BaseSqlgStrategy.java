@@ -42,7 +42,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         this.sqlgGraph = sqlgGraph;
     }
 
-    protected boolean mayNotBeOptimized(List<Step> steps, int index) {
+    static boolean mayNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
                 s.getClass().equals(PathStep.class) ||
@@ -79,7 +79,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    protected void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+    static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
         //Collect the OrderGlobalSteps
         if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
             iterator.remove();
@@ -90,7 +90,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    private void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+    private static void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
@@ -111,13 +111,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    private boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
+    private static boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
         return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
                 && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
                 ((ElementValueComparator) c).getValueComparator() == Order.decr));
     }
 
-    private boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
+    private static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
         for (Object o : orderGlobalStep.getComparators()) {
             if (o instanceof TraversalComparator) {
                 TraversalComparator traversalComparator = (TraversalComparator) o;

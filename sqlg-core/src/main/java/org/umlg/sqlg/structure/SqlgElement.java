@@ -243,8 +243,8 @@ public abstract class SqlgElement implements Element {
         Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
+        List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
         try {
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
             SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
             for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
                 Connection conn = this.sqlgGraph.tx().getConnection();

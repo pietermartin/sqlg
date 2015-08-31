@@ -36,7 +36,7 @@ public class GremlinParser<S extends Element, E extends Element> {
      */
     public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
         ReplacedStep startReplacedStep = replacedSteps.remove(0);
-        Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must ne a GraphStep");
+        Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph);
         Set<SchemaTableTree> toRemove = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
@@ -70,6 +70,7 @@ public class GremlinParser<S extends Element, E extends Element> {
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
         Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
         SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
+        rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
         schemaTableTrees.add(rootSchemaTableTree);
         for (ReplacedStep<S, E> replacedStep : replacedSteps) {
             //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
