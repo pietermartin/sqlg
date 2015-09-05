@@ -20,7 +20,7 @@ import org.umlg.sqlg.test.vertex.TestTinkerpopBug;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestVertexStepOrderBy.class
+        TestGremlinCompileGraphStep.class
 })
 public class AnyTest {
 }

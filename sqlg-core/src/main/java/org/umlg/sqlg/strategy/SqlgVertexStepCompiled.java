@@ -72,24 +72,24 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     protected Iterator<Pair<E, Multimap<String, Object>>> flatMapCustom(Traverser.Admin<S> traverser) {
         //for the OrderGlobalStep we'll need to remove the step here
         S s = traverser.get();
-        SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
-        List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
-        ListIterator<Step> stepIterator = steps.listIterator();
-        boolean afterThis = false;
-        while (stepIterator.hasNext()) {
-            Step step = stepIterator.next();
-            //only interested what happens after this step
-            if (afterThis) {
-                parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
-                if (!isForMultipleQueries()) {
-                    BaseSqlgStrategy.collectOrderGlobalSteps(step, stepIterator, traversal, this.replacedSteps.get(0));
-                }
-            }
-
-            if (step == this) {
-                afterThis = true;
-            }
-        }
+//        SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
+//        List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+//        ListIterator<Step> stepIterator = steps.listIterator();
+//        boolean afterThis = false;
+//        while (stepIterator.hasNext()) {
+//            Step step = stepIterator.next();
+//            //only interested what happens after this step
+//            if (afterThis) {
+//                parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
+//                if (!isForMultipleQueries()) {
+//                    BaseSqlgStrategy.collectOrderGlobalSteps(step, stepIterator, traversal, this.replacedSteps.get(0));
+//                }
+//            }
+//
+//            if (step == this) {
+//                afterThis = true;
+//            }
+//        }
         return s.elements(Collections.unmodifiableList(this.replacedSteps));
     }
 
