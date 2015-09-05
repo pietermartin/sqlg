@@ -48,6 +48,10 @@
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-test</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-groovy-test</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
