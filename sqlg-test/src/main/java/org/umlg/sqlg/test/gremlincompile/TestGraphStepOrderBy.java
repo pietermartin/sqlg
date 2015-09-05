@@ -1,21 +1,12 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +15,7 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select
 /**
  * Created by pieter on 2015/08/22.
  */
-public class TestOrderBy extends BaseTest {
+public class TestGraphStepOrderBy extends BaseTest {
 
     @Test
     public void testOrderBy() {
@@ -168,34 +159,4 @@ public class TestOrderBy extends BaseTest {
         Assert.assertEquals("bc", map4.get("b").value("name"));
     }
 
-//    @Test
-//    public void g_V_order_byXname_incrX_name() throws IOException {
-//        Graph g = this.sqlgGraph;
-//        final GraphReader reader = GryoReader.build()
-//                .mapper(g.io(GryoIo.build()).mapper().create())
-//                .create();
-//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-//            reader.readGraph(stream, g);
-//        }
-//        assertModernGraph(g, true, false);
-//        Arrays.asList(get_g_V_order_byXname_incrX_name()/*, get_g_V_order_byXnameX_name()*/).forEach(traversal -> {
-//            printTraversalForm(traversal);
-//            final List<String> names = traversal.toList();
-//            Assert.assertEquals(names.size(), 6);
-//            Assert.assertEquals("josh", names.get(0));
-//            Assert.assertEquals("lop", names.get(1));
-//            Assert.assertEquals("marko", names.get(2));
-//            Assert.assertEquals("peter", names.get(3));
-//            Assert.assertEquals("ripple", names.get(4));
-//            Assert.assertEquals("vadas", names.get(5));
-//        });
-//    }
-//
-//    public Traversal<Vertex, String> get_g_V_order_byXname_incrX_name() {
-//        return this.sqlgGraph.traversal().V().order().by("name", Order.incr).values("name");
-//    }
-//
-//    public Traversal<Vertex, String> get_g_V_order_byXnameX_name() {
-//        return this.sqlgGraph.traversal().V().order().by("name", Order.incr).values("name");
-//    }
 }

@@ -84,7 +84,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGremlinCompileGraphStep.class,
         TestGremlinCompileWhere.class,
         TestColumnNameTranslation.class,
-        TestOrderBy.class,
+        TestGraphStepOrderBy.class,
         TestAggregate.class,
         TestVertexStepOrderBy.class,
         TestTreeStep.class

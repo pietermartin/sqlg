@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.Text;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.List;
@@ -66,8 +67,8 @@ public class WhereClause {
             result += " or " + prefix + key + compareToSql((Compare) p2.getBiPredicate());
             return result;
         } else if (p.getBiPredicate() instanceof Text) {
-            result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-            result += textToSql((Text) p.getBiPredicate());
+            prefix += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            result += textToSql(sqlgGraph.getSqlDialect(), prefix, (Text) p.getBiPredicate());
             return result;
         }
         throw new IllegalStateException("Unhandled BiPredicate " + p.getBiPredicate().toString());
@@ -115,7 +116,10 @@ public class WhereClause {
         return result;
     }
 
-    private static String textToSql(Text text) {
+    private static String textToSql(SqlDialect sqlDialect, String prefix, Text text) {
+        if (!sqlDialect.supportsILike()) {
+            prefix = "lower(" + prefix + ")";
+        }
         String result;
         switch (text) {
             case contains:
@@ -125,10 +129,18 @@ public class WhereClause {
                 result = " not like ?";
                 break;
             case containsCIS:
-                result = " ilike ?";
+                if (sqlDialect.supportsILike()) {
+                    result = " ilike ?";
+                } else {
+                    result = " like lower(?)";
+                }
                 break;
             case ncontainsCIS:
-                result = " not ilike ?";
+                if (sqlDialect.supportsILike()) {
+                    result = " not ilike ?";
+                } else {
+                    result = " not like lower(?)";
+                }
                 break;
             case startsWith:
                 result = " like ?";
@@ -145,7 +157,7 @@ public class WhereClause {
             default:
                 throw new RuntimeException("Unknown Contains " + text.name());
         }
-        return result;
+        return prefix + result;
     }
 
     public void putKeyValueMap(HasContainer hasContainer, Multimap<String, Object> keyValueMap) {
@@ -157,7 +169,7 @@ public class WhereClause {
             keyValueMap.put(hasContainer.getKey(), p1.getValue());
             keyValueMap.put(hasContainer.getKey(), p2.getValue());
         } else if (p.getBiPredicate() == Contains.within || p.getBiPredicate() == Contains.without) {
-            List values = (List)hasContainer.getValue();
+            List values = (List) hasContainer.getValue();
             for (Object value : values) {
                 keyValueMap.put(hasContainer.getKey(), value);
             }

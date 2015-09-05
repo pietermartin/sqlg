@@ -1,13 +1,16 @@
 package org.umlg.sqlg.strategy;
 
+import groovy.util.OrderBy;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -86,7 +89,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
                 if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                     if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
-                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (FlatMapStep<?, ?>) step);
+                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep<?,?>) step);
                         if (previous == null) {
                             sqlgVertexStepCompiled = new SqlgVertexStepCompiled(traversal);
                             TraversalHelper.replaceStep(step, sqlgVertexStepCompiled, traversal);
@@ -103,12 +106,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
                     }
                 } else {
                     if (lastReplacedStep != null) {
-                        //TODO optimize this, to not parse if there are no OrderGlobalSteps
-                        //TODO this is not going to work, can not parse the gremlin before knowing what the start vertex is
-//                        sqlgVertexStepCompiled.parseForStrategy();
-//                        if (sqlgVertexStepCompiled.isForMultipleQueries()) {
-//                            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
-//                        }
+                        replaceOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
                     }
                     previous = null;
                     lastReplacedStep = null;
@@ -116,6 +114,41 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
             }
         }
 
+    }
+
+    private static void replaceOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+        //Collect the OrderGlobalSteps
+        if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
+            TraversalHelper.replaceStep(step, new SqlgOrderGlobalStep<>((OrderGlobalStep) step), traversal);
+            iterator.remove();
+//            traversal.removeStep(step);
+            replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
+        } else {
+            replaceSelectOrderGlobalSteps(iterator, traversal, replacedStep);
+        }
+    }
+
+    private static void replaceSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+        //Collect the OrderGlobalSteps
+        while (iterator.hasNext()) {
+            Step currentStep = iterator.next();
+            if (currentStep instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) currentStep)) {
+                iterator.remove();
+                TraversalHelper.replaceStep(currentStep, new SqlgOrderGlobalStep<>((OrderGlobalStep) currentStep), traversal);
+//                traversal.removeStep(currentStep);
+                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
+            } else if (currentStep instanceof OrderGlobalStep && isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep)) {
+                iterator.remove();
+                TraversalHelper.replaceStep(currentStep, new SqlgOrderGlobalStep<>((OrderGlobalStep) currentStep), traversal);
+//                traversal.removeStep(currentStep);
+                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
+            } else if (currentStep instanceof IdentityStep) {
+                // do nothing
+            } else {
+                iterator.previous();
+                break;
+            }
+        }
     }
 
     @Override

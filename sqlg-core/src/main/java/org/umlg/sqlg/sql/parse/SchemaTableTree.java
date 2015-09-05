@@ -162,7 +162,7 @@ public class SchemaTableTree {
                 result.add(Pair.of(distinctQueryStack, singlePathSql));
             } else {
                 //If there are no duplicates in the path then one select statement will suffice.
-                String singlePathSql = constructSinglePathSql(this.sqlgGraph, distinctQueryStack, null, null);
+                String singlePathSql = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null);
                 result.add(Pair.of(distinctQueryStack, singlePathSql));
             }
         }
@@ -187,9 +187,6 @@ public class SchemaTableTree {
      * @return
      */
     private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
-//        String singlePathSql = "SELECT ";
-//        LinkedList<SchemaTableTree> schemaTableTrees = subQueryLinkedLists.get(subQueryLinkedLists.size() - 1);
-//        singlePathSql += constructOuterFromClause(subQueryLinkedLists);
         String singlePathSql = " FROM (";
         int count = 1;
         SchemaTableTree lastOfPrevious = null;
@@ -203,7 +200,7 @@ public class SchemaTableTree {
             }
             SchemaTableTree firstSchemaTableTree = subQueryLinkedList.getFirst();
 
-            String sql = constructSinglePathSql(sqlgGraph, subQueryLinkedList, lastOfPrevious, firstOfNext);
+            String sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext);
             singlePathSql += sql;
             if (count == 1) {
                 singlePathSql += ") a" + count++ + " INNER JOIN (";
@@ -218,11 +215,12 @@ public class SchemaTableTree {
             lastOfPrevious = subQueryLinkedList.getLast();
         }
 //        LinkedList<SchemaTableTree> schemaTableTrees = subQueryLinkedLists.get(subQueryLinkedLists.size() - 1);
-        String result = "SELECT " + constructOuterFromClause(subQueryLinkedLists);
+        String result = "SELECT " + constructOuterFromClause(sqlgGraph, subQueryLinkedLists);
+        singlePathSql += constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists);
         return result + singlePathSql;
     }
 
-    private static String constructOuterFromClause(List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+    private static String constructOuterFromClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String result = "";
         int countOuter = 1;
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
@@ -243,6 +241,25 @@ public class SchemaTableTree {
             countOuter++;
         }
         result = result.substring(0, result.length() - 2);
+        return result;
+    }
+
+    private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+        String result = "";
+        int countOuter = 1;
+        //construct the order by clause for the comparators
+        MutableBoolean mutableOrderBy = new MutableBoolean(false);
+        for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
+            int countInner = 1;
+            for (SchemaTableTree schemaTableTree : subQueryLinkedList) {
+                //last entry, only order on the last entry as duplicate paths are for the same SchemaTable
+                if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
+                    result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
+                }
+                countInner++;
+            }
+            countOuter++;
+        }
         return result;
     }
 
@@ -342,7 +359,7 @@ public class SchemaTableTree {
      * @param lastOfPrevious
      * @return
      */
-    private static String constructSinglePathSql(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
+    private static String constructSinglePathSql(SqlgGraph sqlgGraph, boolean partOfDuplicateQuery, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
         String singlePathSql = "SELECT ";
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
@@ -375,17 +392,19 @@ public class SchemaTableTree {
         //check if the 'where' has already been printed
         boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
 //        boolean printedOrderBy = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
-        boolean printedOrderBy = false;
         MutableBoolean mutableWhere = new MutableBoolean(printedWhere);
-        MutableBoolean mutableOrderBy = new MutableBoolean(printedOrderBy);
+        MutableBoolean mutableOrderBy = new MutableBoolean(false);
 
         //construct the where clause for the hasContainers
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             singlePathSql += schemaTableTree.toWhereClause(sqlgGraph, mutableWhere);
         }
-        //construct the order by clause for the comparators
-        for (SchemaTableTree schemaTableTree : distinctQueryStack) {
-            singlePathSql += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy);
+        //if partOfDuplicateQuery then the order by clause is on the outer select
+        if (!partOfDuplicateQuery) {
+            //construct the order by clause for the comparators
+            for (SchemaTableTree schemaTableTree : distinctQueryStack) {
+                singlePathSql += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, -1);
+            }
         }
 
         return singlePathSql;
@@ -406,21 +425,31 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy) {
+    private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy, int counter) {
         String result = "";
         for (Comparator comparator : this.getComparators()) {
             if (!printedOrderBy.booleanValue()) {
                 printedOrderBy.setTrue();
-                result += " ORDER BY ";
+                result += " ORDER BY";
             } else {
                 result += " , ";
             }
             if (comparator instanceof ElementValueComparator) {
                 ElementValueComparator elementValueComparator = (ElementValueComparator) comparator;
-                String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
+                String prefix = this.getSchemaTable().getSchema();
                 prefix += ".";
-                prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable());
-                result += " " + prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(elementValueComparator.getPropertyKey());
+                prefix += this.getSchemaTable().getTable();
+                prefix += ".";
+                prefix += elementValueComparator.getPropertyKey();
+                String alias;
+                if (counter == -1) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                } else {
+                    //TODO its a multi map because multiple elements may have the same label
+                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                }
+                result += " " + alias;
                 if (elementValueComparator.getValueComparator() == Order.incr) {
                     result += " ASC";
                 } else if (elementValueComparator.getValueComparator() == Order.decr) {
@@ -429,21 +458,40 @@ public class SchemaTableTree {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
                 }
             } else if (comparator instanceof TraversalComparator) {
-                TraversalComparator traversalComparator = (TraversalComparator)comparator;
+                TraversalComparator traversalComparator = (TraversalComparator) comparator;
                 Preconditions.checkState(traversalComparator.getTraversal().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(traversalComparator.getTraversal().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
-                SelectOneStep selectOneStep = (SelectOneStep)traversalComparator.getTraversal().getSteps().get(0);
+                SelectOneStep selectOneStep = (SelectOneStep) traversalComparator.getTraversal().getSteps().get(0);
                 Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                 Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                 Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
-                System.out.println(selectOneStep);
                 //need to find the schemaTable that the select is for.
                 //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
-                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String)selectOneStep.getScopeKeys().iterator().next());
-                String prefix = sqlgGraph.getSqlDialect().maybeWrapInQoutes(selectSchemaTableTree.getSchemaTable().getSchema());
+                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String) selectOneStep.getScopeKeys().iterator().next());
+                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
+
+                String prefix;
+                if (counter != -1) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    prefix = "";
+                } else {
+                    prefix = selectSchemaTableTree.labels.iterator().next();
+                    prefix += ".";
+                }
+                prefix += selectSchemaTableTree.getSchemaTable().getSchema();
                 prefix += ".";
-                prefix += sqlgGraph.getSqlDialect().maybeWrapInQoutes(selectSchemaTableTree.getSchemaTable().getTable());
-                result += " " + prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(((ElementValueTraversal)selectOneStep.getLocalChildren().get(0)).getPropertyKey());
+                prefix += selectSchemaTableTree.getSchemaTable().getTable();
+                prefix += ".";
+                prefix += elementValueTraversal.getPropertyKey();
+                String alias;
+                if (counter == -1) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                } else {
+                    //TODO its a multi map because multiple elements may have the same label
+                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                }
+                result += " " + alias;
                 if (traversalComparator.getComparator() == Order.incr) {
                     result += " ASC";
                 } else if (traversalComparator.getComparator() == Order.decr) {
@@ -457,7 +505,7 @@ public class SchemaTableTree {
     }
 
     private SchemaTableTree findSelectSchemaTable(String select) {
-        return this.walkUp((t)->t.contains(select));
+        return this.walkUp((t) -> t.contains(select));
     }
 
     private SchemaTableTree walkUp(Predicate<Set<String>> predicate) {

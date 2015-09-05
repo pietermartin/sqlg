@@ -1084,4 +1084,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public int getMinimumColumnNameLength() {
         return 63;
     }
+
+    @Override
+    public boolean supportsILike() {
+        return Boolean.TRUE;
+    }
 }

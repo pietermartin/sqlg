@@ -339,5 +339,7 @@ public interface SqlDialect {
         return Integer.MAX_VALUE;
     }
 
-
+    public default boolean supportsILike() {
+        return Boolean.FALSE;
+    }
 }

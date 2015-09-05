@@ -111,13 +111,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    private static boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
+    static boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
         return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
                 && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
                 ((ElementValueComparator) c).getValueComparator() == Order.decr));
     }
 
-    private static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
+    static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
         for (Object o : orderGlobalStep.getComparators()) {
             if (o instanceof TraversalComparator) {
                 TraversalComparator traversalComparator = (TraversalComparator) o;
