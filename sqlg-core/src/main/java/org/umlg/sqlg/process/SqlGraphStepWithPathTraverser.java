@@ -20,7 +20,7 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
         super(t, step, initialBulk);
         this.labeledObjects = labeledObjects;
         if (!this.labeledObjects.isEmpty()) {
-            customSplit();
+            customSplit(t);
         }
     }
 
@@ -28,14 +28,22 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
      * This odd logic is to ensure the path represents the path from left to right.
      * Calling this.path.extends(...) reverses the path. The test still pass but it seems wrong.
      */
-    private void customSplit() {
+    private void customSplit(final T t) {
+        boolean addT = true;
         Path localPath = ImmutablePath.make();
         for (String label : labeledObjects.keySet()) {
             Collection<Object> labeledElements = labeledObjects.get(label);
             for (Object labeledElement : labeledElements) {
+                if (!addT && labeledElement == t) {
+                    addT = true;
+                }
                 localPath = localPath.extend(labeledElement, Collections.singleton(label));
             }
         }
+        if (addT)
+            //tp relies on all elements traversed being on the path.
+            //if the element is not labelled put it on the path
+            localPath = localPath.clone().extend(t);
         this.path = localPath;
     }
 

@@ -37,31 +37,31 @@ public class TestGremlinCompileGraphStep extends BaseTest {
             reader.readGraph(stream, g);
         }
 //        assertModernGraph(g, true, false);
-        final GraphTraversal<Vertex, Map<String, Vertex>> traversal = this.sqlgGraph.traversal()
+        final GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("created")
                 .in("created")
                 .where(P.neq("a")).as("b")
-                .<Vertex>select("a", "b");
+                .<Vertex>select("a", "b")
+                .addInE("a", "co-developer", "b", "year", 2009);
 //        printTraversalForm(traversal);
-        List<Map<String,Vertex>> result = traversal.toList();
 //        printTraversalForm(traversal);
         int count = 0;
-//        while (traversal.hasNext()) {
-//            final Edge edge = traversal.next();
-//            Assert.assertEquals("co-developer", edge.label());
-//            Assert.assertEquals(2009, (int) edge.value("year"));
-//            Assert.assertEquals(1, IteratorUtils.count(edge.properties()));
-//            Assert.assertEquals("person", edge.inVertex().label());
-//            Assert.assertEquals("person", edge.outVertex().label());
-//            Assert.assertFalse(edge.inVertex().value("name").equals("vadas"));
-//            Assert.assertFalse(edge.outVertex().value("name").equals("vadas"));
-//            Assert.assertFalse(edge.inVertex().equals(edge.outVertex()));
-//            count++;
-//        }
-//        Assert.assertEquals(6, count);
-//        Assert.assertEquals(12, IteratorUtils.count(this.sqlgGraph.edges()));
-//        Assert.assertEquals(6, IteratorUtils.count(this.sqlgGraph.vertices()));
+        while (traversal.hasNext()) {
+            final Edge edge = traversal.next();
+            Assert.assertEquals("co-developer", edge.label());
+            Assert.assertEquals(2009, (int) edge.value("year"));
+            Assert.assertEquals(1, IteratorUtils.count(edge.properties()));
+            Assert.assertEquals("person", edge.inVertex().label());
+            Assert.assertEquals("person", edge.outVertex().label());
+            Assert.assertFalse(edge.inVertex().value("name").equals("vadas"));
+            Assert.assertFalse(edge.outVertex().value("name").equals("vadas"));
+            Assert.assertFalse(edge.inVertex().equals(edge.outVertex()));
+            count++;
+        }
+        Assert.assertEquals(6, count);
+        Assert.assertEquals(12, IteratorUtils.count(this.sqlgGraph.edges()));
+        Assert.assertEquals(6, IteratorUtils.count(this.sqlgGraph.vertices()));
     }
 
 //    @Test
