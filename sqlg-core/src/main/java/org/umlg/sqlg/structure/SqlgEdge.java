@@ -116,6 +116,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
+        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
@@ -123,7 +124,19 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(" (");
         int i = 1;
         for (String column : keyValueMap.keySet()) {
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+            PropertyType propertyType = columnPropertyTypeMap.get(column);
+            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            int count = 1;
+            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                if (count > 1) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                } else {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+                }
+                if (count++ < sqlDefinitions.length) {
+                    sql.append(",");
+                }
+            }
             if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
@@ -137,7 +150,19 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(") VALUES (");
         i = 1;
         for (String column : keyValueMap.keySet()) {
-            sql.append("?");
+            PropertyType propertyType = columnPropertyTypeMap.get(column);
+            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            int count = 1;
+            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                if (count > 1) {
+                    sql.append("?");
+                } else {
+                    sql.append("?");
+                }
+                if (count++ < sqlDefinitions.length) {
+                    sql.append(",");
+                }
+            }
             if (i++ < keyValueMap.size()) {
                 sql.append(", ");
             }
@@ -225,7 +250,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                    loadProperty(resultSetMetaData, i, name, o);
+                    loadProperty(resultSetMetaData, resultSet, i, name, o);
 
                 }
                 if (!Objects.isNull(o)) {
@@ -265,7 +290,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                    loadProperty(resultSetMetaData, i, name, o);
+                    loadProperty(resultSetMetaData, resultSet, i, name, o);
                 } else if (!Objects.isNull(o)) {
                     if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                         inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
@@ -297,7 +322,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                loadProperty(resultSetMetaData, i, columnName, o);
+                loadProperty(resultSetMetaData, resultSet, i, columnName, o);
 
             }
             if (!Objects.isNull(o)) {

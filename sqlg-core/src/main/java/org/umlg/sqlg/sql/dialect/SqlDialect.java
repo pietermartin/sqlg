@@ -46,7 +46,7 @@ public interface SqlDialect {
 
     String getAutoIncrementPrimaryKeyConstruct();
 
-    String propertyTypeToSqlDefinition(PropertyType propertyType);
+    String[] propertyTypeToSqlDefinition(PropertyType propertyType);
 
     int propertyTypeToJavaSqlType(PropertyType propertyType);
 
@@ -342,4 +342,9 @@ public interface SqlDialect {
     public default boolean supportsILike() {
         return Boolean.FALSE;
     }
+
+    public default boolean needsTimeZone() {
+        return Boolean.FALSE;
+    }
+
 }

@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.*;
 import java.util.*;
 
 /**
@@ -121,6 +122,24 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof Double) {
             return;
         }
+        if (value instanceof LocalDate) {
+            return;
+        }
+        if (value instanceof LocalDateTime) {
+            return;
+        }
+        if (value instanceof ZonedDateTime) {
+            return;
+        }
+        if (value instanceof LocalTime) {
+            return;
+        }
+        if (value instanceof Period) {
+            return;
+        }
+        if (value instanceof Duration) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -185,40 +204,52 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public String propertyTypeToSqlDefinition(PropertyType propertyType) {
+    public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return "BOOLEAN";
+                return new String[]{"BOOLEAN"};
             case BYTE:
-                return "TINYINT";
+                return new String[]{"TINYINT"};
             case SHORT:
-                return "SMALLINT";
+                return new String[]{"SMALLINT"};
             case INTEGER:
-                return "INTEGER";
+                return new String[]{"INTEGER"};
             case LONG:
-                return "BIGINT";
+                return new String[]{"BIGINT"};
             case FLOAT:
-                return "REAL";
+                return new String[]{"REAL"};
             case DOUBLE:
-                return "DOUBLE";
+                return new String[]{"DOUBLE"};
+            case LOCALDATE:
+                return new String[]{"DATE"};
+            case LOCALDATETIME:
+                return new String[]{"TIMESTAMP WITH TIME ZONE"};
+            case ZONEDDATETIME:
+                return new String[]{"TIMESTAMP WITH TIME ZONE", "LONGVARCHAR"};
+            case LOCALTIME:
+                return new String[]{"TIME WITH TIME ZONE"};
+            case PERIOD:
+                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
+            case DURATION:
+                throw new RuntimeException("Not yet implemented");
             case STRING:
-                return "LONGVARCHAR";
+                return new String[]{"LONGVARCHAR"};
             case BYTE_ARRAY:
-                return "LONGVARBINARY";
+                return new String[]{"LONGVARBINARY"};
             case BOOLEAN_ARRAY:
-                return "BOOLEAN ARRAY DEFAULT ARRAY[]";
+                return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
             case SHORT_ARRAY:
-                return "SMALLINT ARRAY DEFAULT ARRAY[]";
+                return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
             case INTEGER_ARRAY:
-                return "INTEGER ARRAY DEFAULT ARRAY[]";
+                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
             case LONG_ARRAY:
-                return "BIGINT ARRAY DEFAULT ARRAY[]";
+                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
             case FLOAT_ARRAY:
-                return "REAL ARRAY DEFAULT ARRAY[]";
+                return new String[]{"REAL ARRAY DEFAULT ARRAY[]"};
             case DOUBLE_ARRAY:
-                return "DOUBLE ARRAY DEFAULT ARRAY[]";
+                return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
             case STRING_ARRAY:
-                return "LONGVARCHAR ARRAY DEFAULT ARRAY[]";
+                return new String[]{"LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }

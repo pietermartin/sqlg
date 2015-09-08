@@ -38,6 +38,9 @@ public class SchemaManager {
     public static final String LABEL_SEPARATOR = ":::";
     public static final String IN_VERTEX_COLUMN_END = "__I";
     public static final String OUT_VERTEX_COLUMN_END = "__O";
+    public static final String ZONEID = "~~~ZONEID";
+    public static final String MONTHS = "~~~MONTHS";
+    public static final String DAYS = "~~~DAYS";
 
     private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();
@@ -599,18 +602,7 @@ public class SchemaManager {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        int i = 1;
-        //This is to make the columns sorted
-        List<String> keys = new ArrayList<>(columns.keySet());
-        Collections.sort(keys);
-        for (String column : keys) {
-            PropertyType propertyType = columns.get(column);
-            //Columns map 1 to 1 to property keys and are case sensitive
-            sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
-            if (i++ < columns.size()) {
-                sql.append(", ");
-            }
-        }
+        buildColumns(columns, sql);
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -627,6 +619,32 @@ public class SchemaManager {
         this.sqlgGraph.tx().setSchemaModification(true);
     }
 
+    private void buildColumns(Map<String, PropertyType> columns, StringBuilder sql) {
+        int i = 1;
+        //This is to make the columns sorted
+        List<String> keys = new ArrayList<>(columns.keySet());
+        Collections.sort(keys);
+        for (String column : keys) {
+            PropertyType propertyType = columns.get(column);
+            int count = 1;
+            String[] propertyTypeToSqlDefinition = sqlDialect.propertyTypeToSqlDefinition(propertyType);
+            for (String sqlDefinition : propertyTypeToSqlDefinition) {
+                if (count > 1) {
+                    sql.append(sqlDialect.maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2])).append(" ").append(sqlDefinition);
+                } else {
+                    //The first column has no postfix
+                    sql.append(sqlDialect.maybeWrapInQoutes(column)).append(" ").append(sqlDefinition);
+                }
+                if (count++ < propertyTypeToSqlDefinition.length) {
+                    sql.append(", ");
+                }
+            }
+            if (i++ < columns.size()) {
+                sql.append(", ");
+            }
+        }
+    }
+
     private void createEdgeTable(String schema, String tableName, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
@@ -640,18 +658,7 @@ public class SchemaManager {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        int i = 1;
-        //This is to make the columns sorted
-        List<String> keys = new ArrayList<>(columns.keySet());
-        Collections.sort(keys);
-        for (String column : keys) {
-            PropertyType propertyType = columns.get(column);
-            //Columns map 1 to 1 to property keys and are case sensitive
-            sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
-            if (i++ < columns.size()) {
-                sql.append(", ");
-            }
-        }
+        buildColumns(columns, sql);
         sql.append(", ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(" ");
@@ -733,15 +740,7 @@ public class SchemaManager {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        int i = 1;
-        for (String column : columns.keySet()) {
-            PropertyType propertyType = columns.get(column);
-            //Columns map 1 to 1 to property keys and are case sensitive
-            sql.append(this.sqlDialect.maybeWrapInQoutes(column)).append(" ").append(this.sqlDialect.propertyTypeToSqlDefinition(propertyType));
-            if (i++ < columns.size()) {
-                sql.append(", ");
-            }
-        }
+        buildColumns(columns, sql);
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -758,28 +757,63 @@ public class SchemaManager {
     }
 
     private void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
-        StringBuilder sql = new StringBuilder("ALTER TABLE ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
-        sql.append(".");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
-        sql.append(" ADD ");
-        sql.append(this.sqlDialect.maybeWrapInQoutes(keyValue.left));
-        sql.append(" ");
-        sql.append(this.sqlDialect.propertyTypeToSqlDefinition(keyValue.right));
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
+        int count = 1;
+        String[] propertyTypeToSqlDefinition = this.sqlDialect.propertyTypeToSqlDefinition(keyValue.getRight());
+        for (String sqlDefinition : propertyTypeToSqlDefinition) {
+            StringBuilder sql = new StringBuilder("ALTER TABLE ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+            sql.append(" ADD ");
+            if (count > 1) {
+                sql.append(sqlDialect.maybeWrapInQoutes(keyValue.getLeft() + keyValue.getRight().getPostFixes()[count - 2]));
+            } else {
+                //The first column has no postfix
+                sql.append(sqlDialect.maybeWrapInQoutes(keyValue.getLeft()));
+            }
+            count++;
+            sql.append(" ");
+            sql.append(sqlDefinition);
+
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            Connection conn = this.sqlgGraph.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            this.sqlgGraph.tx().setSchemaModification(true);
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        this.sqlgGraph.tx().setSchemaModification(true);
     }
+
+//    private void addZoneIdColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
+//        StringBuilder sql = new StringBuilder("ALTER TABLE ");
+//        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+//        sql.append(".");
+//        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+//        sql.append(" ADD ");
+//        sql.append(this.sqlDialect.maybeWrapInQoutes(keyValue.left + ZONEID));
+//        sql.append(" ");
+//        sql.append(this.sqlDialect.zoneIdToSqlDefinition());
+//        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+//            sql.append(";");
+//        }
+//        if (logger.isDebugEnabled()) {
+//            logger.debug(sql.toString());
+//        }
+//        Connection conn = this.sqlgGraph.tx().getConnection();
+//        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+//            preparedStatement.executeUpdate();
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//        this.sqlgGraph.tx().setSchemaModification(true);
+//    }
 
     private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey) {
         StringBuilder sql = new StringBuilder();

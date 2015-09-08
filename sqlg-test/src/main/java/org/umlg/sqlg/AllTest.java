@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
@@ -87,7 +88,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGraphStepOrderBy.class,
         TestAggregate.class,
         TestVertexStepOrderBy.class,
-        TestTreeStep.class
+        TestTreeStep.class,
+        LocalDateTest.class
 })
 public class AllTest {
 }

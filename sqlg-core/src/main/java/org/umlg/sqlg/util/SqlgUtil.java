@@ -15,6 +15,7 @@ import org.umlg.sqlg.structure.*;
 
 import java.lang.reflect.Array;
 import java.sql.*;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -102,7 +103,7 @@ public class SqlgUtil {
                     sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                 }
                 sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
-                schemaTableTree.getLabels().forEach(l->result.put(l, sqlgElement));
+                schemaTableTree.getLabels().forEach(l -> result.put(l, sqlgElement));
             }
         }
         return result;
@@ -159,7 +160,34 @@ public class SqlgUtil {
                 case STRING:
                     preparedStatement.setString(parameterStartIndex++, (String) pair.right);
                     break;
+                case LOCALDATE:
+                    preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDate) pair.right).atStartOfDay()));
+                    break;
+                case LOCALDATETIME:
+                    preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((LocalDateTime) pair.right)));
+                    break;
+                case ZONEDDATETIME:
+                    if (sqlgGraph.getSqlDialect().needsTimeZone()) {
+                        //This is for postgresql that adjust the timestamp to the server's timezone
+                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()),
+                                Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId())));
+                    } else {
+                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()));
+                    }
 
+                    preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
+                    break;
+                case LOCALTIME:
+                    //looses nanos
+                    preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
+                    break;
+                case PERIOD:
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getMonths());
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
+                    break;
+                case DURATION:
+                    throw new RuntimeException("Not yet implemented");
                 //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
                     java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
@@ -300,7 +328,7 @@ public class SqlgUtil {
                 if (!(value instanceof RecordId)) {
                     id = RecordId.from(value);
                 } else {
-                    id = (RecordId)value;
+                    id = (RecordId) value;
                 }
                 result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
             } else {

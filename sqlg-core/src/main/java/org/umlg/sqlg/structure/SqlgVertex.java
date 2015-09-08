@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -430,15 +431,29 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {
+        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         int i = 1;
         if (!keyValueMap.isEmpty()) {
+            Preconditions.checkState(!columnPropertyTypeMap.isEmpty(), getSchemaTablePrefixed().toString() + " not found in SchemaManager's allTables map!");
             sql.append(" ( ");
             for (String column : keyValueMap.keySet()) {
-                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(column));
+                PropertyType propertyType = columnPropertyTypeMap.get(column);
+                String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                int count = 1;
+                for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                    if (count > 1) {
+                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                    } else {
+                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+                    }
+                    if (count++ < sqlDefinitions.length) {
+                        sql.append(",");
+                    }
+                }
                 if (i++ < keyValueMap.size()) {
                     sql.append(", ");
                 }
@@ -446,7 +461,19 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sql.append(") VALUES ( ");
             i = 1;
             for (String column : keyValueMap.keySet()) {
-                sql.append("?");
+                PropertyType propertyType = columnPropertyTypeMap.get(column);
+                String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+                int count = 1;
+                for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                    if (count > 1) {
+                        sql.append("?");
+                    } else {
+                        sql.append("?");
+                    }
+                    if (count++ < sqlDefinitions.length) {
+                        sql.append(",");
+                    }
+                }
                 if (i++ < keyValueMap.size()) {
                     sql.append(", ");
                 }
@@ -865,7 +892,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         && !name.equals(SchemaManager.VERTEX_TABLE)
                         && !Objects.isNull(o)) {
 
-                    loadProperty(resultSetMetaData, i, name, o);
+                    loadProperty(resultSetMetaData, resultSet, i, name, o);
                 }
             }
         }
@@ -889,7 +916,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         && !Objects.isNull(o)) {
 
                     toRemove.put(columnName, columnCount);
-                    loadProperty(resultSetMetaData, columnCount, name, o);
+                    loadProperty(resultSetMetaData, resultSet, columnCount, name, o);
                 }
             }
         }
@@ -915,7 +942,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     && !columnName.equals(SchemaManager.VERTEX_TABLE)
                     && !Objects.isNull(o)) {
 
-                loadProperty(resultSetMetaData, i, columnName, o);
+                loadProperty(resultSetMetaData, resultSet, i, columnName, o);
             }
         }
     }

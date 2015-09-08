@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.gremlincompile.*;
+import org.umlg.sqlg.test.localdate.LocalDateTest;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWhere.class
+        LocalDateTest.class
 })
 public class AnyTest {
 }

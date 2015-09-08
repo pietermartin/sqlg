@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.lang.reflect.*;
 import java.sql.*;
 import java.sql.Array;
+import java.time.*;
 import java.util.*;
 
 /**
@@ -821,43 +822,56 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public String propertyTypeToSqlDefinition(PropertyType propertyType) {
+    public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return "BOOLEAN";
+                return new String[]{"BOOLEAN"};
             case SHORT:
-                return "SMALLINT";
+                return new String[]{"SMALLINT"};
             case INTEGER:
-                return "INTEGER";
+                return new String[]{"INTEGER"};
             case LONG:
-                return "BIGINT";
+                return new String[]{"BIGINT"};
             case FLOAT:
-                return "REAL";
+                return new String[]{"REAL"};
             case DOUBLE:
-                return "DOUBLE PRECISION";
+                return new String[]{"DOUBLE PRECISION"};
+            case LOCALDATE:
+                return new String[]{"DATE"};
+            case LOCALDATETIME:
+                return new String[]{"TIMESTAMP WITH TIME ZONE"};
+            case ZONEDDATETIME:
+                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
+            case LOCALTIME:
+                return new String[]{"TIME WITH TIME ZONE"};
+            case PERIOD:
+                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
+            case DURATION:
+                throw new RuntimeException("Not yet implemented");
             case STRING:
-                return "TEXT";
+                return new String[]{"TEXT"};
             case BYTE_ARRAY:
-                return "BYTEA";
+                return new String[]{"BYTEA"};
             case BOOLEAN_ARRAY:
-                return "BOOLEAN[]";
+                return new String[]{"BOOLEAN[]"};
             case SHORT_ARRAY:
-                return "SMALLINT[]";
+                return new String[]{"SMALLINT[]"};
             case INTEGER_ARRAY:
-                return "INTEGER[]";
+                return new String[]{"INTEGER[]"};
             case LONG_ARRAY:
-                return "BIGINT[]";
+                return new String[]{"BIGINT[]"};
             case FLOAT_ARRAY:
-                return "REAL[]";
+                return new String[]{"REAL[]"};
             case DOUBLE_ARRAY:
-                return "DOUBLE PRECISION[]";
+                return new String[]{"DOUBLE PRECISION[]"};
             case STRING_ARRAY:
-                return "TEXT[]";
+                return new String[]{"TEXT[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
     }
 
+    //TODO
     @Override
     public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
         switch (sqlType) {
@@ -969,6 +983,24 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             return;
         }
         if (value instanceof Double) {
+            return;
+        }
+        if (value instanceof LocalDate) {
+            return;
+        }
+        if (value instanceof LocalDateTime) {
+            return;
+        }
+        if (value instanceof ZonedDateTime) {
+            return;
+        }
+        if (value instanceof LocalTime) {
+            return;
+        }
+        if (value instanceof Period) {
+            return;
+        }
+        if (value instanceof Duration) {
             return;
         }
         if (value instanceof byte[]) {
@@ -1087,6 +1119,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public boolean supportsILike() {
+        return Boolean.TRUE;
+    }
+
+    @Override
+    public boolean needsTimeZone() {
         return Boolean.TRUE;
     }
 }
