@@ -3,19 +3,16 @@ package org.umlg.sqlg.strategy;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -23,11 +20,13 @@ import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.time.Duration;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 
 /**
  * Created by pieter on 2015/07/19.
@@ -55,7 +54,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof HasContainerHolder &&
+            if (currentStep instanceof HasContainerHolder && isNotZonedDateTimeOrPeriodOrDuration((HasContainerHolder) currentStep) &&
                     (isSingleBiPredicate(((HasContainerHolder) currentStep).getHasContainers()) ||
                             isBetween(((HasContainerHolder) currentStep).getHasContainers()) ||
                             isInside(((HasContainerHolder) currentStep).getHasContainers()) ||
@@ -79,12 +78,24 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
+    protected boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
+        return currentStep.getHasContainers().stream().filter(
+                h -> h.getPredicate().getValue() instanceof ZonedDateTime ||
+                        h.getPredicate().getValue() instanceof Period ||
+                        h.getPredicate().getValue() instanceof Duration ||
+                        (h.getPredicate().getValue() instanceof List && (
+                                ((List) h.getPredicate().getValue()).stream().anyMatch(v -> v instanceof ZonedDateTime) ||
+                                        ((List) h.getPredicate().getValue()).stream().anyMatch(v -> v instanceof Period) ||
+                                        ((List) h.getPredicate().getValue()).stream().anyMatch(v -> v instanceof Duration)))
+        ).count() < 1;
+    }
+
     static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
         //Collect the OrderGlobalSteps
         if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
             iterator.remove();
             traversal.removeStep(step);
-            replacedStep.getComparators().addAll(((OrderGlobalStep)step).getComparators());
+            replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
         } else {
             collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
         }

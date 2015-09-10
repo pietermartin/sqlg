@@ -231,7 +231,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case PERIOD:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION:
-                throw new RuntimeException("Not yet implemented");
+                return new String[]{"BIGINT", "INTEGER"};
             case STRING:
                 return new String[]{"LONGVARCHAR"};
             case BYTE_ARRAY:

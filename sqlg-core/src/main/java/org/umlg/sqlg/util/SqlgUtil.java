@@ -119,21 +119,19 @@ public class SqlgUtil {
                 whereClause.putKeyValueMap(hasContainer, keyValueMap);
             }
         }
-        SqlgUtil.setKeyValuesAsParameter(sqlgGraph, parameterIndex, conn, preparedStatement, keyValueMap);
+        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);
+        //This is for selects
+        setKeyValueAsParameter(sqlgGraph, false, parameterIndex, conn, preparedStatement, typeAndValues);
     }
 
+    //This is called for inserts
     public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
-        i = setKeyValueAsParameter(sqlgGraph, i, conn, preparedStatement, typeAndValues);
+        i = setKeyValueAsParameter(sqlgGraph, true, i, conn, preparedStatement, typeAndValues);
         return i;
     }
 
-    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, Multimap<String, Object> keyValues) throws SQLException {
-        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
-        return setKeyValueAsParameter(sqlgGraph, parameterStartIndex, conn, preparedStatement, typeAndValues);
-    }
-
-    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
+    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
             switch (pair.left) {
                 case BOOLEAN:
@@ -174,8 +172,8 @@ public class SqlgUtil {
                     } else {
                         preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()));
                     }
-
-                    preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
+                    if (mod)
+                        preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
                     break;
                 case LOCALTIME:
                     //looses nanos
@@ -187,8 +185,10 @@ public class SqlgUtil {
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
                     break;
                 case DURATION:
-                    throw new RuntimeException("Not yet implemented");
-                //TODO the array properties are hardcoded according to postgres's jdbc driver
+                    preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
+                    preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
+                    break;
+                    //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
                     java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, booleanArray);

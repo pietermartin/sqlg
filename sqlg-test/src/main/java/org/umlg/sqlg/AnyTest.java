@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.localdate.LocalDateTest;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        LocalDateTest.class
+        TestGremlinCompileWhereLocalDate.class
 })
 public class AnyTest {
 }

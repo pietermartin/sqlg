@@ -41,6 +41,7 @@ public class SchemaManager {
     public static final String ZONEID = "~~~ZONEID";
     public static final String MONTHS = "~~~MONTHS";
     public static final String DAYS = "~~~DAYS";
+    public static final String DURATION_NANOS = "~~~NANOS";
 
     private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();

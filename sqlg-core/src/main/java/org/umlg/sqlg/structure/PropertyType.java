@@ -26,7 +26,7 @@ public enum PropertyType {
     LOCALTIME(LocalTime.class.getName(), new String[]{}),
     //years is the first default column
     PERIOD(Period.class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS}),
-    DURATION(Duration.class.getName(), new String[]{}),
+    DURATION(Duration.class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
 
     BOOLEAN_ARRAY(boolean[].class.getName(), new String[]{}),
     BYTE_ARRAY(byte[].class.getName(), new String[]{}),

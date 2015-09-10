@@ -18,6 +18,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.lang.reflect.Array;
 import java.sql.*;
 import java.sql.Date;
+import java.time.Duration;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -502,7 +503,10 @@ public abstract class SqlgElement implements Element {
 
     protected void loadProperty(ResultSetMetaData resultSetMetaData, ResultSet resultSet, int i, String columnName, Object o) throws SQLException {
         if (columnName.endsWith(SchemaManager.ZONEID) ||
-                columnName.endsWith(SchemaManager.MONTHS) || columnName.endsWith(SchemaManager.DAYS)) {
+                columnName.endsWith(SchemaManager.MONTHS) ||
+                columnName.endsWith(SchemaManager.DAYS) ||
+                columnName.endsWith(SchemaManager.DURATION_NANOS)
+                ) {
             return;
         }
         int type = resultSetMetaData.getColumnType(i);
@@ -513,8 +517,25 @@ public abstract class SqlgElement implements Element {
             case Types.TINYINT:
                 this.properties.put(columnName, ((Integer) o).byteValue());
                 break;
-            case Types.INTEGER:
+            case Types.BIGINT:
                 PropertyType propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                switch (propertyType) {
+                    case DURATION:
+                        long seconds = (Long) o;
+                        //load the months and days as its needed to construct the Period
+                        Collection<String> aliasedNanos = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[0]);
+                        if (aliasedNanos.isEmpty()) {
+                            aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                        }
+                        int nanos = resultSet.getInt(aliasedNanos.iterator().next());
+                        this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
+                        break;
+                    default:
+                        this.properties.put(columnName, o);
+                }
+                break;
+            case Types.INTEGER:
+                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
                 switch (propertyType) {
                     case PERIOD:
                         int years = (Integer) o;

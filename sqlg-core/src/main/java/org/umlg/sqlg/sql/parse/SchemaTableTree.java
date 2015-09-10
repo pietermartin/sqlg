@@ -866,6 +866,15 @@ public class SchemaTableTree {
             sql += " AS \"";
             sql += lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyName);
             sql += "\"";
+
+            for (String postFix : propertyTypeMap.get(propertyName).getPostFixes()) {
+                sql += ", ";
+                sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName + postFix);
+                sql += " AS \"";
+                sql += lastSchemaTableTree.calculateAliasPropertyName(propertyName + postFix);
+                sql += "\"";
+            }
+
             if (count++ < propertyTypeMap.size()) {
                 sql += ", ";
             }
