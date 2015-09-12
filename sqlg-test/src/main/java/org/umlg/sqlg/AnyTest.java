@@ -2,7 +2,9 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.gremlincompile.*;
+import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 
@@ -12,7 +14,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        LocalDateTest.class
+        TestBatch.class
 })
 public class AnyTest {
 }

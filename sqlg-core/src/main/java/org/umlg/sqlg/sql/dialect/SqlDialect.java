@@ -1,5 +1,6 @@
 package org.umlg.sqlg.sql.dialect;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -9,10 +10,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.*;
 
-import java.sql.Array;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -290,6 +288,10 @@ public interface SqlDialect {
         return false;
     }
 
+    public default boolean supportsJson() {
+        return false;
+    }
+
     void flushVertexLabelCache(SqlgGraph sqlgGraph, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap);
 
     String getBatchNull();
@@ -351,4 +353,7 @@ public interface SqlDialect {
 
     List<String> getGisSchemas();
 
+    void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right);
+
+    void handleOther(Map<String, Object> properties, String columnName, Object o);
 }

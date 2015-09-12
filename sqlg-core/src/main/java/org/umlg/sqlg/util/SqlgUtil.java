@@ -1,5 +1,6 @@
 package org.umlg.sqlg.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
@@ -188,7 +189,12 @@ public class SqlgUtil {
                     preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
                     preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
                     break;
-                    //TODO the array properties are hardcoded according to postgres's jdbc driver
+                //TODO the array properties are hardcoded according to postgres's jdbc driver
+                case JSON:
+                    sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case BOOLEAN_ARRAY:
                     java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, booleanArray);

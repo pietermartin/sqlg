@@ -1,5 +1,6 @@
 package org.umlg.sqlg.sql.dialect;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
+import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
@@ -850,6 +852,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"BIGINT", "INTEGER"};
             case STRING:
                 return new String[]{"TEXT"};
+            case JSON:
+                return new String[]{"JSONB"};
             case BYTE_ARRAY:
                 return new String[]{"BYTEA"};
             case BOOLEAN_ARRAY:
@@ -1003,6 +1007,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof Duration) {
             return;
         }
+        if (value instanceof JsonNode) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -1135,5 +1142,27 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public List<String> getGisSchemas() {
         return Arrays.asList("tiger", "tiger_data", "topology");
+    }
+
+    @Override
+    public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode json) {
+        PGobject jsonObject = new PGobject();
+        jsonObject.setType("jsonb");
+        try {
+            jsonObject.setValue(json.toString());
+            preparedStatement.setObject(parameterStartIndex, jsonObject);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void handleOther(Map<String, Object> properties, String columnName, Object o) {
+        properties.put(columnName, ((PGobject)o).getValue());
+    }
+
+    @Override
+    public boolean supportsJson() {
+        return true;
     }
 }

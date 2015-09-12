@@ -597,6 +597,9 @@ public abstract class SqlgElement implements Element {
                 Object[] objectArray = (Object[]) array.getArray();
                 this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
                 break;
+            case Types.OTHER:
+                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o);
+                break;
             default:
                 this.properties.put(columnName, o);
         }

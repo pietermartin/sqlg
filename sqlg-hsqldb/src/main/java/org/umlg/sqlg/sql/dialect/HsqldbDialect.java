@@ -1,5 +1,6 @@
 package org.umlg.sqlg.sql.dialect;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -234,6 +235,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"BIGINT", "INTEGER"};
             case STRING:
                 return new String[]{"LONGVARCHAR"};
+            case JSON:
+                throw new IllegalStateException("HSQLDB does not support json types, use good ol string instead!");
             case BYTE_ARRAY:
                 return new String[]{"LONGVARBINARY"};
             case BOOLEAN_ARRAY:
@@ -413,5 +416,15 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public List<String> getGisSchemas() {
         return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
+        throw new IllegalStateException("Hsqldb does not support json types, this should not have happened!");
+    }
+
+    @Override
+    public void handleOther(Map<String, Object> properties, String columnName, Object o) {
+        throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
     }
 }

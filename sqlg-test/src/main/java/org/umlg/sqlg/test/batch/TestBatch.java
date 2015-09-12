@@ -32,23 +32,23 @@ public class TestBatch extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
-    @Test
-    public void testEscapingCharacters() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        for (int i = 0; i < 10000; i++) {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "MO1", "name", "marko" + i, "test1", "\\", "test2", "\nhalo", "test3", "\rhalo", "test4", "\thalo");
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i, "test1", "\\", "test2", "\nhalo", "test3", "\rhalo", "test4", "\thalo");
-            v1.addEdge("Friend", v2, "name", "xxx");
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        Assert.assertEquals(20000, this.sqlgGraph.traversal().V().count().next(), 0);
-        Assert.assertEquals(10000, this.sqlgGraph.traversal().E().count().next(), 0);
-    }
-
+//    @Test
+//    public void testEscapingCharacters() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 0; i < 10000; i++) {
+//            Vertex v1 = this.sqlgGraph.addVertex(T.label, "MO1", "name", "marko" + i, "test1", "\\", "test2", "\nhalo", "test3", "\rhalo", "test4", "\thalo");
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i, "test1", "\\", "test2", "\nhalo", "test3", "\rhalo", "test4", "\thalo");
+//            v1.addEdge("Friend", v2, "name", "xxx");
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        Assert.assertEquals(20000, this.sqlgGraph.traversal().V().count().next(), 0);
+//        Assert.assertEquals(10000, this.sqlgGraph.traversal().E().count().next(), 0);
+//    }
+//
 //    @Test
 //    public void testVerticesBatchOn() {
 //        StopWatch stopWatch = new StopWatch();
@@ -618,6 +618,7 @@ public class TestBatch extends BaseTest {
 //    public void testBatchUpdatePersistentVerticesPerformance1() {
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
 //        int count = 1;
 //        for (int i = 0; i < 100000; i++) {
 //            this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
@@ -627,6 +628,7 @@ public class TestBatch extends BaseTest {
 //
 //        }
 //        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
 //        stopWatch.stop();
 //        System.out.println(stopWatch.toString());
 //        stopWatch.reset();
@@ -733,45 +735,47 @@ public class TestBatch extends BaseTest {
 //        Assert.assertEquals(0, this.sqlgGraph.traversal().V().count().next().intValue());
 //        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
 //    }
-//
-//    @Test
-//    public void testDeletePerformance() {
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        this.sqlgGraph.tx().batchModeOn();
-//        //32767
-//        int j = 1;
-//        //create 280 foreign keys
-//        for (int i = 0; i < 2810; i++) {
-//            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
-//            if (j == 281) {
-//                j = 1;
-//            }
-//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "huawei.NetworkElement", "name", "networkElement" + i + "_" + j);
-//            v2.addEdge("WorkspaceElement_NetworkElement" + j, v1);
-//            j++;
-//        }
-//        this.sqlgGraph.tx().commit();
-//        this.sqlgGraph.tx().batchModeOn();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//        stopWatch.reset();
-//        stopWatch.start();
-//        List<Vertex> vertexes = this.sqlgGraph.traversal().V().has(T.label, "WorkspaceElement").toList();
-//        for (Vertex sqlgVertex : vertexes) {
-//            sqlgVertex.remove();
-//        }
-//        vertexes = this.sqlgGraph.traversal().V().<SqlgVertex>has(T.label, "NetworkElement").toList();
-//        for (Vertex sqlgVertex : vertexes) {
-//            sqlgVertex.remove();
-//        }
-//        this.sqlgGraph.tx().commit();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//        Assert.assertEquals(0, this.sqlgGraph.traversal().V().count().next().intValue());
-//        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
-//    }
-//
+
+    @Test
+    public void testDeletePerformance() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        this.sqlgGraph.tx().batchModeOn();
+        //32767
+        int j = 1;
+        //create 280 foreign keys
+        for (int i = 0; i < 2810; i++) {
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
+            if (j == 281) {
+                j = 1;
+            }
+            Vertex v2 = this.sqlgGraph.addVertex(T.label, "huawei.NetworkElement", "name", "networkElement" + i + "_" + j);
+            v2.addEdge("WorkspaceElement_NetworkElement" + j, v1);
+            j++;
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().batchModeOn();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        List<Vertex> vertexes = this.sqlgGraph.traversal().V().has(T.label, "WorkspaceElement").toList();
+        for (Vertex sqlgVertex : vertexes) {
+            sqlgVertex.remove();
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().batchModeOn();
+        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
+        vertexes = this.sqlgGraph.traversal().V().<SqlgVertex>has(T.label, "huawei.NetworkElement").toList();
+        for (Vertex sqlgVertex : vertexes) {
+            sqlgVertex.remove();
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        Assert.assertEquals(0, this.sqlgGraph.traversal().V().count().next().intValue());
+    }
+
 //    @Test
 //    public void testDropForeignKeys() {
 //        this.sqlgGraph.tx().commit();
@@ -939,7 +943,7 @@ public class TestBatch extends BaseTest {
 //    }
 //
 //
-//    @Test
+////    @Test
 //    public void testPerformance1() {
 //        this.sqlgGraph.tx().batchModeOn();
 //        for (int i = 0; i < 1000000; i++) {

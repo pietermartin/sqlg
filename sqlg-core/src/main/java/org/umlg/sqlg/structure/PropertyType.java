@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
@@ -27,6 +29,7 @@ public enum PropertyType {
     //years is the first default column
     PERIOD(Period.class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS}),
     DURATION(Duration.class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
+    JSON(JsonNode.class.getName(), new String[]{}),
 
     BOOLEAN_ARRAY(boolean[].class.getName(), new String[]{}),
     BYTE_ARRAY(byte[].class.getName(), new String[]{}),
@@ -56,7 +59,12 @@ public enum PropertyType {
     }
 
     public static PropertyType from(Object o) {
-        PropertyType propertyType = javaClassNameToEnum.get(o.getClass().getName());
+        PropertyType propertyType;
+        if (o instanceof JsonNode) {
+            propertyType = javaClassNameToEnum.get(JsonNode.class.getName());
+        } else {
+            propertyType = javaClassNameToEnum.get(o.getClass().getName());
+        }
         if (propertyType == null) {
             throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(o);
         }
