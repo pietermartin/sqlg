@@ -86,10 +86,15 @@ public abstract class BaseTest {
                 String[] types = {"TABLE"};
                 ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (result.next()) {
+                    String schema = result.getString(2);
+                    String table = result.getString(3);
+                    if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
+                        continue;
+                    }
                     StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(2)));
+                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
                     sql.append(".");
-                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
+                    sql.append(sqlDialect.maybeWrapInQoutes(table));
                     sql.append(" CASCADE");
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");

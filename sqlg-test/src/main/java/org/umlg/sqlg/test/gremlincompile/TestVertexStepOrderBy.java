@@ -2,10 +2,12 @@ package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -166,6 +168,104 @@ public class TestVertexStepOrderBy extends BaseTest {
         Assert.assertEquals(c1, result.get(2));
         Assert.assertEquals(a3, result.get(1));
         Assert.assertEquals(a2, result.get(0));
+    }
+
+    @Test
+    public void testOrderOnEdge() {
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+        Vertex fantasy1 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan1");
+        Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
+        Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
+        Vertex fantasy4 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan4");
+        god.addEdge("godDream", fantasy1, "sequence", 1);
+        god.addEdge("godDream", fantasy2, "sequence", 2);
+        god.addEdge("godDream", fantasy3, "sequence", 3);
+        god.addEdge("godDream", fantasy4, "sequence", 4);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> result = this.sqlgGraph.traversal().V(god)
+                .outE("godDream").as("e")
+                .inV().as("v")
+                .select("e", "v")
+                .order().by(__.select("e").by("sequence"), Order.decr)
+                .map(m -> (Vertex)m.get().get("v"))
+                .toList();
+        Assert.assertEquals(fantasy4, result.get(0));
+        Assert.assertEquals(fantasy3, result.get(1));
+        Assert.assertEquals(fantasy2, result.get(2));
+        Assert.assertEquals(fantasy1, result.get(3));
+    }
+
+    @Test
+    public void testOrderOnEdgeClearThreadVarOnFailures() {
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+        Vertex fantasy1 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan1");
+        Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
+        Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
+        Vertex fantasy4 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan4");
+        god.addEdge("godDream", fantasy1);
+        god.addEdge("godDream", fantasy2);
+        god.addEdge("godDream", fantasy3);
+        god.addEdge("godDream", fantasy4);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> result = this.sqlgGraph.traversal().V(god)
+                .outE("godDream").as("e")
+                .inV().as("v")
+                .select("e", "v")
+                .order().by(__.select("e").by("sequence"), Order.decr)
+                .map(m -> (Vertex)m.get().get("v"))
+                .toList();
+        Assert.assertTrue(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty());
+        Assert.assertTrue(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty());
+    }
+
+    @Test
+    public void testSelectVertexAndEdgeOrderByEdge() {
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+        Vertex fantasy1 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan1");
+        Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
+        Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
+        Vertex fantasy4 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan4");
+        Edge e1 = god.addEdge("godDream", fantasy1, "sequence", 1);
+        Edge e2 = god.addEdge("godDream", fantasy2, "sequence", 2);
+        Edge e3 = god.addEdge("godDream", fantasy3, "sequence", 3);
+        Edge e4 = god.addEdge("godDream", fantasy4, "sequence", 4);
+        this.sqlgGraph.tx().commit();
+        List<Map<String, Object>> result = this.sqlgGraph.traversal().V(god)
+                .outE("godDream").as("e")
+                .inV().as("v")
+                .select("e", "v")
+                .order().by(__.select("e").by("sequence"), Order.decr)
+                .toList();
+
+        Assert.assertEquals(4, result.size());
+        Assert.assertEquals(fantasy4, result.get(0).get("v"));
+        Assert.assertEquals(fantasy3, result.get(1).get("v"));
+        Assert.assertEquals(fantasy2, result.get(2).get("v"));
+        Assert.assertEquals(fantasy1, result.get(3).get("v"));
+
+        Assert.assertEquals(e4, result.get(0).get("e"));
+        Assert.assertEquals(e3, result.get(1).get("e"));
+        Assert.assertEquals(e2, result.get(2).get("e"));
+        Assert.assertEquals(e1, result.get(3).get("e"));
+    }
+
+    @Test
+    public void testOrderByToSelf() {
+
+        Vertex root = this.sqlgGraph.addVertex(T.label, "Root");
+        Vertex folder1 = this.sqlgGraph.addVertex(T.label, "Folder");
+        Vertex folder2 = this.sqlgGraph.addVertex(T.label, "Folder");
+        Edge e1 = root.addEdge("rootFolder", folder1);
+        Edge e2 = folder1.addEdge("subFolder", folder2, "sequence", 1);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> result = this.sqlgGraph.traversal().V(folder1)
+                .outE("subFolder").as("e")
+                .inV().as("v")
+                .select("e", "v")
+                .order().by(__.select("e").by("sequence"), Order.incr)
+                .map(m -> (Vertex)m.get().get("v")).toList();
+
+        Assert.assertEquals(1, result.size());
     }
 
 }

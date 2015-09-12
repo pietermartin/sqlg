@@ -1126,4 +1126,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public boolean needsTimeZone() {
         return Boolean.TRUE;
     }
+
+    @Override
+    public List<String> getSpacialRefTable() {
+        return Arrays.asList("spatial_ref_sys");
+    }
+
+    @Override
+    public List<String> getGisSchemas() {
+        return Arrays.asList("tiger", "tiger_data", "topology");
+    }
 }

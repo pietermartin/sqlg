@@ -347,4 +347,8 @@ public interface SqlDialect {
         return Boolean.FALSE;
     }
 
+    List<String> getSpacialRefTable();
+
+    List<String> getGisSchemas();
+
 }

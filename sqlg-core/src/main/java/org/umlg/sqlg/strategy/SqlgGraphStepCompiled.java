@@ -71,8 +71,8 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
         for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
             try {
+                List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
                 for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
                     Connection conn = this.sqlgGraph.tx().getConnection();
                     if (logger.isDebugEnabled()) {
@@ -94,6 +94,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 schemaTableTree.resetThreadVars();
             }
         }
+        rootSchemaTableTree.forEach(SchemaTableTree::resetThreadVars);
         return resultIterator;
     }
 
@@ -116,6 +117,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 rootSchemaTableTree.resetThreadVars();
             }
         }
+        rootSchemaTableTrees.forEach(SchemaTableTree::resetThreadVars);
     }
 
     boolean isForMultipleQueries() {

@@ -210,8 +210,8 @@ public class SchemaTableTree {
             }
             lastOfPrevious = subQueryLinkedList.getLast();
         }
-        String result = "SELECT " + constructOuterFromClause(sqlgGraph, subQueryLinkedLists);
         singlePathSql += constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists);
+        String result = "SELECT " + constructOuterFromClause(sqlgGraph, subQueryLinkedLists);
         return result + singlePathSql;
     }
 
@@ -467,7 +467,7 @@ public class SchemaTableTree {
                 ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
 
                 String prefix;
-                if (counter != -1) {
+                if (selectSchemaTableTree.children.isEmpty()) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     prefix = "";
                 } else {
@@ -485,7 +485,7 @@ public class SchemaTableTree {
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
                 } else {
                     //TODO its a multi map because multiple elements may have the same label
-                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
                 }
                 result += " " + alias;
                 if (traversalComparator.getComparator() == Order.incr) {

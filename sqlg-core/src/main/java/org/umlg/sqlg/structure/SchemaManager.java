@@ -915,6 +915,9 @@ public class SchemaManager {
                 ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
                 while (tablesRs.next()) {
                     String table = tablesRs.getString(3);
+                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                        continue;
+                    }
                     Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
                     Set<String> foreignKeys = null;
                     //get the columns
@@ -922,6 +925,9 @@ public class SchemaManager {
                     ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                     while (columnsRs.next()) {
                         String schema = columnsRs.getString(2);
+                        if (this.sqlDialect.getGisSchemas().contains(schema)) {
+                            continue;
+                        }
                         this.localSchemas.put(schema, schema);
                         if (!previousSchema.equals(schema)) {
                             foreignKeys = new HashSet<>();

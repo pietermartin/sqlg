@@ -404,4 +404,14 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public void validateColumnName(String column) {
         super.validateColumnName(column);
     }
+
+    @Override
+    public List<String> getSpacialRefTable() {
+        return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public List<String> getGisSchemas() {
+        return Collections.EMPTY_LIST;
+    }
 }

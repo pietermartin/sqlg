@@ -83,7 +83,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
                 if (!isForMultipleQueries()) {
                     if (step instanceof SqlgOrderGlobalStep) {
-                        ((SqlgOrderGlobalStep)step).setIgnore(true);
+                        ((SqlgOrderGlobalStep) step).setIgnore(true);
                     }
                 }
             }
@@ -129,12 +129,14 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 this.replacedSteps.get(0).isVertexStep() ||
                         this.replacedSteps.get(0).isEdgeVertexStep()
                 , "The first step must a VertexStep or EdgeVertexStep found " + this.replacedSteps.get(0).getStep().getClass().toString());
-        SchemaTableTree schemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
-        List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
+        SchemaTableTree schemaTableTree = null;
         try {
+            schemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
+            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
             this.parsedForStrategySql.put(schemaTableTree, sqlStatements);
         } finally {
-            schemaTableTree.resetThreadVars();
+            if (schemaTableTree != null)
+                schemaTableTree.resetThreadVars();
         }
     }
 
