@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestTreeStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTreeStep.class
+        JsonTest.class
 })
 public class AnyTest {
 }

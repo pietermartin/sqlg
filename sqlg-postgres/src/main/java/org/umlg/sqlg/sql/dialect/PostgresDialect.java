@@ -1181,6 +1181,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } else {
             properties.put(columnName, ((PGobject) o).getValue());
         }
+        ObjectMapper objectMapper =  new ObjectMapper();
+        try {
+            JsonNode jsonNode = objectMapper.readTree(((PGobject)o).getValue());
+            properties.put(columnName, jsonNode);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        if (o instanceof PGgeometry) {
+            properties.put(columnName, ((PGgeometry) o).getGeometry());
+        } else {
+            properties.put(columnName, ((PGobject) o).getValue());
+        }
     }
 
     @Override
