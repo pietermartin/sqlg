@@ -14,7 +14,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        JsonTest.class
+        TestTreeStep.class
 })
 public class AnyTest {
 }
