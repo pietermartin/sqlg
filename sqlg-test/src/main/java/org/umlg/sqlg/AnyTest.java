@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.gremlincompile.TestTreeStep;
+import org.umlg.sqlg.test.json.JsonTest;
 
 /**
  * Date: 2014/07/16

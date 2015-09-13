@@ -31,6 +31,9 @@ public enum PropertyType {
 
     //GIS
     POINT("org.postgis.Point", new String[]{}),
+    POLYGON("org.postgis.Polygon", new String[]{}),
+    GEOGRAPHY_POINT("org.umlg.sqlg.gis.GeographyPoint", new String[]{}),
+    GEOGRAPHY_POLYGON("org.umlg.sqlg.gis.GeographyPolygon", new String[]{}),
 
     BOOLEAN_ARRAY(boolean[].class.getName(), new String[]{}),
     BYTE_ARRAY(byte[].class.getName(), new String[]{}),

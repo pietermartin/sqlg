@@ -197,6 +197,18 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
+                case POLYGON:
+                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case GEOGRAPHY_POINT:
+                    sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case GEOGRAPHY_POLYGON:
+                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
                 case BOOLEAN_ARRAY:
                     java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, booleanArray);

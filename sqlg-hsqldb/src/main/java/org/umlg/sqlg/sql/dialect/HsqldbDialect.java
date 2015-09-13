@@ -239,6 +239,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 throw new IllegalStateException("HSQLDB does not support json types, use good ol string instead!");
             case POINT:
                 throw new IllegalStateException("HSQLDB does not support gis types!");
+            case POLYGON:
+                throw new IllegalStateException("HSQLDB does not support gis types!");
+            case GEOGRAPHY_POINT:
+                throw new IllegalStateException("HSQLDB does not support gis types!");
+            case GEOGRAPHY_POLYGON:
+                throw new IllegalStateException("HSQLDB does not support gis types!");
             case BYTE_ARRAY:
                 return new String[]{"LONGVARBINARY"};
             case BOOLEAN_ARRAY:
@@ -424,13 +430,29 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
         throw new IllegalStateException("Hsqldb does not support json types, this should not have happened!");
     }
+
     @Override
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
     }
 
     @Override
+    public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
+    }
+
+    @Override
+    public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
+    }
+
+    @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
+        throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
+    }
+
+    @Override
+    public <T> T getGis(SqlgGraph sqlgGraph) {
         throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
     }
 }

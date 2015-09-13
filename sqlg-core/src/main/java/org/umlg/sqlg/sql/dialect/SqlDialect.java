@@ -358,6 +358,9 @@ public interface SqlDialect {
     void handleOther(Map<String, Object> properties, String columnName, Object o);
 
     void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
+    void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
 
     public default boolean isPostgresql() {
         return false;
@@ -367,4 +370,5 @@ public interface SqlDialect {
         //do nothing
     }
 
+    <T> T getGis(SqlgGraph sqlgGraph);
 }

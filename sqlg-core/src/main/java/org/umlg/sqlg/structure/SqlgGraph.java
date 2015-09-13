@@ -302,6 +302,10 @@ public class SqlgGraph implements Graph {
         return new SqlGFeatures();
     }
 
+    public <T> T gis() {
+        return this.getSqlDialect().getGis(this);
+    }
+
 
     public interface ISqlGFeatures extends Features {
         boolean supportsBatchMode();

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.configuration.Configuration;
@@ -10,17 +11,23 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.postgis.Geometry;
 import org.postgis.PGgeometry;
 import org.postgis.Point;
+import org.postgis.Polygon;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.jdbc4.Jdbc4Connection;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.gis.GeographyPoint;
+import org.umlg.sqlg.gis.GeographyPolygon;
+import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.sql.*;
@@ -859,6 +866,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"JSONB"};
             case POINT:
                 return new String[]{"geometry(POINT)"};
+            case POLYGON:
+                return new String[]{"geometry(POLYGON)"};
+            case GEOGRAPHY_POINT:
+                return new String[]{"geography(POINT, 4326)"};
+            case GEOGRAPHY_POLYGON:
+                return new String[]{"geography(POLYGON, 4326)"};
             case BYTE_ARRAY:
                 return new String[]{"BYTEA"};
             case BOOLEAN_ARRAY:
@@ -1018,6 +1031,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof Point) {
             return;
         }
+        if (value instanceof Polygon) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -1175,23 +1191,51 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object polygon) {
+        Preconditions.checkArgument(polygon instanceof Polygon, "polygon must be an instance of " + Polygon.class.getName());
+        try {
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Polygon)polygon));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        Preconditions.checkArgument(point instanceof GeographyPoint, "point must be an instance of " + GeographyPoint.class.getName());
+        try {
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((GeographyPoint)point));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
         if (o instanceof PGgeometry) {
             properties.put(columnName, ((PGgeometry) o).getGeometry());
+        } else if (((PGobject)o).getType().equals("geography")) {
+            try {
+                Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
+                if (geometry instanceof Point) {
+                    properties.put(columnName, new GeographyPoint((Point) geometry));
+                } else if (geometry instanceof  Polygon) {
+                    properties.put(columnName, new GeographyPolygon((Polygon) geometry));
+                } else {
+                    throw new IllegalStateException("Gis type " + geometry.getClass().getName() + " is not supported.");
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         } else {
-            properties.put(columnName, ((PGobject) o).getValue());
-        }
-        ObjectMapper objectMapper =  new ObjectMapper();
-        try {
-            JsonNode jsonNode = objectMapper.readTree(((PGobject)o).getValue());
-            properties.put(columnName, jsonNode);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        if (o instanceof PGgeometry) {
-            properties.put(columnName, ((PGgeometry) o).getGeometry());
-        } else {
-            properties.put(columnName, ((PGobject) o).getValue());
+            //Assume json for now
+            ObjectMapper objectMapper =  new ObjectMapper();
+            try {
+                JsonNode jsonNode = objectMapper.readTree(((PGobject)o).getValue());
+                properties.put(columnName, jsonNode);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -1212,5 +1256,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public <T> T getGis(SqlgGraph sqlgGraph) {
+        Gis gis = Gis.GIS;
+        gis.setSqlgGraph(sqlgGraph);
+        return (T)gis;
     }
 }
