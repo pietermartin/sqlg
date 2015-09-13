@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.json;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -30,8 +31,8 @@ public class JsonTest extends BaseTest {
         json.put("username", "john");
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
         this.sqlgGraph.tx().commit();
-        String value = this.sqlgGraph.traversal().V(v1.id()).next().value("doc");
-        Assert.assertEquals("{\"username\": \"john\"}", value);
+        JsonNode value = this.sqlgGraph.traversal().V(v1.id()).next().value("doc");
+        Assert.assertEquals(json, value);
     }
 
     @Test
@@ -41,11 +42,26 @@ public class JsonTest extends BaseTest {
         JsonNode jsonNode = objectMapper.readTree(content);
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "doc", jsonNode);
         this.sqlgGraph.tx().commit();
-        String value = this.sqlgGraph.traversal().V(v1.id()).next().value("doc");
-        JsonNode jsonNode1 = objectMapper.readTree(value);
-        Assert.assertEquals(jsonNode.get("username"), jsonNode1.get("username"));
-        Assert.assertEquals(jsonNode.get("post"), jsonNode1.get("post"));
-        Assert.assertEquals(jsonNode.get("emailaddress"), jsonNode1.get("emailaddress"));
+        JsonNode value = this.sqlgGraph.traversal().V(v1.id()).next().value("doc");
+        Assert.assertEquals(jsonNode.get("username"), value.get("username"));
+        Assert.assertEquals(jsonNode.get("post"), value.get("post"));
+        Assert.assertEquals(jsonNode.get("emailaddress"), value.get("emailaddress"));
+    }
+
+    @Test
+    public void testJsonArray() throws IOException {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ArrayNode jsonArray = new ArrayNode(objectMapper.getNodeFactory());
+        ObjectNode john = new ObjectNode(objectMapper.getNodeFactory());
+        john.put("username", "john");
+        ObjectNode pete = new ObjectNode(objectMapper.getNodeFactory());
+        pete.put("username", "pete");
+        jsonArray.add(john);
+        jsonArray.add(pete);
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "users", jsonArray);
+        this.sqlgGraph.tx().commit();
+        JsonNode value = this.sqlgGraph.traversal().V(v1.id()).next().value("users");
+        Assert.assertEquals(jsonArray, value);
     }
 
 }

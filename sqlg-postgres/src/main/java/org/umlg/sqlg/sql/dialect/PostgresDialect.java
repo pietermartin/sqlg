@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.*;
 import java.sql.*;
@@ -1158,7 +1160,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
-        properties.put(columnName, ((PGobject)o).getValue());
+        ObjectMapper objectMapper =  new ObjectMapper();
+        try {
+            JsonNode jsonNode = objectMapper.readTree(((PGobject)o).getValue());
+            properties.put(columnName, jsonNode);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
