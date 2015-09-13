@@ -14,35 +14,25 @@ public class TestTreeStep extends BaseTest {
     @Test
     public void testTreeStep() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
 
-        Vertex b11 = this.sqlgGraph.addVertex(T.label, "B", "name", "b11");
-        Vertex b12 = this.sqlgGraph.addVertex(T.label, "B", "name", "b12");
-        Vertex b13 = this.sqlgGraph.addVertex(T.label, "B", "name", "b13");
-        a1.addEdge("ab", b11);
-        a1.addEdge("ab", b12);
-        a1.addEdge("ab", b13);
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
 
-        Vertex b21 = this.sqlgGraph.addVertex(T.label, "B", "name", "b21");
-        Vertex b22 = this.sqlgGraph.addVertex(T.label, "B", "name", "b22");
-        Vertex b23 = this.sqlgGraph.addVertex(T.label, "B", "name", "b23");
-        a2.addEdge("ab", b21);
-        a2.addEdge("ab", b22);
-        a2.addEdge("ab", b23);
-
-        Vertex b31 = this.sqlgGraph.addVertex(T.label, "B", "name", "b31");
-        Vertex b32 = this.sqlgGraph.addVertex(T.label, "B", "name", "b32");
-        Vertex b33 = this.sqlgGraph.addVertex(T.label, "B", "name", "b33");
-        a3.addEdge("ab", b31);
-        a3.addEdge("ab", b32);
-        a3.addEdge("ab", b33);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
 
         this.sqlgGraph.tx().commit();
 
-        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().tree().next();
+        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
         System.out.println(tree);
-
 
     }
 }
