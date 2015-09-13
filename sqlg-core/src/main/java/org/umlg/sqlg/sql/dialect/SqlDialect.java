@@ -356,4 +356,15 @@ public interface SqlDialect {
     void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right);
 
     void handleOther(Map<String, Object> properties, String columnName, Object o);
+
+    void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
+    public default boolean isPostgresql() {
+        return false;
+    }
+
+    public default void registerGisDataTypes(Connection connection) {
+        //do nothing
+    }
+
 }

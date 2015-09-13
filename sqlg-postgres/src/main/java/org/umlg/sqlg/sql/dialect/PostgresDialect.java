@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -9,8 +10,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.postgis.PGgeometry;
+import org.postgis.Point;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.core.BaseConnection;
+import org.postgresql.jdbc4.Jdbc4Connection;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +22,8 @@ import org.umlg.sqlg.structure.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
 import java.sql.*;
-import java.sql.Array;
 import java.time.*;
 import java.util.*;
 
@@ -854,6 +857,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"TEXT"};
             case JSON:
                 return new String[]{"JSONB"};
+            case POINT:
+                return new String[]{"geometry(POINT)"};
             case BYTE_ARRAY:
                 return new String[]{"BYTEA"};
             case BOOLEAN_ARRAY:
@@ -1010,6 +1015,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof JsonNode) {
             return;
         }
+        if (value instanceof Point) {
+            return;
+        }
         if (value instanceof byte[]) {
             return;
         }
@@ -1157,12 +1165,40 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        Preconditions.checkArgument(point instanceof Point, "point must be an instance of " + Point.class.getName());
+        try {
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Point)point));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
-        properties.put(columnName, ((PGobject)o).getValue());
+        if (o instanceof PGgeometry) {
+            properties.put(columnName, ((PGgeometry) o).getGeometry());
+        } else {
+            properties.put(columnName, ((PGobject) o).getValue());
+        }
     }
 
     @Override
     public boolean supportsJson() {
         return true;
+    }
+
+    @Override
+    public boolean isPostgresql() {
+        return true;
+    }
+
+    @Override
+    public void registerGisDataTypes(Connection connection) {
+        try {
+            ((Jdbc4Connection)((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

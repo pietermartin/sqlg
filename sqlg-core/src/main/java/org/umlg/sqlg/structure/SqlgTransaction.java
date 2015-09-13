@@ -46,6 +46,9 @@ public class SqlgTransaction extends AbstractTransaction {
             try {
                 Connection connection = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
+                if (this.sqlgGraph.getSqlDialect().isPostgresql()) {
+                    this.sqlgGraph.getSqlDialect().registerGisDataTypes(connection);
+                }
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }

@@ -237,6 +237,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"LONGVARCHAR"};
             case JSON:
                 throw new IllegalStateException("HSQLDB does not support json types, use good ol string instead!");
+            case POINT:
+                throw new IllegalStateException("HSQLDB does not support gis types!");
             case BYTE_ARRAY:
                 return new String[]{"LONGVARBINARY"};
             case BOOLEAN_ARRAY:
@@ -421,6 +423,10 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right) {
         throw new IllegalStateException("Hsqldb does not support json types, this should not have happened!");
+    }
+    @Override
+    public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
     }
 
     @Override
