@@ -31,12 +31,23 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param outVertex
      * @param keyValues
      */
-    public SqlgEdge(SqlgGraph sqlgGraph, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+//    public SqlgEdge(SqlgGraph sqlgGraph, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+//        super(sqlgGraph, schema, table);
+//        this.inVertex = inVertex;
+//        this.outVertex = outVertex;
+//        try {
+//            insertEdge(keyValues);
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
+
+    public SqlgEdge(SqlgGraph sqlgGraph, boolean complete, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
         super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         try {
-            insertEdge(keyValues);
+            insertEdge(complete, keyValues);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -104,15 +115,30 @@ public class SqlgEdge extends SqlgElement implements Edge {
         return StringFactory.edgeString(this);
     }
 
-    protected void insertEdge(Object... keyValues) throws SQLException {
+//    protected void insertEdge(Object... keyValues) throws SQLException {
+//        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+//        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+//            internalBatchAddEdge(keyValueMap);
+//        } else {
+//            internalAddEdge(keyValueMap);
+//        }
+//        //Cache the properties
+//        this.properties.putAll(keyValueMap);
+//    }
+
+    protected void insertEdge(boolean complete, Object... keyValues) throws SQLException {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddEdge(keyValueMap);
+            internalBatchAddEdge(complete, keyValueMap);
         } else {
             internalAddEdge(keyValueMap);
         }
         //Cache the properties
         this.properties.putAll(keyValueMap);
+    }
+
+    private void internalBatchAddEdge(boolean complete, Map<String, Object> keyValueMap) {
+        this.sqlgGraph.tx().getBatchManager().addEdge(complete, this, this.outVertex, this.inVertex, keyValueMap);
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {

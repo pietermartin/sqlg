@@ -33,9 +33,17 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param table
      * @param keyValues
      */
-    public SqlgVertex(SqlgGraph sqlgGraph, String schema, String table, Object... keyValues) {
+//    public SqlgVertex(SqlgGraph sqlgGraph, String schema, String table, Object... keyValues) {
+//        super(sqlgGraph, schema, table);
+//        insertVertex(keyValues);
+//        if (!sqlgGraph.tx().isInBatchMode()) {
+//            sqlgGraph.tx().add(this);
+//        }
+//    }
+
+    public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Object... keyValues) {
         super(sqlgGraph, schema, table);
-        insertVertex(keyValues);
+        insertVertex(complete, keyValues);
         if (!sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().add(this);
         }
@@ -66,8 +74,66 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return addEdge(label, inVertex, parameters);
     }
 
+//    @Override
+//    public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
+//        if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
+//        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
+//        ElementHelper.validateLabel(label);
+//        if (label.contains("."))
+//            throw new IllegalStateException(String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", new Object[]{label}));
+//        ElementHelper.legalPropertyKeyValueArray(keyValues);
+//        if (ElementHelper.getIdValue(keyValues).isPresent())
+//            throw Edge.Exceptions.userSuppliedIdsNotSupported();
+//
+//        int i = 0;
+//        String key = "";
+//        Object value;
+//        for (Object keyValue : keyValues) {
+//            if (i++ % 2 == 0) {
+//                key = (String) keyValue;
+//            } else {
+//                value = keyValue;
+//                ElementHelper.validateProperty(key, value);
+//                this.sqlgGraph.getSqlDialect().validateProperty(key, value);
+//            }
+//        }
+//        SchemaTable schemaTablePair = SchemaTable.of(this.schema, label);
+//        this.sqlgGraph.tx().readWrite();
+//        this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
+//                schemaTablePair.getSchema(),
+//                schemaTablePair.getTable(),
+//                SchemaTable.of(
+//                        ((SqlgVertex) inVertex).schema,
+//                        ((SqlgVertex) inVertex).table
+//                ),
+//                SchemaTable.of(
+//                        this.schema,
+//                        this.table
+//                ),
+//                keyValues);
+//        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
+//        return edge;
+//    }
+
+    public Edge addCompleteEdge(String label, Vertex inVertex, Object... keyValues) {
+        if (!sqlgGraph.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for addCompleteEdge");
+        }
+        if (!sqlgGraph.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteEdge");
+        }
+        return addEdgeInternal(true, label, inVertex, keyValues);
+    }
+
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
+        if (sqlgGraph.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addEdge. Please use addCompleteEdge");
+        }
+        return addEdgeInternal(false, label, inVertex, keyValues);
+    }
+
+    private Edge addEdgeInternal(boolean complete, String label, Vertex inVertex, Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
         ElementHelper.validateLabel(label);
@@ -103,7 +169,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         this.table
                 ),
                 keyValues);
-        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
+        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, complete, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
         return edge;
     }
 
@@ -414,11 +480,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-
-    private void insertVertex(Object... keyValues) {
+    private void insertVertex(boolean complete, Object... keyValues) {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(keyValueMap);
+            internalBatchAddVertex(complete, keyValueMap);
         } else {
             internalAddVertex(keyValueMap);
         }
@@ -426,8 +491,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         this.properties.putAll(keyValueMap);
     }
 
-    private void internalBatchAddVertex(Map<String, Object> keyValueMap) {
-        this.sqlgGraph.tx().getBatchManager().addVertex(this, keyValueMap);
+    private void internalBatchAddVertex(boolean complete, Map<String, Object> keyValueMap) {
+        this.sqlgGraph.tx().getBatchManager().addVertex(complete, this, keyValueMap);
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {

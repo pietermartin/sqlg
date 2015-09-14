@@ -2,6 +2,7 @@ package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -64,6 +65,8 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     }
 
     private Iterator<Pair<E, Multimap<String, Object>>> elements() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
@@ -95,6 +98,10 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
             }
         }
         rootSchemaTableTree.forEach(SchemaTableTree::resetThreadVars);
+        stopWatch.stop();
+        if (logger.isDebugEnabled())
+            logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
+
         return resultIterator;
     }
 

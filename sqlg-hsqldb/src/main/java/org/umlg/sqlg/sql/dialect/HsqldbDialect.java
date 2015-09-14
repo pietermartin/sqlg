@@ -7,6 +7,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.*;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -69,6 +71,26 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
@@ -426,5 +448,10 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
         throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
+    }
+
+    @Override
+    public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
+        throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
     }
 }

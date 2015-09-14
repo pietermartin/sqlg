@@ -194,6 +194,53 @@ public class SqlgGraph implements Graph {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
 
+        validateVertexKeysValues(keyValues);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        this.tx().readWrite();
+        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+    }
+
+    /**
+     * Only to be called when batchMode is on
+     *
+     * @param label
+     * @param keyValues
+     * @return
+     */
+    public Vertex addCompleteVertex(String label, Map<String, Object> keyValues) {
+        if (!this.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
+        }
+        if (!this.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteVertex");
+        }
+        Map<Object, Object> tmp = new HashMap<>(keyValues);
+        tmp.put(T.label, label);
+        return addCompleteVertex(SqlgUtil.mapTokeyValues(tmp));
+    }
+
+    private Vertex addCompleteVertex(Object... keyValues) {
+        if (!this.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
+        }
+        if (!this.tx().isInBatchModeComplete()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteVertex");
+        }
+        validateVertexKeysValues(keyValues);
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        this.tx().readWrite();
+        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+    }
+
+    private void validateVertexKeysValues(Object[] keyValues) {
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if (ElementHelper.getIdValue(keyValues).isPresent())
+            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+
         int i = 0;
         Object key = null;
         Object value;
@@ -209,12 +256,6 @@ public class SqlgGraph implements Graph {
 
             }
         }
-        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
-        this.tx().readWrite();
-        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
-        final SqlgVertex vertex = new SqlgVertex(this, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
-        return vertex;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -7,6 +8,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -41,29 +45,68 @@ public class BatchManager {
     //map per label's edges to delete
     private Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
 
+    private Map<SchemaTable, OutputStream> completeVertexCache = new LinkedHashMap<>();
+    private Map<SchemaTable, OutputStream> completeEdgeCache = new LinkedHashMap<>();
+
+    public enum BatchModeType {
+        NONE, NORMAL, COMPLETE
+    }
+
+    private BatchModeType batchModeType = BatchModeType.NONE;
+
     BatchManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
     }
 
+    public boolean isBatchModeNormal() {
+        return this.batchModeType == BatchModeType.NORMAL;
+    }
+
+    public boolean isBatchModeComplete() {
+        return this.batchModeType == BatchModeType.COMPLETE;
+    }
+
     public boolean isBatchModeOn() {
-        return batchModeOn;
+        return (this.batchModeType == BatchModeType.NORMAL) || (this.batchModeType == BatchModeType.COMPLETE);
+    }
+
+    public void batchModeOn(boolean completeBatchModeOn) {
+        if (completeBatchModeOn) {
+            this.batchModeType = BatchModeType.COMPLETE;
+        } else {
+            this.batchModeType = BatchModeType.NORMAL;
+        }
     }
 
     public void batchModeOn() {
-        this.batchModeOn = true;
+        batchModeOn(false);
     }
 
-    public synchronized void addVertex(SqlgVertex vertex, Map<String, Object> keyValueMap) {
+    public synchronized void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         SchemaTable schemaTable = SchemaTable.of(vertex.getSchema(), vertex.getTable());
-        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> pairs = this.vertexCache.get(schemaTable);
-        if (pairs == null) {
-            pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
-            pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
-            this.vertexCache.put(schemaTable, pairs);
+        if (!complete) {
+            Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> pairs = this.vertexCache.get(schemaTable);
+            if (pairs == null) {
+                pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
+                pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
+                this.vertexCache.put(schemaTable, pairs);
+            } else {
+                pairs.getLeft().addAll(keyValueMap.keySet());
+                pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
+            }
         } else {
-            pairs.getLeft().addAll(keyValueMap.keySet());
-            pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
+            try {
+                OutputStream out = this.completeVertexCache.get(schemaTable);
+                if (out == null) {
+                    String sql = this.sqlDialect.constructCompleteCopyCommandSqlVertex(sqlgGraph, vertex, keyValueMap);
+                    out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
+                    this.completeVertexCache.put(schemaTable, out);
+                }
+                this.sqlDialect.flushCompleteVertex(out, keyValueMap);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -113,14 +156,87 @@ public class BatchManager {
         }
     }
 
+    void addEdge(boolean complete, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+        SchemaTable outSchemaTable = SchemaTable.of(outVertex.getSchema(), sqlgEdge.getTable());
+        if (!complete) {
+            Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(outSchemaTable);
+            if (triples == null) {
+                triples = new LinkedHashMap<>();
+                triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
+                this.edgeCache.put(outSchemaTable, triples);
+            } else {
+                triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
+            }
+            Map<SchemaTable, List<SqlgEdge>> outEdgesMap = this.vertexOutEdgeCache.get(outVertex);
+            if (outEdgesMap == null) {
+                outEdgesMap = new HashMap<>();
+                List<SqlgEdge> edges = new ArrayList<>();
+                edges.add(sqlgEdge);
+                outEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
+                this.vertexOutEdgeCache.put(outVertex, outEdgesMap);
+            } else {
+                List<SqlgEdge> sqlgEdges = outEdgesMap.get(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()));
+                if (sqlgEdges == null) {
+                    List<SqlgEdge> edges = new ArrayList<>();
+                    edges.add(sqlgEdge);
+                    outEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
+                } else {
+                    sqlgEdges.add(sqlgEdge);
+                }
+            }
+            Map<SchemaTable, List<SqlgEdge>> inEdgesMap = this.vertexInEdgeCache.get(outVertex);
+            if (inEdgesMap == null) {
+                inEdgesMap = new HashMap<>();
+                List<SqlgEdge> edges = new ArrayList<>();
+                edges.add(sqlgEdge);
+                inEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
+                this.vertexInEdgeCache.put(inVertex, inEdgesMap);
+            } else {
+                List<SqlgEdge> sqlgEdges = inEdgesMap.get(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()));
+                if (sqlgEdges == null) {
+                    List<SqlgEdge> edges = new ArrayList<>();
+                    edges.add(sqlgEdge);
+                    inEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
+                } else {
+                    sqlgEdges.add(sqlgEdge);
+                }
+            }
+        } else {
+            try {
+                OutputStream out = this.completeEdgeCache.get(outSchemaTable);
+                if (out == null) {
+                    String sql = this.sqlDialect.constructCompleteCopyCommandSqlEdge(sqlgGraph, sqlgEdge, outVertex, inVertex, keyValueMap);
+                    out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
+                    this.completeEdgeCache.put(outSchemaTable, out);
+                }
+                this.sqlDialect.flushCompleteEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     public synchronized Map<SchemaTable, Pair<Long, Long>> flush() {
         Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
         this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
-        this.sqlDialect.flushVertexLabelCache(this.sqlgGraph, this.vertexOutInLabelCache);
         this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
         this.sqlDialect.flushEdgePropertyCache(this.sqlgGraph, this.edgePropertyCache);
         this.sqlDialect.flushRemovedEdges(this.sqlgGraph, this.removeEdgeCache);
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
+        this.completeVertexCache.values().forEach(o -> {
+            try {
+                o.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        this.completeEdgeCache.values().forEach(o -> {
+            try {
+                o.close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
         return verticesRange;
     }
 
