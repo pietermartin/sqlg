@@ -33,14 +33,14 @@ public class TestTreeStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
-        System.out.println(tree);
-        this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
-        tree = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out()).times(2).tree().next();
-        System.out.println(tree);
+//        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
+//        System.out.println(tree);
+//        this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
+//        tree = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out()).times(2).tree().next();
+//        System.out.println(tree);
         GraphTraversal gt = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc")).times(2).tree();
         System.out.println(gt.toString());
-        System.out.println(tree);
+        System.out.println(gt.next());
 
     }
 }

@@ -2,6 +2,10 @@ package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
@@ -30,6 +34,8 @@ public class ReplacedStep<S, E> {
     private List<Comparator> comparators;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
+    private boolean emit;
+    private boolean path;
 
     public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step) {
         ReplacedStep replacedStep = new ReplacedStep<>();
@@ -58,9 +64,20 @@ public class ReplacedStep<S, E> {
             return appendPathForVertexStep(schemaTableTree);
         } else if (this.step instanceof EdgeVertexStep) {
             return appendPathForEdgeVertexStep(schemaTableTree);
+        } else if (this.step instanceof RepeatStep) {
+            return appendPathForRepeatStep(schemaTableTree);
         } else {
             throw new IllegalStateException("Only VertexStep and EdgeVertexStep is handled");
         }
+    }
+
+    private Set<SchemaTableTree> appendPathForRepeatStep(SchemaTableTree schemaTableTree) {
+        RepeatStep repeatStep = (RepeatStep) this.step;
+        List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
+        Traversal.Admin admin = repeatTraversals.get(0);
+        List<Step> steps = admin.getSteps();
+        VertexStep vertexStep = (VertexStep) steps.get(0);
+        return null;
     }
 
     private Set<SchemaTableTree> appendPathForEdgeVertexStep(SchemaTableTree schemaTableTree) {
@@ -329,5 +346,13 @@ public class ReplacedStep<S, E> {
 
     public AbstractStep<S, E> getStep() {
         return step;
+    }
+
+    public void emit() {
+        this.emit = true;
+    }
+
+    public void path() {
+        this.path = true;
     }
 }
