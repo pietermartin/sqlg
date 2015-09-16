@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.batch;
 
-import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -32,6 +32,90 @@ public class TestBatch extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
+    @Test
+    public void queryPerformance() {
+        this.sqlgGraph.tx().batchModeOn();
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        for (int i = 0; i < 600000; i++) {
+            Map<String, Object> properties = new HashMap<>();
+            properties.put("Adjacent Cell Inter-layer HO Hysteresis", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("BQ HO Margin", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("BQ HO Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("BQ HO Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Better Cell HO Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Better Cell HO Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Chain Neighbor Cell", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Chain Neighbour Cell Type", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Directed Retry Handover Level Range", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Directional of Neighboring Cell", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Edge HO AdjCell Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Edge HO AdjCell Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Edge HO Hysteresis", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Enhanced Outgoing Cell Handover Offset", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("HCS HO Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("HCS HO Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("IBCA Dyn Measure Neighbour Cell Flag", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("IBCA RxLev Offset", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Inter-cell HO Hysteresis", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Layer HO Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Layer HO Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Level Penalty Value on Neighboring Cell", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Load HO PBGT Threshold", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Min Access Level Offset", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("NCell Interf Type", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Neighbor 2G Cell Index", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Neighbor 2G Cell Name", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Neighboring Cell Penalty Switch", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Neighboring Cell Priority", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Neighboring Cell Type", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("PBGT HO Threshold", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("PBGT Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("PBGT Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Penalty Stop Level Threshold", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Penalty Timer Length", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Quick Handover Last Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Quick Handover Offset for Neighbor Cell", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Quick Handover Static Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Source Cell Index", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("Source Cell Name", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("TA HO Valid Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("TA HO Watch Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("UL BQ HO Last Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("UL BQ HO Static Time", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("cmSoftwareVersion", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("cm_parent_nodename", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("cm_uid", "MTN->South Africa->HUAWEI->GSM->REAL_WS->G2GNCELL->CNBSH3->5292B->5860C" + i);
+            properties.put("createdOn", 111111111);
+            properties.put("internal_cm_name", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("name", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("networkName", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("updatedOn", 10000000);
+            properties.put("Is External Cell", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("BQ HO Neighbor Cell Select Absolute Thld Switch", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("BCCH TRX NoBCCH TS PC Neighbor Cell HO CMP Value", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            properties.put("2G Neighboring Cell Ranking Priority", "aaaaaaaaaaaaaaaaaaaaaaaaa");
+            if (i % 100000 == 0) {
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().batchModeOn();
+            }
+            this.sqlgGraph.addVertex("R_HG.G2GNCELL", properties);
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        List<Vertex> result = this.sqlgGraph.traversal().V().has(T.label, "R_HG.G2GNCELL").toList();
+//        Map<String, SqlgVertex> cache = new HashMap<>();
+//        this.sqlgGraph.traversal().V().has(T.label, "R_HG.G2GNCELL").forEachRemaining(
+//                v -> cache.put(v.<String>value("cm_uid"), (SqlgVertex) v)
+//        );
+//        Assert.assertEquals(600000, cache.size());
+        Assert.assertEquals(600000, result.size());
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
 //    @Test
 //    public void testEscapingCharacters() {
 //        StopWatch stopWatch = new StopWatch();
@@ -735,47 +819,47 @@ public class TestBatch extends BaseTest {
 //        Assert.assertEquals(0, this.sqlgGraph.traversal().V().count().next().intValue());
 //        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
 //    }
-
-    @Test
-    public void testDeletePerformance() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
-        //32767
-        int j = 1;
-        //create 280 foreign keys
-        for (int i = 0; i < 2810; i++) {
-            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
-            if (j == 281) {
-                j = 1;
-            }
-            Vertex v2 = this.sqlgGraph.addVertex(T.label, "huawei.NetworkElement", "name", "networkElement" + i + "_" + j);
-            v2.addEdge("WorkspaceElement_NetworkElement" + j, v1);
-            j++;
-        }
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
-        List<Vertex> vertexes = this.sqlgGraph.traversal().V().has(T.label, "WorkspaceElement").toList();
-        for (Vertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
-        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
-        vertexes = this.sqlgGraph.traversal().V().<SqlgVertex>has(T.label, "huawei.NetworkElement").toList();
-        for (Vertex sqlgVertex : vertexes) {
-            sqlgVertex.remove();
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        Assert.assertEquals(0, this.sqlgGraph.traversal().V().count().next().intValue());
-    }
-
+//
+//    @Test
+//    public void testDeletePerformance() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().batchModeOn();
+//        //32767
+//        int j = 1;
+//        //create 280 foreign keys
+//        for (int i = 0; i < 2810; i++) {
+//            Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
+//            if (j == 281) {
+//                j = 1;
+//            }
+//            Vertex v2 = this.sqlgGraph.addVertex(T.label, "huawei.NetworkElement", "name", "networkElement" + i + "_" + j);
+//            v2.addEdge("WorkspaceElement_NetworkElement" + j, v1);
+//            j++;
+//        }
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        stopWatch.reset();
+//        stopWatch.start();
+//        List<Vertex> vertexes = this.sqlgGraph.traversal().V().has(T.label, "WorkspaceElement").toList();
+//        for (Vertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.tx().batchModeOn();
+//        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
+//        vertexes = this.sqlgGraph.traversal().V().<SqlgVertex>has(T.label, "huawei.NetworkElement").toList();
+//        for (Vertex sqlgVertex : vertexes) {
+//            sqlgVertex.remove();
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//        Assert.assertEquals(0, this.sqlgGraph.traversal().V().count().next().intValue());
+//    }
+//
 //    @Test
 //    public void testDropForeignKeys() {
 //        this.sqlgGraph.tx().commit();
