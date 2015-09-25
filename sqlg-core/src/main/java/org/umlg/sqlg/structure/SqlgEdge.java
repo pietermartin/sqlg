@@ -221,10 +221,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     }
 
-    private void internalBatchAddEdge(Map<String, Object> keyValueMap) {
-        this.sqlgGraph.tx().getBatchManager().addEdge(this, this.outVertex, this.inVertex, keyValueMap);
-    }
-
     //TODO this needs optimizing, an edge created in the transaction need not go to the db to load itself again
     @Override
     protected void load() {

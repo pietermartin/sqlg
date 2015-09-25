@@ -209,27 +209,34 @@ public class SqlgGraph implements Graph {
      * @param keyValues
      * @return
      */
-    public Vertex addCompleteVertex(String label, Map<String, Object> keyValues) {
+    public Vertex streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
         if (!this.tx().isInBatchMode()) {
-            throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
+            throw new IllegalStateException("Transaction must be in batch mode for streamVertex");
         }
         if (!this.tx().isInBatchModeComplete()) {
-            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteVertex");
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamVertex");
         }
-        Map<Object, Object> tmp = new HashMap<>(keyValues);
+        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         tmp.put(T.label, label);
-        return addCompleteVertex(SqlgUtil.mapTokeyValues(tmp));
+        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+        return streamVertex(keyValues1);
     }
 
-    private Vertex addCompleteVertex(Object... keyValues) {
+    private Vertex streamVertex(Object... keyValues) {
         if (!this.tx().isInBatchMode()) {
-            throw new IllegalStateException("Transaction must be in batch mode for addCompleteVertex");
+            throw new IllegalStateException("Transaction must be in batch mode for streamVertex");
         }
         if (!this.tx().isInBatchModeComplete()) {
-            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for addCompleteVertex");
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamVertex");
         }
-        validateVertexKeysValues(keyValues);
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        String streamingBatchModeVertexLabel = this.tx().getBatchManager().getStreamingBatchModeVertexLabel();
+        if (streamingBatchModeVertexLabel != null && !streamingBatchModeVertexLabel.equals(label)) {
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexLabel + "\" found \"" + label + "\"");
+        }
+        List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
+        validateVertexKeysValues(keyValues, keys);
+
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.tx().readWrite();
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
@@ -254,6 +261,32 @@ public class SqlgGraph implements Graph {
                     this.sqlDialect.validateProperty(key, value);
                 }
 
+            }
+        }
+    }
+
+    private void validateVertexKeysValues(Object[] keyValues, List<String> previousBatchModeKeys) {
+        ElementHelper.legalPropertyKeyValueArray(keyValues);
+        if (ElementHelper.getIdValue(keyValues).isPresent())
+            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
+
+        int i = 0;
+        int keyCount = 0;
+        Object key = null;
+        Object value;
+
+        for (Object keyValue : keyValues) {
+            if (i++ % 2 == 0) {
+                key = keyValue;
+                if (!key.equals(T.label) && previousBatchModeKeys != null && !key.equals(previousBatchModeKeys.get(keyCount++))) {
+                    throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
+                }
+            } else {
+                value = keyValue;
+                if (!key.equals(T.label)) {
+                    ElementHelper.validateProperty((String) key, value);
+                    this.sqlDialect.validateProperty(key, value);
+                }
             }
         }
     }

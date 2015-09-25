@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -10,7 +9,6 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.sql.SQLException;
 import java.util.*;
 
 /**
@@ -19,10 +17,8 @@ import java.util.*;
  */
 public class BatchManager {
 
-    //This is postgres's default copy command null value
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
-    private boolean batchModeOn = false;
 
     //map per label/keys, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache = new LinkedHashMap<>();
@@ -31,10 +27,6 @@ public class BatchManager {
 
     private Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexInEdgeCache = new HashMap<>();
     private Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexOutEdgeCache = new HashMap<>();
-
-    //this cache is used to cache out and in labels of vertices that are not itself in the cache.
-    //i.e. when adding edges between vertices in batch mode
-    private Map<SqlgVertex, Pair<String, String>> vertexOutInLabelCache = new LinkedHashMap<>();
 
     //this is a cache of changes to properties that are already persisted, i.e. not in the vertexCache
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache = new LinkedHashMap<>();
@@ -47,6 +39,12 @@ public class BatchManager {
 
     private Map<SchemaTable, OutputStream> completeVertexCache = new LinkedHashMap<>();
     private Map<SchemaTable, OutputStream> completeEdgeCache = new LinkedHashMap<>();
+
+    //indicates what is being streamed
+    private String streamingBatchModeVertexLabel;
+    private List<String> streamingBatchModeVertexKeys;
+    private String streamingBatchModeEdgeLabel;
+    private ArrayList<String> streamingBatchModeEdgeKeys;
 
     public enum BatchModeType {
         NONE, NORMAL, COMPLETE
@@ -83,6 +81,7 @@ public class BatchManager {
         batchModeOn(false);
     }
 
+    //why is this synchronized
     public synchronized void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         SchemaTable schemaTable = SchemaTable.of(vertex.getSchema(), vertex.getTable());
         if (!complete) {
@@ -96,7 +95,16 @@ public class BatchManager {
                 pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
             }
         } else {
+            if (this.streamingBatchModeVertexLabel == null) {
+                this.streamingBatchModeVertexLabel = vertex.label();
+            }
+            if (this.streamingBatchModeVertexKeys == null) {
+                this.streamingBatchModeVertexKeys = new ArrayList<>(keyValueMap.keySet());
+            }
             try {
+                if (!this.completeEdgeCache.isEmpty()) {
+                    throw new IllegalStateException("streaming edge is in progress, first flush or commit before streaming vertices.");
+                }
                 OutputStream out = this.completeVertexCache.get(schemaTable);
                 if (out == null) {
                     String sql = this.sqlDialect.constructCompleteCopyCommandSqlVertex(sqlgGraph, vertex, keyValueMap);
@@ -106,52 +114,6 @@ public class BatchManager {
                 this.sqlDialect.flushCompleteVertex(out, keyValueMap);
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
-        }
-    }
-
-    public void addEdge(SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        SchemaTable outSchemaTable = SchemaTable.of(outVertex.getSchema(), sqlgEdge.getTable());
-        Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(outSchemaTable);
-        if (triples == null) {
-            triples = new LinkedHashMap<>();
-            triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
-            this.edgeCache.put(outSchemaTable, triples);
-        } else {
-            triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
-        }
-        Map<SchemaTable, List<SqlgEdge>> outEdgesMap = this.vertexOutEdgeCache.get(outVertex);
-        if (outEdgesMap == null) {
-            outEdgesMap = new HashMap<>();
-            List<SqlgEdge> edges = new ArrayList<>();
-            edges.add(sqlgEdge);
-            outEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
-            this.vertexOutEdgeCache.put(outVertex, outEdgesMap);
-        } else {
-            List<SqlgEdge> sqlgEdges = outEdgesMap.get(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()));
-            if (sqlgEdges == null) {
-                List<SqlgEdge> edges = new ArrayList<>();
-                edges.add(sqlgEdge);
-                outEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
-            } else {
-                sqlgEdges.add(sqlgEdge);
-            }
-        }
-        Map<SchemaTable, List<SqlgEdge>> inEdgesMap = this.vertexInEdgeCache.get(outVertex);
-        if (inEdgesMap == null) {
-            inEdgesMap = new HashMap<>();
-            List<SqlgEdge> edges = new ArrayList<>();
-            edges.add(sqlgEdge);
-            inEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
-            this.vertexInEdgeCache.put(inVertex, inEdgesMap);
-        } else {
-            List<SqlgEdge> sqlgEdges = inEdgesMap.get(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()));
-            if (sqlgEdges == null) {
-                List<SqlgEdge> edges = new ArrayList<>();
-                edges.add(sqlgEdge);
-                inEdgesMap.put(SchemaTable.of(sqlgEdge.getSchema(), sqlgEdge.getTable()), edges);
-            } else {
-                sqlgEdges.add(sqlgEdge);
             }
         }
     }
@@ -202,6 +164,15 @@ public class BatchManager {
                 }
             }
         } else {
+            if (this.streamingBatchModeEdgeLabel == null) {
+                this.streamingBatchModeEdgeLabel = sqlgEdge.label();
+            }
+            if (this.streamingBatchModeEdgeKeys == null) {
+                this.streamingBatchModeEdgeKeys = new ArrayList<>(keyValueMap.keySet());
+            }
+            if (!this.completeVertexCache.isEmpty()) {
+                throw new IllegalStateException("streaming vertex is in progress, first flush or commit before streaming edges.");
+            }
             try {
                 OutputStream out = this.completeEdgeCache.get(outSchemaTable);
                 if (out == null) {
@@ -216,6 +187,7 @@ public class BatchManager {
         }
     }
 
+    //why is this synchronized
     public synchronized Map<SchemaTable, Pair<Long, Long>> flush() {
         Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
         this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
@@ -237,6 +209,10 @@ public class BatchManager {
                 throw new RuntimeException(e);
             }
         });
+        this.streamingBatchModeVertexLabel = null;
+        this.streamingBatchModeVertexKeys.clear();;
+        this.streamingBatchModeEdgeLabel = null;
+        this.streamingBatchModeEdgeKeys.clear();
         return verticesRange;
     }
 
@@ -380,7 +356,6 @@ public class BatchManager {
         this.edgeCache.clear();
         this.vertexInEdgeCache.clear();
         this.vertexOutEdgeCache.clear();
-        this.vertexOutInLabelCache.clear();
         this.removeEdgeCache.clear();
         this.removeVertexCache.clear();
         this.edgePropertyCache.clear();
@@ -458,4 +433,19 @@ public class BatchManager {
         }
     }
 
+    public String getStreamingBatchModeVertexLabel() {
+        return streamingBatchModeVertexLabel;
+    }
+
+    public List<String> getStreamingBatchModeVertexKeys() {
+        return streamingBatchModeVertexKeys;
+    }
+
+    public String getStreamingBatchModeEdgeLabel() {
+        return streamingBatchModeEdgeLabel;
+    }
+
+    public ArrayList<String> getStreamingBatchModeEdgeKeys() {
+        return streamingBatchModeEdgeKeys;
+    }
 }

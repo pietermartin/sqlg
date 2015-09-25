@@ -20,8 +20,6 @@ import java.util.function.Consumer;
  */
 public class SqlgTransaction extends AbstractTransaction {
 
-    private Consumer<Transaction> readWriteConsumer;
-    private Consumer<Transaction> closeConsumer;
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
@@ -227,53 +225,6 @@ public class SqlgTransaction extends AbstractTransaction {
     public boolean isOpen() {
         return (threadLocalTx.get() != null);
     }
-//    @Override
-//    public <R> Workload<R> submit(final Function<Graph, R> work) {
-//        return new Workload<>(this.sqlgGraph, work);
-//    }
-//
-//    @Override
-//    public <G extends Graph> G create() {
-//        throw Transaction.Exceptions.threadedTransactionsNotSupported();
-//    }
-//
-//
-//    @Override
-//    public void readWrite() {
-//        this.readWriteConsumer.accept(this);
-//    }
-//
-//    @Override
-//    public void close() {
-//        this.closeConsumer.accept(this);
-//    }
-//
-//    @Override
-//    public Transaction onReadWrite(final Consumer<Transaction> consumer) {
-//        this.readWriteConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onReadWriteBehaviorCannotBeNull);
-//        return this;
-//    }
-//
-//    @Override
-//    public Transaction onClose(final Consumer<Transaction> consumer) {
-//        this.closeConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onCloseBehaviorCannotBeNull);
-//        return this;
-//    }
-//
-//    @Override
-//    public void addTransactionListener(Consumer<Status> listener) {
-//
-//    }
-//
-//    @Override
-//    public void removeTransactionListener(Consumer<Status> listener) {
-//
-//    }
-//
-//    @Override
-//    public void clearTransactionListeners() {
-//
-//    }
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, recordId);

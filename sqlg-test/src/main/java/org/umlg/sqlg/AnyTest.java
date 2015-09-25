@@ -16,7 +16,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchCompleteVertex.class
+        TestBatchCompleteEdge.class
 })
 public class AnyTest {
 }
