@@ -2,6 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
 import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
 
@@ -11,8 +12,7 @@ import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchCompleteVertex.class,
-        TestBatchCompleteEdge.class
+        TestBatch.class
         })
 public class AnyTest {
 }
