@@ -17,10 +17,7 @@ import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
-import org.umlg.sqlg.test.schema.TestCaptureSchemaTableEdges;
-import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
-import org.umlg.sqlg.test.schema.TestLoadSchema;
-import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.vertex.TestNewVertex;
 import org.umlg.sqlg.test.vertex.TestRemovedVertex;
 import org.umlg.sqlg.test.vertex.TestTinkerpopBug;
@@ -91,7 +88,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexStepOrderBy.class,
         TestTreeStep.class,
         LocalDateTest.class,
-        JsonTest.class
+        JsonTest.class,
+        TestLockedByCurrentThreadPerformance.class,
+        TestSchemaManagerGetTablesFor.class
 })
 public class AllTest {
 }

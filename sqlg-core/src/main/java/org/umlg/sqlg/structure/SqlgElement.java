@@ -520,7 +520,7 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(columnName, ((Integer) o).byteValue());
                 break;
             case Types.BIGINT:
-                PropertyType propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case DURATION:
                         long seconds = (Long) o;
@@ -537,7 +537,8 @@ public abstract class SqlgElement implements Element {
                 }
                 break;
             case Types.INTEGER:
-                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+//                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case PERIOD:
                         int years = (Integer) o;
@@ -568,7 +569,7 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(columnName, ((Date) o).toLocalDate());
                 break;
             case Types.TIMESTAMP:
-                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case LOCALDATETIME:
                         this.properties.put(columnName, ((Timestamp) o).toLocalDateTime());
