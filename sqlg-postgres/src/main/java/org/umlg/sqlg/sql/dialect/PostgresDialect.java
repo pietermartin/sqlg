@@ -470,16 +470,20 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
-            for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
-                if (countKeys > 1 && countKeys <= keyValueMap.size()) {
-                    out.write(COPY_COMMAND_SEPARATOR.getBytes());
-                }
-                countKeys++;
-                Object value = entry.getValue();
-                if (value == null) {
-                    out.write(getBatchNull().getBytes());
-                } else {
-                    out.write(value.toString().getBytes());
+            if (keyValueMap.isEmpty()) {
+                out.write(Integer.toString(1).getBytes());
+            } else {
+                for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
+                    if (countKeys > 1 && countKeys <= keyValueMap.size()) {
+                        out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                    }
+                    countKeys++;
+                    Object value = entry.getValue();
+                    if (value == null) {
+                        out.write(getBatchNull().getBytes());
+                    } else {
+                        out.write(value.toString().getBytes());
+                    }
                 }
             }
             out.write("\n".getBytes());

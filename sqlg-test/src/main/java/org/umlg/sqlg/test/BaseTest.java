@@ -60,6 +60,7 @@ public abstract class BaseTest {
 
     @Before
     public void before() throws IOException {
+        SqlgDataSource sqlgDataSource;
         SqlDialect sqlDialect;
         try {
             Class<?> sqlDialectClass = findSqlGDialect();
@@ -69,7 +70,7 @@ public abstract class BaseTest {
             throw new RuntimeException(e);
         }
         try {
-            SqlgDataSource.INSTANCE.setupDataSource(
+            sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration);
         } catch (PropertyVetoException e) {
@@ -77,7 +78,7 @@ public abstract class BaseTest {
         }
         Connection conn;
         try {
-            conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection();
+            conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection();
             DatabaseMetaData metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
                 String catalog = null;
@@ -150,7 +151,7 @@ public abstract class BaseTest {
 
     @After
     public void after() throws Exception {
-        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.COMMIT);
+        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         this.sqlgGraph.close();
     }
 
@@ -171,7 +172,7 @@ public abstract class BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+            conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));

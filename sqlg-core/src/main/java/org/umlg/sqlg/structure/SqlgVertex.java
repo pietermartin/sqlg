@@ -33,14 +33,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param table
      * @param keyValues
      */
-//    public SqlgVertex(SqlgGraph sqlgGraph, String schema, String table, Object... keyValues) {
-//        super(sqlgGraph, schema, table);
-//        insertVertex(keyValues);
-//        if (!sqlgGraph.tx().isInBatchMode()) {
-//            sqlgGraph.tx().add(this);
-//        }
-//    }
-
     public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Object... keyValues) {
         super(sqlgGraph, schema, table);
         insertVertex(complete, keyValues);
@@ -74,26 +66,33 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return addEdge(label, inVertex, parameters);
     }
 
-    public Edge streamEdge(String label, Vertex inVertex, Object... keyValues) {
+    public void streamEdge(String label, Vertex inVertex) {
+        this.streamEdge(label, inVertex, new LinkedHashMap<>());
+    }
+
+    public void streamEdge(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
         if (!sqlgGraph.tx().isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode for streamEdge");
         }
-        if (!sqlgGraph.tx().isInBatchModeComplete()) {
+        if (!sqlgGraph.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamEdge");
         }
         if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() != null) {
-            System.out.println("asdas");
+            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() + " is in progress. Commit the transaction or call SqlgGraph.flushAndCloseStream()");
         }
         String streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeLabel();
         if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.equals(label)) {
-            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\"");
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flushAndCloseStream() before streaming a different label");
         }
-        return addEdgeInternal(true, label, inVertex, keyValues);
+        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
+        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+        addEdgeInternal(true, label, inVertex, keyValues1);
     }
 
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
-        if (sqlgGraph.tx().isInBatchModeComplete()) {
+        this.sqlgGraph.tx().readWrite();
+        if (sqlgGraph.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addEdge. Please use streamEdge");
         }
         return addEdgeInternal(false, label, inVertex, keyValues);
@@ -108,6 +107,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
+
 
         List<String> previousBatchModeKeys = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeKeys();
         int i = 0;
@@ -127,7 +127,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             }
         }
         SchemaTable schemaTablePair = SchemaTable.of(this.schema, label);
-        this.sqlgGraph.tx().readWrite();
         this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
                 schemaTablePair.getSchema(),
                 schemaTablePair.getTable(),
@@ -986,12 +985,18 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return SqlgVertex.this.internalEdges(direction, edgeLabels);
     }
 
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return SqlgVertex.this.vertices(Collections.emptyList(), direction, edgeLabels);
     }
 

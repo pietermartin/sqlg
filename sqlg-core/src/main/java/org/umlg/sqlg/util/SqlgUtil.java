@@ -299,7 +299,7 @@ public class SqlgUtil {
     }
 
     public static Map<String, Object> transformToInsertValues(Object... keyValues) {
-        Map<String, Object> result = new TreeMap<>();
+        Map<String, Object> result = new LinkedHashMap<>();
         int i = 1;
         Object key = null;
         for (Object keyValue : keyValues) {

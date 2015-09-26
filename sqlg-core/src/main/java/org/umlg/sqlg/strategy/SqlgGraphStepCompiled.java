@@ -65,6 +65,10 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     }
 
     private Iterator<Pair<E, Multimap<String, Object>>> elements() {
+        this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");

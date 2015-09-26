@@ -36,6 +36,9 @@
             <email>pieter.martin@gmail.com</email>
         </developer>
     </developers>
+    <prerequisites>
+        <maven>3.0</maven>
+    </prerequisites>
 
     <distributionManagement>
         <snapshotRepository>

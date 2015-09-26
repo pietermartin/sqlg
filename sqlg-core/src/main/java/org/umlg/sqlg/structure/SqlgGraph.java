@@ -16,10 +16,10 @@ import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.process.SqlgTraverserGeneratorFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
-import org.umlg.sqlg.process.SqlgTraverserGeneratorFactory;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -85,6 +85,7 @@ import java.util.stream.Stream;
         reason = "Takes too long")
 public class SqlgGraph implements Graph {
 
+    private final SqlgDataSource sqlgDataSource;
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
     private SchemaManager schemaManager;
@@ -127,7 +128,7 @@ public class SqlgGraph implements Graph {
 
     private SqlgGraph(final Configuration configuration) {
         try {
-            Class<?> sqlDialectClass = findSqlGDialect();
+            Class<?> sqlDialectClass = findSqlgDialect();
             logger.debug(String.format("Initializing Sqlg with %s dialect", sqlDialectClass.getSimpleName()));
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
@@ -138,10 +139,10 @@ public class SqlgGraph implements Graph {
         }
         try {
             this.jdbcUrl = configuration.getString("jdbc.url");
-            SqlgDataSource.INSTANCE.setupDataSource(
+            this.sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration);
-            this.sqlDialect.prepareDB(SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection());
+            this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -190,6 +191,9 @@ public class SqlgGraph implements Graph {
 
     @Override
     public Vertex addVertex(Object... keyValues) {
+        if (this.tx().isInStreamingBatchMode()) {
+            throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addVertex. Please use streamVertex");
+        }
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
@@ -202,37 +206,45 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
+    public void flushAndCloseStream() {
+        if (!this.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for streamVertex");
+        }
+        if (!this.tx().isInStreamingBatchMode()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamVertex");
+        }
+        this.tx().getBatchManager().flush();
+    }
+
+    public void streamVertex(String label) {
+        this.streamVertex(label, new LinkedHashMap<>());
+    }
+
     /**
-     * Only to be called when batchMode is on
+     * Only to be called when batchMode(true) is on
      *
      * @param label
      * @param keyValues
      * @return
      */
-    public Vertex streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
-        if (!this.tx().isInBatchMode()) {
-            throw new IllegalStateException("Transaction must be in batch mode for streamVertex");
-        }
-        if (!this.tx().isInBatchModeComplete()) {
+    public void streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
+        if (!this.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamVertex");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         tmp.put(T.label, label);
         Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
-        return streamVertex(keyValues1);
+        streamVertex(keyValues1);
     }
 
-    private Vertex streamVertex(Object... keyValues) {
-        if (!this.tx().isInBatchMode()) {
-            throw new IllegalStateException("Transaction must be in batch mode for streamVertex");
-        }
-        if (!this.tx().isInBatchModeComplete()) {
+    private void streamVertex(Object... keyValues) {
+        if (!this.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamVertex");
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         String streamingBatchModeVertexLabel = this.tx().getBatchManager().getStreamingBatchModeVertexLabel();
         if (streamingBatchModeVertexLabel != null && !streamingBatchModeVertexLabel.equals(label)) {
-            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexLabel + "\" found \"" + label + "\"");
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flushAndCloseStream() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
         validateVertexKeysValues(keyValues, keys);
@@ -240,7 +252,8 @@ public class SqlgGraph implements Graph {
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.tx().readWrite();
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
-        return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        //This vertex is a tad useless as it will not have an id
+        new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
     private void validateVertexKeysValues(Object[] keyValues) {
@@ -278,7 +291,7 @@ public class SqlgGraph implements Graph {
         for (Object keyValue : keyValues) {
             if (i++ % 2 == 0) {
                 key = keyValue;
-                if (!key.equals(T.label) && previousBatchModeKeys != null && !key.equals(previousBatchModeKeys.get(keyCount++))) {
+                if (!key.equals(T.label) && previousBatchModeKeys != null && !previousBatchModeKeys.isEmpty() && !key.equals(previousBatchModeKeys.get(keyCount++))) {
                     throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
                 }
             } else {
@@ -304,12 +317,18 @@ public class SqlgGraph implements Graph {
     @Override
     public Iterator<Vertex> vertices(Object... vertexIds) {
         this.tx().readWrite();
+        if (this.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return createElementIterator(Vertex.class, vertexIds);
     }
 
     @Override
     public Iterator<Edge> edges(Object... edgeIds) {
         this.tx().readWrite();
+        if (this.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return createElementIterator(Edge.class, edgeIds);
     }
 
@@ -360,7 +379,7 @@ public class SqlgGraph implements Graph {
         if (this.tx().isOpen())
             this.tx().close();
         this.schemaManager.close();
-        SqlgDataSource.INSTANCE.close(this.getJdbcUrl());
+        this.sqlgDataSource.close(this.getJdbcUrl());
     }
 
     @Override
@@ -869,7 +888,7 @@ public class SqlgGraph implements Graph {
         return implementForeignKeys;
     }
 
-    private Class<?> findSqlGDialect() {
+    private Class<?> findSqlgDialect() {
         try {
             return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
         } catch (ClassNotFoundException e) {
@@ -983,4 +1002,7 @@ public class SqlgGraph implements Graph {
         return sqlgElements;
     }
 
+    public SqlgDataSource getSqlgDataSource() {
+        return sqlgDataSource;
+    }
 }

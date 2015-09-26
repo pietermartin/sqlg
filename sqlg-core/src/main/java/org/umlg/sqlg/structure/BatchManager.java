@@ -81,8 +81,7 @@ public class BatchManager {
         batchModeOn(false);
     }
 
-    //why is this synchronized
-    public synchronized void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+    public void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         SchemaTable schemaTable = SchemaTable.of(vertex.getSchema(), vertex.getTable());
         if (!complete) {
             Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> pairs = this.vertexCache.get(schemaTable);
@@ -102,7 +101,7 @@ public class BatchManager {
                 this.streamingBatchModeVertexKeys = new ArrayList<>(keyValueMap.keySet());
             }
             try {
-                if (!this.completeEdgeCache.isEmpty()) {
+                if (isStreamingEdges()) {
                     throw new IllegalStateException("streaming edge is in progress, first flush or commit before streaming vertices.");
                 }
                 OutputStream out = this.completeVertexCache.get(schemaTable);
@@ -170,7 +169,7 @@ public class BatchManager {
             if (this.streamingBatchModeEdgeKeys == null) {
                 this.streamingBatchModeEdgeKeys = new ArrayList<>(keyValueMap.keySet());
             }
-            if (!this.completeVertexCache.isEmpty()) {
+            if (isStreamingVertices()) {
                 throw new IllegalStateException("streaming vertex is in progress, first flush or commit before streaming edges.");
             }
             try {
@@ -187,14 +186,18 @@ public class BatchManager {
         }
     }
 
-    //why is this synchronized
-    public synchronized Map<SchemaTable, Pair<Long, Long>> flush() {
+    public Map<SchemaTable, Pair<Long, Long>> flush() {
         Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
         this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
         this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
         this.sqlDialect.flushEdgePropertyCache(this.sqlgGraph, this.edgePropertyCache);
         this.sqlDialect.flushRemovedEdges(this.sqlgGraph, this.removeEdgeCache);
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
+        this.close();
+        return verticesRange;
+    }
+
+    public void close() {
         this.completeVertexCache.values().forEach(o -> {
             try {
                 o.close();
@@ -202,6 +205,7 @@ public class BatchManager {
                 throw new RuntimeException(e);
             }
         });
+        this.completeVertexCache.clear();
         this.completeEdgeCache.values().forEach(o -> {
             try {
                 o.close();
@@ -209,11 +213,14 @@ public class BatchManager {
                 throw new RuntimeException(e);
             }
         });
+        this.completeEdgeCache.clear();
         this.streamingBatchModeVertexLabel = null;
-        this.streamingBatchModeVertexKeys.clear();;
+        if (this.streamingBatchModeVertexKeys != null)
+            this.streamingBatchModeVertexKeys.clear();
+
         this.streamingBatchModeEdgeLabel = null;
-        this.streamingBatchModeEdgeKeys.clear();
-        return verticesRange;
+        if (this.streamingBatchModeEdgeKeys != null)
+            this.streamingBatchModeEdgeKeys.clear();
     }
 
     public boolean updateProperty(SqlgElement sqlgElement, String key, Object value) {
@@ -302,14 +309,14 @@ public class BatchManager {
         for (Edge sqlgEdge : edges) {
             switch (direction) {
                 case IN:
-                    vertices.add(((SqlgEdge)sqlgEdge).getOutVertex());
+                    vertices.add(((SqlgEdge) sqlgEdge).getOutVertex());
                     break;
                 case OUT:
-                    vertices.add(((SqlgEdge)sqlgEdge).getInVertex());
+                    vertices.add(((SqlgEdge) sqlgEdge).getInVertex());
                     break;
                 default:
-                    vertices.add(((SqlgEdge)sqlgEdge).getInVertex());
-                    vertices.add(((SqlgEdge)sqlgEdge).getOutVertex());
+                    vertices.add(((SqlgEdge) sqlgEdge).getInVertex());
+                    vertices.add(((SqlgEdge) sqlgEdge).getOutVertex());
             }
         }
         return vertices;
@@ -447,5 +454,17 @@ public class BatchManager {
 
     public ArrayList<String> getStreamingBatchModeEdgeKeys() {
         return streamingBatchModeEdgeKeys;
+    }
+
+    public boolean isStreaming() {
+        return isStreamingVertices() || isStreamingEdges();
+    }
+
+    public boolean isStreamingVertices() {
+        return !this.completeVertexCache.isEmpty();
+    }
+
+    public boolean isStreamingEdges() {
+        return !this.completeEdgeCache.isEmpty();
     }
 }

@@ -45,6 +45,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
+        SqlgDataSource sqlgDataSource;
         if (null != g) {
             if (g.features().graph().supportsTransactions() && g.tx().isOpen())
                 g.tx().rollback();
@@ -59,13 +60,13 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         }
         try {
-            SqlgDataSource.INSTANCE.setupDataSource(
+            sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration);
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
         }
-        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
+        try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
             DatabaseMetaData metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
                 String catalog = null;

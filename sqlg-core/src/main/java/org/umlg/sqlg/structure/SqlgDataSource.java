@@ -18,8 +18,7 @@ import java.util.*;
  */
 public class SqlgDataSource {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
-    public static final SqlgDataSource INSTANCE = new SqlgDataSource();
+    private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private Map<String, ComboPooledDataSource> cpdss = new HashMap<>();
 
     private SqlgDataSource() {
@@ -29,7 +28,8 @@ public class SqlgDataSource {
         return this.cpdss.get(jdbcUrl);
     }
 
-    public void setupDataSource(String driver, final Configuration configuration) throws PropertyVetoException {
+    public static SqlgDataSource setupDataSource(String driver, final Configuration configuration) throws PropertyVetoException {
+        SqlgDataSource ds = new SqlgDataSource();
         Preconditions.checkState(configuration.containsKey("jdbc.url"));
         Preconditions.checkState(configuration.containsKey("jdbc.username"));
         Preconditions.checkState(configuration.containsKey("jdbc.password"));
@@ -37,8 +37,8 @@ public class SqlgDataSource {
         String username = configuration.getString("jdbc.username");
         String password = configuration.getString("jdbc.password");
 
-        if (this.cpdss.get(connectURI) != null) {
-            return;
+        if (ds.cpdss.get(connectURI) != null) {
+            return ds;
         }
         logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
         ComboPooledDataSource cpds = new ComboPooledDataSource();
@@ -52,7 +52,8 @@ public class SqlgDataSource {
         if (!StringUtils.isEmpty(username)) {
             cpds.setPassword(password);
         }
-        this.cpdss.put(connectURI, cpds);
+        ds.cpdss.put(connectURI, cpds);
+        return ds;
     }
 
     public void close(String jdbcUrl) {

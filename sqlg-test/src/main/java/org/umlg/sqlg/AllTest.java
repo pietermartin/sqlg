@@ -91,7 +91,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestTreeStep.class,
         LocalDateTest.class,
         TestBatchCompleteVertex.class,
-        TestBatchCompleteEdge.class
+        TestBatchCompleteEdge.class,
         JsonTest.class,
         TestLockedByCurrentThreadPerformance.class,
         TestSchemaManagerGetTablesFor.class

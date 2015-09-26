@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
@@ -88,7 +87,7 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
-        Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+        Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
@@ -119,7 +118,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").has("name1", "n500").count().next(), 0);
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
-            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
             Statement statement = conn.createStatement();
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"Schema0\".\"E_edge\" a WHERE a.\"name1\" = 'n50'");
             Assert.assertTrue(rs.next());

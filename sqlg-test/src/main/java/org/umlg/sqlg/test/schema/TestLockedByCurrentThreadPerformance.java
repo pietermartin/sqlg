@@ -43,7 +43,7 @@ public class TestLockedByCurrentThreadPerformance extends BaseTest {
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
             this.sqlgGraph.tx().batchModeOn();
         }
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 1000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name1", i, "name2", i);
         }
         this.sqlgGraph.tx().commit();
@@ -51,7 +51,7 @@ public class TestLockedByCurrentThreadPerformance extends BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        Assert.assertEquals(100000, persons.size());
+        Assert.assertEquals(1000, persons.size());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
         sqlgGraph1.close();

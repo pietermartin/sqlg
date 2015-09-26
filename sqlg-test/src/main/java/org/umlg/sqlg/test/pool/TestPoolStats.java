@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test.pool;
 
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
@@ -12,6 +11,6 @@ public class TestPoolStats extends BaseTest {
 
     @Test
     public void testPoolStats() {
-        System.out.println(SqlgDataSource.INSTANCE.getPoolStatsAsJson());
+        System.out.println(this.sqlgGraph.getSqlgDataSource().getPoolStatsAsJson());
     }
 }
