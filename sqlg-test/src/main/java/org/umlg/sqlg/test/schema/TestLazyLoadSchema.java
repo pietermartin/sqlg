@@ -137,7 +137,6 @@ public class TestLazyLoadSchema extends BaseTest {
 
     @Test
     public void testLoadSchemaRemembersUncommittedSchemas() throws Exception {
-
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
         //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
