@@ -36,6 +36,9 @@
             <email>pieter.martin@gmail.com</email>
         </developer>
     </developers>
+    <prerequisites>
+        <maven>3.0</maven>
+    </prerequisites>
 
     <distributionManagement>
         <snapshotRepository>
@@ -80,6 +83,7 @@
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
                     </includes>
+                    <argLine>-Xmx2048m</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -105,6 +109,9 @@
                         <goals>
                             <goal>jar</goal>
                         </goals>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -129,6 +136,9 @@
         <module>sqlg-hsqldb</module>
         <module>sqlg-postgres</module>
         <!--<module>sqlg-mariadb</module>-->
+        <module>sqlg-benchmark</module>
+        <module>sqlg-benchmark-postgres</module>
+        <module>sqlg-benchmark-hsqldb</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -160,9 +170,23 @@
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
+                <artifactId>sqlg-postgres</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-hsqldb</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
                 <artifactId>sqlg-test</artifactId>
                 <version>1.1.0-SNAPSHOT</version>
-                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-benchmark</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
 
         </dependencies>

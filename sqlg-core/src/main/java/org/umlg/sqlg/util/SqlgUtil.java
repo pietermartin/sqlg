@@ -189,12 +189,26 @@ public class SqlgUtil {
                     preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());
                     preparedStatement.setInt(parameterStartIndex++, ((Duration) pair.right).getNano());
                     break;
-                //TODO the array properties are hardcoded according to postgres's jdbc driver
                 case JSON:
                     sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
                     parameterStartIndex++;
                     break;
-                //TODO the array properties are hardcoded according to postgres's jdbc driver
+                case POINT:
+                    sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case POLYGON:
+                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case GEOGRAPHY_POINT:
+                    sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
+                case GEOGRAPHY_POLYGON:
+                    sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
                 case BOOLEAN_ARRAY:
                     java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, booleanArray);
@@ -299,7 +313,7 @@ public class SqlgUtil {
     }
 
     public static Map<String, Object> transformToInsertValues(Object... keyValues) {
-        Map<String, Object> result = new TreeMap<>();
+        Map<String, Object> result = new LinkedHashMap<>();
         int i = 1;
         Object key = null;
         for (Object keyValue : keyValues) {

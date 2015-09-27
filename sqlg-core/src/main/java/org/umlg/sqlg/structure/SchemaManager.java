@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
+import com.hazelcast.map.listener.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -76,7 +77,7 @@ public class SchemaManager {
     private static final String EDGE_FOREIGN_KEYS_HAZELCAST_MAP = "_edgeForeignKeys";
     private static final String TABLE_LABELS_HAZELCAST_MAP = "_tableLabels";
 
-    private static final int LOCK_TIMEOUT = 5;
+    private static final int LOCK_TIMEOUT = 10;
 
     SchemaManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect, Configuration configuration) {
         this.sqlgGraph = sqlgGraph;
@@ -278,6 +279,7 @@ public class SchemaManager {
             if (!this.isLockedByCurrentThread()) {
                 try {
                     if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+//                        System.out.println("aaaaaaaaaaaaaaaa "  + Thread.currentThread().getName());
                         throw new RuntimeException("timeout lapsed for to acquire lock for schema creation for " + schema + "." + table);
                     }
                 } catch (InterruptedException e) {
@@ -447,10 +449,6 @@ public class SchemaManager {
         }
         //ensure columns exist
         ensureColumnsExist(schema, prefixedTable, columns);
-    }
-
-    boolean columnExists(String schema, String table, String column) {
-        return internalGetColumn(schema, table).containsKey(column);
     }
 
     private Map<String, PropertyType> internalGetColumn(String schema, String table) {
@@ -792,30 +790,6 @@ public class SchemaManager {
         }
     }
 
-//    private void addZoneIdColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
-//        StringBuilder sql = new StringBuilder("ALTER TABLE ");
-//        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
-//        sql.append(".");
-//        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
-//        sql.append(" ADD ");
-//        sql.append(this.sqlDialect.maybeWrapInQoutes(keyValue.left + ZONEID));
-//        sql.append(" ");
-//        sql.append(this.sqlDialect.zoneIdToSqlDefinition());
-//        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-//            sql.append(";");
-//        }
-//        if (logger.isDebugEnabled()) {
-//            logger.debug(sql.toString());
-//        }
-//        Connection conn = this.sqlgGraph.tx().getConnection();
-//        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//            preparedStatement.executeUpdate();
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//        this.sqlgGraph.tx().setSchemaModification(true);
-//    }
-
     private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey) {
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER TABLE ");
@@ -1014,58 +988,43 @@ public class SchemaManager {
         }
     }
 
-    /**
-     * Deletes all tables.
-     */
-    public void clear() {
-        try {
-            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
-            DatabaseMetaData metadata;
-            metadata = conn.getMetaData();
-            if (sqlDialect.supportsCascade()) {
-                String catalog = "sqlgraphdb";
-                String schemaPattern = null;
-                String tableNamePattern = "%";
-                String[] types = {"TABLE"};
-                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (result.next()) {
-                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
-                    sql.append(" CASCADE");
-                    if (sqlDialect.needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    }
-                }
-            } else {
-                throw new RuntimeException("Not yet implemented!");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    Set<String> getSchemasForTable(String table) {
-        Set<String> labels = this.localLabelSchemas.get(table);
-        Set<String> result = new HashSet<>();
-        if (labels != null) {
-            result.addAll(labels);
-        }
-        if (this.isLockedByCurrentThread()) {
-            Set<String> uncommittedLabels = this.uncommittedLabelSchemas.get(table);
-            if (uncommittedLabels != null) {
-                result.addAll(uncommittedLabels);
-            }
-        }
-        return result;
-    }
+//    /**
+//     * Deletes all tables.
+//     */
+//    public void clear() {
+//        try {
+//            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
+//            DatabaseMetaData metadata;
+//            metadata = conn.getMetaData();
+//            if (sqlDialect.supportsCascade()) {
+//                String catalog = "sqlgraphdb";
+//                String schemaPattern = null;
+//                String tableNamePattern = "%";
+//                String[] types = {"TABLE"};
+//                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+//                while (result.next()) {
+//                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+//                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
+//                    sql.append(" CASCADE");
+//                    if (sqlDialect.needsSemicolon()) {
+//                        sql.append(";");
+//                    }
+//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+//                        preparedStatement.executeUpdate();
+//                    }
+//                }
+//            } else {
+//                throw new RuntimeException("Not yet implemented!");
+//            }
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
         Map<String, Set<String>> allForeignKeys = new ConcurrentHashMap<>();
         allForeignKeys.putAll(this.localEdgeForeignKeys);
-        if (this.isLockedByCurrentThread()) {
+        if (!this.uncommittedEdgeForeignKeys.isEmpty() && this.isLockedByCurrentThread()) {
             allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
         }
         return allForeignKeys.get(schemaTable);
@@ -1078,7 +1037,7 @@ public class SchemaManager {
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
         result.putAll(this.localEdgeForeignKeys);
-        if (this.isLockedByCurrentThread()) {
+        if (!this.uncommittedEdgeForeignKeys.isEmpty() && this.isLockedByCurrentThread()) {
             result.putAll(this.uncommittedEdgeForeignKeys);
             for (String schemaTable : this.uncommittedEdgeForeignKeys.keySet()) {
                 Set<String> foreignKeys = result.get(schemaTable);
@@ -1108,7 +1067,7 @@ public class SchemaManager {
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
         Pair<Set<SchemaTable>, Set<SchemaTable>> result = this.localTableLabels.get(schemaTable);
         if (result == null) {
-            if (this.isLockedByCurrentThread()) {
+            if (!this.uncommittedTableLabels.isEmpty() && this.isLockedByCurrentThread()) {
                 Pair<Set<SchemaTable>, Set<SchemaTable>> pair = this.uncommittedTableLabels.get(schemaTable);
                 if (pair != null) {
                     return Pair.of(Collections.unmodifiableSet(pair.getLeft()), Collections.unmodifiableSet(pair.getRight()));
@@ -1118,7 +1077,7 @@ public class SchemaManager {
         } else {
             Set<SchemaTable> left = new HashSet<>(result.getLeft());
             Set<SchemaTable> right = new HashSet<>(result.getRight());
-            if (this.isLockedByCurrentThread()) {
+            if (!this.uncommittedTableLabels.isEmpty() && this.isLockedByCurrentThread()) {
                 Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedLabels = this.uncommittedTableLabels.get(schemaTable);
                 if (uncommittedLabels != null) {
                     left.addAll(uncommittedLabels.getLeft());
@@ -1131,20 +1090,40 @@ public class SchemaManager {
         }
     }
 
-    public Map<String, Map<String, PropertyType>> getLocalTables() {
+    Map<String, Map<String, PropertyType>> getLocalTables() {
         return Collections.unmodifiableMap(localTables);
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
         Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         result.putAll(this.localTables);
-        if (this.isLockedByCurrentThread()) {
+        if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
             result.putAll(this.uncommittedTables);
         }
         return Collections.unmodifiableMap(result);
     }
 
-    public class SchemasMapEntryListener implements EntryListener<String, String> {
+    public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
+        Map<String, PropertyType> result = this.localTables.get(schemaTable.toString());
+        if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
+            Map<String, PropertyType> tmp = this.uncommittedTables.get(schemaTable.toString());
+            if (tmp != null) {
+                result = tmp;
+            }
+        }
+        if (result == null) {
+            return Collections.emptyMap();
+        } else {
+            return Collections.unmodifiableMap(result);
+        }
+    }
+
+    public class SchemasMapEntryListener implements EntryAddedListener<String, String>,
+            EntryRemovedListener<String, String>,
+            EntryUpdatedListener<String, String>,
+            EntryEvictedListener<String, String>,
+            MapEvictedListener,
+            MapClearedListener {
 
         @Override
         public void entryAdded(EntryEvent<String, String> event) {
@@ -1177,7 +1156,12 @@ public class SchemaManager {
         }
     }
 
-    public class LabelSchemasMapEntryListener implements EntryListener<String, Set<String>> {
+    public class LabelSchemasMapEntryListener implements EntryAddedListener<String, Set<String>>,
+            EntryRemovedListener<String, Set<String>>,
+            EntryUpdatedListener<String, Set<String>>,
+            EntryEvictedListener<String, Set<String>>,
+            MapEvictedListener,
+            MapClearedListener {
 
         @Override
         public void entryAdded(EntryEvent<String, Set<String>> event) {
@@ -1210,7 +1194,12 @@ public class SchemaManager {
         }
     }
 
-    public class TablesMapEntryListener implements EntryListener<String, Map<String, PropertyType>> {
+    public class TablesMapEntryListener implements EntryAddedListener<String, Map<String, PropertyType>>,
+            EntryRemovedListener<String, Map<String, PropertyType>>,
+            EntryUpdatedListener<String, Map<String, PropertyType>>,
+            EntryEvictedListener<String, Map<String, PropertyType>>,
+            MapEvictedListener,
+            MapClearedListener {
 
         @Override
         public void entryAdded(EntryEvent<String, Map<String, PropertyType>> event) {
@@ -1243,7 +1232,12 @@ public class SchemaManager {
         }
     }
 
-    public class EdgeForeignKeysMapEntryListener implements EntryListener<String, Set<String>> {
+    public class EdgeForeignKeysMapEntryListener implements EntryAddedListener<String, Set<String>>,
+            EntryRemovedListener<String, Set<String>>,
+            EntryUpdatedListener<String, Set<String>>,
+            EntryEvictedListener<String, Set<String>>,
+            MapEvictedListener,
+            MapClearedListener {
 
         @Override
         public void entryAdded(EntryEvent<String, Set<String>> event) {
@@ -1276,7 +1270,12 @@ public class SchemaManager {
         }
     }
 
-    public class TableLabelMapEntryListener implements EntryListener<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> {
+    public class TableLabelMapEntryListener implements EntryAddedListener<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>>,
+            EntryRemovedListener<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>>,
+            EntryUpdatedListener<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>>,
+            EntryEvictedListener<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>>,
+            MapEvictedListener,
+            MapClearedListener {
 
         @Override
         public void entryAdded(EntryEvent<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> event) {

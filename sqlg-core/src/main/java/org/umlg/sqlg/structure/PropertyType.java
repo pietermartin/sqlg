@@ -1,9 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.time.*;
 import java.util.HashMap;
@@ -30,6 +28,12 @@ public enum PropertyType {
     PERIOD(Period.class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS}),
     DURATION(Duration.class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
     JSON(JsonNode.class.getName(), new String[]{}),
+
+    //GIS
+    POINT("org.postgis.Point", new String[]{}),
+    POLYGON("org.postgis.Polygon", new String[]{}),
+    GEOGRAPHY_POINT("org.umlg.sqlg.gis.GeographyPoint", new String[]{}),
+    GEOGRAPHY_POLYGON("org.umlg.sqlg.gis.GeographyPolygon", new String[]{}),
 
     BOOLEAN_ARRAY(boolean[].class.getName(), new String[]{}),
     BYTE_ARRAY(byte[].class.getName(), new String[]{}),
@@ -59,11 +63,9 @@ public enum PropertyType {
     }
 
     public static PropertyType from(Object o) {
-        PropertyType propertyType;
-        if (o instanceof JsonNode) {
+        PropertyType propertyType = javaClassNameToEnum.get(o.getClass().getName());
+        if (propertyType == null && (o instanceof JsonNode)) {
             propertyType = javaClassNameToEnum.get(JsonNode.class.getName());
-        } else {
-            propertyType = javaClassNameToEnum.get(o.getClass().getName());
         }
         if (propertyType == null) {
             throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(o);

@@ -10,6 +10,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.*;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.sql.*;
 import java.util.List;
 import java.util.Map;
@@ -312,6 +314,14 @@ public interface SqlDialect {
 
     void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache);
 
+    public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
+
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
+
+    void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException;
+
+    void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
+
     public default boolean needForeignKeyIndex() {
         return false;
     }
@@ -356,4 +366,21 @@ public interface SqlDialect {
     void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right);
 
     void handleOther(Map<String, Object> properties, String columnName, Object o);
+
+    void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+    void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
+    void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
+    public default boolean isPostgresql() {
+        return false;
+    }
+
+    public default void registerGisDataTypes(Connection connection) {
+        //do nothing
+    }
+
+    <T> T getGis(SqlgGraph sqlgGraph);
+
+    OutputStream streamSql(SqlgGraph sqlgGraph, String sql);
 }

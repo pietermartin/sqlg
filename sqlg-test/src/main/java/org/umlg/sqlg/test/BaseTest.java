@@ -60,57 +60,39 @@ public abstract class BaseTest {
 
     @Before
     public void before() throws IOException {
+        SqlgDataSource sqlgDataSource = null;
         SqlDialect sqlDialect;
         try {
-            Class<?> sqlDialectClass = findSqlGDialect();
+            Class<?> sqlDialectClass = findSqlgDialect();
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
         try {
-            SqlgDataSource.INSTANCE.setupDataSource(
+            sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration);
-        } catch (PropertyVetoException e) {
-            throw new RuntimeException(e);
-        }
-        Connection conn;
-        try {
-            conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection();
-            DatabaseMetaData metadata = conn.getMetaData();
-            if (sqlDialect.supportsCascade()) {
-                String catalog = null;
-                String schemaPattern = null;
-                String tableNamePattern = "%";
-                String[] types = {"TABLE"};
-                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (result.next()) {
-                    String schema = result.getString(2);
-                    String table = result.getString(3);
-                    if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
-                        continue;
-                    }
-                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                    sql.append(".");
-                    sql.append(sqlDialect.maybeWrapInQoutes(table));
-                    sql.append(" CASCADE");
-                    if (sqlDialect.needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    }
-                }
-                catalog = null;
-                schemaPattern = null;
-                result = metadata.getSchemas(catalog, schemaPattern);
-                while (result.next()) {
-                    String schema = result.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(schema)) {
-                        StringBuilder sql = new StringBuilder("DROP SCHEMA ");
+            Connection conn;
+            try {
+                conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection();
+                DatabaseMetaData metadata = conn.getMetaData();
+                if (sqlDialect.supportsCascade()) {
+                    String catalog = null;
+                    String schemaPattern = null;
+                    String tableNamePattern = "%";
+                    String[] types = {"TABLE"};
+                    ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                    while (result.next()) {
+                        String schema = result.getString(2);
+                        String table = result.getString(3);
+                        if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
+                            continue;
+                        }
+                        StringBuilder sql = new StringBuilder("DROP TABLE ");
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        sql.append(".");
+                        sql.append(sqlDialect.maybeWrapInQoutes(table));
                         sql.append(" CASCADE");
                         if (sqlDialect.needsSemicolon()) {
                             sql.append(";");
@@ -119,38 +101,59 @@ public abstract class BaseTest {
                             preparedStatement.executeUpdate();
                         }
                     }
-                }
-            } else if (!sqlDialect.supportSchemas()) {
-                ResultSet result = metadata.getCatalogs();
-                while (result.next()) {
-                    StringBuilder sql = new StringBuilder("DROP DATABASE ");
-                    String database = result.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(database)) {
-                        sql.append(sqlDialect.maybeWrapInQoutes(database));
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
+                    catalog = null;
+                    schemaPattern = null;
+                    result = metadata.getSchemas(catalog, schemaPattern);
+                    while (result.next()) {
+                        String schema = result.getString(1);
+                        if (!sqlDialect.getDefaultSchemas().contains(schema)) {
+                            StringBuilder sql = new StringBuilder("DROP SCHEMA ");
+                            sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                            sql.append(" CASCADE");
+                            if (sqlDialect.needsSemicolon()) {
+                                sql.append(";");
+                            }
+                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                                preparedStatement.executeUpdate();
+                            }
                         }
                     }
+                } else if (!sqlDialect.supportSchemas()) {
+                    ResultSet result = metadata.getCatalogs();
+                    while (result.next()) {
+                        StringBuilder sql = new StringBuilder("DROP DATABASE ");
+                        String database = result.getString(1);
+                        if (!sqlDialect.getDefaultSchemas().contains(database)) {
+                            sql.append(sqlDialect.maybeWrapInQoutes(database));
+                            if (sqlDialect.needsSemicolon()) {
+                                sql.append(";");
+                            }
+                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                                preparedStatement.executeUpdate();
+                            }
+                        }
+                    }
+                } else {
+                    conn.setAutoCommit(false);
+                    JDBC.dropSchema(metadata, "APP");
+                    conn.commit();
                 }
-            } else {
-                conn.setAutoCommit(false);
-                JDBC.dropSchema(metadata, "APP");
-                conn.commit();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } catch (SQLException e) {
+        } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
+        } finally {
+            if (sqlgDataSource != null)
+                sqlgDataSource.close(configuration.getString("jdbc.url"));
         }
-
         this.sqlgGraph = SqlgGraph.open(configuration);
         this.gt = this.sqlgGraph.traversal();
     }
 
     @After
     public void after() throws Exception {
-        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.COMMIT);
+        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         this.sqlgGraph.close();
     }
 
@@ -171,7 +174,7 @@ public abstract class BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+            conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
@@ -210,7 +213,7 @@ public abstract class BaseTest {
 
     }
 
-    private Class<?> findSqlGDialect() {
+    private Class<?> findSqlgDialect() {
         try {
             return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
         } catch (ClassNotFoundException e) {
@@ -239,7 +242,7 @@ public abstract class BaseTest {
         final GraphReader initreader = GryoReader.build().create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
             initreader.readGraph(stream, g);
-        } catch (IOException e){
+        } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
     }
