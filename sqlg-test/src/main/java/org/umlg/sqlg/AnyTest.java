@@ -2,6 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.TinkerpopTest;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
 import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
@@ -13,7 +14,7 @@ import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLazyLoadSchema.class
+        TinkerpopTest.class
         })
 public class AnyTest {
 }

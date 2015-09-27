@@ -32,6 +32,21 @@ import static org.junit.Assert.fail;
 public class TinkerpopTest extends BaseTest {
 
     @Test
+    public void g_V_both_both_count() throws IOException {
+        Graph graph = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(graph.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
+            reader.readGraph(stream, graph);
+        }
+        final Traversal<Vertex, Long> traversal = graph.traversal().V().both().both().count();
+        printTraversalForm(traversal);
+        assertEquals(new Long(1406914), traversal.next());
+        Assert.assertFalse(traversal.hasNext());
+    }
+
+//    @Test
     public void shouldConstructDetachedEdge() throws IOException {
         Graph graph = this.sqlgGraph;
         final GraphReader reader = GryoReader.build()

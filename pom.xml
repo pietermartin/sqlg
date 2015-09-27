@@ -83,6 +83,7 @@
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
                     </includes>
+                    <argLine>-Xmx2048m</argLine>
                 </configuration>
             </plugin>
             <plugin>
