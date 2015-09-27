@@ -4,9 +4,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -32,6 +30,11 @@ public class TestLazyLoadSchema extends BaseTest {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Before
+    public void beforeTest() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().getConfiguration().getString("jdbc.url").contains("hsqldb"));
     }
 
     @Test

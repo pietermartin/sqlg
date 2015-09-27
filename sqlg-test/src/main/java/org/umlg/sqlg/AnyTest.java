@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
 import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
+import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +13,7 @@ import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TestLazyLoadSchema.class
         })
 public class AnyTest {
 }
