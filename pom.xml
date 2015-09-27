@@ -135,6 +135,9 @@
         <module>sqlg-hsqldb</module>
         <module>sqlg-postgres</module>
         <!--<module>sqlg-mariadb</module>-->
+        <module>sqlg-benchmark</module>
+        <module>sqlg-benchmark-postgres</module>
+        <module>sqlg-benchmark-hsqldb</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -166,9 +169,23 @@
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
+                <artifactId>sqlg-postgres</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-hsqldb</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
                 <artifactId>sqlg-test</artifactId>
                 <version>1.1.0-SNAPSHOT</version>
-                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-benchmark</artifactId>
+                <version>1.1.0-SNAPSHOT</version>
             </dependency>
 
         </dependencies>

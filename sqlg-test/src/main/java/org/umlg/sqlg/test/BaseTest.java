@@ -63,7 +63,7 @@ public abstract class BaseTest {
         SqlgDataSource sqlgDataSource = null;
         SqlDialect sqlDialect;
         try {
-            Class<?> sqlDialectClass = findSqlGDialect();
+            Class<?> sqlDialectClass = findSqlgDialect();
             Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
             sqlDialect = (SqlDialect) constructor.newInstance(configuration);
         } catch (Exception e) {
@@ -213,7 +213,7 @@ public abstract class BaseTest {
 
     }
 
-    private Class<?> findSqlGDialect() {
+    private Class<?> findSqlgDialect() {
         try {
             return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
         } catch (ClassNotFoundException e) {

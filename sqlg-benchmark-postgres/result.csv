@@ -1,0 +1,5 @@
+"Benchmark","Mode","Threads","Samples","Score","Score Error (99.9%)","Unit"
+"org.sqlg.benchmark.MultipleGraphSimpleReadBenchmark.multipleRead","avgt",20,10,0.063493,0.013564,"s/op"
+"org.sqlg.benchmark.MultipleGraphSimpleReadBenchmark.multipleRead:read1","avgt",20,10,0.031257,0.007310,"s/op"
+"org.sqlg.benchmark.MultipleGraphSimpleReadBenchmark.multipleRead:read2","avgt",20,10,0.095729,0.020218,"s/op"
+"org.sqlg.benchmark.SimpleInsertBenchmark.insert1000VerticesWith10Properties","avgt",1,10,0.180279,0.012874,"s/op"
