@@ -33,9 +33,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param table
      * @param keyValues
      */
-    public SqlgVertex(SqlgGraph sqlgGraph, String schema, String table, Object... keyValues) {
+    public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Object... keyValues) {
         super(sqlgGraph, schema, table);
-        insertVertex(keyValues);
+        insertVertex(complete, keyValues);
         if (!sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().add(this);
         }
@@ -66,8 +66,39 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return addEdge(label, inVertex, parameters);
     }
 
+    public void streamEdge(String label, Vertex inVertex) {
+        this.streamEdge(label, inVertex, new LinkedHashMap<>());
+    }
+
+    public void streamEdge(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
+        if (!sqlgGraph.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for streamEdge");
+        }
+        if (!sqlgGraph.tx().isInStreamingBatchMode()) {
+            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamEdge");
+        }
+        if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() != null) {
+            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() + " is in progress. Commit the transaction or call SqlgGraph.flushAndCloseStream()");
+        }
+        String streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeLabel();
+        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.equals(label)) {
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flushAndCloseStream() before streaming a different label");
+        }
+        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
+        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+        addEdgeInternal(true, label, inVertex, keyValues1);
+    }
+
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
+        this.sqlgGraph.tx().readWrite();
+        if (sqlgGraph.tx().isInStreamingBatchMode()) {
+            throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addEdge. Please use streamEdge");
+        }
+        return addEdgeInternal(false, label, inVertex, keyValues);
+    }
+
+    private Edge addEdgeInternal(boolean complete, String label, Vertex inVertex, Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
         ElementHelper.validateLabel(label);
@@ -77,12 +108,18 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
 
+
+        List<String> previousBatchModeKeys = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeKeys();
         int i = 0;
+        int keyCount = 0;
         String key = "";
         Object value;
         for (Object keyValue : keyValues) {
             if (i++ % 2 == 0) {
                 key = (String) keyValue;
+                if (!key.equals(T.label) && previousBatchModeKeys != null && !key.equals(previousBatchModeKeys.get(keyCount++))) {
+                    throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
+                }
             } else {
                 value = keyValue;
                 ElementHelper.validateProperty(key, value);
@@ -90,7 +127,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             }
         }
         SchemaTable schemaTablePair = SchemaTable.of(this.schema, label);
-        this.sqlgGraph.tx().readWrite();
         this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
                 schemaTablePair.getSchema(),
                 schemaTablePair.getTable(),
@@ -103,7 +139,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         this.table
                 ),
                 keyValues);
-        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
+        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, complete, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
         return edge;
     }
 
@@ -414,11 +450,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-
-    private void insertVertex(Object... keyValues) {
+    private void insertVertex(boolean complete, Object... keyValues) {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(keyValueMap);
+            internalBatchAddVertex(complete, keyValueMap);
         } else {
             internalAddVertex(keyValueMap);
         }
@@ -426,8 +461,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         this.properties.putAll(keyValueMap);
     }
 
-    private void internalBatchAddVertex(Map<String, Object> keyValueMap) {
-        this.sqlgGraph.tx().getBatchManager().addVertex(this, keyValueMap);
+    private void internalBatchAddVertex(boolean complete, Map<String, Object> keyValueMap) {
+        this.sqlgGraph.tx().getBatchManager().addVertex(complete, this, keyValueMap);
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {
@@ -950,12 +985,18 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return SqlgVertex.this.internalEdges(direction, edgeLabels);
     }
 
     @Override
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return SqlgVertex.this.vertices(Collections.emptyList(), direction, edgeLabels);
     }
 

@@ -15,7 +15,9 @@ import org.postgis.Geometry;
 import org.postgis.PGgeometry;
 import org.postgis.Point;
 import org.postgis.Polygon;
+import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.jdbc4.Jdbc4Connection;
 import org.postgresql.util.PGobject;
@@ -30,6 +32,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.io.OutputStream;
+import java.lang.reflect.*;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
@@ -432,11 +436,122 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-
-
         }
-
     }
+
+    @Override
+    public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("COPY ");
+        sql.append(maybeWrapInQoutes(vertex.getSchema()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + vertex.getTable()));
+        sql.append(" (");
+        if (keyValueMap.isEmpty()) {
+            //copy command needs at least one field.
+            //check if the dummy field exist, if not create it
+            sqlgGraph.getSchemaManager().ensureColumnExist(
+                    vertex.getSchema(),
+                    SchemaManager.VERTEX_PREFIX + vertex.getTable(),
+                    ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
+            sql.append(maybeWrapInQoutes("_copy_dummy"));
+        } else {
+            int count = 1;
+            for (String key : keyValueMap.keySet()) {
+                if (count > 1 && count <= keyValueMap.size()) {
+                    sql.append(", ");
+                }
+                count++;
+                sql.append(maybeWrapInQoutes(key));
+            }
+        }
+        sql.append(")");
+        sql.append(" FROM stdin DELIMITER '");
+        sql.append(COPY_COMMAND_SEPARATOR);
+        sql.append("';");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        return sql.toString();
+    }
+
+    @Override
+    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) {
+        try {
+            int countKeys = 1;
+            if (keyValueMap.isEmpty()) {
+                out.write(Integer.toString(1).getBytes());
+            } else {
+                for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
+                    if (countKeys > 1 && countKeys <= keyValueMap.size()) {
+                        out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                    }
+                    countKeys++;
+                    Object value = entry.getValue();
+                    if (value == null) {
+                        out.write(getBatchNull().getBytes());
+                    } else {
+                        out.write(value.toString().getBytes());
+                    }
+                }
+            }
+            out.write("\n".getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+        try {
+            String encoding = "UTF-8";
+            out.write(((RecordId) outVertex.id()).getId().toString().getBytes(encoding));
+            out.write(COPY_COMMAND_SEPARATOR.getBytes(encoding));
+            out.write(((RecordId) inVertex.id()).getId().toString().getBytes(encoding));
+            for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
+                out.write(COPY_COMMAND_SEPARATOR.getBytes(encoding));
+                Object value = entry.getValue();
+                if (value == null) {
+                    out.write(getBatchNull().getBytes(encoding));
+                } else {
+                    out.write(value.toString().getBytes(encoding));
+                }
+            }
+            out.write("\n".getBytes(encoding));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("COPY ");
+        sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + sqlgEdge.getTable()));
+        sql.append(" (");
+        sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(", ");
+        sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+        int count = 1;
+        for (String key : keyValueMap.keySet()) {
+            if (count <= keyValueMap.size()) {
+                sql.append(", ");
+            }
+            count++;
+            sql.append(maybeWrapInQoutes(key));
+        }
+        sql.append(") ");
+        sql.append(" FROM stdin DELIMITER '");
+        sql.append(COPY_COMMAND_SEPARATOR);
+        sql.append("';");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        return sql.toString();
+    }
+
 
     @Override
     public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
@@ -1013,18 +1128,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof LocalDateTime) {
             return;
         }
-        if (value instanceof ZonedDateTime) {
-            return;
-        }
+        //TODO, needs schema db with types as it classes with regular LOCALDATETIME
+//        if (value instanceof ZonedDateTime) {
+//            return;
+//        }
         if (value instanceof LocalTime) {
             return;
         }
-        if (value instanceof Period) {
-            return;
-        }
-        if (value instanceof Duration) {
-            return;
-        }
+        //TODO, needs schema db with types as it classes with regular Integer
+//        if (value instanceof Period) {
+//            return;
+//        }
+        //TODO, needs schema db with types as it classes with regular Long
+//        if (value instanceof Duration) {
+//            return;
+//        }
         if (value instanceof JsonNode) {
             return;
         }
@@ -1242,6 +1360,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public boolean supportsJson() {
         return true;
+    }
+
+    @Override
+    public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
+        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        PGConnection pgConnection;
+        try {
+            pgConnection = conn.unwrap(PGConnection.class);
+            return new PGCopyOutputStream(pgConnection, sql);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

@@ -7,6 +7,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.*;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -73,6 +75,26 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
     public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
@@ -129,18 +151,21 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof LocalDateTime) {
             return;
         }
-        if (value instanceof ZonedDateTime) {
-            return;
-        }
+        //TODO, needs schema db with types as it classes with regular LOCALDATETIME
+//        if (value instanceof ZonedDateTime) {
+//            return;
+//        }
         if (value instanceof LocalTime) {
             return;
         }
-        if (value instanceof Period) {
-            return;
-        }
-        if (value instanceof Duration) {
-            return;
-        }
+        //TODO, needs schema db with types as it classes with regular Integer
+//        if (value instanceof Period) {
+//            return;
+//        }
+        //TODO, needs schema db with types as it classes with regular Long
+//        if (value instanceof Duration) {
+//            return;
+//        }
         if (value instanceof byte[]) {
             return;
         }
@@ -454,5 +479,10 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public <T> T getGis(SqlgGraph sqlgGraph) {
         throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
+    }
+
+    @Override
+    public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
+        throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
     }
 }

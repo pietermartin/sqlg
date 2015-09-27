@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -20,8 +19,6 @@ import java.util.function.Consumer;
  */
 public class SqlgTransaction extends AbstractTransaction {
 
-    private Consumer<Transaction> readWriteConsumer;
-    private Consumer<Transaction> closeConsumer;
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
@@ -44,7 +41,7 @@ public class SqlgTransaction extends AbstractTransaction {
             throw Transaction.Exceptions.transactionAlreadyOpen();
         else {
             try {
-                Connection connection = SqlgDataSource.INSTANCE.get(this.sqlgGraph.getJdbcUrl()).getConnection();
+                Connection connection = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
                 //this does not seem needed
 //                if (this.sqlgGraph.getSqlDialect().isPostgresql() && this.sqlgGraph.configuration().getBoolean("sqlg.postgres.gis", false)) {
@@ -109,6 +106,9 @@ public class SqlgTransaction extends AbstractTransaction {
         if (!isOpen())
             return;
         try {
+            if (this.threadLocalTx.get().getBatchManager().isBatchModeOn()) {
+                this.threadLocalTx.get().getBatchManager().close();
+            }
             Connection connection = threadLocalTx.get().getConnection();
             connection.rollback();
             if (this.afterRollbackFunction != null) {
@@ -128,6 +128,18 @@ public class SqlgTransaction extends AbstractTransaction {
         }
     }
 
+    public void streamingBatchMode() {
+        if (this.sqlgGraph.features().supportsBatchMode()) {
+            if (isOpen()) {
+                throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
+            }
+            readWrite();
+            threadLocalTx.get().getBatchManager().batchModeOn(true);
+        } else {
+            throw new IllegalStateException("Batch mode not supported!");
+        }
+    }
+
     public void batchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             if (isOpen()) {
@@ -141,7 +153,15 @@ public class SqlgTransaction extends AbstractTransaction {
     }
 
     public boolean isInBatchMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeOn();
+        return isInBatchModeNormal() || isInStreamingBatchMode();
+    }
+
+    public boolean isInBatchModeNormal() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeNormal();
+    }
+
+    public boolean isInStreamingBatchMode() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeComplete();
     }
 
     public BatchManager getBatchManager() {
@@ -216,53 +236,6 @@ public class SqlgTransaction extends AbstractTransaction {
     public boolean isOpen() {
         return (threadLocalTx.get() != null);
     }
-//    @Override
-//    public <R> Workload<R> submit(final Function<Graph, R> work) {
-//        return new Workload<>(this.sqlgGraph, work);
-//    }
-//
-//    @Override
-//    public <G extends Graph> G create() {
-//        throw Transaction.Exceptions.threadedTransactionsNotSupported();
-//    }
-//
-//
-//    @Override
-//    public void readWrite() {
-//        this.readWriteConsumer.accept(this);
-//    }
-//
-//    @Override
-//    public void close() {
-//        this.closeConsumer.accept(this);
-//    }
-//
-//    @Override
-//    public Transaction onReadWrite(final Consumer<Transaction> consumer) {
-//        this.readWriteConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onReadWriteBehaviorCannotBeNull);
-//        return this;
-//    }
-//
-//    @Override
-//    public Transaction onClose(final Consumer<Transaction> consumer) {
-//        this.closeConsumer = Optional.ofNullable(consumer).orElseThrow(Transaction.Exceptions::onCloseBehaviorCannotBeNull);
-//        return this;
-//    }
-//
-//    @Override
-//    public void addTransactionListener(Consumer<Status> listener) {
-//
-//    }
-//
-//    @Override
-//    public void removeTransactionListener(Consumer<Status> listener) {
-//
-//    }
-//
-//    @Override
-//    public void clearTransactionListeners() {
-//
-//    }
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
         return this.threadLocalTx.get().putVertexIfAbsent(sqlgGraph, recordId);

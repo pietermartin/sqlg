@@ -48,7 +48,9 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
+            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        }
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -60,7 +62,9 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
+            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        }
     }
 
     @Override
@@ -152,7 +156,9 @@ public abstract class SqlgElement implements Element {
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.getSqlDialect().validateProperty(key, value);
-        sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
+            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+        }
         //Validate the property
         PropertyType.from(value);
         //Check if column exist
@@ -233,6 +239,9 @@ public abstract class SqlgElement implements Element {
      */
     public <S, E> Iterator<Pair<E, Multimap<String, Object>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
         return internalGetElements(replacedSteps);
     }
 
@@ -520,7 +529,7 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(columnName, ((Integer) o).byteValue());
                 break;
             case Types.BIGINT:
-                PropertyType propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case DURATION:
                         long seconds = (Long) o;
@@ -537,7 +546,8 @@ public abstract class SqlgElement implements Element {
                 }
                 break;
             case Types.INTEGER:
-                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+//                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case PERIOD:
                         int years = (Integer) o;
@@ -568,7 +578,7 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(columnName, ((Date) o).toLocalDate());
                 break;
             case Types.TIMESTAMP:
-                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
+                propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case LOCALDATETIME:
                         this.properties.put(columnName, ((Timestamp) o).toLocalDateTime());

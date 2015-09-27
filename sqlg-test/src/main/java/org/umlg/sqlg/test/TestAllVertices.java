@@ -25,11 +25,8 @@ public class TestAllVertices extends BaseTest {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
-
         Vertex washineMachine = this.sqlgGraph.addVertex(T.label, "Product", "productName", "Washing Machine");
         marko.addEdge("happiness", washineMachine, "love", true);
-
-
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(4L, this.sqlgGraph.traversal().V().count().next(), 0);
     }
@@ -64,6 +61,7 @@ public class TestAllVertices extends BaseTest {
         } catch (Exception ex) {
             validateException(Graph.Exceptions.elementNotFound(Vertex.class, oid), ex);
         }
+        g.close();
     }
 
     public static void validateException(final Throwable expected, final Throwable actual) {

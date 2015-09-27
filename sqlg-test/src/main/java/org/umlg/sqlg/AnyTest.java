@@ -2,8 +2,10 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestTreeStep;
-import org.umlg.sqlg.test.json.JsonTest;
+import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
+import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
+import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +13,7 @@ import org.umlg.sqlg.test.json.JsonTest;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        JsonTest.class
-})
+        TestLazyLoadSchema.class
+        })
 public class AnyTest {
 }

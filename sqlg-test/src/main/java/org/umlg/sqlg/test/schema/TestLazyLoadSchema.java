@@ -4,9 +4,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -20,26 +18,26 @@ import java.net.URL;
  */
 public class TestLazyLoadSchema extends BaseTest {
 
-    @Test
-    public void test() {
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+        try {
+            configuration = new PropertiesConfiguration(sqlProperties);
+            configuration.addProperty("distributed", true);
+            if (!configuration.containsKey("jdbc.url"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
 
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-//    @BeforeClass
-//    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
-//        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
-//        try {
-//            configuration = new PropertiesConfiguration(sqlProperties);
-//            configuration.addProperty("distributed", true);
-//            if (!configuration.containsKey("jdbc.url"))
-//                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
-//
-//        } catch (ConfigurationException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+    @Before
+    public void beforeTest() {
+        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().getConfiguration().getString("jdbc.url").contains("hsqldb"));
+    }
 
-//    @Test
+    @Test
     public void testLazyLoadTableViaVertexHas() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
@@ -54,7 +52,7 @@ public class TestLazyLoadSchema extends BaseTest {
         sqlgGraph1.close();
     }
 
-//    @Test
+    @Test
     public void testLazyLoadTableViaVertexHasWithKey() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
@@ -69,7 +67,7 @@ public class TestLazyLoadSchema extends BaseTest {
         sqlgGraph1.close();
     }
 
-//    @Test
+    @Test
     public void testLazyLoadTableViaVertexHasWithKeyMissingColumn() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
@@ -96,7 +94,7 @@ public class TestLazyLoadSchema extends BaseTest {
     }
 
     //Fails via maven for Hsqldb
-//    @Test
+    @Test
     public void testLazyLoadTableViaEdgeCreation() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
@@ -120,7 +118,7 @@ public class TestLazyLoadSchema extends BaseTest {
         sqlgGraph1.close();
     }
 
-//    @Test
+    @Test
     public void testLazyLoadTableViaEdgesHas() throws Exception {
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
@@ -140,9 +138,8 @@ public class TestLazyLoadSchema extends BaseTest {
         sqlgGraph1.close();
     }
 
-//    @Test
+    @Test
     public void testLoadSchemaRemembersUncommittedSchemas() throws Exception {
-
         //Create a new sqlgGraph
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
         //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map

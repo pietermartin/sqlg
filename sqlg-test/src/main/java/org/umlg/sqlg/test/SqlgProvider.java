@@ -20,7 +20,7 @@ import java.util.Set;
  * Date: 2014/07/13
  * Time: 5:57 PM
  */
-public class SqlGProvider extends AbstractGraphProvider {
+public class SqlgProvider extends AbstractGraphProvider {
 
     private static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
         add(SqlgEdge.class);
@@ -45,38 +45,42 @@ public class SqlGProvider extends AbstractGraphProvider {
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
+        SqlgDataSource sqlgDataSource = null;
         if (null != g) {
             if (g.features().graph().supportsTransactions())
                 g.tx().rollback();
             g.close();
         }
         try {
-            SqlgDataSource.INSTANCE.setupDataSource(
+            sqlgDataSource = SqlgDataSource.setupDataSource(
                     configuration.getString("jdbc.driver"),
                     configuration);
+            StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS PUBLIC CASCADE;");
+            try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
+                conn.setAutoCommit(false);
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    preparedStatement.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            sql = new StringBuilder("CREATE SCHEMA PUBLIC;");
+            // CREATE SCHEMA PUBLIC
+            try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
+                conn.setAutoCommit(false);
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    preparedStatement.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
-        }
-        StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS PUBLIC CASCADE;");
-        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.executeUpdate();
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        sql = new StringBuilder("CREATE SCHEMA PUBLIC;");
-        // CREATE SCHEMA PUBLIC
-        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
-            conn.setAutoCommit(false);
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.executeUpdate();
-            }
-            conn.commit();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+        } finally {
+            if (sqlgDataSource != null)
+                sqlgDataSource.close(configuration.getString("jdbc.url"));
         }
     }
 

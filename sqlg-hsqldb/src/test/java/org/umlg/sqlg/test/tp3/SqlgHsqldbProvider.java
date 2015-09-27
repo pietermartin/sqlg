@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 /**
  * Date: 2014/07/13
  * Time: 5:57 PM
@@ -44,6 +45,7 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
+        SqlgDataSource sqlgDataSource = null;
         if (null != g) {
             if (g.features().graph().supportsTransactions() && g.tx().isOpen())
                 g.tx().rollback();
@@ -58,33 +60,36 @@ public class SqlgHsqldbProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         }
         try {
-            SqlgDataSource.INSTANCE.setupDataSource(
+            sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(), configuration);
-        } catch (PropertyVetoException e) {
-            throw new RuntimeException(e);
-        }
-        try (Connection conn = SqlgDataSource.INSTANCE.get(configuration.getString("jdbc.url")).getConnection()) {
-            DatabaseMetaData metadata = conn.getMetaData();
-            if (sqlDialect.supportsCascade()) {
-                String catalog = null;
-                String schemaPattern = null;
-                String tableNamePattern = "%";
-                String[] types = {"TABLE"};
-                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (result.next()) {
-                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
-                    sql.append(" CASCADE");
-                    if (sqlDialect.needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
+            try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
+                DatabaseMetaData metadata = conn.getMetaData();
+                if (sqlDialect.supportsCascade()) {
+                    String catalog = null;
+                    String schemaPattern = null;
+                    String tableNamePattern = "%";
+                    String[] types = {"TABLE"};
+                    ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                    while (result.next()) {
+                        StringBuilder sql = new StringBuilder("DROP TABLE ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
+                        sql.append(" CASCADE");
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
                     }
                 }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } catch (SQLException e) {
+        } catch (PropertyVetoException e) {
             throw new RuntimeException(e);
+        } finally {
+            if (sqlgDataSource != null)
+                sqlgDataSource.close(configuration.getString("jdbc.url"));
         }
     }
 
