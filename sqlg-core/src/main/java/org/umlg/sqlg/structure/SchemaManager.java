@@ -988,38 +988,38 @@ public class SchemaManager {
         }
     }
 
-//    /**
-//     * Deletes all tables.
-//     */
-//    public void clear() {
-//        try {
-//            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
-//            DatabaseMetaData metadata;
-//            metadata = conn.getMetaData();
-//            if (sqlDialect.supportsCascade()) {
-//                String catalog = "sqlgraphdb";
-//                String schemaPattern = null;
-//                String tableNamePattern = "%";
-//                String[] types = {"TABLE"};
-//                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-//                while (result.next()) {
-//                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-//                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
-//                    sql.append(" CASCADE");
-//                    if (sqlDialect.needsSemicolon()) {
-//                        sql.append(";");
-//                    }
-//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                        preparedStatement.executeUpdate();
-//                    }
-//                }
-//            } else {
-//                throw new RuntimeException("Not yet implemented!");
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+    /**
+     * Deletes all tables.
+     */
+    public void clear() {
+        try {
+            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlDialect.getJdbcDriver()).getConnection();
+            DatabaseMetaData metadata;
+            metadata = conn.getMetaData();
+            if (sqlDialect.supportsCascade()) {
+                String catalog = "sqlgraphdb";
+                String schemaPattern = null;
+                String tableNamePattern = "%";
+                String[] types = {"TABLE"};
+                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (result.next()) {
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    }
+                }
+            } else {
+                throw new RuntimeException("Not yet implemented!");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
         Map<String, Set<String>> allForeignKeys = new ConcurrentHashMap<>();
