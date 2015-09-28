@@ -23,20 +23,28 @@ public class MultipleGraphSimpleReadBenchmark extends BaseBenchmark {
     @GroupThreads(10)
     @Benchmark
     public long read1() {
-        Long person = this.gt1.V().hasLabel("Person").count().next();
-        if (person != 1000)
-            throw new RuntimeException("expected 1000");
-        return person;
+        try {
+            Long person = this.gt1.V().hasLabel("Person").count().next();
+            if (person != 1000)
+                throw new RuntimeException("expected 1000");
+            return person;
+        } finally {
+            this.sqlgGraph1.tx().rollback();
+        }
     }
 
     @Group("multipleRead")
     @GroupThreads(10)
     @Benchmark
     public long read2() {
-        Long person = this.gt2.V().hasLabel("Person").count().next();
-        if (person != 1000)
-            throw new RuntimeException("expected 1000");
-        return person;
+        try {
+            Long person = this.gt2.V().hasLabel("Person").count().next();
+            if (person != 1000)
+                throw new RuntimeException("expected 1000");
+            return person;
+        } finally {
+            this.sqlgGraph2.tx().rollback();
+        }
     }
 
     @Setup(Level.Iteration)
