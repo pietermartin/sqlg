@@ -93,7 +93,6 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBatchCompleteVertex.class,
         TestBatchCompleteEdge.class,
         JsonTest.class,
-        TestLockedByCurrentThreadPerformance.class,
         TestSchemaManagerGetTablesFor.class
 })
 public class AllTest {
