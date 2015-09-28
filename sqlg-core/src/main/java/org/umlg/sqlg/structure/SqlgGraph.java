@@ -95,6 +95,7 @@ public class SqlgGraph implements Graph {
     private ObjectMapper mapper = new ObjectMapper();
     private boolean implementForeignKeys;
     private Configuration configuration = new BaseConfiguration();
+    private final ISqlGFeatures features = new SqlGFeatures();
 
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
@@ -392,7 +393,7 @@ public class SqlgGraph implements Graph {
     }
 
     public ISqlGFeatures features() {
-        return new SqlGFeatures();
+        return this.features;
     }
 
     public <T> T gis() {
