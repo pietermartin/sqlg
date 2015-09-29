@@ -130,6 +130,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
                 schemaTablePair.getSchema(),
                 schemaTablePair.getTable(),
+                false,
                 SchemaTable.of(
                         ((SqlgVertex) inVertex).schema,
                         ((SqlgVertex) inVertex).table

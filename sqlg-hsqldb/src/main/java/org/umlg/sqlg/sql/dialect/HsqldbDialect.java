@@ -485,4 +485,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
         throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
     }
+
+    @Override
+    public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids) {
+        throw new UnsupportedOperationException("Hsqldb does not support bulk mode!");
+    }
 }

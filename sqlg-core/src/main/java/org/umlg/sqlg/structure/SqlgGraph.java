@@ -7,6 +7,7 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -207,6 +208,7 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
+
     public void flushAndCloseStream() {
         if (!this.tx().isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode for streamVertex");
@@ -255,6 +257,20 @@ public class SqlgGraph implements Graph {
         this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
         //This vertex is a tad useless as it will not have an id
         new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+    }
+
+    public void bulkAddEdges(SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, List<Pair<String, String>> uids) {
+        if (!this.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for bulkAddEdges");
+        }
+        //create temp table and copy the uids into it
+        Map<String, PropertyType> columns = new HashMap<>();
+        columns.put("in", PropertyType.STRING);
+        columns.put("out", PropertyType.STRING);
+        this.schemaManager.createTempTable("BULK_TEMP_EDGE", columns);
+        this.sqlDialect.copyInBulkTempEdges(this, SchemaTable.of(in.getSchema(), "BULK_TEMP_EDGE"), uids);
+        //execute copy from select. select the edge ids to copy into the new table by joining on the temp table
+
     }
 
     private void validateVertexKeysValues(Object[] keyValues) {

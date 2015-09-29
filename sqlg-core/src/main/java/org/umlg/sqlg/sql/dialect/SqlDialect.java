@@ -255,6 +255,10 @@ public interface SqlDialect {
         return "CREATE TABLE ";
     }
 
+    public default String createTemporaryTableStatement() {
+        return "CREATE TEMPORARY TABLE ";
+    }
+
     public default void prepareDB(Connection conn) {
 
     }
@@ -383,4 +387,6 @@ public interface SqlDialect {
     <T> T getGis(SqlgGraph sqlgGraph);
 
     OutputStream streamSql(SqlgGraph sqlgGraph, String sql);
+
+    void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String,String>> uids);
 }

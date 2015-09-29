@@ -1375,6 +1375,41 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids) {
+        try {
+            StringBuffer sql = new StringBuffer();
+            sql.append("COPY ");
+            sql.append(maybeWrapInQoutes(schemaTable.getTable()));
+            sql.append(" (");
+            int count = 1;
+            for (String key : Arrays.asList("in", "out")) {
+                if (count > 1 && count <= 2) {
+                    sql.append(", ");
+                }
+                count++;
+                sql.append(maybeWrapInQoutes(key));
+            }
+            sql.append(")");
+            sql.append(" FROM stdin DELIMITER '");
+            sql.append(COPY_COMMAND_SEPARATOR);
+            sql.append("';");
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            OutputStream out= streamSql(sqlgGraph, sql.toString());
+            for (Pair<String, String> uid : uids) {
+                out.write(uid.getLeft().getBytes());
+                out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                out.write(uid.getRight().getBytes());
+                out.write("\n".getBytes());
+            }
+            out.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public boolean isPostgresql() {
         return true;
     }

@@ -332,6 +332,8 @@ public class SchemaManager {
 
     }
 
+
+
     /**
      * @param schema        The tables that the table for this edge will reside in.
      * @param table         The table for this edge
@@ -407,7 +409,7 @@ public class SchemaManager {
     }
 
     /**
-     * This is only called from createVertexIndex
+     * This is only called from createEdgeIndex
      *
      * @param schema
      * @param table
@@ -438,7 +440,7 @@ public class SchemaManager {
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
                 Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                 if (schemas == null) {
-                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Collections.singletonList(schema)));
                 } else {
                     schemas.add(schema);
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
@@ -726,6 +728,35 @@ public class SchemaManager {
         this.sqlgGraph.tx().setSchemaModification(true);
     }
 
+    void createTempTable(String tableName, Map<String, PropertyType> columns) {
+        this.sqlDialect.assertTableName(tableName);
+        StringBuilder sql = new StringBuilder(this.sqlDialect.createTemporaryTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+        sql.append("(");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
+        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
+        if (columns.size() > 0) {
+            sql.append(", ");
+        }
+        buildColumns(columns, sql);
+        sql.append(")");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    //This is called from creating edge indexes
     private void createEdgeTable(String schema, String tableName, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
@@ -1118,6 +1149,14 @@ public class SchemaManager {
         }
     }
 
+    private boolean isLockedByCurrentThread() {
+        if (this.distributed) {
+            return ((ILock) this.schemaLock).isLockedByCurrentThread();
+        } else {
+            return ((ReentrantLock) this.schemaLock).isHeldByCurrentThread();
+        }
+    }
+
     public class SchemasMapEntryListener implements EntryAddedListener<String, String>,
             EntryRemovedListener<String, String>,
             EntryUpdatedListener<String, String>,
@@ -1308,11 +1347,4 @@ public class SchemaManager {
         }
     }
 
-    private boolean isLockedByCurrentThread() {
-        if (this.distributed) {
-            return ((ILock) this.schemaLock).isLockedByCurrentThread();
-        } else {
-            return ((ReentrantLock) this.schemaLock).isHeldByCurrentThread();
-        }
-    }
 }
