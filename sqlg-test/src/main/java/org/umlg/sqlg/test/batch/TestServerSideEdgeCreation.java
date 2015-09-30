@@ -6,6 +6,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
@@ -19,7 +21,12 @@ import java.util.List;
  */
 public class TestServerSideEdgeCreation extends BaseTest {
 
-//    @Test
+    @Before
+    public void before() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
+
+    @Test
     public void testBulkEdges() {
         this.sqlgGraph.tx().batchModeOn();
         int count = 0;
@@ -71,45 +78,6 @@ public class TestServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.tx().streamingBatchMode();
         SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges(person, person, SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "friend"), Pair.of("id", "idSpecial"), uids);
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-
-        GraphTraversal<Vertex, Vertex> has = this.sqlgGraph.traversal().V().hasLabel("Person").has("id", Integer.toString(50));
-        Assert.assertTrue(has.hasNext());
-        Vertex person50 = has.next();
-
-        GraphTraversal<Vertex, Vertex> has1 = this.sqlgGraph.traversal().V().hasLabel("Person").has("idSpecial", Integer.toString(2050));
-        Assert.assertTrue(has1.hasNext());
-        Vertex person250 = has1.next();
-        Assert.assertTrue(this.sqlgGraph.traversal().V(person50.id()).out().hasNext());
-        Vertex person250Please = this.sqlgGraph.traversal().V(person50.id()).out().next();
-        Assert.assertEquals(person250, person250Please);
-
-    }
-
-    @Test
-    public void testStreamingEdges() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().streamingBatchMode();
-        int j = 2000;
-        List<Pair<Vertex, Vertex>> inOut = new ArrayList<>();
-        LinkedHashMap properties = new LinkedHashMap();
-        for (int i = 1; i <= 1000; i++) {
-            properties.put("id", Integer.toString(i));
-            properties.put("idSpecial", "-");
-            this.sqlgGraph.streamVertex("Person", properties);
-            properties.put("id", "-");
-            properties.put("idSpecial", Integer.toString(j++));
-            this.sqlgGraph.streamVertex("Person", properties);
-            if (i % 10000 == 0) {
-                this.sqlgGraph.flushAndCloseStream();
-
-                this.sqlgGraph.tx().commit();
-            }
-        }
-        this.sqlgGraph.flushAndCloseStream();
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
