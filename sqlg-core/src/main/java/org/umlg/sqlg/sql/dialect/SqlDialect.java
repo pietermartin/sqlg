@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
 import java.util.List;
@@ -372,6 +373,7 @@ public interface SqlDialect {
     void handleOther(Map<String, Object> properties, String columnName, Object o);
 
     void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
     void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
 
     void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
@@ -388,7 +390,9 @@ public interface SqlDialect {
 
     OutputStream streamSql(SqlgGraph sqlgGraph, String sql);
 
-    void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String,String>> uids);
+    InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql);
+
+    void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids);
 
     void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids);
 }

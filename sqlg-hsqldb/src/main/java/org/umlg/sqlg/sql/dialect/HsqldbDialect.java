@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.umlg.sqlg.structure.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -485,6 +486,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
         throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
     }
+
+    @Override
+    public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
+        throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
+    }
+
 
     @Override
     public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids) {

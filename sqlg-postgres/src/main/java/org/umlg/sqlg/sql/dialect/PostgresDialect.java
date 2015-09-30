@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -17,6 +18,7 @@ import org.postgis.Point;
 import org.postgis.Polygon;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.jdbc4.Jdbc4Connection;
@@ -31,11 +33,12 @@ import org.umlg.sqlg.structure.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.io.OutputStream;
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
 import java.sql.*;
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -1302,7 +1305,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         Preconditions.checkArgument(point instanceof Point, "point must be an instance of " + Point.class.getName());
         try {
-            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Point)point));
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Point) point));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1312,7 +1315,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object polygon) {
         Preconditions.checkArgument(polygon instanceof Polygon, "polygon must be an instance of " + Polygon.class.getName());
         try {
-            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Polygon)polygon));
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Polygon) polygon));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1322,7 +1325,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         Preconditions.checkArgument(point instanceof GeographyPoint, "point must be an instance of " + GeographyPoint.class.getName());
         try {
-            preparedStatement.setObject(parameterStartIndex, new PGgeometry((GeographyPoint)point));
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((GeographyPoint) point));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1332,12 +1335,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
         if (o instanceof PGgeometry) {
             properties.put(columnName, ((PGgeometry) o).getGeometry());
-        } else if (((PGobject)o).getType().equals("geography")) {
+        } else if (((PGobject) o).getType().equals("geography")) {
             try {
                 Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
                 if (geometry instanceof Point) {
                     properties.put(columnName, new GeographyPoint((Point) geometry));
-                } else if (geometry instanceof  Polygon) {
+                } else if (geometry instanceof Polygon) {
                     properties.put(columnName, new GeographyPolygon((Polygon) geometry));
                 } else {
                     throw new IllegalStateException("Gis type " + geometry.getClass().getName() + " is not supported.");
@@ -1347,9 +1350,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         } else {
             //Assume json for now
-            ObjectMapper objectMapper =  new ObjectMapper();
+            ObjectMapper objectMapper = new ObjectMapper();
             try {
-                JsonNode jsonNode = objectMapper.readTree(((PGobject)o).getValue());
+                JsonNode jsonNode = objectMapper.readTree(((PGobject) o).getValue());
                 properties.put(columnName, jsonNode);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -1369,6 +1372,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         try {
             pgConnection = conn.unwrap(PGConnection.class);
             return new PGCopyOutputStream(pgConnection, sql);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
+        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        PGConnection pgConnection;
+        try {
+            pgConnection = conn.unwrap(PGConnection.class);
+            return new PGCopyInputStream(pgConnection, sql);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1396,7 +1411,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
-            OutputStream out= streamSql(sqlgGraph, sql.toString());
+            OutputStream out = streamSql(sqlgGraph, sql.toString());
             for (Pair<String, String> uid : uids) {
                 out.write(uid.getLeft().getBytes());
                 out.write(COPY_COMMAND_SEPARATOR.getBytes());
@@ -1422,9 +1437,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), SchemaManager.BULK_TEMP_EDGE), uids);
         //execute copy from select. select the edge ids to copy into the new table by joining on the temp table
         sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeSchemaTable.getSchema(), edgeSchemaTable.getTable(), out, in);
-//        COPY
-//                (select _in."ID" as "public.Person__O", _out."ID" as "public.Person__I" FROM "public"."V_Person" _in join "BULK_TEMP_EDGE" ab on ab.in = _in."id"join "public"."V_Person" _out on ab.out = _out."idSpecial")
-//        TO '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t';
         StringBuilder sql = new StringBuilder("COPY (");
         sql.append("select _in.\"ID\" as \"");
         sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
@@ -1440,7 +1452,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
         sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
-        sql.append(") TO '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t'");
+        sql.append(") TO '");
+        sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
+        UUID uuid = UUID.randomUUID();
+        sql.append("/sqlg.bulk.edit.");
+        sql.append(uuid.toString());
+        sql.append(".csv' CSV DELIMITER E'\t'");
         if (this.needsSemicolon()) {
             sql.append(";");
         }
@@ -1453,8 +1470,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-//        COPY public."E_friend"("public.Person__O", "public.Person__I") FROM '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t';
         sql = new StringBuilder("COPY ");
         sql.append(this.maybeWrapInQoutes(edgeSchemaTable.getSchema()));
         sql.append(".");
@@ -1463,7 +1478,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
         sql.append(",");
         sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-        sql.append(") FROM '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t'");
+        sql.append(") FROM '");
+        sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
+        sql.append("/sqlg.bulk.edit.");
+        sql.append(uuid.toString());
+        sql.append(".csv' CSV DELIMITER E'\t'");
         if (this.needsSemicolon()) {
             sql.append(";");
         }
@@ -1476,8 +1495,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 
     @Override
@@ -1488,7 +1505,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public void registerGisDataTypes(Connection connection) {
         try {
-            ((Jdbc4Connection)((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
+            ((Jdbc4Connection) ((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1498,6 +1515,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public <T> T getGis(SqlgGraph sqlgGraph) {
         Gis gis = Gis.GIS;
         gis.setSqlgGraph(sqlgGraph);
-        return (T)gis;
+        return (T) gis;
     }
 }

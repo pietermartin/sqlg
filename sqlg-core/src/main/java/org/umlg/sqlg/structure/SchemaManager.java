@@ -731,7 +731,7 @@ public class SchemaManager {
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
-        StringBuilder sql = new StringBuilder(this.sqlDialect.createTemporaryTableStatement());
+        StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
