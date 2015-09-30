@@ -389,4 +389,6 @@ public interface SqlDialect {
     OutputStream streamSql(SqlgGraph sqlgGraph, String sql);
 
     void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String,String>> uids);
+
+    void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids);
 }

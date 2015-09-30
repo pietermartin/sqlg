@@ -1410,6 +1410,77 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids) {
+        if (!sqlgGraph.tx().isInStreamingBatchMode()) {
+            throw new IllegalStateException("Transaction must be in streaming batch mode for bulkAddEdges");
+        }
+        //create temp table and copy the uids into it
+        Map<String, PropertyType> columns = new HashMap<>();
+        columns.put("out", PropertyType.STRING);
+        columns.put("in", PropertyType.STRING);
+        sqlgGraph.getSchemaManager().createTempTable(SchemaManager.BULK_TEMP_EDGE, columns);
+        this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), SchemaManager.BULK_TEMP_EDGE), uids);
+        //execute copy from select. select the edge ids to copy into the new table by joining on the temp table
+        sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeSchemaTable.getSchema(), edgeSchemaTable.getTable(), out, in);
+//        COPY
+//                (select _in."ID" as "public.Person__O", _out."ID" as "public.Person__I" FROM "public"."V_Person" _in join "BULK_TEMP_EDGE" ab on ab.in = _in."id"join "public"."V_Person" _out on ab.out = _out."idSpecial")
+//        TO '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t';
+        StringBuilder sql = new StringBuilder("COPY (");
+        sql.append("select _in.\"ID\" as \"");
+        sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
+        sql.append("\", _out.\"ID\" as \"");
+        sql.append(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
+        sql.append("\" FROM ");
+        sql.append(this.maybeWrapInQoutes(in.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
+        sql.append(" _in join ");
+        sql.append("\"" + SchemaManager.BULK_TEMP_EDGE + "\" ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+        sql.append(this.maybeWrapInQoutes(out.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
+        sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
+        sql.append(") TO '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t'");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+//        COPY public."E_friend"("public.Person__O", "public.Person__I") FROM '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t';
+        sql = new StringBuilder("COPY ");
+        sql.append(this.maybeWrapInQoutes(edgeSchemaTable.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeSchemaTable.getTable()));
+        sql.append(" (");
+        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(",");
+        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+        sql.append(") FROM '/var/lib/postgres/data/friend.csv' CSV DELIMITER E'\t'");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+
+    }
+
+    @Override
     public boolean isPostgresql() {
         return true;
     }

@@ -43,6 +43,7 @@ public class SchemaManager {
     public static final String MONTHS = "~~~MONTHS";
     public static final String DAYS = "~~~DAYS";
     public static final String DURATION_NANOS = "~~~NANOS";
+    public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
     private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();
@@ -728,7 +729,7 @@ public class SchemaManager {
         this.sqlgGraph.tx().setSchemaModification(true);
     }
 
-    void createTempTable(String tableName, Map<String, PropertyType> columns) {
+    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTemporaryTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));

@@ -490,4 +490,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids) {
         throw new UnsupportedOperationException("Hsqldb does not support bulk mode!");
     }
+
+    @Override
+    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids) {
+        throw new UnsupportedOperationException("Hsqldb does not support bulk mode!");
+    }
 }
