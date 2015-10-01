@@ -22,7 +22,7 @@ import java.util.List;
 public class TestServerSideEdgeCreation extends BaseTest {
 
     @Before
-    public void before() {
+    public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
