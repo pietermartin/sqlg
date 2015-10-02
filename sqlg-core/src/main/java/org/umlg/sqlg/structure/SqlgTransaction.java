@@ -128,13 +128,26 @@ public class SqlgTransaction extends AbstractTransaction {
         }
     }
 
+    public void streamingBatchMode(int batchSize) {
+        if (this.sqlgGraph.features().supportsBatchMode()) {
+            if (isOpen()) {
+                throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
+            }
+            readWrite();
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_BATCH_SIZE);
+            threadLocalTx.get().getBatchManager().setStreamingBatchSize(batchSize);
+        } else {
+            throw new IllegalStateException("Batch mode not supported!");
+        }
+    }
+
     public void streamingBatchMode() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             if (isOpen()) {
                 throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
             }
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn(true);
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
         } else {
             throw new IllegalStateException("Batch mode not supported!");
         }
@@ -146,14 +159,14 @@ public class SqlgTransaction extends AbstractTransaction {
                 throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
             }
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn();
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
         } else {
             throw new IllegalStateException("Batch mode not supported!");
         }
     }
 
     public boolean isInBatchMode() {
-        return isInBatchModeNormal() || isInStreamingBatchMode();
+        return isInBatchModeNormal() || isInStreamingBatchMode() || isInStreamingFixedBatchMode();
     }
 
     public boolean isInBatchModeNormal() {
@@ -161,7 +174,11 @@ public class SqlgTransaction extends AbstractTransaction {
     }
 
     public boolean isInStreamingBatchMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeComplete();
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeStreaming();
+    }
+
+    public boolean isInStreamingFixedBatchMode() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeBatchStreaming();
     }
 
     public BatchManager getBatchManager() {

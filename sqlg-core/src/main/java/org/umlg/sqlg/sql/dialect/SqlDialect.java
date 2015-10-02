@@ -323,7 +323,7 @@ public interface SqlDialect {
 
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
 
-    void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException;
+    void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException;
 
     void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
@@ -395,4 +395,8 @@ public interface SqlDialect {
     void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids);
 
     void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids);
+
+    void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable);
+
+    void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize);
 }

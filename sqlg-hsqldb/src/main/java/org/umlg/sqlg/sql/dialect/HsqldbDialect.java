@@ -86,7 +86,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException {
+    public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
@@ -501,5 +501,15 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids) {
         throw new UnsupportedOperationException("Hsqldb does not support bulk mode!");
+    }
+
+    @Override
+    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        throw new UnsupportedOperationException("Hsqldb does not support table locking!");
+    }
+
+    @Override
+    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize) {
+        throw new UnsupportedOperationException("Hsqldb does not support alterSequenceCacheSize!");
     }
 }

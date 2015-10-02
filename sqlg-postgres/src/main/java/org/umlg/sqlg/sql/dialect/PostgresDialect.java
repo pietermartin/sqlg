@@ -479,7 +479,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) {
+    public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
             if (keyValueMap.isEmpty()) {
@@ -1214,7 +1214,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return true;
     }
 
-    public Set<String> getForeignKeyConstraintNames(SqlgGraph sqlgGraph, String foreignKeySchema, String foreignKeyTable) {
+    private Set<String> getForeignKeyConstraintNames(SqlgGraph sqlgGraph, String foreignKeySchema, String foreignKeyTable) {
         Set<String> result = new HashSet<>();
         Connection conn = sqlgGraph.tx().getConnection();
         DatabaseMetaData metadata;
@@ -1495,6 +1495,49 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("LOCK TABLE ");
+        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+        sql.append(".");
+        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.VERTEX_PREFIX) + schemaTable.getTable()));
+        sql.append(" IN EXCLUSIVE MODE");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER SEQUENCE ");
+        sql.append("\"V_A_ID_seq\" CACHE ");
+        sql.append(String.valueOf(batchSize));
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Override

@@ -46,8 +46,11 @@ public class BatchManager {
     private String streamingBatchModeEdgeLabel;
     private ArrayList<String> streamingBatchModeEdgeKeys;
 
+    private int batchSize;
+    private int batchCount;
+
     public enum BatchModeType {
-        NONE, NORMAL, COMPLETE
+        NONE, NORMAL, STREAMING, STREAMING_WITH_BATCH_SIZE
     }
 
     private BatchModeType batchModeType = BatchModeType.NONE;
@@ -61,24 +64,24 @@ public class BatchManager {
         return this.batchModeType == BatchModeType.NORMAL;
     }
 
-    public boolean isBatchModeComplete() {
-        return this.batchModeType == BatchModeType.COMPLETE;
+    public boolean isBatchModeStreaming() {
+        return this.batchModeType == BatchModeType.STREAMING;
+    }
+
+    public boolean isBatchModeBatchStreaming() {
+        return this.batchModeType == BatchModeType.STREAMING_WITH_BATCH_SIZE;
     }
 
     public boolean isBatchModeOn() {
-        return (this.batchModeType == BatchModeType.NORMAL) || (this.batchModeType == BatchModeType.COMPLETE);
+        return this.batchModeType != BatchModeType.NONE;
     }
 
-    public void batchModeOn(boolean completeBatchModeOn) {
-        if (completeBatchModeOn) {
-            this.batchModeType = BatchModeType.COMPLETE;
-        } else {
-            this.batchModeType = BatchModeType.NORMAL;
-        }
+    void batchModeOn(BatchModeType batchModeType) {
+        this.batchModeType = batchModeType;
     }
 
-    public void batchModeOn() {
-        batchModeOn(false);
+    void setStreamingBatchSize(int batchSize) {
+        this.batchSize = batchSize;
     }
 
     public void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
@@ -104,13 +107,25 @@ public class BatchManager {
                 if (isStreamingEdges()) {
                     throw new IllegalStateException("streaming edge is in progress, first flush or commit before streaming vertices.");
                 }
+                if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
+                    throw new IllegalStateException("batch size is reached, first commit or flush and close the batch. Batch count = " + this.batchCount + " batch size is " + this.batchSize);
+                }
+                if (isBatchModeBatchStreaming() && this.batchCount == 0) {
+                    //lock the table,
+                    this.sqlDialect.lockTable(sqlgGraph, schemaTable);
+                    //set the sequence cache
+                    this.sqlDialect.alterSequenceCacheSize(sqlgGraph, schemaTable, this.batchSize);
+                }
                 OutputStream out = this.completeVertexCache.get(schemaTable);
                 if (out == null) {
                     String sql = this.sqlDialect.constructCompleteCopyCommandSqlVertex(sqlgGraph, vertex, keyValueMap);
                     out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
                     this.completeVertexCache.put(schemaTable, out);
                 }
-                this.sqlDialect.flushCompleteVertex(out, keyValueMap);
+                this.sqlDialect.flushStreamingVertex(out, keyValueMap);
+                if (isBatchModeBatchStreaming()) {
+                    this.batchCount++;
+                }
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

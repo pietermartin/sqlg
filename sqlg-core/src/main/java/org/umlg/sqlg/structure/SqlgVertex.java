@@ -75,7 +75,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             throw new IllegalStateException("Transaction must be in batch mode for streamEdge");
         }
         if (!sqlgGraph.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction must be in COMPLETE batch mode for streamEdge");
+            throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamEdge");
         }
         if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() != null) {
             throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() + " is in progress. Commit the transaction or call SqlgGraph.flushAndCloseStream()");
@@ -93,7 +93,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
         this.sqlgGraph.tx().readWrite();
         if (sqlgGraph.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction cannot be in COMPLETE batch mode for addEdge. Please use streamEdge");
+            throw new IllegalStateException("Transaction cannot be in STREAMING batch mode for addEdge. Please use streamEdge");
         }
         return addEdgeInternal(false, label, inVertex, keyValues);
     }
