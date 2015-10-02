@@ -10,6 +10,7 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.ArrayList;
@@ -101,27 +102,27 @@ public class TestServerSideEdgeCreation extends BaseTest {
 //    }
 
     @Test
-    public void testStreamingWIthBatchSize() {
+    public void testStreamingWithBatchSize() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().streamingBatchMode(100);
-        List<Pair<String, String>> uids = new ArrayList<>();
         LinkedHashMap properties = new LinkedHashMap();
+        this.sqlgGraph.tx().streamingBatchMode(10);
+        List<Pair<SqlgVertex, SqlgVertex>> uids = new ArrayList<>();
         String uuid1Cache = null;
         String uuid2Cache = null;
-        for (int i = 0; i < 10; i++) {
+        for (int i = 1; i <= 100; i++) {
             String uuid1 = UUID.randomUUID().toString();
             String uuid2 = UUID.randomUUID().toString();
-            if (i == 50) {
-                uuid1Cache = uuid1;
-                uuid2Cache = uuid2;
-            }
-            uids.add(Pair.of(uuid1, uuid2));
             properties.put("id", uuid1);
-            this.sqlgGraph.streamVertexFixedBatch("Person", properties);
+            SqlgVertex v1 = this.sqlgGraph.streamVertexFixedBatch("Person", properties);
             properties.put("id", uuid2);
-            this.sqlgGraph.streamVertexFixedBatch("Person", properties);
-            if (i % 100 == 0) {
+            SqlgVertex v2 = this.sqlgGraph.streamVertexFixedBatch("Person", properties);
+            uids.add(Pair.of(v1, v2));
+            if (i % 5 == 0) {
+                this.sqlgGraph.flushAndCloseStream();
+                for (Pair<SqlgVertex, SqlgVertex> uid : uids) {
+                    uid.getLeft().addEdge("friend", uid.getRight());
+                }
                 this.sqlgGraph.flushAndCloseStream();
             }
         }

@@ -512,4 +512,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize) {
         throw new UnsupportedOperationException("Hsqldb does not support alterSequenceCacheSize!");
     }
+
+    @Override
+    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        throw new UnsupportedOperationException("Hsqldb does not support nextSequenceVal!");
+    }
 }

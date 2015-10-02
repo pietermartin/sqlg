@@ -1523,7 +1523,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize) {
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER SEQUENCE ");
-        sql.append("\"V_A_ID_seq\" CACHE ");
+        sql.append("public.\"V_Person_ID_seq\" CACHE ");
         sql.append(String.valueOf(batchSize));
         if (this.needsSemicolon()) {
             sql.append(";");
@@ -1537,7 +1537,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    @Override
+    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        long result;
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            result = resultSet.getLong(1);
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 
     @Override

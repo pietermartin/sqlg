@@ -77,11 +77,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (!sqlgGraph.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamEdge");
         }
-        if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() != null) {
-            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexLabel() + " is in progress. Commit the transaction or call SqlgGraph.flushAndCloseStream()");
+        if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
+            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flushAndCloseStream()");
         }
-        String streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeLabel();
-        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.equals(label)) {
+        SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeLabel();
+        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flushAndCloseStream() before streaming a different label");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
@@ -1008,6 +1008,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     SchemaTable getSchemaTablePrefixed() {
         return SchemaTable.of(this.getSchema(), SchemaManager.VERTEX_PREFIX + this.getTable());
+    }
+
+    SchemaTable getSchemaTable() {
+        return SchemaTable.of(this.getSchema(), this.getTable());
     }
 
     @Override

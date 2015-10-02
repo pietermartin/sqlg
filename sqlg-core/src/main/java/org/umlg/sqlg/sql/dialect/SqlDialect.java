@@ -399,4 +399,6 @@ public interface SqlDialect {
     void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable);
 
     void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize);
+
+    long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable);
 }

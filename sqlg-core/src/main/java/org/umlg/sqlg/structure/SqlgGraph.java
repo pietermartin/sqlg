@@ -242,8 +242,8 @@ public class SqlgGraph implements Graph {
 
     private SqlgVertex streamVertex(Object... keyValues) {
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        String streamingBatchModeVertexLabel = this.tx().getBatchManager().getStreamingBatchModeVertexLabel();
-        if (streamingBatchModeVertexLabel != null && !streamingBatchModeVertexLabel.equals(label)) {
+        SchemaTable streamingBatchModeVertexLabel = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
+        if (streamingBatchModeVertexLabel != null && !streamingBatchModeVertexLabel.getTable().equals(label)) {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flushAndCloseStream() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
@@ -414,7 +414,6 @@ public class SqlgGraph implements Graph {
     public <T> T gis() {
         return this.getSqlDialect().getGis(this);
     }
-
 
     public interface ISqlGFeatures extends Features {
         boolean supportsBatchMode();
