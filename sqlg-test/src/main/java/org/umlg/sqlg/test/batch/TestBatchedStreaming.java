@@ -81,6 +81,59 @@ public class TestBatchedStreaming extends BaseTest {
     }
 
     @Test
+    public void testStreamingWithBatchSizeNonDefaultSchema() {
+        final int BATCH_SIZE = 1000;
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        LinkedHashMap properties = new LinkedHashMap();
+        this.sqlgGraph.tx().streamingBatchMode(BATCH_SIZE);
+        List<Pair<SqlgVertex, SqlgVertex>> uids = new ArrayList<>();
+        String uuidCache1 = null;
+        String uuidCache2 = null;
+        for (int i = 1; i <= 1000; i++) {
+            String uuid1 = UUID.randomUUID().toString();
+            String uuid2 = UUID.randomUUID().toString();
+            if (i == 50) {
+                uuidCache1 = uuid1;
+                uuidCache2 = uuid2;
+            }
+            properties.put("id", uuid1);
+            SqlgVertex v1 = this.sqlgGraph.streamVertexFixedBatch("A.Person", properties);
+            properties.put("id", uuid2);
+            SqlgVertex v2 = this.sqlgGraph.streamVertexFixedBatch("A.Person", properties);
+            uids.add(Pair.of(v1, v2));
+            if (i % (BATCH_SIZE / 2) == 0) {
+                for (Pair<SqlgVertex, SqlgVertex> uid : uids) {
+                    uid.getLeft().streamFixedBatchEdge("friend", uid.getRight());
+                }
+                //This is needed because the number of edges are less than the batch size so it will not be auto flushed
+                this.sqlgGraph.tx().flush();
+                uids.clear();
+                this.sqlgGraph.tx().streamingBatchMode(BATCH_SIZE);
+            }
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+
+        Assert.assertEquals(2000, this.sqlgGraph.traversal().V().hasLabel("A.Person").count().next(), 0);
+        Assert.assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("A.friend").count().next(), 0);
+
+        GraphTraversal<Vertex, Vertex> has = this.sqlgGraph.traversal().V().hasLabel("A.Person").has("id", uuidCache1);
+        Assert.assertTrue(has.hasNext());
+        Vertex person50 = has.next();
+
+        GraphTraversal<Vertex, Vertex> has1 = this.sqlgGraph.traversal().V().hasLabel("A.Person").has("id", uuidCache2);
+        Assert.assertTrue(has1.hasNext());
+        Vertex person250 = has1.next();
+        Assert.assertTrue(this.sqlgGraph.traversal().V(person50.id()).out().hasNext());
+        Vertex person250Please = this.sqlgGraph.traversal().V(person50.id()).out().next();
+        Assert.assertEquals(person250, person250Please);
+    }
+
+    @Test
     public void testStreamingWithBatchSizeWithCallBack() {
         final int BATCH_SIZE = 500;
         StopWatch stopWatch = new StopWatch();

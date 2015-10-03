@@ -88,7 +88,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestTreeStep.class,
         LocalDateTest.class,
         TestStreamVertex.class,
-        TestBatchCompleteEdge.class,
+        TestStreamingEdge.class,
         JsonTest.class,
         TestSchemaManagerGetTablesFor.class,
         TestBatchServerSideEdgeCreation.class,

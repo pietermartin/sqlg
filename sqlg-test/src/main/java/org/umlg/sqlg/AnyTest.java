@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.batch.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchServerSideEdgeCreation.class
+        TestBatchedStreaming.class
         })
 public class AnyTest {
 }

@@ -19,7 +19,7 @@ import java.util.Map;
  * Date: 2015/07/18
  * Time: 4:18 PM
  */
-public class TestBatchCompleteEdge extends BaseTest {
+public class TestStreamingEdge extends BaseTest {
 
     final private int NUMBER_OF_VERTICES = 10000;
 
