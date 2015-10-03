@@ -32,7 +32,7 @@ public class TestBatchCompleteEdge extends BaseTest {
     public void testCanNotCreateBatchEdgeWhileBatchVertexInProgress() {
         SqlgVertex v1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "Dog");
         SqlgVertex v2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "House");
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "test");
         this.sqlgGraph.streamVertex("A", keyValues);
@@ -46,7 +46,7 @@ public class TestBatchCompleteEdge extends BaseTest {
         SqlgVertex v1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex v2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         v1.streamEdge("a", v2);
         v1.streamEdge("b", v2);
         Assert.fail();
@@ -57,9 +57,10 @@ public class TestBatchCompleteEdge extends BaseTest {
         SqlgVertex v1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex v2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         v1.streamEdge("a", v2);
-        this.sqlgGraph.flushAndCloseStream();
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.tx().streamingMode();
         v1.streamEdge("b", v2);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("a").count().next(), 1);
@@ -71,7 +72,7 @@ public class TestBatchCompleteEdge extends BaseTest {
         SqlgVertex v1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex v2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
         v1.streamEdge("a", v2, keyValues);
@@ -86,7 +87,7 @@ public class TestBatchCompleteEdge extends BaseTest {
         SqlgVertex v1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex v2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
         keyValues.put("surname", "test");
@@ -101,7 +102,7 @@ public class TestBatchCompleteEdge extends BaseTest {
 
     @Test
     public void testStreamingVerticesAndEdges() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
         keyValues.put("surname", "halo");
@@ -109,12 +110,14 @@ public class TestBatchCompleteEdge extends BaseTest {
             keyValues.put("age", i);
             this.sqlgGraph.streamVertex("Man", keyValues);
         }
-        this.sqlgGraph.flushAndCloseStream();
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 1000; i++) {
             keyValues.put("age", i);
             this.sqlgGraph.streamVertex("Female", keyValues);
         }
-        this.sqlgGraph.flushAndCloseStream();
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.tx().streamingMode();
         int count = 0;
         List<Vertex> men = this.sqlgGraph.traversal().V().hasLabel("Man").toList();
         List<Vertex> females = this.sqlgGraph.traversal().V().hasLabel("Female").toList();
@@ -135,7 +138,7 @@ public class TestBatchCompleteEdge extends BaseTest {
         this.sqlgGraph.tx().commit();
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
         keyValues.put("name2", "halo");

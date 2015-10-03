@@ -91,7 +91,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBatchCompleteEdge.class,
         JsonTest.class,
         TestSchemaManagerGetTablesFor.class,
-        TestServerSideEdgeCreation.class
+        TestBatchServerSideEdgeCreation.class
 })
 public class AllTest {
 }

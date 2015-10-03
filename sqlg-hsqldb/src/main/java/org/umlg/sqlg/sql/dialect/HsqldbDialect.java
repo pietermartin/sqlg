@@ -504,17 +504,27 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         throw new UnsupportedOperationException("Hsqldb does not support table locking!");
     }
 
     @Override
-    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize) {
+    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize) {
         throw new UnsupportedOperationException("Hsqldb does not support alterSequenceCacheSize!");
     }
 
     @Override
-    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
         throw new UnsupportedOperationException("Hsqldb does not support nextSequenceVal!");
+    }
+
+    @Override
+    public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        throw new UnsupportedOperationException("Hsqldb does not support currSequenceVal!");
+    }
+
+    @Override
+    public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
+        throw new UnsupportedOperationException("Hsqldb does not support sequenceName!");
     }
 }

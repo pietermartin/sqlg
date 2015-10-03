@@ -396,9 +396,13 @@ public interface SqlDialect {
 
     void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids);
 
-    void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable);
+    void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
 
-    void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize);
+    void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize);
 
-    long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable);
+    long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
+
+    long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
+
+    String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix);
 }

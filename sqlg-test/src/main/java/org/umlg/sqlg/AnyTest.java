@@ -2,12 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TinkerpopTest;
-import org.umlg.sqlg.test.batch.TestBatch;
-import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
-import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
-import org.umlg.sqlg.test.batch.TestServerSideEdgeCreation;
-import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
+import org.umlg.sqlg.test.batch.*;
 
 /**
  * Date: 2014/07/16
@@ -15,7 +10,11 @@ import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestServerSideEdgeCreation.class
+        TestBatch.class,
+        TestBatchCompleteEdge.class,
+        TestBatchCompleteVertex.class,
+        TestMultiThreadedBatch.class,
+        TestBatchServerSideEdgeCreation.class
         })
 public class AnyTest {
 }

@@ -27,7 +27,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCanNotQueryWhileStreaming() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -42,7 +42,7 @@ public class TestBatchCompleteVertex extends BaseTest {
         v1.addEdge("friend", v2);
 
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -57,7 +57,7 @@ public class TestBatchCompleteVertex extends BaseTest {
         v1.addEdge("friend", v2);
 
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -72,7 +72,7 @@ public class TestBatchCompleteVertex extends BaseTest {
         v1.addEdge("friend", v2);
 
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -87,7 +87,7 @@ public class TestBatchCompleteVertex extends BaseTest {
         v1.addEdge("friend", v2);
 
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -102,7 +102,7 @@ public class TestBatchCompleteVertex extends BaseTest {
         v1.addEdge("friend", v2);
 
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -112,7 +112,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test
     public void testVertexWithNoProperties() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.streamVertex("Person");
         }
@@ -122,7 +122,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCanNotAddVertexOnceStreaming() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "test");
         SqlgVertex v2 = (SqlgVertex)this.sqlgGraph.addVertex("A", keyValues);
@@ -131,7 +131,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCompleteVertexChecksSingleLabelOnly() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
         keyValue.put("name", "a");
         keyValue.put("surname", "b");
@@ -143,12 +143,13 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test
     public void testCompleteVertexFlushAndCloseStream() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
         keyValue.put("name", "a");
         keyValue.put("surname", "b");
         this.sqlgGraph.streamVertex("Person", keyValue);
-        this.sqlgGraph.flushAndCloseStream();
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.tx().streamingMode();
         this.sqlgGraph.streamVertex("Persons", keyValue);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
@@ -161,7 +162,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testCompleteVertexChecksSameKeys() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
         keyValue.put("name", "a");
         keyValue.put("surname", "b");
@@ -176,7 +177,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test(expected = IllegalStateException.class)
     public void testStreamingVertexKeysSameOrder() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
         keyValue.put("name", "a");
         keyValue.put("surname", "b");
@@ -193,7 +194,7 @@ public class TestBatchCompleteVertex extends BaseTest {
     public void testMilCompleteVertex() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 1; i < 1000001; i++) {
             LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
             for (int j = 0; j < 2; j++) {
@@ -202,7 +203,7 @@ public class TestBatchCompleteVertex extends BaseTest {
             this.sqlgGraph.streamVertex("Person", keyValue);
             if (i % 250000 == 0) {
                 this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().streamingBatchMode();
+                this.sqlgGraph.tx().streamingMode();
                 System.out.println(i);
             }
         }
@@ -218,7 +219,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 
     @Test
     public void testStreamingRollback() {
-        this.sqlgGraph.tx().streamingBatchMode();
+        this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
         keyValues.put("surname", "halo");
@@ -226,7 +227,8 @@ public class TestBatchCompleteVertex extends BaseTest {
             keyValues.put("age", i);
             this.sqlgGraph.streamVertex("Man", keyValues);
         }
-        this.sqlgGraph.flushAndCloseStream();
+        this.sqlgGraph.tx().flush();
+        this.sqlgGraph.tx().streamingMode();
         for (int i = 0; i < 1000; i++) {
             keyValues.put("age", i);
             this.sqlgGraph.streamVertex("Female", keyValues);
@@ -241,7 +243,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 //    public void testVerticesStream() {
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
-//        this.sqlgGraph.tx().streamingBatchMode();
+//        this.sqlgGraph.tx().streamingMode();
 //        LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
 //        keyValues.put("name", "halo");
 //        keyValues.put("surname", "halo");
@@ -249,7 +251,7 @@ public class TestBatchCompleteVertex extends BaseTest {
 //            keyValues.put("age", i);
 //            this.sqlgGraph.streamVertex("Man", keyValues);
 //        }
-//        this.sqlgGraph.flushAndCloseStream();
+//        this.sqlgGraph.flush();
 //        for (int i = 0; i < 10000000; i++) {
 //            keyValues.put("age", i);
 //            this.sqlgGraph.streamVertex("Female", keyValues);

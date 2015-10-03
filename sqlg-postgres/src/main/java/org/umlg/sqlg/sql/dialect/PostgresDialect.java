@@ -1498,12 +1498,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
         StringBuilder sql = new StringBuilder();
         sql.append("LOCK TABLE ");
         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
-        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.VERTEX_PREFIX) + schemaTable.getTable()));
+        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(prefix + schemaTable.getTable()));
         sql.append(" IN EXCLUSIVE MODE");
         if (this.needsSemicolon()) {
             sql.append(";");
@@ -1520,10 +1521,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, int batchSize) {
+    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize) {
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER SEQUENCE ");
-        sql.append("public.\"V_Person_ID_seq\" CACHE ");
+        sql.append(sequence);
+        sql.append(" CACHE ");
         sql.append(String.valueOf(batchSize));
         if (this.needsSemicolon()) {
             sql.append(";");
@@ -1540,13 +1542,65 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
             result = resultSet.getLong(1);
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    @Override
+    public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        long result;
+        Connection conn = sqlgGraph.tx().getConnection();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            result = resultSet.getLong(1);
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    @Override
+    public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+//        select pg_get_serial_sequence('public."V_Person"', 'ID')
+        String result;
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT pg_get_serial_sequence('");
+        sql.append(outSchemaTable.getSchema());
+        sql.append(".\"");
+        sql.append(prefix).append(outSchemaTable.getTable()).append("\"', 'ID')");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            result = resultSet.getString(1);
             resultSet.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);

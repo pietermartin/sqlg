@@ -66,6 +66,29 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return addEdge(label, inVertex, parameters);
     }
 
+    public void streamFixedBatchEdge(String label, Vertex inVertex) {
+        this.streamFixedBatchEdge(label, inVertex, new LinkedHashMap<>());
+    }
+
+    public void streamFixedBatchEdge(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
+        if (!sqlgGraph.tx().isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode for streamEdge");
+        }
+        if (!sqlgGraph.tx().isInStreamingFixedBatchMode()) {
+            throw new IllegalStateException("Transaction must be in STREAMING fixed batch mode for streamFixedBatchEdge");
+        }
+        if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
+            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flush()");
+        }
+        SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
+        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
+        }
+        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
+        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+        addEdgeInternal(true, label, inVertex, keyValues1);
+    }
+
     public void streamEdge(String label, Vertex inVertex) {
         this.streamEdge(label, inVertex, new LinkedHashMap<>());
     }
@@ -78,11 +101,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamEdge");
         }
         if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
-            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flushAndCloseStream()");
+            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flush()");
         }
-        SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeLabel();
+        SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
         if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
-            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flushAndCloseStream() before streaming a different label");
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
