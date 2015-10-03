@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.BatchCallback;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
@@ -202,9 +203,11 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
             uids.add(String.valueOf(i));
         }
         AtomicInteger count = new AtomicInteger(0);
-        this.sqlgGraph.tx().streamingBatchMode(10, (v) -> {
+        BatchCallback<SqlgVertex> sqlgVertexBatchCallback = (v) -> {
             count.incrementAndGet();
-        });
+        };
+        this.sqlgGraph.tx().streamingBatchMode(10, (v)->{});
+        this.sqlgGraph.tx().streamingBatchMode(10, sqlgVertexBatchCallback);
         uids.stream().forEach(u -> this.sqlgGraph.streamVertexFixedBatch(T.label, "Person", "name", u));
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
