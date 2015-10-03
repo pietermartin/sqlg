@@ -18,7 +18,7 @@ import java.util.LinkedHashMap;
  * Date: 2015/05/19
  * Time: 9:34 PM
  */
-public class TestBatchCompleteVertex extends BaseTest {
+public class TestStreamVertex extends BaseTest {
 
     @Before
     public void beforeTest() {
@@ -191,6 +191,21 @@ public class TestBatchCompleteVertex extends BaseTest {
     }
 
     @Test
+    public void testStreamingVertexDifferentSchema() {
+        this.sqlgGraph.tx().streamingMode();
+        LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
+        keyValue.put("name", "a");
+        keyValue.put("surname", "b");
+        this.sqlgGraph.streamVertex("R_HG.Person", keyValue);
+        keyValue = new LinkedHashMap<>();
+        keyValue.put("name", "a");
+        keyValue.put("surname", "b");
+        this.sqlgGraph.streamVertex("R_HG.Person", keyValue);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0l);
+    }
+
+    @Test
     public void testMilCompleteVertex() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -238,55 +253,4 @@ public class TestBatchCompleteVertex extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
     }
 
-//    Next two should move to benchmark tests
-//    @Test
-//    public void testVerticesStream() {
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        this.sqlgGraph.tx().streamingMode();
-//        LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
-//        keyValues.put("name", "halo");
-//        keyValues.put("surname", "halo");
-//        for (int i = 0; i < 10000000; i++) {
-//            keyValues.put("age", i);
-//            this.sqlgGraph.streamVertex("Man", keyValues);
-//        }
-//        this.sqlgGraph.flush();
-//        for (int i = 0; i < 10000000; i++) {
-//            keyValues.put("age", i);
-//            this.sqlgGraph.streamVertex("Female", keyValues);
-//        }
-//        this.sqlgGraph.tx().commit();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//    }
-//
-//    @Test
-//    public void testVertices() {
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        this.sqlgGraph.tx().batchModeOn();
-//        LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
-//        keyValues.put("name", "halo");
-//        keyValues.put("surname", "halo");
-//        for (int i = 1; i <= 10000000; i++) {
-//            keyValues.put("age", i);
-//            this.sqlgGraph.addVertex("Man", keyValues);
-//            if (i % 100000 == 0) {
-//                this.sqlgGraph.tx().commit();
-//                this.sqlgGraph.tx().batchModeOn();
-//            }
-//        }
-//        for (int i = 1; i <= 10000000; i++) {
-//            keyValues.put("age", i);
-//            this.sqlgGraph.addVertex("Female", keyValues);
-//            if (i % 100000 == 0) {
-//                this.sqlgGraph.tx().commit();
-//                this.sqlgGraph.tx().batchModeOn();
-//            }
-//        }
-//        this.sqlgGraph.tx().commit();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//    }
 }

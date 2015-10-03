@@ -243,9 +243,9 @@ public class SqlgGraph implements Graph {
             throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamVertex");
         }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable streamingBatchModeVertexLabel = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
-        if (streamingBatchModeVertexLabel != null && !streamingBatchModeVertexLabel.getTable().equals(label)) {
-            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
+        SchemaTable streamingBatchModeVertexSchemaTable = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
+        if (streamingBatchModeVertexSchemaTable != null && !streamingBatchModeVertexSchemaTable.toString().equals(label)) {
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
         validateVertexKeysValues(keyValues, keys);

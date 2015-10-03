@@ -1589,9 +1589,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 //        select pg_get_serial_sequence('public."V_Person"', 'ID')
         String result;
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT pg_get_serial_sequence('");
+        sql.append("SELECT pg_get_serial_sequence('\"");
         sql.append(outSchemaTable.getSchema());
-        sql.append(".\"");
+        sql.append("\".\"");
         sql.append(prefix).append(outSchemaTable.getTable()).append("\"', 'ID')");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());

@@ -10,10 +10,6 @@ import org.umlg.sqlg.test.batch.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class,
-        TestBatchCompleteEdge.class,
-        TestBatchCompleteVertex.class,
-        TestMultiThreadedBatch.class,
         TestBatchServerSideEdgeCreation.class
         })
 public class AnyTest {

@@ -87,11 +87,12 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexStepOrderBy.class,
         TestTreeStep.class,
         LocalDateTest.class,
-        TestBatchCompleteVertex.class,
+        TestStreamVertex.class,
         TestBatchCompleteEdge.class,
         JsonTest.class,
         TestSchemaManagerGetTablesFor.class,
-        TestBatchServerSideEdgeCreation.class
+        TestBatchServerSideEdgeCreation.class,
+        TestBatchedStreaming.class
 })
 public class AllTest {
 }
