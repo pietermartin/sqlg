@@ -151,6 +151,25 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
+    public void testBatchEdgesManyProperties() {
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        v1.addEdge("Friend", v2, "weight", 1, "test", "a");
+        v1.addEdge("Friend", v3, "weight", 2, "test", "b");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V(v1.id()).out("Friend").count().next(), 0);
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v2));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v3));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v2.id()).in("Friend").toList().contains(v1));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v3.id()).in("Friend").toList().contains(v1));
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("Friend").has("test", "a").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("Friend").has("test", "b").count().next(), 0);
+    }
+
+    @Test
     public void testBatchVertices() {
         this.sqlgGraph.tx().batchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");

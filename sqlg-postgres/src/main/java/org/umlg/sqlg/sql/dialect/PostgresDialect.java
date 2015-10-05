@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -35,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.security.SecureRandom;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1425,7 +1425,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids) {
+    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids) {
         if (!sqlgGraph.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction must be in streaming batch mode for bulkAddEdges");
         }
@@ -1433,10 +1433,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         Map<String, PropertyType> columns = new HashMap<>();
         columns.put("out", PropertyType.STRING);
         columns.put("in", PropertyType.STRING);
-        sqlgGraph.getSchemaManager().createTempTable(SchemaManager.BULK_TEMP_EDGE, columns);
-        this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), SchemaManager.BULK_TEMP_EDGE), uids);
+        SecureRandom random = new SecureRandom();
+        byte bytes[] = new byte[6];
+        random.nextBytes(bytes);
+        String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+        tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
+        sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+        this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids);
         //execute copy from select. select the edge ids to copy into the new table by joining on the temp table
-        sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeSchemaTable.getSchema(), edgeSchemaTable.getTable(), out, in);
+        sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
         StringBuilder sql = new StringBuilder("COPY (");
         sql.append("select _in.\"ID\" as \"");
         sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
@@ -1447,7 +1452,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
         sql.append(" _in join ");
-        sql.append("\"" + SchemaManager.BULK_TEMP_EDGE + "\" ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+        sql.append("\"" + tmpTableIdentified + "\" ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
         sql.append(this.maybeWrapInQoutes(out.getSchema()));
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
@@ -1471,13 +1476,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             throw new RuntimeException(e);
         }
         sql = new StringBuilder("COPY ");
-        sql.append(this.maybeWrapInQoutes(edgeSchemaTable.getSchema()));
+        sql.append(this.maybeWrapInQoutes(in.getSchema()));
         sql.append(".");
-        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeSchemaTable.getTable()));
+        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
         sql.append(" (");
-        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
         sql.append(",");
-        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(") FROM '");
         sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
         sql.append("/sqlg.bulk.edit.");

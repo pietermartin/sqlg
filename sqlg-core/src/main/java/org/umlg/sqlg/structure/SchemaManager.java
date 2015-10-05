@@ -731,7 +731,7 @@ public class SchemaManager {
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
-        StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
+        StringBuilder sql = new StringBuilder(this.sqlDialect.createTemporaryTableStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
         sql.append("(");
         sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
@@ -741,7 +741,7 @@ public class SchemaManager {
             sql.append(", ");
         }
         buildColumns(columns, sql);
-        sql.append(")");
+        sql.append(") ON COMMIT DROP");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }

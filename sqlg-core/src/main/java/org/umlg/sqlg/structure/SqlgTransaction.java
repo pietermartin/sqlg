@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -176,6 +177,14 @@ public class SqlgTransaction extends AbstractTransaction {
 
     public boolean isInStreamingFixedBatchMode() {
         return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeBatchStreaming();
+    }
+
+    public Optional<BatchManager.BatchModeType> getBatchModeType() {
+        if (threadLocalTx.get() != null) {
+            return Optional.of(threadLocalTx.get().getBatchManager().getBatchModeType());
+        } else {
+            return Optional.empty();
+        }
     }
 
     public BatchManager getBatchManager() {

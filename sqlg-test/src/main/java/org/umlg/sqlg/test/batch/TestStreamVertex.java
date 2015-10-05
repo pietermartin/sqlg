@@ -12,7 +12,9 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Date: 2015/05/19
@@ -251,6 +253,15 @@ public class TestStreamVertex extends BaseTest {
         this.sqlgGraph.tx().rollback();
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+    }
+
+    @Test
+    public void streamJava8Style() {
+        List<String> uids = Arrays.asList("1", "2", "3", "4", "5");
+        this.sqlgGraph.tx().streamingMode();
+        uids.stream().forEach(u->this.sqlgGraph.streamVertex(T.label, "Person", "name", u));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
     }
 
 }

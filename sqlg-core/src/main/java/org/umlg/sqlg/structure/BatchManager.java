@@ -83,6 +83,10 @@ public class BatchManager {
         return this.batchModeType != BatchModeType.NONE;
     }
 
+    public BatchModeType getBatchModeType() {
+        return batchModeType;
+    }
+
     void batchModeOn(BatchModeType batchModeType) {
         this.batchModeType = batchModeType;
     }

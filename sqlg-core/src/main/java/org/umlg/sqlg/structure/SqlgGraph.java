@@ -27,8 +27,6 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -223,7 +221,7 @@ public class SqlgGraph implements Graph {
      */
     public void streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
         if (!this.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamVertex");
+            throw new IllegalStateException("Transaction must be in STREAMING mode for streamVertex. Current mode is " + this.tx().getBatchModeType().orElse(BatchManager.BatchModeType.NONE));
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         tmp.put(T.label, label);
@@ -274,11 +272,11 @@ public class SqlgGraph implements Graph {
         return internalStreamVertex(keyValues1);
     }
 
-    public void bulkAddEdges(SchemaTable in, SchemaTable out, SchemaTable edgeSchemaTable, Pair<String, String> idFields, List<Pair<String, String>> uids) {
+    public void bulkAddEdges(SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids) {
         if (!this.tx().isInStreamingBatchMode()) {
             throw new IllegalStateException("Transaction must be in streaming batch mode for bulkAddEdges");
         }
-        this.sqlDialect.bulkAddEdges(this, in, out, edgeSchemaTable, idFields, uids);
+        this.sqlDialect.bulkAddEdges(this, in, out, edgeLabel, idFields, uids);
     }
 
     private void validateVertexKeysValues(Object[] keyValues) {
