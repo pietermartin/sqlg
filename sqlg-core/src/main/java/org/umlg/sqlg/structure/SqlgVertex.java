@@ -162,8 +162,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         this.table
                 ),
                 keyValues);
-        final SqlgEdge edge = new SqlgEdge(this.sqlgGraph, complete, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
-        return edge;
+        return new SqlgEdge(this.sqlgGraph, complete, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
     }
 
     @Override
