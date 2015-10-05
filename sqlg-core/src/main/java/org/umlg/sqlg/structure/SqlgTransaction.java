@@ -133,7 +133,7 @@ public class SqlgTransaction extends AbstractTransaction {
         streamingBatchMode(batchSize, null);
     }
 
-    public void streamingBatchMode(int batchSize, BatchCallback batchCallback) {
+    public <T extends SqlgElement> void streamingBatchMode(int batchSize, BatchCallback<T> batchCallback) {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_BATCH_SIZE);

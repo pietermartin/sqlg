@@ -135,30 +135,25 @@ public class TestBatchedStreaming extends BaseTest {
 
     @Test
     public void testStreamingWithBatchSizeWithCallBack() {
-        final int BATCH_SIZE = 500;
+        final int BATCH_SIZE = 5;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         LinkedHashMap properties = new LinkedHashMap();
-        final List<SqlgVertex> persons = new ArrayList<>();
-        this.sqlgGraph.tx().streamingBatchMode(BATCH_SIZE, (e) -> {
-            if (e instanceof SqlgVertex) {
-                persons.add((SqlgVertex) e);
-                SqlgVertex previous = null;
-                for (SqlgVertex person : persons) {
-                    if (previous == null) {
-                        previous = person;
-                    } else {
-                        previous.streamFixedBatchEdge("friend", person);
-                    }
+        this.sqlgGraph.tx().<SqlgVertex>streamingBatchMode(BATCH_SIZE, (e) -> {
+            SqlgVertex previous = null;
+            for (SqlgVertex person : e) {
+                if (previous == null) {
+                    previous = person;
+                } else {
+                    previous.streamFixedBatchEdge("friend", person);
                 }
-                this.sqlgGraph.tx().flush();
-                persons.clear();
             }
+            this.sqlgGraph.tx().flush();
         });
-        for (int i = 1; i <= 1000; i++) {
+        for (int i = 1; i <= 10; i++) {
             String uuid1 = UUID.randomUUID().toString();
             properties.put("id", uuid1);
-            persons.add(this.sqlgGraph.streamVertexFixedBatch("Person", properties));
+            this.sqlgGraph.streamVertexFixedBatch("Person", properties);
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
@@ -166,8 +161,8 @@ public class TestBatchedStreaming extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0);
-        Assert.assertEquals(999, this.sqlgGraph.traversal().E().hasLabel("friend").count().next(), 0);
+        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0);
+        Assert.assertEquals(8, this.sqlgGraph.traversal().E().hasLabel("friend").count().next(), 0);
     }
 
     @Test

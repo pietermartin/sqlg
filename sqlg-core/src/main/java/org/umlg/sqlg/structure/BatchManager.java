@@ -51,6 +51,7 @@ public class BatchManager {
     private long batchIndex;
     private String sequenceName;
     private BatchCallback batchCallback;
+    private List<SqlgElement> batchedElements;
 
     public void setBatchCallback(BatchCallback batchCallback) {
         this.batchCallback = batchCallback;
@@ -121,15 +122,16 @@ public class BatchManager {
                 throw new IllegalStateException("batch size is reached, first commit or flush and close the batch. Batch count = " + this.batchCount + " batch size is " + this.batchSize);
             }
             if (isBatchModeBatchStreaming() && this.batchCount == 0) {
+                this.batchedElements = new ArrayList<>();
                 //lock the table,
                 this.sqlDialect.lockTable(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
                 //set the sequence cache
                 this.sequenceName = this.sqlDialect.sequenceName(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
                 this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
-                vertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
             }
-            if (isBatchModeBatchStreaming() && this.batchCount > 0) {
+            if (isBatchModeBatchStreaming()) {
                 vertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
+                this.batchedElements.add(vertex);
             }
             OutputStream out = this.streamingVertexCache.get(schemaTable);
             if (out == null) {
@@ -147,8 +149,10 @@ public class BatchManager {
             }
             if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
                 this.flush();
-                if (this.batchCallback != null)
-                    this.batchCallback.callBack(vertex);
+                if (this.batchCallback != null) {
+                    this.batchCallback.callBack(this.batchedElements);
+                    this.batchedElements.clear();
+                }
             }
         }
     }
@@ -212,6 +216,7 @@ public class BatchManager {
                 throw new IllegalStateException("batch size is reached, first commit or flush and close the batch. Batch count = " + this.batchCount + " batch size is " + this.batchSize);
             }
             if (isBatchModeBatchStreaming() && this.batchCount == 0) {
+                this.batchedElements = new ArrayList<>();
                 //lock the table,
                 this.sqlDialect.lockTable(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
                 //set the sequence cache
@@ -221,6 +226,7 @@ public class BatchManager {
             }
             if (isBatchModeBatchStreaming() && this.batchCount > 0) {
                 sqlgEdge.setInternalPrimaryKey(RecordId.from(outSchemaTable, ++this.batchIndex));
+                this.batchedElements.add(sqlgEdge);
             }
             OutputStream out = this.streamingEdgeCache.get(outSchemaTable);
             if (out == null) {
@@ -238,8 +244,10 @@ public class BatchManager {
             }
             if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
                 this.flush();
-                if (this.batchCallback != null)
-                    this.batchCallback.callBack(sqlgEdge);
+                if (this.batchCallback != null) {
+                    this.batchCallback.callBack(this.batchedElements);
+                    this.batchedElements.clear();
+                }
             }
         }
     }
