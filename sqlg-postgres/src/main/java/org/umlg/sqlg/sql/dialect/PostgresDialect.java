@@ -142,7 +142,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
      *                    3) The properties as a map of key values
      */
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
@@ -150,7 +150,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             Object[] arg = new Object[]{};
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
             for (SchemaTable schemaTable : vertexCache.keySet()) {
-                Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertices = vertexCache.get(schemaTable);
+                Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
                 //insert the labeled vertices
                 long endHigh;
                 long numberInserted;
@@ -208,7 +208,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
             Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
@@ -216,7 +216,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
 
             for (SchemaTable schemaTable : edgeCache.keySet()) {
-                Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = edgeCache.get(schemaTable);
+                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(schemaTable);
                 try (InputStream is = mapToEdge_InputStream(triples)) {
                     StringBuffer sql = new StringBuffer();
                     sql.append("COPY ");
@@ -224,13 +224,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(".");
                     sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
                     sql.append(" (");
-                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.values()) {
+                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                         int count = 1;
                         sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
                         sql.append(", ");
                         sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                        for (String key : triple.getRight().keySet()) {
-                            if (count <= triple.getRight().size()) {
+                        for (String key : triples.getLeft()) {
+                            if (count <= triples.getLeft().size()) {
                                 sql.append(", ");
                             }
                             count++;
@@ -873,38 +873,53 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return BATCH_NULL;
     }
 
-    private InputStream mapToEdge_InputStream(Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
+    private InputStream mapToEdge_InputStream(Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
         StringBuilder sb = new StringBuilder();
         int count = 1;
-        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
+        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
             sb.append(((RecordId) triple.getLeft().id()).getId());
             sb.append(COPY_COMMAND_SEPARATOR);
             sb.append(((RecordId) triple.getMiddle().id()).getId());
-            if (!triple.getRight().isEmpty()) {
+            if (!edgeCache.getLeft().isEmpty()) {
                 sb.append(COPY_COMMAND_SEPARATOR);
             }
             int countKeys = 1;
-            for (String key : triple.getRight().keySet()) {
+            for (String key : edgeCache.getLeft()) {
                 Object value = triple.getRight().get(key);
-                sb.append(escapeSpecialCharacters(value.toString()));
-                if (countKeys < triple.getRight().size()) {
+                if (value == null) {
+                    sb.append(getBatchNull());
+                } else if (value.getClass().isArray()) {
+                    sb.append("{");
+                    int length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                        sb.append(escapeSpecialCharacters(valueOfArray));
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                } else {
+                    sb.append(escapeSpecialCharacters(value.toString()));
+                }
+                if (countKeys < edgeCache.getLeft().size()) {
                     sb.append(COPY_COMMAND_SEPARATOR);
                 }
                 countKeys++;
             }
-            if (count++ < edgeCache.size()) {
+            if (count++ < edgeCache.getRight().size()) {
                 sb.append("\n");
             }
         }
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
-    private InputStream mapToLabeledVertex_InputStream(Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+    private InputStream mapToLabeledVertex_InputStream(Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (SqlgVertex sqlgVertex : vertexCache.getRight().keySet()) {
-            Triple<String, String, Map<String, Object>> triple = vertexCache.getRight().get(sqlgVertex);
+            Map<String, Object> triple = vertexCache.getRight().get(sqlgVertex);
             //set the internal batch id to be used with inserting batch edges
             if (!vertexCache.getLeft().isEmpty()) {
                 int countKeys = 1;
@@ -913,7 +928,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         sb.append(COPY_COMMAND_SEPARATOR);
                     }
                     countKeys++;
-                    Object value = triple.getRight().get(key);
+                    Object value = triple.get(key);
                     if (value == null) {
                         sb.append(getBatchNull());
                     } else if (value.getClass().isArray()) {

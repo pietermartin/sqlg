@@ -10,12 +10,12 @@ import org.umlg.sqlg.test.batch.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
-//        TestBatchedStreaming.class,
-//        TestBatchServerSideEdgeCreation.class,
-//        TestMultiThreadedBatch.class,
-//        TestStreamingEdge.class,
-//        TestStreamVertex.class
+        TestBatch.class,
+        TestBatchedStreaming.class,
+        TestBatchServerSideEdgeCreation.class,
+        TestMultiThreadedBatch.class,
+        TestStreamingEdge.class,
+        TestStreamVertex.class
         })
 public class AnyTest {
 }

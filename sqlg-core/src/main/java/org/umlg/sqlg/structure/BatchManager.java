@@ -21,9 +21,10 @@ public class BatchManager {
     private SqlDialect sqlDialect;
 
     //map per label/keys, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
-    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache = new LinkedHashMap<>();
+    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache = new LinkedHashMap<>();
     //map per label, contains a map edges. The triple is outVertex, inVertex, edge properties
-    private Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache = new LinkedHashMap<>();
+
+    private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache = new LinkedHashMap<>();
 
     private Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexInEdgeCache = new HashMap<>();
     private Map<SqlgVertex, Map<SchemaTable, List<SqlgEdge>>> vertexOutEdgeCache = new HashMap<>();
@@ -96,17 +97,17 @@ public class BatchManager {
         this.batchSize = batchSize;
     }
 
-    public void addVertex(boolean complete, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+    public void addVertex(boolean streaming, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         SchemaTable schemaTable = SchemaTable.of(vertex.getSchema(), vertex.getTable());
-        if (!complete) {
-            Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> pairs = this.vertexCache.get(schemaTable);
+        if (!streaming) {
+            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> pairs = this.vertexCache.get(schemaTable);
             if (pairs == null) {
                 pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
-                pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
+                pairs.getRight().put(vertex, keyValueMap);
                 this.vertexCache.put(schemaTable, pairs);
             } else {
                 pairs.getLeft().addAll(keyValueMap.keySet());
-                pairs.getRight().put(vertex, Triple.of(this.sqlDialect.getBatchNull(), this.sqlDialect.getBatchNull(), keyValueMap));
+                pairs.getRight().put(vertex, keyValueMap);
             }
         } else {
             if (this.streamingBatchModeVertexSchemaTable == null) {
@@ -157,16 +158,19 @@ public class BatchManager {
         }
     }
 
-    void addEdge(boolean complete, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    void addEdge(boolean streaming, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         SchemaTable outSchemaTable = SchemaTable.of(outVertex.getSchema(), sqlgEdge.getTable());
-        if (!complete) {
-            Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(outSchemaTable);
+        if (!streaming) {
+            Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = this.edgeCache.get(outSchemaTable);
             if (triples == null) {
-                triples = new LinkedHashMap<>();
-                triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
+                triples = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
+                triples.getRight().put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
+//                triples = new LinkedHashMap<>();
+//                triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
                 this.edgeCache.put(outSchemaTable, triples);
             } else {
-                triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
+                triples.getLeft().addAll(keyValueMap.keySet());
+                triples.getRight().put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
             }
             Map<SchemaTable, List<SqlgEdge>> outEdgesMap = this.vertexOutEdgeCache.get(outVertex);
             if (outEdgesMap == null) {
@@ -297,11 +301,11 @@ public class BatchManager {
     public boolean updateProperty(SqlgElement sqlgElement, String key, Object value) {
         SchemaTable schemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());
         if (Vertex.class.isAssignableFrom(sqlgElement.getClass())) {
-            Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> triples = this.vertexCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> triples = this.vertexCache.get(schemaTable);
             if (triples != null) {
-                Triple<String, String, Map<String, Object>> triple = triples.getRight().get(sqlgElement);
+                Map<String, Object> triple = triples.getRight().get(sqlgElement);
                 if (triple != null) {
-                    triple.getRight().put(key, value);
+                    triple.put(key, value);
                     triples.getLeft().add(key);
                     return true;
                 }
@@ -322,11 +326,12 @@ public class BatchManager {
                 return true;
             }
         } else {
-            Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = this.edgeCache.get(schemaTable);
             if (triples != null) {
-                Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = triples.get(sqlgElement);
+                Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = triples.getRight().get(sqlgElement);
                 if (triple != null) {
                     triple.getRight().put(key, value);
+                    triples.getLeft().add(key);
                     return true;
                 }
             } else {
@@ -353,18 +358,18 @@ public class BatchManager {
         SqlgElement sqlgElement = (SqlgElement) sqlgProperty.element();
         SchemaTable schemaTable = SchemaTable.of(sqlgElement.getSchema(), sqlgElement.getTable());
         if (Vertex.class.isAssignableFrom(sqlgElement.getClass())) {
-            Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> triples = this.vertexCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> triples = this.vertexCache.get(schemaTable);
             if (triples != null) {
-                Triple<String, String, Map<String, Object>> triple = triples.getRight().get(sqlgElement);
+                Map<String, Object> triple = triples.getRight().get(sqlgElement);
                 if (triple != null) {
-                    triple.getRight().remove(key);
+                    triple.remove(key);
                     return true;
                 }
             }
         } else {
-            Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = this.edgeCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = this.edgeCache.get(schemaTable);
             if (triples != null) {
-                Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = triples.get(sqlgElement);
+                Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = triples.getRight().get(sqlgElement);
                 if (triple != null) {
                     triple.getRight().remove(key);
                     return true;
@@ -425,7 +430,7 @@ public class BatchManager {
     }
 
     public boolean vertexIsCached(SqlgVertex vertex) {
-        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> map = this.vertexCache.get(SchemaTable.of(vertex.getSchema(), vertex.getTable()));
+        Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> map = this.vertexCache.get(SchemaTable.of(vertex.getSchema(), vertex.getTable()));
         return map != null && map.getRight().containsKey(vertex);
     }
 
@@ -443,7 +448,7 @@ public class BatchManager {
     public void removeVertex(String schema, String table, SqlgVertex vertex) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
         //check if the vertex is in the newly inserted cache
-        Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexSortedSetMapPair = this.vertexCache.get(schemaTable);
+        Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexSortedSetMapPair = this.vertexCache.get(schemaTable);
         if (vertexSortedSetMapPair != null && vertexSortedSetMapPair.getRight().containsKey(vertex)) {
             vertexSortedSetMapPair.getRight().remove(vertex);
             //all the edges of a new vertex must also be new
@@ -453,14 +458,14 @@ public class BatchManager {
                     SchemaTable edgeSchemaTable = entry.getKey();
                     List<SqlgEdge> edges = entry.getValue();
                     //remove these edges from the edge cache
-                    Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> cachedEdge = this.edgeCache.get(edgeSchemaTable);
+                    Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> cachedEdge = this.edgeCache.get(edgeSchemaTable);
                     if (cachedEdge == null) {
                         throw new IllegalStateException("BUG: new edge not found in edgeCache during bulk remove!");
                     }
                     for (SqlgEdge sqlgEdge : edges) {
-                        cachedEdge.remove(sqlgEdge);
+                        cachedEdge.getRight().remove(sqlgEdge);
                     }
-                    if (cachedEdge.isEmpty()) {
+                    if (cachedEdge.getRight().isEmpty()) {
                         this.edgeCache.remove(edgeSchemaTable);
                     }
                 }
@@ -472,14 +477,14 @@ public class BatchManager {
                     SchemaTable edgeSchemaTable = entry.getKey();
                     List<SqlgEdge> edges = entry.getValue();
                     //remove these edges from the edge cache
-                    Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> cachedEdge = this.edgeCache.get(edgeSchemaTable);
+                    Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> cachedEdge = this.edgeCache.get(edgeSchemaTable);
                     if (cachedEdge == null) {
                         throw new IllegalStateException("BUG: new edge not found in edgeCache during bulk remove!");
                     }
                     for (SqlgEdge sqlgEdge : edges) {
-                        cachedEdge.remove(sqlgEdge);
+                        cachedEdge.getRight().remove(sqlgEdge);
                     }
-                    if (cachedEdge.isEmpty()) {
+                    if (cachedEdge.getRight().isEmpty()) {
                         this.edgeCache.remove(edgeSchemaTable);
                     }
                 }
@@ -498,9 +503,9 @@ public class BatchManager {
     public void removeEdge(String schema, String table, SqlgEdge edge) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
         //check it the edge is in the newly inserted cache
-        Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleMap = this.edgeCache.get(schemaTable);
-        if (sqlgEdgeTripleMap != null && sqlgEdgeTripleMap.containsKey(edge)) {
-            sqlgEdgeTripleMap.remove(edge);
+        Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> sqlgEdgeTripleMap = this.edgeCache.get(schemaTable);
+        if (sqlgEdgeTripleMap != null && sqlgEdgeTripleMap.getRight().containsKey(edge)) {
+            sqlgEdgeTripleMap.getRight().remove(edge);
         } else {
             List<SqlgEdge> edges = this.removeEdgeCache.get(schemaTable);
             if (edges == null) {
