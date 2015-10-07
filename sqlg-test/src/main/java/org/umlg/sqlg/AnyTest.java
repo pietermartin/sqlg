@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.*;
+import org.umlg.sqlg.test.gremlincompile.TestBulkWithin;
 
 /**
  * Date: 2014/07/16
@@ -10,12 +10,7 @@ import org.umlg.sqlg.test.batch.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class,
-        TestBatchedStreaming.class,
-        TestBatchServerSideEdgeCreation.class,
-        TestMultiThreadedBatch.class,
-        TestStreamingEdge.class,
-        TestStreamVertex.class
+        TestBulkWithin.class
         })
 public class AnyTest {
 }

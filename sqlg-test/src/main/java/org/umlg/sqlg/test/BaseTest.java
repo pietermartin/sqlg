@@ -106,7 +106,7 @@ public abstract class BaseTest {
                     result = metadata.getSchemas(catalog, schemaPattern);
                     while (result.next()) {
                         String schema = result.getString(1);
-                        if (!sqlDialect.getDefaultSchemas().contains(schema)) {
+                        if (!sqlDialect.getDefaultSchemas().contains(schema) && !sqlDialect.getGisSchemas().contains(schema)) {
                             StringBuilder sql = new StringBuilder("DROP SCHEMA ");
                             sql.append(sqlDialect.maybeWrapInQoutes(schema));
                             sql.append(" CASCADE");
