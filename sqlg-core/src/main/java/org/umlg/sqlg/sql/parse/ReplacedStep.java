@@ -287,8 +287,13 @@ public class ReplacedStep<S, E> {
         return this.step instanceof EdgeVertexStep;
     }
 
-    public Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
-        Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for GraphStep");
+    /**
+     * Calculates the root labels from which to start the query construction.
+     * @param sqlgGraph
+     * @return A set of SchemaTableTree. A SchemaTableTree for each root label.
+     */
+    Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
+        Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
         Set<SchemaTableTree> result = new HashSet<>();
         List<HasContainer> hasContainerWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
