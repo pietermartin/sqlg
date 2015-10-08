@@ -22,7 +22,9 @@ public class TestBulkWithin extends BaseTest {
     public void testBulkWithin() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
+            this.sqlgGraph.tx().batchModeOn();
+        }
         Vertex god = this.sqlgGraph.addVertex(T.label, "God");
         List<String> uuids = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
