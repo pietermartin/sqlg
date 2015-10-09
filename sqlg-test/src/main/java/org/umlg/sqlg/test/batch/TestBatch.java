@@ -1,5 +1,8 @@
 package org.umlg.sqlg.test.batch;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,6 +19,9 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1160,6 +1166,61 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(2, list.size());
         Assert.assertTrue(list.contains(1d));
         Assert.assertTrue(list.contains(2d));
+    }
+
+    @Test
+    public void batchLocalDateTime() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchLocalDate() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDate now = LocalDate.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchLocalTime() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalTime now = LocalTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+    }
+
+    @Test
+    public void batchJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().batchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
     }
 
 }

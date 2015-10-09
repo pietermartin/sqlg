@@ -45,7 +45,6 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLoadSchema.class,
         TestPool.class,
         TestRemoveElement.class,
-        TestRemoveProperty.class,
         TestSetProperty.class,
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
@@ -93,7 +92,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestSchemaManagerGetTablesFor.class,
         TestBatchServerSideEdgeCreation.class,
         TestBatchedStreaming.class,
-        TestBulkWithin.class
+        TestBulkWithin.class,
+        TestRemoveProperty.class
 })
 public class AllTest {
 }

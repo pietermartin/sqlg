@@ -985,8 +985,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"DATE"};
             case LOCALDATETIME:
                 return new String[]{"TIMESTAMP WITH TIME ZONE"};
-            case ZONEDDATETIME:
-                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
+//            case ZONEDDATETIME:
+//                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
             case LOCALTIME:
                 return new String[]{"TIME WITH TIME ZONE"};
             case PERIOD:
@@ -1044,6 +1044,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
+            case Types.TIMESTAMP:
+                return PropertyType.LOCALDATETIME;
+            case Types.DATE:
+                return PropertyType.LOCALDATE;
+            case Types.TIME:
+                return PropertyType.LOCALTIME;
+            case Types.OTHER:
+                //this is a f up as only JSON can be used for other.
+                //means all the gis data types which are also OTHER are not supported
+                return PropertyType.JSON;
             case Types.BINARY:
                 return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
@@ -1089,6 +1099,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return Types.CLOB;
             case BYTE_ARRAY:
                 return Types.ARRAY;
+            case LOCALDATETIME:
+                return Types.TIMESTAMP;
+            case LOCALDATE:
+                return Types.DATE;
+            case LOCALTIME:
+                return Types.TIME;
+            case JSON:
+                //TODO support other others like Geometry...
+                return Types.OTHER;
             case BOOLEAN_ARRAY:
                 return Types.ARRAY;
             case SHORT_ARRAY:

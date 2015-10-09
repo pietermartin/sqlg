@@ -1,15 +1,61 @@
 package org.umlg.sqlg.test.mod;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * Date: 2014/07/13
  * Time: 6:51 PM
  */
 public class TestRemoveProperty extends BaseTest {
+
+    @Test
+    public void testRemoveLocalDateTime() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDateTime.now());
+        this.sqlgGraph.tx().commit();
+        v.property("createOn").remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V(v.id()).next().property("createOn").isPresent());
+    }
+
+    @Test
+    public void testRemoveLocalDate() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDate.now());
+        this.sqlgGraph.tx().commit();
+        v.property("createOn").remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V(v.id()).next().property("createOn").isPresent());
+    }
+
+    @Test
+    public void testRemoveLocalTime() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalTime.now());
+        this.sqlgGraph.tx().commit();
+        v.property("createOn").remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V(v.id()).next().property("createOn").isPresent());
+    }
+
+    @Test
+    public void testRemoveJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        this.sqlgGraph.tx().commit();
+        v.property("doc").remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V(v.id()).next().property("doc").isPresent());
+    }
 
     @Test
     public void testRemoveProperty() {

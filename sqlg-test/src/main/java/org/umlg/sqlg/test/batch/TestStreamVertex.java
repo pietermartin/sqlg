@@ -1,5 +1,8 @@
 package org.umlg.sqlg.test.batch;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -12,6 +15,9 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -262,6 +268,61 @@ public class TestStreamVertex extends BaseTest {
         uids.stream().forEach(u->this.sqlgGraph.streamVertex(T.label, "Person", "name", u));
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
+    }
+
+    @Test
+    public void testStreamLocalDateTime() {
+        this.sqlgGraph.tx().streamingMode();
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void testStreamLocalDate() {
+        this.sqlgGraph.tx().streamingMode();
+        LocalDate now = LocalDate.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void testStreamLocalTime() {
+        this.sqlgGraph.tx().streamingMode();
+        LocalTime now = LocalTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+    }
+
+    @Test
+    public void testStreamJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().streamingMode();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
     }
 
 }
