@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.batch.TestBatch;
 import org.umlg.sqlg.test.batch.TestStreamVertex;
 import org.umlg.sqlg.test.gremlincompile.TestBulkWithin;
+import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.mod.TestRemoveProperty;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 
@@ -14,7 +15,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class
+        TestLoadSchema.class
         })
 public class AnyTest {
 }

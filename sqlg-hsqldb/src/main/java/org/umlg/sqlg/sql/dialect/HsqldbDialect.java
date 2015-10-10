@@ -313,6 +313,15 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return Types.DOUBLE;
             case STRING:
                 return Types.CLOB;
+            case LOCALDATETIME:
+                return Types.TIMESTAMP;
+            case LOCALDATE:
+                return Types.DATE;
+            case LOCALTIME:
+                return Types.TIME;
+            case JSON:
+                //TODO support other others like Geometry...
+                return Types.OTHER;
             case BYTE_ARRAY:
                 return Types.ARRAY;
             case BOOLEAN_ARRAY:
@@ -351,6 +360,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
+            case Types.TIMESTAMP:
+                return PropertyType.LOCALDATETIME;
+            case Types.DATE:
+                return PropertyType.LOCALDATE;
+            case Types.TIME:
+                return PropertyType.LOCALTIME;
             case Types.VARBINARY:
                 return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
