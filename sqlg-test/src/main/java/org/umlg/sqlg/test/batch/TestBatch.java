@@ -1223,4 +1223,98 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(json, value);
     }
 
+    @Test
+    public void batchUpdateLocalDateTime() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDateTime nowAgain = LocalDateTime.now();
+        for (Vertex vertex : vertices) {
+            vertex.property("createOn", nowAgain);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(nowAgain, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchUpdateLocalDate() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDate now = LocalDate.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDate nowAgain = LocalDate.now();
+        for (Vertex vertex : vertices) {
+            vertex.property("createOn", nowAgain);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(nowAgain, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchUpdateLocalTime() throws InterruptedException {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalTime now = LocalTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+        this.sqlgGraph.tx().batchModeOn();
+        Thread.sleep(1000);
+        LocalTime nowAgain = LocalTime.now();
+        for (Vertex vertex : vertices) {
+            vertex.property("createOn", nowAgain);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(nowAgain.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+    }
+
+    @Test
+    public void batchUpdateJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().batchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
+        this.sqlgGraph.tx().batchModeOn();
+        json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "pete");
+        for (Vertex vertex : vertices) {
+            vertex.property("doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
+    }
+
 }

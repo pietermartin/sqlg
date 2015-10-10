@@ -14,7 +14,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestStreamVertex.class
+        TestBatch.class
         })
 public class AnyTest {
 }

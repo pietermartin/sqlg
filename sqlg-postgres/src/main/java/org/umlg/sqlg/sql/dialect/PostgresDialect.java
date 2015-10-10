@@ -382,6 +382,26 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(value);
                                 sql.append("$token$");
                                 break;
+                            case LOCALDATETIME:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::TIMESTAMP");
+                                break;
+                            case LOCALDATE:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::DATE");
+                                break;
+                            case LOCALTIME:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::TIME");
+                                break;
+                            case JSON:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::JSONB");
+                                break;
                             case BOOLEAN_ARRAY:
                                 break;
                             case BYTE_ARRAY:
