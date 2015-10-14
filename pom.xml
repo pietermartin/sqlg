@@ -79,12 +79,12 @@
                 <version>2.17</version>
                 <configuration>
                     <includes>
-                        <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
-                        <!--<include>**/SqlgHsqldbProcessStandardTest.java</include>-->
-                        <!--<include>**/HsqldbAllTest.java</include>-->
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <!--<include>**/SqlgPostgresProcessStandardTest.java</include>-->
-                        <!--<include>**/PostgresAllTest.java</include>-->
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+                        <include>**/HsqldbAllTest.java</include>
+                        <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
+                        <include>**/SqlgPostgresProcessStandardTest.java</include>
+                        <include>**/PostgresAllTest.java</include>
                     </includes>
                     <argLine>-Xmx2048m</argLine>
                 </configuration>
