@@ -40,6 +40,7 @@ public class SqlgPostgresProvider extends AbstractGraphProvider {
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
             put("jdbc.username", "postgres");
             put("jdbc.password", "postgres");
+            put("maxPoolSize", 10);
         }};
     }
 
