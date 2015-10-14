@@ -93,6 +93,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBatchServerSideEdgeCreation.class,
         TestBatchedStreaming.class,
         TestBulkWithin.class,
+        TestBulkWithout.class,
         TestRemoveProperty.class
 })
 public class AllTest {

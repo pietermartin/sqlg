@@ -319,11 +319,13 @@ public interface SqlDialect {
 
     void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache);
 
+    String constructManualCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap);
+
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
 
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
 
-    void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException;
+    void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
 
     void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
@@ -405,4 +407,6 @@ public interface SqlDialect {
     long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
 
     String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix);
+
+    boolean supportsBulkWithinOut();
 }

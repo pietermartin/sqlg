@@ -10,23 +10,6 @@
     <artifactId>sqlg-hsqldb</artifactId>
     <name>sqlg-hsqldb</name>
 
-    <!--<repositories>-->
-        <!--<repository>-->
-            <!--<releases>-->
-                <!--<enabled>false</enabled>-->
-            <!--</releases>-->
-            <!--<snapshots>-->
-                <!--<enabled>true</enabled>-->
-                <!--<updatePolicy>always</updatePolicy>-->
-                <!--<checksumPolicy>fail</checksumPolicy>-->
-            <!--</snapshots>-->
-            <!--<id>hsqldb_snapshots</id>-->
-            <!--<name>HyperSQL Snapshots</name>-->
-            <!--<url>http://hsqldb.org/repos</url>-->
-            <!--<layout>default</layout>-->
-        <!--</repository>-->
-    <!--</repositories>-->
-
     <dependencies>
         <dependency>
             <groupId>org.umlg</groupId>
@@ -35,8 +18,7 @@
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.3.2</version>
-            <!--<version>SNAPSHOT</version>-->
+            <version>2.3.3</version>
         </dependency>
         <dependency>
             <groupId>org.umlg</groupId>

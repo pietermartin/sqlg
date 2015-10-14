@@ -499,6 +499,41 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public String constructManualCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("COPY ");
+        //Temo tables only
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+        sql.append(" (");
+        if (keyValueMap.isEmpty()) {
+            //copy command needs at least one field.
+            //check if the dummy field exist, if not create it
+            sqlgGraph.getSchemaManager().ensureColumnExist(
+                    schemaTable.getSchema(),
+                    SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
+                    ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
+            sql.append(maybeWrapInQoutes("_copy_dummy"));
+        } else {
+            int count = 1;
+            for (String key : keyValueMap.keySet()) {
+                if (count > 1 && count <= keyValueMap.size()) {
+                    sql.append(", ");
+                }
+                count++;
+                sql.append(maybeWrapInQoutes(key));
+            }
+        }
+        sql.append(")");
+        sql.append(" FROM stdin DELIMITER '");
+        sql.append(COPY_COMMAND_SEPARATOR);
+        sql.append("';");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        return sql.toString();
+    }
+
+    @Override
     public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
@@ -1665,6 +1700,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             throw new RuntimeException(e);
         }
         return result;
+    }
+
+    @Override
+    public boolean supportsBulkWithinOut() {
+        return true;
     }
 
     @Override

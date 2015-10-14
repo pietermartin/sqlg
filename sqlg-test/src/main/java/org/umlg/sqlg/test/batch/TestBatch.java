@@ -1073,18 +1073,18 @@ public class TestBatch extends BaseTest {
     public void testBatchRemoveManyEdgesTestPostgresLimit() {
         this.sqlgGraph.tx().batchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 100000; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
             Edge edge1 = v1.addEdge("test", v2);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000001, this.sqlgGraph.traversal().V().count().next().intValue());
-        Assert.assertEquals(1000000, this.sqlgGraph.traversal().E().count().next().intValue());
+        Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(100000, this.sqlgGraph.traversal().E().count().next().intValue());
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().batchModeOn();
         vertexTraversal(v1).outE("test").forEachRemaining(Edge::remove);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000001, this.sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
     }
 

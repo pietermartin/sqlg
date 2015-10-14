@@ -16,10 +16,10 @@ import java.util.UUID;
  * Date: 2015/10/07
  * Time: 7:28 PM
  */
-public class TestBulkWithin extends BaseTest {
+public class TestBulkWithout extends BaseTest {
 
     @Test
-    public void testBulkWithin() {
+    public void testBulkWithout() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
@@ -38,10 +38,10 @@ public class TestBulkWithin extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.within(uuids.subList(0, 2).toArray())).toList();
-        Assert.assertEquals(2, persons.size());
-        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.within(uuids.toArray())).toList();
-        Assert.assertEquals(100, persons.size());
+        List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.subList(0, 2).toArray())).toList();
+        Assert.assertEquals(98, persons.size());
+        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.toArray())).toList();
+        Assert.assertEquals(0, persons.size());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
@@ -50,9 +50,6 @@ public class TestBulkWithin extends BaseTest {
     public void testBulkWithinMultipleHasContainers() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
-            this.sqlgGraph.tx().batchModeOn();
-        }
         Vertex god = this.sqlgGraph.addVertex(T.label, "God");
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "idNumber", 1, "name", "pete");
         god.addEdge("creator", person1);
@@ -84,9 +81,9 @@ public class TestBulkWithin extends BaseTest {
                 .hasLabel("God")
                 .out()
                 .has("name", "pete")
-                .has("idNumber", P.within(1,2,3))
+                .has("idNumber", P.without(1,2,3))
                 .toList();
-        Assert.assertEquals(2, persons.size());
+        Assert.assertEquals(7, persons.size());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
@@ -111,10 +108,10 @@ public class TestBulkWithin extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Vertex> persons = this.sqlgGraph.traversal().V(god).out().has("idNumber", P.within(uuids.subList(0, 2).toArray())).toList();
-        Assert.assertEquals(2, persons.size());
-        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.within(uuids.toArray())).toList();
-        Assert.assertEquals(100, persons.size());
+        List<Vertex> persons = this.sqlgGraph.traversal().V(god).out().has("idNumber", P.without(uuids.subList(0, 2).toArray())).toList();
+        Assert.assertEquals(98, persons.size());
+        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.toArray())).toList();
+        Assert.assertEquals(0, persons.size());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
 

@@ -88,7 +88,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException {
+    public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
@@ -109,6 +109,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
+    public String constructManualCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
@@ -543,5 +548,10 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
         throw new UnsupportedOperationException("Hsqldb does not support sequenceName!");
+    }
+
+    @Override
+    public boolean supportsBulkWithinOut() {
+        return false;
     }
 }

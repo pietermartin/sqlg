@@ -140,13 +140,9 @@ public class BatchManager {
                 out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
                 this.streamingVertexCache.put(schemaTable, out);
             }
-            try {
-                this.sqlDialect.flushStreamingVertex(out, keyValueMap);
-                if (isBatchModeBatchStreaming()) {
-                    this.batchCount++;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+            this.sqlDialect.flushStreamingVertex(out, keyValueMap);
+            if (isBatchModeBatchStreaming()) {
+                this.batchCount++;
             }
             if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
                 this.flush();

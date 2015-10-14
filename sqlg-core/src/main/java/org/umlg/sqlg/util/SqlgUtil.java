@@ -6,6 +6,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -19,6 +20,7 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 
 /**
  * Date: 2014/07/12
@@ -110,14 +112,26 @@ public class SqlgUtil {
         return result;
     }
 
+    public static boolean isBulkWithinOrOut(HasContainer hasContainer) {
+        BiPredicate p = hasContainer.getPredicate().getBiPredicate();
+        return p == Contains.within || p == Contains.without;
+    }
+
+    public static boolean isBulkWithin(HasContainer hasContainer) {
+        BiPredicate p = hasContainer.getPredicate().getBiPredicate();
+        return p == Contains.within;
+    }
+
     public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement, int parameterIndex) throws SQLException {
         //start the index at 2 as sql starts at 1 and the first is the id that is already set.
 //        int parameterIndex = 2;
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-                whereClause.putKeyValueMap(hasContainer, keyValueMap);
+                if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinOrOut(hasContainer)) {
+                    WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                    whereClause.putKeyValueMap(hasContainer, keyValueMap);
+                }
             }
         }
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);

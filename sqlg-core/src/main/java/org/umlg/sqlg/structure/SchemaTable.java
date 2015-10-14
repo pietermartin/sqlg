@@ -4,11 +4,13 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.google.common.base.Preconditions;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 
+import javax.xml.validation.Schema;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
@@ -100,6 +102,14 @@ public class SchemaTable implements DataSerializable, Serializable {
 
     public boolean isEdgeTable() {
         return !isVertexTable();
+    }
+
+    public SchemaTable withOutPrefix() {
+        Preconditions.checkState(this.table.startsWith(SchemaManager.VERTEX_PREFIX) || this.table.startsWith(SchemaManager.EDGE_PREFIX));
+        if (this.table.startsWith(SchemaManager.VERTEX_PREFIX))
+            return SchemaTable.of(this.getSchema(), this.getTable().substring(SchemaManager.VERTEX_PREFIX.length()));
+        else
+            return SchemaTable.of(this.getSchema(), this.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
     }
 
     static class SchemaTableJacksonSerializer extends StdSerializer<SchemaTable> {
