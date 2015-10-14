@@ -74,7 +74,7 @@ public class TestMultiThread extends BaseTest {
                     }
                     countDownLatch.countDown();
                     completedThreads.getAndAdd(1);
-                    logger.info("shouldExecuteWithCompetingThreads " + completedThreads.get());
+                    logger.debug("shouldExecuteWithCompetingThreads " + completedThreads.get());
                 }
             }.start();
         }
@@ -93,7 +93,7 @@ public class TestMultiThread extends BaseTest {
 
     @Test
     public void testMultiThreadVertices() throws InterruptedException, ExecutionException {
-        AtomicInteger atomicInteger = new AtomicInteger(1);
+//        AtomicInteger atomicInteger = new AtomicInteger(1);
         Set<Integer> tables = new ConcurrentSkipListSet<>();
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         for (int j = 0; j < 100; j++) {
@@ -105,7 +105,7 @@ public class TestMultiThread extends BaseTest {
                     tables.add(randomInt);
                 }
                 sqlgGraph.tx().commit();
-                System.out.println(atomicInteger.getAndIncrement());
+//                System.out.println(atomicInteger.getAndIncrement());
             });
         }
         executorService.shutdown();
@@ -119,7 +119,7 @@ public class TestMultiThread extends BaseTest {
 
     @Test
     public void testMultiThreadEdges() throws InterruptedException, ExecutionException {
-        AtomicInteger atomicInteger = new AtomicInteger(1);
+//        AtomicInteger atomicInteger = new AtomicInteger(1);
         Vertex v1 = sqlgGraph.addVertex(T.label, "Person", "name", "0");
         sqlgGraph.tx().commit();
         Set<Integer> tables = new ConcurrentSkipListSet<>();
@@ -134,7 +134,7 @@ public class TestMultiThread extends BaseTest {
                     tables.add(randomInt);
                 }
                 sqlgGraph.tx().commit();
-                System.out.println(atomicInteger.getAndIncrement());
+//                System.out.println(atomicInteger.getAndIncrement());
             });
         }
         executorService.shutdown();

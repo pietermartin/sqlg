@@ -226,6 +226,7 @@ public class SchemaManager {
         Config config = new Config();
         config.getNetworkConfig().setPort(5900);
         config.getNetworkConfig().setPortAutoIncrement(true);
+        config.setProperty( "hazelcast.logging.type", "log4j" );
         String[] ips = configuration.getStringArray("hazelcast.members");
         if (ips.length > 0) {
             NetworkConfig network = config.getNetworkConfig();

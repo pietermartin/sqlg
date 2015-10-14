@@ -31,7 +31,7 @@ public class TestMultiThreadedBatch extends BaseTest {
     @Test
     public void testMultiThreadAddVertex() throws InterruptedException {
         sqlgGraph.tx().rollback();
-        AtomicInteger atomicInteger = new AtomicInteger(1);
+//        AtomicInteger atomicInteger = new AtomicInteger(1);
         Set<Integer> tables = new ConcurrentSkipListSet<>();
         ExecutorService executorService = Executors.newFixedThreadPool(1);
         for (int j = 0; j < 100; j++) {
