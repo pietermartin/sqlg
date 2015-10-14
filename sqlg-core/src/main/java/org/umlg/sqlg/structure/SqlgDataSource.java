@@ -40,7 +40,12 @@ public class SqlgDataSource {
         if (ds.cpdss.get(connectURI) != null) {
             return ds;
         }
-        logger.info(String.format("Setting up datasource to %s for user %s", connectURI, username));
+        //this odd logic is for travis, it needs log feedback to not kill the build
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            logger.info(String.format("Setting up datasource to %s for user %s", connectURI, username));
+        } else {
+            logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
+        }
         ComboPooledDataSource cpds = new ComboPooledDataSource();
         cpds.setDriverClass(driver);
         cpds.setJdbcUrl(connectURI);
