@@ -49,7 +49,7 @@ public class TestMultiThreadedBatch extends BaseTest {
                     }
                     sqlgGraph.tx().commit();
                     sqlgGraph.tx().batchModeOn();
-                    System.out.println(atomicInteger.getAndIncrement());
+//                    System.out.println(atomicInteger.getAndIncrement());
                 } catch (Exception e) {
                     Assert.fail(e.getMessage());
                 }
