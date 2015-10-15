@@ -82,6 +82,7 @@
                         <include>**/SqlgHsqldbStructureStandardTest.java</include>
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
+                        <!-- this is still failing on travis -->
                         <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
                         <include>**/SqlgPostgresProcessStandardTest.java</include>
                         <include>**/PostgresAllTest.java</include>
