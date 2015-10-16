@@ -6,8 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_P_S_SE_SL_Traverser;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by pieter on 2015/07/20.
@@ -31,16 +33,18 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
     private void customSplit(final T t) {
         boolean addT = true;
         Path localPath = ImmutablePath.make();
-        for (String label : labeledObjects.keySet()) {
+        List<String> sortedKeys = new ArrayList<>(labeledObjects.keySet());
+        Collections.sort(sortedKeys);
+        for (String label : sortedKeys) {
             Collection<Object> labeledElements = labeledObjects.get(label);
             for (Object labeledElement : labeledElements) {
-                if (!addT && labeledElement == t) {
-                    addT = true;
+                if (addT && labeledElement == t) {
+                    addT = false;
                 }
                 localPath = localPath.extend(labeledElement, Collections.singleton(label));
             }
         }
-        if (addT)
+//        if (addT)
             //tp relies on all elements traversed being on the path.
             //if the element is not labelled put it on the path
             localPath = localPath.clone().extend(t);
