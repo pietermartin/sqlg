@@ -88,7 +88,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGraphStepOrderBy.class,
         TestAggregate.class,
         TestVertexStepOrderBy.class,
-        TestTreeStep.class,
+        TestPathStep.class,
         LocalDateTest.class,
         TestBatchCompleteVertex.class,
         TestBatchCompleteEdge.class,

@@ -6,10 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_P_S_SE_SL_Traverser;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by pieter on 2015/07/20.
@@ -35,13 +32,22 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
         Path localPath = ImmutablePath.make();
         List<String> sortedKeys = new ArrayList<>(labeledObjects.keySet());
         Collections.sort(sortedKeys);
+        //This is to prevent duplicates in the path. Each labeled object will be present in the sql result set.
+        //If the same object has multiple labels it will be present many times in the sql result set.
+        //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
+        Set<Object> allLabeledElementsAsSet = new HashSet<>();
         for (String label : sortedKeys) {
             Collection<Object> labeledElements = labeledObjects.get(label);
             for (Object labeledElement : labeledElements) {
                 if (addT && labeledElement == t) {
                     addT = false;
                 }
-                localPath = localPath.extend(labeledElement, Collections.singleton(label));
+                if (!allLabeledElementsAsSet.contains(labeledElement)) {
+                    localPath = localPath.extend(labeledElement, Collections.singleton(label));
+                    allLabeledElementsAsSet.add(labeledElement);
+                } else {
+                    localPath.addLabel(label);
+                }
             }
         }
         if (addT)

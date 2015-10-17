@@ -25,7 +25,7 @@ import java.util.ListIterator;
  */
 public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class, PathStep.class);
+    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgGraphStepStrategy(SqlgGraph sqlgGraph) {
@@ -58,11 +58,17 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         Step previous = null;
         ReplacedStep<?, ?> lastReplacedStep = null;
 
+        int pathCount = 0;
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
             if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                 ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step);
-//                        replacedStep.addLabel("a0");
+                if (replacedStep.getLabels().isEmpty()) {
+                    boolean precedesPathStep = precedesPathStep(steps, stepIterator.nextIndex());
+                    if (precedesPathStep) {
+                        replacedStep.addLabel("a" + pathCount++);
+                    }
+                }
                 if (previous == null) {
                     sqlgGraphStepCompiled = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, originalGraphStep.getReturnClass(), originalGraphStep.getIds());
                     sqlgGraphStepCompiled.addReplacedStep(replacedStep);

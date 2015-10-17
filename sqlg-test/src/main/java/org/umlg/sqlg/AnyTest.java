@@ -2,13 +2,9 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TinkerpopTest;
-import org.umlg.sqlg.test.aggregate.TestAggregate;
-import org.umlg.sqlg.test.batch.TestBatch;
-import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
-import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
-import org.umlg.sqlg.test.gremlincompile.TestTreeStep;
-import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
+import org.umlg.sqlg.test.gremlincompile.TestColumnNameTranslation;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
+import org.umlg.sqlg.test.gremlincompile.TestPathStep;
 
 /**
  * Date: 2014/07/16
@@ -17,7 +13,8 @@ import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestAggregate.class,
-        TestTreeStep.class
+        TestPathStep.class
+//        TestColumnNameTranslation.class
         })
 public class AnyTest {
 }

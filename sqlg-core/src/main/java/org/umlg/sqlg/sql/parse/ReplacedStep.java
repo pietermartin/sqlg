@@ -59,6 +59,10 @@ public class ReplacedStep<S, E> {
         this.labels.add(label);
     }
 
+    public Set<String> getLabels() {
+        return Collections.unmodifiableSet(this.labels);
+    }
+
     public Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
         if (this.step instanceof VertexStep) {
             return appendPathForVertexStep(schemaTableTree);
