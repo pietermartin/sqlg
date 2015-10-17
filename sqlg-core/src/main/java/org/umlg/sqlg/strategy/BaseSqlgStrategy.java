@@ -41,11 +41,11 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         this.sqlgGraph = sqlgGraph;
     }
 
-    static boolean mayNotBeOptimized(List<Step> steps, int index) {
+    protected boolean mayNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
                 s.getClass().equals(PathStep.class) ||
-//                        s.getClass().equals(TreeStep.class) ||
+                        s.getClass().equals(TreeStep.class) ||
                         s.getClass().equals(TreeSideEffectStep.class) ||
                         s.getClass().equals(Order.class));
     }

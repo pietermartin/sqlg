@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
@@ -33,14 +34,18 @@ public class TestTreeStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
+        GraphTraversal<Vertex, Path> path = this.sqlgGraph.traversal().V().hasLabel("A").out().out().path();
+        while (path.hasNext()) {
+            System.out.println(path.next());
+        }
+
 //        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
 //        System.out.println(tree);
-//        this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
-//        tree = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out()).times(2).tree().next();
-//        System.out.println(tree);
-        GraphTraversal gt = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc")).times(2).tree();
-        System.out.println(gt.toString());
-        System.out.println(gt.next());
+
+        //left join todo
+//        GraphTraversal gt = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc")).times(2).tree();
+//        System.out.println(gt.toString());
+//        System.out.println(gt.next());
 
     }
 }

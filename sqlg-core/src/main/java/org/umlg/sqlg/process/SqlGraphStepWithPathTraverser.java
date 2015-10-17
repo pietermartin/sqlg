@@ -44,7 +44,7 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
                 localPath = localPath.extend(labeledElement, Collections.singleton(label));
             }
         }
-//        if (addT)
+        if (addT)
             //tp relies on all elements traversed being on the path.
             //if the element is not labelled put it on the path
             localPath = localPath.clone().extend(t);
