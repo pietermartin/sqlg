@@ -46,15 +46,19 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     protected boolean mayNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
-//                s.getClass().equals(PathStep.class) ||
-                s.getClass().equals(TreeStep.class) ||
-                        s.getClass().equals(TreeSideEffectStep.class) ||
-                        s.getClass().equals(Order.class));
+//                s.getClass().equals(TreeStep.class) ||
+//                        s.getClass().equals(TreeSideEffectStep.class) ||
+                s.getClass().equals(Order.class));
     }
 
-    protected boolean precedesPathStep(List<Step> steps, int index) {
+    protected boolean precedesPathOrTreeStep(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
-        return toCome.stream().anyMatch(s -> s.getClass().equals(PathStep.class));
+        return toCome.stream().anyMatch(s ->
+                (s.getClass().equals(PathStep.class) ||
+                        s.getClass().equals(TreeStep.class) ||
+                        s.getClass().equals(TreeSideEffectStep.class)));
+//        return toCome.stream().anyMatch(s -> (s.getClass().equals(PathStep.class) || s.getClass().equals(TreeStep.class)));
+//        return toCome.stream().anyMatch(s -> (s.getClass().equals(PathStep.class)));
     }
 
     protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {

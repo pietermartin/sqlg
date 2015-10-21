@@ -64,7 +64,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 pathCount++;
                 ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
                 if (replacedStep.getLabels().isEmpty()) {
-                    boolean precedesPathStep = precedesPathStep(steps, stepIterator.nextIndex());
+                    boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
                     if (precedesPathStep) {
                         replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                     }

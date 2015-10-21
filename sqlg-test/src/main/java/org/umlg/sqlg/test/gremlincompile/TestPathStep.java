@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -217,18 +218,24 @@ public class TestPathStep extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        GraphTraversal<Vertex, Path> path = this.sqlgGraph.traversal().V().hasLabel("A").out().out().path();
-        while (path.hasNext()) {
-            System.out.println(path.next());
-        }
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").out().out().path().toList();
+        Assert.assertEquals(3, paths.size());
+        Assert.assertEquals(a1, paths.get(0).get(0));
+        Assert.assertEquals(a1, paths.get(1).get(0));
+        Assert.assertEquals(a1, paths.get(2).get(0));
 
-//        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
-//        System.out.println(tree);
+        Assert.assertEquals(b1, paths.get(0).get(1));
+        Assert.assertEquals(b1, paths.get(1).get(1));
+        Assert.assertEquals(b1, paths.get(2).get(1));
 
-        //left join todo
-//        GraphTraversal gt = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc")).times(2).tree();
-//        System.out.println(gt.toString());
-//        System.out.println(gt.next());
-
+        Set<Vertex> cs = new HashSet<>();
+        cs.add(c1);
+        cs.add(c2);
+        cs.add(c3);
+        Assert.assertTrue(cs.remove(paths.get(0).get(2)));
+        Assert.assertTrue(cs.remove(paths.get(1).get(2)));
+        Assert.assertTrue(cs.remove(paths.get(2).get(2)));
+        Assert.assertTrue(cs.isEmpty());
     }
+
 }

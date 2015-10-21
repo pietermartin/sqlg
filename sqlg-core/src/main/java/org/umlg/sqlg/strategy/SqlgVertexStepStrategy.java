@@ -93,7 +93,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
                         ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep<?,?>) step, pathCount);
                         if (replacedStep.getLabels().isEmpty()) {
                             //if the step is before a PathStep and is not labeled, add a fake label in order for the sql to return its values.
-                            boolean precedesPathStep = precedesPathStep(steps, stepIterator.nextIndex());
+                            boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
                             if (precedesPathStep) {
                                 replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                             }
