@@ -4,7 +4,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
@@ -62,22 +61,23 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
             if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
-                ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step);
+                pathCount++;
+                ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
                 if (replacedStep.getLabels().isEmpty()) {
                     boolean precedesPathStep = precedesPathStep(steps, stepIterator.nextIndex());
                     if (precedesPathStep) {
-                        replacedStep.addLabel("a" + pathCount++);
+                        replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                     }
                 }
                 if (previous == null) {
                     sqlgGraphStepCompiled = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, originalGraphStep.getReturnClass(), originalGraphStep.getIds());
                     sqlgGraphStepCompiled.addReplacedStep(replacedStep);
                     TraversalHelper.replaceStep(step, sqlgGraphStepCompiled, traversal);
-                    collectHasSteps(stepIterator, traversal, replacedStep);
+                    collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                 } else {
                     sqlgGraphStepCompiled.addReplacedStep(replacedStep);
                     traversal.removeStep(step);
-                    collectHasSteps(stepIterator, traversal, replacedStep);
+                    collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                 }
                 previous = step;
                 lastReplacedStep = replacedStep;

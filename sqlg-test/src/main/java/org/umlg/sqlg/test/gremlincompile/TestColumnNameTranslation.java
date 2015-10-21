@@ -19,21 +19,21 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestColumnNameTranslation extends BaseTest {
 
-//    @Test
-//    public void testInOutInOut2() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-//
-//        a1.addEdge("a_outB", b1);
-//        a1.addEdge("a_outB", b2);
-//        a1.addEdge("a_outB", b3);
-//
-//        this.sqlgGraph.tx().commit();
-//
-//        assertEquals(9, vertexTraversal(a1).out().in().out().count().next().intValue());
-//    }
+    @Test
+    public void testInOutInOut2() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+
+        a1.addEdge("a_outB", b1);
+        a1.addEdge("a_outB", b2);
+        a1.addEdge("a_outB", b3);
+
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(9, vertexTraversal(a1).out().in().out().count().next().intValue());
+    }
 
     @Test
     public void testNameWithMultipleSameLabel() {

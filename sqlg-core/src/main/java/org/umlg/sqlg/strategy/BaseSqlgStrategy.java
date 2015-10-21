@@ -34,6 +34,8 @@ import java.util.function.BiPredicate;
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     protected SqlgGraph sqlgGraph;
+    public static final String PATH_LABEL_SUFFIX = "~~~P";
+    public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
 
@@ -55,7 +57,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         return toCome.stream().anyMatch(s -> s.getClass().equals(PathStep.class));
     }
 
-    protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+    protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
@@ -68,7 +70,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             isTextContains(((HasContainerHolder) currentStep).getHasContainers()))) {
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
-                    currentStep.getLabels().forEach(replacedStep::addLabel);
+                    currentStep.getLabels().forEach(l -> replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l));
                     TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                 }
                 iterator.remove();

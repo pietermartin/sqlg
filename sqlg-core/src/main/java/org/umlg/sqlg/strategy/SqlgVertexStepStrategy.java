@@ -78,6 +78,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
             toRemove.forEach(traversal::removeStep);
         } else {
             //Replace all consecutive VertexStep and HasStep with one step
+            int pathCount = 0;
             Step previous = null;
             ReplacedStep<?, ?> lastReplacedStep = null;
             SqlgVertexStepCompiled sqlgVertexStepCompiled = null;
@@ -87,15 +88,23 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
                 Step step = stepIterator.next();
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
                 if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                    pathCount++;
                     if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
-                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep<?,?>) step);
+                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep<?,?>) step, pathCount);
+                        if (replacedStep.getLabels().isEmpty()) {
+                            //if the step is before a PathStep and is not labeled, add a fake label in order for the sql to return its values.
+                            boolean precedesPathStep = precedesPathStep(steps, stepIterator.nextIndex());
+                            if (precedesPathStep) {
+                                replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                            }
+                        }
                         if (previous == null) {
                             sqlgVertexStepCompiled = new SqlgVertexStepCompiled(traversal);
                             TraversalHelper.replaceStep(step, sqlgVertexStepCompiled, traversal);
-                            collectHasSteps(stepIterator, traversal, replacedStep);
+                            collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                         } else {
                             traversal.removeStep(step);
-                            collectHasSteps(stepIterator, traversal, replacedStep);
+                            collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                         }
                         previous = step;
                         lastReplacedStep = replacedStep;

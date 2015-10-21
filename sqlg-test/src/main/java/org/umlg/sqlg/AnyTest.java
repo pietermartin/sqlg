@@ -2,9 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestColumnNameTranslation;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
-import org.umlg.sqlg.test.gremlincompile.TestPathStep;
+import org.umlg.sqlg.test.gremlincompile.*;
 
 /**
  * Date: 2014/07/16
@@ -12,9 +10,8 @@ import org.umlg.sqlg.test.gremlincompile.TestPathStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestAggregate.class,
-        TestPathStep.class
-//        TestColumnNameTranslation.class
+        TestPathStep.class,
+        TestGremlinCompileWithAs.class
         })
 public class AnyTest {
 }
