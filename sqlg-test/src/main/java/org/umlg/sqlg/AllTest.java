@@ -94,8 +94,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBatchedStreaming.class,
         TestBulkWithin.class,
         TestBulkWithout.class,
-        TestRemoveProperty.class
-        TestLockedByCurrentThreadPerformance.class,
+        TestRemoveProperty.class,
         TestSchemaManagerGetTablesFor.class,
         TestAggregate.class,
         TestTreeStep.class
