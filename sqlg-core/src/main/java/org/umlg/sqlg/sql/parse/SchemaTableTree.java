@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
@@ -17,7 +18,11 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -93,6 +98,7 @@ public class SchemaTableTree {
 //            return false;
 //        }
     }
+
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -381,6 +387,15 @@ public class SchemaTableTree {
             previous = schemaTableTree;
         }
 
+        //Check if there is a hasContainer with a P.within more than x.
+        //If so add in a join to the temporary table that will hold the values of the P.within predicate.
+        //These values are inserted/copy command into a temporary table before joining.
+        for (SchemaTableTree schemaTableTree : distinctQueryStack) {
+            if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && schemaTableTree.hasBulkWithinOrOut()) {
+                singlePathSql += schemaTableTree.bulkWithJoin(sqlgGraph);
+            }
+        }
+
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             singlePathSql += " WHERE ";
@@ -390,6 +405,7 @@ public class SchemaTableTree {
             singlePathSql += "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
             singlePathSql += " = ? ";
         }
+
 
         //check if the 'where' has already been printed
         boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
@@ -411,19 +427,114 @@ public class SchemaTableTree {
         return singlePathSql;
     }
 
-    private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
-        String result = "";
-        for (HasContainer hasContainer : this.getHasContainers()) {
-            if (!printedWhere.booleanValue()) {
-                printedWhere.setTrue();
-                result += " WHERE (";
-            } else {
-                result += " AND (";
-            }
-            WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
-            result += " " + whereClause.toSql(sqlgGraph, this, hasContainer) + ")";
+    private boolean hasBulkWithinOrOut() {
+        return this.hasContainers.stream().filter(SqlgUtil::isBulkWithinOrOut).findAny().isPresent();
+    }
+
+    private boolean hasBulkWithin() {
+        return this.hasContainers.stream().filter(SqlgUtil::isBulkWithin).findAny().isPresent();
+    }
+
+
+
+    private String bulkWithJoin(SqlgGraph sqlgGraph) {
+
+        HasContainer hasContainer = this.hasContainers.stream().filter(SqlgUtil::isBulkWithinOrOut).findAny().get();
+        P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
+        List<Object> withInList = predicate.getValue();
+        Set<Object> withInOuts = new HashSet<>(withInList);
+
+        Map<String, PropertyType> columns = new HashMap<>();
+        if (hasContainer.getBiPredicate() == Contains.within) {
+            columns.put("within", PropertyType.from(withInOuts.iterator().next()));
+        } else if (hasContainer.getBiPredicate() == Contains.without) {
+            columns.put("without", PropertyType.from(withInOuts.iterator().next()));
+        } else {
+            throw new UnsupportedOperationException("Only Contains.within and Contains.without is supported!");
         }
-        return result;
+
+        SecureRandom random = new SecureRandom();
+        byte bytes[] = new byte[6];
+        random.nextBytes(bytes);
+        String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+        tmpTableIdentified = SchemaManager.VERTEX_PREFIX + SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
+        sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+
+        Map<String, Object> withInOutMap = new HashMap<>();
+        if (hasContainer.getBiPredicate() == Contains.within) {
+            withInOutMap.put("within", "unused");
+        } else {
+            withInOutMap.put("without", "unused");
+        }
+        String copySql = sqlgGraph.getSqlDialect().constructManualCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
+        OutputStream out = sqlgGraph.getSqlDialect().streamSql(this.sqlgGraph, copySql);
+
+        for (Object withInOutValue : withInOuts) {
+            withInOutMap = new HashMap<>();
+            if (hasContainer.getBiPredicate() == Contains.within) {
+                withInOutMap.put("within", withInOutValue);
+            } else {
+                withInOutMap.put("without", withInOutValue);
+            }
+            sqlgGraph.getSqlDialect().flushStreamingVertex(out, withInOutMap);
+        }
+        try {
+            out.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        StringBuilder sb = new StringBuilder();
+        if (hasContainer.getBiPredicate() == Contains.within) {
+            sb.append(" INNER JOIN ");
+        } else {
+            //left join and in the where clause add a IS NULL, to find the values not in the right hand table
+            sb.append(" LEFT JOIN ");
+        }
+        sb.append(" \"");
+        sb.append(tmpTableIdentified);
+        sb.append("\" m on");
+        sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
+        sb.append(".");
+        sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
+        sb.append(".");
+        sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
+        if (hasContainer.getBiPredicate() == Contains.within) {
+            sb.append(" = m.within");
+        } else {
+            sb.append(" = m.without");
+        }
+        return sb.toString();
+    }
+
+    private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
+        final StringBuilder result = new StringBuilder();
+        if (sqlgGraph.getSqlDialect().supportsBulkWithinOut()) {
+            if (!(this.hasContainers.size() == 1 && hasBulkWithin())) {
+                this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(h)).forEach(h -> {
+                    if (!printedWhere.booleanValue()) {
+                        printedWhere.setTrue();
+                        result.append(" WHERE (");
+                    } else {
+                        result.append(" AND (");
+                    }
+                    WhereClause whereClause = WhereClause.from(h.getPredicate());
+                    result.append(" " + whereClause.toSql(sqlgGraph, this, h) + ")");
+
+                });
+            }
+        } else {
+            for (HasContainer hasContainer : this.getHasContainers()) {
+                if (!printedWhere.booleanValue()) {
+                    printedWhere.setTrue();
+                    result.append(" WHERE (");
+                } else {
+                    result.append(" AND (");
+                }
+                WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
+                result.append(" " + whereClause.toSql(sqlgGraph, this, hasContainer) + ")");
+            }
+        }
+        return result.toString();
     }
 
     private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy, int counter) {
@@ -1188,7 +1299,7 @@ public class SchemaTableTree {
      * Remove all leaf nodes that are not at the deepest level.
      * Those nodes are not to be included in the sql as they do not have enough incident edges.
      * i.e. The graph is not deep enough along those labels.
-     * <p>
+     * <p/>
      * This is done via a breath first traversal.
      */
     void removeAllButDeepestLeafNodes(int depth) {

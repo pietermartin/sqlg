@@ -44,13 +44,22 @@ public class WhereClause {
             }
             result += compareToSql((Compare) p.getBiPredicate());
             return result;
-        } else if (p.getBiPredicate() instanceof Contains) {
+        } else if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 result += prefix + ".\"ID\"";
             } else {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
             result += containsToSql((Contains) p.getBiPredicate(), ((List) p.getValue()).size());
+            return result;
+        } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
+//            if (hasContainer.getKey().equals(T.id.getAccessor())) {
+//                result += prefix + ".\"ID\"";
+//            } else {
+//                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+//            }
+//            result += containsToSql((Contains) p.getBiPredicate(), ((List) p.getValue()).size());
+            result += " m.without IS NULL";
             return result;
         } else if (p instanceof OrP) {
             OrP<?> orP = (OrP) p;

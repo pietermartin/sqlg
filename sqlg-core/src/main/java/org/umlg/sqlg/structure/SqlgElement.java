@@ -48,7 +48,7 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
+        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingFixedBatchMode()) {
             sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
         }
     }

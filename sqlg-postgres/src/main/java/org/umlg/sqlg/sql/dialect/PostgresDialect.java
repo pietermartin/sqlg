@@ -17,6 +17,7 @@ import org.postgis.Point;
 import org.postgis.Polygon;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
+import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.jdbc4.Jdbc4Connection;
@@ -31,11 +32,13 @@ import org.umlg.sqlg.structure.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.io.OutputStream;
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
+import java.security.SecureRandom;
 import java.sql.*;
-import java.time.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 /**
@@ -139,7 +142,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
      *                    3) The properties as a map of key values
      */
     @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache) {
+    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
@@ -147,7 +150,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             Object[] arg = new Object[]{};
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
             for (SchemaTable schemaTable : vertexCache.keySet()) {
-                Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertices = vertexCache.get(schemaTable);
+                Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
                 //insert the labeled vertices
                 long endHigh;
                 long numberInserted;
@@ -205,7 +208,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
             Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
@@ -213,7 +216,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
 
             for (SchemaTable schemaTable : edgeCache.keySet()) {
-                Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> triples = edgeCache.get(schemaTable);
+                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(schemaTable);
                 try (InputStream is = mapToEdge_InputStream(triples)) {
                     StringBuffer sql = new StringBuffer();
                     sql.append("COPY ");
@@ -221,13 +224,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(".");
                     sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
                     sql.append(" (");
-                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.values()) {
+                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                         int count = 1;
                         sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
                         sql.append(", ");
                         sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                        for (String key : triple.getRight().keySet()) {
-                            if (count <= triple.getRight().size()) {
+                        for (String key : triples.getLeft()) {
+                            if (count <= triples.getLeft().size()) {
                                 sql.append(", ");
                             }
                             count++;
@@ -379,6 +382,26 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(value);
                                 sql.append("$token$");
                                 break;
+                            case LOCALDATETIME:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::TIMESTAMP");
+                                break;
+                            case LOCALDATE:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::DATE");
+                                break;
+                            case LOCALTIME:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::TIME");
+                                break;
+                            case JSON:
+                                sql.append("'");
+                                sql.append(value.toString());
+                                sql.append("'::JSONB");
+                                break;
                             case BOOLEAN_ARRAY:
                                 break;
                             case BYTE_ARRAY:
@@ -476,7 +499,42 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) {
+    public String constructManualCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("COPY ");
+        //Temo tables only
+        sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+        sql.append(" (");
+        if (keyValueMap.isEmpty()) {
+            //copy command needs at least one field.
+            //check if the dummy field exist, if not create it
+            sqlgGraph.getSchemaManager().ensureColumnExist(
+                    schemaTable.getSchema(),
+                    SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
+                    ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
+            sql.append(maybeWrapInQoutes("_copy_dummy"));
+        } else {
+            int count = 1;
+            for (String key : keyValueMap.keySet()) {
+                if (count > 1 && count <= keyValueMap.size()) {
+                    sql.append(", ");
+                }
+                count++;
+                sql.append(maybeWrapInQoutes(key));
+            }
+        }
+        sql.append(")");
+        sql.append(" FROM stdin DELIMITER '");
+        sql.append(COPY_COMMAND_SEPARATOR);
+        sql.append("';");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        return sql.toString();
+    }
+
+    @Override
+    public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
             if (keyValueMap.isEmpty()) {
@@ -870,38 +928,53 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return BATCH_NULL;
     }
 
-    private InputStream mapToEdge_InputStream(Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> edgeCache) {
+    private InputStream mapToEdge_InputStream(Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
         StringBuilder sb = new StringBuilder();
         int count = 1;
-        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.values()) {
+        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
             sb.append(((RecordId) triple.getLeft().id()).getId());
             sb.append(COPY_COMMAND_SEPARATOR);
             sb.append(((RecordId) triple.getMiddle().id()).getId());
-            if (!triple.getRight().isEmpty()) {
+            if (!edgeCache.getLeft().isEmpty()) {
                 sb.append(COPY_COMMAND_SEPARATOR);
             }
             int countKeys = 1;
-            for (String key : triple.getRight().keySet()) {
+            for (String key : edgeCache.getLeft()) {
                 Object value = triple.getRight().get(key);
-                sb.append(escapeSpecialCharacters(value.toString()));
-                if (countKeys < triple.getRight().size()) {
+                if (value == null) {
+                    sb.append(getBatchNull());
+                } else if (value.getClass().isArray()) {
+                    sb.append("{");
+                    int length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                        sb.append(escapeSpecialCharacters(valueOfArray));
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                } else {
+                    sb.append(escapeSpecialCharacters(value.toString()));
+                }
+                if (countKeys < edgeCache.getLeft().size()) {
                     sb.append(COPY_COMMAND_SEPARATOR);
                 }
                 countKeys++;
             }
-            if (count++ < edgeCache.size()) {
+            if (count++ < edgeCache.getRight().size()) {
                 sb.append("\n");
             }
         }
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
-    private InputStream mapToLabeledVertex_InputStream(Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>> vertexCache) {
+    private InputStream mapToLabeledVertex_InputStream(Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (SqlgVertex sqlgVertex : vertexCache.getRight().keySet()) {
-            Triple<String, String, Map<String, Object>> triple = vertexCache.getRight().get(sqlgVertex);
+            Map<String, Object> triple = vertexCache.getRight().get(sqlgVertex);
             //set the internal batch id to be used with inserting batch edges
             if (!vertexCache.getLeft().isEmpty()) {
                 int countKeys = 1;
@@ -910,7 +983,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         sb.append(COPY_COMMAND_SEPARATOR);
                     }
                     countKeys++;
-                    Object value = triple.getRight().get(key);
+                    Object value = triple.get(key);
                     if (value == null) {
                         sb.append(getBatchNull());
                     } else if (value.getClass().isArray()) {
@@ -967,8 +1040,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"DATE"};
             case LOCALDATETIME:
                 return new String[]{"TIMESTAMP WITH TIME ZONE"};
-            case ZONEDDATETIME:
-                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
+//            case ZONEDDATETIME:
+//                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
             case LOCALTIME:
                 return new String[]{"TIME WITH TIME ZONE"};
             case PERIOD:
@@ -1026,6 +1099,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
+            case Types.TIMESTAMP:
+                return PropertyType.LOCALDATETIME;
+            case Types.DATE:
+                return PropertyType.LOCALDATE;
+            case Types.TIME:
+                return PropertyType.LOCALTIME;
+            case Types.OTHER:
+                //this is a f up as only JSON can be used for other.
+                //means all the gis data types which are also OTHER are not supported
+                return PropertyType.JSON;
             case Types.BINARY:
                 return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
@@ -1071,6 +1154,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return Types.CLOB;
             case BYTE_ARRAY:
                 return Types.ARRAY;
+            case LOCALDATETIME:
+                return Types.TIMESTAMP;
+            case LOCALDATE:
+                return Types.DATE;
+            case LOCALTIME:
+                return Types.TIME;
+            case JSON:
+                //TODO support other others like Geometry...
+                return Types.OTHER;
             case BOOLEAN_ARRAY:
                 return Types.ARRAY;
             case SHORT_ARRAY:
@@ -1211,7 +1303,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return true;
     }
 
-    public Set<String> getForeignKeyConstraintNames(SqlgGraph sqlgGraph, String foreignKeySchema, String foreignKeyTable) {
+    private Set<String> getForeignKeyConstraintNames(SqlgGraph sqlgGraph, String foreignKeySchema, String foreignKeyTable) {
         Set<String> result = new HashSet<>();
         Connection conn = sqlgGraph.tx().getConnection();
         DatabaseMetaData metadata;
@@ -1302,7 +1394,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         Preconditions.checkArgument(point instanceof Point, "point must be an instance of " + Point.class.getName());
         try {
-            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Point)point));
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Point) point));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1312,7 +1404,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object polygon) {
         Preconditions.checkArgument(polygon instanceof Polygon, "polygon must be an instance of " + Polygon.class.getName());
         try {
-            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Polygon)polygon));
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((Polygon) polygon));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1322,7 +1414,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
         Preconditions.checkArgument(point instanceof GeographyPoint, "point must be an instance of " + GeographyPoint.class.getName());
         try {
-            preparedStatement.setObject(parameterStartIndex, new PGgeometry((GeographyPoint)point));
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((GeographyPoint) point));
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1332,12 +1424,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void handleOther(Map<String, Object> properties, String columnName, Object o) {
         if (o instanceof PGgeometry) {
             properties.put(columnName, ((PGgeometry) o).getGeometry());
-        } else if (((PGobject)o).getType().equals("geography")) {
+        } else if (((PGobject) o).getType().equals("geography")) {
             try {
                 Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
                 if (geometry instanceof Point) {
                     properties.put(columnName, new GeographyPoint((Point) geometry));
-                } else if (geometry instanceof  Polygon) {
+                } else if (geometry instanceof Polygon) {
                     properties.put(columnName, new GeographyPolygon((Polygon) geometry));
                 } else {
                     throw new IllegalStateException("Gis type " + geometry.getClass().getName() + " is not supported.");
@@ -1347,9 +1439,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         } else {
             //Assume json for now
-            ObjectMapper objectMapper =  new ObjectMapper();
+            ObjectMapper objectMapper = new ObjectMapper();
             try {
-                JsonNode jsonNode = objectMapper.readTree(((PGobject)o).getValue());
+                JsonNode jsonNode = objectMapper.readTree(((PGobject) o).getValue());
                 properties.put(columnName, jsonNode);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -1375,6 +1467,247 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
+        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        PGConnection pgConnection;
+        try {
+            pgConnection = conn.unwrap(PGConnection.class);
+            return new PGCopyInputStream(pgConnection, sql);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids) {
+        try {
+            StringBuffer sql = new StringBuffer();
+            sql.append("COPY ");
+            sql.append(maybeWrapInQoutes(schemaTable.getTable()));
+            sql.append(" (");
+            int count = 1;
+            for (String key : Arrays.asList("in", "out")) {
+                if (count > 1 && count <= 2) {
+                    sql.append(", ");
+                }
+                count++;
+                sql.append(maybeWrapInQoutes(key));
+            }
+            sql.append(")");
+            sql.append(" FROM stdin DELIMITER '");
+            sql.append(COPY_COMMAND_SEPARATOR);
+            sql.append("';");
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            OutputStream out = streamSql(sqlgGraph, sql.toString());
+            for (Pair<String, String> uid : uids) {
+                out.write(uid.getLeft().getBytes());
+                out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                out.write(uid.getRight().getBytes());
+                out.write("\n".getBytes());
+            }
+            out.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids) {
+        if (!sqlgGraph.tx().isInStreamingBatchMode()) {
+            throw new IllegalStateException("Transaction must be in streaming batch mode for bulkAddEdges");
+        }
+        //create temp table and copy the uids into it
+        Map<String, PropertyType> columns = new HashMap<>();
+        columns.put("out", PropertyType.STRING);
+        columns.put("in", PropertyType.STRING);
+        SecureRandom random = new SecureRandom();
+        byte bytes[] = new byte[6];
+        random.nextBytes(bytes);
+        String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+        tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
+        sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+        this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids);
+        //execute copy from select. select the edge ids to copy into the new table by joining on the temp table
+        sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
+        StringBuilder sql = new StringBuilder("COPY (");
+        sql.append("select _in.\"ID\" as \"");
+        sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
+        sql.append("\", _out.\"ID\" as \"");
+        sql.append(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
+        sql.append("\" FROM ");
+        sql.append(this.maybeWrapInQoutes(in.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
+        sql.append(" _in join ");
+        sql.append("\"" + tmpTableIdentified + "\" ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+        sql.append(this.maybeWrapInQoutes(out.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
+        sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
+        sql.append(") TO '");
+        sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
+        UUID uuid = UUID.randomUUID();
+        sql.append("/sqlg.bulk.edit.");
+        sql.append(uuid.toString());
+        sql.append(".csv' CSV DELIMITER E'\t'");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        sql = new StringBuilder("COPY ");
+        sql.append(this.maybeWrapInQoutes(in.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
+        sql.append(" (");
+        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(",");
+        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+        sql.append(") FROM '");
+        sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
+        sql.append("/sqlg.bulk.edit.");
+        sql.append(uuid.toString());
+        sql.append(".csv' CSV DELIMITER E'\t'");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        StringBuilder sql = new StringBuilder();
+        sql.append("LOCK TABLE ");
+        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
+        sql.append(".");
+        sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(prefix + schemaTable.getTable()));
+        sql.append(" IN EXCLUSIVE MODE");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER SEQUENCE ");
+        sql.append(sequence);
+        sql.append(" CACHE ");
+        sql.append(String.valueOf(batchSize));
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        long result;
+        Connection conn = sqlgGraph.tx().getConnection();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            result = resultSet.getLong(1);
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    @Override
+    public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        long result;
+        Connection conn = sqlgGraph.tx().getConnection();
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            result = resultSet.getLong(1);
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    @Override
+    public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+//        select pg_get_serial_sequence('public."V_Person"', 'ID')
+        String result;
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT pg_get_serial_sequence('\"");
+        sql.append(outSchemaTable.getSchema());
+        sql.append("\".\"");
+        sql.append(prefix).append(outSchemaTable.getTable()).append("\"', 'ID')");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            result = resultSet.getString(1);
+            resultSet.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return result;
+    }
+
+    @Override
+    public boolean supportsBulkWithinOut() {
+        return true;
+    }
+
+    @Override
     public boolean isPostgresql() {
         return true;
     }
@@ -1382,7 +1715,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public void registerGisDataTypes(Connection connection) {
         try {
-            ((Jdbc4Connection)((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
+            ((Jdbc4Connection) ((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1392,6 +1725,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public <T> T getGis(SqlgGraph sqlgGraph) {
         Gis gis = Gis.GIS;
         gis.setSqlgGraph(sqlgGraph);
-        return (T)gis;
+        return (T) gis;
     }
 }

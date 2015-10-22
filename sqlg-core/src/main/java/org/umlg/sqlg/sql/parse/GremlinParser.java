@@ -30,7 +30,7 @@ public class GremlinParser<S extends Element, E extends Element> {
 
     /**
      * This is for the GraphStep
-     * The first replacedStep has the starting SchemaTable is the starting point
+     * The first replacedStep has the starting SchemaTable.
      * @param replacedSteps
      * @return
      */

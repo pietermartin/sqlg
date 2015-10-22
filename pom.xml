@@ -82,6 +82,10 @@
                         <include>**/SqlgHsqldbStructureStandardTest.java</include>
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
+                        <!-- this is still failing on travis -->
+                        <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
+                        <include>**/SqlgPostgresProcessStandardTest.java</include>
+                        <include>**/PostgresAllTest.java</include>
                     </includes>
                     <argLine>-Xmx2048m</argLine>
                 </configuration>
@@ -134,6 +138,8 @@
         <module>sqlg-core</module>
         <module>sqlg-test</module>
         <module>sqlg-hsqldb</module>
+        <!--<module>sqlg-postgis-install</module>-->
+        <!--<module>sqlg-postgis-shaded</module>-->
         <module>sqlg-postgres</module>
         <!--<module>sqlg-mariadb</module>-->
         <module>sqlg-benchmark</module>
@@ -172,6 +178,17 @@
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-postgres</artifactId>
                 <version>1.1.0-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>net.postgis</groupId>
+                <artifactId>postgis-jdbc</artifactId>
+                <version>2.1.7.2</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>

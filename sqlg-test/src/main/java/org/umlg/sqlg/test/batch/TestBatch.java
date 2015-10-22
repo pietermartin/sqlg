@@ -1,5 +1,8 @@
 package org.umlg.sqlg.test.batch;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,6 +19,9 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,7 +38,7 @@ public class TestBatch extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
 
-//    @Test
+    //    @Test
     public void queryPerformance() {
         this.sqlgGraph.tx().batchModeOn();
         StopWatch stopWatch = new StopWatch();
@@ -116,6 +122,7 @@ public class TestBatch extends BaseTest {
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
+
     @Test
     public void testEscapingCharacters() {
         StopWatch stopWatch = new StopWatch();
@@ -149,6 +156,60 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(20000, this.sqlgGraph.traversal().V().count().next(), 0);
         Assert.assertEquals(10000, this.sqlgGraph.traversal().E().count().next(), 0);
     }
+
+    @Test
+    public void testBatchEdgesManyProperties() {
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        v1.addEdge("Friend", v2, "weight", 1, "test", "a");
+        v1.addEdge("Friend", v3, "weight", 2, "test", "b");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V(v1.id()).out("Friend").count().next(), 0);
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v2));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v3));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v2.id()).in("Friend").toList().contains(v1));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v3.id()).in("Friend").toList().contains(v1));
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("Friend").has("test", "a").count().next(), 0);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("Friend").has("test", "b").count().next(), 0);
+    }
+
+
+//    @Test
+//    public void testBatchEdgesDifferentProperties() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//        v1.addEdge("Friend", v2, "weight", 1, "test1", "a");
+//        v1.addEdge("Friend", v3, "weight", 2, "test1", "a", "test2", "b");
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testBatchVertexDifferentProperties() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko", "test1", "a");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter", "test2", "b");
+//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "test3", "c", "test4", "d");
+//        v1.addEdge("Friend", v2, "weight", 1);
+//        v1.addEdge("Friend", v3, "weight", 2);
+//        this.sqlgGraph.tx().commit();
+//        Vertex marko = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "marko").next();
+//        Assert.assertEquals("a", marko.value("test1"));
+//        Assert.assertFalse(marko.property("test2").isPresent());
+//        Assert.assertFalse(marko.property("test3").isPresent());
+//        Vertex peter = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "peter").next();
+//        Assert.assertEquals("b", peter.value("test2"));
+//        Assert.assertFalse(peter.property("test1").isPresent());
+//        Assert.assertFalse(peter.property("test3").isPresent());
+//        Vertex john = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "john").next();
+//        Assert.assertEquals("c", john.value("test3"));
+//        Assert.assertFalse(john.property("test1").isPresent());
+//        Assert.assertFalse(john.property("test2").isPresent());
+//    }
 
     @Test
     public void testBatchVertices() {
@@ -549,6 +610,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(222l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
 
     }
+
     @Test
     public void testCacheAndUpdateVERTICESLabels() {
         this.sqlgGraph.tx().batchModeOn();
@@ -1011,36 +1073,21 @@ public class TestBatch extends BaseTest {
     public void testBatchRemoveManyEdgesTestPostgresLimit() {
         this.sqlgGraph.tx().batchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 100000; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
             Edge edge1 = v1.addEdge("test", v2);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000001, this.sqlgGraph.traversal().V().count().next().intValue());
-        Assert.assertEquals(1000000, this.sqlgGraph.traversal().E().count().next().intValue());
+        Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(100000, this.sqlgGraph.traversal().E().count().next().intValue());
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().batchModeOn();
         vertexTraversal(v1).outE("test").forEachRemaining(Edge::remove);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000001, this.sqlgGraph.traversal().V().count().next().intValue());
+        Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
     }
 
-////    @Test
-//    public void testPerformance1() {
-//        this.sqlgGraph.tx().batchModeOn();
-//        for (int i = 0; i < 1000000; i++) {
-//            Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a" + i);
-//            Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b" + i);
-//            person1.addEdge("friend", person2, "context", 1);
-//            if (i != 0 && i % 100000 == 0) {
-//                this.sqlgGraph.tx().commit();
-//                this.sqlgGraph.tx().batchModeOn();
-//            }
-//        }
-//        this.sqlgGraph.tx().commit();
-//    }
-//
     @Test
     public void testNoProperties() {
         this.sqlgGraph.tx().batchModeOn();
@@ -1119,6 +1166,155 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(2, list.size());
         Assert.assertTrue(list.contains(1d));
         Assert.assertTrue(list.contains(2d));
+    }
+
+    @Test
+    public void batchLocalDateTime() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchLocalDate() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDate now = LocalDate.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchLocalTime() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalTime now = LocalTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+    }
+
+    @Test
+    public void batchJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().batchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
+    }
+
+    @Test
+    public void batchUpdateLocalDateTime() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDateTime nowAgain = LocalDateTime.now();
+        for (Vertex vertex : vertices) {
+            vertex.property("createOn", nowAgain);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(nowAgain, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchUpdateLocalDate() {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDate now = LocalDate.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
+        this.sqlgGraph.tx().batchModeOn();
+        LocalDate nowAgain = LocalDate.now();
+        for (Vertex vertex : vertices) {
+            vertex.property("createOn", nowAgain);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(nowAgain, vertices.get(0).value("createOn"));
+    }
+
+    @Test
+    public void batchUpdateLocalTime() throws InterruptedException {
+        this.sqlgGraph.tx().batchModeOn();
+        LocalTime now = LocalTime.now();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+        this.sqlgGraph.tx().batchModeOn();
+        Thread.sleep(1000);
+        LocalTime nowAgain = LocalTime.now();
+        for (Vertex vertex : vertices) {
+            vertex.property("createOn", nowAgain);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(nowAgain.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+    }
+
+    @Test
+    public void batchUpdateJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().batchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
+        this.sqlgGraph.tx().batchModeOn();
+        json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "pete");
+        for (Vertex vertex : vertices) {
+            vertex.property("doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        value = vertices.get(0).value("doc");
+        Assert.assertEquals(json, value);
     }
 
 }

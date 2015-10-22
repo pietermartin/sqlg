@@ -3,10 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
-import org.umlg.sqlg.test.batch.TestBatch;
-import org.umlg.sqlg.test.batch.TestBatchCompleteEdge;
-import org.umlg.sqlg.test.batch.TestBatchCompleteVertex;
-import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
+import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
@@ -48,7 +45,6 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLoadSchema.class,
         TestPool.class,
         TestRemoveElement.class,
-        TestRemoveProperty.class,
         TestSetProperty.class,
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
@@ -90,10 +86,15 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexStepOrderBy.class,
         TestPathStep.class,
         LocalDateTest.class,
-        TestBatchCompleteVertex.class,
-        TestBatchCompleteEdge.class,
+        TestStreamVertex.class,
+        TestStreamingEdge.class,
         JsonTest.class,
-        TestLockedByCurrentThreadPerformance.class,
+        TestSchemaManagerGetTablesFor.class,
+        TestBatchServerSideEdgeCreation.class,
+        TestBatchedStreaming.class,
+        TestBulkWithin.class,
+        TestBulkWithout.class,
+        TestRemoveProperty.class,
         TestSchemaManagerGetTablesFor.class,
         TestAggregate.class,
         TestTreeStep.class,

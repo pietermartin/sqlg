@@ -1,15 +1,22 @@
 package org.umlg.sqlg.test.schema;
 
-import org.apache.tinkerpop.gremlin.structure.T;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -18,6 +25,66 @@ import java.util.Map;
  * Time: 3:27 PM
  */
 public class TestLoadSchema extends BaseTest {
+
+    @Test
+    public void testLoadingLocalDateTime() throws Exception {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDateTime.now());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
+        Assert.assertTrue(vv.property("createOn").isPresent());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
+        Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
+        this.sqlgGraph.tx().rollback();
+    }
+
+    @Test
+    public void testLoadingLocalDate() throws Exception {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDate.now());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
+        Assert.assertTrue(vv.property("createOn").isPresent());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
+        Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
+        this.sqlgGraph.tx().rollback();
+    }
+
+    @Test
+    public void testLoadingLocalTime() throws Exception {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalTime.now());
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
+        Assert.assertTrue(vv.property("createOn").isPresent());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
+        Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
+        this.sqlgGraph.tx().rollback();
+    }
+
+    @Test
+    public void testLoadingJson() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        Vertex vv = this.sqlgGraph.traversal().V(v1.id()).next();
+        Assert.assertTrue(vv.property("doc").isPresent());
+        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
+                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
+        Assert.assertTrue(propertyTypeMap.containsKey("doc"));
+        this.sqlgGraph.tx().rollback();
+    }
 
     @Test
     public void testIdNotLoadedAsProperty() throws Exception {

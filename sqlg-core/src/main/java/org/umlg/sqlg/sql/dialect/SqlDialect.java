@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
 import java.util.List;
@@ -255,6 +256,10 @@ public interface SqlDialect {
         return "CREATE TABLE ";
     }
 
+    public default String createTemporaryTableStatement() {
+        return "CREATE TEMPORARY TABLE ";
+    }
+
     public default void prepareDB(Connection conn) {
 
     }
@@ -282,9 +287,9 @@ public interface SqlDialect {
         return true;
     }
 
-    Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Triple<String, String, Map<String, Object>>>>> vertexCache);
+    Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache);
 
-    void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache);
+    void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache);
 
     public default boolean supportsBatchMode() {
         return false;
@@ -314,11 +319,13 @@ public interface SqlDialect {
 
     void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache);
 
+    String constructManualCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap);
+
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
 
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
 
-    void flushCompleteVertex(OutputStream out, Map<String, Object> keyValueMap) throws IOException;
+    void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
 
     void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
@@ -368,6 +375,7 @@ public interface SqlDialect {
     void handleOther(Map<String, Object> properties, String columnName, Object o);
 
     void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
     void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
 
     void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
@@ -383,4 +391,22 @@ public interface SqlDialect {
     <T> T getGis(SqlgGraph sqlgGraph);
 
     OutputStream streamSql(SqlgGraph sqlgGraph, String sql);
+
+    InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql);
+
+    void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids);
+
+    void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids);
+
+    void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
+
+    void alterSequenceCacheSize(SqlgGraph sqlgGraph, SchemaTable schemaTable, String sequence, int batchSize);
+
+    long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
+
+    long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
+
+    String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix);
+
+    boolean supportsBulkWithinOut();
 }

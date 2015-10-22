@@ -43,6 +43,7 @@ public class SchemaManager {
     public static final String MONTHS = "~~~MONTHS";
     public static final String DAYS = "~~~DAYS";
     public static final String DURATION_NANOS = "~~~NANOS";
+    public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
     private Map<String, String> schemas;
     private Map<String, String> localSchemas = new HashMap<>();
@@ -225,6 +226,7 @@ public class SchemaManager {
         Config config = new Config();
         config.getNetworkConfig().setPort(5900);
         config.getNetworkConfig().setPortAutoIncrement(true);
+        config.setProperty( "hazelcast.logging.type", "log4j" );
         String[] ips = configuration.getStringArray("hazelcast.members");
         if (ips.length > 0) {
             NetworkConfig network = config.getNetworkConfig();
@@ -332,6 +334,8 @@ public class SchemaManager {
 
     }
 
+
+
     /**
      * @param schema        The tables that the table for this edge will reside in.
      * @param table         The table for this edge
@@ -407,7 +411,7 @@ public class SchemaManager {
     }
 
     /**
-     * This is only called from createVertexIndex
+     * This is only called from createEdgeIndex
      *
      * @param schema
      * @param table
@@ -438,7 +442,7 @@ public class SchemaManager {
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
                 Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                 if (schemas == null) {
-                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Collections.singletonList(schema)));
                 } else {
                     schemas.add(schema);
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
@@ -726,6 +730,35 @@ public class SchemaManager {
         this.sqlgGraph.tx().setSchemaModification(true);
     }
 
+    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
+        this.sqlDialect.assertTableName(tableName);
+        StringBuilder sql = new StringBuilder(this.sqlDialect.createTemporaryTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(tableName));
+        sql.append("(");
+        sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+        sql.append(" ");
+        sql.append(this.sqlDialect.getAutoIncrementPrimaryKeyConstruct());
+        if (columns.size() > 0) {
+            sql.append(", ");
+        }
+        buildColumns(columns, sql);
+        sql.append(") ON COMMIT DROP");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    //This is called from creating edge indexes
     private void createEdgeTable(String schema, String tableName, Map<String, PropertyType> columns) {
         this.sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
@@ -988,38 +1021,38 @@ public class SchemaManager {
         }
     }
 
-//    /**
-//     * Deletes all tables.
-//     */
-//    public void clear() {
-//        try {
-//            Connection conn = SqlgDataSource.INSTANCE.get(this.sqlDialect.getJdbcDriver()).getConnection();
-//            DatabaseMetaData metadata;
-//            metadata = conn.getMetaData();
-//            if (sqlDialect.supportsCascade()) {
-//                String catalog = "sqlgraphdb";
-//                String schemaPattern = null;
-//                String tableNamePattern = "%";
-//                String[] types = {"TABLE"};
-//                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-//                while (result.next()) {
-//                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-//                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
-//                    sql.append(" CASCADE");
-//                    if (sqlDialect.needsSemicolon()) {
-//                        sql.append(";");
-//                    }
-//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                        preparedStatement.executeUpdate();
-//                    }
-//                }
-//            } else {
-//                throw new RuntimeException("Not yet implemented!");
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
+    /**
+     * Deletes all tables.
+     */
+    public void clear() {
+        try {
+            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlDialect.getJdbcDriver()).getConnection();
+            DatabaseMetaData metadata;
+            metadata = conn.getMetaData();
+            if (sqlDialect.supportsCascade()) {
+                String catalog = "sqlgraphdb";
+                String schemaPattern = null;
+                String tableNamePattern = "%";
+                String[] types = {"TABLE"};
+                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (result.next()) {
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    }
+                }
+            } else {
+                throw new RuntimeException("Not yet implemented!");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
         Map<String, Set<String>> allForeignKeys = new ConcurrentHashMap<>();
@@ -1115,6 +1148,14 @@ public class SchemaManager {
             return Collections.emptyMap();
         } else {
             return Collections.unmodifiableMap(result);
+        }
+    }
+
+    private boolean isLockedByCurrentThread() {
+        if (this.distributed) {
+            return ((ILock) this.schemaLock).isLockedByCurrentThread();
+        } else {
+            return ((ReentrantLock) this.schemaLock).isHeldByCurrentThread();
         }
     }
 
@@ -1308,11 +1349,4 @@ public class SchemaManager {
         }
     }
 
-    private boolean isLockedByCurrentThread() {
-        if (this.distributed) {
-            return ((ILock) this.schemaLock).isLockedByCurrentThread();
-        } else {
-            return ((ReentrantLock) this.schemaLock).isHeldByCurrentThread();
-        }
-    }
 }

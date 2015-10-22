@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -32,7 +33,7 @@ public class SqlgTransaction extends AbstractTransaction {
 
     public SqlgTransaction(Graph sqlgGraph) {
         super(sqlgGraph);
-        this.sqlgGraph = (SqlgGraph)sqlgGraph;
+        this.sqlgGraph = (SqlgGraph) sqlgGraph;
     }
 
     @Override
@@ -128,13 +129,26 @@ public class SqlgTransaction extends AbstractTransaction {
         }
     }
 
-    public void streamingBatchMode() {
+    public void streamingBatchMode(int batchSize) {
+        streamingBatchMode(batchSize, null);
+    }
+
+    public <T extends SqlgElement> void streamingBatchMode(int batchSize, BatchCallback<T> batchCallback) {
         if (this.sqlgGraph.features().supportsBatchMode()) {
-            if (isOpen()) {
-                throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
-            }
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn(true);
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_BATCH_SIZE);
+            threadLocalTx.get().getBatchManager().setStreamingBatchSize(batchSize);
+            if (batchCallback != null)
+                threadLocalTx.get().getBatchManager().setBatchCallback(batchCallback);
+        } else {
+            throw new IllegalStateException("Batch mode not supported!");
+        }
+    }
+
+    public void streamingMode() {
+        if (this.sqlgGraph.features().supportsBatchMode()) {
+            readWrite();
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
         } else {
             throw new IllegalStateException("Batch mode not supported!");
         }
@@ -142,18 +156,15 @@ public class SqlgTransaction extends AbstractTransaction {
 
     public void batchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
-            if (isOpen()) {
-                throw new IllegalStateException("A transaction is already in progress. First commit or rollback before enabling batch mode.");
-            }
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn();
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
         } else {
             throw new IllegalStateException("Batch mode not supported!");
         }
     }
 
     public boolean isInBatchMode() {
-        return isInBatchModeNormal() || isInStreamingBatchMode();
+        return isInBatchModeNormal() || isInStreamingBatchMode() || isInStreamingFixedBatchMode();
     }
 
     public boolean isInBatchModeNormal() {
@@ -161,7 +172,19 @@ public class SqlgTransaction extends AbstractTransaction {
     }
 
     public boolean isInStreamingBatchMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeComplete();
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeStreaming();
+    }
+
+    public boolean isInStreamingFixedBatchMode() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeBatchStreaming();
+    }
+
+    public Optional<BatchManager.BatchModeType> getBatchModeType() {
+        if (threadLocalTx.get() != null) {
+            return Optional.of(threadLocalTx.get().getBatchManager().getBatchModeType());
+        } else {
+            return Optional.empty();
+        }
     }
 
     public BatchManager getBatchManager() {
@@ -181,6 +204,13 @@ public class SqlgTransaction extends AbstractTransaction {
             readWrite();
         }
         return this.threadLocalTx.get().getConnection();
+    }
+
+    public void flush() {
+        if (!this.isInBatchMode()) {
+            throw new IllegalStateException("Transaction must be in batch mode to flush");
+        }
+        this.getBatchManager().flush();
     }
 
     public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
