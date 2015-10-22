@@ -89,7 +89,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
                 //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
                 if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                     pathCount++;
-                    if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
+                    if (!canNotBeOptimized(steps, stepIterator.nextIndex())) {
                         ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep<?,?>) step, pathCount);
                         if (replacedStep.getLabels().isEmpty()) {
                             //if the step is before a PathStep and is not labeled, add a fake label in order for the sql to return its values.

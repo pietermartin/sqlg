@@ -2,11 +2,11 @@ package org.umlg.sqlg.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
@@ -23,10 +23,9 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Created by pieter on 2015/07/19.
@@ -34,6 +33,7 @@ import java.util.function.BiPredicate;
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     protected SqlgGraph sqlgGraph;
+    protected static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
     public static final String PATH_LABEL_SUFFIX = "~~~P";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
@@ -43,11 +43,58 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         this.sqlgGraph = sqlgGraph;
     }
 
-    protected boolean mayNotBeOptimized(List<Step> steps, int index) {
+    private static Optional<Traversal.Admin<?, ?>> emitTraversal(RepeatStep repeatStep) {
+        return repeatStep.getLocalChildren().stream().filter(t->{
+            return !(t instanceof LoopTraversal);
+        }).findAny();
+    }
+
+    private static Optional<Traversal.Admin<?, ?>> untilTraversal(RepeatStep repeatStep) {
+        return repeatStep.getLocalChildren().stream().filter(t->(t instanceof LoopTraversal)).findAny();
+    }
+
+    protected boolean containsRepeatWithEmit(List<Step> steps, int index) {
+        List<Step> toCome = steps.subList(index, steps.size());
+        boolean repeatExist = toCome.stream().anyMatch(s -> s.getClass().equals(RepeatStep.class));
+        if (repeatExist) {
+
+            boolean hasEmit = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> ((RepeatStep) r).getEmitTraversal() != null);
+//            boolean hasEmit = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> emitTraversal(((RepeatStep) r)).isPresent());
+            boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
+                return ((RepeatStep) r).getUntilTraversal() != null;
+            });
+            boolean hasUnoptimizableUntil = false;
+            if (hasUntil) {
+                hasUnoptimizableUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> !(((RepeatStep) r).getUntilTraversal() instanceof LoopTraversal));
+            }
+
+            boolean badRepeat = hasEmit || !hasUntil || hasUnoptimizableUntil;
+            //Check if the repeat step only contains optimizable steps
+            if (!badRepeat) {
+                List<Step> collectedRepeatInternalSteps = new ArrayList<>();
+                List<Step> repeatSteps = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).collect(Collectors.toList());
+                for (Step step : repeatSteps) {
+                    RepeatStep repeatStep = (RepeatStep) step;
+                    List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
+                    Traversal.Admin admin = repeatTraversals.get(0);
+                    List<Step> repeatInternalSteps = admin.getSteps();
+                    collectedRepeatInternalSteps.addAll(repeatInternalSteps);
+                }
+                return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
+                        .allMatch((s) -> {
+                            return CONSECUTIVE_STEPS_TO_REPLACE.contains(s.getClass());
+                        });
+            } else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    protected boolean canNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
-//                s.getClass().equals(TreeStep.class) ||
-//                        s.getClass().equals(TreeSideEffectStep.class) ||
                 s.getClass().equals(Order.class));
     }
 
@@ -57,8 +104,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 (s.getClass().equals(PathStep.class) ||
                         s.getClass().equals(TreeStep.class) ||
                         s.getClass().equals(TreeSideEffectStep.class)));
-//        return toCome.stream().anyMatch(s -> (s.getClass().equals(PathStep.class) || s.getClass().equals(TreeStep.class)));
-//        return toCome.stream().anyMatch(s -> (s.getClass().equals(PathStep.class)));
     }
 
     protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {

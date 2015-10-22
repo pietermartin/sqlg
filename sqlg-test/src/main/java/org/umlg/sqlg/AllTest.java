@@ -96,7 +96,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLockedByCurrentThreadPerformance.class,
         TestSchemaManagerGetTablesFor.class,
         TestAggregate.class,
-        TestTreeStep.class
+        TestTreeStep.class,
+        TestRepeatStep.class
 })
 public class AllTest {
 }

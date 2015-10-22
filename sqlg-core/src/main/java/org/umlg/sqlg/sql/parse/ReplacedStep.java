@@ -41,7 +41,6 @@ public class ReplacedStep<S, E> {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = step;
         replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
-//        replacedStep.labels = new HashSet<>(step.getLabels());
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
