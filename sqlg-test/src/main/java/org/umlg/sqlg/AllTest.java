@@ -84,7 +84,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGraphStepOrderBy.class,
         TestAggregate.class,
         TestVertexStepOrderBy.class,
-        TestTreeStep.class,
+        TestPathStep.class,
         LocalDateTest.class,
         TestStreamVertex.class,
         TestStreamingEdge.class,
@@ -95,6 +95,10 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBulkWithin.class,
         TestBulkWithout.class,
         TestRemoveProperty.class
+        TestLockedByCurrentThreadPerformance.class,
+        TestSchemaManagerGetTablesFor.class,
+        TestAggregate.class,
+        TestTreeStep.class
 })
 public class AllTest {
 }

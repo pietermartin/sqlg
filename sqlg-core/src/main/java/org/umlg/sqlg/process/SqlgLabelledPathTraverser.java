@@ -8,4 +8,5 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 public interface SqlgLabelledPathTraverser {
 
     void setPath(Path path);
+    Path getPath();
 }

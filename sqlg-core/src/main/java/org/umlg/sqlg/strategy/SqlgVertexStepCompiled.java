@@ -6,13 +6,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.umlg.sqlg.process.SqlGraphStepWithPathTraverser;
 import org.umlg.sqlg.process.SqlgLabelledPathTraverser;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -30,6 +28,7 @@ import java.util.*;
 public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep<S, E> {
 
     private Traverser.Admin<S> head = null;
+    private Traverser.Admin<S> originalHead = null;
     private Iterator<Pair<E, Multimap<String, Object>>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
@@ -42,21 +41,17 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     protected Traverser<E> processNextStart() {
         while (true) {
             if (this.iterator.hasNext()) {
+                Preconditions.checkState(this.head instanceof SqlgLabelledPathTraverser);
                 Pair<E, Multimap<String, Object>> next = this.iterator.next();
                 E e = next.getLeft();
                 Multimap<String, Object> labeledObjects = next.getRight();
-                //split before setting the path.
-                //This is because the labels must be set on a unique path for every iteration.
-                Traverser.Admin<E> split = this.head.split(e, this);
-                for (String label : labeledObjects.keySet()) {
-                    //If there are labels then it must be a SqlgLabelledPathTraverser
-                    SqlgLabelledPathTraverser sqlgLabelledPathTraverser = (SqlgLabelledPathTraverser) split;
-                    Collection<Object> labeledElements = labeledObjects.get(label);
-                    for (Object labeledElement : labeledElements) {
-                        sqlgLabelledPathTraverser.setPath(split.path().extend(labeledElement, Collections.singleton(label)));
-                    }
-                }
-                return split;
+                SqlGraphStepWithPathTraverser<E> sqlgLabelledPathTraverser = (SqlGraphStepWithPathTraverser<E>) this.head;
+                //each iteration is a new row. i.e. must start from the original head containing the the start element.
+                this.originalHead = (Traverser.Admin<S>) sqlgLabelledPathTraverser.clone();
+                sqlgLabelledPathTraverser.customSplit(e, this.head.path(), labeledObjects);
+                sqlgLabelledPathTraverser.set(e);
+                this.head = this.originalHead;
+                return sqlgLabelledPathTraverser;
             } else {
                 this.head = this.starts.next();
                 this.iterator = this.flatMapCustom(this.head);

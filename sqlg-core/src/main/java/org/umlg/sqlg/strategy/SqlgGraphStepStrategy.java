@@ -34,57 +34,84 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
         final Step<?, ?> startStep = traversal.getStartStep();
-        if (startStep instanceof GraphStep) {
-            final GraphStep<?> originalGraphStep = (GraphStep) startStep;
-            //Replace all consecutive VertexStep and HasStep with one step
-            Step previous = null;
-            ReplacedStep<?, ?> lastReplacedStep = null;
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = null;
-            List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
-            ListIterator<Step> stepIterator = steps.listIterator();
-            boolean first = true;
-            while (stepIterator.hasNext()) {
-                Step step = stepIterator.next();
-                if (first && ((GraphStep) step).getIds().length > 0) {
-                    break;
-                }
-                first = false;
-                //The point of the optimization is to reduce the Paths so the result will be inaccurate as some paths are skipped.
-                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
-                    if (!mayNotBeOptimized(steps, stepIterator.nextIndex())) {
-                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step);
-                        if (previous == null) {
-                            sqlgGraphStepCompiled = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, originalGraphStep.getReturnClass(), originalGraphStep.getIds());
-                            sqlgGraphStepCompiled.addReplacedStep(replacedStep);
-                            TraversalHelper.replaceStep(step, sqlgGraphStepCompiled, traversal);
-                            collectHasSteps(stepIterator, traversal, replacedStep);
-                            if (originalGraphStep.getIds().length > 0) {
-                                //will get optimize via SqlgVertexStepStrategy
-                                break;
-                            }
-                        } else {
-                            sqlgGraphStepCompiled.addReplacedStep(replacedStep);
-                            traversal.removeStep(step);
-                            collectHasSteps(stepIterator, traversal, replacedStep);
-                        }
-                        previous = step;
-                        lastReplacedStep = replacedStep;
-                    } else {
-                        logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+
+        //Only optimize graph step.
+        if (!(startStep instanceof GraphStep)) {
+            return;
+        }
+
+        final GraphStep<?> originalGraphStep = (GraphStep) startStep;
+        final List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        final ListIterator<Step> stepIterator = steps.listIterator();
+
+        if (originalGraphStep.getIds().length > 0) {
+            return;
+        }
+        if (this.mayNotBeOptimized(steps, stepIterator.nextIndex())) {
+            logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            return;
+        }
+
+        //Replace all consecutive VertexStep and HasStep with one step
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = null;
+        Step previous = null;
+        ReplacedStep<?, ?> lastReplacedStep = null;
+
+        int pathCount = 0;
+        while (stepIterator.hasNext()) {
+            Step step = stepIterator.next();
+            if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                pathCount++;
+                ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                if (replacedStep.getLabels().isEmpty()) {
+                    boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
+                    if (precedesPathStep) {
+                        replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                     }
+                }
+                if (previous == null) {
+                    sqlgGraphStepCompiled = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, originalGraphStep.getReturnClass(), originalGraphStep.getIds());
+                    sqlgGraphStepCompiled.addReplacedStep(replacedStep);
+                    TraversalHelper.replaceStep(step, sqlgGraphStepCompiled, traversal);
+                    collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                 } else {
-                    if (lastReplacedStep != null) {
-                        //TODO optimize this, to not parse if there are no OrderGlobalSteps
-                        sqlgGraphStepCompiled.parseForStrategy();
-                        if (!sqlgGraphStepCompiled.isForMultipleQueries()) {
-                            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
-                        }
-                    }
-                    break;
+                    sqlgGraphStepCompiled.addReplacedStep(replacedStep);
+                    traversal.removeStep(step);
+                    collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                 }
+                previous = step;
+                lastReplacedStep = replacedStep;
+            } else {
+                if (lastReplacedStep != null) {
+                    //TODO optimize this, to not parse if there are no OrderGlobalSteps
+                    sqlgGraphStepCompiled.parseForStrategy();
+                    if (!sqlgGraphStepCompiled.isForMultipleQueries()) {
+                        collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+                    }
+                }
+                break;
             }
         }
     }
 
 
 }
+
+//                } else if (step instanceof RepeatStep) {
+//                    RepeatStep repeatStep = (RepeatStep) step;
+//                    List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
+//                    Traversal.Admin admin = repeatTraversals.get(0);
+//                    List<Step> repeatVertexSteps = admin.getSteps();
+//                    VertexStep vertexStep = (VertexStep) repeatVertexSteps.get(0);
+//
+//                    List<LoopTraversal> untilTraversals = repeatStep.<LoopTraversal>getLocalChildren();
+//                    LoopTraversal untilTraversal = untilTraversals.get(0);
+//                    long numberOfLoops = untilTraversal.getMaxLoops();
+//                    for (int i = 1; i <= numberOfLoops; i++) {
+//                        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), vertexStep);
+////                        replacedStep.emit();
+////                        replacedStep.path();
+//                        replacedStep.addLabel("a" + i);
+//                        sqlgGraphStepCompiled.addReplacedStep(replacedStep);
+//                    }
+//                    traversal.removeStep(repeatStep);

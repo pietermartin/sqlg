@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -45,7 +46,7 @@ public class SchemaTableTree {
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
     private List<Comparator> comparators = new ArrayList<>();
-    Set<String> labels;
+    private Set<String> labels;
 
     //This counter must only ever be used on the root node of the schema table tree
     //It is used to alias the select clauses
@@ -64,6 +65,10 @@ public class SchemaTableTree {
             return new HashMap<>();
         }
     };
+
+    public void setLabels(Set<String> labels) {
+        this.labels = labels;
+    }
 
     public void resetThreadVars() {
         threadLocalAliasColumnNameMap.remove();
@@ -612,7 +617,10 @@ public class SchemaTableTree {
     }
 
     private SchemaTableTree findSelectSchemaTable(String select) {
-        return this.walkUp((t) -> t.contains(select));
+        return this.walkUp((t) -> {
+            return t.stream().filter(a->a.endsWith(BaseSqlgStrategy.PATH_LABEL_SUFFIX + select)).findAny().isPresent();
+//            return t.contains(select);
+        });
     }
 
     private SchemaTableTree walkUp(Predicate<Set<String>> predicate) {

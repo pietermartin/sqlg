@@ -2,12 +2,16 @@ package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -30,11 +34,14 @@ public class ReplacedStep<S, E> {
     private List<Comparator> comparators;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
+    private boolean emit;
+    private boolean path;
 
-    public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step) {
+    public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = step;
-        replacedStep.labels = new HashSet<>(step.getLabels());
+        replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
+//        replacedStep.labels = new HashSet<>(step.getLabels());
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
@@ -53,14 +60,29 @@ public class ReplacedStep<S, E> {
         this.labels.add(label);
     }
 
+    public Set<String> getLabels() {
+        return Collections.unmodifiableSet(this.labels);
+    }
+
     public Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
         if (this.step instanceof VertexStep) {
             return appendPathForVertexStep(schemaTableTree);
         } else if (this.step instanceof EdgeVertexStep) {
             return appendPathForEdgeVertexStep(schemaTableTree);
+        } else if (this.step instanceof RepeatStep) {
+            return appendPathForRepeatStep(schemaTableTree);
         } else {
             throw new IllegalStateException("Only VertexStep and EdgeVertexStep is handled");
         }
+    }
+
+    private Set<SchemaTableTree> appendPathForRepeatStep(SchemaTableTree schemaTableTree) {
+        RepeatStep repeatStep = (RepeatStep) this.step;
+        List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
+        Traversal.Admin admin = repeatTraversals.get(0);
+        List<Step> steps = admin.getSteps();
+        VertexStep vertexStep = (VertexStep) steps.get(0);
+        return null;
     }
 
     private Set<SchemaTableTree> appendPathForEdgeVertexStep(SchemaTableTree schemaTableTree) {
@@ -309,7 +331,7 @@ public class ReplacedStep<S, E> {
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
                     schemaTableTree.setComparators(this.comparators);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
-                    schemaTableTree.labels = ReplacedStep.this.labels;
+                    schemaTableTree.setLabels(ReplacedStep.this.labels);
                     result.add(schemaTableTree);
                 }
             });
@@ -324,7 +346,7 @@ public class ReplacedStep<S, E> {
                     schemaTableTree.setHasContainers(hasContainerWithoutLabel);
                     schemaTableTree.setComparators(this.comparators);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
-                    schemaTableTree.labels = ReplacedStep.this.labels;
+                    schemaTableTree.setLabels(ReplacedStep.this.labels);
                     result.add(schemaTableTree);
                 }
             });
@@ -334,5 +356,13 @@ public class ReplacedStep<S, E> {
 
     public AbstractStep<S, E> getStep() {
         return step;
+    }
+
+    public void emit() {
+        this.emit = true;
+    }
+
+    public void path() {
+        this.path = true;
     }
 }
