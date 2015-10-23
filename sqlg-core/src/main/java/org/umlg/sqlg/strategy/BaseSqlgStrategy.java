@@ -43,32 +43,20 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         this.sqlgGraph = sqlgGraph;
     }
 
-    private static Optional<Traversal.Admin<?, ?>> emitTraversal(RepeatStep repeatStep) {
-        return repeatStep.getLocalChildren().stream().filter(t->{
-            return !(t instanceof LoopTraversal);
-        }).findAny();
-    }
-
-    private static Optional<Traversal.Admin<?, ?>> untilTraversal(RepeatStep repeatStep) {
-        return repeatStep.getLocalChildren().stream().filter(t->(t instanceof LoopTraversal)).findAny();
-    }
-
-    protected boolean containsRepeatWithEmit(List<Step> steps, int index) {
+    protected boolean unoptimizableRepeat(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         boolean repeatExist = toCome.stream().anyMatch(s -> s.getClass().equals(RepeatStep.class));
         if (repeatExist) {
 
-            boolean hasEmit = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> ((RepeatStep) r).getEmitTraversal() != null);
-//            boolean hasEmit = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> emitTraversal(((RepeatStep) r)).isPresent());
-            boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
-                return ((RepeatStep) r).getUntilTraversal() != null;
-            });
+//            boolean hasEmit = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> ((RepeatStep) r).getEmitTraversal() != null);
+            boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> ((RepeatStep) r).getUntilTraversal() != null);
             boolean hasUnoptimizableUntil = false;
             if (hasUntil) {
                 hasUnoptimizableUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> !(((RepeatStep) r).getUntilTraversal() instanceof LoopTraversal));
             }
 
-            boolean badRepeat = hasEmit || !hasUntil || hasUnoptimizableUntil;
+//            boolean badRepeat = hasEmit || !hasUntil || hasUnoptimizableUntil;
+            boolean badRepeat = !hasUntil || hasUnoptimizableUntil;
             //Check if the repeat step only contains optimizable steps
             if (!badRepeat) {
                 List<Step> collectedRepeatInternalSteps = new ArrayList<>();

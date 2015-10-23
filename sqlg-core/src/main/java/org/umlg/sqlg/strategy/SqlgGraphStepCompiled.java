@@ -6,12 +6,15 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.process.SqlGraphStepWithPathTraverser;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
@@ -32,6 +35,7 @@ import java.util.function.Supplier;
  */
 public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
 
+    private Set<Object> alreadyEmitted = null;
     protected Supplier<Iterator<Pair<E, Multimap<String, Object>>>> iteratorSupplier;
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private SqlgGraph sqlgGraph;
@@ -49,14 +53,25 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     @Override
     protected Traverser<S> processNextStart() {
         if (this.first) {
+            alreadyEmitted = new HashSet<>();
             this.start = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
             if (null != this.start) {
                 this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
             }
             this.first = false;
         }
-        Traverser.Admin<S> traverser = this.starts.next();
-        return traverser;
+        SqlGraphStepWithPathTraverser sqlGraphStepWithPathTraverser = (SqlGraphStepWithPathTraverser) this.starts.next();
+        List<Object> toEmits = sqlGraphStepWithPathTraverser.getToEmit();
+        Iterator<Object> toEmit = sqlGraphStepWithPathTraverser.getToEmit().iterator();
+        while (toEmit.hasNext()) {
+            Object emit = toEmit.next();
+            toEmit.remove();
+            if (alreadyEmitted.add(emit)) {
+                this.starts.add(sqlGraphStepWithPathTraverser);
+                return sqlGraphStepWithPathTraverser.split(emit, this);
+            }
+        }
+        return sqlGraphStepWithPathTraverser;
     }
 
     @Override
@@ -133,5 +148,9 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
 
     boolean isForMultipleQueries() {
         return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 1;
+    }
+
+    List<ReplacedStep<S, E>> getReplacedSteps() {
+        return replacedSteps;
     }
 }

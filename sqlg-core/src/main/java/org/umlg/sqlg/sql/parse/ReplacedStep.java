@@ -357,11 +357,7 @@ public class ReplacedStep<S, E> {
         return step;
     }
 
-    public void emit() {
-        this.emit = true;
-    }
-
-    public void path() {
-        this.path = true;
+    public void setEmit(boolean emit) {
+        this.emit = emit;
     }
 }

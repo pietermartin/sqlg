@@ -4,9 +4,8 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -16,7 +15,6 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -52,7 +50,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
-        if (containsRepeatWithEmit(steps, stepIterator.nextIndex())) {
+        if (unoptimizableRepeat(steps, stepIterator.nextIndex())) {
             logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
@@ -64,16 +62,17 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
         int pathCount = 0;
         boolean repeatStepAdded = false;
+        int countStepsToGoBack = 0;
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
 
             if (step instanceof RepeatStep) {
+                countStepsToGoBack = 0;
                 repeatStepAdded = false;
                 RepeatStep repeatStep = (RepeatStep) step;
                 List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
                 Traversal.Admin admin = repeatTraversals.get(0);
                 List<Step> internalRepeatSteps = admin.getSteps();
-                int countStepsToGoBack = 0;
                 //There must be a until traversal and no emit traversal
                 LoopTraversal untilTraversal = (LoopTraversal) repeatStep.<LoopTraversal>getLocalChildren().stream().filter(c->c instanceof LoopTraversal).findAny().get();
                 long numberOfLoops = untilTraversal.getMaxLoops();
@@ -98,8 +97,27 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             } else {
 
                 if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+
+                    //check if the step is a repeat step
+                    boolean emit = false;
+                    if (countStepsToGoBack > 0) {
+                        countStepsToGoBack--;
+                        RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
+                        emit =  repeatStep.getEmitTraversal() != null;
+                    }
+
                     pathCount++;
                     ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    if (emit) {
+                        //for now pretend is a emit first
+                        //the previous step must be marked as emit
+                        List<ReplacedStep> previousReplacedSteps = sqlgGraphStepCompiled.getReplacedSteps();
+                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                        previousReplacedStep.setEmit(true);
+                        if (previousReplacedStep.getLabels().isEmpty()) {
+                            previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        }
+                    }
                     if (replacedStep.getLabels().isEmpty()) {
                         boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
                         if (precedesPathStep) {

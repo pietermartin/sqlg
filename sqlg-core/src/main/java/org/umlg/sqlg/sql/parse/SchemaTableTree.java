@@ -1245,7 +1245,8 @@ public class SchemaTableTree {
         } else {
             rawLabelToTravers = labelToTravers.getTable();
         }
-        String joinSql = " INNER JOIN ";
+//        String joinSql = " INNER JOIN ";
+        String joinSql = " LEFT JOIN ";
         if (fromSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
             joinSql += ".";

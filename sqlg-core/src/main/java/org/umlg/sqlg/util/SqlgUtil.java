@@ -74,18 +74,22 @@ public class SqlgUtil {
         Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
         Integer columnCount = propertyColumnsCounts.iterator().next();
         Long id = resultSet.getLong(columnCount);
-        //Need to be removed so as not to load it again
-        propertyColumnsCounts.remove(columnCount);
-        SqlgElement sqlgElement;
-        if (schemaTable.isVertexTable()) {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-            sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+        if (!resultSet.wasNull()) {
+            //Need to be removed so as not to load it again
+            propertyColumnsCounts.remove(columnCount);
+            SqlgElement sqlgElement;
+            if (schemaTable.isVertexTable()) {
+                String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+                sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            } else {
+                String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+                sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            }
+            sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
+            return (E) sqlgElement;
         } else {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
-            sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
+            return null;
         }
-        sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
-        return (E) sqlgElement;
     }
 
     private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {

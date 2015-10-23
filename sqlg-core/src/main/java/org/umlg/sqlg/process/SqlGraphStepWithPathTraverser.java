@@ -15,6 +15,7 @@ import java.util.*;
 public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T> implements SqlgLabelledPathTraverser {
 
     private Step<T, ?> localStep;
+    private List<Object> toEmit = new ArrayList<>();
 
     public SqlGraphStepWithPathTraverser(final T t, Multimap<String, Object> labeledObjects, final Step<T, ?> step, final long initialBulk) {
         super(t, step, initialBulk);
@@ -23,6 +24,14 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
             Path localPath = ImmutablePath.make();
             customSplit(t, localPath, labeledObjects);
         }
+    }
+
+    public boolean isEmit() {
+        return !this.toEmit.isEmpty();
+    }
+
+    public List<Object> getToEmit() {
+        return toEmit;
     }
 
     /**
@@ -51,6 +60,7 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
                     allLabeledElementMap.put(pathLabel, allLabeledElementsAsSet);
                 }
                 if (!allLabeledElementsAsSet.contains(labeledElement)) {
+                    this.toEmit.add(labeledElement);
                     currentPath = currentPath.extend(labeledElement, Collections.singleton(realLabel));
                     allLabeledElementsAsSet.add(labeledElement);
                 } else {
