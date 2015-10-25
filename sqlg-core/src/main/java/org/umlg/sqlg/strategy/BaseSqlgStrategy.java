@@ -34,7 +34,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     protected SqlgGraph sqlgGraph;
     protected static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
-    public static final String PATH_LABEL_SUFFIX = "~~~P";
+    public static final String PATH_LABEL_SUFFIX = "P~~~";
+    public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);

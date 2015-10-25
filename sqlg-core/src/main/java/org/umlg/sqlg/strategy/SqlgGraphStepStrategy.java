@@ -4,7 +4,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
@@ -62,61 +61,71 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
         int pathCount = 0;
         boolean repeatStepAdded = false;
-        int countStepsToGoBack = 0;
+        int repeatStepsAdded = 0;
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
 
+            //Check for RepeatStep(s) and insert them into the stepIterator
             if (step instanceof RepeatStep) {
-                countStepsToGoBack = 0;
+                repeatStepsAdded = 0;
                 repeatStepAdded = false;
                 RepeatStep repeatStep = (RepeatStep) step;
                 List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
                 Traversal.Admin admin = repeatTraversals.get(0);
                 List<Step> internalRepeatSteps = admin.getSteps();
-                //There must be a until traversal and no emit traversal
-                LoopTraversal untilTraversal = (LoopTraversal) repeatStep.<LoopTraversal>getLocalChildren().stream().filter(c->c instanceof LoopTraversal).findAny().get();
-                long numberOfLoops = untilTraversal.getMaxLoops();
+                //this is guaranteed by the previous check unoptimizableRepeat(...)
+                LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
+                long numberOfLoops = loopTraversal.getMaxLoops();
                 for (int i = 0; i < numberOfLoops; i++) {
                     for (Step internalRepeatStep : internalRepeatSteps) {
                         if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
                             break;
                         }
-                        pathCount++;
                         stepIterator.add(internalRepeatStep);
                         stepIterator.previous();
                         stepIterator.next();
                         repeatStepAdded = true;
-                        countStepsToGoBack++;
+                        repeatStepsAdded++;
                     }
                 }
                 traversal.removeStep(repeatStep);
-                //this is needed to the next() to be the added step
-                for (int i = 0; i < countStepsToGoBack; i++) {
+                //this is needed for the stepIterator.next() to be the newly inserted steps
+                for (int i = 0; i < repeatStepsAdded; i++) {
                     stepIterator.previous();
                 }
             } else {
 
                 if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
 
-                    //check if the step is a repeat step
+                    //check if repeat steps were added to the stepIterator
                     boolean emit = false;
-                    if (countStepsToGoBack > 0) {
-                        countStepsToGoBack--;
+                    boolean emitFirst = false;
+                    if (repeatStepsAdded > 0) {
+                        repeatStepsAdded--;
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
-                        emit =  repeatStep.getEmitTraversal() != null;
+                        emit = repeatStep.getEmitTraversal() != null;
+                        emitFirst = repeatStep.emitFirst;
                     }
 
                     pathCount++;
                     ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
                     if (emit) {
                         //for now pretend is a emit first
-                        //the previous step must be marked as emit
+                        //the previous step must be marked as emit.
+                        //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
+                        //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
+                        //
                         List<ReplacedStep> previousReplacedSteps = sqlgGraphStepCompiled.getReplacedSteps();
-                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
-                        previousReplacedStep.setEmit(true);
-                        if (previousReplacedStep.getLabels().isEmpty()) {
-                            previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        ReplacedStep previousReplacedStep;
+                        if (emitFirst) {
+                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                        } else {
+                            previousReplacedStep = replacedStep;
                         }
+                        previousReplacedStep.setEmit(true);
+                        previousReplacedStep.addLabel((pathCount - 1) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        previousReplacedStep.getLabels().remove((pathCount - 1) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                     }
                     if (replacedStep.getLabels().isEmpty()) {
                         boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());

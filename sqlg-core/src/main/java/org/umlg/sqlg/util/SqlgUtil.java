@@ -52,7 +52,7 @@ public class SqlgUtil {
         return result;
     }
 
-    public static <E> Pair<E, Multimap<String, Object>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    public static <E> Pair<E, Multimap<String, Pair<Object, Optional<Long>>>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
@@ -63,7 +63,7 @@ public class SqlgUtil {
             columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
             columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
         }
-        Multimap<String, Object> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
+        Multimap<String, Pair<Object, Optional<Long>>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
         E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
         return Pair.of(e, labeledResult);
     }
@@ -92,28 +92,51 @@ public class SqlgUtil {
         }
     }
 
-    private static Multimap<String, Object> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        Multimap<String, Object> result = ArrayListMultimap.create();
+    /**
+     * Loads all labeled or emitted elements.
+     * For emitted elements the edge id to the element is also returned as that is needed in the traverser to calculate whether the element should be emitted or not.
+     * @param sqlgGraph
+     * @param columnMap
+     * @param resultSet
+     * @param schemaTableTreeStack
+     * @return
+     * @throws SQLException
+     */
+    private static Multimap<String, Pair<Object, Optional<Long>>> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+        Multimap<String, Pair<Object, Optional<Long>>> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
                 Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
                 Integer columnCount = propertyColumnsCounts.iterator().next();
                 Long id = resultSet.getLong(columnCount);
-                //Need to be removed so as not to load it again
-                propertyColumnsCounts.remove(columnCount);
-                SqlgElement sqlgElement;
-                String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-                if (schemaTableTree.getSchemaTable().isVertexTable()) {
-                    sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
-                } else {
-                    sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                if (!resultSet.wasNull()) {
+                    //Need to be removed so as not to load it again
+                    propertyColumnsCounts.remove(columnCount);
+                    SqlgElement sqlgElement;
+                    String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+                    if (schemaTableTree.getSchemaTable().isVertexTable()) {
+                        sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                    } else {
+                        sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                    }
+                    sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
+                    final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet);
+                    schemaTableTree.getLabels().forEach(l -> result.put(l, Pair.of(sqlgElement, edgeId)));
                 }
-                sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
-                schemaTableTree.getLabels().forEach(l -> result.put(l, sqlgElement));
             }
         }
         return result;
+    }
+
+    private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet) throws SQLException {
+        if (schemaTableTree.hasParent() && schemaTableTree.isEmit()) {
+            //Need to load the edge id. It is used in the traverser to calculate if the element needs to be emitted or not.
+            return Optional.of(resultSet.getLong(schemaTableTree.getParent().mappedAliasId()));
+        } else {
+            return Optional.empty();
+        }
+
     }
 
     public static boolean isBulkWithinOrOut(HasContainer hasContainer) {

@@ -60,7 +60,7 @@ public class ReplacedStep<S, E> {
     }
 
     public Set<String> getLabels() {
-        return Collections.unmodifiableSet(this.labels);
+        return this.labels;
     }
 
     public Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
@@ -129,19 +129,19 @@ public class ReplacedStep<S, E> {
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.comparators, this.depth, this.labels);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.comparators, this.depth, this.emit, this.labels);
                 result.add(schemaTableTreeChild);
             } else {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.comparators, this.depth, Collections.EMPTY_SET);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(inLabelsToTravers, Direction.IN, elementClass, this.hasContainers, this.comparators, this.depth, this.emit, Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, inLabelsToTravers, Direction.IN));
             }
         }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.comparators, this.depth, this.labels);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.comparators, this.depth, this.emit, this.labels);
                 result.add(schemaTableTreeChild);
             } else {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.comparators, this.depth, Collections.EMPTY_SET);
+                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(outLabelsToTravers, Direction.OUT, elementClass, this.hasContainers, this.comparators, this.depth, this.emit, Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, outLabelsToTravers, Direction.OUT));
             }
         }
@@ -197,6 +197,7 @@ public class ReplacedStep<S, E> {
                         this.comparators,
                         this.depth,
                         true,
+                        this.emit,
                         this.labels
                 );
                 result.add(schemaTableTreeChild);
@@ -210,6 +211,7 @@ public class ReplacedStep<S, E> {
                         this.comparators,
                         this.depth,
                         true,
+                        this.emit,
                         this.labels
                 );
                 result.add(schemaTableTreeChild);
@@ -236,6 +238,7 @@ public class ReplacedStep<S, E> {
                         this.hasContainers,
                         this.comparators,
                         this.depth,
+                        this.emit,
                         this.labels
                 );
                 result.add(schemaTableTree1);
@@ -247,6 +250,7 @@ public class ReplacedStep<S, E> {
                         this.hasContainers,
                         this.comparators,
                         this.depth,
+                        this.emit,
                         this.labels
                 );
                 result.add(schemaTableTree1);
@@ -331,6 +335,7 @@ public class ReplacedStep<S, E> {
                     schemaTableTree.setComparators(this.comparators);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
                     schemaTableTree.setLabels(ReplacedStep.this.labels);
+                    schemaTableTree.setEmit(ReplacedStep.this.emit);
                     result.add(schemaTableTree);
                 }
             });
@@ -346,6 +351,7 @@ public class ReplacedStep<S, E> {
                     schemaTableTree.setComparators(this.comparators);
                     schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
                     schemaTableTree.setLabels(ReplacedStep.this.labels);
+                    schemaTableTree.setEmit(ReplacedStep.this.emit);
                     result.add(schemaTableTree);
                 }
             });

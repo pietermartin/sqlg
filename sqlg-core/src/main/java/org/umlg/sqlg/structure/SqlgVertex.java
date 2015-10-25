@@ -941,6 +941,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             }
             if (properName.split("\\.").length < 4) {
                 String name = schemaTableTree.propertyNameFromAlias(properName);
+
+                //Collect emit edge names, they must not be loaded
+                SchemaTableTree root = schemaTableTree.getRoot();
+                List<String> edgeIds = root.collectEmitEdgeIds();
+                if (edgeIds.contains(name)) {
+                    continue;
+                }
+
                 Object o = resultSet.getObject(columnName);
                 if (!name.equals("ID")
                         && !name.equals(SchemaManager.VERTEX_IN_LABELS)

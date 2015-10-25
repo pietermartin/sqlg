@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -29,14 +30,29 @@ public class SqlgGraphStepWithPathTraverserGenerator implements TraverserGenerat
     private SqlgGraphStepWithPathTraverserGenerator() {
     }
 
+    /**
+     * This class is used when there is no t element for the traverser.
+     * This happens because of the left joins so the leaf node in the path might not be present.
+     * However a traverser must have an object else hashCode fails.
+     * So dummy it here.
+     * @link org.umlg.sqlg.strategy.SqlgGraphStepCompiled has the corresponding logic not the pass the Dummy along.
+     */
+    public class Dummy {
+
+    }
+
     @Override
     public <S> Traverser.Admin<S> generate(final S pair, final Step<S, ?> step, final long initialBulk) {
-        //This sucks, ReducingBarrierStep call the generator again
         if (pair instanceof Pair) {
-            Pair<S, Multimap<String, Object>> p = (Pair<S, Multimap<String, Object>>) pair;
-            return new SqlGraphStepWithPathTraverser<>(p.getLeft(), p.getRight(), step, initialBulk);
+            Pair<S, Multimap<String, Pair<Object, Optional<Long>>>> p = (Pair<S, Multimap<String, Pair<Object, Optional<Long>>>>) pair;
+            if (p.getLeft() == null) {
+                //This happens for emit().repeat() where a left join is used in the sql
+                return new SqlGraphStepWithPathTraverser<>(((S)new Dummy()), p.getRight(), step, initialBulk);
+            } else {
+                return new SqlGraphStepWithPathTraverser<>(p.getLeft(), p.getRight(), step, initialBulk);
+            }
         } else {
-            Multimap<String, Object> emptyMap = ArrayListMultimap.create();
+            Multimap<String, Pair<Object, Optional<Long>>> emptyMap = ArrayListMultimap.create();
             return new SqlGraphStepWithPathTraverser<>(pair, emptyMap, step, initialBulk);
         }
     }

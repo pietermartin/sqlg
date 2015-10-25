@@ -112,6 +112,13 @@ public class SchemaTable implements DataSerializable, Serializable {
             return SchemaTable.of(this.getSchema(), this.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
     }
 
+    public String getEmitEdgeId() {
+        String emitEdgeId = this.getSchema();
+        emitEdgeId += "." + this.getTable();
+        emitEdgeId += "." + "ID";
+        return emitEdgeId;
+    }
+
     static class SchemaTableJacksonSerializer extends StdSerializer<SchemaTable> {
         public SchemaTableJacksonSerializer() {
             super(SchemaTable.class);
