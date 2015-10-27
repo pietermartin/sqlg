@@ -52,7 +52,7 @@ public class SqlgUtil {
         return result;
     }
 
-    public static <E> Pair<E, Multimap<String, Pair<Object, Optional<Long>>>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    public static <E extends SqlgElement> Pair<E, Multimap<String, Pair<E, Optional<Long>>>> loadElementsLabeledAndEndElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
@@ -63,7 +63,7 @@ public class SqlgUtil {
             columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
             columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
         }
-        Multimap<String, Pair<Object, Optional<Long>>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
+        Multimap<String, Pair<E, Optional<Long>>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
         E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
         return Pair.of(e, labeledResult);
     }
@@ -102,8 +102,8 @@ public class SqlgUtil {
      * @return
      * @throws SQLException
      */
-    private static Multimap<String, Pair<Object, Optional<Long>>> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        Multimap<String, Pair<Object, Optional<Long>>> result = ArrayListMultimap.create();
+    private static <E extends SqlgElement> Multimap<String, Pair<E, Optional<Long>>> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+        Multimap<String, Pair<E, Optional<Long>>> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
@@ -122,7 +122,7 @@ public class SqlgUtil {
                     }
                     sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
                     final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet);
-                    schemaTableTree.getLabels().forEach(l -> result.put(l, Pair.of(sqlgElement, edgeId)));
+                    schemaTableTree.getLabels().forEach(l -> result.put(l, Pair.of((E)sqlgElement, edgeId)));
                 }
             }
         }

@@ -7,17 +7,19 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_P_S_SE_SL_Traverser;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
+import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.*;
 
 /**
  * Created by pieter on 2015/07/20.
  */
-public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T> implements SqlgLabelledPathTraverser {
+public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O_P_S_SE_SL_Traverser<T> implements SqlgLabelledPathTraverser {
 
-    private List<Pair<Path, Pair<Object, Optional<Long>>>> toEmit = new ArrayList<>();
+    private List<Emit> toEmit = new ArrayList<>();
 
-    public SqlGraphStepWithPathTraverser(final T t, Multimap<String, Pair<Object, Optional<Long>>> labeledObjects, final Step<T, ?> step, final long initialBulk) {
+    public SqlGraphStepWithPathTraverser(final T t, Multimap<String, Pair<E, Optional<Long>>> labeledObjects, final Step<T, ?> step, final long initialBulk) {
         super(t, step, initialBulk);
         if (labeledObjects != null && !labeledObjects.isEmpty()) {
             Path localPath = ImmutablePath.make();
@@ -29,7 +31,7 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
         super(t, step, initialBulk);
     }
 
-    public List<Pair<Path, Pair<Object, Optional<Long>>>> getToEmit() {
+    public List<Emit> getToEmit() {
         return this.toEmit;
     }
 
@@ -37,7 +39,7 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
      * This odd logic is to ensure the path represents the path from left to right.
      * Calling this.path.extends(...) reverses the path. The test still pass but it seems wrong.
      */
-    public void customSplit(final T t, Path currentPath, Multimap<String, Pair<Object, Optional<Long>>> labeledObjects) {
+    public void customSplit(final T t, Path currentPath, Multimap<String, Pair<E, Optional<Long>>> labeledObjects) {
         boolean addT = true;
         List<String> sortedKeys = new ArrayList<>(labeledObjects.keySet());
         Collections.sort(sortedKeys);
@@ -46,19 +48,22 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
         //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
         Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
         for (String label : sortedKeys) {
-            Collection<Pair<Object, Optional<Long>>> labeledElements = labeledObjects.get(label);
+            Collection<Pair<E, Optional<Long>>> labeledElements = labeledObjects.get(label);
             String realLabel;
             String pathLabel;
+            int degree = -1;
             if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
                 realLabel = label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
                 pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
+                degree = Integer.valueOf(pathLabel.substring(0, pathLabel.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX)));
             } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
                 realLabel = label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
                 pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
+                degree = Integer.valueOf(pathLabel.substring(0, pathLabel.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)));
             } else {
                 throw new IllegalStateException();
             }
-            for (Pair<Object, Optional<Long>> labeledElementPair : labeledElements) {
+            for (Pair<E, Optional<Long>> labeledElementPair : labeledElements) {
                 if (addT && labeledElementPair.getLeft() == t) {
                     addT = false;
                 }
@@ -71,7 +76,8 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
                     currentPath = currentPath.extend(labeledElementPair.getLeft(), Collections.singleton(realLabel));
                     allLabeledElementsAsSet.add(labeledElementPair.getLeft());
                     if (pathLabel.endsWith(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                        this.toEmit.add(Pair.of(currentPath.clone(), labeledElementPair));
+                        this.toEmit.add(new Emit(degree, currentPath.clone(), labeledElementPair));
+//                        this.toEmit.add(Pair.of(currentPath.clone(), labeledElementPair));
                     }
                 } else {
                     currentPath.addLabel(realLabel);

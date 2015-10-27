@@ -47,13 +47,13 @@ public class SqlgGraphStepWithPathTraverserGenerator implements TraverserGenerat
             Pair<S, Multimap<String, Pair<Object, Optional<Long>>>> p = (Pair<S, Multimap<String, Pair<Object, Optional<Long>>>>) pair;
             if (p.getLeft() == null) {
                 //This happens for emit().repeat() where a left join is used in the sql
-                return new SqlGraphStepWithPathTraverser<>(((S)new Dummy()), p.getRight(), step, initialBulk);
+                return new SqlGraphStepWithPathTraverser(((S)new Dummy()), p.getRight(), step, initialBulk);
             } else {
-                return new SqlGraphStepWithPathTraverser<>(p.getLeft(), p.getRight(), step, initialBulk);
+                return new SqlGraphStepWithPathTraverser(p.getLeft(), p.getRight(), step, initialBulk);
             }
         } else {
             Multimap<String, Pair<Object, Optional<Long>>> emptyMap = ArrayListMultimap.create();
-            return new SqlGraphStepWithPathTraverser<>(pair, emptyMap, step, initialBulk);
+            return new SqlGraphStepWithPathTraverser(pair, emptyMap, step, initialBulk);
         }
     }
 

@@ -68,39 +68,6 @@ public class SchemaTableTree {
 
     private boolean emit;
 
-    public boolean hasParent() {
-        return this.parent != null;
-    }
-
-    public SchemaTableTree getRoot() {
-        return walkUp(this);
-    }
-
-    private SchemaTableTree walkUp(SchemaTableTree schemaTableTree) {
-        if (schemaTableTree.hasParent()) {
-            return schemaTableTree.walkUp(schemaTableTree.getParent());
-        } else {
-            return schemaTableTree;
-        }
-    }
-
-    public List<String> collectEmitEdgeIds() {
-        List<String> result = new ArrayList<>();
-        collectEmitEdges(result);
-        return result;
-    }
-
-    private void collectEmitEdges(List<String> edgeIds) {
-        if (this.hasParent() && this.schemaTable.isVertexTable() && this.emit) {
-            SchemaTable parentSchemaTable = this.parent.getSchemaTable();
-            String edgeId = parentSchemaTable.getEmitEdgeId();
-            edgeIds.add(edgeId);
-        }
-        for (SchemaTableTree child : children) {
-            child.collectEmitEdges(edgeIds);
-        }
-    }
-
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -145,6 +112,39 @@ public class SchemaTableTree {
 
     public SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, List<Comparator> comparators, int depth, boolean emit, Set<String> labels) {
         return addChild(schemaTable, direction, elementClass, hasContainers, comparators, depth, false, emit, labels);
+    }
+
+    public boolean hasParent() {
+        return this.parent != null;
+    }
+
+    public SchemaTableTree getRoot() {
+        return walkUp(this);
+    }
+
+    private SchemaTableTree walkUp(SchemaTableTree schemaTableTree) {
+        if (schemaTableTree.hasParent()) {
+            return schemaTableTree.walkUp(schemaTableTree.getParent());
+        } else {
+            return schemaTableTree;
+        }
+    }
+
+    public List<String> collectEmitEdgeIds() {
+        List<String> result = new ArrayList<>();
+        collectEmitEdges(result);
+        return result;
+    }
+
+    private void collectEmitEdges(List<String> edgeIds) {
+        if (this.hasParent() && this.schemaTable.isVertexTable() && this.emit) {
+            SchemaTable parentSchemaTable = this.parent.getSchemaTable();
+            String edgeId = parentSchemaTable.getEmitEdgeId();
+            edgeIds.add(edgeId);
+        }
+        for (SchemaTableTree child : children) {
+            child.collectEmitEdges(edgeIds);
+        }
     }
 
     public void setEmit(boolean emit) {
@@ -1300,7 +1300,7 @@ public class SchemaTableTree {
         if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit())) {
             joinSql = " LEFT JOIN\n\t";
         } else {
-            joinSql = " INNER JOIN ";
+            joinSql = " INNER JOIN\n\t";
         }
         if (fromSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
