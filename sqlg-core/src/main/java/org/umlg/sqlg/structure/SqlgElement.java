@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Array;
@@ -237,7 +238,7 @@ public abstract class SqlgElement implements Element {
      * @return The result of the query.
      * //
      */
-    public <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
+    public <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -252,7 +253,7 @@ public abstract class SqlgElement implements Element {
      * @param replacedSteps
      * @return The results of the query
      */
-    private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
+    private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         SchemaTable schemaTable = getSchemaTablePrefixed();
@@ -260,7 +261,7 @@ public abstract class SqlgElement implements Element {
         try {
             schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
             List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-            SqlgCompiledResultIterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> resultIterator = new SqlgCompiledResultIterator<>();
+            SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
             for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
                 Connection conn = this.sqlgGraph.tx().getConnection();
                 if (logger.isDebugEnabled()) {
@@ -272,7 +273,7 @@ public abstract class SqlgElement implements Element {
                     ResultSet resultSet = preparedStatement.executeQuery();
                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                     while (resultSet.next()) {
-                        Pair<E, Multimap<String, Pair<E, Optional<Long>>>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
+                        Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabaledAndLeafElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
                         resultIterator.add(result);
                     }
                 } catch (SQLException e) {

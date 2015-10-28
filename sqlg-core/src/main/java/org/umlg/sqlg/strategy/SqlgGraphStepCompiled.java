@@ -2,7 +2,6 @@ package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -36,10 +35,9 @@ import java.util.function.Supplier;
  */
 public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
 
-    private ListOrderedSet<Pair<E, Optional<Long>>> alreadyEmitted = null;
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
-    protected Supplier<Iterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>>> iteratorSupplier;
+    protected Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> iteratorSupplier;
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
@@ -56,7 +54,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     @Override
     protected Traverser<S> processNextStart() {
         if (this.first) {
-            this.alreadyEmitted = new ListOrderedSet<>();
             this.start = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
             if (null != this.start) {
                 this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
@@ -71,7 +68,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
             if (this.currentEmitTree == null) {
                 //get it from the roots
                 for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-                    if (rootEmitTree.getEmit().equals(emit.getElementPlusEdgeId())) {
+                    if (rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
                         this.currentEmitTree = rootEmitTree;
                         break;
                     }
@@ -84,14 +81,14 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 SqlGraphStepWithPathTraverser emitTraverser = new SqlGraphStepWithPathTraverser<>((S) emit.getElementPlusEdgeId().getLeft(), this, 1l);
                 emitTraverser.setPath(emit.getPath());
                 if (this.currentEmitTree == null) {
-                    this.currentEmitTree = new EmitTree<>(emit.getDegree(), emit.getElementPlusEdgeId());
+                    this.currentEmitTree = new EmitTree<>(emit.getDegree(), emit);
                     this.rootEmitTrees.add(this.currentEmitTree);
                 } else {
-                    this.currentEmitTree = this.currentEmitTree.addEmit(emit.getDegree(), emit.getElementPlusEdgeId());
+                    this.currentEmitTree = this.currentEmitTree.addEmit(emit.getDegree(), emit);
                 }
                 return emitTraverser;
             } else {
-                if (!this.currentEmitTree.getEmit().equals(emit.getElementPlusEdgeId())) {
+                if (!this.currentEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
                     this.currentEmitTree = this.currentEmitTree.getChild(emit.getElementPlusEdgeId());
                 }
             }
@@ -104,11 +101,17 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
             //Do not emit the last element if it has already been emitted.
             if (this.currentEmitTree != null) {
                 if (this.currentEmitTree.emitEquals((E) sqlGraphStepWithPathTraverser.get())) {
-                    //reset the tree to the root
-                    this.currentEmitTree = null;
-                    return EmptyTraverser.instance();
+                    if (this.currentEmitTree.getEmit().isUntilFirst()) {
+                        //reset the tree to the root
+                        this.currentEmitTree = null;
+                        return sqlGraphStepWithPathTraverser;
+                    } else {
+                        //reset the tree to the root
+                        this.currentEmitTree = null;
+                        return EmptyTraverser.instance();
+                    }
                 } else {
-                    this.currentEmitTree = this.currentEmitTree.addEmit(-1, Pair.of((E) sqlGraphStepWithPathTraverser.get(), Optional.empty()));
+                    this.currentEmitTree = this.currentEmitTree.addEmit(-1, new Emit((E) sqlGraphStepWithPathTraverser.get(), Optional.empty(), false));
                     this.currentEmitTree = null;
                     return sqlGraphStepWithPathTraverser;
                 }
@@ -120,7 +123,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
 
     private boolean rootEmitTreeContains(Emit emit) {
         for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-            if (rootEmitTree.getEmit().equals(emit.getElementPlusEdgeId())) {
+            if (rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
                 return true;
             }
         }
@@ -132,7 +135,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         return EnumSet.of(TraverserRequirement.OBJECT);
     }
 
-    private Iterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> elements() {
+    private Iterator<Pair<E, Multimap<String, Emit<E>>>> elements() {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -144,21 +147,23 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
-        SqlgCompiledResultIterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> resultIterator = new SqlgCompiledResultIterator<>();
+        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
         for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
             try {
                 List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-                for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
+                for (Pair<LinkedList<SchemaTableTree>, String> schemaTableTreeSqlPair : sqlStatements) {
                     Connection conn = this.sqlgGraph.tx().getConnection();
                     if (logger.isDebugEnabled()) {
-                        logger.debug(sqlPair.getRight());
+                        logger.debug(schemaTableTreeSqlPair.getRight());
                     }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
-                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 1);
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(schemaTableTreeSqlPair.getRight())) {
+                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, schemaTableTreeSqlPair.getLeft(), conn, preparedStatement, 1);
                         ResultSet resultSet = preparedStatement.executeQuery();
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                         while (resultSet.next()) {
-                            Pair<E, Multimap<String, Pair<E, Optional<Long>>>> result = SqlgUtil.loadElementsLabeledAndEndElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft());
+                            Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabaledAndLeafElements(
+                                    this.sqlgGraph, resultSetMetaData, resultSet, schemaTableTreeSqlPair.getLeft()
+                            );
                             resultIterator.add(result);
                         }
                     } catch (Exception e) {

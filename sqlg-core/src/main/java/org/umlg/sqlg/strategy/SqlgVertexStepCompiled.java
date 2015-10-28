@@ -29,7 +29,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
     private Traverser.Admin<S> head = null;
     private Traverser.Admin<S> originalHead = null;
-    private Iterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> iterator = EmptyIterator.instance();
+    private Iterator<Pair<E, Multimap<String, Emit<E>>>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
@@ -42,9 +42,9 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         while (true) {
             if (this.iterator.hasNext()) {
                 Preconditions.checkState(this.head instanceof SqlgLabelledPathTraverser);
-                Pair<E, Multimap<String, Pair<E, Optional<Long>>>> next = this.iterator.next();
+                Pair<E, Multimap<String, Emit<E>>> next = this.iterator.next();
                 E e = next.getLeft();
-                Multimap<String, Pair<E, Optional<Long>>> labeledObjects = next.getRight();
+                Multimap<String, Emit<E>> labeledObjects = next.getRight();
                 SqlGraphStepWithPathTraverser<E, E> sqlgLabelledPathTraverser = (SqlGraphStepWithPathTraverser<E, E>) this.head;
                 //each iteration is a new row. i.e. must start from the original head containing the the start element.
                 this.originalHead = (Traverser.Admin<S>) sqlgLabelledPathTraverser.clone();
@@ -64,7 +64,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         return new HashSet<>();
     }
 
-    protected Iterator<Pair<E, Multimap<String, Pair<E, Optional<Long>>>>> flatMapCustom(Traverser.Admin<S> traverser) {
+    protected Iterator<Pair<E, Multimap<String, Emit<E>>>> flatMapCustom(Traverser.Admin<S> traverser) {
         //for the OrderGlobalStep we'll need to remove the step here
         S s = traverser.get();
         SqlgGraph sqlgGraph = (SqlgGraph) s.graph();

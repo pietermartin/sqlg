@@ -1,7 +1,6 @@
 package org.umlg.sqlg.process;
 
 import com.google.common.collect.Multimap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
@@ -19,7 +18,7 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
 
     private List<Emit> toEmit = new ArrayList<>();
 
-    public SqlGraphStepWithPathTraverser(final T t, Multimap<String, Pair<E, Optional<Long>>> labeledObjects, final Step<T, ?> step, final long initialBulk) {
+    public SqlGraphStepWithPathTraverser(final T t, Multimap<String, Emit<E>> labeledObjects, final Step<T, ?> step, final long initialBulk) {
         super(t, step, initialBulk);
         if (labeledObjects != null && !labeledObjects.isEmpty()) {
             Path localPath = ImmutablePath.make();
@@ -39,7 +38,7 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
      * This odd logic is to ensure the path represents the path from left to right.
      * Calling this.path.extends(...) reverses the path. The test still pass but it seems wrong.
      */
-    public void customSplit(final T t, Path currentPath, Multimap<String, Pair<E, Optional<Long>>> labeledObjects) {
+    public void customSplit(final T t, Path currentPath, Multimap<String, Emit<E>> labeledObjects) {
         boolean addT = true;
         List<String> sortedKeys = new ArrayList<>(labeledObjects.keySet());
         Collections.sort(sortedKeys);
@@ -48,7 +47,7 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
         //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
         Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
         for (String label : sortedKeys) {
-            Collection<Pair<E, Optional<Long>>> labeledElements = labeledObjects.get(label);
+            Collection<Emit<E>> labeledElements = labeledObjects.get(label);
             String realLabel;
             String pathLabel;
             int degree = -1;
@@ -63,8 +62,8 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
             } else {
                 throw new IllegalStateException();
             }
-            for (Pair<E, Optional<Long>> labeledElementPair : labeledElements) {
-                if (addT && labeledElementPair.getLeft() == t) {
+            for (Emit<E> emit : labeledElements) {
+                if (addT && emit.getElementPlusEdgeId().getLeft() == t) {
                     addT = false;
                 }
                 Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);
@@ -72,11 +71,14 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
                     allLabeledElementsAsSet = new HashSet<>();
                     allLabeledElementMap.put(pathLabel, allLabeledElementsAsSet);
                 }
-                if (!allLabeledElementsAsSet.contains(labeledElementPair.getLeft())) {
-                    currentPath = currentPath.extend(labeledElementPair.getLeft(), Collections.singleton(realLabel));
-                    allLabeledElementsAsSet.add(labeledElementPair.getLeft());
+                if (!allLabeledElementsAsSet.contains(emit.getElementPlusEdgeId().getLeft())) {
+                    currentPath = currentPath.extend(emit.getElementPlusEdgeId().getLeft(), Collections.singleton(realLabel));
+                    allLabeledElementsAsSet.add(emit.getElementPlusEdgeId().getLeft());
                     if (pathLabel.endsWith(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                        this.toEmit.add(new Emit(degree, currentPath.clone(), labeledElementPair));
+                        emit.setPath(currentPath.clone());
+                        emit.setDegree(degree);
+                        this.toEmit.add(emit);
+//                        this.toEmit.add(new Emit(degree, currentPath.clone(), emit.getElementPlusEdgeId()));
 //                        this.toEmit.add(Pair.of(currentPath.clone(), labeledElementPair));
                     }
                 } else {

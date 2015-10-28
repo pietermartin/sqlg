@@ -70,7 +70,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 repeatStepsAdded = 0;
                 repeatStepAdded = false;
                 RepeatStep repeatStep = (RepeatStep) step;
-                List<Traversal.Admin> repeatTraversals = repeatStep.<Traversal.Admin>getGlobalChildren();
+                List<Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
                 Traversal.Admin admin = repeatTraversals.get(0);
                 List<Step> internalRepeatSteps = admin.getSteps();
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
@@ -100,21 +100,21 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;
                     boolean emitFirst = false;
+                    boolean untilFirst = false;
                     if (repeatStepsAdded > 0) {
                         repeatStepsAdded--;
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
+                        untilFirst = repeatStep.untilFirst;
                     }
 
                     pathCount++;
                     ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
                     if (emit) {
-                        //for now pretend is a emit first
                         //the previous step must be marked as emit.
                         //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
                         //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
-                        //
                         List<ReplacedStep> previousReplacedSteps = sqlgGraphStepCompiled.getReplacedSteps();
                         ReplacedStep previousReplacedStep;
                         if (emitFirst) {
@@ -123,6 +123,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                             previousReplacedStep = replacedStep;
                         }
                         previousReplacedStep.setEmit(true);
+                        previousReplacedStep.setUntilFirst(untilFirst);
                         previousReplacedStep.addLabel((pathCount - 1) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove((pathCount - 1) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);

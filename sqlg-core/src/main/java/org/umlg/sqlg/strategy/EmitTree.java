@@ -5,7 +5,6 @@ import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Created by pieter on 2015/10/26.
@@ -13,17 +12,17 @@ import java.util.Optional;
 public class EmitTree<E extends SqlgElement> {
 
     private int degree;
-    private Pair<E, Optional<Long>> emit;
+    private Emit<E> emit;
     private List<EmitTree> children = new ArrayList<>();
     private EmitTree parent = null;
     private EmitTree<E> root;
 
-    public EmitTree(int degree, Pair<E, Optional<Long>> elementPlusEdgeId) {
+    public EmitTree(int degree, Emit<E> emit) {
         this.degree = degree;
-        this.emit = elementPlusEdgeId;
+        this.emit = emit;
     }
 
-    public Pair<E, Optional<Long>> getEmit() {
+    public Emit<E> getEmit() {
         return emit;
     }
 
@@ -31,37 +30,7 @@ public class EmitTree<E extends SqlgElement> {
         return parent;
     }
 
-    public boolean anyChildEquals(Pair<E, Optional<Long>> emit) {
-        for (EmitTree child : this.children) {
-            if (child.emit.equals(emit)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean containsAtDegree(int degree, Pair<E, Optional<Long>> elementPlusEdgeId) {
-        return getAtDegree(degree, elementPlusEdgeId) != null;
-    }
-
-    public EmitTree<E> getAtDegree(int degree, Pair<E, Optional<Long>> elementPlusEdgeId) {
-        if (this.degree > degree) {
-            return null;
-        } else if (this.degree < degree) {
-            for (EmitTree child : this.children) {
-                return child.getAtDegree(degree, elementPlusEdgeId);
-            }
-        } else {
-            for (EmitTree child : this.children) {
-                if (child.emit.equals(elementPlusEdgeId)) {
-                    return child;
-                }
-            }
-        }
-        return null;
-    }
-
-    public EmitTree<E> addEmit(int degree, Pair<E, Optional<Long>> emit) {
+    public EmitTree<E> addEmit(int degree, Emit<E> emit) {
         EmitTree child = new EmitTree(degree, emit);
         child.parent = this;
         this.children.add(child);
@@ -69,7 +38,7 @@ public class EmitTree<E extends SqlgElement> {
     }
 
     public boolean emitEquals(E e) {
-        return this.emit.getLeft().equals(e);
+        return this.emit.getElementPlusEdgeId().getLeft().equals(e);
     }
 
     public EmitTree<E> getRoot() {
@@ -104,7 +73,7 @@ public class EmitTree<E extends SqlgElement> {
             return false;
         } else {
             for (EmitTree child : children) {
-                if (child.emit.equals(elementPlusEdgeId)) {
+                if (child.emit.getElementPlusEdgeId().equals(elementPlusEdgeId)) {
                     return true;
                 }
             }
@@ -114,7 +83,7 @@ public class EmitTree<E extends SqlgElement> {
 
     public EmitTree<E> getChild(Pair elementPlusEdgeId) {
         for (EmitTree child : children) {
-            if (child.emit.equals(elementPlusEdgeId)) {
+            if (child.emit.getElementPlusEdgeId().equals(elementPlusEdgeId)) {
                 return child;
             }
         }

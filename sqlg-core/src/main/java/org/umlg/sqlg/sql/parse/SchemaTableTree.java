@@ -47,6 +47,8 @@ public class SchemaTableTree {
     private List<HasContainer> hasContainers = new ArrayList<>();
     private List<Comparator> comparators = new ArrayList<>();
     private Set<String> labels;
+    //untilFirst is for the repeatStep optimization
+    private boolean untilFirst;
 
     //This counter must only ever be used on the root node of the schema table tree
     //It is used to alias the select clauses
@@ -68,7 +70,6 @@ public class SchemaTableTree {
 
     private boolean emit;
 
-
     enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -84,18 +85,55 @@ public class SchemaTableTree {
         this.labels = new HashSet<>();
     }
 
+    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
+                    List<HasContainer> hasContainers,
+                    List<Comparator> comparators,
+                    STEP_TYPE stepType,
+                    boolean emit,
+                    boolean untilFirst,
+                    Set<String> labels
+                    ) {
+        this(sqlgGraph, schemaTable, stepDepth);
+        this.hasContainers = hasContainers;
+        this.comparators = comparators;
+        this.labels = labels;
+        this.stepType = stepType;
+        this.emit = emit;
+        this.untilFirst = untilFirst;
+    }
+
     public SchemaTableTree addChild(
+            SchemaTable schemaTable,
+            Direction direction,
+            Class<? extends Element> elementClass,
+            ReplacedStep replacedStep,
+            boolean isEdgeVertexStep,
+            Set<String> labels) {
+        return addChild(schemaTable, direction, elementClass, replacedStep.getHasContainers(), replacedStep.getComparators(), replacedStep.getDepth(), isEdgeVertexStep, replacedStep.isEmit(), replacedStep.isUntilFirst(), labels);
+    }
+
+    public SchemaTableTree addChild(
+            SchemaTable schemaTable,
+            Direction direction,
+            Class<? extends Element> elementClass,
+            ReplacedStep replacedStep,
+            Set<String> labels) {
+        return addChild(schemaTable, direction, elementClass, replacedStep.getHasContainers(), replacedStep.getComparators(), replacedStep.getDepth(), false, replacedStep.isEmit(), replacedStep.isUntilFirst(), labels);
+    }
+
+    private SchemaTableTree addChild(
             SchemaTable schemaTable,
             Direction direction,
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
             List<Comparator> comparators,
-            int depth,
+            int stepDepth,
             boolean isEdgeVertexStep,
             boolean emit,
+            boolean untilFirst,
             Set<String> labels) {
 
-        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, depth);
+        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth);
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
@@ -107,11 +145,8 @@ public class SchemaTableTree {
         schemaTableTree.stepType = isEdgeVertexStep ? STEP_TYPE.EDGE_VERTEX_STEP : STEP_TYPE.VERTEX_STEP;
         schemaTableTree.labels = labels;
         schemaTableTree.emit = emit;
+        schemaTableTree.untilFirst = untilFirst;
         return schemaTableTree;
-    }
-
-    public SchemaTableTree addChild(SchemaTable schemaTable, Direction direction, Class<? extends Element> elementClass, List<HasContainer> hasContainers, List<Comparator> comparators, int depth, boolean emit, Set<String> labels) {
-        return addChild(schemaTable, direction, elementClass, hasContainers, comparators, depth, false, emit, labels);
     }
 
     public boolean hasParent() {
@@ -1627,5 +1662,9 @@ public class SchemaTableTree {
 
     void setStepType(STEP_TYPE stepType) {
         this.stepType = stepType;
+    }
+
+    public boolean isUntilFirst() {
+        return untilFirst;
     }
 }
