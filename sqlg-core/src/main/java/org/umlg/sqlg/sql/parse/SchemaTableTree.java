@@ -92,7 +92,7 @@ public class SchemaTableTree {
                     boolean emit,
                     boolean untilFirst,
                     Set<String> labels
-                    ) {
+    ) {
         this(sqlgGraph, schemaTable, stepDepth);
         this.hasContainers = hasContainers;
         this.comparators = comparators;
@@ -264,7 +264,7 @@ public class SchemaTableTree {
      * @return
      */
     private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
-        String singlePathSql = " FROM (";
+        String singlePathSql = "\nFROM (";
         int count = 1;
         SchemaTableTree lastOfPrevious = null;
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
@@ -280,19 +280,29 @@ public class SchemaTableTree {
             String sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext);
             singlePathSql += sql;
             if (count == 1) {
-                singlePathSql += ") a" + count++ + " INNER JOIN\n\t (";
+                SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
+                if (beforeLastSchemaTableTree.isEmit()) {
+                    singlePathSql += "\n) a" + count++ + " LEFT JOIN (";
+                } else {
+                    singlePathSql += "\n) a" + count++ + " INNER JOIN (";
+                }
             } else {
                 //join the last with the first
-                singlePathSql += ") a" + count + " ON ";
+                singlePathSql += "\n) a" + count + " ON ";
                 singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
-                    singlePathSql += " INNER JOIN\n\t (";
+                    SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
+                    if (beforeLastSchemaTableTree.isEmit()) {
+                        singlePathSql += " LEFT JOIN (";
+                    } else {
+                        singlePathSql += " INNER JOIN (";
+                    }
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();
         }
         singlePathSql += constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists);
-        String result = "SELECT " + constructOuterFromClause(sqlgGraph, subQueryLinkedLists);
+        String result = "SELECT\n\t" + constructOuterFromClause(sqlgGraph, subQueryLinkedLists);
         return result + singlePathSql;
     }
 
@@ -307,6 +317,10 @@ public class SchemaTableTree {
                     result = schemaTableTree.printLabeledOuterFromClause(result, countOuter);
                     result += ", ";
                 }
+                if (schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
+                    result += schemaTableTree.printEmitMappedAliasId(countOuter);
+                    result += ", ";
+                }
                 //last entry, always print this
                 if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
                     result += schemaTableTree.printOuterFromClause(countOuter);
@@ -318,6 +332,10 @@ public class SchemaTableTree {
         }
         result = result.substring(0, result.length() - 2);
         return result;
+    }
+
+    private String printEmitMappedAliasId(int countOuter) {
+        return " a" + countOuter + ".\"" + this.mappedAliasId() + "\"";
     }
 
     private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
@@ -438,7 +456,7 @@ public class SchemaTableTree {
      * @return
      */
     private static String constructSinglePathSql(SqlgGraph sqlgGraph, boolean partOfDuplicateQuery, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
-        String singlePathSql = "SELECT\n\t";
+        String singlePathSql = "\nSELECT\n\t";
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
         singlePathSql += constructFromClause(sqlgGraph, distinctQueryStack, lastOfPrevious, firstOfNextStack);
@@ -856,6 +874,7 @@ public class SchemaTableTree {
                             nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
 
                     sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
+                    sql = constructEmitEdgeIdFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
                 }
             } else {
                 if (nextSchemaTableTree.isEdgeVertexStep()) {
@@ -920,6 +939,9 @@ public class SchemaTableTree {
             sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
             sql = constructEmitFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
 
+        } else if (lastSchemaTableTree.parent.isEmit()) {
+
+//            sql = printEdgeId(sqlgGraph, lastSchemaTableTree, sql);
 
         }
         return sql;
@@ -979,6 +1001,22 @@ public class SchemaTableTree {
         return sql;
     }
 
+    private static String constructEmitEdgeIdFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, String sql) {
+        List<SchemaTableTree> emitted = distinctQueryStack.stream().filter(d -> d.getSchemaTable().isEdgeTable() && d.isEmit()).collect(Collectors.toList());
+        if (!emitted.isEmpty()) {
+            sql += ",\n\t ";
+        }
+        int count = 1;
+        for (SchemaTableTree schemaTableTree : emitted) {
+//            sql = printLabeledIDFromClauseFor(sqlgGraph, schemaTableTree, sql);
+            sql = printEdgeId(sqlgGraph, schemaTableTree, sql);
+            if (count++ < emitted.size()) {
+                sql += ",\n\t ";
+            }
+        }
+        return sql;
+    }
+
 
     /**
      * If emit is true then the edge id also needs to be printed.
@@ -996,15 +1034,22 @@ public class SchemaTableTree {
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (count > 1) {
                 if (!schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.emit) {
-                    //no need to print edge ids as its already printed.
-                    sql += ",\n\t " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.parent.getSchemaTable().getSchema()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.parent.getSchemaTable().getTable()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
-                    sql += " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.parent.calculatedAliasId());
+                    //if the VertexStep is for an edge table there is no need to print edge ids as its already printed.
+                    sql += ",\n\t";
+                    sql = printEdgeId(sqlgGraph, schemaTableTree.parent, sql);
                 }
             }
             count++;
         }
+        return sql;
+    }
+
+    private static String printEdgeId(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, String sql) {
+        Preconditions.checkArgument(schemaTableTree.getSchemaTable().isEdgeTable());
+        sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema()) + "." +
+                sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable()) + "." +
+                sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+        sql += " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.calculatedAliasId());
         return sql;
     }
 

@@ -413,6 +413,7 @@ public class TestRepeatStep extends BaseTest {
 //        Assert.assertTrue(vertices.remove(d3));
 //        Assert.assertTrue(vertices.isEmpty());
 //    }
+
     @Test
     public void g_V_repeatXoutX_timesX2X_emit_path() throws IOException {
         Graph graph = this.sqlgGraph;
@@ -441,4 +442,29 @@ public class TestRepeatStep extends BaseTest {
             Assert.assertEquals(new Long(2), pathLengths.get(3));
         });
     }
+
+//    @Test
+//    public void testOnLeftJoinOnLeaveNode() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        a1.addEdge("ab", b1);
+//        a2.addEdge("ab", b1);
+//        this.sqlgGraph.tx().commit();
+//        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab")).times(1).toList();
+//        Assert.assertEquals(4, vertices.size());
+//    }
+//
+//    @Test
+//    public void testOnDuplicatePaths() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        a1.addEdge("ab", b1);
+//        b1.addEdge("ba", a2);
+//        this.sqlgGraph.tx().commit();
+//        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "ba")).times(2).toList();
+//        Assert.assertEquals(4, vertices.size());
+//    }
+
 }
