@@ -444,18 +444,21 @@ public class TestRepeatStep extends BaseTest {
     }
 
 //    @Test
-//    public void testDuplicatePath() {
+//    public void testDuplicatePathToSelf() {
 //        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
 //        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+//        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
 //
-//        a1.addEdge("ab", b1);
-//        b1.addEdge("ba", a2);
-//        a2.addEdge("ab", b2);
+//        a1.addEdge("knows", a2);
+//        a2.addEdge("knows", a3);
 //        this.sqlgGraph.tx().commit();
 //
-//        List<Vertex> vertices = this.sqlgGraph.traversal().V().repeat(__.out("ab", "ba")).times(2).emit().toList();
+//        List<Vertex> vertices = this.sqlgGraph.traversal().V().repeat(__.out("knows")).times(2).emit().toList();
+//        Assert.assertEquals(3, vertices.size());
+//        Assert.assertTrue(vertices.remove(a2));
+//        Assert.assertTrue(vertices.remove(a3));
+//        Assert.assertTrue(vertices.remove(a3));
+//        Assert.assertEquals(0, vertices.size());
 //    }
 //
 //    @Test

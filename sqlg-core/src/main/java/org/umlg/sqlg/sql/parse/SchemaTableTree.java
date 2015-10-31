@@ -54,21 +54,25 @@ public class SchemaTableTree {
     //It is used to alias the select clauses
     private int rootAliasCounter = 1;
 
-    //This contains the columnName as key and the generated alias as value
-    //Needs to be a multimap as the same column can appear multiple times in different selects in one query
-    public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
-        protected Multimap<String, String> initialValue() {
-            return ArrayListMultimap.create();
-        }
-    };
-    //This contains the generated alias as key and the columnName as value
-    public static final ThreadLocal<Map<String, String>> threadLocalAliasColumnNameMap = new ThreadLocal<Map<String, String>>() {
-        protected Map<String, String> initialValue() {
-            return new HashMap<>();
-        }
-    };
+//    //This contains the columnName as key and the generated alias as value
+//    //Needs to be a multimap as the same column can appear multiple times in different selects in one query
+//    public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
+//        protected Multimap<String, String> initialValue() {
+//            return ArrayListMultimap.create();
+//        }
+//    };
+//    //This contains the generated alias as key and the columnName as value
+//    public static final ThreadLocal<Map<String, String>> threadLocalAliasColumnNameMap = new ThreadLocal<Map<String, String>>() {
+//        protected Map<String, String> initialValue() {
+//            return new HashMap<>();
+//        }
+//    };
 
     private boolean emit;
+
+    //Only root SchemaTableTrees have these maps;
+    private Multimap<String, String> threadLocalColumnNameAliasMap;
+    private Multimap<String, String> threadLocalAliasColumnNameMap;
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -85,6 +89,19 @@ public class SchemaTableTree {
         this.labels = new HashSet<>();
     }
 
+    /**
+     * This constructor is called for the root SchemaTableTree(s)
+     *
+     * @param sqlgGraph
+     * @param schemaTable
+     * @param stepDepth
+     * @param hasContainers
+     * @param comparators
+     * @param stepType
+     * @param emit
+     * @param untilFirst
+     * @param labels
+     */
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
                     List<HasContainer> hasContainers,
                     List<Comparator> comparators,
@@ -100,6 +117,8 @@ public class SchemaTableTree {
         this.stepType = stepType;
         this.emit = emit;
         this.untilFirst = untilFirst;
+        this.threadLocalColumnNameAliasMap = ArrayListMultimap.create();
+        this.threadLocalAliasColumnNameMap = ArrayListMultimap.create();
     }
 
     public SchemaTableTree addChild(
@@ -149,6 +168,14 @@ public class SchemaTableTree {
         return schemaTableTree;
     }
 
+    public Multimap<String, String> getThreadLocalColumnNameAliasMap() {
+        return this.getRoot().threadLocalColumnNameAliasMap;
+    }
+
+    public Multimap<String, String> getThreadLocalAliasColumnNameMap() {
+        return this.getRoot().threadLocalAliasColumnNameMap;
+    }
+
     public boolean hasParent() {
         return this.parent != null;
     }
@@ -195,10 +222,13 @@ public class SchemaTableTree {
     }
 
     public void resetThreadVars() {
-        threadLocalAliasColumnNameMap.remove();
-        threadLocalColumnNameAliasMap.remove();
+        threadLocalAliasColumnNameMap.clear();
+        threadLocalAliasColumnNameMap = null;
+        threadLocalColumnNameAliasMap.clear();
+        threadLocalColumnNameAliasMap = null;
         this.rootAliasCounter = 1;
     }
+
 
     public boolean containsLabelledColumn(String columnName) {
         if (columnName.startsWith(this.reducedLabels() + ".")) {
@@ -252,6 +282,14 @@ public class SchemaTableTree {
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
         for (SchemaTableTree leafNode : this.leafNodes) {
             result.add(leafNode.constructQueryStackFromLeaf());
+        }
+
+        //Check that the first element in the List's LinkedList is a root element
+        //TODO remove this assertion.
+        for (LinkedList<SchemaTableTree> schemaTableTrees : result) {
+            if (schemaTableTrees.get(0).getParent() != null) {
+                throw new IllegalStateException("Expected root SchemaTableTree for the first SchemaTableTree in the LinkedList");
+            }
         }
         return result;
     }
@@ -309,16 +347,27 @@ public class SchemaTableTree {
     private static String constructOuterFromClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String result = "";
         int countOuter = 1;
+        Multimap<String, String> columnNameAliasMapCopy = null;
         for (LinkedList<SchemaTableTree> subQueryLinkedList : subQueryLinkedLists) {
             int countInner = 1;
             for (SchemaTableTree schemaTableTree : subQueryLinkedList) {
+
+                if (countOuter == 1 && countInner == 1) {
+                    //Need a copy here as the entries are remove from the map.
+                    //Can not remove it from the original as that map is used later.
+                    if (schemaTableTree.getParent() != null) {
+                        throw new IllegalStateException("The first SchemaTableTree in the stack must be a root.");
+                    }
+                    columnNameAliasMapCopy = schemaTableTree.copyColumnNameAliasMap();
+                }
+
                 //labelled entries need to be in the outer select
                 if (!schemaTableTree.getLabels().isEmpty()) {
                     result = schemaTableTree.printLabeledOuterFromClause(result, countOuter);
                     result += ", ";
                 }
                 if (schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
-                    result += schemaTableTree.printEmitMappedAliasId(countOuter);
+                    result += schemaTableTree.printEmitMappedAliasIdForOuterFromClause(countOuter, columnNameAliasMapCopy);
                     result += ", ";
                 }
                 //last entry, always print this
@@ -334,8 +383,8 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String printEmitMappedAliasId(int countOuter) {
-        return " a" + countOuter + ".\"" + this.mappedAliasId() + "\"";
+    private String printEmitMappedAliasIdForOuterFromClause(int countOuter, Multimap<String, String> columnNameAliasMap) {
+        return " a" + countOuter + ".\"" + this.mappedAliasIdForOuterFromClause(columnNameAliasMap) + "\"";
     }
 
     private static String constructOuterOrderByClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
@@ -358,7 +407,7 @@ public class SchemaTableTree {
     }
 
     private String printOuterFromClause(int count) {
-        String sql = "a" + count + ".\"" + this.mappedAliasId() + "\"";
+        String sql = "a" + count + ".\"" + this.lastMappedAliasId() + "\"";
         Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.toString());
         if (propertyTypeMap.size() > 0) {
             sql += ", ";
@@ -404,25 +453,21 @@ public class SchemaTableTree {
                 if (toSchemaTableTree.direction == Direction.OUT) {
                     result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
                             toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
-//                    result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasId() + "\"";
+                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
                 } else {
                     result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
                             toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
-//                    result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasId() + "\"";
+                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
                 }
             } else {
                 if (toSchemaTableTree.direction == Direction.OUT) {
                     result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
                             toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
-//                    result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasId() + "\"";
+                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
                 } else {
                     result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
                             toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
-//                    result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasId() + "\"";
+                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
                 }
             }
         } else {
@@ -643,10 +688,10 @@ public class SchemaTableTree {
                 String alias;
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
                 } else {
                     //TODO its a multi map because multiple elements may have the same label
-                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
                 }
                 result += " " + alias;
                 if (elementValueComparator.getValueComparator() == Order.incr) {
@@ -685,10 +730,10 @@ public class SchemaTableTree {
                 String alias;
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
                 } else {
                     //TODO its a multi map because multiple elements may have the same label
-                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(threadLocalColumnNameAliasMap.get().get(prefix).iterator().next());
+                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
                 }
                 result += " " + alias;
                 if (traversalComparator.getComparator() == Order.incr) {
@@ -1148,7 +1193,6 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += prepend;
             sql += ".\"";
-//            sql += this.aliasPropertyName(edgeForeignKey);
             sql += this.mappedAliasPropertyName(edgeForeignKey);
             sql += "\"";
             if (propertyCount < edgeForeignKeys.size()) {
@@ -1223,11 +1267,23 @@ public class SchemaTableTree {
         return sql;
     }
 
+    public Multimap<String, String> copyColumnNameAliasMap() {
+        Multimap<String, String> result = ArrayListMultimap.create();
+        Multimap<String, String> copy = this.getThreadLocalColumnNameAliasMap();
+        for (String key : copy.keySet()) {
+            List<String> values = new ArrayList<>(copy.get(key));
+            for (String value : values) {
+                result.put(key, value);
+            }
+        }
+        return result;
+    }
+
     public String calculatedAliasId() {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
         String alias = rootAliasAndIncrement();
-        threadLocalColumnNameAliasMap.get().put(result, alias);
-        threadLocalAliasColumnNameMap.get().put(alias, result);
+        this.getThreadLocalColumnNameAliasMap().put(result, alias);
+        this.getThreadLocalAliasColumnNameMap().put(alias, result);
         return alias;
     }
 
@@ -1235,8 +1291,8 @@ public class SchemaTableTree {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
         String alias = rootAliasAndIncrement();
-        threadLocalColumnNameAliasMap.get().put(result, alias);
-        threadLocalAliasColumnNameMap.get().put(alias, result);
+        this.getThreadLocalColumnNameAliasMap().put(result, alias);
+        this.getThreadLocalAliasColumnNameMap().put(alias, result);
         return alias;
     }
 
@@ -1244,16 +1300,16 @@ public class SchemaTableTree {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
         String alias = rootAliasAndIncrement();
-        threadLocalColumnNameAliasMap.get().put(result, alias);
-        threadLocalAliasColumnNameMap.get().put(alias, result);
+        this.getThreadLocalColumnNameAliasMap().put(result, alias);
+        this.getThreadLocalAliasColumnNameMap().put(alias, result);
         return alias;
     }
 
     public String calculateAliasPropertyName(String propertyName) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
         String alias = rootAliasAndIncrement();
-        threadLocalColumnNameAliasMap.get().put(result, alias);
-        threadLocalAliasColumnNameMap.get().put(alias, result);
+        this.getThreadLocalColumnNameAliasMap().put(result, alias);
+        this.getThreadLocalAliasColumnNameMap().put(alias, result);
         return alias;
     }
 
@@ -1263,42 +1319,48 @@ public class SchemaTableTree {
                 "." + previousRawLabel +
                 (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
         String alias = rootAliasAndIncrement();
-        threadLocalColumnNameAliasMap.get().put(result, alias);
-        threadLocalAliasColumnNameMap.get().put(alias, result);
+        this.getThreadLocalColumnNameAliasMap().put(result, alias);
+        this.getThreadLocalAliasColumnNameMap().put(alias, result);
         return alias;
     }
 
     public String mappedAliasVertexColumnEnd(SchemaTableTree previousSchemaTableTree, Direction direction, String rawFromLabel) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." +
                 previousSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
-        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.get(strings.size() - 1);
     }
 
     public String labeledMappedAliasPropertyName(String propertyName) {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
-        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.remove(0);
     }
 
     public String mappedAliasPropertyName(String propertyName) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
-        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.get(strings.size() - 1);
     }
 
     public String labeledMappedAliasId() {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.remove(0);
     }
 
-    public String mappedAliasId() {
+    public String lastMappedAliasId() {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        List<String> strings = (List<String>) threadLocalColumnNameAliasMap.get().get(result);
+        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.get(strings.size() - 1);
+    }
+
+    public String mappedAliasIdForOuterFromClause(Multimap<String, String> columnNameAliasMap) {
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
+        List<String> strings = (List<String>) columnNameAliasMap.get(result);
+        return strings.remove(0);
     }
 
     public String propertyNameFromAlias(String alias) {

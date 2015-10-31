@@ -254,8 +254,6 @@ public abstract class SqlgElement implements Element {
      * @return The results of the query
      */
     private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
-        Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
-        Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree schemaTableTree = null;
         try {
