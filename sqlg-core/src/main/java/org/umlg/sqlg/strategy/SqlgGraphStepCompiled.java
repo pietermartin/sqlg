@@ -1,6 +1,7 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -159,13 +160,29 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                         SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 1);
                         ResultSet resultSet = preparedStatement.executeQuery();
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                        int row = 0;
                         while (resultSet.next()) {
-                            Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabeledAndLeafElements(
-                                    this.sqlgGraph, resultSetMetaData, resultSet, distinctQueryStack, row
-                            );
-                            resultIterator.add(result);
-                            row++;
+                            int row = 0;
+                            List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
+                            Multimap<String, Emit<E>> previousLabeledElements = null;
+                            for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
+                                Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
+                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, row
+                                );
+                                if (previousLabeledElements == null) {
+                                    previousLabeledElements = labeledElements;
+                                } else {
+                                    previousLabeledElements.putAll(labeledElements);
+                                }
+                                //The last subQuery
+                                if (row == subQueryStacks.size() - 1) {
+                                    Optional<E> e = SqlgUtil.loadLeafElement(
+                                            this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast()
+                                    );
+                                    //TODO Optional must go all the way up the stack
+                                    resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
+                                }
+                                row++;
+                            }
                         }
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -175,34 +192,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 }
             }
         }
-
-
-//        for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
-//            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-//            for (Pair<LinkedList<SchemaTableTree>, String> schemaTableTreeSqlPair : sqlStatements) {
-//                try {
-//                    Connection conn = this.sqlgGraph.tx().getConnection();
-//                    if (logger.isDebugEnabled()) {
-//                        logger.debug(schemaTableTreeSqlPair.getRight());
-//                    }
-//                    try (PreparedStatement preparedStatement = conn.prepareStatement(schemaTableTreeSqlPair.getRight())) {
-//                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, schemaTableTreeSqlPair.getLeft(), conn, preparedStatement, 1);
-//                        ResultSet resultSet = preparedStatement.executeQuery();
-//                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-//                        while (resultSet.next()) {
-//                            Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabeledAndLeafElements(
-//                                    this.sqlgGraph, resultSetMetaData, resultSet, schemaTableTreeSqlPair.getLeft()
-//                            );
-//                            resultIterator.add(result);
-//                        }
-//                    } catch (Exception e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                } finally {
-////                    schemaTableTree.resetThreadVars();
-//                }
-//            }
-//        }
 
         stopWatch.stop();
         if (logger.isDebugEnabled())

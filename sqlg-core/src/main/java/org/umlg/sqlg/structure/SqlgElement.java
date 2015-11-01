@@ -251,34 +251,53 @@ public abstract class SqlgElement implements Element {
     private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree schemaTableTree = null;
-        try {
-            schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-            SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
-            for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
+        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
+        schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
+        List<LinkedList<SchemaTableTree>> distinctQueries = schemaTableTree.constructDistinctQueries();
+        for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
+            String sql = schemaTableTree.constructSql(distinctQueryStack);
+            try {
                 Connection conn = this.sqlgGraph.tx().getConnection();
                 if (logger.isDebugEnabled()) {
-                    logger.debug(sqlPair.getRight());
+                    logger.debug(sql);
                 }
-                try (PreparedStatement preparedStatement = conn.prepareStatement(sqlPair.getRight())) {
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
                     preparedStatement.setLong(1, this.recordId.getId());
-                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, sqlPair.getLeft(), conn, preparedStatement, 2);
+                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 2);
                     ResultSet resultSet = preparedStatement.executeQuery();
                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                     while (resultSet.next()) {
-                        //TODO the row number needs sorting out
-                        Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabeledAndLeafElements(this.sqlgGraph, resultSetMetaData, resultSet, sqlPair.getLeft(), 0);
-                        resultIterator.add(result);
+                        int row = 0;
+                        List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
+                        Multimap<String, Emit<E>> previousLabeledElements = null;
+                        for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
+                            Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
+                                    this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, row
+                            );
+                            if (previousLabeledElements == null) {
+                                previousLabeledElements = labeledElements;
+                            } else {
+                                previousLabeledElements.putAll(labeledElements);
+                            }
+                            //The last subQuery
+                            if (row == subQueryStacks.size() - 1) {
+                                Optional<E> e = SqlgUtil.loadLeafElement(
+                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast()
+                                );
+                                resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
+                            }
+                            row++;
+                        }
                     }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
+            } finally {
+                if (schemaTableTree != null)
+                    schemaTableTree.resetThreadVars();
             }
-            return resultIterator;
-        } finally {
-            if (schemaTableTree != null)
-                schemaTableTree.resetThreadVars();
         }
+        return resultIterator;
     }
 
     @Override

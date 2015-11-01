@@ -765,8 +765,7 @@ public class SchemaTableTree {
         return null;
     }
 
-    private static List<LinkedList<SchemaTableTree>> splitIntoSubStacks
-            (LinkedList<SchemaTableTree> distinctQueryStack) {
+    public static List<LinkedList<SchemaTableTree>> splitIntoSubStacks(LinkedList<SchemaTableTree> distinctQueryStack) {
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
         LinkedList<SchemaTableTree> subList = new LinkedList<>();
         result.add(subList);

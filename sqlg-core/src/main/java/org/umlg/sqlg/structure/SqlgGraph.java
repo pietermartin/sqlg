@@ -145,7 +145,7 @@ public class SqlgGraph implements Graph {
                     sqlDialect.getJdbcDriver(),
                     configuration);
 
-            logger.info("about to get connection to " + configuration.getString("jdbc.url") + " " + configuration.getInt("maxPoolSize", 100));
+            logger.info("Connection url = " + configuration.getString("jdbc.url") + ", maxPoolSize =  " + configuration.getInt("maxPoolSize", 100));
             this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);

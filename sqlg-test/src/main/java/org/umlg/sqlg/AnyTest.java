@@ -2,7 +2,10 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.TestEdgeToDifferentLabeledVertexes;
+import org.umlg.sqlg.test.gremlincompile.TestPathStep;
 import org.umlg.sqlg.test.gremlincompile.TestRepeatStep;
+import org.umlg.sqlg.test.gremlincompile.TestTreeStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +13,7 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatStep.class
+        TestTreeStep.class
         })
 public class AnyTest {
 }

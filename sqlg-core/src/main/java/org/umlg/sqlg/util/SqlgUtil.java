@@ -53,11 +53,31 @@ public class SqlgUtil {
         return result;
     }
 
-    public static <E extends SqlgElement> Pair<E, Multimap<String, Emit<E>>> loadLabeledAndLeafElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int row) throws SQLException {
+    public static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
+            SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet,
+            LinkedList<SchemaTableTree> subQueryStack, int row) throws SQLException {
+
+        //First load all labeled entries from the resultSet
+        Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
+        SchemaTableTree rootSchemaTableTree = subQueryStack.getFirst();
+        //Translate the columns back from alias to meaningful column headings
+        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+            columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
+        }
+        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, row);
+        return labeledResult;
+    }
+
+    public static <E extends SqlgElement> Optional<E> loadLeafElement(
+            SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet,
+            SchemaTableTree leafSubQueryStack) throws SQLException {
+
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
-        SchemaTableTree rootSchemaTableTree = schemaTableTreeStack.getFirst();
+        SchemaTableTree rootSchemaTableTree = leafSubQueryStack.getRoot();
         //Translate the columns back from alias to meaningful column headings
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
@@ -65,13 +85,36 @@ public class SqlgUtil {
             columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
             columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
         }
-        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack, row);
-        E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
-        return Pair.of(e, labeledResult);
+        Optional<E> e = loadElement(sqlgGraph, columnMap2, resultSet, leafSubQueryStack);
+        return e;
     }
 
-    private static <E> E loadElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
-        SchemaTable schemaTable = schemaTableTreeStack.getLast().getSchemaTable();
+//    public static <E extends SqlgElement> Pair<E, Multimap<String, Emit<E>>> loadLabeledAndLeafElements(
+//            SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet,
+//            LinkedList<SchemaTableTree> subQueryStack, int row) throws SQLException {
+//
+//        //First load all labeled entries from the resultSet
+//        Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
+//        Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
+//        SchemaTableTree rootSchemaTableTree = subQueryStack.getFirst();
+//        //Translate the columns back from alias to meaningful column headings
+//        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+//            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+//            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+//            columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
+//            columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
+//        }
+//        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, subQueryStack, row);
+//        Optional<E> e = loadElement(sqlgGraph, columnMap2, resultSet, subQueryStack);
+//        //TODO refactor optional to go up the stack
+//        return Pair.of(e.get(), labeledResult);
+//    }
+
+    private static <E> Optional<E> loadElement(
+            SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap,
+            ResultSet resultSet, SchemaTableTree leafSchemaTableTree) throws SQLException {
+
+        SchemaTable schemaTable = leafSchemaTableTree.getSchemaTable();
         String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
         Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
         Integer columnCount = propertyColumnsCounts.iterator().next();
@@ -87,30 +130,34 @@ public class SqlgUtil {
                 String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
                 sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
             }
-            sqlgElement.loadResultSet(resultSet, schemaTableTreeStack.getLast());
-            return (E) sqlgElement;
+            sqlgElement.loadResultSet(resultSet, leafSchemaTableTree);
+            return Optional.of((E) sqlgElement);
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
     /**
      * Loads all labeled or emitted elements.
      * For emitted elements the edge id to the element is also returned as that is needed in the traverser to calculate whether the element should be emitted or not.
+     *
      * @param sqlgGraph
-     * @param columnMap
+     * @param columnNameCountMap
      * @param resultSet
      * @param schemaTableTreeStack
      * @param row
      * @return
      * @throws SQLException
      */
-    private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int row) throws SQLException {
+    private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
+            SqlgGraph sqlgGraph, Multimap<String, Integer> columnNameCountMap,
+            ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int row) throws SQLException {
+
         Multimap<String, Emit<E>> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
-                Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
+                Collection<Integer> propertyColumnsCounts = columnNameCountMap.get(idProperty);
                 Integer columnCount = propertyColumnsCounts.iterator().next();
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
@@ -123,9 +170,9 @@ public class SqlgUtil {
                     } else {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
-                    sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
+                    sqlgElement.loadLabeledResultSet(resultSet, columnNameCountMap, schemaTableTree);
                     final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, row);
-                    schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E)sqlgElement, edgeId), schemaTableTree.isUntilFirst())));
+                    schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst())));
                 }
             }
         }
