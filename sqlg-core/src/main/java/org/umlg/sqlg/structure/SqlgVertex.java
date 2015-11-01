@@ -935,7 +935,8 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+//            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+            String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
             if (properName == null) {
                 properName = columnName;
             }

@@ -53,18 +53,19 @@ public class SqlgUtil {
         return result;
     }
 
-    public static <E extends SqlgElement> Pair<E, Multimap<String, Emit<E>>> loadLabaledAndLeafElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    public static <E extends SqlgElement> Pair<E, Multimap<String, Emit<E>>> loadLabeledAndLeafElements(SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int row) throws SQLException {
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
         Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
+        SchemaTableTree rootSchemaTableTree = schemaTableTreeStack.getFirst();
         //Translate the columns back from alias to meaningful column headings
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-            String unaliased = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnLabel);
+            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
             columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
             columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
         }
-        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack);
+        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnMap1, resultSet, schemaTableTreeStack, row);
         E e = loadElements(sqlgGraph, columnMap2, resultSet, schemaTableTreeStack);
         return Pair.of(e, labeledResult);
     }
@@ -100,10 +101,11 @@ public class SqlgUtil {
      * @param columnMap
      * @param resultSet
      * @param schemaTableTreeStack
+     * @param row
      * @return
      * @throws SQLException
      */
-    private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack) throws SQLException {
+    private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap, ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int row) throws SQLException {
         Multimap<String, Emit<E>> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
@@ -122,7 +124,7 @@ public class SqlgUtil {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     sqlgElement.loadLabeledResultSet(resultSet, columnMap, schemaTableTree);
-                    final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet);
+                    final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, row);
                     schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E)sqlgElement, edgeId), schemaTableTree.isUntilFirst())));
                 }
             }
@@ -130,10 +132,15 @@ public class SqlgUtil {
         return result;
     }
 
-    private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet) throws SQLException {
+    private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet, int row) throws SQLException {
         if (schemaTableTree.hasParent() && schemaTableTree.isEmit()) {
             //Need to load the edge id. It is used in the traverser to calculate if the element needs to be emitted or not.
-            return Optional.of(resultSet.getLong(schemaTableTree.getParent().lastMappedAliasId()));
+            long edgeId = resultSet.getLong(schemaTableTree.getParent().mappedAliasIdFor(row));
+            if (resultSet.wasNull()) {
+                return Optional.empty();
+            } else {
+                return Optional.of(edgeId);
+            }
         } else {
             return Optional.empty();
         }

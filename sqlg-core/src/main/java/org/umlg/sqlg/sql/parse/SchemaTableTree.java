@@ -53,26 +53,13 @@ public class SchemaTableTree {
     //This counter must only ever be used on the root node of the schema table tree
     //It is used to alias the select clauses
     private int rootAliasCounter = 1;
-
-//    //This contains the columnName as key and the generated alias as value
-//    //Needs to be a multimap as the same column can appear multiple times in different selects in one query
-//    public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
-//        protected Multimap<String, String> initialValue() {
-//            return ArrayListMultimap.create();
-//        }
-//    };
-//    //This contains the generated alias as key and the columnName as value
-//    public static final ThreadLocal<Map<String, String>> threadLocalAliasColumnNameMap = new ThreadLocal<Map<String, String>>() {
-//        protected Map<String, String> initialValue() {
-//            return new HashMap<>();
-//        }
-//    };
-
     private boolean emit;
 
     //Only root SchemaTableTrees have these maps;
     private Multimap<String, String> threadLocalColumnNameAliasMap;
-    private Multimap<String, String> threadLocalAliasColumnNameMap;
+    private Map<String, String> threadLocalAliasColumnNameMap;
+    private boolean copy = false;
+
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -117,8 +104,12 @@ public class SchemaTableTree {
         this.stepType = stepType;
         this.emit = emit;
         this.untilFirst = untilFirst;
+        initializeAliasColumnNameMaps();
+    }
+
+    public void initializeAliasColumnNameMaps() {
         this.threadLocalColumnNameAliasMap = ArrayListMultimap.create();
-        this.threadLocalAliasColumnNameMap = ArrayListMultimap.create();
+        this.threadLocalAliasColumnNameMap = new HashMap<>();
     }
 
     public SchemaTableTree addChild(
@@ -172,7 +163,7 @@ public class SchemaTableTree {
         return this.getRoot().threadLocalColumnNameAliasMap;
     }
 
-    public Multimap<String, String> getThreadLocalAliasColumnNameMap() {
+    public Map<String, String> getThreadLocalAliasColumnNameMap() {
         return this.getRoot().threadLocalAliasColumnNameMap;
     }
 
@@ -223,9 +214,7 @@ public class SchemaTableTree {
 
     public void resetThreadVars() {
         threadLocalAliasColumnNameMap.clear();
-        threadLocalAliasColumnNameMap = null;
         threadLocalColumnNameAliasMap.clear();
-        threadLocalColumnNameAliasMap = null;
         this.rootAliasCounter = 1;
     }
 
@@ -245,6 +234,20 @@ public class SchemaTableTree {
 
     public SchemaTable getSchemaTable() {
         return schemaTable;
+    }
+
+    public String constructSql(LinkedList<SchemaTableTree> distinctQueryStack) {
+        Preconditions.checkState(this.parent == null, "constructSql may only be called on the root object");
+        //If the same element occurs multiple times in the stack then the sql needs to be different.
+        //This is because the same element can not be joined on more than once in sql
+        //The way to overcome this is  to break up the path in select sections with no duplicates and then join them together.
+        if (duplicatesInStack(distinctQueryStack)) {
+            List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
+            return constructDuplicatePathSql(this.sqlgGraph, subQueryStacks);
+        } else {
+            //If there are no duplicates in the path then one select statement will suffice.
+            return constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null);
+        }
     }
 
     /**
@@ -276,16 +279,12 @@ public class SchemaTableTree {
         return result;
     }
 
-    private List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
+    public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
         Preconditions.checkState(this.parent == null, "constructSql may only be called on the root object");
-
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
         for (SchemaTableTree leafNode : this.leafNodes) {
             result.add(leafNode.constructQueryStackFromLeaf());
         }
-
-        //Check that the first element in the List's LinkedList is a root element
-        //TODO remove this assertion.
         for (LinkedList<SchemaTableTree> schemaTableTrees : result) {
             if (schemaTableTrees.get(0).getParent() != null) {
                 throw new IllegalStateException("Expected root SchemaTableTree for the first SchemaTableTree in the LinkedList");
@@ -363,7 +362,7 @@ public class SchemaTableTree {
 
                 //labelled entries need to be in the outer select
                 if (!schemaTableTree.getLabels().isEmpty()) {
-                    result = schemaTableTree.printLabeledOuterFromClause(result, countOuter);
+                    result = schemaTableTree.printLabeledOuterFromClause(result, countOuter, columnNameAliasMapCopy);
                     result += ", ";
                 }
                 if (schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
@@ -372,6 +371,7 @@ public class SchemaTableTree {
                 }
                 //last entry, always print this
                 if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
+                    //TODO use columnNameAliasMapCop
                     result += schemaTableTree.printOuterFromClause(countOuter);
                     result += ", ";
                 }
@@ -983,26 +983,21 @@ public class SchemaTableTree {
 
             sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
             sql = constructEmitFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
-
-        } else if (lastSchemaTableTree.parent.isEmit()) {
-
-//            sql = printEdgeId(sqlgGraph, lastSchemaTableTree, sql);
-
         }
         return sql;
     }
 
 
-    private String printLabeledOuterFromClause(String sql, int counter) {
-        sql += " a" + counter + ".\"" + this.labeledMappedAliasId() + "\"";
+    private String printLabeledOuterFromClause(String sql, int counter, Multimap<String, String> columnNameAliasMapCopy) {
+        sql += " a" + counter + ".\"" + this.labeledMappedAliasId(columnNameAliasMapCopy) + "\"";
         Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
         if (!propertyTypeMap.isEmpty()) {
             sql += ", ";
         }
-        sql = this.printLabeledOuterFromClauseFor(sql, counter);
+        sql = this.printLabeledOuterFromClauseFor(sql, counter, columnNameAliasMapCopy);
         if (this.getSchemaTable().isEdgeTable()) {
             sql += ", ";
-            sql = printLabeledEdgeInOutVertexIdOuterFromClauseFor(sql, counter);
+            sql = printLabeledEdgeInOutVertexIdOuterFromClauseFor(sql, counter, columnNameAliasMapCopy);
         }
         return sql;
     }
@@ -1135,13 +1130,13 @@ public class SchemaTableTree {
     }
 
 
-    private String printLabeledOuterFromClauseFor(String sql, int counter) {
+    private String printLabeledOuterFromClauseFor(String sql, int counter, Multimap<String, String> columnNameAliasMapCopy) {
         Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
         int count = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
             sql += " a" + counter + ".";
             sql += "\"";
-            sql += this.labeledMappedAliasPropertyName(propertyName);
+            sql += this.labeledMappedAliasPropertyName(propertyName, columnNameAliasMapCopy);
             sql += "\"";
             if (count++ < propertyTypeMap.size()) {
                 sql += ", ";
@@ -1229,7 +1224,7 @@ public class SchemaTableTree {
         return edgeForeignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) ? Direction.IN : Direction.OUT;
     }
 
-    private String printLabeledEdgeInOutVertexIdOuterFromClauseFor(String sql, int counter) {
+    private String printLabeledEdgeInOutVertexIdOuterFromClauseFor(String sql, int counter, Multimap<String, String> columnNameAliasMapCopy) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
         Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
@@ -1237,7 +1232,7 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += " a" + counter + ".";
             sql += "";
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasPropertyName(edgeForeignKey));
+            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasPropertyName(edgeForeignKey, columnNameAliasMapCopy));
             sql += "\n\t";
             if (propertyCount++ < edgeForeignKeys.size()) {
                 sql += ", ";
@@ -1267,7 +1262,7 @@ public class SchemaTableTree {
         return sql;
     }
 
-    public Multimap<String, String> copyColumnNameAliasMap() {
+    private Multimap<String, String> copyColumnNameAliasMap() {
         Multimap<String, String> result = ArrayListMultimap.create();
         Multimap<String, String> copy = this.getThreadLocalColumnNameAliasMap();
         for (String key : copy.keySet()) {
@@ -1331,10 +1326,23 @@ public class SchemaTableTree {
         return strings.get(strings.size() - 1);
     }
 
-    public String labeledMappedAliasPropertyName(String propertyName) {
+    public String labeledMappedAliasPropertyName(String propertyName, Multimap<String, String> columnNameAliasMapCopy) {
         String labels = reducedLabels();
         String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + propertyName;
-        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
+        List<String> strings = (List<String>) columnNameAliasMapCopy.get(result);
+        return strings.remove(0);
+    }
+
+    public String labeledMappedAliasId(Multimap<String, String> columnNameAliasMapCopy) {
+        String labels = reducedLabels();
+        String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
+        List<String> strings = (List<String>) columnNameAliasMapCopy.get(result);
+        return strings.remove(0);
+    }
+
+    public String mappedAliasIdForOuterFromClause(Multimap<String, String> columnNameAliasMap) {
+        String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
+        List<String> strings = (List<String>) columnNameAliasMap.get(result);
         return strings.remove(0);
     }
 
@@ -1344,23 +1352,16 @@ public class SchemaTableTree {
         return strings.get(strings.size() - 1);
     }
 
-    public String labeledMappedAliasId() {
-        String labels = reducedLabels();
-        String result = labels + "." + getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
-        return strings.remove(0);
-    }
-
     public String lastMappedAliasId() {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
         List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.get(strings.size() - 1);
     }
 
-    public String mappedAliasIdForOuterFromClause(Multimap<String, String> columnNameAliasMap) {
+    public String mappedAliasIdFor(int subQueryDepth) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        List<String> strings = (List<String>) columnNameAliasMap.get(result);
-        return strings.remove(0);
+        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
+        return strings.get(subQueryDepth);
     }
 
     public String propertyNameFromAlias(String alias) {

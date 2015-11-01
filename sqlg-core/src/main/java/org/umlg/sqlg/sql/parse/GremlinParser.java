@@ -70,6 +70,7 @@ public class GremlinParser<S extends Element, E extends Element> {
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
         Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
         SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
+        rootSchemaTableTree.initializeAliasColumnNameMaps();
         //TODO what about the emit, untilFirst flag????
         rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
         schemaTableTrees.add(rootSchemaTableTree);

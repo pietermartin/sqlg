@@ -147,32 +147,63 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
         for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
-            try {
-                List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-                for (Pair<LinkedList<SchemaTableTree>, String> schemaTableTreeSqlPair : sqlStatements) {
+            List<LinkedList<SchemaTableTree>> distinctQueries = schemaTableTree.constructDistinctQueries();
+            for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
+                String sql = schemaTableTree.constructSql(distinctQueryStack);
+                try {
                     Connection conn = this.sqlgGraph.tx().getConnection();
                     if (logger.isDebugEnabled()) {
-                        logger.debug(schemaTableTreeSqlPair.getRight());
+                        logger.debug(sql);
                     }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(schemaTableTreeSqlPair.getRight())) {
-                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, schemaTableTreeSqlPair.getLeft(), conn, preparedStatement, 1);
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 1);
                         ResultSet resultSet = preparedStatement.executeQuery();
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                        int row = 0;
                         while (resultSet.next()) {
-                            Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabaledAndLeafElements(
-                                    this.sqlgGraph, resultSetMetaData, resultSet, schemaTableTreeSqlPair.getLeft()
+                            Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabeledAndLeafElements(
+                                    this.sqlgGraph, resultSetMetaData, resultSet, distinctQueryStack, row
                             );
                             resultIterator.add(result);
+                            row++;
                         }
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
+                } finally {
+                    schemaTableTree.resetThreadVars();
                 }
-            } finally {
-                schemaTableTree.resetThreadVars();
             }
         }
-        rootSchemaTableTree.forEach(SchemaTableTree::resetThreadVars);
+
+
+//        for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
+//            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
+//            for (Pair<LinkedList<SchemaTableTree>, String> schemaTableTreeSqlPair : sqlStatements) {
+//                try {
+//                    Connection conn = this.sqlgGraph.tx().getConnection();
+//                    if (logger.isDebugEnabled()) {
+//                        logger.debug(schemaTableTreeSqlPair.getRight());
+//                    }
+//                    try (PreparedStatement preparedStatement = conn.prepareStatement(schemaTableTreeSqlPair.getRight())) {
+//                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, schemaTableTreeSqlPair.getLeft(), conn, preparedStatement, 1);
+//                        ResultSet resultSet = preparedStatement.executeQuery();
+//                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+//                        while (resultSet.next()) {
+//                            Pair<E, Multimap<String, Emit<E>>> result = SqlgUtil.loadLabeledAndLeafElements(
+//                                    this.sqlgGraph, resultSetMetaData, resultSet, schemaTableTreeSqlPair.getLeft()
+//                            );
+//                            resultIterator.add(result);
+//                        }
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                } finally {
+////                    schemaTableTree.resetThreadVars();
+//                }
+//            }
+//        }
+
         stopWatch.stop();
         if (logger.isDebugEnabled())
             logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
@@ -199,7 +230,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 rootSchemaTableTree.resetThreadVars();
             }
         }
-        rootSchemaTableTrees.forEach(SchemaTableTree::resetThreadVars);
     }
 
     boolean isForMultipleQueries() {

@@ -259,7 +259,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+//            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+            String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
             if (properName == null) {
                 properName = columnName;
             }
@@ -300,7 +301,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = schemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+//            String properName = schemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
+            String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
             if (properName == null) {
                 properName = columnName;
             }
