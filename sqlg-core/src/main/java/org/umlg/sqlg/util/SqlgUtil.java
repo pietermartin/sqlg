@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.Emit;
@@ -55,7 +56,7 @@ public class SqlgUtil {
 
     public static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet,
-            LinkedList<SchemaTableTree> subQueryStack, int row) throws SQLException {
+            LinkedList<SchemaTableTree> subQueryStack, int row, AliasMapHolder copyAliasMapHolder) throws SQLException {
 
         //First load all labeled entries from the resultSet
         Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
@@ -66,7 +67,7 @@ public class SqlgUtil {
             String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
             columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
         }
-        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, row);
+        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, row,  copyAliasMapHolder);
         return labeledResult;
     }
 
@@ -145,13 +146,13 @@ public class SqlgUtil {
      * @param columnNameCountMap
      * @param resultSet
      * @param schemaTableTreeStack
-     * @param row
+     * @param subQueryCount
      * @return
      * @throws SQLException
      */
     private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph, Multimap<String, Integer> columnNameCountMap,
-            ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int row) throws SQLException {
+            ResultSet resultSet, LinkedList<SchemaTableTree> schemaTableTreeStack, int subQueryCount, AliasMapHolder copyAliasMapHolder) throws SQLException {
 
         Multimap<String, Emit<E>> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
@@ -171,7 +172,9 @@ public class SqlgUtil {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     sqlgElement.loadLabeledResultSet(resultSet, columnNameCountMap, schemaTableTree);
-                    final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, row);
+                    //if its the first element in that stack then the edgeId is in the previous stack.
+                    //This means the edgeId is in the previous subQuery
+                    final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, subQueryCount, copyAliasMapHolder);
                     schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst())));
                 }
             }
@@ -179,10 +182,10 @@ public class SqlgUtil {
         return result;
     }
 
-    private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet, int row) throws SQLException {
+    private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet, int subQueryCount, AliasMapHolder copyAliasMapHolder) throws SQLException {
         if (schemaTableTree.hasParent() && schemaTableTree.isEmit()) {
             //Need to load the edge id. It is used in the traverser to calculate if the element needs to be emitted or not.
-            long edgeId = resultSet.getLong(schemaTableTree.getParent().mappedAliasIdFor(row));
+            long edgeId = resultSet.getLong(schemaTableTree.getParent().mappedAliasIdFor(subQueryCount, copyAliasMapHolder));
             if (resultSet.wasNull()) {
                 return Optional.empty();
             } else {

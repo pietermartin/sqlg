@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.SqlGraphStepWithPathTraverser;
 import org.umlg.sqlg.process.SqlgGraphStepWithPathTraverserGenerator;
+import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
@@ -145,12 +146,13 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
+        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
-        for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
-            List<LinkedList<SchemaTableTree>> distinctQueries = schemaTableTree.constructDistinctQueries();
+        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
+            List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
             for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
-                String sql = schemaTableTree.constructSql(distinctQueryStack);
+                String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
                 try {
                     Connection conn = this.sqlgGraph.tx().getConnection();
                     if (logger.isDebugEnabled()) {
@@ -161,12 +163,15 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                         ResultSet resultSet = preparedStatement.executeQuery();
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                         while (resultSet.next()) {
-                            int row = 0;
+                            AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
+                            int subQueryDepth = 0;
                             List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
                             Multimap<String, Emit<E>> previousLabeledElements = null;
+
+                            //Copy the alias map
                             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
                                 Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
-                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, row
+                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, subQueryDepth, copyAliasMapHolder
                                 );
                                 if (previousLabeledElements == null) {
                                     previousLabeledElements = labeledElements;
@@ -174,21 +179,21 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                                     previousLabeledElements.putAll(labeledElements);
                                 }
                                 //The last subQuery
-                                if (row == subQueryStacks.size() - 1) {
+                                if (subQueryDepth == subQueryStacks.size() - 1) {
                                     Optional<E> e = SqlgUtil.loadLeafElement(
                                             this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast()
                                     );
                                     //TODO Optional must go all the way up the stack
                                     resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                                 }
-                                row++;
+                                subQueryDepth++;
                             }
                         }
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 } finally {
-                    schemaTableTree.resetThreadVars();
+                    rootSchemaTableTree.resetThreadVars();
                 }
             }
         }

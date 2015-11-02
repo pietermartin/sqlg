@@ -13,7 +13,7 @@ import org.umlg.sqlg.test.gremlincompile.TestTreeStep;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTreeStep.class
+        TestRepeatStep.class
         })
 public class AnyTest {
 }

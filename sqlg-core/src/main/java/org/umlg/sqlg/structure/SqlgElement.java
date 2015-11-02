@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.Emit;
@@ -250,12 +251,12 @@ public abstract class SqlgElement implements Element {
      */
     private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         SchemaTable schemaTable = getSchemaTablePrefixed();
-        SchemaTableTree schemaTableTree = null;
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
-        schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        List<LinkedList<SchemaTableTree>> distinctQueries = schemaTableTree.constructDistinctQueries();
+        SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
+        AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
+        List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
         for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
-            String sql = schemaTableTree.constructSql(distinctQueryStack);
+            String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
             try {
                 Connection conn = this.sqlgGraph.tx().getConnection();
                 if (logger.isDebugEnabled()) {
@@ -267,12 +268,13 @@ public abstract class SqlgElement implements Element {
                     ResultSet resultSet = preparedStatement.executeQuery();
                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                     while (resultSet.next()) {
+                        AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
                         int row = 0;
                         List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
                         Multimap<String, Emit<E>> previousLabeledElements = null;
                         for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
                             Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
-                                    this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, row
+                                    this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, row, copyAliasMapHolder
                             );
                             if (previousLabeledElements == null) {
                                 previousLabeledElements = labeledElements;
@@ -293,8 +295,8 @@ public abstract class SqlgElement implements Element {
                     throw new RuntimeException(e);
                 }
             } finally {
-                if (schemaTableTree != null)
-                    schemaTableTree.resetThreadVars();
+                if (rootSchemaTableTree != null)
+                    rootSchemaTableTree.resetThreadVars();
             }
         }
         return resultIterator;

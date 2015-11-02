@@ -56,10 +56,7 @@ public class SchemaTableTree {
     private boolean emit;
 
     //Only root SchemaTableTrees have these maps;
-    private Multimap<String, String> threadLocalColumnNameAliasMap;
-    private Map<String, String> threadLocalAliasColumnNameMap;
-    private boolean copy = false;
-
+    private AliasMapHolder aliasMapHolder;
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -108,8 +105,7 @@ public class SchemaTableTree {
     }
 
     public void initializeAliasColumnNameMaps() {
-        this.threadLocalColumnNameAliasMap = ArrayListMultimap.create();
-        this.threadLocalAliasColumnNameMap = new HashMap<>();
+        this.aliasMapHolder = new AliasMapHolder();
     }
 
     public SchemaTableTree addChild(
@@ -160,11 +156,11 @@ public class SchemaTableTree {
     }
 
     public Multimap<String, String> getThreadLocalColumnNameAliasMap() {
-        return this.getRoot().threadLocalColumnNameAliasMap;
+        return this.getRoot().aliasMapHolder.getColumnNameAliasMap();
     }
 
     public Map<String, String> getThreadLocalAliasColumnNameMap() {
-        return this.getRoot().threadLocalAliasColumnNameMap;
+        return this.getRoot().aliasMapHolder.getAliasColumnNameMap();
     }
 
     public boolean hasParent() {
@@ -212,9 +208,13 @@ public class SchemaTableTree {
         this.labels = labels;
     }
 
+    public AliasMapHolder getAliasMapHolder() {
+        Preconditions.checkState(getParent() == null, "The aliasMapHolder is only on the root SchemaTableTree");
+        return aliasMapHolder;
+    }
+
     public void resetThreadVars() {
-        threadLocalAliasColumnNameMap.clear();
-        threadLocalColumnNameAliasMap.clear();
+        this.aliasMapHolder.clear();
         this.rootAliasCounter = 1;
     }
 
@@ -1357,10 +1357,17 @@ public class SchemaTableTree {
         return strings.get(strings.size() - 1);
     }
 
-    public String mappedAliasIdFor(int subQueryDepth) {
+    public String mappedAliasIdFor(int subQueryDepth, AliasMapHolder copyAliasMapHolder) {
         String result = getSchemaTable().getSchema() + "." + getSchemaTable().getTable() + "." + SchemaManager.ID;
-        List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
-        return strings.get(subQueryDepth);
+//        List<String> aliases = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
+        List<String> aliases = (List<String>) copyAliasMapHolder.getColumnNameAliasMap().get(result);
+        return aliases.remove(0);
+//        ///get the last alias for the aliases index < subQueryCount
+//        if (aliases.size() <= subQueryDepth + 1) {
+//            return aliases.get(aliases.size() - 1);
+//        } else {
+//            return aliases.get(subQueryDepth);
+//        }
     }
 
     public String propertyNameFromAlias(String alias) {
@@ -1497,7 +1504,7 @@ public class SchemaTableTree {
      * Remove all leaf nodes that are not at the deepest level.
      * Those nodes are not to be included in the sql as they do not have enough incident edges.
      * i.e. The graph is not deep enough along those labels.
-     * <p/>
+     * <p>
      * This is done via a breath first traversal.
      */
     void removeAllButDeepestLeafNodes(int depth) {
@@ -1505,11 +1512,11 @@ public class SchemaTableTree {
         queue.add(this);
         while (!queue.isEmpty()) {
             SchemaTableTree current = queue.remove();
-            if (current.stepDepth < depth && current.children.isEmpty()) {
+            if (current.stepDepth < depth && current.children.isEmpty() && !current.isEmit()) {
                 removeNode(current);
             } else {
                 queue.addAll(current.children);
-                if (current.stepDepth == depth && current.children.isEmpty()) {
+                if ((current.stepDepth == depth && current.children.isEmpty()) || (current.isEmit() && current.children.isEmpty())) {
                     this.leafNodes.add(current);
                 }
             }
