@@ -119,14 +119,15 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                         ReplacedStep previousReplacedStep;
                         if (emitFirst) {
                             previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                            pathCount--;
                         } else {
                             previousReplacedStep = replacedStep;
                         }
                         previousReplacedStep.setEmit(true);
                         previousReplacedStep.setUntilFirst(untilFirst);
-                        previousReplacedStep.addLabel((pathCount - 1) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
-                        previousReplacedStep.getLabels().remove((pathCount - 1) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        previousReplacedStep.getLabels().remove((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                     }
                     if (replacedStep.getLabels().isEmpty()) {
                         boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
