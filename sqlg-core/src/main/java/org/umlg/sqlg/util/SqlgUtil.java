@@ -56,18 +56,10 @@ public class SqlgUtil {
 
     public static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet,
-            LinkedList<SchemaTableTree> subQueryStack, int row, AliasMapHolder copyAliasMapHolder) throws SQLException {
+            LinkedList<SchemaTableTree> subQueryStack, int subQueryCount, AliasMapHolder copyAliasMapHolder,
+            Multimap<String, Integer> columnNameCountMap) throws SQLException {
 
-        //First load all labeled entries from the resultSet
-        Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
-        SchemaTableTree rootSchemaTableTree = subQueryStack.getFirst();
-        //Translate the columns back from alias to meaningful column headings
-        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-            columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
-        }
-        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, row,  copyAliasMapHolder);
+        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, subQueryCount,  copyAliasMapHolder);
         return labeledResult;
     }
 
