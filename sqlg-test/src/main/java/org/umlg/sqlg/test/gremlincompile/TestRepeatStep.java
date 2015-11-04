@@ -1,14 +1,28 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Date: 2015/10/21
@@ -522,5 +536,49 @@ public class TestRepeatStep extends BaseTest {
 //        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1).emit().repeat(__.out("ab", "ba")).times(2).toList();
 //        Assert.assertEquals(3, vertices.size());
 //    }
+//
+//    @Test
+//    public void testRepeatWithTimesBefore() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        a1.addEdge("ab", b1);
+//        this.sqlgGraph.tx().commit();
+//        List<Path> paths = this.sqlgGraph.traversal().V().emit().times(2).repeat(__.out()).path().toList();
+//        for (Path path : paths) {
+//            System.out.println(path);
+//        }
+//    }
+//
+    @Test
+    public void g_V_emit_timesX2X_repeatXoutX_path() throws IOException {
+        Graph graph = this.sqlgGraph;
+        graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
+        GraphTraversalSource g = graph.traversal();
+        final List<Traversal<Vertex, Path>> traversals = Arrays.asList(
+//                g.V().emit().times(2).repeat(__.out()).path()
+                g.V().emit().repeat(__.out()).times(2).path()
+        );
+        traversals.forEach(traversal -> {
+            int path1 = 0;
+            int path2 = 0;
+            int path3 = 0;
+            while (traversal.hasNext()) {
+                final Path path = traversal.next();
+                System.out.println(path);
+//                if (path.size() == 1) {
+//                    path1++;
+//                } else if (path.size() == 2) {
+//                    path2++;
+//                } else if (path.size() == 3) {
+//                    path3++;
+//                } else {
+//                    Assert.fail("Only path lengths of 1, 2, or 3 should be seen");
+//                }
+            }
+//            Assert.assertEquals(6, path1);
+//            Assert.assertEquals(6, path2);
+//            Assert.assertEquals(2, path3);
+        });
+    }
 
 }
