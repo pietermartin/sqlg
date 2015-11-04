@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -269,12 +270,20 @@ public abstract class SqlgElement implements Element {
                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                     while (resultSet.next()) {
                         AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
-                        int row = 0;
+                        //First load all labeled entries from the resultSet
+                        Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
+                        //Translate the columns back from alias to meaningful column headings
+                        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+                            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+                            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+                            columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
+                        }
+                        int subQueryCount = 0;
                         List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
                         Multimap<String, Emit<E>> previousLabeledElements = null;
                         for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
                             Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
-                                    this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, row, copyAliasMapHolder
+                                    this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, subQueryCount, copyAliasMapHolder, columnNameCountMap
                             );
                             if (previousLabeledElements == null) {
                                 previousLabeledElements = labeledElements;
@@ -282,13 +291,13 @@ public abstract class SqlgElement implements Element {
                                 previousLabeledElements.putAll(labeledElements);
                             }
                             //The last subQuery
-                            if (row == subQueryStacks.size() - 1) {
+                            if (subQueryCount == subQueryStacks.size() - 1) {
                                 Optional<E> e = SqlgUtil.loadLeafElement(
                                         this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast()
                                 );
                                 resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                             }
-                            row++;
+                            subQueryCount++;
                         }
                     }
                 } catch (SQLException e) {

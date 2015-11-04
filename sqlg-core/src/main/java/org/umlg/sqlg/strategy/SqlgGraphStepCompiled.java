@@ -164,6 +164,14 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                         while (resultSet.next()) {
                             AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
+                            //First load all labeled entries from the resultSet
+                            Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
+                            //Translate the columns back from alias to meaningful column headings
+                            for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+                                String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+                                String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+                                columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
+                            }
                             int subQueryDepth = 0;
                             List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
                             Multimap<String, Emit<E>> previousLabeledElements = null;
@@ -171,7 +179,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                             //Copy the alias map
                             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
                                 Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
-                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, subQueryDepth, copyAliasMapHolder
+                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, subQueryDepth, copyAliasMapHolder, columnNameCountMap
                                 );
                                 if (previousLabeledElements == null) {
                                     previousLabeledElements = labeledElements;
