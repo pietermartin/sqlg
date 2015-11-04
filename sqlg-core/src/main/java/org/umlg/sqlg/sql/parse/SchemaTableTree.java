@@ -1634,6 +1634,7 @@ public class SchemaTableTree {
                 .append(this.comparators.toString()).append(" ")
                 .append(this.direction != null ? this.direction.toString() : "").append(" ")
                 .append("isVertexStep = ").append(this.isEdgeVertexStep())
+                .append(" isUntilFirst = ").append(this.isUntilFirst())
                 .append(" labels = ").append(this.labels);
         for (SchemaTableTree child : children) {
             child.internalToString(sb);
