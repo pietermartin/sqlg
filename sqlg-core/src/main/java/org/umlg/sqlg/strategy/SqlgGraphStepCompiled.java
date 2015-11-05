@@ -103,15 +103,15 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
             //Do not emit the last element if it has already been emitted.
             if (this.currentEmitTree != null) {
                 if (this.currentEmitTree.emitEquals((E) sqlGraphStepWithPathTraverser.get())) {
-                    if (this.currentEmitTree.getEmit().isUntilFirst()) {
-                        //reset the tree to the root
-                        this.currentEmitTree = null;
-                        return sqlGraphStepWithPathTraverser;
-                    } else {
+//                    if (this.currentEmitTree.getEmit().isUntilFirst()) {
+//                        //reset the tree to the root
+//                        this.currentEmitTree = null;
+//                        return sqlGraphStepWithPathTraverser;
+//                    } else {
                         //reset the tree to the root
                         this.currentEmitTree = null;
                         return EmptyTraverser.instance();
-                    }
+//                    }
                 } else {
                     this.currentEmitTree = this.currentEmitTree.addEmit(-1, new Emit((E) sqlGraphStepWithPathTraverser.get(), Optional.empty(), false));
                     this.currentEmitTree = null;

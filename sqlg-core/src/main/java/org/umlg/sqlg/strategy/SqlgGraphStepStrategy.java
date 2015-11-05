@@ -76,6 +76,10 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
                 LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
                 long numberOfLoops = loopTraversal.getMaxLoops();
+                //A times(x) before is the same as a times(x + 1) after
+                if (repeatStep.untilFirst) {
+                    numberOfLoops++;
+                }
                 for (int i = 0; i < numberOfLoops; i++) {
                     for (Step internalRepeatStep : internalRepeatSteps) {
                         if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
@@ -100,13 +104,13 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;
                     boolean emitFirst = false;
-                    boolean untilFirst = false;
+//                    boolean untilFirst = false;
                     if (repeatStepsAdded > 0) {
                         repeatStepsAdded--;
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
-                        untilFirst = repeatStep.untilFirst;
+//                        untilFirst = repeatStep.untilFirst;
                     }
 
                     pathCount++;
@@ -124,7 +128,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                             previousReplacedStep = replacedStep;
                         }
                         previousReplacedStep.setEmit(true);
-                        previousReplacedStep.setUntilFirst(untilFirst);
+//                        previousReplacedStep.setUntilFirst(untilFirst);
                         previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
