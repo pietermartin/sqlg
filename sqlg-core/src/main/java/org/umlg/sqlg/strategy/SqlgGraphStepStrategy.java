@@ -76,10 +76,12 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
                 LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
                 long numberOfLoops = loopTraversal.getMaxLoops();
-                //A times(x) before is the same as a times(x + 1) after
-                if (repeatStep.untilFirst) {
-                    numberOfLoops++;
-                }
+
+                //Bug on tp3, times after is the same as times before for now
+//                //A times(x) after is the same as a times(x + 1) before
+//                if (repeatStep.untilFirst) {
+//                    numberOfLoops++;
+//                }
                 for (int i = 0; i < numberOfLoops; i++) {
                     for (Step internalRepeatStep : internalRepeatSteps) {
                         if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
