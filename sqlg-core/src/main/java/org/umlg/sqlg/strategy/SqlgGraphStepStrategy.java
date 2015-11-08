@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
@@ -58,6 +59,14 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         SqlgGraphStepCompiled sqlgGraphStepCompiled = null;
         Step previous = null;
         ReplacedStep<?, ?> lastReplacedStep = null;
+        Class repeatStepClass;
+        Class loopTraversalClass = null;
+        try {
+            repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
+            loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
 
         int pathCount = 0;
         boolean repeatStepAdded = false;
@@ -74,8 +83,23 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 Traversal.Admin admin = repeatTraversals.get(0);
                 List<Step> internalRepeatSteps = admin.getSteps();
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
-                LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
-                long numberOfLoops = loopTraversal.getMaxLoops();
+                //TODO remove when go to 3.1.0-incubating
+                LoopTraversal loopTraversal;
+                long numberOfLoops;
+                try {
+                    Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
+                    untilTraversalField.setAccessible(true);
+                    loopTraversal = (LoopTraversal) untilTraversalField.get(repeatStep);
+                    Field maxLoopsField = loopTraversalClass.getDeclaredField("maxLoops");
+                    maxLoopsField.setAccessible(true);
+                    numberOfLoops = (Long)maxLoopsField.get(loopTraversal);
+                } catch (NoSuchFieldException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+//                LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
+//                long numberOfLoops = loopTraversal.getMaxLoops();
 
                 //Bug on tp3, times after is the same as times before for now
                 //A times(x) after is the same as a times(x + 1) before
@@ -110,7 +134,18 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                     if (repeatStepsAdded > 0) {
                         repeatStepsAdded--;
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
-                        emit = repeatStep.getEmitTraversal() != null;
+                        Field emitTraversalField;
+                        try {
+                            //TODO remove when go to 3.1.0-incubating
+                            emitTraversalField = repeatStepClass.getDeclaredField("emitTraversal");
+                            emitTraversalField.setAccessible(true);
+                            emit = emitTraversalField.get(repeatStep) != null;
+                        } catch (NoSuchFieldException e) {
+                            throw new RuntimeException(e);
+                        } catch (IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+//                        emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
                     }

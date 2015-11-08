@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphIn;
+import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphOut;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphIn;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatStepGraphIn.class
+        TestRepeatStepGraphOut.class
         })
 public class AnyTest {
 }
