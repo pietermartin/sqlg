@@ -1,6 +1,5 @@
 package org.umlg.sqlg.strategy;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
@@ -20,10 +19,14 @@ import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
@@ -48,15 +51,43 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         List<Step> toCome = steps.subList(index, steps.size());
         boolean repeatExist = toCome.stream().anyMatch(s -> s.getClass().equals(RepeatStep.class));
         if (repeatExist) {
-
-//            boolean hasEmit = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> ((RepeatStep) r).getEmitTraversal() != null);
-            boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> ((RepeatStep) r).getUntilTraversal() != null);
-            boolean hasUnoptimizableUntil = false;
-            if (hasUntil) {
-                hasUnoptimizableUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> !(((RepeatStep) r).getUntilTraversal() instanceof LoopTraversal));
+            //TODO tp3 3.1.0-incubating
+            Class repeatStepClass;
+            try {
+                repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
 
-//            boolean badRepeat = hasEmit || !hasUntil || hasUnoptimizableUntil;
+            boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
+                try {
+                    Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
+                    untilTraversalField.setAccessible(true);
+                    return untilTraversalField.get(r) != null;
+                } catch (NoSuchFieldException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                //TODO tp3 3.1.0-incubating
+//                ((RepeatStep) r).getUntilTraversal() != null
+            });
+            boolean hasUnoptimizableUntil = false;
+            if (hasUntil) {
+                hasUnoptimizableUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
+                    try {
+                        Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
+                        untilTraversalField.setAccessible(true);
+                        return !(untilTraversalField.get(r)  instanceof LoopTraversal);
+                    } catch (NoSuchFieldException e) {
+                        throw new RuntimeException(e);
+                    } catch (IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+                    //TODO tp3 3.1.0-incubating
+//                    return !(((RepeatStep) r).getUntilTraversal() instanceof LoopTraversal)
+                });
+            }
             boolean badRepeat = !hasUntil || hasUnoptimizableUntil;
             //Check if the repeat step only contains optimizable steps
             if (!badRepeat) {
@@ -70,9 +101,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     collectedRepeatInternalSteps.addAll(repeatInternalSteps);
                 }
                 return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
-                        .allMatch((s) -> {
-                            return CONSECUTIVE_STEPS_TO_REPLACE.contains(s.getClass());
-                        });
+                        .allMatch((s) -> CONSECUTIVE_STEPS_TO_REPLACE.contains(s.getClass()));
             } else {
                 return true;
             }
