@@ -41,6 +41,14 @@ public abstract class SqlgElement implements Element {
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     protected boolean removed = false;
 
+
+    /**
+     * Constructor only used for the Dummy element.
+     */
+    SqlgElement() {
+        this.sqlgGraph = null;
+    }
+
     public SqlgElement(SqlgGraph sqlgGraph, String schema, String table) {
         this.sqlgGraph = sqlgGraph;
         this.schema = schema;
@@ -272,11 +280,13 @@ public abstract class SqlgElement implements Element {
                         AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
                         //First load all labeled entries from the resultSet
                         Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
+                        Multimap<String, Integer> columnNameCountMap2 = ArrayListMultimap.create();
                         //Translate the columns back from alias to meaningful column headings
                         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
                             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
                             String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
                             columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
+                            columnNameCountMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
                         }
                         int subQueryCount = 0;
                         List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
@@ -293,7 +303,7 @@ public abstract class SqlgElement implements Element {
                             //The last subQuery
                             if (subQueryCount == subQueryStacks.size() - 1) {
                                 Optional<E> e = SqlgUtil.loadLeafElement(
-                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast()
+                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast(), columnNameCountMap2
                                 );
                                 resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                             }

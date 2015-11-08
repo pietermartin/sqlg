@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_P_S_SE_SL_Traverser;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.structure.Dummy;
 import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.*;
@@ -86,7 +87,7 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
                 }
             }
         }
-        if (addT && !(t instanceof SqlgGraphStepWithPathTraverserGenerator.Dummy)) {
+        if (addT && !(t instanceof Dummy)) {
             //tp relies on all elements traversed being on the path.
             //if the element is not labelled put it on the path
             currentPath = currentPath.clone().extend(t);

@@ -65,20 +65,20 @@ public class SqlgUtil {
 
     public static <E extends SqlgElement> Optional<E> loadLeafElement(
             SqlgGraph sqlgGraph, ResultSetMetaData resultSetMetaData, final ResultSet resultSet,
-            SchemaTableTree leafSubQueryStack) throws SQLException {
+            SchemaTableTree leafSubQueryStack, Multimap<String, Integer> columnMap) throws SQLException {
 
-        //First load all labeled entries from the resultSet
-        Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
-        Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
-        SchemaTableTree rootSchemaTableTree = leafSubQueryStack.getRoot();
-        //Translate the columns back from alias to meaningful column headings
-        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-            columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
-            columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
-        }
-        Optional<E> e = loadElement(sqlgGraph, columnMap2, resultSet, leafSubQueryStack);
+//        //First load all labeled entries from the resultSet
+//        Multimap<String, Integer> columnMap1 = ArrayListMultimap.create();
+//        Multimap<String, Integer> columnMap2 = ArrayListMultimap.create();
+//        SchemaTableTree rootSchemaTableTree = leafSubQueryStack.getRoot();
+//        //Translate the columns back from alias to meaningful column headings
+//        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+//            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+//            String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+//            columnMap1.put(unaliased != null ? unaliased : columnLabel, columnCount);
+//            columnMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
+//        }
+        Optional<E> e = loadElement(sqlgGraph, columnMap, resultSet, leafSubQueryStack);
         return e;
     }
 

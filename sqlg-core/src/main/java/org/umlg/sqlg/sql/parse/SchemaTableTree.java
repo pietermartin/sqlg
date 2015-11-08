@@ -57,6 +57,15 @@ public class SchemaTableTree {
 
     //Only root SchemaTableTrees have these maps;
     private AliasMapHolder aliasMapHolder;
+    private boolean leadNodeIsEmpty;
+
+    public void leafNodeIfEmpty() {
+        this.leadNodeIsEmpty = true;
+    }
+
+    public boolean isLeadNodeIsEmpty() {
+        return leadNodeIsEmpty;
+    }
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -945,6 +954,7 @@ public class SchemaTableTree {
                             nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
 
                     sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
+                    sql = constructEmitEdgeIdFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
                 }
             }
         } else if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
@@ -1504,7 +1514,7 @@ public class SchemaTableTree {
      * Remove all leaf nodes that are not at the deepest level.
      * Those nodes are not to be included in the sql as they do not have enough incident edges.
      * i.e. The graph is not deep enough along those labels.
-     * <p>
+     * <p/>
      * This is done via a breath first traversal.
      */
     void removeAllButDeepestLeafNodes(int depth) {

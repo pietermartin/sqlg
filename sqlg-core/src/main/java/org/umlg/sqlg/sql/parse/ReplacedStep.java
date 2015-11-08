@@ -131,6 +131,11 @@ public class ReplacedStep<S, E> {
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, inLabelsToTravers, Direction.IN));
             }
         }
+        //if emit and no where to traverse to add in a dummy.
+        //this is required for the SqlgGraphStepCompiled to know that their is no last element to emit
+        if (inLabelsToTraversers.isEmpty() && (vertexStep.getDirection() == Direction.BOTH || vertexStep.getDirection() == Direction.IN)) {
+            schemaTableTree.leafNodeIfEmpty();
+        }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
@@ -145,6 +150,11 @@ public class ReplacedStep<S, E> {
                         Collections.EMPTY_SET);
                 result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, outLabelsToTravers, Direction.OUT));
             }
+        }
+        //if emit and no where to traverse to add in a dummy.
+        //this is required for the SqlgGraphStepCompiled to know that their is no last element to emit
+        if (outLabelsToTraversers.isEmpty() && (vertexStep.getDirection() == Direction.BOTH || vertexStep.getDirection() == Direction.OUT)) {
+            schemaTableTree.leafNodeIfEmpty();
         }
         return result;
     }

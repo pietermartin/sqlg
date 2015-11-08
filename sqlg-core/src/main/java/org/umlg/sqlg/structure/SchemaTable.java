@@ -10,7 +10,6 @@ import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
 
-import javax.xml.validation.Schema;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Objects;
@@ -23,6 +22,7 @@ import java.util.Objects;
 public class SchemaTable implements DataSerializable, Serializable {
     private String schema;
     private String table;
+    public static SchemaTable DUMMY = SchemaTable.of("dummy", "dummy");
 
     //Needed for Hazelcast
     public SchemaTable() {

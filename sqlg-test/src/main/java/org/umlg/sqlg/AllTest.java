@@ -98,7 +98,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestSchemaManagerGetTablesFor.class,
         TestAggregate.class,
         TestTreeStep.class,
-        TestRepeatStep.class
+        TestRepeatStepGraphOut.class
 })
 public class AllTest {
 }
