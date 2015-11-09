@@ -60,7 +60,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         Step previous = null;
         ReplacedStep<?, ?> lastReplacedStep = null;
         Class repeatStepClass;
-        Class loopTraversalClass = null;
+        Class loopTraversalClass;
         try {
             repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
             loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
