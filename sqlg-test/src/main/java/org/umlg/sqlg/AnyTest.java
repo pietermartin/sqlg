@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestVertexNavToEdges;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +12,8 @@ import org.umlg.sqlg.test.TestVertexNavToEdges;
 @Suite.SuiteClasses({
 //        TestRepeatStepGraphOut.class
 //        TestRepeatStepVertexOut.class
-        TestVertexNavToEdges.class
+//        TestVertexNavToEdges.class
+        TestGremlinCompileWithHas.class
         })
 public class AnyTest {
 }

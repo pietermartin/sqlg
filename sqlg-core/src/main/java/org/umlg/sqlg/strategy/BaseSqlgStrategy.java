@@ -4,8 +4,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
@@ -37,7 +39,6 @@ import java.util.stream.Collectors;
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     protected SqlgGraph sqlgGraph;
-    protected static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
@@ -120,7 +121,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             } else {
 
-                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+//                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                if (isReplaceableStep(step.getClass())) {
 
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;
@@ -201,6 +203,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
+    protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass);
+
     protected abstract SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep);
 
     protected boolean unoptimizableRepeat(List<Step> steps, int index) {
@@ -257,7 +261,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     collectedRepeatInternalSteps.addAll(repeatInternalSteps);
                 }
                 return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
-                        .allMatch((s) -> CONSECUTIVE_STEPS_TO_REPLACE.contains(s.getClass()));
+                        .allMatch((s) -> isReplaceableStep(s.getClass()));
             } else {
                 return true;
             }

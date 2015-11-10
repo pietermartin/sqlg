@@ -293,4 +293,9 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     public Set<Class<? extends OptimizationStrategy>> applyPrior() {
         return Stream.of(SqlgGraphStepStrategy.class).collect(Collectors.toSet());
     }
+
+    @Override
+    protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
+        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
+    }
 }

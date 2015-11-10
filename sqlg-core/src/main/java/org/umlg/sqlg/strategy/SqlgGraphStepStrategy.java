@@ -4,12 +4,15 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -20,6 +23,7 @@ import java.util.ListIterator;
 public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
+    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
 
     public SqlgGraphStepStrategy(SqlgGraph sqlgGraph) {
         super(sqlgGraph);
@@ -56,6 +60,11 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
         return new SqlgGraphStepCompiled(this.sqlgGraph, traversal, ((GraphStep)startStep).getReturnClass(), ((GraphStep)startStep).getIds());
+    }
+
+    @Override
+    protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
+        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 
 }
