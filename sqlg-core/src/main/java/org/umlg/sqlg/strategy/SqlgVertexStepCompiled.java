@@ -25,7 +25,7 @@ import java.util.*;
  * Date: 2014/08/15
  * Time: 8:10 PM
  */
-public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep<S, E> {
+public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep implements SqlgStep {
 
     private Traverser.Admin<S> head = null;
     private Traverser.Admin<S> originalHead = null;
@@ -91,15 +91,17 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     }
 
     @Override
-    protected Iterator<E> flatMap(final Traverser.Admin<S> traverser) {
+    protected Iterator<E> flatMap(final Traverser.Admin traverser) {
         throw new IllegalStateException("SqlgVertexStepCompiled.flatMap should never be called, it has been replaced with flatMapCustom");
     }
 
-    void addReplacedStep(ReplacedStep<S, E> replacedStep) {
+    @Override
+    public void addReplacedStep(ReplacedStep replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
         replacedStep.setDepth(this.replacedSteps.size() + 1);
         this.replacedSteps.add(replacedStep);
     }
+
 
     //This is only used in tests, think about, delete?
     public List<ReplacedStep<S, E>> getReplacedSteps() {
@@ -117,7 +119,12 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         return EnumSet.of(TraverserRequirement.PATH);
     }
 
-    void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    @Override
+    public void parseForStrategy() {
+
+    }
+
+    public void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         this.parsedForStrategySql.clear();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(
@@ -135,7 +142,9 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         }
     }
 
-    boolean isForMultipleQueries() {
+    @Override
+    public boolean isForMultipleQueries() {
         return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
     }
+
 }

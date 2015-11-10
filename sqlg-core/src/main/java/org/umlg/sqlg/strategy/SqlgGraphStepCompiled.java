@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
+public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep implements SqlgStep {
 
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
@@ -219,13 +219,14 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         return resultIterator;
     }
 
-    void addReplacedStep(ReplacedStep<S, E> replacedStep) {
+    @Override
+    public void addReplacedStep(ReplacedStep replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
         replacedStep.setDepth(this.replacedSteps.size() + 1);
         this.replacedSteps.add(replacedStep);
     }
 
-    void parseForStrategy() {
+    public void parseForStrategy() {
         this.parsedForStrategySql.clear();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
@@ -240,11 +241,12 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         }
     }
 
-    boolean isForMultipleQueries() {
+    public boolean isForMultipleQueries() {
         return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 1;
     }
 
-    List<ReplacedStep<S, E>> getReplacedSteps() {
+    public List<ReplacedStep<S, E>> getReplacedSteps() {
         return replacedSteps;
     }
+
 }
