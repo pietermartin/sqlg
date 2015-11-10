@@ -29,10 +29,7 @@ import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
@@ -1588,6 +1585,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+        File tmp = new File(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp") + "/sqlg.bulk.edit." + uuid.toString() + ".csv");
+        if (tmp.exists()) {
+            tmp.delete();
         }
     }
 
