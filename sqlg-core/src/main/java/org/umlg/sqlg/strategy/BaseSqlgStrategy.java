@@ -51,8 +51,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     protected void babySitSteps(Traversal.Admin<?, ?> traversal, Step startStep, List<Step> steps, ListIterator<Step> stepIterator) {
         //Replace all consecutive VertexStep and HasStep with one step
-//        SqlgGraphStepCompiled sqlgGraphStepCompiled = null;
-        SqlgStep sqlgGraphStepCompiled = null;
+//        SqlgGraphStepCompiled sqlgStep = null;
+        SqlgStep sqlgStep = null;
         Step previous = null;
         ReplacedStep<?, ?> lastReplacedStep = null;
         Class repeatStepClass;
@@ -153,7 +153,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         //the previous step must be marked as emit.
                         //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
                         //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
-                        List<ReplacedStep> previousReplacedSteps = sqlgGraphStepCompiled.getReplacedSteps();
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
                         ReplacedStep previousReplacedStep;
                         if (emitFirst) {
                             previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
@@ -174,13 +174,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         }
                     }
                     if (previous == null) {
-                        sqlgGraphStepCompiled = constructSqlgStep(traversal, startStep);
-//                        sqlgGraphStepCompiled = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, startStep.getReturnClass(), startStep.getIds());
-                        sqlgGraphStepCompiled.addReplacedStep(replacedStep);
-                        TraversalHelper.replaceStep(step, sqlgGraphStepCompiled, traversal);
+                        sqlgStep = constructSqlgStep(traversal, startStep);
+//                        sqlgStep = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, startStep.getReturnClass(), startStep.getIds());
+                        sqlgStep.addReplacedStep(replacedStep);
+                        TraversalHelper.replaceStep(step, sqlgStep, traversal);
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                     } else {
-                        sqlgGraphStepCompiled.addReplacedStep(replacedStep);
+                        sqlgStep.addReplacedStep(replacedStep);
                         if (!repeatStepAdded) {
                             //its not in the traversal, so do not remove it
                             traversal.removeStep(step);
@@ -190,18 +190,17 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     previous = step;
                     lastReplacedStep = replacedStep;
                 } else {
-                    if (lastReplacedStep != null) {
-                        //TODO optimize this, to not parse if there are no OrderGlobalSteps
-                        sqlgGraphStepCompiled.parseForStrategy();
-                        if (!sqlgGraphStepCompiled.isForMultipleQueries()) {
-                            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
-                        }
+                    if (doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep)) {
+                        break;
                     }
-                    break;
+                    previous = null;
+                    lastReplacedStep = null;
                 }
             }
         }
     }
+
+    protected abstract boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
     protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass);
 

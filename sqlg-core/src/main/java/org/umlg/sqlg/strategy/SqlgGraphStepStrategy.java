@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ArrayList;
@@ -67,5 +68,16 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 
+    @Override
+    protected boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
+        if (lastReplacedStep != null) {
+            //TODO optimize this, to not parse if there are no OrderGlobalSteps
+            sqlgStep.parseForStrategy();
+            if (!sqlgStep.isForMultipleQueries()) {
+                collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+            }
+        }
+        return true;
+    }
 }
 

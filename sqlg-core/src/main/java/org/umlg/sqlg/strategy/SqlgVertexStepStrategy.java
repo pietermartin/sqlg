@@ -253,6 +253,14 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
+    protected boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
+        if (lastReplacedStep != null) {
+            replaceOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+        }
+        return false;
+    }
+
+    @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         return new SqlgVertexStepCompiled(traversal);
     }
