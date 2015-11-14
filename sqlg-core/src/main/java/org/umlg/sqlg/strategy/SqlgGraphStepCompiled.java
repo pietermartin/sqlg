@@ -77,7 +77,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
             }
             if ((this.rootEmitTrees.isEmpty() || (!this.rootEmitTrees.isEmpty() && this.currentEmitTree == null)) ||
-                    (!rootEmitTreeContains(emit) && !this.currentEmitTree.hasChild(emit.getElementPlusEdgeId()))) {
+                    (!rootEmitTreeContains(this.rootEmitTrees, emit) && !this.currentEmitTree.hasChild(emit.getElementPlusEdgeId()))) {
 
                 this.starts.add(sqlGraphStepWithPathTraverser);
                 SqlGraphStepWithPathTraverser emitTraverser = new SqlGraphStepWithPathTraverser<>((S) emit.getElementPlusEdgeId().getLeft(), this, 1l);
@@ -102,7 +102,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         } else {
             //Do not emit the last element if it has already been emitted.
             if (this.currentEmitTree != null) {
-                this.currentEmitTree = this.currentEmitTree.addEmit(-1, new Emit((E) sqlGraphStepWithPathTraverser.get(), Optional.empty(), false));
+//                this.currentEmitTree = this.currentEmitTree.addEmit(-1, new Emit((E) sqlGraphStepWithPathTraverser.get(), Optional.empty(), false));
                 this.currentEmitTree = null;
                 return sqlGraphStepWithPathTraverser;
             } else {
@@ -111,16 +111,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         }
     }
 
-    private boolean rootEmitTreeContains(Emit emit) {
-        for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-            if (rootEmitTree.getEmit().getPath().get(0).equals(emit.getPath().get(0)) &&
-                    rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-
-                return true;
-            }
-        }
-        return false;
-    }
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
@@ -180,14 +170,11 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                                 }
                                 //The last subQuery
                                 if (subQueryDepth == subQueryStacks.size() - 1) {
-                                    if (subQueryStack.getLast().isLeadNodeIsEmpty()) {
+                                    if (subQueryStack.getLast().isLeafNodeIsEmpty()) {
                                         //write in a empty element indicating that the traversal actually returns nothing.
                                         //this only happens for emit queries where a left join is used.
                                         //if the last VertexStep does not exist it is excluded from the sql so a empty needs to be written.
                                         //The empty is used in processNextStart() to know whether the last element should be emitted ot not.
-//                                        Optional<E> e = SqlgUtil.loadLeafElement(
-//                                                this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast(), columnNameCountMap2
-//                                        );
 //                                        //TODO Optional must go all the way up the stack
 //                                        resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                                         resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));

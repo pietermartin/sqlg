@@ -79,8 +79,6 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
                         emit.setPath(currentPath.clone());
                         emit.setDegree(degree);
                         this.toEmit.add(emit);
-//                        this.toEmit.add(new Emit(degree, currentPath.clone(), emit.getElementPlusEdgeId()));
-//                        this.toEmit.add(Pair.of(currentPath.clone(), labeledElementPair));
                     }
                 } else {
                     currentPath.addLabel(realLabel);

@@ -33,6 +33,9 @@ import java.util.stream.Collectors;
  * Time: 7:06 AM
  */
 public class SchemaTableTree {
+    //This is only ever true for the root SchemaTableTree of a gremlin qurey starting with g.V(vertex). i.e. a traversal starting from a vertex.
+    //TODO think about starting with an edge.
+    private boolean vertexGraphStep = false;
     //stepDepth indicates the depth of the replaced steps. i.e. v1.out().out().out() has stepDepth 0,1,2,3
     private int stepDepth;
     private SchemaTable schemaTable;
@@ -59,11 +62,11 @@ public class SchemaTableTree {
     private AliasMapHolder aliasMapHolder;
     private boolean leadNodeIsEmpty;
 
-    public void leafNodeIfEmpty() {
+    public void leafNodeIsEmpty() {
         this.leadNodeIsEmpty = true;
     }
 
-    public boolean isLeadNodeIsEmpty() {
+    public boolean isLeafNodeIsEmpty() {
         return leadNodeIsEmpty;
     }
 
@@ -101,6 +104,7 @@ public class SchemaTableTree {
                     STEP_TYPE stepType,
                     boolean emit,
                     boolean untilFirst,
+                    boolean vertexGraphStep,
                     Set<String> labels
     ) {
         this(sqlgGraph, schemaTable, stepDepth);
@@ -110,6 +114,7 @@ public class SchemaTableTree {
         this.stepType = stepType;
         this.emit = emit;
         this.untilFirst = untilFirst;
+        this.vertexGraphStep = vertexGraphStep;
         initializeAliasColumnNameMaps();
     }
 
@@ -162,6 +167,10 @@ public class SchemaTableTree {
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
         return schemaTableTree;
+    }
+
+    public boolean isVertexGraphStep() {
+        return vertexGraphStep;
     }
 
     public Multimap<String, String> getThreadLocalColumnNameAliasMap() {
@@ -539,7 +548,7 @@ public class SchemaTableTree {
         }
 
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
-        if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
+        if (lastOfPrevious == null && distinctQueryStack.getFirst().isVertexGraphStep()) {
             singlePathSql += " WHERE ";
             singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
             singlePathSql += ".";

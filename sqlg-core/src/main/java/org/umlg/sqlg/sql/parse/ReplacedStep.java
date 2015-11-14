@@ -33,7 +33,8 @@ public class ReplacedStep<S, E> {
     private int depth;
     private boolean emit;
     private boolean untilFirst;
-    private boolean path;
+    //This is indicate whether a where clause is needed in the sql
+    private boolean isVertexGraphStep = false;
 
     public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
@@ -43,6 +44,10 @@ public class ReplacedStep<S, E> {
         replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
         return replacedStep;
+    }
+
+    public void setVertexGraphStep(boolean vertexGraphStep) {
+        isVertexGraphStep = vertexGraphStep;
     }
 
     public List<HasContainer> getHasContainers() {
@@ -134,7 +139,7 @@ public class ReplacedStep<S, E> {
         //if emit and no where to traverse to add in a dummy.
         //this is required for the SqlgGraphStepCompiled to know that their is no last element to emit
         if (inLabelsToTraversers.isEmpty() && (vertexStep.getDirection() == Direction.BOTH || vertexStep.getDirection() == Direction.IN)) {
-            schemaTableTree.leafNodeIfEmpty();
+            schemaTableTree.leafNodeIsEmpty();
         }
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
@@ -154,7 +159,7 @@ public class ReplacedStep<S, E> {
         //if emit and no where to traverse to add in a dummy.
         //this is required for the SqlgGraphStepCompiled to know that their is no last element to emit
         if (outLabelsToTraversers.isEmpty() && (vertexStep.getDirection() == Direction.BOTH || vertexStep.getDirection() == Direction.OUT)) {
-            schemaTableTree.leafNodeIfEmpty();
+            schemaTableTree.leafNodeIsEmpty();
         }
         return result;
     }
@@ -339,6 +344,7 @@ public class ReplacedStep<S, E> {
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
+                            ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
 
@@ -362,6 +368,7 @@ public class ReplacedStep<S, E> {
                             SchemaTableTree.STEP_TYPE.VERTEX_STEP.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
+                            ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
                     result.add(schemaTableTree);

@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -57,6 +58,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         babySitSteps(traversal, originalGraphStep, steps, stepIterator);
     }
 
+
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
@@ -66,6 +68,11 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     @Override
     protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
+    }
+
+    @Override
+    protected void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?>  traversal) {
+        TraversalHelper.replaceStep(firstStep, sqlgStep, traversal);
     }
 
     @Override

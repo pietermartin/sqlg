@@ -68,6 +68,8 @@ public class GremlinParser<S extends Element, E extends Element> {
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
+        ReplacedStep startReplacedStep = replacedSteps.remove(0);
+        Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
         Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
         SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
         rootSchemaTableTree.initializeAliasColumnNameMaps();

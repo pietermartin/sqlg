@@ -49,156 +49,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         this.sqlgGraph = sqlgGraph;
     }
 
-    protected void babySitSteps(Traversal.Admin<?, ?> traversal, Step startStep, List<Step> steps, ListIterator<Step> stepIterator) {
-        //Replace all consecutive VertexStep and HasStep with one step
-//        SqlgGraphStepCompiled sqlgStep = null;
-        SqlgStep sqlgStep = null;
-        Step previous = null;
-        ReplacedStep<?, ?> lastReplacedStep = null;
-        Class repeatStepClass;
-        Class loopTraversalClass;
-        try {
-            repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
-            loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        int pathCount = 0;
-        boolean repeatStepAdded = false;
-        int repeatStepsAdded = 0;
-        while (stepIterator.hasNext()) {
-            Step step = stepIterator.next();
-
-            //Check for RepeatStep(s) and insert them into the stepIterator
-            if (step instanceof RepeatStep) {
-                repeatStepsAdded = 0;
-                repeatStepAdded = false;
-                RepeatStep repeatStep = (RepeatStep) step;
-                List<Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
-                Traversal.Admin admin = repeatTraversals.get(0);
-                List<Step> internalRepeatSteps = admin.getSteps();
-                //this is guaranteed by the previous check unoptimizableRepeat(...)
-                //TODO remove when go to 3.1.0-incubating
-                LoopTraversal loopTraversal;
-                long numberOfLoops;
-                try {
-                    Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
-                    untilTraversalField.setAccessible(true);
-                    loopTraversal = (LoopTraversal) untilTraversalField.get(repeatStep);
-                    Field maxLoopsField = loopTraversalClass.getDeclaredField("maxLoops");
-                    maxLoopsField.setAccessible(true);
-                    numberOfLoops = (Long) maxLoopsField.get(loopTraversal);
-                } catch (NoSuchFieldException e) {
-                    throw new RuntimeException(e);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-//                LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
-//                long numberOfLoops = loopTraversal.getMaxLoops();
-
-                //Bug on tp3, times after is the same as times before for now
-                //A times(x) after is the same as a times(x + 1) before
-                if (!repeatStep.untilFirst) {
-                    numberOfLoops++;
-                }
-                for (int i = 0; i < numberOfLoops; i++) {
-                    for (Step internalRepeatStep : internalRepeatSteps) {
-                        if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
-                            break;
-                        }
-                        stepIterator.add(internalRepeatStep);
-                        stepIterator.previous();
-                        stepIterator.next();
-                        repeatStepAdded = true;
-                        repeatStepsAdded++;
-                    }
-                }
-                traversal.removeStep(repeatStep);
-                //this is needed for the stepIterator.next() to be the newly inserted steps
-                for (int i = 0; i < repeatStepsAdded; i++) {
-                    stepIterator.previous();
-                }
-            } else {
-
-//                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
-                if (isReplaceableStep(step.getClass())) {
-
-                    //check if repeat steps were added to the stepIterator
-                    boolean emit = false;
-                    boolean emitFirst = false;
-                    boolean untilFirst = false;
-                    if (repeatStepsAdded > 0) {
-                        repeatStepsAdded--;
-                        RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
-                        Field emitTraversalField;
-                        try {
-                            //TODO remove when go to 3.1.0-incubating
-                            emitTraversalField = repeatStepClass.getDeclaredField("emitTraversal");
-                            emitTraversalField.setAccessible(true);
-                            emit = emitTraversalField.get(repeatStep) != null;
-                        } catch (NoSuchFieldException e) {
-                            throw new RuntimeException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new RuntimeException(e);
-                        }
-//                        emit = repeatStep.getEmitTraversal() != null;
-                        emitFirst = repeatStep.emitFirst;
-                        untilFirst = repeatStep.untilFirst;
-                    }
-
-                    pathCount++;
-                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
-                    if (emit) {
-                        //the previous step must be marked as emit.
-                        //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
-                        //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
-                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-                        ReplacedStep previousReplacedStep;
-                        if (emitFirst) {
-                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
-                            pathCount--;
-                        } else {
-                            previousReplacedStep = replacedStep;
-                        }
-                        previousReplacedStep.setEmit(true);
-                        previousReplacedStep.setUntilFirst(untilFirst);
-                        previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
-                        previousReplacedStep.getLabels().remove((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                    }
-                    if (replacedStep.getLabels().isEmpty()) {
-                        boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
-                        if (precedesPathStep) {
-                            replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        }
-                    }
-                    if (previous == null) {
-                        sqlgStep = constructSqlgStep(traversal, startStep);
-//                        sqlgStep = new SqlgGraphStepCompiled(this.sqlgGraph, traversal, startStep.getReturnClass(), startStep.getIds());
-                        sqlgStep.addReplacedStep(replacedStep);
-                        TraversalHelper.replaceStep(step, sqlgStep, traversal);
-                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
-                    } else {
-                        sqlgStep.addReplacedStep(replacedStep);
-                        if (!repeatStepAdded) {
-                            //its not in the traversal, so do not remove it
-                            traversal.removeStep(step);
-                        }
-                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
-                    }
-                    previous = step;
-                    lastReplacedStep = replacedStep;
-                } else {
-                    if (doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep)) {
-                        break;
-                    }
-                    previous = null;
-                    lastReplacedStep = null;
-                }
-            }
-        }
-    }
+    protected abstract void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
 
     protected abstract boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
@@ -441,6 +292,158 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         hasContainers.get(0).getBiPredicate() == Text.endsWith ||
                         hasContainers.get(0).getBiPredicate() == Text.nendsWith
                 ));
+    }
+
+    protected void babySitSteps(Traversal.Admin<?, ?> traversal, Step startStep, List<Step> steps, ListIterator<Step> stepIterator) {
+        //Replace all consecutive VertexStep and HasStep with one step
+        SqlgStep sqlgStep = null;
+        Step previous = null;
+        ReplacedStep<?, ?> lastReplacedStep = null;
+        Class repeatStepClass;
+        Class loopTraversalClass;
+        try {
+            repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
+            loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+
+        int pathCount = 0;
+        boolean repeatStepAdded = false;
+        int repeatStepsAdded = 0;
+        while (stepIterator.hasNext()) {
+            Step step = stepIterator.next();
+
+            //Check for RepeatStep(s) and insert them into the stepIterator
+            if (step instanceof RepeatStep) {
+                repeatStepsAdded = 0;
+                repeatStepAdded = false;
+                RepeatStep repeatStep = (RepeatStep) step;
+                List<Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
+                Traversal.Admin admin = repeatTraversals.get(0);
+                List<Step> internalRepeatSteps = admin.getSteps();
+                //this is guaranteed by the previous check unoptimizableRepeat(...)
+                //TODO remove when go to 3.1.0-incubating
+                LoopTraversal loopTraversal;
+                long numberOfLoops;
+                try {
+                    Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
+                    untilTraversalField.setAccessible(true);
+                    loopTraversal = (LoopTraversal) untilTraversalField.get(repeatStep);
+                    Field maxLoopsField = loopTraversalClass.getDeclaredField("maxLoops");
+                    maxLoopsField.setAccessible(true);
+                    numberOfLoops = (Long) maxLoopsField.get(loopTraversal);
+                } catch (NoSuchFieldException e) {
+                    throw new RuntimeException(e);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+//                LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
+//                long numberOfLoops = loopTraversal.getMaxLoops();
+
+                //Bug on tp3, times after is the same as times before for now
+                //A times(x) after is the same as a times(x + 1) before
+                if (!repeatStep.untilFirst) {
+                    numberOfLoops++;
+                }
+                for (int i = 0; i < numberOfLoops; i++) {
+                    for (Step internalRepeatStep : internalRepeatSteps) {
+                        if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
+                            break;
+                        }
+                        stepIterator.add(internalRepeatStep);
+                        stepIterator.previous();
+                        stepIterator.next();
+                        repeatStepAdded = true;
+                        repeatStepsAdded++;
+                    }
+                }
+                traversal.removeStep(repeatStep);
+                //this is needed for the stepIterator.next() to be the newly inserted steps
+                for (int i = 0; i < repeatStepsAdded; i++) {
+                    stepIterator.previous();
+                }
+            } else {
+
+//                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
+                if (isReplaceableStep(step.getClass())) {
+
+                    //check if repeat steps were added to the stepIterator
+                    boolean emit = false;
+                    boolean emitFirst = false;
+                    boolean untilFirst = false;
+                    if (repeatStepsAdded > 0) {
+                        repeatStepsAdded--;
+                        RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
+                        Field emitTraversalField;
+                        try {
+                            //TODO remove when go to 3.1.0-incubating
+                            emitTraversalField = repeatStepClass.getDeclaredField("emitTraversal");
+                            emitTraversalField.setAccessible(true);
+                            emit = emitTraversalField.get(repeatStep) != null;
+                        } catch (NoSuchFieldException e) {
+                            throw new RuntimeException(e);
+                        } catch (IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+//                        emit = repeatStep.getEmitTraversal() != null;
+                        emitFirst = repeatStep.emitFirst;
+                        untilFirst = repeatStep.untilFirst;
+                    }
+
+                    pathCount++;
+                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    if (emit) {
+                        //the previous step must be marked as emit.
+                        //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
+                        //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+                        ReplacedStep previousReplacedStep;
+                        if (emitFirst) {
+                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                            pathCount--;
+                        } else {
+                            previousReplacedStep = replacedStep;
+                        }
+                        previousReplacedStep.setEmit(true);
+                        previousReplacedStep.setUntilFirst(untilFirst);
+                        previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        previousReplacedStep.getLabels().remove((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        if (emitFirst) {
+                            pathCount++;
+                        }
+                    }
+                    if (replacedStep.getLabels().isEmpty()) {
+                        boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
+                        if (precedesPathStep) {
+                            replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        }
+                    }
+                    if (previous == null) {
+                        sqlgStep = constructSqlgStep(traversal, startStep);
+                        sqlgStep.addReplacedStep(replacedStep);
+                        handleFirstReplacedStep(startStep, sqlgStep, traversal);
+                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+                    } else {
+                        sqlgStep.addReplacedStep(replacedStep);
+                        if (!repeatStepAdded) {
+                            //its not in the traversal, so do not remove it
+                            traversal.removeStep(step);
+                        }
+                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+                    }
+                    previous = step;
+                    lastReplacedStep = replacedStep;
+                } else {
+                    if (doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep)) {
+                        break;
+                    }
+                    previous = null;
+                    lastReplacedStep = null;
+                }
+            }
+        }
     }
 
 }
