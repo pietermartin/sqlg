@@ -1,5 +1,6 @@
 package org.umlg.sqlg.strategy;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
@@ -18,6 +19,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -39,6 +42,7 @@ import java.util.stream.Collectors;
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
     protected SqlgGraph sqlgGraph;
+    protected Logger logger = LoggerFactory.getLogger(getClass().getName());
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
@@ -338,9 +342,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
-//                LoopTraversal loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
-//                long numberOfLoops = loopTraversal.getMaxLoops();
-
                 //Bug on tp3, times after is the same as times before for now
                 //A times(x) after is the same as a times(x + 1) before
                 if (!repeatStep.untilFirst) {
@@ -365,8 +366,16 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             } else {
 
-//                if (CONSECUTIVE_STEPS_TO_REPLACE.contains(step.getClass())) {
                 if (isReplaceableStep(step.getClass())) {
+
+                    if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
+                        logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+                        return;
+                    }
+                    if (unoptimizableRepeat(steps, stepIterator.nextIndex())) {
+                        logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+                        return;
+                    }
 
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;
@@ -386,7 +395,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         } catch (IllegalAccessException e) {
                             throw new RuntimeException(e);
                         }
-//                        emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
                     }

@@ -22,47 +22,56 @@ import java.util.*;
  */
 public class TestRepeatStepGraphOut extends BaseTest {
 
+
     @Test
-    //This is not optimized
-    public void testUntilRepeat() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-        a1.addEdge("ab", b1);
-        a1.addEdge("ab", b2);
-        a1.addEdge("ab", b3);
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
-        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
-        b1.addEdge("bc", c1);
-        b1.addEdge("bc", c2);
-        b1.addEdge("bc", c3);
+    public void testGraph() {
+        this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
-
-        List<Vertex> t = this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("C")).toList();
-        Assert.assertEquals(6, t.size());
-        Assert.assertTrue(t.remove(c1));
-        Assert.assertTrue(t.remove(c1));
-        Assert.assertTrue(t.remove(c2));
-        Assert.assertTrue(t.remove(c2));
-        Assert.assertTrue(t.remove(c3));
-        Assert.assertTrue(t.remove(c3));
-        Assert.assertTrue(t.isEmpty());
-
-        t = this.sqlgGraph.traversal().V().until(__.hasLabel("C")).repeat(__.out()).toList();
-        Assert.assertEquals(9, t.size());
-        Assert.assertTrue(t.remove(c1));
-        Assert.assertTrue(t.remove(c1));
-        Assert.assertTrue(t.remove(c1));
-        Assert.assertTrue(t.remove(c2));
-        Assert.assertTrue(t.remove(c2));
-        Assert.assertTrue(t.remove(c2));
-        Assert.assertTrue(t.remove(c3));
-        Assert.assertTrue(t.remove(c3));
-        Assert.assertTrue(t.remove(c3));
-        Assert.assertTrue(t.isEmpty());
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(1, vertices.size());
     }
+
+//    @Test
+//    //This is not optimized
+//    public void testUntilRepeat() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+//        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+//        a1.addEdge("ab", b1);
+//        a1.addEdge("ab", b2);
+//        a1.addEdge("ab", b3);
+//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+//        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+//        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+//        b1.addEdge("bc", c1);
+//        b1.addEdge("bc", c2);
+//        b1.addEdge("bc", c3);
+//        this.sqlgGraph.tx().commit();
+//
+//        List<Vertex> t = this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("C")).toList();
+//        Assert.assertEquals(6, t.size());
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c3));
+//        Assert.assertTrue(t.remove(c3));
+//        Assert.assertTrue(t.isEmpty());
+//
+//        t = this.sqlgGraph.traversal().V().until(__.hasLabel("C")).repeat(__.out()).toList();
+//        Assert.assertEquals(9, t.size());
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c3));
+//        Assert.assertTrue(t.remove(c3));
+//        Assert.assertTrue(t.remove(c3));
+//        Assert.assertTrue(t.isEmpty());
+//    }
 
 //    @Test
 //    //This is not optimized

@@ -24,7 +24,6 @@ import java.util.ListIterator;
  */
 public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
 
     public SqlgGraphStepStrategy(SqlgGraph sqlgGraph) {
@@ -45,14 +44,6 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         final ListIterator<Step> stepIterator = steps.listIterator();
 
         if (originalGraphStep.getIds().length > 0) {
-            return;
-        }
-        if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
-            logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
-            return;
-        }
-        if (unoptimizableRepeat(steps, stepIterator.nextIndex())) {
-            logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
         babySitSteps(traversal, originalGraphStep, steps, stepIterator);
