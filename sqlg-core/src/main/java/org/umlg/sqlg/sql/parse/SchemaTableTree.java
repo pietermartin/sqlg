@@ -548,7 +548,8 @@ public class SchemaTableTree {
         }
 
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
-        if (lastOfPrevious == null && distinctQueryStack.getFirst().isVertexGraphStep()) {
+//        if (lastOfPrevious == null && distinctQueryStack.getFirst().isVertexGraphStep()) {
+        if (lastOfPrevious == null) {
             singlePathSql += " WHERE ";
             singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
             singlePathSql += ".";

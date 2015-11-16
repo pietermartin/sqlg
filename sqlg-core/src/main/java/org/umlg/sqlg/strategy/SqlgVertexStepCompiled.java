@@ -192,8 +192,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 , "The first step must a VertexStep, EdgeVertexStep or GraphStep found " + this.replacedSteps.get(0).getStep().getClass().toString());
         SchemaTableTree rootSchemaTableTree = null;
         try {
-            Set<SchemaTableTree> rootSchemaTableTrees = sqlgGraph.getGremlinParser().parseForStrategy(this.replacedSteps);
-            rootSchemaTableTree = rootSchemaTableTrees.iterator().next();
+            rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
             List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = rootSchemaTableTree.constructSql();
             this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
         } finally {
