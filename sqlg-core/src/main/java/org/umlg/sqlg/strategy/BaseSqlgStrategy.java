@@ -368,14 +368,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
                 if (isReplaceableStep(step.getClass())) {
 
-                    if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
-                        logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
-                        return;
-                    }
-                    if (unoptimizableRepeat(steps, stepIterator.nextIndex())) {
-                        logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
-                        return;
-                    }
 
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;

@@ -9,10 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;

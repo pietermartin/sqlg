@@ -7,6 +7,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -68,21 +69,28 @@ public class GremlinParser<S extends Element, E extends Element> {
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
-        ReplacedStep startReplacedStep = replacedSteps.remove(0);
-        Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
-        Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
-        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
-        rootSchemaTableTree.initializeAliasColumnNameMaps();
-        //TODO what about the emit, untilFirst flag????
-        rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
-        schemaTableTrees.add(rootSchemaTableTree);
-        for (ReplacedStep<S, E> replacedStep : replacedSteps) {
-            //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
-            schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+        if (replacedSteps.get(0).isGraphStep()) {
+            //this happens for the repeatStep optimization where the query is build including the root vertex step.
+            Set<SchemaTableTree> rootSchemaTableTrees = parse(replacedSteps);
+            //there is only one
+            Optional<SchemaTableTree> rootSchemaTableTree = rootSchemaTableTrees.stream().filter(s->s.getSchemaTable().equals(schemaTable)).findAny();
+            Preconditions.checkState(rootSchemaTableTree.isPresent());
+            return rootSchemaTableTree.get();
+        } else {
+            Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
+            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
+            rootSchemaTableTree.initializeAliasColumnNameMaps();
+            //TODO what about the emit, untilFirst flag????
+            rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
+            schemaTableTrees.add(rootSchemaTableTree);
+            for (ReplacedStep<S, E> replacedStep : replacedSteps) {
+                //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
+                schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+            }
+            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
+            rootSchemaTableTree.removeNodesInvalidatedByHas();
+            return rootSchemaTableTree;
         }
-        rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
-        rootSchemaTableTree.removeNodesInvalidatedByHas();
-        return rootSchemaTableTree;
     }
 
 }

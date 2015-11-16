@@ -261,8 +261,7 @@ public abstract class SqlgElement implements Element {
     private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
-        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(replacedSteps);
-        SchemaTableTree rootSchemaTableTree = rootSchemaTableTrees.iterator().next();
+        SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
         List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
         for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
@@ -309,8 +308,6 @@ public abstract class SqlgElement implements Element {
                                     //this only happens for emit queries where a left join is used.
                                     //if the last VertexStep does not exist it is excluded from the sql so a empty needs to be written.
                                     //The empty is used in processNextStart() to know whether the last element should be emitted ot not.
-//                                        //TODO Optional must go all the way up the stack
-//                                        resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                                     resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));
                                 } else {
                                     Optional<E> e = SqlgUtil.loadLeafElement(
@@ -319,10 +316,6 @@ public abstract class SqlgElement implements Element {
                                     //TODO Optional must go all the way up the stack
                                     resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                                 }
-//                                Optional<E> e = SqlgUtil.loadLeafElement(
-//                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast(), columnNameCountMap2
-//                                );
-//                                resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
                             }
                             subQueryDepth++;
                         }

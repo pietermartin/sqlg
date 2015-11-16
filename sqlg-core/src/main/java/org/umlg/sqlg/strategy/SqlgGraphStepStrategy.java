@@ -46,6 +46,14 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         if (originalGraphStep.getIds().length > 0) {
             return;
         }
+        if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
+            this.logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            return;
+        }
+        if (unoptimizableRepeat(steps, stepIterator.nextIndex())) {
+            this.logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            return;
+        }
         babySitSteps(traversal, originalGraphStep, steps, stepIterator);
     }
 
