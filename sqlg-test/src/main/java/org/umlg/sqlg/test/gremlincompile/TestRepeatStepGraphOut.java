@@ -1,13 +1,20 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Date: 2015/10/21
@@ -15,48 +22,48 @@ import java.util.List;
  */
 public class TestRepeatStepGraphOut extends BaseTest {
 
-//    @Test
-//    //This is not optimized
-//    public void testUntilRepeat() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-//        a1.addEdge("ab", b1);
-//        a1.addEdge("ab", b2);
-//        a1.addEdge("ab", b3);
-//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-//        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
-//        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
-//        b1.addEdge("bc", c1);
-//        b1.addEdge("bc", c2);
-//        b1.addEdge("bc", c3);
-//        this.sqlgGraph.tx().commit();
-//
-//        List<Vertex> t = this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("C")).toList();
-//        Assert.assertEquals(6, t.size());
-//        Assert.assertTrue(t.remove(c1));
-//        Assert.assertTrue(t.remove(c1));
-//        Assert.assertTrue(t.remove(c2));
-//        Assert.assertTrue(t.remove(c2));
-//        Assert.assertTrue(t.remove(c3));
-//        Assert.assertTrue(t.remove(c3));
-//        Assert.assertTrue(t.isEmpty());
-//
-//        t = this.sqlgGraph.traversal().V().until(__.hasLabel("C")).repeat(__.out()).toList();
-//        Assert.assertEquals(9, t.size());
-//        Assert.assertTrue(t.remove(c1));
-//        Assert.assertTrue(t.remove(c1));
-//        Assert.assertTrue(t.remove(c1));
-//        Assert.assertTrue(t.remove(c2));
-//        Assert.assertTrue(t.remove(c2));
-//        Assert.assertTrue(t.remove(c2));
-//        Assert.assertTrue(t.remove(c3));
-//        Assert.assertTrue(t.remove(c3));
-//        Assert.assertTrue(t.remove(c3));
-//        Assert.assertTrue(t.isEmpty());
-//    }
-//
+    @Test
+    //This is not optimized
+    public void testUntilRepeat() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> t = this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("C")).toList();
+        Assert.assertEquals(6, t.size());
+        Assert.assertTrue(t.remove(c1));
+        Assert.assertTrue(t.remove(c1));
+        Assert.assertTrue(t.remove(c2));
+        Assert.assertTrue(t.remove(c2));
+        Assert.assertTrue(t.remove(c3));
+        Assert.assertTrue(t.remove(c3));
+        Assert.assertTrue(t.isEmpty());
+
+        t = this.sqlgGraph.traversal().V().until(__.hasLabel("C")).repeat(__.out()).toList();
+        Assert.assertEquals(9, t.size());
+        Assert.assertTrue(t.remove(c1));
+        Assert.assertTrue(t.remove(c1));
+        Assert.assertTrue(t.remove(c1));
+        Assert.assertTrue(t.remove(c2));
+        Assert.assertTrue(t.remove(c2));
+        Assert.assertTrue(t.remove(c2));
+        Assert.assertTrue(t.remove(c3));
+        Assert.assertTrue(t.remove(c3));
+        Assert.assertTrue(t.remove(c3));
+        Assert.assertTrue(t.isEmpty());
+    }
+
 //    @Test
 //    //This is not optimized
 //    public void testRepeatWithUnoptimizableInternalSteps() {
@@ -144,21 +151,21 @@ public class TestRepeatStepGraphOut extends BaseTest {
 //        Assert.assertTrue(vertices.contains(c2));
 //        Assert.assertTrue(vertices.contains(c3));
 //    }
-
-    @Test
-    public void testSmallerRepeatWithEmitFirst() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-        a1.addEdge("ab", b1);
-        a1.addEdge("ab", b2);
-        b1.addEdge("bc", c1);
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc")).times(1).toList();
-        Assert.assertEquals(4, vertices.size());
-    }
-
+//
+//    @Test
+//    public void testSmallerRepeatWithEmitFirst() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+//        a1.addEdge("ab", b1);
+//        a1.addEdge("ab", b2);
+//        b1.addEdge("bc", c1);
+//        this.sqlgGraph.tx().commit();
+//        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc")).times(1).toList();
+//        Assert.assertEquals(4, vertices.size());
+//    }
+//
 //    @Test
 //    public void testRepeatWithEmitFirst() {
 //        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

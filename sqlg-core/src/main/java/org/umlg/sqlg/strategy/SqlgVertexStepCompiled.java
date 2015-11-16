@@ -188,18 +188,17 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     public void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         this.parsedForStrategySql.clear();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
-        Preconditions.checkState(
-                this.replacedSteps.get(0).isVertexStep() ||
-                        this.replacedSteps.get(0).isEdgeVertexStep()
-                , "The first step must a VertexStep or EdgeVertexStep found " + this.replacedSteps.get(0).getStep().getClass().toString());
-        SchemaTableTree schemaTableTree = null;
+        Preconditions.checkState(this.replacedSteps.get(0).isVertexStep() || this.replacedSteps.get(0).isEdgeVertexStep() || this.replacedSteps.get(0).isGraphStep()
+                , "The first step must a VertexStep, EdgeVertexStep or GraphStep found " + this.replacedSteps.get(0).getStep().getClass().toString());
+        SchemaTableTree rootSchemaTableTree = null;
         try {
-            schemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
-            this.parsedForStrategySql.put(schemaTableTree, sqlStatements);
+            Set<SchemaTableTree> rootSchemaTableTrees = sqlgGraph.getGremlinParser().parseForStrategy(this.replacedSteps);
+            rootSchemaTableTree = rootSchemaTableTrees.iterator().next();
+            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = rootSchemaTableTree.constructSql();
+            this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
         } finally {
-            if (schemaTableTree != null)
-                schemaTableTree.resetThreadVars();
+            if (rootSchemaTableTree != null)
+                rootSchemaTableTree.resetThreadVars();
         }
     }
 
