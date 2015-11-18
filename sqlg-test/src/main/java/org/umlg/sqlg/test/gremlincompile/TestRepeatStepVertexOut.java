@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Date: 2015/10/21
@@ -16,7 +17,7 @@ import java.util.List;
  */
 public class TestRepeatStepVertexOut extends BaseTest {
 
-//        @Test
+//    @Test
 //    //This is not optimized
 //    public void testUntilRepeat() {
 //        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -34,7 +35,20 @@ public class TestRepeatStepVertexOut extends BaseTest {
 //        b1.addEdge("bc", c3);
 //        this.sqlgGraph.tx().commit();
 //
-//        List<Vertex> t = this.sqlgGraph.traversal().V(a1).repeat(__.out()).until(__.hasLabel("C")).toList();
+//        List<Vertex> t = this.sqlgGraph.traversal().V(a1.id()).repeat(__.out()).until(__.hasLabel("C")).toList();
+//        Assert.assertEquals(3, t.size());
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c3));
+//        Assert.assertTrue(t.isEmpty());
+//
+//        t = this.sqlgGraph.traversal().V(a1.id()).until(__.hasLabel("C")).repeat(__.out()).toList();
+//        Assert.assertEquals(3, t.size());
+//        Assert.assertTrue(t.remove(c1));
+//        Assert.assertTrue(t.remove(c2));
+//        Assert.assertTrue(t.remove(c3));
+//
+//        t = this.sqlgGraph.traversal().V(a1).repeat(__.out()).until(__.hasLabel("C")).toList();
 //        Assert.assertEquals(3, t.size());
 //        Assert.assertTrue(t.remove(c1));
 //        Assert.assertTrue(t.remove(c2));
@@ -46,7 +60,6 @@ public class TestRepeatStepVertexOut extends BaseTest {
 //        Assert.assertTrue(t.remove(c1));
 //        Assert.assertTrue(t.remove(c2));
 //        Assert.assertTrue(t.remove(c3));
-//        Assert.assertTrue(t.isEmpty());
 //    }
 //
 //    @Test
@@ -75,6 +88,13 @@ public class TestRepeatStepVertexOut extends BaseTest {
 //        Assert.assertTrue(t.get(0).containsKey("b2"));
 //        Assert.assertTrue(t.get(0).containsKey("b3"));
 //
+//        t = this.sqlgGraph.traversal().V(a1.id()).repeat(__.groupCount("m").by("name").out()).times(2).<Map<String, Long>>cap("m").toList();
+//        Assert.assertEquals(1, t.size());
+//        Assert.assertEquals(4, t.get(0).size());
+//        Assert.assertTrue(t.get(0).containsKey("a1"));
+//        Assert.assertTrue(t.get(0).containsKey("b1"));
+//        Assert.assertTrue(t.get(0).containsKey("b2"));
+//        Assert.assertTrue(t.get(0).containsKey("b3"));
 //    }
 //
 //    @Test
@@ -95,6 +115,9 @@ public class TestRepeatStepVertexOut extends BaseTest {
 //        b1.addEdge("bc", c3);
 //        this.sqlgGraph.tx().commit();
 //        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1).repeat(__.out("ab").out("bc")).toList();
+//        Assert.assertTrue(vertices.isEmpty());
+//
+//        vertices = this.sqlgGraph.traversal().V(a1.id()).repeat(__.out("ab").out("bc")).toList();
 //        Assert.assertTrue(vertices.isEmpty());
 //    }
 //
@@ -138,7 +161,7 @@ public class TestRepeatStepVertexOut extends BaseTest {
         a1.addEdge("ab", b2);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V(a1).emit().repeat(__.out("ab", "bc")).times(1).path().toList();
+        List<Path> paths = this.sqlgGraph.traversal().V(a1.id()).emit().repeat(__.out("ab", "bc")).times(1).path().toList();
         Assert.assertEquals(4, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1)));
         paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().get());
@@ -151,6 +174,7 @@ public class TestRepeatStepVertexOut extends BaseTest {
         Assert.assertTrue(paths.isEmpty());
     }
 
+//
 //    @Test
 //    public void testRepeatWithEmitFirst() {
 //        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

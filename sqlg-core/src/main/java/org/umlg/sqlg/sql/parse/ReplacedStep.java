@@ -323,6 +323,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
         Set<SchemaTableTree> result = new HashSet<>();
+
         List<HasContainer> hasContainerWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
         List<HasContainer> hasContainerWithLabel = this.hasContainers.stream().filter(h -> h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
         if (hasContainerWithLabel.isEmpty()) {
@@ -362,7 +363,7 @@ public class ReplacedStep<S, E> {
                             1,
                             hasContainerWithoutLabel,
                             this.comparators,
-                            SchemaTableTree.STEP_TYPE.VERTEX_STEP.GRAPH_STEP,
+                            SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
                             ReplacedStep.this.isVertexGraphStep,
@@ -372,6 +373,7 @@ public class ReplacedStep<S, E> {
                 }
             });
         }
+
         return result;
     }
 

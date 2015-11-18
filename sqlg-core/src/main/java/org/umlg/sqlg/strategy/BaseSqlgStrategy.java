@@ -53,7 +53,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         this.sqlgGraph = sqlgGraph;
     }
 
-    protected abstract void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
+    protected abstract void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
 
     protected abstract boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
@@ -318,14 +318,19 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
 
+
             //Check for RepeatStep(s) and insert them into the stepIterator
             if (step instanceof RepeatStep) {
+                if (unoptimizableRepeat(steps, stepIterator.previousIndex())) {
+                    this.logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+                    return;
+                }
                 repeatStepsAdded = 0;
                 repeatStepAdded = false;
                 RepeatStep repeatStep = (RepeatStep) step;
                 List<Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
                 Traversal.Admin admin = repeatTraversals.get(0);
-                List<Step> internalRepeatSteps = admin.getSteps();
+                List<Step> repeatStepInternalVertexSteps = admin.getSteps();
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
                 //TODO remove when go to 3.1.0-incubating
                 LoopTraversal loopTraversal;
@@ -348,11 +353,12 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     numberOfLoops++;
                 }
                 for (int i = 0; i < numberOfLoops; i++) {
-                    for (Step internalRepeatStep : internalRepeatSteps) {
-                        if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
+                    for (Step internalVertexStep : repeatStepInternalVertexSteps) {
+                        if (internalVertexStep instanceof RepeatStep.RepeatEndStep) {
                             break;
                         }
-                        stepIterator.add(internalRepeatStep);
+                        internalVertexStep.setPreviousStep(repeatStep.getPreviousStep());
+                        stepIterator.add(internalVertexStep);
                         stepIterator.previous();
                         stepIterator.next();
                         repeatStepAdded = true;
@@ -382,9 +388,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             emitTraversalField = repeatStepClass.getDeclaredField("emitTraversal");
                             emitTraversalField.setAccessible(true);
                             emit = emitTraversalField.get(repeatStep) != null;
-                        } catch (NoSuchFieldException e) {
-                            throw new RuntimeException(e);
-                        } catch (IllegalAccessException e) {
+                        } catch (NoSuchFieldException | IllegalAccessException e) {
                             throw new RuntimeException(e);
                         }
                         emitFirst = repeatStep.emitFirst;
@@ -421,9 +425,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         }
                     }
                     if (previous == null) {
-                        sqlgStep = constructSqlgStep(traversal, startStep);
+                        sqlgStep = constructSqlgStep(traversal, step);
                         sqlgStep.addReplacedStep(replacedStep);
-                        handleFirstReplacedStep(startStep, sqlgStep, traversal);
+                        handleFirstReplacedStep(step, sqlgStep, traversal);
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                     } else {
                         sqlgStep.addReplacedStep(replacedStep);

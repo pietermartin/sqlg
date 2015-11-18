@@ -28,7 +28,8 @@ import java.util.stream.Stream;
 @SuppressWarnings("Duplicates")
 public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
+//    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class);
+        private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgVertexStepStrategy(SqlgGraph sqlgGraph) {
@@ -83,18 +84,31 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
             if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
                 logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             }
-            if (unoptimizableRepeat(steps, stepIterator.nextIndex())) {
-                logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
-                return;
-            }
             babySitSteps(traversal, traversal.getStartStep(), steps, stepIterator);
         }
 
     }
 
     @Override
-    protected void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
-        TraversalHelper.insertAfterStep(sqlgStep, firstStep, traversal);
+    protected void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
+//        if (!(stepToReplace instanceof GraphStep) && traversal.getSteps().contains(stepToReplace)) {
+//            //Normal replacement
+//            TraversalHelper.replaceStep(stepToReplace, sqlgStep, traversal);
+//        } else {
+//            if (stepToReplace instanceof GraphStep) {
+//                TraversalHelper.insertAfterStep(sqlgStep, stepToReplace, traversal);
+//            } else {
+//                //For vertex steps nested in a RepeatStep the outer RepeatStep has been removed from the traversal.
+//                TraversalHelper.insertAfterStep(sqlgStep, stepToReplace.getPreviousStep(), traversal);
+//            }
+//        }
+
+        if (traversal.getSteps().contains(stepToReplace)) {
+            TraversalHelper.replaceStep(stepToReplace, sqlgStep, traversal);
+        } else {
+            TraversalHelper.insertAfterStep(sqlgStep, stepToReplace.getPreviousStep(), traversal);
+        }
+
         ReplacedStep r = (ReplacedStep) sqlgStep.getReplacedSteps().get(0);
         r.setVertexGraphStep(true);
     }

@@ -491,13 +491,9 @@ public class SchemaTableTree {
         } else {
             if (toSchemaTableTree.direction == Direction.OUT) {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-//                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
-//                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
                 result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasVertexColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel) + "\"";
             } else {
                 result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-//                result += " = a" + count + ".\"" + toSchemaTableTree.getSchemaTable().getSchema() + "." + toSchemaTableTree.getSchemaTable().getTable() + "." +
-//                        fromSchemaTableTree.getSchemaTable().getSchema() + "." + rawFromLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
                 result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasVertexColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel) + "\"";
             }
         }
@@ -549,7 +545,7 @@ public class SchemaTableTree {
 
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
 //        if (lastOfPrevious == null && distinctQueryStack.getFirst().isVertexGraphStep()) {
-        if (lastOfPrevious == null) {
+        if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             singlePathSql += " WHERE ";
             singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
             singlePathSql += ".";

@@ -11,8 +11,8 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepVertexOut;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatStepGraphOut.class
-//        TestRepeatStepVertexOut.class
+//        TestRepeatStepGraphOut.class,
+        TestRepeatStepVertexOut.class
         })
 public class AnyTest {
 }
