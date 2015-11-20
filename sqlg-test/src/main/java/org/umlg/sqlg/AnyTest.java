@@ -2,8 +2,15 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphOut;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatStepVertexOut;
+import org.umlg.sqlg.test.TestVertexNavToEdges;
+import org.umlg.sqlg.test.TinkerpopTest;
+import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestStreamVertex;
+import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
+import org.umlg.sqlg.test.gremlincompile.*;
+import org.umlg.sqlg.test.mod.TestDeletedVertex;
+import org.umlg.sqlg.test.vertex.TestNewVertex;
+import org.umlg.sqlg.test.vertex.TestOtherVertex;
 
 /**
  * Date: 2014/07/16
@@ -11,8 +18,12 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepVertexOut;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestRepeatStepGraphOut.class,
-        TestRepeatStepVertexOut.class
+//        TestPathStep.class,
+//        TestTreeStep.class
+//        TestVertexStepOrderBy.class,
+//        TestBulkWithin.class
+        TinkerpopTest.class,
+//        TestGraphStepWithIds.class
         })
 public class AnyTest {
 }

@@ -347,13 +347,13 @@ public class SqlgUtil {
         return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
     }
 
-    public static SchemaTable parseLabelMaybeNoSchema(final String label) {
+    public static SchemaTable parseLabelMaybeNoSchema(SqlgGraph sqlgGraph, final String label) {
         Objects.requireNonNull(label, "label may not be null!");
         String[] schemaLabel = label.split("\\.");
         if (schemaLabel.length == 2) {
             return SchemaTable.of(schemaLabel[0], schemaLabel[1]);
         } else if (schemaLabel.length == 1) {
-            return SchemaTable.of(null, schemaLabel[0]);
+            return SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), schemaLabel[0]);
         } else {
             throw new IllegalStateException("label must be if the format 'schema.table' or just 'table'");
         }

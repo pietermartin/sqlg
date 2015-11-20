@@ -335,7 +335,11 @@ public abstract class SqlgElement implements Element {
     public boolean equals(final Object object) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            return super.equals(object);
+            if (this.id() != null && object != null && (object instanceof SqlgElement) && ((SqlgElement) object).id() != null) {
+                return ElementHelper.areEqual(this, object);
+            } else {
+                return super.equals(object);
+            }
         } else {
             return ElementHelper.areEqual(this, object);
         }

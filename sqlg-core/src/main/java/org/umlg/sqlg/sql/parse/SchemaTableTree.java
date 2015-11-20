@@ -62,6 +62,23 @@ public class SchemaTableTree {
     private AliasMapHolder aliasMapHolder;
     private boolean leadNodeIsEmpty;
 
+    //This counter is used for the within predicate when aliasing the temporary table
+    private int tmpTableAliasCounter = 1;
+
+    //This contains the columnName as key and the generated alias as value
+    //Needs to be a multimap as the same column can appear multiple times in different selects in one query
+    public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
+        protected Multimap<String, String> initialValue() {
+            return ArrayListMultimap.create();
+        }
+    };
+    //This contains the generated alias as key and the columnName as value
+    public static final ThreadLocal<Map<String, String>> threadLocalAliasColumnNameMap = new ThreadLocal<Map<String, String>>() {
+        protected Map<String, String> initialValue() {
+            return new HashMap<>();
+        }
+    };
+
     public void leafNodeIsEmpty() {
         this.leadNodeIsEmpty = true;
     }
@@ -586,69 +603,82 @@ public class SchemaTableTree {
 
     private String bulkWithJoin(SqlgGraph sqlgGraph) {
 
-        HasContainer hasContainer = this.hasContainers.stream().filter(SqlgUtil::isBulkWithinOrOut).findAny().get();
-        P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
-        List<Object> withInList = predicate.getValue();
-        Set<Object> withInOuts = new HashSet<>(withInList);
-
-        Map<String, PropertyType> columns = new HashMap<>();
-        if (hasContainer.getBiPredicate() == Contains.within) {
-            columns.put("within", PropertyType.from(withInOuts.iterator().next()));
-        } else if (hasContainer.getBiPredicate() == Contains.without) {
-            columns.put("without", PropertyType.from(withInOuts.iterator().next()));
-        } else {
-            throw new UnsupportedOperationException("Only Contains.within and Contains.without is supported!");
-        }
-
-        SecureRandom random = new SecureRandom();
-        byte bytes[] = new byte[6];
-        random.nextBytes(bytes);
-        String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
-        tmpTableIdentified = SchemaManager.VERTEX_PREFIX + SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
-        sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
-
-        Map<String, Object> withInOutMap = new HashMap<>();
-        if (hasContainer.getBiPredicate() == Contains.within) {
-            withInOutMap.put("within", "unused");
-        } else {
-            withInOutMap.put("without", "unused");
-        }
-        String copySql = sqlgGraph.getSqlDialect().constructManualCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
-        OutputStream out = sqlgGraph.getSqlDialect().streamSql(this.sqlgGraph, copySql);
-
-        for (Object withInOutValue : withInOuts) {
-            withInOutMap = new HashMap<>();
-            if (hasContainer.getBiPredicate() == Contains.within) {
-                withInOutMap.put("within", withInOutValue);
-            } else {
-                withInOutMap.put("without", withInOutValue);
-            }
-            sqlgGraph.getSqlDialect().flushStreamingVertex(out, withInOutMap);
-        }
-        try {
-            out.close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
         StringBuilder sb = new StringBuilder();
-        if (hasContainer.getBiPredicate() == Contains.within) {
-            sb.append(" INNER JOIN\n\t");
-        } else {
-            //left join and in the where clause add a IS NULL, to find the values not in the right hand table
-            sb.append(" LEFT JOIN\n\t");
-        }
-        sb.append(" \"");
-        sb.append(tmpTableIdentified);
-        sb.append("\" m on");
-        sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
-        sb.append(".");
-        sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
-        sb.append(".");
-        sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
-        if (hasContainer.getBiPredicate() == Contains.within) {
-            sb.append(" = m.within");
-        } else {
-            sb.append(" = m.without");
+        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(SqlgUtil::isBulkWithinOrOut).collect(Collectors.toList());
+        for (HasContainer hasContainer : bulkHasContainers) {
+            P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
+            List<Object> withInList = predicate.getValue();
+            Set<Object> withInOuts = new HashSet<>(withInList);
+
+            Map<String, PropertyType> columns = new HashMap<>();
+            if (hasContainer.getBiPredicate() == Contains.within) {
+                columns.put("within", PropertyType.from(withInOuts.iterator().next()));
+            } else if (hasContainer.getBiPredicate() == Contains.without) {
+                columns.put("without", PropertyType.from(withInOuts.iterator().next()));
+            } else {
+                throw new UnsupportedOperationException("Only Contains.within and Contains.without is supported!");
+            }
+
+            SecureRandom random = new SecureRandom();
+            byte bytes[] = new byte[6];
+            random.nextBytes(bytes);
+            String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+            tmpTableIdentified = SchemaManager.VERTEX_PREFIX + SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
+            sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+
+            Map<String, Object> withInOutMap = new HashMap<>();
+            if (hasContainer.getBiPredicate() == Contains.within) {
+                withInOutMap.put("within", "unused");
+            } else {
+                withInOutMap.put("without", "unused");
+            }
+            String copySql = sqlgGraph.getSqlDialect().constructManualCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
+            OutputStream out = sqlgGraph.getSqlDialect().streamSql(this.sqlgGraph, copySql);
+
+            for (Object withInOutValue : withInOuts) {
+                withInOutMap = new HashMap<>();
+                if (hasContainer.getBiPredicate() == Contains.within) {
+                    withInOutMap.put("within", withInOutValue);
+                } else {
+                    withInOutMap.put("without", withInOutValue);
+                }
+                sqlgGraph.getSqlDialect().flushStreamingVertex(out, withInOutMap);
+            }
+            try {
+                out.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            if (hasContainer.getBiPredicate() == Contains.within) {
+                sb.append("\n INNER JOIN ");
+            } else {
+                //left join and in the where clause add a IS NULL, to find the values not in the right hand table
+                sb.append(" \nLEFT JOIN ");
+            }
+            sb.append(" \"");
+            sb.append(tmpTableIdentified);
+            sb.append("\" tmp");
+            sb.append(this.rootSchemaTableTree().tmpTableAliasCounter);
+            sb.append(" on");
+            sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
+            sb.append(".");
+            sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
+            sb.append(".");
+            if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+            } else {
+                sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey()));
+            }
+            if (hasContainer.getBiPredicate() == Contains.within) {
+                sb.append(" = tmp");
+                sb.append(this.rootSchemaTableTree().tmpTableAliasCounter++);
+                sb.append(".within");
+            } else {
+                sb.append(" = tmp");
+                sb.append(this.rootSchemaTableTree().tmpTableAliasCounter++);
+                sb.append(".without");
+            }
+
         }
         return sb.toString();
     }
@@ -1410,7 +1440,7 @@ public class SchemaTableTree {
         return "alias" + rootSchemaTableTree().rootAliasCounter++;
     }
 
-    private SchemaTableTree rootSchemaTableTree() {
+    public SchemaTableTree rootSchemaTableTree() {
         if (this.parent != null) {
             return this.parent.rootSchemaTableTree();
         } else {
@@ -1520,7 +1550,7 @@ public class SchemaTableTree {
      * Remove all leaf nodes that are not at the deepest level.
      * Those nodes are not to be included in the sql as they do not have enough incident edges.
      * i.e. The graph is not deep enough along those labels.
-     * <p/>
+     * <p>
      * This is done via a breath first traversal.
      */
     void removeAllButDeepestLeafNodes(int depth) {
@@ -1797,5 +1827,10 @@ public class SchemaTableTree {
 
     public boolean isUntilFirst() {
         return untilFirst;
+    }
+
+
+    public int getTmpTableAliasCounter() {
+        return tmpTableAliasCounter;
     }
 }

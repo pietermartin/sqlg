@@ -135,7 +135,10 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         return toCome.stream().anyMatch(s ->
                 (s.getClass().equals(PathStep.class) ||
                         s.getClass().equals(TreeStep.class) ||
-                        s.getClass().equals(TreeSideEffectStep.class)));
+                        s.getClass().equals(TreeSideEffectStep.class) ||
+                        s.getClass().equals(CyclicPathStep.class) ||
+                        s.getClass().equals(SimplePathStep.class) ||
+                        s.getClass().equals(EdgeOtherVertexStep.class)));
     }
 
     protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {

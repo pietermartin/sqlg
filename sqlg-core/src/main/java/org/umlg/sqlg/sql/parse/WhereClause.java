@@ -59,7 +59,8 @@ public class WhereClause {
 //                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
 //            }
 //            result += containsToSql((Contains) p.getBiPredicate(), ((List) p.getValue()).size());
-            result += " m.without IS NULL";
+            result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
+            result += " .without IS NULL";
             return result;
         } else if (p instanceof OrP) {
             OrP<?> orP = (OrP) p;
@@ -180,7 +181,11 @@ public class WhereClause {
         } else if (p.getBiPredicate() == Contains.within || p.getBiPredicate() == Contains.without) {
             List values = (List) hasContainer.getValue();
             for (Object value : values) {
-                keyValueMap.put(hasContainer.getKey(), value);
+                if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                    keyValueMap.put("ID", value);
+                } else {
+                    keyValueMap.put(hasContainer.getKey(), value);
+                }
             }
         } else if (p.getBiPredicate() == Text.contains || p.getBiPredicate() == Text.ncontains ||
                 p.getBiPredicate() == Text.containsCIS || p.getBiPredicate() == Text.ncontainsCIS) {
