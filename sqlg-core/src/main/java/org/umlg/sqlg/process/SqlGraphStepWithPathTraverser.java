@@ -42,7 +42,7 @@ public class SqlGraphStepWithPathTraverser<T> extends B_O_P_S_SE_SL_Traverser<T>
             String realLabel = label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
             String pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
             for (Object labeledElement : labeledElements) {
-                if (addT && labeledElement == t) {
+                if (addT && labeledElement.equals(t)) {
                     addT = false;
                 }
                 Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);

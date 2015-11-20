@@ -41,9 +41,15 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final Object... ids) {
         super(traversal, returnClass, ids);
         this.sqlgGraph = sqlgGraph;
-        if ((this.ids.length == 0 || !(this.ids[0] instanceof Element))) {
-            this.iteratorSupplier = this::elements;
-        }
+//        if ((this.ids.length == 0 || !(this.ids[0] instanceof Element))) {
+//            this.iteratorSupplier = this::elements;
+//        }
+        this.iteratorSupplier = this::elements;
+    }
+
+    //This is only used in tests, think about, delete?
+    public List<ReplacedStep<S, E>> getReplacedSteps() {
+        return Collections.unmodifiableList(replacedSteps);
     }
 
     @Override
@@ -75,9 +81,9 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Preconditions.checkState(SchemaTableTree.threadLocalAliasColumnNameMap.get().isEmpty(), "Column name and alias thread local map must be empty");
         Preconditions.checkState(SchemaTableTree.threadLocalColumnNameAliasMap.get().isEmpty(), "Column name and alias thread local map must be empty");
-        Set<SchemaTableTree> rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
+        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Object>>> resultIterator = new SqlgCompiledResultIterator<>();
-        for (SchemaTableTree schemaTableTree : rootSchemaTableTree) {
+        for (SchemaTableTree schemaTableTree : rootSchemaTableTrees) {
             try {
                 List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = schemaTableTree.constructSql();
                 for (Pair<LinkedList<SchemaTableTree>, String> sqlPair : sqlStatements) {
@@ -101,7 +107,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
                 schemaTableTree.resetThreadVars();
             }
         }
-        rootSchemaTableTree.forEach(SchemaTableTree::resetThreadVars);
+        rootSchemaTableTrees.forEach(SchemaTableTree::resetThreadVars);
         stopWatch.stop();
         if (logger.isDebugEnabled())
             logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
@@ -111,7 +117,8 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
 
     void addReplacedStep(ReplacedStep<S, E> replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
-        replacedStep.setDepth(this.replacedSteps.size() + 1);
+//        replacedStep.setDepth(this.replacedSteps.size() + 1);
+        replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
     }
 
@@ -122,6 +129,10 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parseForStrategy(this.replacedSteps);
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             try {
+                //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
+                if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+                    throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+                }
                 List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = rootSchemaTableTree.constructSql();
                 this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
             } finally {
@@ -132,6 +143,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep {
     }
 
     boolean isForMultipleQueries() {
-        return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 1;
+        return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
     }
 }

@@ -319,7 +319,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
     }
 
-    @Test
+//    @Test
     public void testSingleCompileWithHasLabelOut() {
         SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -388,7 +388,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(3, vertexTraversal(c1).in().in().has(T.label, "A").count().next().intValue());
     }
 
-    @Test
+//    @Test
     public void testHasOnProperty() {
         SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");

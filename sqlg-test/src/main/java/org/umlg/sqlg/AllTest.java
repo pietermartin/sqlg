@@ -7,6 +7,7 @@ import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
+import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
@@ -17,10 +18,7 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
-import org.umlg.sqlg.test.vertex.TestNewVertex;
-import org.umlg.sqlg.test.vertex.TestRemovedVertex;
-import org.umlg.sqlg.test.vertex.TestTinkerpopBug;
-import org.umlg.sqlg.test.vertex.TestVertexCache;
+import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
@@ -97,7 +95,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRemoveProperty.class,
         TestSchemaManagerGetTablesFor.class,
         TestAggregate.class,
-        TestTreeStep.class
+        TestTreeStep.class,
+        TestGraphStepWithIds.class,
+        TestOtherVertex.class
 })
 public class AllTest {
 }

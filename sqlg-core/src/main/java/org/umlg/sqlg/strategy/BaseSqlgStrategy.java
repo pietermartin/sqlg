@@ -3,10 +3,9 @@ package org.umlg.sqlg.strategy;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.TreeStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
@@ -56,9 +55,10 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         return toCome.stream().anyMatch(s ->
                 (s.getClass().equals(PathStep.class) ||
                         s.getClass().equals(TreeStep.class) ||
-                        s.getClass().equals(TreeSideEffectStep.class)));
-//        return toCome.stream().anyMatch(s -> (s.getClass().equals(PathStep.class) || s.getClass().equals(TreeStep.class)));
-//        return toCome.stream().anyMatch(s -> (s.getClass().equals(PathStep.class)));
+                        s.getClass().equals(TreeSideEffectStep.class) ||
+                        s.getClass().equals(CyclicPathStep.class) ||
+                        s.getClass().equals(SimplePathStep.class) ||
+                        s.getClass().equals(EdgeOtherVertexStep.class)));
     }
 
     protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {

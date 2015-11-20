@@ -167,7 +167,6 @@ public abstract class BaseTest {
 
     protected GraphTraversal<Edge, Edge> edgeTraversal(Edge e) {
         return this.sqlgGraph.traversal().E(e.id());
-
     }
 
     protected void assertDb(String table, int numberOfRows) {
