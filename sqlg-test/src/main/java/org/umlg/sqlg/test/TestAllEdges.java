@@ -22,24 +22,24 @@ public class TestAllEdges extends BaseTest {
         Assert.assertEquals(2L, this.sqlgGraph.traversal().E().count().next(), 0);
     }
 
-    @Test
-    public void shouldNotGetConcurrentModificationException() {
-        for (int i = 0; i < 25; i++) {
-            final Vertex v = this.sqlgGraph.addVertex();
-            v.addEdge("friend", v);
-        }
-
-        Assert.assertEquals(25, this.sqlgGraph.traversal().E().count().next().intValue());
-        Assert.assertEquals(25, this.sqlgGraph.traversal().V().count().next().intValue());
-        this.sqlgGraph.tx().commit();
-
-        for (Edge e : this.sqlgGraph.traversal().E().toList()) {
-            e.remove();
-            this.sqlgGraph.tx().commit();
-        }
-
-        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
-        Assert.assertEquals(25, this.sqlgGraph.traversal().V().count().next().intValue());
-        this.sqlgGraph.tx().commit();
-    }
+//    @Test
+//    public void shouldNotGetConcurrentModificationException() {
+//        for (int i = 0; i < 25; i++) {
+//            final Vertex v = this.sqlgGraph.addVertex();
+//            v.addEdge("friend", v);
+//        }
+//
+//        Assert.assertEquals(25, this.sqlgGraph.traversal().E().count().next().intValue());
+//        Assert.assertEquals(25, this.sqlgGraph.traversal().V().count().next().intValue());
+//        this.sqlgGraph.tx().commit();
+//
+//        for (Edge e : this.sqlgGraph.traversal().E().toList()) {
+//            e.remove();
+//            this.sqlgGraph.tx().commit();
+//        }
+//
+//        Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
+//        Assert.assertEquals(25, this.sqlgGraph.traversal().V().count().next().intValue());
+//        this.sqlgGraph.tx().commit();
+//    }
 }

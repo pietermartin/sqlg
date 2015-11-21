@@ -2,6 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.TestAddVertexViaMap;
+import org.umlg.sqlg.test.TestAllEdges;
 import org.umlg.sqlg.test.TestVertexNavToEdges;
 import org.umlg.sqlg.test.TinkerpopTest;
 import org.umlg.sqlg.test.batch.TestBatch;
@@ -18,12 +20,7 @@ import org.umlg.sqlg.test.vertex.TestOtherVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestPathStep.class,
-//        TestTreeStep.class
-//        TestVertexStepOrderBy.class,
-//        TestBulkWithin.class
-        TinkerpopTest.class,
-//        TestGraphStepWithIds.class
+        TestAllEdges.class
         })
 public class AnyTest {
 }

@@ -2,6 +2,8 @@ package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
@@ -9,7 +11,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
@@ -70,8 +75,6 @@ public class ReplacedStep<S, E> {
             return appendPathForEdgeVertexStep(schemaTableTree);
         } else if (this.step instanceof EdgeOtherVertexStep) {
             return appendPathForEdgeOtherVertexStep(schemaTableTree);
-        } else if (this.step instanceof RepeatStep) {
-            return appendPathForRepeatStep(schemaTableTree);
         } else {
             throw new IllegalStateException("Only VertexStep and EdgeVertexStep is handled");
         }
@@ -404,11 +407,18 @@ public class ReplacedStep<S, E> {
                 SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
                 if (sqlgGraph.getSchemaManager().getAllTables().containsKey(schemaTableForLabel.toString())) {
 
+                    List<HasContainer> hasContainers = new ArrayList<>(hasContainerWithoutLabel);
+                    if (groupedIds != null) {
+                        List<Long> ids = groupedIds.get(schemaTable);
+                        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
+                        hasContainers.add(idHasContainer);
+                        toRemove.add(idHasContainer);
+                    }
                     SchemaTableTree schemaTableTree = new SchemaTableTree(
                             sqlgGraph,
                             schemaTableForLabel,
-                            1,
-                            hasContainerWithoutLabel,
+                            0,
+                            hasContainers,
                             this.comparators,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
@@ -416,23 +426,6 @@ public class ReplacedStep<S, E> {
                             ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
-                    result.add(schemaTableTree);
-
-
-
-                    List<HasContainer> hasContainers = new ArrayList<>(hasContainerWithoutLabel);
-
-                    SchemaTableTree schemaTableTree = new SchemaTableTree(sqlgGraph, schemaTableForLabel, 0);
-                    schemaTableTree.setComparators(this.comparators);
-                    schemaTableTree.setStepType(SchemaTableTree.STEP_TYPE.GRAPH_STEP);
-                    schemaTableTree.setLabels(ReplacedStep.this.labels);
-                    if (groupedIds != null) {
-                        List<Long> ids = groupedIds.get(schemaTable);
-                        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
-                        hasContainers.add(idHasContainer);
-                        toRemove.add(idHasContainer);
-                    }
-                    schemaTableTree.setHasContainers(hasContainers);
                     result.add(schemaTableTree);
                 }
 

@@ -54,11 +54,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         this.iteratorSupplier = this::elements;
     }
 
-    //This is only used in tests, think about, delete?
-    public List<ReplacedStep<S, E>> getReplacedSteps() {
-        return Collections.unmodifiableList(replacedSteps);
-    }
-
     @Override
     protected Traverser<S> processNextStart() {
         if (this.first) {

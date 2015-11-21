@@ -52,9 +52,9 @@ public class TestAddVertexViaMap extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         List<Vertex> markos = this.sqlgGraph.traversal().V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
-        if (markos.isEmpty()) {
-            markos.get(0).property("name", "marko2");
-        }
+        Assert.assertFalse(markos.isEmpty());
+        Assert.assertEquals(1, markos.size());
+        markos.get(0).property("name", "marko2");
         this.sqlgGraph.tx().commit();
 
     }
