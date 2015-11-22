@@ -167,7 +167,7 @@ public class SqlgUtil {
                     //if its the first element in that stack then the edgeId is in the previous stack.
                     //This means the edgeId is in the previous subQuery
                     final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, subQueryCount, copyAliasMapHolder);
-                    schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst())));
+                    schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst(), schemaTableTree.isEmitFirst())));
                 }
             }
         }

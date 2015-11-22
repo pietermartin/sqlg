@@ -334,7 +334,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 Traversal.Admin admin = repeatTraversals.get(0);
                 List<Step> repeatStepInternalVertexSteps = admin.getSteps();
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
-                //TODO remove when go to 3.1.0-incubating
                 LoopTraversal loopTraversal;
                 long numberOfLoops;
                 try {
@@ -348,11 +347,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     throw new RuntimeException(e);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
-                }
-                //Bug on tp3, times after is the same as times before for now
-                //A times(x) after is the same as a times(x + 1) before
-                if (!repeatStep.untilFirst) {
-                    numberOfLoops++;
                 }
                 for (int i = 0; i < numberOfLoops; i++) {
                     for (Step internalVertexStep : repeatStepInternalVertexSteps) {
@@ -413,6 +407,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         }
                         previousReplacedStep.setEmit(true);
                         previousReplacedStep.setUntilFirst(untilFirst);
+                        previousReplacedStep.setEmitFirst(emitFirst);
                         previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);

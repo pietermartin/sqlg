@@ -20,7 +20,7 @@ import org.umlg.sqlg.test.vertex.TestOtherVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAllEdges.class
+        TestRepeatStepGraphOut.class
         })
 public class AnyTest {
 }

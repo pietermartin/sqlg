@@ -44,6 +44,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
+    private Emit lastEmit = null;
 
     public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final Object... ids) {
         super(traversal, returnClass, ids);
@@ -68,6 +69,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         while (toEmit.hasNext()) {
             Emit emit = toEmit.next();
             toEmit.remove();
+            lastEmit = emit;
             if (this.currentEmitTree == null) {
                 //get it from the roots
                 for (EmitTree<E> rootEmitTree : rootEmitTrees) {
@@ -101,11 +103,12 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
             this.currentEmitTree = null;
             return EmptyTraverser.instance();
         } else {
-            //Do not emit the last element if it has already been emitted.
             if (this.currentEmitTree != null) {
-//                this.currentEmitTree = this.currentEmitTree.addEmit(-1, new Emit((E) sqlGraphStepWithPathTraverser.get(), Optional.empty(), false));
                 this.currentEmitTree = null;
-                return sqlGraphStepWithPathTraverser;
+            }
+            //if emit and times are both at the end or start then only emit or return but not both.
+            if (lastEmit != null && lastEmit.emitUntilBothStartOrEnd()) {
+                return EmptyTraverser.instance();
             } else {
                 return sqlGraphStepWithPathTraverser;
             }

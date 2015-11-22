@@ -85,26 +85,26 @@ import java.util.stream.Stream;
         method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Takes too long")
 
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
-        method = "g_V_repeatXoutX_timesX2X",
-        reason = "TP3 RepeatStep bug")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
-        method = "g_V_repeatXoutX_timesX2X_repeatXinX_timesX2X_name",
-        reason = "TP3 RepeatStep bug")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.PathTest$Traversals",
-        method = "g_V_repeatXoutX_timesX2X_path_byXitX_byXnameX_byXlangX",
-        reason = "TP3 RepeatStep bug")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GroupTest$Traversals",
-        method = "g_V_repeatXbothXfollowedByXX_timesX2X_group_byXsongTypeX_byXcountX",
-        reason = "TP3 RepeatStep bug")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GroupTest$Traversals",
-        method = "g_V_repeatXbothXfollowedByXX_timesX2X_groupXaX_byXsongTypeX_byXcountX_capXaX",
-        reason = "TP3 RepeatStep bug")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
+//        method = "g_V_repeatXoutX_timesX2X",
+//        reason = "TP3 RepeatStep bug")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
+//        method = "g_V_repeatXoutX_timesX2X_repeatXinX_timesX2X_name",
+//        reason = "TP3 RepeatStep bug")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.PathTest$Traversals",
+//        method = "g_V_repeatXoutX_timesX2X_path_byXitX_byXnameX_byXlangX",
+//        reason = "TP3 RepeatStep bug")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GroupTest$Traversals",
+//        method = "g_V_repeatXbothXfollowedByXX_timesX2X_group_byXsongTypeX_byXcountX",
+//        reason = "TP3 RepeatStep bug")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GroupTest$Traversals",
+//        method = "g_V_repeatXbothXfollowedByXX_timesX2X_groupXaX_byXsongTypeX_byXcountX_capXaX",
+//        reason = "TP3 RepeatStep bug")
 public class SqlgGraph implements Graph {
 
     private final SqlgDataSource sqlgDataSource;

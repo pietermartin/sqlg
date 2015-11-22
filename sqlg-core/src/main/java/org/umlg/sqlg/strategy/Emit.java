@@ -15,21 +15,12 @@ public class Emit<E extends SqlgElement> {
     private Path path;
     private Pair<E, Optional<Long>> elementPlusEdgeId;
     private boolean untilFirst;
+    private boolean emitFirst;
 
-    public Emit(int degree, Path path, Pair<E, Optional<Long>> elementPlusEdgeId) {
-        this.degree = degree;
-        this.path = path;
-        this.elementPlusEdgeId = elementPlusEdgeId;
-    }
-
-    public Emit(Pair<E, Optional<Long>> elementPlusEdgeId, boolean untilFirst) {
+    public Emit(Pair<E, Optional<Long>> elementPlusEdgeId, boolean untilFirst, boolean emitFirst) {
         this.elementPlusEdgeId = elementPlusEdgeId;
         this.untilFirst = untilFirst;
-    }
-
-    public Emit(E element, Optional<Long> edgeId, boolean untilFirst) {
-        this.elementPlusEdgeId = Pair.of(element, edgeId);
-        this.untilFirst = untilFirst;
+        this.emitFirst = emitFirst;
     }
 
     public int getDegree() {
@@ -54,6 +45,14 @@ public class Emit<E extends SqlgElement> {
 
     public boolean isUntilFirst() {
         return untilFirst;
+    }
+
+    public boolean isEmitFirst() {
+        return emitFirst;
+    }
+
+    public boolean emitUntilBothStartOrEnd() {
+        return this.untilFirst && this.emitFirst || !this.untilFirst && !this.emitFirst;
     }
 
     @Override

@@ -52,7 +52,8 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                     E e = next.getLeft();
                     Multimap<String, Emit<E>> labeledObjects = next.getRight();
                     this.sqlGraphStepWithPathTraverser = (SqlGraphStepWithPathTraverser<E, E>) this.head;
-                    this.sqlGraphStepWithPathTraverser.customSplit(e, ImmutablePath.make(), labeledObjects);
+//                    this.sqlGraphStepWithPathTraverser.customSplit(e, ImmutablePath.make(), labeledObjects);
+                    this.sqlGraphStepWithPathTraverser.customSplit(e, this.sqlGraphStepWithPathTraverser.getPath(), labeledObjects);
                     if (e == null) {
                         this.sqlGraphStepWithPathTraverser.set((E)new Dummy());
                     } else {
@@ -106,12 +107,6 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                         return sqlGraphStepWithPathTraverser;
                     }
                 }
-//                //each iteration is a new row. i.e. must start from the original head containing the the start element.
-//                this.originalHead = (Traverser.Admin<S>) sqlGraphStepWithPathTraverser.clone();
-//                sqlGraphStepWithPathTraverser.customSplit(e, this.head.path(), labeledObjects);
-//                sqlGraphStepWithPathTraverser.set(e);
-//                this.head = this.originalHead;
-//                return sqlGraphStepWithPathTraverser;
             } else {
                 this.head = this.starts.next();
                 this.originalHead = (Traverser.Admin<S>) head.clone();

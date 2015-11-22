@@ -51,7 +51,7 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
             Collection<Emit<E>> labeledElements = labeledObjects.get(label);
             String realLabel;
             String pathLabel;
-            int degree = -1;
+            int degree;
             if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
                 realLabel = label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
                 pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
@@ -64,7 +64,7 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
                 throw new IllegalStateException();
             }
             for (Emit<E> emit : labeledElements) {
-                if (addT && emit.getElementPlusEdgeId().getLeft() == t) {
+                if (addT && emit.getElementPlusEdgeId().getLeft().equals(t)) {
                     addT = false;
                 }
                 Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);

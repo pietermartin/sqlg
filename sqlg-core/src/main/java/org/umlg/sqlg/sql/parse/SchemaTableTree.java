@@ -52,6 +52,7 @@ public class SchemaTableTree {
     private Set<String> labels;
     //untilFirst is for the repeatStep optimization
     private boolean untilFirst;
+    private boolean emitFirst;
 
     //This counter must only ever be used on the root node of the schema table tree
     //It is used to alias the select clauses
@@ -121,6 +122,7 @@ public class SchemaTableTree {
                     STEP_TYPE stepType,
                     boolean emit,
                     boolean untilFirst,
+                    boolean emitFirst,
                     boolean vertexGraphStep,
                     Set<String> labels
     ) {
@@ -131,6 +133,7 @@ public class SchemaTableTree {
         this.stepType = stepType;
         this.emit = emit;
         this.untilFirst = untilFirst;
+        this.emitFirst = emitFirst;
         this.vertexGraphStep = vertexGraphStep;
         initializeAliasColumnNameMaps();
     }
@@ -146,7 +149,18 @@ public class SchemaTableTree {
             ReplacedStep replacedStep,
             boolean isEdgeVertexStep,
             Set<String> labels) {
-        return addChild(schemaTable, direction, elementClass, replacedStep.getHasContainers(), replacedStep.getComparators(), replacedStep.getDepth(), isEdgeVertexStep, replacedStep.isEmit(), replacedStep.isUntilFirst(), labels);
+        return addChild(
+                schemaTable,
+                direction,
+                elementClass,
+                replacedStep.getHasContainers(),
+                replacedStep.getComparators(),
+                replacedStep.getDepth(),
+                isEdgeVertexStep,
+                replacedStep.isEmit(),
+                replacedStep.isUntilFirst(),
+                replacedStep.isEmitFirst(),
+                labels);
     }
 
     public SchemaTableTree addChild(
@@ -155,7 +169,18 @@ public class SchemaTableTree {
             Class<? extends Element> elementClass,
             ReplacedStep replacedStep,
             Set<String> labels) {
-        return addChild(schemaTable, direction, elementClass, replacedStep.getHasContainers(), replacedStep.getComparators(), replacedStep.getDepth(), false, replacedStep.isEmit(), replacedStep.isUntilFirst(), labels);
+        return addChild(
+                schemaTable,
+                direction,
+                elementClass,
+                replacedStep.getHasContainers(),
+                replacedStep.getComparators(),
+                replacedStep.getDepth(),
+                false,
+                replacedStep.isEmit(),
+                replacedStep.isUntilFirst(),
+                replacedStep.isEmitFirst(),
+                labels);
     }
 
     private SchemaTableTree addChild(
@@ -168,6 +193,7 @@ public class SchemaTableTree {
             boolean isEdgeVertexStep,
             boolean emit,
             boolean untilFirst,
+            boolean emitFirst,
             Set<String> labels) {
 
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth);
@@ -183,6 +209,7 @@ public class SchemaTableTree {
         schemaTableTree.labels = labels;
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
+        schemaTableTree.emitFirst = emitFirst;
         return schemaTableTree;
     }
 
@@ -563,7 +590,7 @@ public class SchemaTableTree {
         //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
 //        if (lastOfPrevious == null && distinctQueryStack.getFirst().isVertexGraphStep()) {
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-            singlePathSql += " WHERE ";
+            singlePathSql += "\nWHERE\n\t";
             singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema());
             singlePathSql += ".";
             singlePathSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable());
@@ -1829,6 +1856,9 @@ public class SchemaTableTree {
         return untilFirst;
     }
 
+    public boolean isEmitFirst() {
+        return emitFirst;
+    }
 
     public int getTmpTableAliasCounter() {
         return tmpTableAliasCounter;

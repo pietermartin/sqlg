@@ -35,6 +35,7 @@ public class ReplacedStep<S, E> {
     private int depth;
     private boolean emit;
     private boolean untilFirst;
+    private boolean emitFirst;
     //This is indicate whether a where clause is needed in the sql
     private boolean isVertexGraphStep = false;
 
@@ -385,12 +386,13 @@ public class ReplacedStep<S, E> {
                     SchemaTableTree schemaTableTree = new SchemaTableTree(
                             sqlgGraph,
                             schemaTable,
-                            1,
+                            0,
                             hasContainerWithoutLabel,
                             this.comparators,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
+                            ReplacedStep.this.emitFirst,
                             ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
@@ -423,6 +425,7 @@ public class ReplacedStep<S, E> {
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
+                            ReplacedStep.this.emitFirst,
                             ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
@@ -485,6 +488,14 @@ public class ReplacedStep<S, E> {
 
     public void setUntilFirst(boolean untilFirst) {
         this.untilFirst = untilFirst;
+    }
+
+    public boolean isEmitFirst() {
+        return emitFirst;
+    }
+
+    public void setEmitFirst(boolean emitFirst) {
+        this.emitFirst = emitFirst;
     }
 
     public int getDepth() {
