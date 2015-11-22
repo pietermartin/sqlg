@@ -52,7 +52,15 @@ public class Emit<E extends SqlgElement> {
     }
 
     public boolean emitUntilBothStartOrEnd() {
-        return this.untilFirst && this.emitFirst || !this.untilFirst && !this.emitFirst;
+        return emitAndUntilBothAtStart() && emitAndUntilBothAtEnd();
+    }
+
+    public boolean emitAndUntilBothAtStart() {
+        return this.untilFirst && this.emitFirst;
+    }
+
+    public boolean emitAndUntilBothAtEnd() {
+        return !this.untilFirst && !this.emitFirst;
     }
 
     @Override

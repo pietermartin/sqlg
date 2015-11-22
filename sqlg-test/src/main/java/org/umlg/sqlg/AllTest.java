@@ -98,6 +98,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestTreeStep.class,
         TestRepeatStepGraphOut.class,
         TestRepeatStepGraphIn.class,
+        TestRepeatStepVertexOut.class,
         TestGraphStepWithIds.class,
         TestOtherVertex.class
 })

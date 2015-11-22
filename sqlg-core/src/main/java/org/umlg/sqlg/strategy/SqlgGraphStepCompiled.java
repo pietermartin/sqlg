@@ -10,7 +10,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +106,9 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 this.currentEmitTree = null;
             }
             //if emit and times are both at the end or start then only emit or return but not both.
-            if (lastEmit != null && lastEmit.emitUntilBothStartOrEnd()) {
+            if (lastEmit != null && lastEmit.emitAndUntilBothAtStart()) {
+                return sqlGraphStepWithPathTraverser;
+            } else  if (lastEmit != null && this.lastEmit.emitAndUntilBothAtEnd()) {
                 return EmptyTraverser.instance();
             } else {
                 return sqlGraphStepWithPathTraverser;
