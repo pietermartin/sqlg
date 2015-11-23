@@ -37,7 +37,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
 
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
-    protected Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> iteratorSupplier;
+    private Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> iteratorSupplier;
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private SqlgGraph sqlgGraph;
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
@@ -173,6 +173,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         this.replacedSteps.add(replacedStep);
     }
 
+    @Override
     public void parseForStrategy() {
         this.parsedForStrategySql.clear();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");

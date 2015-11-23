@@ -1,5 +1,6 @@
 package org.umlg.sqlg.strategy;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -69,11 +70,9 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
-        if (lastReplacedStep != null) {
-            replaceOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
-        }
-        return false;
+    protected void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
+        Preconditions.checkArgument(lastReplacedStep != null);
+        replaceOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
     }
 
 
@@ -92,11 +91,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step currentStep = iterator.next();
-            if (currentStep instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) currentStep)) {
-                iterator.remove();
-                TraversalHelper.replaceStep(currentStep, new SqlgOrderGlobalStep<>((OrderGlobalStep) currentStep), traversal);
-                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
-            } else if (currentStep instanceof OrderGlobalStep && isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep)) {
+            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
                 iterator.remove();
                 TraversalHelper.replaceStep(currentStep, new SqlgOrderGlobalStep<>((OrderGlobalStep) currentStep), traversal);
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());

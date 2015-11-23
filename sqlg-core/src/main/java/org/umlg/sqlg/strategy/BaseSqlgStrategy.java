@@ -53,7 +53,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     protected abstract void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
 
-    protected abstract boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
+    protected abstract void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
     protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass);
 
@@ -81,8 +81,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
-                //TODO tp3 3.1.0-incubating
-//                ((RepeatStep) r).getUntilTraversal() != null
             });
             boolean hasUnoptimizableUntil = false;
             if (hasUntil) {
@@ -96,8 +94,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     } catch (IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
-                    //TODO tp3 3.1.0-incubating
-//                    return !(((RepeatStep) r).getUntilTraversal() instanceof LoopTraversal)
                 });
             }
             boolean badRepeat = !hasUntil || hasUnoptimizableUntil;
@@ -179,37 +175,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         ).count() < 1;
     }
 
-    static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
-        //Collect the OrderGlobalSteps
-        if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
-            iterator.remove();
-            traversal.removeStep(step);
-            replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
-        } else {
-            collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
-        }
-    }
-
-    private static void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
-        //Collect the OrderGlobalSteps
-        while (iterator.hasNext()) {
-            Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) currentStep)) {
-                iterator.remove();
-                traversal.removeStep(currentStep);
-                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
-            } else if (currentStep instanceof OrderGlobalStep && isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep)) {
-                iterator.remove();
-                traversal.removeStep(currentStep);
-                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing
-            } else {
-                iterator.previous();
-                break;
-            }
-        }
-    }
 
     static boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
         return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
@@ -368,7 +333,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
                 if (isReplaceableStep(step.getClass())) {
 
-
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;
                     boolean emitFirst = false;
@@ -435,11 +399,10 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     previous = step;
                     lastReplacedStep = replacedStep;
                 } else {
-                    if (doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep)) {
-                        break;
+                    if (lastReplacedStep != null && steps.stream().anyMatch(s->s instanceof OrderGlobalStep)) {
+                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
                     }
-                    previous = null;
-                    lastReplacedStep = null;
+                    break;
                 }
             }
         }

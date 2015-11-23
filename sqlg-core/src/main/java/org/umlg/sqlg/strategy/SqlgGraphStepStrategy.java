@@ -6,8 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -67,7 +69,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
-        return new SqlgGraphStepCompiled(this.sqlgGraph, traversal, ((GraphStep)startStep).getReturnClass(), ((GraphStep)startStep).getIds());
+        return new SqlgGraphStepCompiled(this.sqlgGraph, traversal, ((GraphStep) startStep).getReturnClass(), ((GraphStep) startStep).getIds());
     }
 
     @Override
@@ -76,20 +78,46 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?>  traversal) {
+    protected void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
         TraversalHelper.replaceStep(firstStep, sqlgStep, traversal);
     }
 
     @Override
-    protected boolean doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
-        if (lastReplacedStep != null) {
-            //TODO optimize this, to not parse if there are no OrderGlobalSteps
-            sqlgStep.parseForStrategy();
-            if (!sqlgStep.isForMultipleQueries()) {
-                collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+    protected void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
+        Preconditions.checkArgument(lastReplacedStep != null);
+        //TODO optimize this, to not parse if there are no OrderGlobalSteps
+        sqlgStep.parseForStrategy();
+        if (!sqlgStep.isForMultipleQueries()) {
+            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+        }
+    }
+
+    private static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+        //Collect the OrderGlobalSteps
+        if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
+            iterator.remove();
+            traversal.removeStep(step);
+            replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
+        } else {
+            collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
+        }
+    }
+
+    private static void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+        //Collect the OrderGlobalSteps
+        while (iterator.hasNext()) {
+            Step<?, ?> currentStep = iterator.next();
+            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
+                iterator.remove();
+                traversal.removeStep(currentStep);
+                replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
+            } else if (currentStep instanceof IdentityStep) {
+                // do nothing
+            } else {
+                iterator.previous();
+                break;
             }
         }
-        return true;
     }
 }
 

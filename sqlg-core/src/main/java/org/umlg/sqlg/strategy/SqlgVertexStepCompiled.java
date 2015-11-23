@@ -52,7 +52,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                     this.sqlGraphStepWithPathTraverser = (SqlGraphStepWithPathTraverser<E, E>) this.head;
                     this.sqlGraphStepWithPathTraverser.customSplit(e, this.sqlGraphStepWithPathTraverser.getPath(), labeledObjects);
                     if (e == null) {
-                        this.sqlGraphStepWithPathTraverser.set((E)new Dummy());
+                        this.sqlGraphStepWithPathTraverser.set((E) new Dummy());
                     } else {
                         this.sqlGraphStepWithPathTraverser.set(e);
                     }
@@ -126,9 +126,9 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
             Step step = stepIterator.next();
             //only interested what happens after this step
             if (afterThis) {
-                parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
-                if (!isForMultipleQueries()) {
-                    if (step instanceof SqlgOrderGlobalStep) {
+                if (step instanceof SqlgOrderGlobalStep) {
+                    parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
+                    if (!isForMultipleQueries()) {
                         ((SqlgOrderGlobalStep) step).setIgnore(true);
                     }
                 }
