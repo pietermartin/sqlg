@@ -7,7 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -27,13 +26,11 @@ import java.util.*;
 public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep implements SqlgStep {
 
     private Traverser.Admin<S> head = null;
-    private Traverser.Admin<S> originalHead = null;
     private Iterator<Pair<E, Multimap<String, Emit<E>>>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
-    private Pair<E, Multimap<String, Emit<E>>> next;
     private SqlGraphStepWithPathTraverser<E, E> sqlGraphStepWithPathTraverser;
 
     public SqlgVertexStepCompiled(final Traversal.Admin traversal) {
@@ -43,16 +40,16 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     @Override
     protected Traverser<E> processNextStart() {
         while (true) {
+            Traverser.Admin<S> originalHead;
             if (this.currentEmitTree != null || this.iterator.hasNext()) {
 
-                this.originalHead = (Traverser.Admin<S>) this.head.clone();
-                Preconditions.checkState(this.originalHead instanceof SqlgLabelledPathTraverser);
+                originalHead = (Traverser.Admin<S>) this.head.clone();
+                Preconditions.checkState(originalHead instanceof SqlgLabelledPathTraverser);
                 if (this.currentEmitTree == null) {
-                    this.next = this.iterator.next();
+                    Pair<E, Multimap<String, Emit<E>>> next = this.iterator.next();
                     E e = next.getLeft();
                     Multimap<String, Emit<E>> labeledObjects = next.getRight();
                     this.sqlGraphStepWithPathTraverser = (SqlGraphStepWithPathTraverser<E, E>) this.head;
-//                    this.sqlGraphStepWithPathTraverser.customSplit(e, ImmutablePath.make(), labeledObjects);
                     this.sqlGraphStepWithPathTraverser.customSplit(e, this.sqlGraphStepWithPathTraverser.getPath(), labeledObjects);
                     if (e == null) {
                         this.sqlGraphStepWithPathTraverser.set((E)new Dummy());
@@ -60,7 +57,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                         this.sqlGraphStepWithPathTraverser.set(e);
                     }
                 }
-                this.head = this.originalHead;
+                this.head = originalHead;
 
                 Iterator<Emit> toEmit = sqlGraphStepWithPathTraverser.getToEmit().iterator();
                 while (toEmit.hasNext()) {
@@ -100,7 +97,6 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 } else {
                     //Do not emit the last element if it has already been emitted.
                     if (this.currentEmitTree != null) {
-//                        this.currentEmitTree = this.currentEmitTree.addEmit(-1, new Emit((E) sqlGraphStepWithPathTraverser.get(), Optional.empty(), false));
                         this.currentEmitTree = null;
                         return sqlGraphStepWithPathTraverser;
                     } else {
@@ -109,7 +105,6 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 }
             } else {
                 this.head = this.starts.next();
-                this.originalHead = (Traverser.Admin<S>) head.clone();
                 this.iterator = this.flatMapCustom(this.head);
             }
         }

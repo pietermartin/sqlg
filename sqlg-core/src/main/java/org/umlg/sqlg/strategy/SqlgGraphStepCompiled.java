@@ -1,7 +1,6 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,9 +47,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final Object... ids) {
         super(traversal, returnClass, ids);
         this.sqlgGraph = sqlgGraph;
-//        if ((this.ids.length == 0 || !(this.ids[0] instanceof Element))) {
-//            this.iteratorSupplier = this::elements;
-//        }
         this.iteratorSupplier = this::elements;
     }
 
@@ -147,54 +143,13 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                         SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 1);
                         ResultSet resultSet = preparedStatement.executeQuery();
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                        while (resultSet.next()) {
-                            AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
-                            //First load all labeled entries from the resultSet
-                            Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
-                            Multimap<String, Integer> columnNameCountMap2 = ArrayListMultimap.create();
-                            //Translate the columns back from alias to meaningful column headings
-                            for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-                                String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-                                String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-                                columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
-                                columnNameCountMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
-                            }
-                            int subQueryDepth = 0;
-                            List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
-                            Multimap<String, Emit<E>> previousLabeledElements = null;
 
-                            //Copy the alias map
-                            for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
-                                Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
-                                        this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack, subQueryDepth, copyAliasMapHolder, columnNameCountMap
-                                );
-                                if (previousLabeledElements == null) {
-                                    previousLabeledElements = labeledElements;
-                                } else {
-                                    previousLabeledElements.putAll(labeledElements);
-                                }
-                                //The last subQuery
-                                if (subQueryDepth == subQueryStacks.size() - 1) {
-                                    if (subQueryStack.getLast().isLeafNodeIsEmpty()) {
-                                        //write in a empty element indicating that the traversal actually returns nothing.
-                                        //this only happens for emit queries where a left join is used.
-                                        //if the last VertexStep does not exist it is excluded from the sql so a empty needs to be written.
-                                        //The empty is used in processNextStart() to know whether the last element should be emitted ot not.
-//                                        //TODO Optional must go all the way up the stack
-//                                        resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
-                                        resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));
-                                    } else {
-                                        Optional<E> e = SqlgUtil.loadLeafElement(
-                                                this.sqlgGraph, resultSetMetaData, resultSet, subQueryStack.getLast(), columnNameCountMap2
-                                        );
-                                        //TODO Optional must go all the way up the stack
-                                        resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
-                                    }
-                                }
-
-                                subQueryDepth++;
-                            }
-                        }
+                        SqlgUtil.loadResultSetIntoResultIterator(
+                                this.sqlgGraph,
+                                resultSetMetaData, resultSet,
+                                rootSchemaTableTree, distinctQueryStack,
+                                aliasMapHolder,
+                                resultIterator);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -214,7 +169,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     @Override
     public void addReplacedStep(ReplacedStep replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
-//        replacedStep.setDepth(this.replacedSteps.size() + 1);
         replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
     }

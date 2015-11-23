@@ -17,7 +17,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalCompara
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Text;
@@ -28,10 +30,7 @@ import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
@@ -91,7 +90,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     try {
                         Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
                         untilTraversalField.setAccessible(true);
-                        return !(untilTraversalField.get(r)  instanceof LoopTraversal);
+                        return !(untilTraversalField.get(r) instanceof LoopTraversal);
                     } catch (NoSuchFieldException e) {
                         throw new RuntimeException(e);
                     } catch (IllegalAccessException e) {
@@ -300,7 +299,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 ));
     }
 
-    protected void babySitSteps(Traversal.Admin<?, ?> traversal, Step startStep, List<Step> steps, ListIterator<Step> stepIterator) {
+    protected void combineSteps(Traversal.Admin<?, ?> traversal, List<Step> steps, ListIterator<Step> stepIterator) {
         //Replace all consecutive VertexStep and HasStep with one step
         SqlgStep sqlgStep = null;
         Step previous = null;
@@ -319,7 +318,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         int repeatStepsAdded = 0;
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
-
 
             //Check for RepeatStep(s) and insert them into the stepIterator
             if (step instanceof RepeatStep) {
@@ -445,6 +443,44 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             }
         }
+    }
+
+    protected void readFromCache(final Traversal.Admin<?, ?> traversal) {
+        List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
+
+        vertexSteps.forEach(
+                (s) -> {
+                    VertexStep<? extends Element> vs = (VertexStep<? extends Element>)s;
+                    SqlgVertexStep<? extends Element> insertStep = new SqlgVertexStep<>(s.getTraversal(), vs.getReturnClass(), vs.getDirection(), vs.getEdgeLabels());
+                    TraversalHelper.replaceStep(s, insertStep, traversal);
+                }
+        );
+
+        //The HasSteps following directly after a VertexStep is merged into the SqlgVertexStep
+        Set<Step> toRemove = new HashSet<>();
+        for (Step<?, ?> step : traversal.asAdmin().getSteps()) {
+            if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).getReturnClass())) {
+                SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
+                Step<?, ?> currentStep = sqlgVertexStep.getNextStep();
+                while (true) {
+                    if (currentStep instanceof HasContainerHolder) {
+                        sqlgVertexStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
+                        if (!currentStep.getLabels().isEmpty()) {
+                            final IdentityStep identityStep = new IdentityStep<>(traversal);
+                            currentStep.getLabels().forEach(identityStep::addLabel);
+                            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
+                        }
+                        toRemove.add(currentStep);
+                    } else if (currentStep instanceof IdentityStep) {
+                        // do nothing
+                    } else {
+                        break;
+                    }
+                    currentStep = currentStep.getNextStep();
+                }
+            }
+        }
+        toRemove.forEach(traversal::removeStep);
     }
 
 }
