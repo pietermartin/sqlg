@@ -1528,7 +1528,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids);
         //execute copy from select. select the edge ids to copy into the new table by joining on the temp table
         sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
-        StringBuilder sql = new StringBuilder("COPY (");
+
+        StringBuilder sql = new StringBuilder("INSERT INTO \n");
+        sql.append(this.maybeWrapInQoutes(in.getSchema()));
+        sql.append(".");
+        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
+        sql.append(" (");
+        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(",");
+        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+        sql.append(") \n");
         sql.append("select _in.\"ID\" as \"");
         sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
         sql.append("\", _out.\"ID\" as \"");
@@ -1538,20 +1547,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
         sql.append(" _in join ");
-        sql.append("\"" + tmpTableIdentified + "\" ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+        sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
         sql.append(this.maybeWrapInQoutes(out.getSchema()));
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
         sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
-        sql.append(") TO '");
-        sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
-        UUID uuid = UUID.randomUUID();
-        sql.append("/sqlg.bulk.edit.");
-        sql.append(uuid.toString());
-        sql.append(".csv' CSV DELIMITER E'\t'");
-        if (this.needsSemicolon()) {
-            sql.append(";");
-        }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -1560,35 +1560,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
-        }
-        sql = new StringBuilder("COPY ");
-        sql.append(this.maybeWrapInQoutes(in.getSchema()));
-        sql.append(".");
-        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
-        sql.append(" (");
-        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-        sql.append(",");
-        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-        sql.append(") FROM '");
-        sql.append(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp"));
-        sql.append("/sqlg.bulk.edit.");
-        sql.append(uuid.toString());
-        sql.append(".csv' CSV DELIMITER E'\t'");
-        if (this.needsSemicolon()) {
-            sql.append(";");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        conn = sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        File tmp = new File(sqlgGraph.configuration().getString("bulk.edge.copy.location", "/tmp") + "/sqlg.bulk.edit." + uuid.toString() + ".csv");
-        if (tmp.exists()) {
-            tmp.delete();
         }
     }
 
