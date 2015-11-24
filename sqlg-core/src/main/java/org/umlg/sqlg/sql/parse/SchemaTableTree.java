@@ -620,18 +620,18 @@ public class SchemaTableTree {
     }
 
     private boolean hasBulkWithinOrOut(SqlgGraph sqlgGraph) {
-        return this.hasContainers.stream().filter(h->SqlgUtil.isBulkWithinOrOut(sqlgGraph, h)).findAny().isPresent();
+        return this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).findAny().isPresent();
     }
 
     private boolean hasBulkWithin(SqlgGraph sqlgGraph) {
-        return this.hasContainers.stream().filter(h->SqlgUtil.isBulkWithin(sqlgGraph, h)).findAny().isPresent();
+        return this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithin(sqlgGraph, h)).findAny().isPresent();
     }
 
 
     private String bulkWithJoin(SqlgGraph sqlgGraph) {
 
         StringBuilder sb = new StringBuilder();
-        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h->SqlgUtil.isBulkWithinOrOut(sqlgGraph, h)).collect(Collectors.toList());
+        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).collect(Collectors.toList());
         for (HasContainer hasContainer : bulkHasContainers) {
             P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
             Collection<Object> withInList = predicate.getValue();
@@ -677,10 +677,10 @@ public class SchemaTableTree {
                 throw new RuntimeException(e);
             }
             if (hasContainer.getBiPredicate() == Contains.within) {
-                sb.append("\n INNER JOIN ");
+                sb.append("\nINNER JOIN ");
             } else {
                 //left join and in the where clause add a IS NULL, to find the values not in the right hand table
-                sb.append(" \nLEFT JOIN ");
+                sb.append("\nLEFT JOIN ");
             }
             sb.append(" \"");
             sb.append(tmpTableIdentified);
@@ -713,19 +713,16 @@ public class SchemaTableTree {
     private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
         final StringBuilder result = new StringBuilder();
         if (sqlgGraph.getSqlDialect().supportsBulkWithinOut()) {
-            if (!(this.hasContainers.size() == 1 && hasBulkWithin(sqlgGraph))) {
-                this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
-                    if (!printedWhere.booleanValue()) {
-                        printedWhere.setTrue();
-                        result.append(" WHERE (");
-                    } else {
-                        result.append(" AND (");
-                    }
-                    WhereClause whereClause = WhereClause.from(h.getPredicate());
-                    result.append(" " + whereClause.toSql(sqlgGraph, this, h) + ")");
-
-                });
-            }
+            this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
+                if (!printedWhere.booleanValue()) {
+                    printedWhere.setTrue();
+                    result.append(" WHERE (");
+                } else {
+                    result.append(" AND (");
+                }
+                WhereClause whereClause = WhereClause.from(h.getPredicate());
+                result.append(" " + whereClause.toSql(sqlgGraph, this, h) + ")");
+            });
         } else {
             for (HasContainer hasContainer : this.getHasContainers()) {
                 if (!printedWhere.booleanValue()) {
@@ -1577,7 +1574,7 @@ public class SchemaTableTree {
      * Remove all leaf nodes that are not at the deepest level.
      * Those nodes are not to be included in the sql as they do not have enough incident edges.
      * i.e. The graph is not deep enough along those labels.
-     * <p>
+     * <p/>
      * This is done via a breath first traversal.
      */
     void removeAllButDeepestLeafNodes(int depth) {

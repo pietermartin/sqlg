@@ -45,7 +45,7 @@ public class WhereClause {
             }
             result += compareToSql((Compare) p.getBiPredicate());
             return result;
-        } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithin(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
+        } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 result += prefix + ".\"ID\"";
             } else {

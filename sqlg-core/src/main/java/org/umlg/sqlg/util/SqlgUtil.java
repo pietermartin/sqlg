@@ -181,7 +181,7 @@ public class SqlgUtil {
 
     }
 
-    public static boolean isBulkWithinOrOut(SqlgGraph sqlgGraph, HasContainer hasContainer) {
+    public static boolean isBulkWithinAndOut(SqlgGraph sqlgGraph, HasContainer hasContainer) {
         BiPredicate p = hasContainer.getPredicate().getBiPredicate();
         return (p == Contains.within || p == Contains.without) && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
@@ -191,11 +191,16 @@ public class SqlgUtil {
         return p == Contains.within && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
+    public static boolean isBulkWithout(SqlgGraph sqlgGraph, HasContainer hasContainer) {
+        BiPredicate p = hasContainer.getPredicate().getBiPredicate();
+        return p == Contains.without && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
+    }
+
     public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement, int parameterIndex) throws SQLException {
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinOrOut(sqlgGraph, hasContainer)) {
+                if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinAndOut(sqlgGraph, hasContainer)) {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
                     whereClause.putKeyValueMap(hasContainer, keyValueMap);
                 }
