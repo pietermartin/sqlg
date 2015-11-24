@@ -28,6 +28,10 @@ import java.util.function.BiPredicate;
  */
 public class SqlgUtil {
 
+    //This is the default count to indicate whether to use in statement or join onto a temp table.
+    //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
+    private final static int BULK_WITHIN_COUNT = 1;
+
     public static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph, final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack, int subQueryCount, AliasMapHolder copyAliasMapHolder,
@@ -36,14 +40,6 @@ public class SqlgUtil {
         Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, subQueryCount, copyAliasMapHolder);
         return labeledResult;
     }
-
-//    public static <E extends SqlgElement> Optional<E> loadLeafElement(
-//            SqlgGraph sqlgGraph, final ResultSet resultSet,
-//            SchemaTableTree leafSubQueryStack, Multimap<String, Integer> columnMap) throws SQLException {
-//
-//        Optional<E> e = loadElement(sqlgGraph, columnMap, resultSet, leafSubQueryStack);
-//        return e;
-//    }
 
     public static <E> Optional<E> loadElement(
             SqlgGraph sqlgGraph, Multimap<String, Integer> columnMap,
@@ -185,21 +181,21 @@ public class SqlgUtil {
 
     }
 
-    public static boolean isBulkWithinOrOut(HasContainer hasContainer) {
+    public static boolean isBulkWithinOrOut(SqlgGraph sqlgGraph, HasContainer hasContainer) {
         BiPredicate p = hasContainer.getPredicate().getBiPredicate();
-        return p == Contains.within || p == Contains.without;
+        return (p == Contains.within || p == Contains.without) && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
-    public static boolean isBulkWithin(HasContainer hasContainer) {
+    public static boolean isBulkWithin(SqlgGraph sqlgGraph, HasContainer hasContainer) {
         BiPredicate p = hasContainer.getPredicate().getBiPredicate();
-        return p == Contains.within;
+        return p == Contains.within && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
     public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement, int parameterIndex) throws SQLException {
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
-                if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinOrOut(hasContainer)) {
+                if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || !isBulkWithinOrOut(sqlgGraph, hasContainer)) {
                     WhereClause whereClause = WhereClause.from(hasContainer.getPredicate());
                     whereClause.putKeyValueMap(hasContainer, keyValueMap);
                 }

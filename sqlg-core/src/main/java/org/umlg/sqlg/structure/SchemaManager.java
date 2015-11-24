@@ -742,7 +742,8 @@ public class SchemaManager {
             sql.append(", ");
         }
         buildColumns(columns, sql);
-        sql.append(") ON COMMIT DROP");
+        sql.append(") ");
+        sql.append(this.sqlDialect.afterCreateTemporaryTableStatement());
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }

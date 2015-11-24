@@ -409,4 +409,6 @@ public interface SqlDialect {
     String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix);
 
     boolean supportsBulkWithinOut();
+
+    String afterCreateTemporaryTableStatement();
 }

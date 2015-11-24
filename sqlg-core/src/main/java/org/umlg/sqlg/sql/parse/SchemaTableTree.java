@@ -582,7 +582,7 @@ public class SchemaTableTree {
         //If so add in a join to the temporary table that will hold the values of the P.within predicate.
         //These values are inserted/copy command into a temporary table before joining.
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
-            if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && schemaTableTree.hasBulkWithinOrOut()) {
+            if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && schemaTableTree.hasBulkWithinOrOut(sqlgGraph)) {
                 singlePathSql += schemaTableTree.bulkWithJoin(sqlgGraph);
             }
         }
@@ -619,22 +619,22 @@ public class SchemaTableTree {
         return singlePathSql;
     }
 
-    private boolean hasBulkWithinOrOut() {
-        return this.hasContainers.stream().filter(SqlgUtil::isBulkWithinOrOut).findAny().isPresent();
+    private boolean hasBulkWithinOrOut(SqlgGraph sqlgGraph) {
+        return this.hasContainers.stream().filter(h->SqlgUtil.isBulkWithinOrOut(sqlgGraph, h)).findAny().isPresent();
     }
 
-    private boolean hasBulkWithin() {
-        return this.hasContainers.stream().filter(SqlgUtil::isBulkWithin).findAny().isPresent();
+    private boolean hasBulkWithin(SqlgGraph sqlgGraph) {
+        return this.hasContainers.stream().filter(h->SqlgUtil.isBulkWithin(sqlgGraph, h)).findAny().isPresent();
     }
 
 
     private String bulkWithJoin(SqlgGraph sqlgGraph) {
 
         StringBuilder sb = new StringBuilder();
-        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(SqlgUtil::isBulkWithinOrOut).collect(Collectors.toList());
+        List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h->SqlgUtil.isBulkWithinOrOut(sqlgGraph, h)).collect(Collectors.toList());
         for (HasContainer hasContainer : bulkHasContainers) {
             P<List<Object>> predicate = (P<List<Object>>) hasContainer.getPredicate();
-            List<Object> withInList = predicate.getValue();
+            Collection<Object> withInList = predicate.getValue();
             Set<Object> withInOuts = new HashSet<>(withInList);
 
             Map<String, PropertyType> columns = new HashMap<>();
@@ -713,8 +713,8 @@ public class SchemaTableTree {
     private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
         final StringBuilder result = new StringBuilder();
         if (sqlgGraph.getSqlDialect().supportsBulkWithinOut()) {
-            if (!(this.hasContainers.size() == 1 && hasBulkWithin())) {
-                this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(h)).forEach(h -> {
+            if (!(this.hasContainers.size() == 1 && hasBulkWithin(sqlgGraph))) {
+                this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
                     if (!printedWhere.booleanValue()) {
                         printedWhere.setTrue();
                         result.append(" WHERE (");
@@ -1676,7 +1676,7 @@ public class SchemaTableTree {
 
     private boolean hasEmptyWithin(HasContainer hasContainer) {
         if (hasContainer.getBiPredicate() == Contains.within) {
-            return ((List) hasContainer.getPredicate().getValue()).isEmpty();
+            return ((Collection) hasContainer.getPredicate().getValue()).isEmpty();
         } else {
             return false;
         }

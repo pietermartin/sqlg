@@ -554,4 +554,14 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public boolean supportsBulkWithinOut() {
         return false;
     }
+
+    @Override
+    public String createTemporaryTableStatement() {
+        return "DECLARE LOCAL TEMPORARY TABLE ";
+    }
+
+    @Override
+    public String afterCreateTemporaryTableStatement() {
+        return "";
+    }
 }

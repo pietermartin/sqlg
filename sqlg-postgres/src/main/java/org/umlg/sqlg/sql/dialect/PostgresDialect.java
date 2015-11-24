@@ -1728,4 +1728,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         gis.setSqlgGraph(sqlgGraph);
         return (T) gis;
     }
+
+    @Override
+    public String afterCreateTemporaryTableStatement() {
+        return "ON COMMIT DROP";
+    }
 }

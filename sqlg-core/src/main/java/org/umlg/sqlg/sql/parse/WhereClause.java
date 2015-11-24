@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class WhereClause {
             }
             result += compareToSql((Compare) p.getBiPredicate());
             return result;
-        } else if (!sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
+        } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithin(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
                 result += prefix + ".\"ID\"";
             } else {
@@ -53,12 +54,6 @@ public class WhereClause {
             result += containsToSql((Contains) p.getBiPredicate(), ((List) p.getValue()).size());
             return result;
         } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
-//            if (hasContainer.getKey().equals(T.id.getAccessor())) {
-//                result += prefix + ".\"ID\"";
-//            } else {
-//                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
-//            }
-//            result += containsToSql((Contains) p.getBiPredicate(), ((List) p.getValue()).size());
             result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
             result += " .without IS NULL";
             return result;
@@ -105,24 +100,37 @@ public class WhereClause {
 
     private static String containsToSql(Contains contains, int size) {
         String result;
-        switch (contains) {
-            case within:
-                result = " in (";
-                break;
-            case without:
-                result = " not in (";
-                break;
-            default:
-                throw new RuntimeException("Unknown Contains" + contains.name());
-        }
-        for (int i = 0; i < size; i++) {
-            result += "?";
-            if (i < size - 1 && size > 1) {
-                result += ", ";
-
+        if (size == 1) {
+            switch (contains) {
+                case within:
+                    result = " = ?";
+                    break;
+                case without:
+                    result = " <> ?";
+                    break;
+                default:
+                    throw new RuntimeException("Unknown Contains" + contains.name());
             }
+        } else {
+            switch (contains) {
+                case within:
+                    result = " in (";
+                    break;
+                case without:
+                    result = " not in (";
+                    break;
+                default:
+                    throw new RuntimeException("Unknown Contains" + contains.name());
+            }
+            for (int i = 0; i < size; i++) {
+                result += "?";
+                if (i < size - 1 && size > 1) {
+                    result += ", ";
+
+                }
+            }
+            result += ")";
         }
-        result += ")";
         return result;
     }
 
