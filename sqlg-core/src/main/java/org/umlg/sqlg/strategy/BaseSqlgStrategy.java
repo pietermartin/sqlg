@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
@@ -55,7 +56,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     protected abstract void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
-    protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass);
+    protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep);
 
     protected abstract SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep);
 
@@ -76,9 +77,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
                     untilTraversalField.setAccessible(true);
                     return untilTraversalField.get(r) != null;
-                } catch (NoSuchFieldException e) {
-                    throw new RuntimeException(e);
-                } catch (IllegalAccessException e) {
+                } catch (NoSuchFieldException | IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
             });
@@ -89,9 +88,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
                         untilTraversalField.setAccessible(true);
                         return !(untilTraversalField.get(r) instanceof LoopTraversal);
-                    } catch (NoSuchFieldException e) {
-                        throw new RuntimeException(e);
-                    } catch (IllegalAccessException e) {
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
                 });
@@ -109,7 +106,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     collectedRepeatInternalSteps.addAll(repeatInternalSteps);
                 }
                 return !collectedRepeatInternalSteps.stream().filter(s -> !s.getClass().equals(RepeatStep.RepeatEndStep.class))
-                        .allMatch((s) -> isReplaceableStep(s.getClass()));
+                        .allMatch((s) -> isReplaceableStep(s.getClass(), false));
             } else {
                 return true;
             }
@@ -121,7 +118,10 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     protected boolean canNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
-                s.getClass().equals(Order.class));
+                s.getClass().equals(Order.class) ||
+                        s.getClass().equals(LambdaCollectingBarrierStep.class) ||
+                        s.getClass().equals(SackValueStep.class) ||
+                        s.getClass().equals(SackStep.class));
     }
 
     protected boolean precedesPathOrTreeStep(List<Step> steps, int index) {
@@ -279,6 +279,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
 
         int pathCount = 0;
+        boolean alreadyReplacedGraphStep = false;
         boolean repeatStepAdded = false;
         int repeatStepsAdded = 0;
         while (stepIterator.hasNext()) {
@@ -306,9 +307,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     Field maxLoopsField = loopTraversalClass.getDeclaredField("maxLoops");
                     maxLoopsField.setAccessible(true);
                     numberOfLoops = (Long) maxLoopsField.get(loopTraversal);
-                } catch (NoSuchFieldException e) {
-                    throw new RuntimeException(e);
-                } catch (IllegalAccessException e) {
+                } catch (NoSuchFieldException | IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
                 for (int i = 0; i < numberOfLoops; i++) {
@@ -331,7 +330,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             } else {
 
-                if (isReplaceableStep(step.getClass())) {
+                if (isReplaceableStep(step.getClass(), alreadyReplacedGraphStep)) {
 
                     //check if repeat steps were added to the stepIterator
                     boolean emit = false;
@@ -385,6 +384,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
                     if (previous == null) {
                         sqlgStep = constructSqlgStep(traversal, step);
+                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
                         sqlgStep.addReplacedStep(replacedStep);
                         handleFirstReplacedStep(step, sqlgStep, traversal);
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
@@ -399,7 +399,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     previous = step;
                     lastReplacedStep = replacedStep;
                 } else {
-                    if (lastReplacedStep != null && steps.stream().anyMatch(s->s instanceof OrderGlobalStep)) {
+                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
                         doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
                     }
                     break;
@@ -413,7 +413,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
         vertexSteps.forEach(
                 (s) -> {
-                    VertexStep<? extends Element> vs = (VertexStep<? extends Element>)s;
+                    VertexStep<? extends Element> vs = (VertexStep<? extends Element>) s;
                     SqlgVertexStep<? extends Element> insertStep = new SqlgVertexStep<>(s.getTraversal(), vs.getReturnClass(), vs.getDirection(), vs.getEdgeLabels());
                     TraversalHelper.replaceStep(s, insertStep, traversal);
                 }

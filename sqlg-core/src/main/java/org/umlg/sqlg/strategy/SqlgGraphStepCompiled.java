@@ -6,10 +6,9 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
-import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.SqlGraphStepWithPathTraverser;
@@ -33,7 +32,7 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep implements SqlgStep {
+public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep {
 
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
@@ -43,22 +42,22 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
     private Emit lastEmit = null;
+    private boolean first = true;
 
-    public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final Object... ids) {
-        super(traversal, returnClass, ids);
+    public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final boolean isStart, final Object... ids) {
+        super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
         this.iteratorSupplier = this::elements;
     }
 
     @Override
     protected Traverser<S> processNextStart() {
+
         if (this.first) {
-            this.start = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
-            if (null != this.start) {
-                this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator((Iterator<S>) this.start, this, 1l));
-            }
+            this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator(this.iteratorSupplier.get(), this, 1l));
             this.first = false;
         }
+
         SqlGraphStepWithPathTraverser sqlGraphStepWithPathTraverser = (SqlGraphStepWithPathTraverser) this.starts.next();
         Iterator<Emit<E>> toEmit = sqlGraphStepWithPathTraverser.getToEmit().iterator();
         while (toEmit.hasNext()) {

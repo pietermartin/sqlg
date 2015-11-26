@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.umlg.sqlg.structure.Dummy;
+import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.EnumSet;
 import java.util.Optional;
@@ -39,7 +40,7 @@ public class SqlgGraphStepWithPathTraverserGenerator implements TraverserGenerat
                 //This happens for emit().repeat() where a left join is used in the sql
                 return new SqlGraphStepWithPathTraverser((new Dummy()), p.getRight(), step, initialBulk);
             } else {
-                return new SqlGraphStepWithPathTraverser(p.getLeft(), p.getRight(), step, initialBulk);
+                return new SqlGraphStepWithPathTraverser((SqlgElement) p.getLeft(), p.getRight(), step, initialBulk);
             }
         } else {
             Multimap<String, Pair<Object, Optional<Long>>> emptyMap = ArrayListMultimap.create();

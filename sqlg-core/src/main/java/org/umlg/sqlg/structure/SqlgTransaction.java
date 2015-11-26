@@ -3,7 +3,7 @@ package org.umlg.sqlg.structure;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.tinkerpop.gremlin.structure.util.AbstractTransaction;
+import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -18,7 +18,7 @@ import java.util.Optional;
  * Date: 2014/07/12
  * Time: 2:18 PM
  */
-public class SqlgTransaction extends AbstractTransaction {
+public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
@@ -67,9 +67,9 @@ public class SqlgTransaction extends AbstractTransaction {
 
     @Override
     protected void doCommit() throws TransactionException {
-        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
-            throw Exceptions.transactionMustBeOpenToReadWrite();
-        }
+//        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
+//            throw Exceptions.transactionMustBeOpenToReadWrite();
+//        }
         if (!isOpen())
             return;
 
@@ -101,9 +101,9 @@ public class SqlgTransaction extends AbstractTransaction {
 
     @Override
     protected void doRollback() throws TransactionException {
-        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
-            throw Exceptions.transactionMustBeOpenToReadWrite();
-        }
+//        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
+//            throw Exceptions.transactionMustBeOpenToReadWrite();
+//        }
         if (!isOpen())
             return;
         try {

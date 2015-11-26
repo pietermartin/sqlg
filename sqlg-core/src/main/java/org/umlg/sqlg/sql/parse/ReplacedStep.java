@@ -5,8 +5,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -77,7 +77,7 @@ public class ReplacedStep<S, E> {
         } else if (this.step instanceof EdgeOtherVertexStep) {
             return appendPathForEdgeOtherVertexStep(schemaTableTree);
         } else {
-            throw new IllegalStateException("Only VertexStep and EdgeVertexStep is handled");
+            throw new IllegalStateException("Only VertexStep, EdgeVertexStep and EdgeOtherVertexStep are handled! Found " + this.step.getClass().getName());
         }
     }
 
@@ -337,7 +337,6 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
 
-
         //This list is reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();
 
@@ -360,7 +359,6 @@ public class ReplacedStep<S, E> {
                 }
 
                 if (!containsLabel) {
-                    List<Long> ids = schemaTableSetEntry.getValue();
                     //add the label
                     HasContainer labelHasContainer = new HasContainer(T.label.getAccessor(), P.eq(schemaTable.toString()));
                     this.hasContainers.add(labelHasContainer);

@@ -1,11 +1,9 @@
 package org.umlg.sqlg.test.mod;
 
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
@@ -18,6 +16,7 @@ public class TestDeletedVertex extends BaseTest {
     public void testDeletedVertex() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "pieter");
+        this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().close();
         v1.remove();
         this.sqlgGraph.tx().commit();

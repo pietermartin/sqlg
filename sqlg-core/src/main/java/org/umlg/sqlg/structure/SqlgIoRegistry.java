@@ -1,9 +1,9 @@
 package org.umlg.sqlg.structure;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
+import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
 
 /**
  * Date: 2015/05/07
@@ -12,10 +12,10 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 public class SqlgIoRegistry extends AbstractIoRegistry {
 
     public SqlgIoRegistry() {
-        final SimpleModule module = new SimpleModule();
-        module.addSerializer(RecordId.class, new RecordId.RecordIdJacksonSerializer());
-        module.addSerializer(SchemaTable.class, new SchemaTable.SchemaTableJacksonSerializer());
-        register(GraphSONIo.class, null, module);
+        final SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addSerializer(RecordId.class, new RecordId.RecordIdJacksonSerializer());
+        simpleModule.addSerializer(SchemaTable.class, new SchemaTable.SchemaTableJacksonSerializer());
+        register(GraphSONIo.class, null, simpleModule);
         register(GryoIo.class, RecordId.class, null);
     }
 }

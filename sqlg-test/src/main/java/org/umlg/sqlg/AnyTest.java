@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchServerSideEdgeCreation;
+import org.umlg.sqlg.test.io.TestIo;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.batch.TestBatchServerSideEdgeCreation;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchServerSideEdgeCreation.class
+        TestIo.class
         })
 public class AnyTest {
 }

@@ -4,7 +4,7 @@ import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_O_P_S_SE_SL_Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.structure.Dummy;
@@ -15,7 +15,12 @@ import java.util.*;
 /**
  * Created by pieter on 2015/07/20.
  */
-public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O_P_S_SE_SL_Traverser<T> implements SqlgLabelledPathTraverser {
+//LP_O_OB_P_S_SE_SL_Traverser
+//LP_O_OB_S_SE_SL_Traverser
+//B_LP_O_S_SE_SL_Traverser
+
+//B_LP_O_P_S_SE_SL_Traverser
+public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_LP_O_P_S_SE_SL_Traverser<T> implements SqlgLabelledPathTraverser {
 
     private List<Emit> toEmit = new ArrayList<>();
 
@@ -81,14 +86,15 @@ public class SqlGraphStepWithPathTraverser<T, E extends SqlgElement> extends B_O
                         this.toEmit.add(emit);
                     }
                 } else {
-                    currentPath.addLabel(realLabel);
+                    //this basically adds the label to the path
+                    currentPath = currentPath.extend(Collections.singleton(realLabel));
                 }
             }
         }
         if (addT && !(t instanceof Dummy)) {
             //tp relies on all elements traversed being on the path.
             //if the element is not labelled put it on the path
-            currentPath = currentPath.clone().extend(t);
+            currentPath = currentPath.clone().extend(t, Collections.emptySet());
         }
         this.path = currentPath;
     }

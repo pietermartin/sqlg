@@ -74,6 +74,10 @@ import java.util.stream.Stream;
         reason = "Takes too long")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX8X_count",
         reason = "Takes too long")
 @Graph.OptOut(
@@ -83,6 +87,14 @@ import java.util.stream.Stream;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
         method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
+        method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
         reason = "Takes too long")
 public class SqlgGraph implements Graph {
 
@@ -506,7 +518,22 @@ public class SqlgGraph implements Graph {
             }
 
             @Override
+            public boolean supportsStringIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsUuidIds() {
+                return false;
+            }
+
+            @Override
             public boolean supportsAnyIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsCustomIds() {
                 return false;
             }
 
@@ -534,6 +561,21 @@ public class SqlgGraph implements Graph {
 
             @Override
             public boolean supportsAnyIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsStringIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsCustomIds() {
+                return false;
+            }
+
+            @Override
+            public boolean supportsUuidIds() {
                 return false;
             }
         }

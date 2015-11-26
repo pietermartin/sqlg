@@ -42,6 +42,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
             ListIterator<Step> stepIterator = steps.listIterator();
             if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
                 logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+                return;
             }
             combineSteps(traversal, steps, stepIterator);
         }
@@ -54,7 +55,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
+    protected boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep) {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 
