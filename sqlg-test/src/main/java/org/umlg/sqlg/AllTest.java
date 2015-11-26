@@ -11,7 +11,6 @@ import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
-import org.umlg.sqlg.test.io.TestIo;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.mod.*;
@@ -103,8 +102,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRepeatStepGraphBoth.class,
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
-        TestGremlinMod.class,
-        TestIo.class
+        TestGremlinMod.class
 })
 public class AllTest {
 }
