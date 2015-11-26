@@ -484,26 +484,51 @@ public class SqlgGraph implements Graph {
 
         public class SqlVertexFeatures implements VertexFeatures {
 
-            /**
-             * Determines if a {@link Vertex} can support multiple properties with the same key.
-             */
+            @Override
             @FeatureDescriptor(name = FEATURE_MULTI_PROPERTIES)
             public boolean supportsMultiProperties() {
                 return false;
             }
 
-            /**
-             * Determines if a {@link Vertex} can support properties on vertex properties.  It is assumed that a
-             * graph will support all the same data types for meta-properties that are supported for regular
-             * properties.
-             */
+            @Override
             @FeatureDescriptor(name = FEATURE_META_PROPERTIES)
             public boolean supportsMetaProperties() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_USER_SUPPLIED_IDS)
             public boolean supportsUserSuppliedIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_NUMERIC_IDS)
+            public boolean supportsNumericIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_STRING_IDS)
+            public boolean supportsStringIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_UUID_IDS)
+            public boolean supportsUuidIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_ANY_IDS)
+            public boolean supportsAnyIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_CUSTOM_IDS)
+            public boolean supportsCustomIds() {
                 return false;
             }
 
@@ -513,39 +538,46 @@ public class SqlgGraph implements Graph {
             }
 
             @Override
-            public boolean supportsNumericIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsStringIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsUuidIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsAnyIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsCustomIds() {
-                return false;
-            }
-
-            @Override
             public VertexProperty.Cardinality getCardinality(final String key) {
                 return VertexProperty.Cardinality.single;
             }
         }
 
         public class SqlEdgeFeatures implements EdgeFeatures {
+
             @Override
+            @FeatureDescriptor(name = FEATURE_USER_SUPPLIED_IDS)
             public boolean supportsUserSuppliedIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_NUMERIC_IDS)
+            public boolean supportsNumericIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_ANY_IDS)
+            public boolean supportsAnyIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_STRING_IDS)
+            public boolean supportsStringIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_CUSTOM_IDS)
+            public boolean supportsCustomIds() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_UUID_IDS)
+            public boolean supportsUuidIds() {
                 return false;
             }
 
@@ -554,105 +586,132 @@ public class SqlgGraph implements Graph {
                 return new SqlEdgePropertyFeatures();
             }
 
-            @Override
-            public boolean supportsNumericIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsAnyIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsStringIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsCustomIds() {
-                return false;
-            }
-
-            @Override
-            public boolean supportsUuidIds() {
-                return false;
-            }
         }
 
         public class SqlGVertexPropertyFeatures implements VertexPropertyFeatures {
 
             @Override
+            @FeatureDescriptor(name = FEATURE_ADD_PROPERTY)
+            public boolean supportsAddProperty() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_REMOVE_PROPERTY)
+            public boolean supportsRemoveProperty() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_USER_SUPPLIED_IDS)
             public boolean supportsUserSuppliedIds() {
                 return false;
             }
 
             @Override
-            public boolean supportsMapValues() {
+            @FeatureDescriptor(name = FEATURE_NUMERIC_IDS)
+            public boolean supportsNumericIds() {
                 return false;
             }
 
             @Override
-            public boolean supportsMixedListValues() {
+            @FeatureDescriptor(name = FEATURE_STRING_IDS)
+            public boolean supportsStringIds() {
                 return false;
             }
 
             @Override
-            public boolean supportsSerializableValues() {
+            @FeatureDescriptor(name = FEATURE_UUID_IDS)
+            public boolean supportsUuidIds() {
                 return false;
             }
 
             @Override
-            public boolean supportsUniformListValues() {
+            @FeatureDescriptor(name = FEATURE_CUSTOM_IDS)
+            public boolean supportsCustomIds() {
                 return false;
             }
 
             @Override
-            public boolean supportsByteValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteValues();
-            }
-
             @FeatureDescriptor(name = FEATURE_ANY_IDS)
             public boolean supportsAnyIds() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_MAP_VALUES)
+            public boolean supportsMapValues() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_MIXED_LIST_VALUES)
+            public boolean supportsMixedListValues() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_SERIALIZABLE_VALUES)
+            public boolean supportsSerializableValues() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_UNIFORM_LIST_VALUES)
+            public boolean supportsUniformListValues() {
+                return false;
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_BYTE_VALUES)
+            public boolean supportsByteValues() {
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteValues();
+            }
+
+            @Override
+            @FeatureDescriptor(name = FEATURE_FLOAT_VALUES)
             public boolean supportsFloatValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BOOLEAN_ARRAY_VALUES)
             public boolean supportsBooleanArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BYTE_ARRAY_VALUES)
             public boolean supportsByteArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_DOUBLE_ARRAY_VALUES)
             public boolean supportsDoubleArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_FLOAT_ARRAY_VALUES)
             public boolean supportsFloatArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_INTEGER_ARRAY_VALUES)
             public boolean supportsIntegerArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_LONG_ARRAY_VALUES)
             public boolean supportsLongArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_STRING_ARRAY_VALUES)
             public boolean supportsStringArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
             }
@@ -661,159 +720,192 @@ public class SqlgGraph implements Graph {
         }
 
         public class SqlEdgePropertyFeatures implements EdgePropertyFeatures {
+
             @Override
+            @FeatureDescriptor(name = FEATURE_MAP_VALUES)
             public boolean supportsMapValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_MIXED_LIST_VALUES)
             public boolean supportsMixedListValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_SERIALIZABLE_VALUES)
             public boolean supportsSerializableValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_UNIFORM_LIST_VALUES)
             public boolean supportsUniformListValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BYTE_VALUES)
             public boolean supportsByteValues() {
-                return false;
+                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_FLOAT_VALUES)
             public boolean supportsFloatValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BOOLEAN_ARRAY_VALUES)
             public boolean supportsBooleanArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BYTE_ARRAY_VALUES)
             public boolean supportsByteArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_DOUBLE_ARRAY_VALUES)
             public boolean supportsDoubleArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_FLOAT_ARRAY_VALUES)
             public boolean supportsFloatArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_INTEGER_ARRAY_VALUES)
             public boolean supportsIntegerArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_LONG_ARRAY_VALUES)
             public boolean supportsLongArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_STRING_ARRAY_VALUES)
             public boolean supportsStringArrayValues() {
                 return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
             }
         }
 
         public class SqlVariableFeatures implements VariableFeatures {
+
             @Override
+            @FeatureDescriptor(name = FEATURE_BOOLEAN_VALUES)
             public boolean supportsBooleanValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_DOUBLE_VALUES)
             public boolean supportsDoubleValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_FLOAT_VALUES)
             public boolean supportsFloatValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_INTEGER_VALUES)
             public boolean supportsIntegerValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_LONG_VALUES)
             public boolean supportsLongValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_MAP_VALUES)
             public boolean supportsMapValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_MIXED_LIST_VALUES)
             public boolean supportsMixedListValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BYTE_VALUES)
             public boolean supportsByteValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BOOLEAN_ARRAY_VALUES)
             public boolean supportsBooleanArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_BYTE_ARRAY_VALUES)
             public boolean supportsByteArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_DOUBLE_ARRAY_VALUES)
             public boolean supportsDoubleArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_FLOAT_ARRAY_VALUES)
             public boolean supportsFloatArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_INTEGER_ARRAY_VALUES)
             public boolean supportsIntegerArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_LONG_ARRAY_VALUES)
             public boolean supportsLongArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_STRING_ARRAY_VALUES)
             public boolean supportsStringArrayValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_SERIALIZABLE_VALUES)
             public boolean supportsSerializableValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_STRING_VALUES)
             public boolean supportsStringValues() {
                 return false;
             }
 
             @Override
+            @FeatureDescriptor(name = FEATURE_UNIFORM_LIST_VALUES)
             public boolean supportsUniformListValues() {
                 return false;
             }
