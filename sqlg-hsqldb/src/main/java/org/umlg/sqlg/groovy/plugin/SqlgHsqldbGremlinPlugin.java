@@ -24,7 +24,7 @@ public class SqlgHsqldbGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "tinkerpop.sqlg-hsqldb";
+        return "sqlg-hsqldb";
     }
 
     @Override
