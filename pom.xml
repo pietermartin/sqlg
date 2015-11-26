@@ -87,8 +87,8 @@
                         <include>**/SqlgPostgresProcessStandardTest.java</include>
                         <include>**/PostgresAllTest.java</include>
                     </includes>
-                    <!--<argLine>-Xmx2048m</argLine>-->
-                    <argLine>-Xmx8192m</argLine>
+                    <argLine>-Xmx2048m</argLine>
+                    <!--<argLine>-Xmx8192m</argLine>-->
                 </configuration>
             </plugin>
             <plugin>
