@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
@@ -206,82 +207,20 @@ public class DocumentationUsecases extends BaseTest {
 //    }
 
     @Test
-    public void testOrderBy2() {
-        Vertex group = this.sqlgGraph.addVertex(T.label, "Group", "name", "MTN");
-        Vertex network = this.sqlgGraph.addVertex(T.label, "Network", "name", "SouthAfrica");
-        Vertex networkSoftwareVersion = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "SouthAfricaHuawei");
-        group.addEdge("groupNetwork", network);
-        network.addEdge("networkNetworkSoftwareVersion", networkSoftwareVersion);
-        Vertex networkNodeGroupBsc = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "BSC");
-        Vertex networkNodeGroupRnc = this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "RNC");
-        networkSoftwareVersion.addEdge("networkSoftwareVersionNetworkNodeGroup", networkNodeGroupBsc);
-        networkSoftwareVersion.addEdge("networkSoftwareVersionNetworkNodeGroup", networkNodeGroupRnc);
-        Vertex bsc1 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "BSCA");
-        Vertex bsc2 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "BSCB");
-        Vertex bsc3 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "BSCC");
-        Vertex bsc4 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "BSCD");
-        Vertex rnc1 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "RNCA");
-        Vertex rnc2 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "RNCB");
-        Vertex rnc3 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "RNCC");
-        Vertex rnc4 = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "RNCD");
-        networkNodeGroupBsc.addEdge("networkNodeGroupNetworkNode", bsc1);
-        networkNodeGroupBsc.addEdge("networkNodeGroupNetworkNode", bsc2);
-        networkNodeGroupBsc.addEdge("networkNodeGroupNetworkNode", bsc3);
-        networkNodeGroupBsc.addEdge("networkNodeGroupNetworkNode", bsc4);
-        networkNodeGroupRnc.addEdge("networkNodeGroupNetworkNode", rnc1);
-        networkNodeGroupRnc.addEdge("networkNodeGroupNetworkNode", rnc2);
-        networkNodeGroupRnc.addEdge("networkNodeGroupNetworkNode", rnc3);
-        networkNodeGroupRnc.addEdge("networkNodeGroupNetworkNode", rnc4);
+    public void showRepeat() {
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+        Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
+        Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
+        Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+        Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
+        Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
+        john.addEdge("lives", usa);
+        peterski.addEdge("lives", russia);
+        usa.addEdge("capital", washington);
         this.sqlgGraph.tx().commit();
 
-        List<Map<String, Vertex>> result = this.sqlgGraph.traversal().V()
-                .hasLabel("Group").as("g")
-                .out("groupNetwork").as("network")
-                .out("networkNetworkSoftwareVersion").as("nsv")
-                .out("networkSoftwareVersionNetworkNodeGroup").as("nng")
-                .out("networkNodeGroupNetworkNode").as("nn")
-                .<Vertex>select("g", "network", "nsv", "nng", "nn")
-                .order()
-                .by(__.select("g").by("name"), Order.incr)
-                .by(__.select("network").by("name"), Order.incr)
-                .by(__.select("nsv").by("name"), Order.incr)
-                .by(__.select("nng").by("name"), Order.incr)
-                .by(__.select("nn").by("name"), Order.decr)
-                .toList();
-
-        for (Map<String, Vertex> stringVertexMap : result) {
-            System.out.println(stringVertexMap.get("g").<String>value("name") + " " +
-                    stringVertexMap.get("network").<String>value("name") + " " +
-                    stringVertexMap.get("nsv").<String>value("name") + " " +
-                    stringVertexMap.get("nng").<String>value("name") + " " +
-                    stringVertexMap.get("nn").<String>value("name")
-            );
-        }
-
-        assertEquals(8, result.size());
-        Map<String,Vertex> row1 = result.get(0);
-        assertEquals("BSC", row1.get("nng").value("name"));
-        assertEquals("BSCD", row1.get("nn").value("name"));
-        Map<String,Vertex> row2 = result.get(1);
-        assertEquals("BSC", row2.get("nng").value("name"));
-        assertEquals("BSCC", row2.get("nn").value("name"));
-        Map<String,Vertex> row3 = result.get(2);
-        assertEquals("BSC", row3.get("nng").value("name"));
-        assertEquals("BSCB", row3.get("nn").value("name"));
-        Map<String,Vertex> row4 = result.get(3);
-        assertEquals("BSC", row4.get("nng").value("name"));
-        assertEquals("BSCA", row4.get("nn").value("name"));
-        Map<String,Vertex> row5 = result.get(4);
-        assertEquals("RNC", row5.get("nng").value("name"));
-        assertEquals("RNCD", row5.get("nn").value("name"));
-        Map<String,Vertex> row6 = result.get(5);
-        assertEquals("RNC", row6.get("nng").value("name"));
-        assertEquals("RNCC", row6.get("nn").value("name"));
-        Map<String,Vertex> row7 = result.get(6);
-        assertEquals("RNC", row7.get("nng").value("name"));
-        assertEquals("RNCB", row7.get("nn").value("name"));
-        Map<String,Vertex> row8 = result.get(7);
-        assertEquals("RNC", row8.get("nng").value("name"));
-        assertEquals("RNCA", row8.get("nn").value("name"));
+        Tree<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Person").emit().times(2).repeat(__.out("lives", "capital")).tree().next();
+        System.out.println(tree);
     }
+
 }
