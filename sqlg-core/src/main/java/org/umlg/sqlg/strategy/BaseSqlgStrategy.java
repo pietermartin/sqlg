@@ -269,14 +269,14 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         SqlgStep sqlgStep = null;
         Step previous = null;
         ReplacedStep<?, ?> lastReplacedStep = null;
-        Class repeatStepClass;
-        Class loopTraversalClass;
-        try {
-            repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
-            loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
+//        Class repeatStepClass;
+//        Class loopTraversalClass;
+//        try {
+//            repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
+//            loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
+//        } catch (ClassNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
 
         int pathCount = 0;
         boolean alreadyReplacedGraphStep = false;
@@ -300,16 +300,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 //this is guaranteed by the previous check unoptimizableRepeat(...)
                 LoopTraversal loopTraversal;
                 long numberOfLoops;
-                try {
-                    Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
-                    untilTraversalField.setAccessible(true);
-                    loopTraversal = (LoopTraversal) untilTraversalField.get(repeatStep);
-                    Field maxLoopsField = loopTraversalClass.getDeclaredField("maxLoops");
-                    maxLoopsField.setAccessible(true);
-                    numberOfLoops = (Long) maxLoopsField.get(loopTraversal);
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+                loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
+                numberOfLoops = loopTraversal.getMaxLoops();
                 for (int i = 0; i < numberOfLoops; i++) {
                     for (Step internalVertexStep : repeatStepInternalVertexSteps) {
                         if (internalVertexStep instanceof RepeatStep.RepeatEndStep) {
@@ -339,15 +331,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     if (repeatStepsAdded > 0) {
                         repeatStepsAdded--;
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
-                        Field emitTraversalField;
-                        try {
-                            //TODO remove when go to 3.1.0-incubating
-                            emitTraversalField = repeatStepClass.getDeclaredField("emitTraversal");
-                            emitTraversalField.setAccessible(true);
-                            emit = emitTraversalField.get(repeatStep) != null;
-                        } catch (NoSuchFieldException | IllegalAccessException e) {
-                            throw new RuntimeException(e);
-                        }
+                        emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
                     }

@@ -544,7 +544,7 @@ public abstract class SqlgElement implements Element {
                 PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case DURATION:
-                        long seconds = (Long) o;
+//                        long seconds = (Long) o;
                         //load the months and days as its needed to construct the Period
 //                        Collection<String> aliasedNanos = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[0]);
 //                        if (aliasedNanos.isEmpty()) {
@@ -552,7 +552,7 @@ public abstract class SqlgElement implements Element {
 //                        }
 //                        int nanos = resultSet.getInt(aliasedNanos.iterator().next());
 //                        this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
-                        break;
+                        throw new IllegalStateException("Duration not yet supported!");
                     default:
                         this.properties.put(columnName, o);
                 }
@@ -562,7 +562,7 @@ public abstract class SqlgElement implements Element {
                 propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case PERIOD:
-                        int years = (Integer) o;
+//                        int years = (Integer) o;
 //                        //load the months and days as its needed to construct the Period
 //                        Collection<String> aliasedMonth = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[0]);
 //                        if (aliasedMonth.isEmpty()) {
@@ -575,7 +575,7 @@ public abstract class SqlgElement implements Element {
 //                        }
 //                        int days = resultSet.getInt(aliasedDay.iterator().next());
 //                        this.properties.put(columnName, Period.of(years, months, days));
-                        break;
+                        throw new IllegalStateException("Period not yet supported!");
                     default:
                         this.properties.put(columnName, o);
                 }
@@ -605,7 +605,7 @@ public abstract class SqlgElement implements Element {
 //                        ZoneId zoneId1 = ZoneId.of(zoneId);
 //                        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
 //                        this.properties.put(columnName, zonedDateTimeAGT);
-                        break;
+                        throw new IllegalStateException("ZonedDateTime not yet supported!");
                     default:
                         throw new IllegalStateException("Database timestamp column must be either for a LocalDateTime or ZonedDateTime, found " + propertyType.name());
                 }

@@ -24,7 +24,7 @@ public class SqlgPostgresGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "tinkerpop.sqlg-postgres";
+        return "sqlg.postgres";
     }
 
     @Override

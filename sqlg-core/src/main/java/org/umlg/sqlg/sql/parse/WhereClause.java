@@ -135,9 +135,6 @@ public class WhereClause {
     }
 
     private static String textToSql(SqlDialect sqlDialect, String prefix, Text text) {
-        if (!sqlDialect.supportsILike()) {
-            prefix = "lower(" + prefix + ")";
-        }
         String result;
         switch (text) {
             case contains:
@@ -147,6 +144,9 @@ public class WhereClause {
                 result = " not like ?";
                 break;
             case containsCIS:
+                if (!sqlDialect.supportsILike()) {
+                    prefix = "lower(" + prefix + ")";
+                }
                 if (sqlDialect.supportsILike()) {
                     result = " ilike ?";
                 } else {
@@ -154,6 +154,9 @@ public class WhereClause {
                 }
                 break;
             case ncontainsCIS:
+                if (!sqlDialect.supportsILike()) {
+                    prefix = "lower(" + prefix + ")";
+                }
                 if (sqlDialect.supportsILike()) {
                     result = " not ilike ?";
                 } else {

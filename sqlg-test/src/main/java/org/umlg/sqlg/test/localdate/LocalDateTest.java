@@ -1,14 +1,14 @@
 package org.umlg.sqlg.test.localdate;
 
-import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
-import java.util.*;
+import java.util.List;
 
 /**
  * Created by pieter on 2015/09/05.
@@ -16,9 +16,51 @@ import java.util.*;
 public class LocalDateTest extends BaseTest {
 
     @Test
-    public void test() {
-        Assert.assertTrue(1==1);
+    public void testLocalDateTime() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        this.sqlgGraph.addVertex(T.label, "A", "dateTime", now);
+        this.sqlgGraph.tx().commit();
+
+        //Create a new sqlgGraph
+        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
+        Assert.assertEquals(1, properties.size());
+        Assert.assertTrue(properties.get(0).isPresent());
+        Assert.assertEquals(now, properties.get(0).value());
+        sqlgGraph1.close();
     }
+
+    @Test
+    public void testLocalDate() throws Exception {
+        LocalDate now = LocalDate.now();
+        this.sqlgGraph.addVertex(T.label, "A", "date", now);
+        this.sqlgGraph.tx().commit();
+
+        //Create a new sqlgGraph
+        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("date").toList();
+        Assert.assertEquals(1, properties.size());
+        Assert.assertTrue(properties.get(0).isPresent());
+        Assert.assertEquals(now, properties.get(0).value());
+        sqlgGraph1.close();
+    }
+
+    @Test
+    public void testLocalTime() throws Exception {
+        LocalTime now = LocalTime.now();
+        this.sqlgGraph.addVertex(T.label, "A", "time", now);
+        this.sqlgGraph.tx().commit();
+
+        //Create a new sqlgGraph
+        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        List<? extends Property<LocalTime>> properties = sqlgGraph1.traversal().V().hasLabel("A").<LocalTime>properties("time").toList();
+        Assert.assertEquals(1, properties.size());
+        Assert.assertTrue(properties.get(0).isPresent());
+        LocalTime value = properties.get(0).<LocalTime>value();
+        Assert.assertEquals(now.toSecondOfDay(), value.toSecondOfDay());
+        sqlgGraph1.close();
+    }
+
 //    @Test
 //    public void testLocalDateVertex() {
 //        ZoneId zoneIdShanghai = ZoneId.of("Asia/Shanghai");

@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.mod.TestVertexCreation;
+import org.umlg.sqlg.test.docs.DocumentationUsecases;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,7 @@ import org.umlg.sqlg.test.mod.TestVertexCreation;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestVertexCreation.class
+        DocumentationUsecases.class
         })
 public class AnyTest {
 }

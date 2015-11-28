@@ -1041,10 +1041,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 //                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
             case LOCALTIME:
                 return new String[]{"TIME WITH TIME ZONE"};
-            case PERIOD:
-                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-            case DURATION:
-                return new String[]{"BIGINT", "INTEGER"};
+//            case PERIOD:
+//                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
+//            case DURATION:
+//                return new String[]{"BIGINT", "INTEGER"};
             case STRING:
                 return new String[]{"TEXT"};
             case JSON:

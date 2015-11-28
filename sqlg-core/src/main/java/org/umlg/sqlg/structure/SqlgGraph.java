@@ -34,8 +34,13 @@ import java.util.stream.Stream;
  * Time: 5:38 AM
  */
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
+@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_PROCESS_STANDARD)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
+@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ProfileTest$Traversals",
         method = "g_V_out_out_profile_modern",
@@ -95,6 +100,10 @@ import java.util.stream.Stream;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
         method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutorPerformanceTest",
+        method = "executorEval",
         reason = "Takes too long")
 public class SqlgGraph implements Graph {
 

@@ -716,7 +716,7 @@ public class SchemaTableTree {
             this.hasContainers.stream().filter(h -> !SqlgUtil.isBulkWithin(sqlgGraph, h)).forEach(h -> {
                 if (!printedWhere.booleanValue()) {
                     printedWhere.setTrue();
-                    result.append(" WHERE (");
+                    result.append("\nWHERE\n\t(");
                 } else {
                     result.append(" AND (");
                 }
@@ -727,7 +727,7 @@ public class SchemaTableTree {
             for (HasContainer hasContainer : this.getHasContainers()) {
                 if (!printedWhere.booleanValue()) {
                     printedWhere.setTrue();
-                    result.append(" WHERE (");
+                    result.append("\nWHERE\n\t(");
                 } else {
                     result.append(" AND (");
                 }
@@ -743,9 +743,9 @@ public class SchemaTableTree {
         for (Comparator comparator : this.getComparators()) {
             if (!printedOrderBy.booleanValue()) {
                 printedOrderBy.setTrue();
-                result += " ORDER BY";
+                result += "\nORDER BY\n\t";
             } else {
-                result += " , ";
+                result += ",\n\t";
             }
             if (comparator instanceof ElementValueComparator) {
                 ElementValueComparator elementValueComparator = (ElementValueComparator) comparator;
@@ -1039,7 +1039,7 @@ public class SchemaTableTree {
             }
             Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
             if (!propertyTypeMap.isEmpty()) {
-                sql += ",\n\t ";
+                sql += ",\n\t";
             }
             sql = printFromClauseFor(sqlgGraph, lastSchemaTableTree, sql, printedId);
 

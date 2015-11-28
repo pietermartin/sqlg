@@ -230,6 +230,17 @@ public class TestGremlinCompileWhere extends BaseTest {
     }
 
     @Test
+    public void showTextPredicate() {
+        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John XXX Doe");
+        Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peter YYY Snow");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", Text.contains("XXX")).toList();
+        Assert.assertEquals(1, persons.size());
+        Assert.assertEquals(john, persons.get(0));
+    }
+
+    @Test
     public void testTextNotContains() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "aaaaa");
         this.sqlgGraph.addVertex(T.label, "Person", "name", "abcd");
