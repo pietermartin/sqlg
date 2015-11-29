@@ -40,7 +40,7 @@ public class TestBatch extends BaseTest {
 
     //    @Test
     public void queryPerformance() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         for (int i = 0; i < 600000; i++) {
@@ -103,7 +103,7 @@ public class TestBatch extends BaseTest {
             properties.put("2G Neighboring Cell Ranking Priority", "aaaaaaaaaaaaaaaaaaaaaaaaa");
             if (i % 100000 == 0) {
                 this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().batchModeOn();
+                this.sqlgGraph.tx().normalBatchModeOn();
             }
             this.sqlgGraph.addVertex("R_HG.G2GNCELL", properties);
         }
@@ -127,7 +127,7 @@ public class TestBatch extends BaseTest {
     public void testEscapingCharacters() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10000; i++) {
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "MO1", "name", "marko" + i, "test1", "\\", "test2", "\nhalo", "test3", "\rhalo", "test4", "\thalo");
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i, "test1", "\\", "test2", "\nhalo", "test3", "\rhalo", "test4", "\thalo");
@@ -144,7 +144,7 @@ public class TestBatch extends BaseTest {
     public void testVerticesBatchOn() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10000; i++) {
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "MO1", "name", "marko" + i);
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
@@ -159,7 +159,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchEdgesManyProperties() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -179,7 +179,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchEdgesDifferentProperties() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -190,7 +190,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchVertexDifferentProperties() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko", "test1", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter", "test2", "b");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "test3", "c", "test4", "d");
@@ -213,7 +213,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchVertices() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -235,7 +235,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
@@ -247,7 +247,7 @@ public class TestBatch extends BaseTest {
     //this test a 'contains' bug in the update of labels batch logic
     @Test
     public void testBatchUpdateOfLabels() throws Exception {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "mike");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
@@ -286,7 +286,7 @@ public class TestBatch extends BaseTest {
             @Override
             public void run() {
                 try {
-                    sqlgGraph.tx().batchModeOn();
+                    sqlgGraph.tx().normalBatchModeOn();
                     for (int i = 0; i < 100000; i++) {
                         Vertex v1 = sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
                         Vertex v2 = sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
@@ -342,7 +342,7 @@ public class TestBatch extends BaseTest {
         List<Integer> integerList = new ArrayList<>();
         List<Long> longList = new ArrayList<>();
         List<Double> doubleList = new ArrayList<>();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.addVertex(T.label, "Person",
                     "age2", (short) i,
@@ -376,7 +376,7 @@ public class TestBatch extends BaseTest {
         List<Integer> integerList = new ArrayList<>();
         List<Long> longList = new ArrayList<>();
         List<Double> doubleList = new ArrayList<>();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -408,7 +408,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testUpdateInsertedVertexProperty() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         v1.property("name", "john");
         this.sqlgGraph.tx().commit();
@@ -421,7 +421,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testAddPropertyToInsertedVertexProperty() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         v1.property("name", "john");
         v1.property("surname", "aaaa");
@@ -434,7 +434,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testUpdateInsertedEdgeProperty() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Edge edge = v1.addEdge("Friend", v2, "weight", 1);
@@ -447,7 +447,7 @@ public class TestBatch extends BaseTest {
     @Test
     //TODO need to deal with missing properties, set them to null
     public void testRemoveProperty() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Edge friend = marko.addEdge("Friend", john, "weight", 1);
@@ -462,7 +462,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testInOutOnEdges() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         root.addEdge("rootGod", god);
@@ -471,7 +471,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testGetEdges() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         Edge sqlgEdge = root.addEdge("rootGod", god);
@@ -482,7 +482,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testGetVertices() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         Vertex human = this.sqlgGraph.addVertex(T.label, "Human", "dummy", "a");
@@ -498,7 +498,7 @@ public class TestBatch extends BaseTest {
     public void testPerformance() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10000; i++) {
             Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko" + i);
             Vertex spaceTime = this.sqlgGraph.addVertex(T.label, "SpaceTime", "name", "marko" + i);
@@ -509,7 +509,7 @@ public class TestBatch extends BaseTest {
             spaceTime.addEdge("time", time, "dimension", 1);
             if (i != 0 && i % 10000 == 0) {
                 this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().batchModeOn();
+                this.sqlgGraph.tx().normalBatchModeOn();
             }
         }
         this.sqlgGraph.tx().commit();
@@ -527,7 +527,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testGetVerticesWithHas() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
         Vertex jah = this.sqlgGraph.addVertex(T.label, "God", "name", "Jah");
         Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
@@ -545,7 +545,7 @@ public class TestBatch extends BaseTest {
     public void testVertexLabelCache() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex jah = this.sqlgGraph.addVertex(T.label, "God", "name", "Jah");
         Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
         root.addEdge("rootGod", jah);
@@ -560,7 +560,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testVertexMultipleEdgesLabels() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
         Vertex bike = this.sqlgGraph.addVertex(T.label, "Bike", "name", "c");
@@ -572,12 +572,12 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testAddEdgeAccrossSchema() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex person = this.sqlgGraph.addVertex(T.label, "Schema1.Person", "name", "a");
         Vertex car = this.sqlgGraph.addVertex(T.label, "Schema2.Car", "name", "b");
         Vertex bike = this.sqlgGraph.addVertex(T.label, "Schema2.Bike", "name", "c");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         person.addEdge("car", car);
         person.addEdge("bike", bike);
         this.sqlgGraph.tx().commit();
@@ -587,7 +587,7 @@ public class TestBatch extends BaseTest {
     @Test
     public void testBatchCommit() {
         Assume.assumeTrue(this.sqlgGraph.features().supportsBatchMode());
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 111; i++) {
             this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
             this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
@@ -598,7 +598,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(1l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
         Assert.assertEquals(111l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
 
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 111; i++) {
             this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
             this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
@@ -613,14 +613,14 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testCacheAndUpdateVERTICESLabels() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "person");
         List<Vertex> cache = new ArrayList<>();
         for (int i = 0; i < 10000; i++) {
             cache.add(this.sqlgGraph.addVertex(T.label, "Person", "name", "person" + i));
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (Vertex person2 : cache) {
             person1.addEdge("Friend", person2);
         }
@@ -638,7 +638,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchInsertDifferentKeys() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
         this.sqlgGraph.tx().commit();
@@ -666,7 +666,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).in("vendorTechnology_softwareVersion").next().value("name"));
 
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex rwe1 = this.sqlgGraph.addVertex(T.label, "RWE", "name", "cell1");
         rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
         this.sqlgGraph.tx().commit();
@@ -686,7 +686,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).out("softwareVersion_vendorTechnology").next().value("name"));
 
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex rwe1 = this.sqlgGraph.addVertex(T.label, "RWE", "name", "cell1");
         rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
         this.sqlgGraph.tx().commit();
@@ -704,7 +704,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
 
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         v1.property("name", "aa");
         v2.property("surname", "bb");
         this.sqlgGraph.tx().commit();
@@ -725,7 +725,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
 
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         v1.property("name", "aa");
         v1.property("boolean", true);
         v1.property("short", (short) 1);
@@ -764,7 +764,7 @@ public class TestBatch extends BaseTest {
     public void testBatchUpdatePersistentVerticesPerformance1() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         int count = 1;
         for (int i = 0; i < 100000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
@@ -774,7 +774,7 @@ public class TestBatch extends BaseTest {
 
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
         stopWatch.reset();
@@ -797,7 +797,7 @@ public class TestBatch extends BaseTest {
     public void testInsertUpdateQuotedStrings() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "'a'");
         }
@@ -806,7 +806,7 @@ public class TestBatch extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().toList();
         for (Vertex v : vertices) {
             v.property("name", "'b'");
@@ -822,7 +822,7 @@ public class TestBatch extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         v1.remove();
         v2.remove();
         v3.remove();
@@ -838,7 +838,7 @@ public class TestBatch extends BaseTest {
         Edge edge1 = v1.addEdge("test", v2);
         Edge edge2 = v1.addEdge("test", v3);
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         edge1.remove();
         edge2.remove();
         this.sqlgGraph.tx().commit();
@@ -854,7 +854,7 @@ public class TestBatch extends BaseTest {
         Edge edge1 = v1.addEdge("test", v2);
         Edge edge2 = v1.addEdge("test", v3);
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         edge1.remove();
         edge2.remove();
         v1.remove();
@@ -873,7 +873,7 @@ public class TestBatch extends BaseTest {
         Edge edge1 = v1.addEdge("test", v2);
         Edge edge2 = v1.addEdge("test", v3);
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         v1.remove();
         v2.remove();
         v3.remove();
@@ -886,7 +886,7 @@ public class TestBatch extends BaseTest {
     public void testDeletePerformance() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         //32767
         int j = 1;
         //create 280 foreign keys
@@ -900,7 +900,7 @@ public class TestBatch extends BaseTest {
             j++;
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
         stopWatch.reset();
@@ -910,7 +910,7 @@ public class TestBatch extends BaseTest {
             sqlgVertex.remove();
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().count().next().intValue());
         vertexes = this.sqlgGraph.traversal().V().<SqlgVertex>has(T.label, "huawei.NetworkElement").toList();
         for (Vertex sqlgVertex : vertexes) {
@@ -925,7 +925,7 @@ public class TestBatch extends BaseTest {
     @Test
     public void testDropForeignKeys() {
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex workspaceElementBsc = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "bsc1");
         Vertex networkElementBsc = this.sqlgGraph.addVertex(T.label, "bsc", "name", "bsc1");
         Vertex workspaceElementCell1 = this.sqlgGraph.addVertex(T.label, "WorkspaceElement", "name", "cell1");
@@ -946,7 +946,7 @@ public class TestBatch extends BaseTest {
         networkElementBsc.addEdge("bsc_bsctmr", networkElementBsctmr1);
 
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
 
         List<Vertex> vertexes = this.sqlgGraph.traversal().V().<SqlgVertex>has(T.label, "WorkspaceElement").toList();
         for (Vertex sqlgVertex : vertexes) {
@@ -969,7 +969,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchDeleteVertexNewlyAdded() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
         for (int i = 0; i < 100; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
@@ -986,7 +986,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchDeleteEdgeNewlyAdded() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
         for (int i = 0; i < 100; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
@@ -1003,7 +1003,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testNullEdge() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         Assert.assertEquals(0, vertexTraversal(v1).out("cars").count().next().intValue());
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
@@ -1015,7 +1015,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchModeStuffsUpProperties() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
         Assert.assertEquals("a", v1.value("name"));
@@ -1036,7 +1036,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("c1", sqlgVertex1.value("property3"));
 
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
         sqlgVertex1.property("property1", "a11");
         sqlgVertex2.property("property2", "b22");
@@ -1058,7 +1058,7 @@ public class TestBatch extends BaseTest {
     public void testBatchUpdateNewVertex() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         v2.property("property2", "bb");
         this.sqlgGraph.tx().commit();
@@ -1071,7 +1071,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testBatchRemoveManyEdgesTestPostgresLimit() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         for (int i = 0; i < 100000; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
@@ -1081,7 +1081,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
         Assert.assertEquals(100000, this.sqlgGraph.traversal().E().count().next().intValue());
         this.sqlgGraph.tx().rollback();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         vertexTraversal(v1).outE("test").forEachRemaining(Edge::remove);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
@@ -1090,14 +1090,14 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testNoProperties() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100; i++) {
             Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person");
             Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person");
             person1.addEdge("friend", person2);
             if (i != 0 && i % 100 == 0) {
                 this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().batchModeOn();
+                this.sqlgGraph.tx().normalBatchModeOn();
             }
         }
         this.sqlgGraph.tx().commit();
@@ -1107,7 +1107,7 @@ public class TestBatch extends BaseTest {
     public void testBatchEdgeLoadProperty() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD");
         Edge edgeToRoot = root.addEdge("edgeToRoot", god);
         edgeToRoot.property("className", "thisthatandanother");
@@ -1118,7 +1118,7 @@ public class TestBatch extends BaseTest {
     public void testBatchArrayString() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new String[]{"name1", "name2"});
         this.sqlgGraph.tx().commit();
         god = this.sqlgGraph.traversal().V(god.id()).next();
@@ -1136,7 +1136,7 @@ public class TestBatch extends BaseTest {
     public void testBatchArrayInteger() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new int[]{1, 2});
         this.sqlgGraph.tx().commit();
         god = this.sqlgGraph.traversal().V(god.id()).next();
@@ -1154,7 +1154,7 @@ public class TestBatch extends BaseTest {
     public void testBatchArrayDouble() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT");
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new double[]{1, 2});
         this.sqlgGraph.tx().commit();
         god = this.sqlgGraph.traversal().V(god.id()).next();
@@ -1170,7 +1170,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void batchLocalDateTime() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
@@ -1183,7 +1183,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void batchLocalDate() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalDate now = LocalDate.now();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
@@ -1196,7 +1196,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void batchLocalTime() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalTime now = LocalTime.now();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
@@ -1212,7 +1212,7 @@ public class TestBatch extends BaseTest {
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
         json.put("username", "john");
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
         }
@@ -1225,7 +1225,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void batchUpdateLocalDateTime() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
@@ -1234,7 +1234,7 @@ public class TestBatch extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
         Assert.assertEquals(now, vertices.get(0).value("createOn"));
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime nowAgain = LocalDateTime.now();
         for (Vertex vertex : vertices) {
             vertex.property("createOn", nowAgain);
@@ -1247,7 +1247,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void batchUpdateLocalDate() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalDate now = LocalDate.now();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
@@ -1256,7 +1256,7 @@ public class TestBatch extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
         Assert.assertEquals(now, vertices.get(0).value("createOn"));
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalDate nowAgain = LocalDate.now();
         for (Vertex vertex : vertices) {
             vertex.property("createOn", nowAgain);
@@ -1269,7 +1269,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void batchUpdateLocalTime() throws InterruptedException {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         LocalTime now = LocalTime.now();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
@@ -1278,7 +1278,7 @@ public class TestBatch extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
         Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Thread.sleep(1000);
         LocalTime nowAgain = LocalTime.now();
         for (Vertex vertex : vertices) {
@@ -1295,7 +1295,7 @@ public class TestBatch extends BaseTest {
         ObjectMapper objectMapper =  new ObjectMapper();
         ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
         json.put("username", "john");
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 10; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
         }
@@ -1304,7 +1304,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(10, vertices.size());
         JsonNode value = vertices.get(0).value("doc");
         Assert.assertEquals(json, value);
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         json = new ObjectNode(objectMapper.getNodeFactory());
         json.put("username", "pete");
         for (Vertex vertex : vertices) {

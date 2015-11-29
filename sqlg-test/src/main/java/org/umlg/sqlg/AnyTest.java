@@ -12,7 +12,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestStreamVertex.class
+        DocumentationUsecases.class
         })
 public class AnyTest {
 }

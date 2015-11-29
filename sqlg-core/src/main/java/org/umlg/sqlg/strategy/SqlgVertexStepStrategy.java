@@ -35,7 +35,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     public void apply(final Traversal.Admin<?, ?> traversal) {
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchModeNormal()) {
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
             readFromCache(traversal);
         } else {
             List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());

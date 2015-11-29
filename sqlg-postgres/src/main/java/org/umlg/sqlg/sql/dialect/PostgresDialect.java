@@ -1512,7 +1512,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
-        if (!sqlgGraph.tx().isInStreamingMode() && !sqlgGraph.tx().isInStreamingWithLockMode()) {
+        if (!sqlgGraph.tx().isInStreamingBatchMode() && !sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         //create temp table and copy the uids into it

@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Date: 2014/11/06
@@ -37,7 +36,7 @@ public class TestMultiThreadedBatch extends BaseTest {
         for (int j = 0; j < 100; j++) {
             executorService.submit(() -> {
                 sqlgGraph.tx().rollback();
-                sqlgGraph.tx().batchModeOn();
+                sqlgGraph.tx().normalBatchModeOn();
                 final Random random = new Random();
                 int randomInt = random.nextInt();
                 try {
@@ -48,7 +47,7 @@ public class TestMultiThreadedBatch extends BaseTest {
                         tables.add(randomInt);
                     }
                     sqlgGraph.tx().commit();
-                    sqlgGraph.tx().batchModeOn();
+                    sqlgGraph.tx().normalBatchModeOn();
 //                    System.out.println(atomicInteger.getAndIncrement());
                 } catch (Exception e) {
                     Assert.fail(e.getMessage());

@@ -26,7 +26,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
 
     @Test
     public void testBulkEdges() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         int count = 0;
         List<Pair<String, String>> uids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -37,7 +37,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
             }
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable a = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
         SchemaTable b = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B");
         this.sqlgGraph.bulkAddEdges(a, b, "AB", Pair.of("index", "index"), uids);
@@ -50,7 +50,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
 
     @Test
     public void testBulkEdgesCrossSchemas() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         int count = 0;
         List<Pair<String, String>> uids = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -61,7 +61,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
             }
         }
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable a = SchemaTable.of("A", "A");
         SchemaTable b = SchemaTable.of("B", "B");
         this.sqlgGraph.bulkAddEdges(a, b, "AB", Pair.of("index", "index"), uids);
@@ -76,7 +76,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
     public void testBulkEdges2() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         List<Pair<String, String>> uids = new ArrayList<>();
         LinkedHashMap properties = new LinkedHashMap();
         String uuid1Cache = null;
@@ -101,7 +101,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges(person, person, "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
@@ -122,7 +122,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
 
     @Test
     public void testBulkEdgesTempTableUnique() {
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         List<Pair<String, String>> uids = new ArrayList<>();
         LinkedHashMap properties = new LinkedHashMap();
         for (int i = 0; i < 1000; i++) {
@@ -135,13 +135,13 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
             this.sqlgGraph.streamVertex("Person", properties);
         }
         this.sqlgGraph.tx().flush();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges(person, person, "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
 
         //and again
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         uids.clear();
         for (int i = 0; i < 1000; i++) {
             String uuid1 = UUID.randomUUID().toString();
@@ -153,7 +153,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
             this.sqlgGraph.streamVertex("Person", properties);
         }
         this.sqlgGraph.tx().flush();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges(person, person, "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();

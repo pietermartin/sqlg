@@ -33,7 +33,7 @@ public class TestTraversalPerformance extends BaseTest {
 
     @Test
     public void testSpeed() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A");
         for (int i = 0; i < 1000000; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B");
@@ -44,7 +44,7 @@ public class TestTraversalPerformance extends BaseTest {
             }
             if (i % 10000 == 0) {
                 this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().batchModeOn();
+                this.sqlgGraph.tx().normalBatchModeOn();
                 System.out.println("inserted " + i);
             }
         }

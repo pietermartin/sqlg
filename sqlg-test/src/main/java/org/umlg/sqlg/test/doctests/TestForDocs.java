@@ -59,7 +59,7 @@ public class TestForDocs extends BaseTest {
 //
 //    @Test
 //    public void testPostgresBatchMode() {
-//        this.sqlgGraph.tx().batchModeOn();
+//        this.sqlgGraph.tx().normalBatchModeOn();
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
 //        for (int i = 1; i < 1000001; i++) {
@@ -68,7 +68,7 @@ public class TestForDocs extends BaseTest {
 //            person.addEdge("pet", dog);
 //            if (i % 100000 == 0) {
 //                this.sqlgGraph.tx().commit();
-//                this.sqlgGraph.tx().batchModeOn();
+//                this.sqlgGraph.tx().normalBatchModeOn();
 //            }
 //        }
 //        this.sqlgGraph.tx().commit();

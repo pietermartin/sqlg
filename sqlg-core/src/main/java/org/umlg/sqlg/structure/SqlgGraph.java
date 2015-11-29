@@ -216,10 +216,10 @@ public class SqlgGraph implements Graph {
 
     @Override
     public Vertex addVertex(Object... keyValues) {
-        if (this.tx().isInStreamingMode()) {
+        if (this.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction is in " + this.tx().getBatchModeType().toString() + ", use streamVertex(Object ... keyValues)");
         }
-        if (this.tx().isInStreamingWithLockMode()) {
+        if (this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction is in " + this.tx().getBatchModeType().toString() + ", use streamVertexWithLock(Object ... keyValues)");
         }
         ElementHelper.legalPropertyKeyValueArray(keyValues);
@@ -239,14 +239,14 @@ public class SqlgGraph implements Graph {
     }
 
     public void streamVertex(Object... keyValues) {
-        if (!this.tx().isInStreamingMode()) {
+        if (!this.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
         }
         internalStreamVertex(keyValues);
     }
 
     public void streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
-        if (!this.tx().isInStreamingMode()) {
+        if (!this.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
@@ -260,14 +260,14 @@ public class SqlgGraph implements Graph {
     }
 
     public SqlgVertex streamVertexWithLock(Object... keyValues) {
-        if (!this.tx().isInStreamingWithLockMode()) {
+        if (!this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + "mode for streamVertexWithLock(Object ... keyValues)");
         }
         return internalStreamVertex(keyValues);
     }
 
     public SqlgVertex streamVertexWithLock(String label, LinkedHashMap<String, Object> keyValues) {
-        if (!this.tx().isInStreamingWithLockMode()) {
+        if (!this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + "mode for streamVertexWithLock(Object ... keyValues)");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
@@ -293,7 +293,7 @@ public class SqlgGraph implements Graph {
     }
 
     public void bulkAddEdges(SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
-        if (!this.tx().isInStreamingMode() && !this.tx().isInStreamingWithLockMode()) {
+        if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         this.sqlDialect.bulkAddEdges(this, in, out, edgeLabel, idFields, uids);

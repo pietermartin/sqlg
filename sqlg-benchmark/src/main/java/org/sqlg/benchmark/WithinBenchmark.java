@@ -80,7 +80,7 @@ public class WithinBenchmark extends BaseBenchmark {
         this.sqlgGraph = getSqlgGraph();
         this.gt = this.sqlgGraph.traversal();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
-            this.sqlgGraph.tx().batchModeOn();
+            this.sqlgGraph.tx().normalBatchModeOn();
         }
         for (int i = 0; i < 1_000_000; i++) {
             String uid = UUID.randomUUID().toString();

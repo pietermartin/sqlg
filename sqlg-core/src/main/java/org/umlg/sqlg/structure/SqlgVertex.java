@@ -71,7 +71,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     public void streamEdgeWithLock(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
-        if (!sqlgGraph.tx().isInStreamingWithLockMode()) {
+        if (!sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for streamEdgeWithLock");
         }
         if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
@@ -91,7 +91,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     public void streamEdge(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
-        if (!sqlgGraph.tx().isInStreamingMode()) {
+        if (!sqlgGraph.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " mode for streamEdge");
         }
         if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
@@ -109,10 +109,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
         this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().isInStreamingMode()) {
+        if (this.sqlgGraph.tx().isInStreamingBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction is in " + this.sqlgGraph.tx().getBatchModeType().toString() + ", use streamEdge(Object ... keyValues)");
         }
-        if (this.sqlgGraph.tx().isInStreamingWithLockMode()) {
+        if (this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction is in " + this.sqlgGraph.tx().getBatchModeType().toString() + ", use streamEdgeWithLock(Object ... keyValues)");
         }
         return addEdgeInternal(false, label, inVertex, keyValues);

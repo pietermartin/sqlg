@@ -23,7 +23,7 @@ public class TestBulkWithout extends BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
-            this.sqlgGraph.tx().batchModeOn();
+            this.sqlgGraph.tx().normalBatchModeOn();
         }
         Vertex god = this.sqlgGraph.addVertex(T.label, "God");
         List<String> uuids = new ArrayList<>();
@@ -93,7 +93,7 @@ public class TestBulkWithout extends BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
-            this.sqlgGraph.tx().batchModeOn();
+            this.sqlgGraph.tx().normalBatchModeOn();
         }
         Vertex god = this.sqlgGraph.addVertex(T.label, "God");
         List<String> uuids = new ArrayList<>();

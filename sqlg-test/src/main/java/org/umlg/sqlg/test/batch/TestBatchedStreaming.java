@@ -13,7 +13,6 @@ import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Date: 2015/10/03
@@ -32,7 +31,7 @@ public class TestBatchedStreaming extends BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         LinkedHashMap properties = new LinkedHashMap();
-        this.sqlgGraph.tx().streamingWithLockMode();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         List<Pair<SqlgVertex, SqlgVertex>> uids = new ArrayList<>();
         String uuidCache1 = null;
         String uuidCache2 = null;
@@ -50,14 +49,14 @@ public class TestBatchedStreaming extends BaseTest {
             uids.add(Pair.of(v1, v2));
             if (i % (BATCH_SIZE / 2) == 0) {
                 this.sqlgGraph.tx().flush();
-                this.sqlgGraph.tx().streamingWithLockMode();
+                this.sqlgGraph.tx().streamingWithLockBatchModeOn();
                 for (Pair<SqlgVertex, SqlgVertex> uid : uids) {
                     uid.getLeft().streamEdgeWithLock("friend", uid.getRight());
                 }
                 //This is needed because the number of edges are less than the batch size so it will not be auto flushed
                 this.sqlgGraph.tx().flush();
                 uids.clear();
-                this.sqlgGraph.tx().streamingWithLockMode();
+                this.sqlgGraph.tx().streamingWithLockBatchModeOn();
             }
         }
         this.sqlgGraph.tx().commit();
@@ -87,7 +86,7 @@ public class TestBatchedStreaming extends BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         LinkedHashMap properties = new LinkedHashMap();
-        this.sqlgGraph.tx().streamingWithLockMode();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         List<Pair<SqlgVertex, SqlgVertex>> uids = new ArrayList<>();
         String uuidCache1 = null;
         String uuidCache2 = null;
@@ -138,7 +137,7 @@ public class TestBatchedStreaming extends BaseTest {
     public void testStreamingWithBatchSizeWithCallBack() {
         LinkedHashMap properties = new LinkedHashMap();
         List<SqlgVertex> persons = new ArrayList<>();
-        this.sqlgGraph.tx().streamingWithLockMode();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         for (int i = 1; i <= 10; i++) {
             String uuid1 = UUID.randomUUID().toString();
             properties.put("id", uuid1);
@@ -161,7 +160,7 @@ public class TestBatchedStreaming extends BaseTest {
     @Test
     public void streamJava8StyleWithSchema() {
         List<String> uids = Arrays.asList("1", "2", "3", "4", "5");
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         uids.stream().forEach(u -> this.sqlgGraph.streamVertex(T.label, "R_HG.Person", "name", u));
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0l);
@@ -170,17 +169,17 @@ public class TestBatchedStreaming extends BaseTest {
 
     @Test
     public void testBatchContinuations() {
-        this.sqlgGraph.tx().batchModeOn();
+        this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Dog");
         v1.addEdge("pet", v2);
         this.sqlgGraph.tx().flush();
-        this.sqlgGraph.tx().streamingWithLockMode();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         for (int i = 1; i <= 100; i++) {
             SqlgVertex v = this.sqlgGraph.streamVertexWithLock("Person", new LinkedHashMap<>());
         }
         this.sqlgGraph.tx().flush();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         this.sqlgGraph.streamVertex("Person", new LinkedHashMap<>());
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);

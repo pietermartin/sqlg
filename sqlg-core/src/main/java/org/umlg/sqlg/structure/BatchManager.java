@@ -61,7 +61,7 @@ public class BatchManager {
         this.sqlDialect = sqlDialect;
     }
 
-    public boolean isBatchModeNormal() {
+    public boolean isInNormalMode() {
         return this.batchModeType == BatchModeType.NORMAL;
     }
 
@@ -73,7 +73,7 @@ public class BatchManager {
         return this.batchModeType == BatchModeType.STREAMING_WITH_LOCK;
     }
 
-    public boolean isInBatchMode() {
+    boolean isInBatchMode() {
         return this.batchModeType != BatchModeType.NONE;
     }
 
@@ -104,15 +104,15 @@ public class BatchManager {
             if (this.streamingBatchModeVertexKeys == null) {
                 this.streamingBatchModeVertexKeys = new ArrayList<>(keyValueMap.keySet());
             }
-            if (isStreamingEdges()) {
+            if (this.isStreamingEdges()) {
                 throw new IllegalStateException("streaming edge is in progress, first flush or commit before streaming vertices.");
             }
-            if (isInStreamingModeWithLock() && this.batchCount == 0) {
+            if (this.isInStreamingModeWithLock() && this.batchCount == 0) {
                 //lock the table,
                 this.sqlDialect.lockTable(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
                 this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
             }
-            if (isInStreamingModeWithLock()) {
+            if (this.isInStreamingModeWithLock()) {
                 sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
             }
             OutputStream out = this.streamingVertexOutputStreamCache.get(schemaTable);
@@ -122,7 +122,7 @@ public class BatchManager {
                 this.streamingVertexOutputStreamCache.put(schemaTable, out);
             }
             this.sqlDialect.writeStreamingVertex(out, keyValueMap);
-            if (isInStreamingModeWithLock()) {
+            if (this.isInStreamingModeWithLock()) {
                 this.batchCount++;
             }
         }
@@ -181,15 +181,15 @@ public class BatchManager {
             if (this.streamingBatchModeEdgeKeys == null) {
                 this.streamingBatchModeEdgeKeys = new ArrayList<>(keyValueMap.keySet());
             }
-            if (isStreamingVertices()) {
+            if (this.isStreamingVertices()) {
                 throw new IllegalStateException("streaming vertex is in progress, first flush or commit before streaming edges.");
             }
-            if (isInStreamingModeWithLock() && this.batchCount == 0) {
+            if (this.isInStreamingModeWithLock() && this.batchCount == 0) {
                 //lock the table,
                 this.sqlDialect.lockTable(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
                 this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
             }
-            if (isInStreamingModeWithLock()) {
+            if (this.isInStreamingModeWithLock()) {
                 sqlgEdge.setInternalPrimaryKey(RecordId.from(outSchemaTable, ++this.batchIndex));
             }
             OutputStream out = this.streamingEdgeOutputStreamCache.get(outSchemaTable);
@@ -200,7 +200,7 @@ public class BatchManager {
             }
             try {
                 this.sqlDialect.writeCompleteEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
-                if (isInStreamingModeWithLock()) {
+                if (this.isInStreamingModeWithLock()) {
                     this.batchCount++;
                 }
             } catch (IOException e) {
@@ -237,7 +237,7 @@ public class BatchManager {
                 throw new RuntimeException(e);
             }
         });
-        if (isInStreamingModeWithLock()) {
+        if (this.isInStreamingModeWithLock()) {
             this.batchCount = 0;
         }
         this.streamingEdgeOutputStreamCache.clear();
@@ -489,11 +489,11 @@ public class BatchManager {
         return isStreamingVertices() || isStreamingEdges();
     }
 
-    public boolean isStreamingVertices() {
+    private boolean isStreamingVertices() {
         return !this.streamingVertexOutputStreamCache.isEmpty();
     }
 
-    public boolean isStreamingEdges() {
+    private boolean isStreamingEdges() {
         return !this.streamingEdgeOutputStreamCache.isEmpty();
     }
 }

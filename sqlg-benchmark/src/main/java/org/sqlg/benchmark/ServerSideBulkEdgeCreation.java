@@ -31,7 +31,7 @@ public class ServerSideBulkEdgeCreation extends BaseBenchmark {
     public long bulkAddEdges() {
         int numberOfElement = 1_000_000;
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
-            this.sqlgGraph.tx().streamingMode();
+            this.sqlgGraph.tx().streamingBatchModeOn();
         }
         List<String> leftUids = new ArrayList<>();
         for (int i = 0; i < numberOfElement; i++) {
@@ -49,7 +49,7 @@ public class ServerSideBulkEdgeCreation extends BaseBenchmark {
         this.sqlgGraph.tx().commit();
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().streamingMode();
+        this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable a = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
         SchemaTable b = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B");
         List<Pair<String,String>> leftRight = new ArrayList<>();

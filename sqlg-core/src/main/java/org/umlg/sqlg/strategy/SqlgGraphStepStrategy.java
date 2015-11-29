@@ -43,7 +43,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
         final GraphStep originalGraphStep = (GraphStep) startStep;
 
-        if (originalGraphStep.getIds().length > 0 && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchModeNormal()) {
+        if (originalGraphStep.getIds().length > 0 && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
             readFromCache(traversal);
         } else {
             if (originalGraphStep.getIds().length > 0) {

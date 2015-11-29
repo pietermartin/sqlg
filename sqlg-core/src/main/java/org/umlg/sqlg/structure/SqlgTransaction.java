@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
@@ -116,14 +117,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
-            if (threadLocalTx.get() != null) {
+            if (isOpen()) {
                 threadLocalTx.get().clear();
                 threadLocalTx.remove();
             }
         }
     }
 
-    public void streamingWithLockMode() {
+    public void streamingWithLockBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_LOCK);
@@ -132,7 +133,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
-    public void streamingMode() {
+    public void streamingBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
@@ -141,7 +142,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
-    public void batchModeOn() {
+    public void normalBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
@@ -151,27 +152,24 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public boolean isInBatchMode() {
-        return isInBatchModeNormal() || isInStreamingMode() || isInStreamingWithLockMode();
+        return isInNormalBatchMode() || isInStreamingBatchMode() || isInStreamingWithLockBatchMode();
     }
 
-    public boolean isInBatchModeNormal() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeNormal();
+    public boolean isInNormalBatchMode() {
+        return isOpen() && threadLocalTx.get().getBatchManager().isInNormalMode();
     }
 
-    public boolean isInStreamingMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isInStreamingMode();
+    public boolean isInStreamingBatchMode() {
+        return isOpen() && threadLocalTx.get().getBatchManager().isInStreamingMode();
     }
 
-    public boolean isInStreamingWithLockMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
+    public boolean isInStreamingWithLockBatchMode() {
+        return isOpen() && threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
     }
 
-    public Optional<BatchManager.BatchModeType> getBatchModeType() {
-        if (threadLocalTx.get() != null) {
-            return Optional.of(threadLocalTx.get().getBatchManager().getBatchModeType());
-        } else {
-            return Optional.empty();
-        }
+    public BatchManager.BatchModeType getBatchModeType() {
+        assert isOpen() : "SqlgTransaction.getBatchModeType() must be called within a transaction.";
+        return threadLocalTx.get().getBatchManager().getBatchModeType();
     }
 
     public BatchManager getBatchManager() {
@@ -247,7 +245,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @Override
     public boolean isOpen() {
-        return (threadLocalTx.get() != null);
+        return threadLocalTx.get() != null;
     }
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {

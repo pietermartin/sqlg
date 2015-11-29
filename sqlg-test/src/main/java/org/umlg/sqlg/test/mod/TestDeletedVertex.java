@@ -48,7 +48,7 @@ public class TestDeletedVertex extends BaseTest {
 //    public void testPerf() {
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
-//        this.sqlgGraph.tx().batchModeOn();
+//        this.sqlgGraph.tx().normalBatchModeOn();
 //        Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
 //        for (int i = 0; i < 1000000; i++) {
 //            Vertex dog = this.sqlgGraph.addVertex(T.label, "Dog");
