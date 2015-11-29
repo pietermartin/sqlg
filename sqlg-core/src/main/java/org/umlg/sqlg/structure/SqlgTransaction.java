@@ -67,14 +67,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @Override
     protected void doCommit() throws TransactionException {
-//        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
-//            throw Exceptions.transactionMustBeOpenToReadWrite();
-//        }
         if (!isOpen())
             return;
 
         try {
-            if (this.threadLocalTx.get().getBatchManager().isBatchModeOn()) {
+            if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 this.threadLocalTx.get().getBatchManager().flush();
             }
             Connection connection = threadLocalTx.get().getConnection();
@@ -101,13 +98,10 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @Override
     protected void doRollback() throws TransactionException {
-//        if (this.readWriteConsumer == READ_WRITE_BEHAVIOR.MANUAL && !isOpen()) {
-//            throw Exceptions.transactionMustBeOpenToReadWrite();
-//        }
         if (!isOpen())
             return;
         try {
-            if (this.threadLocalTx.get().getBatchManager().isBatchModeOn()) {
+            if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 this.threadLocalTx.get().getBatchManager().close();
             }
             Connection connection = threadLocalTx.get().getConnection();
@@ -129,17 +123,10 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
-    public void streamingBatchMode(int batchSize) {
-        streamingBatchMode(batchSize, null);
-    }
-
-    public <T extends SqlgElement> void streamingBatchMode(int batchSize, BatchCallback<T> batchCallback) {
+    public void streamingWithLockMode() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_BATCH_SIZE);
-            threadLocalTx.get().getBatchManager().setStreamingBatchSize(batchSize);
-            if (batchCallback != null)
-                threadLocalTx.get().getBatchManager().setBatchCallback(batchCallback);
+            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_LOCK);
         } else {
             throw new IllegalStateException("Batch mode not supported!");
         }
@@ -164,19 +151,19 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public boolean isInBatchMode() {
-        return isInBatchModeNormal() || isInStreamingBatchMode() || isInStreamingFixedBatchMode();
+        return isInBatchModeNormal() || isInStreamingMode() || isInStreamingWithLockMode();
     }
 
     public boolean isInBatchModeNormal() {
         return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeNormal();
     }
 
-    public boolean isInStreamingBatchMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeStreaming();
+    public boolean isInStreamingMode() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isInStreamingMode();
     }
 
-    public boolean isInStreamingFixedBatchMode() {
-        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isBatchModeBatchStreaming();
+    public boolean isInStreamingWithLockMode() {
+        return threadLocalTx.get() != null && threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
     }
 
     public Optional<BatchManager.BatchModeType> getBatchModeType() {
@@ -189,10 +176,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     public BatchManager getBatchManager() {
         return threadLocalTx.get().getBatchManager();
-    }
-
-    boolean isSchemaModification() {
-        return threadLocalTx.get().isSchemaModification();
     }
 
     void setSchemaModification(boolean schemaModification) {
@@ -214,7 +197,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
-        if (!threadLocalTx.get().getBatchManager().isBatchModeOn())
+        if (!threadLocalTx.get().getBatchManager().isInBatchMode())
             throw new IllegalStateException("Must be in batch mode to batchCommit!");
 
         if (!isOpen())

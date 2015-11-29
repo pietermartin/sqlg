@@ -1,8 +1,12 @@
 package org.umlg.sqlg.test.docs;
 
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
@@ -10,6 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.Text;
+import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
@@ -205,22 +210,80 @@ public class DocumentationUsecases extends BaseTest {
 //        assertEquals(b2, result.get(4));
 //        assertEquals(b1, result.get(5));
 //    }
+//
+//    @Test
+//    public void showRepeat() {
+//        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
+//        Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
+//        Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
+//        Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
+//        Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
+//        Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
+//        john.addEdge("lives", usa);
+//        peterski.addEdge("lives", russia);
+//        usa.addEdge("capital", washington);
+//        this.sqlgGraph.tx().commit();
+//
+//        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("Person").emit().times(2).repeat(__.out("lives", "capital")).path().by("name").toList();
+//        for (Path path : paths) {
+//            System.out.println(path);
+//        }
+//    }
+//
+//    @Test
+//    public void showNormalBatchMode() {
+//        this.sqlgGraph.tx().batchModeOn();
+//        for (int i = 1; i <= 1_000_000; i++) {
+//            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+//            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+//            person.addEdge("drives", car);
+//            //To preserve memory commit or flush every so often
+//            if (i % 10_000 == 0) {
+//                this.sqlgGraph.tx().commit();
+//                this.sqlgGraph.tx().batchModeOn();
+//            }
+//        }
+//        this.sqlgGraph.tx().commit();
+//        assertEquals(1_000_000, this.sqlgGraph.traversal().V()
+//                .hasLabel("Person")
+//                .out("drives")
+//                .count().next().intValue());
+//    }
+//
+//    @Test
+    public void showStreamingMode() {
+        //enable streaming mode
+        this.sqlgGraph.tx().streamingMode();
+        for (int i = 1; i <= 1_000_000; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+        }
+        //flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+        this.sqlgGraph.tx().flush();
+        for (int i = 1; i <= 1_000_000; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+        }
+        this.sqlgGraph.tx().commit();
+//        assertEquals(1_000_000, this.sqlgGraph.traversal().V()
+//                .hasLabel("Person")
+//                .count().next().intValue());
+    }
 
     @Test
-    public void showRepeat() {
-        Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
-        Vertex peterski = this.sqlgGraph.addVertex(T.label, "Person", "name", "Peterski");
-        Vertex paul = this.sqlgGraph.addVertex(T.label, "Person", "name", "Paul");
-        Vertex usa = this.sqlgGraph.addVertex(T.label, "Country", "name", "USA");
-        Vertex russia = this.sqlgGraph.addVertex(T.label, "Country", "name", "Russia");
-        Vertex washington = this.sqlgGraph.addVertex(T.label, "City", "name", "Washington");
-        john.addEdge("lives", usa);
-        peterski.addEdge("lives", russia);
-        usa.addEdge("capital", washington);
+    public void showStreamingWithLockMode() {
+        //enable streaming mode
+        this.sqlgGraph.tx().streamingWithLockMode();
+        for (int i = 1; i <= 1_000_000; i++) {
+            Vertex person = this.sqlgGraph.streamVertexWithLock(T.label, "Person", "name", "John" + i);
+        }
+        //flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+        this.sqlgGraph.tx().flush();
+        for (int i = 1; i <= 1_000_000; i++) {
+            Vertex car = this.sqlgGraph.streamVertexWithLock(T.label, "Car", "name", "Dodge" + i);
+        }
         this.sqlgGraph.tx().commit();
-
-        Tree<Vertex> tree = this.sqlgGraph.traversal().V().hasLabel("Person").emit().times(2).repeat(__.out("lives", "capital")).tree().next();
-        System.out.println(tree);
+//        assertEquals(1_000_000, this.sqlgGraph.traversal().V()
+//                .hasLabel("Person")
+//                .count().next().intValue());
     }
 
 }

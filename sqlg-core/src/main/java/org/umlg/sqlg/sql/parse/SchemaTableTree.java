@@ -669,7 +669,7 @@ public class SchemaTableTree {
                 } else {
                     withInOutMap.put("without", withInOutValue);
                 }
-                sqlgGraph.getSqlDialect().flushStreamingVertex(out, withInOutMap);
+                sqlgGraph.getSqlDialect().writeStreamingVertex(out, withInOutMap);
             }
             try {
                 out.close();

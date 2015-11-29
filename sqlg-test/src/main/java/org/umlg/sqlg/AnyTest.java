@@ -2,6 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.docs.DocumentationUsecases;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
 
@@ -11,7 +12,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        DocumentationUsecases.class
+        TestStreamVertex.class
         })
 public class AnyTest {
 }

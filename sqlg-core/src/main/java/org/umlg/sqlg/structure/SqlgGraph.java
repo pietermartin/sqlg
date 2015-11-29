@@ -216,8 +216,11 @@ public class SqlgGraph implements Graph {
 
     @Override
     public Vertex addVertex(Object... keyValues) {
-        if (this.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction cannot be in STREAMING batch mode for addVertex. Please use streamVertex");
+        if (this.tx().isInStreamingMode()) {
+            throw SqlgExceptions.invalidMode("Transaction is in " + this.tx().getBatchModeType().toString() + ", use streamVertex(Object ... keyValues)");
+        }
+        if (this.tx().isInStreamingWithLockMode()) {
+            throw SqlgExceptions.invalidMode("Transaction is in " + this.tx().getBatchModeType().toString() + ", use streamVertexWithLock(Object ... keyValues)");
         }
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
@@ -235,16 +238,16 @@ public class SqlgGraph implements Graph {
         this.streamVertex(label, new LinkedHashMap<>());
     }
 
-    /**
-     * Only to be called when batchMode(true) is on
-     *
-     * @param label
-     * @param keyValues
-     * @return
-     */
+    public void streamVertex(Object... keyValues) {
+        if (!this.tx().isInStreamingMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+        }
+        internalStreamVertex(keyValues);
+    }
+
     public void streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
-        if (!this.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction must be in STREAMING mode for streamVertex. Current mode is " + this.tx().getBatchModeType().orElse(BatchManager.BatchModeType.NONE));
+        if (!this.tx().isInStreamingMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         tmp.put(T.label, label);
@@ -252,17 +255,28 @@ public class SqlgGraph implements Graph {
         streamVertex(keyValues1);
     }
 
-    public void streamVertex(Object... keyValues) {
-        if (!this.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamVertex");
+    public void streamVertexWithLock(String label) {
+        this.streamVertexWithLock(label, new LinkedHashMap<>());
+    }
+
+    public SqlgVertex streamVertexWithLock(Object... keyValues) {
+        if (!this.tx().isInStreamingWithLockMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + "mode for streamVertexWithLock(Object ... keyValues)");
         }
-        internalStreamVertex(keyValues);
+        return internalStreamVertex(keyValues);
+    }
+
+    public SqlgVertex streamVertexWithLock(String label, LinkedHashMap<String, Object> keyValues) {
+        if (!this.tx().isInStreamingWithLockMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + "mode for streamVertexWithLock(Object ... keyValues)");
+        }
+        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
+        tmp.put(T.label, label);
+        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+        return internalStreamVertex(keyValues1);
     }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
-        if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingFixedBatchMode()) {
-            throw new IllegalStateException("Transaction must be in STREAMING batch mode for streamVertex");
-        }
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
 
@@ -278,26 +292,9 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
-    public SqlgVertex streamVertexFixedBatch(Object... keyValues) {
-        if (!this.tx().isInStreamingFixedBatchMode()) {
-            throw new IllegalStateException("Transaction must be in STREAMING fixed batch mode for streamVertexFixedBatch");
-        }
-        return internalStreamVertex(keyValues);
-    }
-
-    public SqlgVertex streamVertexFixedBatch(String label, LinkedHashMap<String, Object> keyValues) {
-        if (!this.tx().isInStreamingFixedBatchMode()) {
-            throw new IllegalStateException("Transaction must be in STREAMING fixed batch mode for streamVertexFixedBatch");
-        }
-        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
-        tmp.put(T.label, label);
-        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
-        return internalStreamVertex(keyValues1);
-    }
-
-    public void bulkAddEdges(SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids) {
-        if (!this.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction must be in streaming batch mode for bulkAddEdges");
+    public void bulkAddEdges(SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
+        if (!this.tx().isInStreamingMode() && !this.tx().isInStreamingWithLockMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         this.sqlDialect.bulkAddEdges(this, in, out, edgeLabel, idFields, uids);
     }

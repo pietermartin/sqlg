@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -128,7 +129,7 @@ public class TestStreamVertex extends BaseTest {
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 1);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = SqlgExceptions.InvalidModeException.class)
     public void testCanNotAddVertexOnceStreaming() {
         this.sqlgGraph.tx().streamingMode();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();

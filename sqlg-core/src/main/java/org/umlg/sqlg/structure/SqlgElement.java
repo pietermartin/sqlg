@@ -53,7 +53,7 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingFixedBatchMode()) {
+        if (!this.sqlgGraph.tx().isInStreamingMode() && !this.sqlgGraph.tx().isInStreamingWithLockMode()) {
             sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
         }
     }
@@ -67,7 +67,7 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
+        if (!this.sqlgGraph.tx().isInStreamingMode() && !this.sqlgGraph.tx().isInStreamingWithLockMode()) {
             sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
         }
     }
@@ -161,7 +161,7 @@ public abstract class SqlgElement implements Element {
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.getSqlDialect().validateProperty(key, value);
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode()) {
+        if (!this.sqlgGraph.tx().isInStreamingMode() && !this.sqlgGraph.tx().isInStreamingWithLockMode()) {
             sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
         }
         //Validate the property

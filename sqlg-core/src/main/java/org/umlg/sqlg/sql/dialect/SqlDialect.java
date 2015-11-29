@@ -325,9 +325,9 @@ public interface SqlDialect {
 
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
 
-    void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
+    void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
 
-    void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
+    void writeCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
     public default boolean needForeignKeyIndex() {
         return false;
@@ -394,9 +394,9 @@ public interface SqlDialect {
 
     InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql);
 
-    void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids);
+    void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<? extends Pair<String, String>> uids);
 
-    void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids);
+    void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids);
 
     void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
 

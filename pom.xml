@@ -88,6 +88,7 @@
                         <include>**/PostgresAllTest.java</include>
                     </includes>
                     <argLine>-Xmx2048m</argLine>
+                    <!--<argLine>-Xmx128m</argLine>-->
                     <!--<argLine>-Xmx8192m</argLine>-->
                 </configuration>
             </plugin>

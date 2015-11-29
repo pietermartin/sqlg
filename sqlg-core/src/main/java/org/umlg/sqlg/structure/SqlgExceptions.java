@@ -22,6 +22,10 @@ public class SqlgExceptions {
         return new InvalidColumnException(message);
     }
 
+    public static InvalidModeException invalidMode(String message) {
+        return new InvalidModeException(message);
+    }
+
     public static class InvalidIdException extends RuntimeException {
 
         public InvalidIdException(String message) {
@@ -49,6 +53,14 @@ public class SqlgExceptions {
     public static class InvalidColumnException extends RuntimeException {
 
         public InvalidColumnException(String message) {
+            super(message);
+        }
+
+    }
+
+    public static class InvalidModeException extends RuntimeException {
+
+        public InvalidModeException(String message) {
             super(message);
         }
 

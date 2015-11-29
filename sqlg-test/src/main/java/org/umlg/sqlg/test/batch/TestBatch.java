@@ -177,39 +177,39 @@ public class TestBatch extends BaseTest {
     }
 
 
-//    @Test
-//    public void testBatchEdgesDifferentProperties() {
-//        this.sqlgGraph.tx().batchModeOn();
-//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
-//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-//        v1.addEdge("Friend", v2, "weight", 1, "test1", "a");
-//        v1.addEdge("Friend", v3, "weight", 2, "test1", "a", "test2", "b");
-//        this.sqlgGraph.tx().commit();
-//    }
-//
-//    @Test
-//    public void testBatchVertexDifferentProperties() {
-//        this.sqlgGraph.tx().batchModeOn();
-//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko", "test1", "a");
-//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter", "test2", "b");
-//        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "test3", "c", "test4", "d");
-//        v1.addEdge("Friend", v2, "weight", 1);
-//        v1.addEdge("Friend", v3, "weight", 2);
-//        this.sqlgGraph.tx().commit();
-//        Vertex marko = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "marko").next();
-//        Assert.assertEquals("a", marko.value("test1"));
-//        Assert.assertFalse(marko.property("test2").isPresent());
-//        Assert.assertFalse(marko.property("test3").isPresent());
-//        Vertex peter = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "peter").next();
-//        Assert.assertEquals("b", peter.value("test2"));
-//        Assert.assertFalse(peter.property("test1").isPresent());
-//        Assert.assertFalse(peter.property("test3").isPresent());
-//        Vertex john = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "john").next();
-//        Assert.assertEquals("c", john.value("test3"));
-//        Assert.assertFalse(john.property("test1").isPresent());
-//        Assert.assertFalse(john.property("test2").isPresent());
-//    }
+    @Test
+    public void testBatchEdgesDifferentProperties() {
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+        v1.addEdge("Friend", v2, "weight", 1, "test1", "a");
+        v1.addEdge("Friend", v3, "weight", 2, "test1", "a", "test2", "b");
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
+    public void testBatchVertexDifferentProperties() {
+        this.sqlgGraph.tx().batchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko", "test1", "a");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter", "test2", "b");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john", "test3", "c", "test4", "d");
+        v1.addEdge("Friend", v2, "weight", 1);
+        v1.addEdge("Friend", v3, "weight", 2);
+        this.sqlgGraph.tx().commit();
+        Vertex marko = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "marko").next();
+        Assert.assertEquals("a", marko.value("test1"));
+        Assert.assertFalse(marko.property("test2").isPresent());
+        Assert.assertFalse(marko.property("test3").isPresent());
+        Vertex peter = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "peter").next();
+        Assert.assertEquals("b", peter.value("test2"));
+        Assert.assertFalse(peter.property("test1").isPresent());
+        Assert.assertFalse(peter.property("test3").isPresent());
+        Vertex john = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "john").next();
+        Assert.assertEquals("c", john.value("test3"));
+        Assert.assertFalse(john.property("test1").isPresent());
+        Assert.assertFalse(john.property("test2").isPresent());
+    }
 
     @Test
     public void testBatchVertices() {

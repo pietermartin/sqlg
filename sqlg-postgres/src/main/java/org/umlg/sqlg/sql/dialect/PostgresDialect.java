@@ -531,7 +531,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
+    public void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
             if (keyValueMap.isEmpty()) {
@@ -557,7 +557,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void writeCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         try {
             String encoding = "UTF-8";
             out.write(((RecordId) outVertex.id()).getId().toString().getBytes(encoding));
@@ -1476,7 +1476,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<String, String>> uids) {
+    public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<? extends Pair<String, String>> uids) {
         try {
             StringBuffer sql = new StringBuffer();
             sql.append("COPY ");
@@ -1511,9 +1511,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<String, String>> uids) {
-        if (!sqlgGraph.tx().isInStreamingBatchMode()) {
-            throw new IllegalStateException("Transaction must be in streaming batch mode for bulkAddEdges");
+    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
+        if (!sqlgGraph.tx().isInStreamingMode() && !sqlgGraph.tx().isInStreamingWithLockMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         //create temp table and copy the uids into it
         Map<String, PropertyType> columns = new HashMap<>();
@@ -1571,7 +1571,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(prefix + schemaTable.getTable()));
-        sql.append(" IN EXCLUSIVE MODE");
+        sql.append(" IN SHARE MODE");
         if (this.needsSemicolon()) {
             sql.append(";");
         }

@@ -38,28 +38,20 @@ public class BatchManager {
     //map per label's edges to delete
     private Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
 
-    private Map<SchemaTable, OutputStream> streamingVertexCache = new LinkedHashMap<>();
-    private Map<SchemaTable, OutputStream> streamingEdgeCache = new LinkedHashMap<>();
+    private Map<SchemaTable, OutputStream> streamingVertexOutputStreamCache = new LinkedHashMap<>();
+    private Map<SchemaTable, OutputStream> streamingEdgeOutputStreamCache = new LinkedHashMap<>();
 
     //indicates what is being streamed
     private SchemaTable streamingBatchModeVertexSchemaTable;
     private List<String> streamingBatchModeVertexKeys;
     private SchemaTable streamingBatchModeEdgeSchemaTable;
-    private ArrayList<String> streamingBatchModeEdgeKeys;
+    private List<String> streamingBatchModeEdgeKeys;
 
-    private int batchSize;
     private int batchCount;
     private long batchIndex;
-    private String sequenceName;
-    private BatchCallback batchCallback;
-    private List<SqlgElement> batchedElements;
-
-    public void setBatchCallback(BatchCallback batchCallback) {
-        this.batchCallback = batchCallback;
-    }
 
     public enum BatchModeType {
-        NONE, NORMAL, STREAMING, STREAMING_WITH_BATCH_SIZE
+        NONE, NORMAL, STREAMING, STREAMING_WITH_LOCK
     }
 
     private BatchModeType batchModeType = BatchModeType.NONE;
@@ -73,15 +65,15 @@ public class BatchManager {
         return this.batchModeType == BatchModeType.NORMAL;
     }
 
-    public boolean isBatchModeStreaming() {
+    public boolean isInStreamingMode() {
         return this.batchModeType == BatchModeType.STREAMING;
     }
 
-    public boolean isBatchModeBatchStreaming() {
-        return this.batchModeType == BatchModeType.STREAMING_WITH_BATCH_SIZE;
+    public boolean isInStreamingModeWithLock() {
+        return this.batchModeType == BatchModeType.STREAMING_WITH_LOCK;
     }
 
-    public boolean isBatchModeOn() {
+    public boolean isInBatchMode() {
         return this.batchModeType != BatchModeType.NONE;
     }
 
@@ -93,25 +85,21 @@ public class BatchManager {
         this.batchModeType = batchModeType;
     }
 
-    void setStreamingBatchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
-
-    public void addVertex(boolean streaming, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        SchemaTable schemaTable = SchemaTable.of(vertex.getSchema(), vertex.getTable());
+    public void addVertex(boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
+        SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable());
         if (!streaming) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> pairs = this.vertexCache.get(schemaTable);
             if (pairs == null) {
                 pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
-                pairs.getRight().put(vertex, keyValueMap);
+                pairs.getRight().put(sqlgVertex, keyValueMap);
                 this.vertexCache.put(schemaTable, pairs);
             } else {
                 pairs.getLeft().addAll(keyValueMap.keySet());
-                pairs.getRight().put(vertex, keyValueMap);
+                pairs.getRight().put(sqlgVertex, keyValueMap);
             }
         } else {
             if (this.streamingBatchModeVertexSchemaTable == null) {
-                this.streamingBatchModeVertexSchemaTable = vertex.getSchemaTable();
+                this.streamingBatchModeVertexSchemaTable = sqlgVertex.getSchemaTable();
             }
             if (this.streamingBatchModeVertexKeys == null) {
                 this.streamingBatchModeVertexKeys = new ArrayList<>(keyValueMap.keySet());
@@ -119,37 +107,23 @@ public class BatchManager {
             if (isStreamingEdges()) {
                 throw new IllegalStateException("streaming edge is in progress, first flush or commit before streaming vertices.");
             }
-            if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
-                throw new IllegalStateException("batch size is reached, first commit or flush and close the batch. Batch count = " + this.batchCount + " batch size is " + this.batchSize);
-            }
-            if (isBatchModeBatchStreaming() && this.batchCount == 0) {
-                this.batchedElements = new ArrayList<>();
+            if (isInStreamingModeWithLock() && this.batchCount == 0) {
                 //lock the table,
                 this.sqlDialect.lockTable(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
-                //set the sequence cache
-                this.sequenceName = this.sqlDialect.sequenceName(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
                 this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
             }
-            if (isBatchModeBatchStreaming()) {
-                vertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
-                this.batchedElements.add(vertex);
+            if (isInStreamingModeWithLock()) {
+                sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
             }
-            OutputStream out = this.streamingVertexCache.get(schemaTable);
+            OutputStream out = this.streamingVertexOutputStreamCache.get(schemaTable);
             if (out == null) {
-                String sql = this.sqlDialect.constructCompleteCopyCommandSqlVertex(sqlgGraph, vertex, keyValueMap);
+                String sql = this.sqlDialect.constructCompleteCopyCommandSqlVertex(sqlgGraph, sqlgVertex, keyValueMap);
                 out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
-                this.streamingVertexCache.put(schemaTable, out);
+                this.streamingVertexOutputStreamCache.put(schemaTable, out);
             }
-            this.sqlDialect.flushStreamingVertex(out, keyValueMap);
-            if (isBatchModeBatchStreaming()) {
+            this.sqlDialect.writeStreamingVertex(out, keyValueMap);
+            if (isInStreamingModeWithLock()) {
                 this.batchCount++;
-            }
-            if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
-                this.flush();
-                if (this.batchCallback != null) {
-                    this.batchCallback.callBack(this.batchedElements);
-                    this.batchedElements.clear();
-                }
             }
         }
     }
@@ -161,8 +135,6 @@ public class BatchManager {
             if (triples == null) {
                 triples = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
                 triples.getRight().put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
-//                triples = new LinkedHashMap<>();
-//                triples.put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
                 this.edgeCache.put(outSchemaTable, triples);
             } else {
                 triples.getLeft().addAll(keyValueMap.keySet());
@@ -212,42 +184,27 @@ public class BatchManager {
             if (isStreamingVertices()) {
                 throw new IllegalStateException("streaming vertex is in progress, first flush or commit before streaming edges.");
             }
-            if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
-                throw new IllegalStateException("batch size is reached, first commit or flush and close the batch. Batch count = " + this.batchCount + " batch size is " + this.batchSize);
-            }
-            if (isBatchModeBatchStreaming() && this.batchCount == 0) {
-                this.batchedElements = new ArrayList<>();
+            if (isInStreamingModeWithLock() && this.batchCount == 0) {
                 //lock the table,
                 this.sqlDialect.lockTable(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
-                //set the sequence cache
-                this.sequenceName = this.sqlDialect.sequenceName(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
                 this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
+            }
+            if (isInStreamingModeWithLock()) {
                 sqlgEdge.setInternalPrimaryKey(RecordId.from(outSchemaTable, ++this.batchIndex));
             }
-            if (isBatchModeBatchStreaming() && this.batchCount > 0) {
-                sqlgEdge.setInternalPrimaryKey(RecordId.from(outSchemaTable, ++this.batchIndex));
-                this.batchedElements.add(sqlgEdge);
-            }
-            OutputStream out = this.streamingEdgeCache.get(outSchemaTable);
+            OutputStream out = this.streamingEdgeOutputStreamCache.get(outSchemaTable);
             if (out == null) {
                 String sql = this.sqlDialect.constructCompleteCopyCommandSqlEdge(sqlgGraph, sqlgEdge, outVertex, inVertex, keyValueMap);
                 out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
-                this.streamingEdgeCache.put(outSchemaTable, out);
+                this.streamingEdgeOutputStreamCache.put(outSchemaTable, out);
             }
             try {
-                this.sqlDialect.flushCompleteEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
-                if (isBatchModeBatchStreaming()) {
+                this.sqlDialect.writeCompleteEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
+                if (isInStreamingModeWithLock()) {
                     this.batchCount++;
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            }
-            if (isBatchModeBatchStreaming() && this.batchCount == this.batchSize) {
-                this.flush();
-                if (this.batchCallback != null) {
-                    this.batchCallback.callBack(this.batchedElements);
-                    this.batchedElements.clear();
-                }
             }
         }
     }
@@ -265,25 +222,25 @@ public class BatchManager {
     }
 
     public void close() {
-        this.streamingVertexCache.values().forEach(o -> {
+        this.streamingVertexOutputStreamCache.values().forEach(o -> {
             try {
                 o.close();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
-        this.streamingVertexCache.clear();
-        this.streamingEdgeCache.values().forEach(o -> {
+        this.streamingVertexOutputStreamCache.clear();
+        this.streamingEdgeOutputStreamCache.values().forEach(o -> {
             try {
                 o.close();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
-        if (isBatchModeBatchStreaming()) {
+        if (isInStreamingModeWithLock()) {
             this.batchCount = 0;
         }
-        this.streamingEdgeCache.clear();
+        this.streamingEdgeOutputStreamCache.clear();
         this.streamingBatchModeVertexSchemaTable = null;
         if (this.streamingBatchModeVertexKeys != null)
             this.streamingBatchModeVertexKeys.clear();
@@ -524,7 +481,7 @@ public class BatchManager {
         return streamingBatchModeEdgeSchemaTable;
     }
 
-    public ArrayList<String> getStreamingBatchModeEdgeKeys() {
+    public List<String> getStreamingBatchModeEdgeKeys() {
         return streamingBatchModeEdgeKeys;
     }
 
@@ -533,10 +490,10 @@ public class BatchManager {
     }
 
     public boolean isStreamingVertices() {
-        return !this.streamingVertexCache.isEmpty();
+        return !this.streamingVertexOutputStreamCache.isEmpty();
     }
 
     public boolean isStreamingEdges() {
-        return !this.streamingEdgeCache.isEmpty();
+        return !this.streamingEdgeOutputStreamCache.isEmpty();
     }
 }
