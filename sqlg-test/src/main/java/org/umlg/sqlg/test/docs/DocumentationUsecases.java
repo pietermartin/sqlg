@@ -11,6 +11,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.shaded.jackson.databind.deser.std.StringArrayDeserializer;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -34,6 +36,7 @@ import static org.junit.Assert.assertTrue;
  * Created by pieter on 2015/11/27.
  */
 public class DocumentationUsecases extends BaseTest {
+
 
 //    @Test
 //    public void schemaDoc() {
@@ -231,6 +234,7 @@ public class DocumentationUsecases extends BaseTest {
 //
 //    @Test
 //    public void showNormalBatchMode() {
+//        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
 //        this.sqlgGraph.tx().normalBatchModeOn();
@@ -251,6 +255,7 @@ public class DocumentationUsecases extends BaseTest {
 //
 //    @Test
 //    public void showStreamingBatchMode() {
+//        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
 //        //enable streaming mode
@@ -270,6 +275,7 @@ public class DocumentationUsecases extends BaseTest {
 //
 //    @Test
 //    public void showBulkEdgeCreation() {
+//        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
 //        int count = 0;
@@ -294,6 +300,7 @@ public class DocumentationUsecases extends BaseTest {
 //
 //    @Test
 //    public void showStreamingWithLockBatchMode() {
+//        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 //        StopWatch stopWatch = new StopWatch();
 //        stopWatch.start();
 //        //enable streaming mode
@@ -313,6 +320,8 @@ public class DocumentationUsecases extends BaseTest {
 //
     @Test
     public void showStreamingWithLockBulkEdgeCreation() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         int count = 0;
