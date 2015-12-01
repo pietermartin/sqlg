@@ -4,6 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.*;
+import org.umlg.sqlg.test.docs.DocumentationUsecases;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
@@ -102,7 +103,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRepeatStepGraphBoth.class,
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
-        TestGremlinMod.class
+        TestGremlinMod.class,
+        DocumentationUsecases.class
 })
 public class AllTest {
 }

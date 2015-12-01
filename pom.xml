@@ -88,8 +88,10 @@
                         <include>**/PostgresAllTest.java</include>
                     </includes>
                     <argLine>-Xmx2048m</argLine>
+                    <!--<argLine>-Xmx1024m</argLine>-->
                     <!--<argLine>-Xmx128m</argLine>-->
                     <!--<argLine>-Xmx8192m</argLine>-->
+                    <!--<argLine>-Xmx12288m</argLine>-->
                 </configuration>
             </plugin>
             <plugin>
@@ -152,21 +154,25 @@
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
                 <version>3.1.0-incubating</version>
+                <!--<version>3.1.1-SNAPSHOT</version>-->
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-groovy</artifactId>
                 <version>3.1.0-incubating</version>
+                <!--<version>3.1.1-SNAPSHOT</version>-->
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
                 <version>3.1.0-incubating</version>
+                <!--<version>3.1.1-SNAPSHOT</version>-->
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-groovy-test</artifactId>
                 <version>3.1.0-incubating</version>
+                <!--<version>3.1.1-SNAPSHOT</version>-->
             </dependency>
 
             <dependency>

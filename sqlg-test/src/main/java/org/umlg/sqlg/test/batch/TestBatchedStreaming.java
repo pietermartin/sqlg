@@ -32,7 +32,7 @@ public class TestBatchedStreaming extends BaseTest {
         stopWatch.start();
         LinkedHashMap properties = new LinkedHashMap();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
-        List<Pair<SqlgVertex, SqlgVertex>> uids = new ArrayList<>();
+        List<Pair<Vertex, Vertex>> uids = new ArrayList<>();
         String uuidCache1 = null;
         String uuidCache2 = null;
         for (int i = 1; i <= 1000; i++) {
@@ -43,15 +43,15 @@ public class TestBatchedStreaming extends BaseTest {
                 uuidCache2 = uuid2;
             }
             properties.put("id", uuid1);
-            SqlgVertex v1 = this.sqlgGraph.streamVertexWithLock("Person", properties);
+            Vertex v1 = this.sqlgGraph.addVertex("Person", properties);
             properties.put("id", uuid2);
-            SqlgVertex v2 = this.sqlgGraph.streamVertexWithLock("Person", properties);
+            Vertex v2 = this.sqlgGraph.addVertex("Person", properties);
             uids.add(Pair.of(v1, v2));
             if (i % (BATCH_SIZE / 2) == 0) {
                 this.sqlgGraph.tx().flush();
                 this.sqlgGraph.tx().streamingWithLockBatchModeOn();
-                for (Pair<SqlgVertex, SqlgVertex> uid : uids) {
-                    uid.getLeft().streamEdgeWithLock("friend", uid.getRight());
+                for (Pair<Vertex, Vertex> uid : uids) {
+                    uid.getLeft().addEdge("friend", uid.getRight());
                 }
                 //This is needed because the number of edges are less than the batch size so it will not be auto flushed
                 this.sqlgGraph.tx().flush();
@@ -87,7 +87,7 @@ public class TestBatchedStreaming extends BaseTest {
         stopWatch.start();
         LinkedHashMap properties = new LinkedHashMap();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
-        List<Pair<SqlgVertex, SqlgVertex>> uids = new ArrayList<>();
+        List<Pair<Vertex, Vertex>> uids = new ArrayList<>();
         String uuidCache1 = null;
         String uuidCache2 = null;
         for (int i = 1; i <= 1000; i++) {
@@ -98,14 +98,14 @@ public class TestBatchedStreaming extends BaseTest {
                 uuidCache2 = uuid2;
             }
             properties.put("id", uuid1);
-            SqlgVertex v1 = this.sqlgGraph.streamVertexWithLock("A.Person", properties);
+            Vertex v1 = this.sqlgGraph.addVertex("A.Person", properties);
             properties.put("id", uuid2);
-            SqlgVertex v2 = this.sqlgGraph.streamVertexWithLock("A.Person", properties);
+            Vertex v2 = this.sqlgGraph.addVertex("A.Person", properties);
             uids.add(Pair.of(v1, v2));
             if (i % (BATCH_SIZE / 2) == 0) {
                 this.sqlgGraph.tx().flush();
-                for (Pair<SqlgVertex, SqlgVertex> uid : uids) {
-                    uid.getLeft().streamEdgeWithLock("friend", uid.getRight());
+                for (Pair<Vertex, Vertex> uid : uids) {
+                    uid.getLeft().addEdge("friend", uid.getRight());
                 }
                 //This is needed because the number of edges are less than the batch size so it will not be auto flushed
                 this.sqlgGraph.tx().flush();
@@ -136,20 +136,20 @@ public class TestBatchedStreaming extends BaseTest {
     @Test
     public void testStreamingWithBatchSizeWithCallBack() {
         LinkedHashMap properties = new LinkedHashMap();
-        List<SqlgVertex> persons = new ArrayList<>();
+        List<Vertex> persons = new ArrayList<>();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         for (int i = 1; i <= 10; i++) {
             String uuid1 = UUID.randomUUID().toString();
             properties.put("id", uuid1);
-            persons.add(this.sqlgGraph.streamVertexWithLock("Person", properties));
+            persons.add(this.sqlgGraph.addVertex("Person", properties));
         }
         this.sqlgGraph.tx().flush();
-        SqlgVertex previous = null;
-        for (SqlgVertex person : persons) {
+        Vertex previous = null;
+        for (Vertex person : persons) {
             if (previous == null) {
                 previous = person;
             } else {
-                previous.streamEdgeWithLock("friend", person);
+                previous.addEdge("friend", person);
             }
         }
         this.sqlgGraph.tx().commit();
@@ -176,7 +176,7 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
         for (int i = 1; i <= 100; i++) {
-            SqlgVertex v = this.sqlgGraph.streamVertexWithLock("Person", new LinkedHashMap<>());
+            Vertex v = this.sqlgGraph.addVertex("Person", new LinkedHashMap<>());
         }
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();

@@ -57,7 +57,7 @@ public class ServerSideBulkEdgeCreation extends BaseBenchmark {
         for (String leftUid : leftUids) {
             leftRight.add(Pair.of(leftUid, rightUids.get(count++)));
         }
-        this.sqlgGraph.bulkAddEdges(a, b, "AB", Pair.of("uid", "uid"), leftRight);
+        this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("uid", "uid"), leftRight);
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());

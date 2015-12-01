@@ -38,9 +38,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        SchemaTable a = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A");
-        SchemaTable b = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B");
-        this.sqlgGraph.bulkAddEdges(a, b, "AB", Pair.of("index", "index"), uids);
+        this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("index", "index"), uids);
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
@@ -62,9 +60,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        SchemaTable a = SchemaTable.of("A", "A");
-        SchemaTable b = SchemaTable.of("B", "B");
-        this.sqlgGraph.bulkAddEdges(a, b, "AB", Pair.of("index", "index"), uids);
+        this.sqlgGraph.bulkAddEdges("A.A", "B.B", "AB", Pair.of("index", "index"), uids);
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A.A").count().next(), 0);
@@ -103,7 +99,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
 
         this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
-        this.sqlgGraph.bulkAddEdges(person, person, "friend", Pair.of("id", "id"), uids);
+        this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
@@ -137,7 +133,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();
         SchemaTable person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
-        this.sqlgGraph.bulkAddEdges(person, person, "friend", Pair.of("id", "id"), uids);
+        this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
 
         //and again
@@ -155,7 +151,7 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();
         person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
-        this.sqlgGraph.bulkAddEdges(person, person, "friend", Pair.of("id", "id"), uids);
+        this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
 
     }

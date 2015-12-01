@@ -66,25 +66,25 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return addEdge(label, inVertex, parameters);
     }
 
-    public void streamEdgeWithLock(String label, Vertex inVertex) {
-        this.streamEdgeWithLock(label, inVertex, new LinkedHashMap<>());
-    }
-
-    public void streamEdgeWithLock(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
-        if (!sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for streamEdgeWithLock");
-        }
-        if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
-            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flush()");
-        }
-        SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
-        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
-            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
-        }
-        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
-        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
-        addEdgeInternal(true, label, inVertex, keyValues1);
-    }
+//    public void streamEdgeWithLock(String label, Vertex inVertex) {
+//        this.streamEdgeWithLock(label, inVertex, new LinkedHashMap<>());
+//    }
+//
+//    public void streamEdgeWithLock(String label, Vertex inVertex, LinkedHashMap<String, Object> keyValues) {
+//        if (!sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+//            throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for streamEdgeWithLock");
+//        }
+//        if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable() != null) {
+//            throw new IllegalStateException("Streaming vertex for label " + this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable().getTable() + " is in progress. Commit the transaction or call SqlgGraph.flush()");
+//        }
+//        SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
+//        if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
+//            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
+//        }
+//        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
+//        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+//        addEdgeInternal(true, label, inVertex, keyValues1);
+//    }
 
     public void streamEdge(String label, Vertex inVertex) {
         this.streamEdge(label, inVertex, new LinkedHashMap<>());
@@ -109,13 +109,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
         this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().isInStreamingBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction is in " + this.sqlgGraph.tx().getBatchModeType().toString() + ", use streamEdge(Object ... keyValues)");
+        boolean streaming = this.sqlgGraph.tx().isInStreamingBatchMode() || this.sqlgGraph.tx().isInStreamingWithLockBatchMode();
+        if (streaming) {
+            SchemaTable streamingBatchModeEdgeLabel = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeSchemaTable();
+            if (streamingBatchModeEdgeLabel != null && !streamingBatchModeEdgeLabel.getTable().substring(SchemaManager.EDGE_PREFIX.length()).equals(label)) {
+                throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeEdgeLabel + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
+            }
         }
-        if (this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction is in " + this.sqlgGraph.tx().getBatchModeType().toString() + ", use streamEdgeWithLock(Object ... keyValues)");
-        }
-        return addEdgeInternal(false, label, inVertex, keyValues);
+        return addEdgeInternal(streaming, label, inVertex, keyValues);
     }
 
     private Edge addEdgeInternal(boolean complete, String label, Vertex inVertex, Object... keyValues) {
