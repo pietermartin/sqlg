@@ -13,7 +13,7 @@
     <groupId>org.umlg</groupId>
     <artifactId>sqlg</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.0.RC1</version>
+    <version>1.1.1-SNAPSHOT</version>
     <name>sqlg</name>
     <description>Sqlg is a tinkerpop 3 implementation on top of a rdbms.
     </description>
@@ -31,7 +31,7 @@
         <url>git@github.com:pietermartin/sqlg.git</url>
     </scm>
     <properties>
-        <sqlg.version>1.1.0.RC1</sqlg.version>
+        <sqlg.version>1.1.1-SNAPSHOT</sqlg.version>
         <tinkerpop.version>3.1.0-incubating</tinkerpop.version>
     </properties>
     <developers>
