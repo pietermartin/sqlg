@@ -13,7 +13,7 @@
     <groupId>org.umlg</groupId>
     <artifactId>sqlg</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.0-SNAPSHOT</version>
+    <version>1.1.0.RC1</version>
     <name>sqlg</name>
     <description>Sqlg is a tinkerpop 3 implementation on top of a rdbms.
     </description>
@@ -30,6 +30,10 @@
         <developerConnection>scm:git:git@github.com:pietermartin/sqlg.git</developerConnection>
         <url>git@github.com:pietermartin/sqlg.git</url>
     </scm>
+    <properties>
+        <sqlg.version>1.1.0.RC1</sqlg.version>
+        <tinkerpop.version>3.1.0-incubating</tinkerpop.version>
+    </properties>
     <developers>
         <developer>
             <name>Pieter Martin</name>
@@ -153,37 +157,33 @@
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
-                <version>3.1.0-incubating</version>
-                <!--<version>3.1.1-SNAPSHOT</version>-->
+                <version>${tinkerpop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-groovy</artifactId>
-                <version>3.1.0-incubating</version>
-                <!--<version>3.1.1-SNAPSHOT</version>-->
+                <version>${tinkerpop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-test</artifactId>
-                <version>3.1.0-incubating</version>
-                <!--<version>3.1.1-SNAPSHOT</version>-->
+                <version>${tinkerpop.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-groovy-test</artifactId>
-                <version>3.1.0-incubating</version>
-                <!--<version>3.1.1-SNAPSHOT</version>-->
+                <version>${tinkerpop.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-core</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-postgres</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>net.postgis</groupId>
@@ -199,17 +199,17 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-hsqldb</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-test</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-benchmark</artifactId>
-                <version>1.1.0-SNAPSHOT</version>
+                <version>${sqlg.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
