@@ -12,8 +12,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
-import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
@@ -51,7 +51,6 @@ public class ReplacedStep<S, E> {
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
-        replacedStep.filteredAllTables = SqlgUtil.filterHasContainers(schemaManager, replacedStep.hasContainers);
         return replacedStep;
     }
 
@@ -94,7 +93,6 @@ public class ReplacedStep<S, E> {
 
     private Set<SchemaTableTree> appendPathForEdgeOtherVertexStep(SchemaTableTree schemaTableTree) {
         Preconditions.checkArgument(schemaTableTree.getDirection() != Direction.BOTH, "ReplacedStep.appendPathForEdgeOtherVertexStep schemaTableTree may not have direction BOTH");
-        EdgeOtherVertexStep edgeOtherVertexStep = (EdgeOtherVertexStep) this.step;
         return calculatePathFromEdgeToVertex(schemaTableTree, schemaTableTree.getSchemaTable(), (schemaTableTree.getDirection() == Direction.IN ? Direction.OUT : Direction.IN));
     }
 
@@ -336,12 +334,17 @@ public class ReplacedStep<S, E> {
     /**
      * Calculates the root labels from which to start the query construction.
      *
+     * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
+     * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
+     *
      * @param sqlgGraph The graph.
      * @return A set of SchemaTableTree. A SchemaTableTree for each root label.
      */
     Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
+
+        this.filteredAllTables = SqlgUtil.filterHasContainers(this.schemaManager, this.hasContainers);
 
         //This list is reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();
@@ -442,6 +445,8 @@ public class ReplacedStep<S, E> {
             }
         }
         this.hasContainers.removeAll(toRemove);
+        SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
+
         return result;
     }
 
@@ -507,5 +512,30 @@ public class ReplacedStep<S, E> {
 
     public int getDepth() {
         return depth;
+    }
+
+    /**
+     * @param hasContainers The hasContainers for this step. Copied from the original step.
+     */
+    public void addHasContainers(List<HasContainer> hasContainers) {
+        this.hasContainers.addAll(hasContainers);
+    }
+
+    /**
+     * This is invoked from the SqlgGraphStrategy and SqlgVertexStrategy, just after having set the hasContainers by calling {@link #addHasContainers(List)}
+     * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
+     * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
+     */
+    public void calculateFilteredAllTables() {
+        this.filteredAllTables = SqlgUtil.filterHasContainers(this.schemaManager, this.hasContainers);
+        //remove the TopologyStrategy hasContainer
+        Optional<HasContainer> fromHascontainer = this.hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
+        Optional<HasContainer> withoutHascontainer = this.hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
+        if (fromHascontainer.isPresent()) {
+            this.hasContainers.remove(fromHascontainer.get());
+        }
+        if (withoutHascontainer.isPresent()) {
+            this.hasContainers.remove(withoutHascontainer.get());
+        }
     }
 }

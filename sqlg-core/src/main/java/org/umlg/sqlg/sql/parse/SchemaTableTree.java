@@ -84,13 +84,6 @@ public class SchemaTableTree {
         }
     };
 
-    public void leafNodeIsEmpty() {
-        this.leadNodeIsEmpty = true;
-    }
-
-    public boolean isLeafNodeIsEmpty() {
-        return leadNodeIsEmpty;
-    }
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -105,11 +98,14 @@ public class SchemaTableTree {
         this.hasContainers = new ArrayList<>();
         this.comparators = new ArrayList<>();
         this.labels = new HashSet<>();
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
     }
 
     /**
      * This constructor is called for the root SchemaTableTree(s)
+     *
+     * This is invoked from {@link ReplacedStep} when creating the root {@link SchemaTableTree}s.
+     * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
+     * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      *
      * @param sqlgGraph
      * @param schemaTable
@@ -141,12 +137,10 @@ public class SchemaTableTree {
         this.emitFirst = emitFirst;
         this.vertexGraphStep = vertexGraphStep;
         this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
+        SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
         initializeAliasColumnNameMaps();
     }
 
-    public void initializeAliasColumnNameMaps() {
-        this.aliasMapHolder = new AliasMapHolder();
-    }
 
     public SchemaTableTree addChild(
             SchemaTable schemaTable,
@@ -219,8 +213,20 @@ public class SchemaTableTree {
         return schemaTableTree;
     }
 
-    public boolean isVertexGraphStep() {
-        return vertexGraphStep;
+    public Map<String, Map<String, PropertyType>> getFilteredAllTables() {
+        return getRoot().filteredAllTables;
+    }
+
+    public void initializeAliasColumnNameMaps() {
+        this.aliasMapHolder = new AliasMapHolder();
+    }
+
+    public void leafNodeIsEmpty() {
+        this.leadNodeIsEmpty = true;
+    }
+
+    public boolean isLeafNodeIsEmpty() {
+        return leadNodeIsEmpty;
     }
 
     public Multimap<String, String> getThreadLocalColumnNameAliasMap() {
@@ -476,7 +482,7 @@ public class SchemaTableTree {
 
     private String printOuterFromClause(int count) {
         String sql = "a" + count + ".\"" + this.lastMappedAliasId() + "\"";
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.toString());
+        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.toString());
         if (propertyTypeMap.size() > 0) {
             sql += ", ";
         }
@@ -1043,11 +1049,11 @@ public class SchemaTableTree {
             if (!printedId) {
                 sql = printIDFromClauseFor(sqlgGraph, lastSchemaTableTree, sql);
             }
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+            Map<String, PropertyType> propertyTypeMap = firstSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
             if (!propertyTypeMap.isEmpty()) {
                 sql += ",\n\t";
             }
-            sql = printFromClauseFor(sqlgGraph, lastSchemaTableTree, sql, printedId);
+            sql = printFromClauseFor(sqlgGraph, lastSchemaTableTree, sql);
 
             if (lastSchemaTableTree.getSchemaTable().isEdgeTable()) {
                 sql += ", ";
@@ -1065,7 +1071,7 @@ public class SchemaTableTree {
 
     private String printLabeledOuterFromClause(String sql, int counter, Multimap<String, String> columnNameAliasMapCopy) {
         sql += " a" + counter + ".\"" + this.labeledMappedAliasId(columnNameAliasMapCopy) + "\"";
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
+        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
         if (!propertyTypeMap.isEmpty()) {
             sql += ", ";
         }
@@ -1073,20 +1079,6 @@ public class SchemaTableTree {
         if (this.getSchemaTable().isEdgeTable()) {
             sql += ", ";
             sql = printLabeledEdgeInOutVertexIdOuterFromClauseFor(sql, counter, columnNameAliasMapCopy);
-        }
-        return sql;
-    }
-
-    private String printLabeledFromClause(String sql) {
-        sql = printLabeledIDFromClauseFor(sqlgGraph, this, sql);
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
-        if (!propertyTypeMap.isEmpty()) {
-            sql += ", ";
-        }
-        sql = printLabeledFromClauseFor(sqlgGraph, this, sql);
-        if (this.getSchemaTable().isEdgeTable()) {
-            sql += ", ";
-            sql = printLabeledEdgeInOutVertexIdFromClauseFor(sql);
         }
         return sql;
     }
@@ -1100,7 +1092,7 @@ public class SchemaTableTree {
         int count = 1;
         for (SchemaTableTree schemaTableTree : labeled) {
             sql = printLabeledIDFromClauseFor(sqlgGraph, schemaTableTree, sql);
-            propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString());
+            propertyTypeMap = firstSchemaTableTree.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString());
             if (!propertyTypeMap.isEmpty()) {
                 sql += ",\n\t ";
             }
@@ -1181,8 +1173,8 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String printFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql, boolean printedId) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+    private static String printFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql) {
+        Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
         finalFromSchemaTableName += ".";
         finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
@@ -1206,7 +1198,7 @@ public class SchemaTableTree {
 
 
     private String printLabeledOuterFromClauseFor(String sql, int counter, Multimap<String, String> columnNameAliasMapCopy) {
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(this.getSchemaTable().toString());
+        Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
         int count = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
             sql += " a" + counter + ".";
@@ -1231,7 +1223,7 @@ public class SchemaTableTree {
     }
 
     private static String printLabeledFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
+        Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
         finalFromSchemaTableName += ".";
         finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
@@ -1650,7 +1642,9 @@ public class SchemaTableTree {
 
     private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
-            if (hasContainer.getKey().equals(T.label.getAccessor())) {
+            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) || hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
+                continue;
+            } else if (hasContainer.getKey().equals(T.label.getAccessor())) {
                 //Check if we are on a vertex or edge
                 SchemaTable hasContainerLabelSchemaTable;
                 if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
@@ -1663,9 +1657,7 @@ public class SchemaTableTree {
                 }
             } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
                 //check if the hasContainer is for a property that exists, if not remove this node from the query tree
-                Map<String, Map<String, PropertyType>>  filteredHasContainer = SqlgUtil.filterHasContainers(this.sqlgGraph.getSchemaManager(), this.hasContainers);
-                if (!filteredHasContainer.get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
-//                if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
+                if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                     return true;
                 }
                 //Check if it is a Contains.within with a empty list of values

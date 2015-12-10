@@ -6,14 +6,11 @@ import com.hazelcast.map.listener.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -314,7 +311,7 @@ public class SchemaManager {
                         this.uncommittedSchemas.add(schema);
                         createSchema(schema);
                         if (!SQLG_SCHEMA.equals(schema)) {
-                            MetaSchemaManager.addSchema(this.sqlgGraph, schema);
+                            TopologyManager.addSchema(this.sqlgGraph, schema);
                         }
                     }
                 }
@@ -328,7 +325,7 @@ public class SchemaManager {
                 this.uncommittedTables.put(schema + "." + prefixedTable, columns);
 
                 if (!SQLG_SCHEMA.equals(schema)) {
-                    MetaSchemaManager.addVertexLabel(this.sqlgGraph, schema, prefixedTable, columns);
+                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, prefixedTable, columns);
                 }
                 createVertexTable(schema, prefixedTable, columns);
             }
@@ -1041,7 +1038,7 @@ public class SchemaManager {
 
     private void deleteDummyDataInSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Arrays.asList(SQLG_SCHEMA_VERTEX_IN_EDGES, SQLG_SCHEMA_VERTEX_OUT_EDGES, SQLG_SCHEMA_VERTEX_PROPERTIES, SQLG_SCHEMA_EDGE_PROPERTIES)
+        Arrays.asList(SQLG_SCHEMA_VERTEX_IN_EDGES, SQLG_SCHEMA_VERTEX_OUT_EDGES, SQLG_SCHEMA_VERTEX_PROPERTIES, SQLG_SCHEMA_EDGE_PROPERTIES, SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                 .forEach(table -> {
                     try {
                         try (Statement st = conn.createStatement()) {
@@ -1071,7 +1068,6 @@ public class SchemaManager {
     }
 
     private void createSqlgSchema() {
-//        GraphTraversalSource graph = GraphTraversalSource.build().with(TopologyStrategy.build().create()).create(this.sqlgGraph);
         Vertex schema = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA, "name", "deleteMe", "createOn", LocalDateTime.now());
         Vertex vertex = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL, "name", "deleteMe", "createOn", LocalDateTime.now());
         Vertex edge = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL, "name", "deleteMe", "createOn", LocalDateTime.now());

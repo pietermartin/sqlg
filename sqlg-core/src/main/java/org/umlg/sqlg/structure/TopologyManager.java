@@ -7,12 +7,13 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
  * Created by pieter on 2015/12/08.
  */
-public class MetaSchemaManager {
+public class TopologyManager {
 
     static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
         GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(sqlgGraph);
@@ -21,7 +22,8 @@ public class MetaSchemaManager {
         Vertex schemaVertex = gt.next();
         Vertex vertex = sqlgGraph.addVertex(
                 T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL,
-                "name", tableName
+                "name", tableName,
+                "createdOn", LocalDateTime.now()
         );
         schemaVertex.addEdge(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
     }
@@ -29,7 +31,8 @@ public class MetaSchemaManager {
     static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
         return sqlgGraph.addVertex(
                 T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA,
-                "name", schema
+                "name", schema,
+                "createdOn", LocalDateTime.now()
         );
     }
 }

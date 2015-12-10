@@ -516,4 +516,16 @@ public class SqlgUtil {
         return filteredAllTables;
     }
 
+    public static void removeTopologyStrategyHasContainer(List<HasContainer> hasContainers) {
+        //remove the TopologyStrategy hasContainer
+        Optional<HasContainer> fromHascontainer = hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
+        Optional<HasContainer> withoutHascontainer = hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
+        if (fromHascontainer.isPresent()) {
+            hasContainers.remove(fromHascontainer.get());
+        }
+        if (withoutHascontainer.isPresent()) {
+            hasContainers.remove(withoutHascontainer.get());
+        }
+    }
+
 }

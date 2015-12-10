@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
@@ -153,7 +154,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
                 iterator.remove();
                 traversal.removeStep(currentStep);
-                replacedStep.getHasContainers().addAll(((HasContainerHolder) currentStep).getHasContainers());
+                replacedStep.addHasContainers(((HasContainerHolder) currentStep).getHasContainers());
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {
