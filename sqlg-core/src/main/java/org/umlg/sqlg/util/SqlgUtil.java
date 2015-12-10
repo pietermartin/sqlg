@@ -13,6 +13,7 @@ import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
 import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
 
 import java.lang.reflect.Array;
@@ -487,6 +488,32 @@ public class SqlgUtil {
         } else {
             return foreignKey;
         }
+    }
+
+    public static Map<String, Map<String, PropertyType>> filterHasContainers(SchemaManager schemaManager, List<HasContainer> hasContainers) {
+        HasContainer fromHasContainer = null;
+        HasContainer withoutHasContainer = null;
+
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
+                fromHasContainer = hasContainer;
+                break;
+            } else if (hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)) {
+                withoutHasContainer = hasContainer;
+                break;
+            }
+        }
+
+        //from and without are mutually exclusive, only one will ever be set.
+        Map<String, Map<String, PropertyType>> filteredAllTables;
+        if (fromHasContainer != null) {
+            filteredAllTables = schemaManager.getAllTablesFrom((List<String>)fromHasContainer.getPredicate().getValue());
+        } else if (withoutHasContainer != null) {
+            filteredAllTables = schemaManager.getAllTablesWithout((List<String>)withoutHasContainer.getPredicate().getValue());
+        } else {
+            filteredAllTables = schemaManager.getAllTables();
+        }
+        return filteredAllTables;
     }
 
 }

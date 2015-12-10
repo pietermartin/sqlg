@@ -16,6 +16,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
+import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -66,6 +67,9 @@ public class SchemaTableTree {
     //This counter is used for the within predicate when aliasing the temporary table
     private int tmpTableAliasCounter = 1;
 
+    //This represents all tables filtered by TopologyStrategy
+    private Map<String, Map<String, PropertyType>>  filteredAllTables;
+
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
     public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
@@ -101,6 +105,7 @@ public class SchemaTableTree {
         this.hasContainers = new ArrayList<>();
         this.comparators = new ArrayList<>();
         this.labels = new HashSet<>();
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
     }
 
     /**
@@ -135,6 +140,7 @@ public class SchemaTableTree {
         this.untilFirst = untilFirst;
         this.emitFirst = emitFirst;
         this.vertexGraphStep = vertexGraphStep;
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
         initializeAliasColumnNameMaps();
     }
 
@@ -1657,7 +1663,9 @@ public class SchemaTableTree {
                 }
             } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
                 //check if the hasContainer is for a property that exists, if not remove this node from the query tree
-                if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
+                Map<String, Map<String, PropertyType>>  filteredHasContainer = SqlgUtil.filterHasContainers(this.sqlgGraph.getSchemaManager(), this.hasContainers);
+                if (!filteredHasContainer.get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
+//                if (!this.sqlgGraph.getSchemaManager().getAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                     return true;
                 }
                 //Check if it is a Contains.within with a empty list of values
@@ -1836,6 +1844,7 @@ public class SchemaTableTree {
         });
         return result;
     }
+
 
     public Set<String> getLabels() {
         return labels;

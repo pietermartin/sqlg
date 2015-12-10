@@ -37,6 +37,12 @@ public class ReplacedStep<S, E> {
     private boolean emitFirst;
     //This is indicate whether a where clause is needed in the sql
     private boolean isVertexGraphStep = false;
+    //This represents all tables filtered by TopologyStrategy
+    private Map<String, Map<String, PropertyType>>  filteredAllTables;
+
+    private ReplacedStep() {
+
+    }
 
     public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
@@ -45,6 +51,7 @@ public class ReplacedStep<S, E> {
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
+        replacedStep.filteredAllTables = SqlgUtil.filterHasContainers(schemaManager, replacedStep.hasContainers);
         return replacedStep;
     }
 
@@ -374,21 +381,9 @@ public class ReplacedStep<S, E> {
         List<HasContainer> hasContainersWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
         List<HasContainer> hasContainersWithLabel = this.hasContainers.stream().filter(h -> h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
 
-        Optional<HasContainer> topologySelectionFrom = hasContainersWithoutLabel.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
-        Optional<HasContainer> topologySelectionWithout = hasContainersWithoutLabel.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
-        //from and without are mutually exclusive, only one will ever be set.
-        Map<String, Map<String, PropertyType>> filteredAllTables;
-        if (topologySelectionFrom.isPresent()) {
-            filteredAllTables = sqlgGraph.getSchemaManager().getAllTablesFrom((List<String>)topologySelectionFrom.get().getPredicate().getValue());
-        } else if (topologySelectionWithout.isPresent()) {
-            filteredAllTables = sqlgGraph.getSchemaManager().getAllTablesWithout((List<String>)topologySelectionWithout.get().getPredicate().getValue());
-        } else {
-            filteredAllTables = sqlgGraph.getSchemaManager().getAllTables();
-        }
-
         if (hasContainersWithLabel.isEmpty()) {
             //this means all vertices or edges except for as filtered by the TopologyStrategy
-            filteredAllTables.forEach((t, p) -> {
+            this.filteredAllTables.forEach((t, p) -> {
                 if ((graphStep.getReturnClass().isAssignableFrom(Vertex.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
                         (graphStep.getReturnClass().isAssignableFrom(Edge.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
 
@@ -419,7 +414,7 @@ public class ReplacedStep<S, E> {
                 String table = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
                 SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
 
-                if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
+                if (this.filteredAllTables.containsKey(schemaTableForLabel.toString())) {
 
                     List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
                     if (groupedIds != null) {
