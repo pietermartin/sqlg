@@ -486,12 +486,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {
-        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         int i = 1;
+        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTablesWithout(Collections.emptyList()).get(getSchemaTablePrefixed().toString());
         if (!keyValueMap.isEmpty()) {
             Preconditions.checkState(!columnPropertyTypeMap.isEmpty(), getSchemaTablePrefixed().toString() + " not found in SchemaManager's allTables map!");
             sql.append(" ( ");

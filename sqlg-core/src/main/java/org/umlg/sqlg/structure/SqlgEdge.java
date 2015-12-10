@@ -142,13 +142,13 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
-        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
         sql.append(" (");
         int i = 1;
+        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
         for (String column : keyValueMap.keySet()) {
             PropertyType propertyType = columnPropertyTypeMap.get(column);
             String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);

@@ -11,10 +11,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
-import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
@@ -330,7 +329,7 @@ public class ReplacedStep<S, E> {
     /**
      * Calculates the root labels from which to start the query construction.
      *
-     * @param sqlgGraph
+     * @param sqlgGraph The graph.
      * @return A set of SchemaTableTree. A SchemaTableTree for each root label.
      */
     Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
@@ -351,7 +350,7 @@ public class ReplacedStep<S, E> {
 
                 //if the label is already in the hasContainers do not add it again.
                 boolean containsLabel = false;
-                for (HasContainer hasContainer : hasContainers) {
+                for (HasContainer hasContainer : this.hasContainers) {
                     if (hasContainer.getKey().equals(T.label.getAccessor())) {
                         SchemaTable hasContainerSchemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, (String) hasContainer.getValue());
                         containsLabel = !hasContainer.getValue().equals(hasContainerSchemaTable.toString());
@@ -372,11 +371,24 @@ public class ReplacedStep<S, E> {
 
         Set<SchemaTableTree> result = new HashSet<>();
 
-        List<HasContainer> hasContainerWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
-        List<HasContainer> hasContainerWithLabel = this.hasContainers.stream().filter(h -> h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
-        if (hasContainerWithLabel.isEmpty()) {
-            //this means all vertices or edges
-            sqlgGraph.getSchemaManager().getAllTables().forEach((t, p) -> {
+        List<HasContainer> hasContainersWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
+        List<HasContainer> hasContainersWithLabel = this.hasContainers.stream().filter(h -> h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
+
+        Optional<HasContainer> topologySelectionFrom = hasContainersWithoutLabel.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
+        Optional<HasContainer> topologySelectionWithout = hasContainersWithoutLabel.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
+        //from and without are mutually exclusive, only one will ever be set.
+        Map<String, Map<String, PropertyType>> filteredAllTables;
+        if (topologySelectionFrom.isPresent()) {
+            filteredAllTables = sqlgGraph.getSchemaManager().getAllTablesFrom((List<String>)topologySelectionFrom.get().getPredicate().getValue());
+        } else if (topologySelectionWithout.isPresent()) {
+            filteredAllTables = sqlgGraph.getSchemaManager().getAllTablesWithout((List<String>)topologySelectionWithout.get().getPredicate().getValue());
+        } else {
+            filteredAllTables = sqlgGraph.getSchemaManager().getAllTables();
+        }
+
+        if (hasContainersWithLabel.isEmpty()) {
+            //this means all vertices or edges except for as filtered by the TopologyStrategy
+            filteredAllTables.forEach((t, p) -> {
                 if ((graphStep.getReturnClass().isAssignableFrom(Vertex.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
                         (graphStep.getReturnClass().isAssignableFrom(Edge.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
 
@@ -385,7 +397,7 @@ public class ReplacedStep<S, E> {
                             sqlgGraph,
                             schemaTable,
                             0,
-                            hasContainerWithoutLabel,
+                            hasContainersWithoutLabel,
                             this.comparators,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
@@ -400,14 +412,16 @@ public class ReplacedStep<S, E> {
                 }
             });
         } else {
-            for (HasContainer h : hasContainerWithLabel) {
+
+            for (HasContainer h : hasContainersWithLabel) {
                 //check if the table exist
                 SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, (String) h.getValue());
                 String table = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
                 SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
-                if (sqlgGraph.getSchemaManager().getAllTables().containsKey(schemaTableForLabel.toString())) {
 
-                    List<HasContainer> hasContainers = new ArrayList<>(hasContainerWithoutLabel);
+                if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
+
+                    List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
                     if (groupedIds != null) {
                         List<Long> ids = groupedIds.get(schemaTable);
                         HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));

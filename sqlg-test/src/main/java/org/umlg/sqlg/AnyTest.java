@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.docs.DocumentationUsecases;
 import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
+import org.umlg.sqlg.test.schema.TestSqlgSchema;
 
 /**
  * Date: 2014/07/16
@@ -12,7 +13,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWhere;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        DocumentationUsecases.class
+        TestSqlgSchema.class
         })
 public class AnyTest {
 }
