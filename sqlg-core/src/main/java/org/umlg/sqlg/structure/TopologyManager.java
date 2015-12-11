@@ -31,6 +31,7 @@ public class TopologyManager {
             Vertex property = sqlgGraph.addVertex(
                     T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_PROPERTY,
                     "name", columnEntry.getKey(),
+                    "type", columnEntry.getValue().name(),
                     "createdOn", LocalDateTime.now()
             );
             vertex.addEdge(SchemaManager.SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES, property);

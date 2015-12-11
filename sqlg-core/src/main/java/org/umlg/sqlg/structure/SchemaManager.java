@@ -6,14 +6,18 @@ import com.hazelcast.map.listener.*;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -945,6 +949,43 @@ public class SchemaManager {
             //add in the public schema
             addPublicSchema();
             this.sqlgGraph.tx().commit();
+        } else {
+
+            GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(this.sqlgGraph);
+            List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+            for (Vertex schema : schemas) {
+                String schemaName = schema.value("name");
+                this.localSchemas.put(schemaName, schemaName);
+
+                List<Vertex> vertexLabels = traversalSource.V(schema).out(SQLG_SCHEMA_EDGE_SCHEMA_VERTEX).toList();
+                for (Vertex vertexLabel : vertexLabels) {
+                    String tableName = vertexLabel.value("name");
+
+                    Set<String> schemaNames = null;
+                    if (!this.localTableLabels.containsKey(tableName)) {
+                        schemaNames = new HashSet<>();
+                    }
+                    schemaNames.add(tableName);
+                    this.localLabelSchemas.put(tableName, schemaNames);
+
+                    Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
+                    List<Vertex> properties = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES).toList();
+                    for (Vertex property : properties) {
+                        String propertyName = property.value("name");
+                        uncommittedColumns.put(propertyName, PropertyType.valueOf(property.value("type")));
+                    }
+                    this.localTables.put(schemaName + "." + tableName, uncommittedColumns);
+
+                    List<Vertex> outEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_EDGE_OUT_EDGES).toList();
+                    for (Vertex outEdge : outEdges) {
+                        this.localEdgeForeignKeys.put(schemaName + "." + tableName, foreignKeys);
+                    }
+                    List<Vertex> inEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_EDGE_IN_EDGES).toList();
+                    for (Vertex inEdge : inEdges) {
+                        this.localEdgeForeignKeys.put(schemaName + "." + tableName, foreignKeys);
+                    }
+                }
+            }
         }
 
         Connection conn = this.sqlgGraph.tx().getConnection();
@@ -1062,7 +1103,11 @@ public class SchemaManager {
     }
 
     private void addPublicSchema() {
-        this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA, "name", this.sqlDialect.getPublicSchema());
+        this.sqlgGraph.addVertex(
+                T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA,
+                "name", this.sqlDialect.getPublicSchema(),
+                "createdOn", LocalDateTime.now()
+        );
     }
 
     private void deleteDummyDataInSqlgSchema() {
