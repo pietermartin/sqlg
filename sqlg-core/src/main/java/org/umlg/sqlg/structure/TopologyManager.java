@@ -25,7 +25,17 @@ public class TopologyManager {
                 "name", tableName,
                 "createdOn", LocalDateTime.now()
         );
-        schemaVertex.addEdge(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
+        schemaVertex.addEdge(SchemaManager.SQLG_SCHEMA_EDGE_SCHEMA_VERTEX, vertex);
+        for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
+
+            Vertex property = sqlgGraph.addVertex(
+                    T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_PROPERTY,
+                    "name", columnEntry.getKey(),
+                    "createdOn", LocalDateTime.now()
+            );
+            vertex.addEdge(SchemaManager.SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES, property);
+
+        }
     }
 
     static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {

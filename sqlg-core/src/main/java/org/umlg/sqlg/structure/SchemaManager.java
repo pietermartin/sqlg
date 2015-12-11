@@ -29,17 +29,46 @@ public class SchemaManager {
 
     private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
 
+    /**
+     * Rdbms schema that holds sqlg topology.
+     */
     public static final String SQLG_SCHEMA = "sqlg_schema";
+    /**
+     * Table storing the graph's schemas.
+     */
     public static final String SQLG_SCHEMA_SCHEMA = "schema";
+    /**
+     * Table storing the graphs vertex labels.
+     */
     public static final String SQLG_SCHEMA_VERTEX_LABEL = "vertex";
+    /**
+     * Table storing the graphs edge labels.
+     */
     public static final String SQLG_SCHEMA_EDGE_LABEL = "edge";
+    /**
+     * Table storing the graphs element properties.
+     */
     public static final String SQLG_SCHEMA_PROPERTY = "property";
-    public static final String SQLG_SCHEMA_SCHEMA_VERTEX_EDGE = "vertexEdge";
-    public static final String SQLG_SCHEMA_VERTEX_IN_EDGES = "inEdges";
-    public static final String SQLG_SCHEMA_VERTEX_OUT_EDGES = "outEdges";
-    public static final String SQLG_SCHEMA_VERTEX_PROPERTIES = "vertex_property";
-    public static final String SQLG_SCHEMA_EDGE_PROPERTIES = "edge_property";
-    public static final List<String> SQLG_SCHEMA_VERTICES = Arrays.asList(SQLG_SCHEMA_SCHEMA, SQLG_SCHEMA_VERTEX_LABEL, SQLG_SCHEMA_EDGE_LABEL, SQLG_SCHEMA_PROPERTY);
+    /**
+     * Edge table for the schema to vertex edge.
+     */
+    public static final String SQLG_SCHEMA_EDGE_SCHEMA_VERTEX = "schema_vertex";
+    /**
+     * Edge table for the vertices in edges.
+     */
+    public static final String SQLG_SCHEMA_EDGE_IN_EDGES = "in_edges";
+    /**
+     * Edge table for the vertices out edges.
+     */
+    public static final String SQLG_SCHEMA_EDGE_OUT_EDGES = "out_edges";
+    /**
+     * Edge table for the vertex's properties.
+     */
+    public static final String SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES = "vertex_property";
+    /**
+     * Edge table for the edge's properties.
+     */
+    public static final String SQLG_SCHEMA_EDGE_EDGE_PROPERTIES = "edge_property";
 
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -63,11 +92,11 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_IN_EDGES,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_OUT_EDGES,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_SCHEMA_VERTEX,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_IN_EDGES,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_OUT_EDGES,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_EDGE_PROPERTIES
     );
 
     private Map<String, String> schemas;
@@ -1038,7 +1067,7 @@ public class SchemaManager {
 
     private void deleteDummyDataInSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Arrays.asList(SQLG_SCHEMA_VERTEX_IN_EDGES, SQLG_SCHEMA_VERTEX_OUT_EDGES, SQLG_SCHEMA_VERTEX_PROPERTIES, SQLG_SCHEMA_EDGE_PROPERTIES, SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+        Arrays.asList(SQLG_SCHEMA_EDGE_IN_EDGES, SQLG_SCHEMA_EDGE_OUT_EDGES, SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES, SQLG_SCHEMA_EDGE_EDGE_PROPERTIES, SQLG_SCHEMA_EDGE_SCHEMA_VERTEX)
                 .forEach(table -> {
                     try {
                         try (Statement st = conn.createStatement()) {
@@ -1068,21 +1097,20 @@ public class SchemaManager {
     }
 
     private void createSqlgSchema() {
-        Vertex schema = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA, "name", "deleteMe", "createOn", LocalDateTime.now());
-        Vertex vertex = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL, "name", "deleteMe", "createOn", LocalDateTime.now());
-        Vertex edge = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL, "name", "deleteMe", "createOn", LocalDateTime.now());
+        Vertex schema = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA, "name", "deleteMe", "createdOn", LocalDateTime.now());
+        Vertex vertex = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL, "name", "deleteMe", "createdOn", LocalDateTime.now());
+        Vertex edge = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL, "name", "deleteMe", "createdOn", LocalDateTime.now());
         Vertex properties = this.sqlgGraph.addVertex(
                 T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
                 "name", "deleteMe",
-                "createOn", LocalDateTime.now(),
+                "createdOn", LocalDateTime.now(),
                 "type", String.class.getName()
         );
-        schema.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
-        schema.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, edge);
-        vertex.addEdge(SQLG_SCHEMA_VERTEX_IN_EDGES, edge);
-        vertex.addEdge(SQLG_SCHEMA_VERTEX_OUT_EDGES, edge);
-        vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES, properties);
-        vertex.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES, properties);
+        schema.addEdge(SQLG_SCHEMA_EDGE_SCHEMA_VERTEX, vertex);
+        vertex.addEdge(SQLG_SCHEMA_EDGE_IN_EDGES, edge);
+        vertex.addEdge(SQLG_SCHEMA_EDGE_OUT_EDGES, edge);
+        vertex.addEdge(SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES, properties);
+        vertex.addEdge(SQLG_SCHEMA_EDGE_EDGE_PROPERTIES, properties);
     }
 
     private boolean existSqlgSchema() {
