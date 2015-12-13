@@ -142,6 +142,26 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
+    public void batchMode(BatchManager.BatchModeType batchModeType) {
+        switch (batchModeType) {
+            case NONE:
+                readWrite();
+                threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NONE);
+                break;
+            case NORMAL:
+                this.normalBatchModeOn();
+                break;
+            case STREAMING:
+                this.streamingBatchModeOn();
+                break;
+            case STREAMING_WITH_LOCK:
+                this.streamingWithLockBatchModeOn();
+                break;
+            default:
+                throw new IllegalStateException("unhandled BatchModeType " + batchModeType.name());
+        }
+    }
+
     public void normalBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
@@ -191,15 +211,19 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!this.isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode to flush");
         }
-        this.getBatchManager().flush();
+        if (!this.getBatchManager().isBusyFlushing()) {
+            this.getBatchManager().flush();
+        }
     }
 
     public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
-        if (!threadLocalTx.get().getBatchManager().isInBatchMode())
-            throw new IllegalStateException("Must be in batch mode to batchCommit!");
+        if (!threadLocalTx.get().getBatchManager().isInBatchMode()) {
+            throw new IllegalStateException("Must be in batch mode to batchCommit! Current mode is " + threadLocalTx.get().getBatchManager().getBatchModeType().name());
+        }
 
-        if (!isOpen())
+        if (!isOpen()) {
             return Collections.emptyMap();
+        }
 
         try {
             Map<SchemaTable, Pair<Long, Long>> verticesRange = this.threadLocalTx.get().getBatchManager().flush();

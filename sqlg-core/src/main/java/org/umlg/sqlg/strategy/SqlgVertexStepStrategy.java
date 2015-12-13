@@ -36,16 +36,15 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
-            readFromCache(traversal);
-        } else {
-            List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
-            ListIterator<Step> stepIterator = steps.listIterator();
-            if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
-                logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
-                return;
-            }
-            combineSteps(traversal, steps, stepIterator);
+            this.sqlgGraph.tx().flush();
         }
+        List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        ListIterator<Step> stepIterator = steps.listIterator();
+        if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
+            logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            return;
+        }
+        combineSteps(traversal, steps, stepIterator);
 
     }
 

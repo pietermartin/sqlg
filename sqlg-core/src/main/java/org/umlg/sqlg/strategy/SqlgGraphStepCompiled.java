@@ -159,8 +159,9 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         }
 
         stopWatch.stop();
-        if (logger.isDebugEnabled())
+        if (logger.isDebugEnabled()) {
             logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
+        }
 
         return resultIterator;
     }

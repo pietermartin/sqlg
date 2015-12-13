@@ -43,22 +43,22 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
         final GraphStep originalGraphStep = (GraphStep) startStep;
 
-        if (originalGraphStep.getIds().length > 0 && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
-            readFromCache(traversal);
-        } else {
-            if (originalGraphStep.getIds().length > 0) {
-                Class clazz = originalGraphStep.getIds()[0].getClass();
-                if (!Stream.of(originalGraphStep.getIds()).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
-                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-            }
-            final List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
-            final ListIterator<Step> stepIterator = steps.listIterator();
-            if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
-                this.logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
-                return;
-            }
-            combineSteps(traversal, steps, stepIterator);
+        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
+            this.sqlgGraph.tx().flush();
         }
+
+        if (originalGraphStep.getIds().length > 0) {
+            Class clazz = originalGraphStep.getIds()[0].getClass();
+            if (!Stream.of(originalGraphStep.getIds()).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
+                throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+        }
+        final List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        final ListIterator<Step> stepIterator = steps.listIterator();
+        if (this.canNotBeOptimized(steps, stepIterator.nextIndex())) {
+            this.logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            return;
+        }
+        combineSteps(traversal, steps, stepIterator);
     }
 
     @Override

@@ -10,8 +10,8 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
@@ -129,13 +129,14 @@ public class SqlgGraph implements Graph {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
-        //The removals are here for unit test, as its stored statically
+
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgVertexStepStrategy.class);
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgGraphStepStrategy.class);
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy(sqlgGraph)));
-
         TraversalStrategies.GlobalCache.getStrategies(Graph.class).setTraverserGeneratorFactory(new SqlgTraverserGeneratorFactory());
+
+        sqlgGraph.schemaManager.loadSchema();
 
         return (G) sqlgGraph;
     }
@@ -177,7 +178,6 @@ public class SqlgGraph implements Graph {
         this.sqlgTransaction = new SqlgTransaction(this);
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect, configuration);
-        this.schemaManager.loadSchema();
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportSchemas() && !this.schemaManager.schemaExist(this.sqlDialect.getPublicSchema())) {
             //This is for mariadb. Need to make sure a db called public exist
@@ -209,7 +209,15 @@ public class SqlgGraph implements Graph {
 
     @Override
     public GraphTraversalSource traversal() {
-        return this.traversal(GraphTraversalSource.build().with(TopologyStrategy.build().create()).engine(StandardTraversalEngine.build()));
+        return this.traversal(GraphTraversalSource.build().with(TopologyStrategy.build().create()));
+    }
+
+    public GraphTraversalSource traversal(TraversalStrategy ... traversalStrategy) {
+        GraphTraversalSource.Builder builder = GraphTraversalSource.build();
+        for (TraversalStrategy strategy : traversalStrategy) {
+            builder.with(strategy);
+        }
+        return this.traversal(builder);
     }
 
     @Override
@@ -1035,7 +1043,7 @@ public class SqlgGraph implements Graph {
 
     private long countElements(boolean returnVertices) {
         long count = 0;
-        Set<String> tables = this.getSchemaManager().getLocalTables().keySet();
+        Set<String> tables = this.getSchemaManager().getAllTables().keySet();
         for (String table : tables) {
             SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
             if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {

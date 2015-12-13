@@ -3,10 +3,11 @@ package org.umlg.sqlg.structure;
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
 import com.hazelcast.map.listener.*;
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -17,7 +18,6 @@ import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,23 +56,23 @@ public class SchemaManager {
     /**
      * Edge table for the schema to vertex edge.
      */
-    public static final String SQLG_SCHEMA_EDGE_SCHEMA_VERTEX = "schema_vertex";
+    public static final String SQLG_SCHEMA_SCHEMA_VERTEX_EDGE = "schema_vertex";
     /**
      * Edge table for the vertices in edges.
      */
-    public static final String SQLG_SCHEMA_EDGE_IN_EDGES = "in_edges";
+    public static final String SQLG_SCHEMA_IN_EDGES_EDGE = "in_edges";
     /**
      * Edge table for the vertices out edges.
      */
-    public static final String SQLG_SCHEMA_EDGE_OUT_EDGES = "out_edges";
+    public static final String SQLG_SCHEMA_OUT_EDGES_EDGE = "out_edges";
     /**
      * Edge table for the vertex's properties.
      */
-    public static final String SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES = "vertex_property";
+    public static final String SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE = "vertex_property";
     /**
      * Edge table for the edge's properties.
      */
-    public static final String SQLG_SCHEMA_EDGE_EDGE_PROPERTIES = "edge_property";
+    public static final String SQLG_SCHEMA_EDGE_PROPERTIES_EDGE = "edge_property";
 
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -96,11 +96,11 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_SCHEMA_VERTEX,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_IN_EDGES,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_OUT_EDGES,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_EDGE_PROPERTIES
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE
     );
 
     private Map<String, String> schemas;
@@ -350,7 +350,7 @@ public class SchemaManager {
                 }
                 Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
                 if (schemas == null) {
-                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
+                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Collections.singletonList(schema)));
                 } else {
                     schemas.add(schema);
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
@@ -392,7 +392,7 @@ public class SchemaManager {
 
 
     /**
-     * @param schema        The tables that the table for this edge will reside in.
+     * @param schema        The schema that the table for this edge will reside in.
      * @param table         The table for this edge
      * @param foreignKeyIn  The tables table pair of foreign key to the in vertex
      * @param foreignKeyOut The tables table pair of foreign key to the out vertex
@@ -404,7 +404,7 @@ public class SchemaManager {
         Objects.requireNonNull(foreignKeyIn.getSchema(), "Given inTable must not be null");
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
-        final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             lock(schema, table);
@@ -429,6 +429,10 @@ public class SchemaManager {
                 }
 
                 this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+
+                if (!SQLG_SCHEMA.equals(schema)) {
+                    TopologyManager.addEdgeLabel(this.sqlgGraph, schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
+                }
                 createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
 
                 //For each table capture its in and out labels
@@ -487,6 +491,8 @@ public class SchemaManager {
                     this.uncommittedLabelSchemas.put(prefixedTable, schemas);
                 }
                 this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+
+                //TODO need to create the topology here
                 createEdgeTable(schema, prefixedTable, columns);
             }
         }
@@ -523,8 +529,10 @@ public class SchemaManager {
         return uncommitedColumns;
     }
 
-    void ensureColumnsExist(String schema, String prefixedTable, ConcurrentHashMap<String, PropertyType> columns) {
-        if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
+    void ensureColumnsExist(String schema, String prefixedTable, Map<String, PropertyType> columns) {
+        boolean isVertex = prefixedTable.startsWith(VERTEX_PREFIX);
+        boolean isEdge = prefixedTable.startsWith(EDGE_PREFIX);
+        if (!isVertex && !isEdge) {
             throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
         Map<String, PropertyType> uncommittedColumns = internalGetColumn(schema, prefixedTable);
@@ -539,6 +547,15 @@ public class SchemaManager {
                 //Make sure the current thread/transaction owns the lock
                 lock(schema, prefixedTable);
                 if (!uncommittedColumns.containsKey(columnName)) {
+                    if (!SQLG_SCHEMA.equals(schema)) {
+
+                        if (isVertex) {
+                            TopologyManager.addVertexColumn(this.sqlgGraph, schema, prefixedTable, column);
+                        } else {
+                            TopologyManager.addEdgeColumn(this.sqlgGraph, schema, prefixedTable, column);
+                        }
+
+                    }
                     addColumn(schema, prefixedTable, ImmutablePair.of(columnName, columnType));
                     uncommittedColumns.put(columnName, columnType);
                     this.uncommittedTables.put(schema + "." + prefixedTable, uncommittedColumns);
@@ -548,23 +565,9 @@ public class SchemaManager {
     }
 
     public void ensureColumnExist(String schema, String prefixedTable, ImmutablePair<String, PropertyType> keyValue) {
-        if (!prefixedTable.startsWith(VERTEX_PREFIX) && !prefixedTable.startsWith(EDGE_PREFIX)) {
-            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
-        }
-        Map<String, PropertyType> uncommitedColumns = internalGetColumn(schema, prefixedTable);
-        Objects.requireNonNull(uncommitedColumns, "Table must already be present in the cache!");
-        if (!uncommitedColumns.containsKey(keyValue.left)) {
-            uncommitedColumns = internalGetColumn(schema, prefixedTable);
-        }
-        if (!uncommitedColumns.containsKey(keyValue.left)) {
-            //Make sure the current thread/transaction owns the lock
-            lock(schema, prefixedTable);
-            if (!uncommitedColumns.containsKey(keyValue.left)) {
-                addColumn(schema, prefixedTable, keyValue);
-                uncommitedColumns.put(keyValue.left, keyValue.right);
-                this.uncommittedTables.put(schema + "." + prefixedTable, uncommitedColumns);
-            }
-        }
+        Map<String, PropertyType> columns = new HashedMap<>();
+        columns.put(keyValue.getLeft(), keyValue.getRight());
+        ensureColumnsExist(schema, prefixedTable, columns);
     }
 
     private void ensureEdgeForeignKeysExist(String schema, String prefixedTable, boolean in, SchemaTable vertexSchemaTable) {
@@ -940,9 +943,13 @@ public class SchemaManager {
         }
         //check if the topology schema exists, if not create it
         if (!existSqlgSchema()) {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             createSqlgSchema();
             //committing here will ensure that sqlg creates the tables.
             this.sqlgGraph.tx().commit();
+            stopWatch.stop();
+            System.out.println(stopWatch.toString());
             //now delete the data in the tables as they are dummy entries used to create the tables.
             deleteDummyDataInSqlgSchema();
             this.sqlgGraph.tx().commit();
@@ -950,156 +957,303 @@ public class SchemaManager {
             addPublicSchema();
             this.sqlgGraph.tx().commit();
         } else {
+            loadTopology();
+            loadUserSchema();
+        }
+        if (distributed) {
+            this.schemas.putAll(this.localSchemas);
+            this.labelSchemas.putAll(this.localLabelSchemas);
+            this.tables.putAll(this.localTables);
+            this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
+        }
 
-            GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(this.sqlgGraph);
-            List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
-            for (Vertex schema : schemas) {
-                String schemaName = schema.value("name");
-                this.localSchemas.put(schemaName, schemaName);
+//        Connection conn = this.sqlgGraph.tx().getConnection();
+//        try {
+//            DatabaseMetaData metadata = conn.getMetaData();
+//            if (this.sqlDialect.supportSchemas()) {
+//                String catalog = null;
+//                String schemaPattern = null;
+//                String tableNamePattern = null;
+//                String[] types = new String[]{"TABLE"};
+//                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+//                while (tablesRs.next()) {
+//                    //ignore sqlg_schema
+//                    if (tablesRs.getString(2).equals(SQLG_SCHEMA)) {
+//                        continue;
+//                    }
+//                    String table = tablesRs.getString(3);
+//                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+//                        continue;
+//                    }
+//                    Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
+//                    Set<String> foreignKeys = null;
+//                    //get the columns
+//                    String previousSchema = "";
+//                    ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+//                    while (columnsRs.next()) {
+//                        String schema = columnsRs.getString(2);
+//                        if (this.sqlDialect.getGisSchemas().contains(schema)) {
+//                            continue;
+//                        }
+//                        this.localSchemas.put(schema, schema);
+//                        if (!previousSchema.equals(schema)) {
+//                            foreignKeys = new HashSet<>();
+//                            uncommittedColumns = new ConcurrentHashMap<>();
+//                        }
+//                        previousSchema = schema;
+//                        String column = columnsRs.getString(4);
+//                        if (!column.equals(SchemaManager.ID)) {
+//                            int columnType = columnsRs.getInt(5);
+//                            String typeName = columnsRs.getString("TYPE_NAME");
+//                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+//                            uncommittedColumns.put(column, propertyType);
+//                        }
+//                        this.localTables.put(schema + "." + table, uncommittedColumns);
+//                        Set<String> schemas = this.localLabelSchemas.get(table);
+//                        if (schemas == null) {
+//                            schemas = new HashSet<>();
+//                        }
+//                        schemas.add(schema);
+//                        this.localLabelSchemas.put(table, schemas);
+//                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
+//                            foreignKeys.add(column);
+//                            this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
+//                            SchemaTable schemaTable = SchemaTable.of(column.split("\\.")[0], SchemaManager.VERTEX_PREFIX + column.split("\\.")[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
+//                            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(schemaTable);
+//                            if (labels == null) {
+//                                labels = Pair.of(new HashSet<>(), new HashSet<>());
+//                                this.localTableLabels.put(schemaTable, labels);
+//                            }
+//                            if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+//                                labels.getLeft().add(SchemaTable.of(schema, table));
+//                            } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+//                                labels.getRight().add(SchemaTable.of(schema, table));
+//                            }
+//                        }
+//                    }
+//                }
+//            } else {
+//                //mariadb
+//                String catalog = null;
+//                String schemaPattern = null;
+//                String tableNamePattern = null;
+//                String[] types = new String[]{"TABLE"};
+//                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+//                while (tablesRs.next()) {
+//                    String db = tablesRs.getString(1);
+//                    if (!sqlDialect.getDefaultSchemas().contains(db)) {
+//                        String table = tablesRs.getString(3);
+//                        final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
+//                        final Set<String> foreignKeys = new HashSet<>();
+//                        //get the columns
+//                        ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+//                        while (columnsRs.next()) {
+//                            String schema = columnsRs.getString(1);
+//                            this.localSchemas.put(schema, schema);
+//                            String column = columnsRs.getString(4);
+//                            int columnType = columnsRs.getInt(5);
+//                            String typeName = columnsRs.getString("TYPE_NAME");
+//                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+//                            uncomitedColumns.put(column, propertyType);
+//                            this.localTables.put(schema + "." + table, uncomitedColumns);
+//                            Set<String> schemas = this.localLabelSchemas.get(table);
+//                            if (schemas == null) {
+//                                schemas = new HashSet<>();
+//                                this.localLabelSchemas.put(table, schemas);
+//                            }
+//                            schemas.add(schema);
+//                            if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
+//                                foreignKeys.add(column);
+//                                this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//            if (distributed) {
+//                this.schemas.putAll(this.localSchemas);
+//                this.labelSchemas.putAll(this.localLabelSchemas);
+//                this.tables.putAll(this.localTables);
+//                this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
+//            }
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+    }
 
-                List<Vertex> vertexLabels = traversalSource.V(schema).out(SQLG_SCHEMA_EDGE_SCHEMA_VERTEX).toList();
-                for (Vertex vertexLabel : vertexLabels) {
-                    String tableName = vertexLabel.value("name");
+    /**
+     * Load Sqlg's actual topology.
+     * This is needed because with the {@link TopologyStrategy} it is possible to query the topology itself.
+     */
+    private void loadTopology() {
 
-                    Set<String> schemaNames = null;
-                    if (!this.localTableLabels.containsKey(tableName)) {
-                        schemaNames = new HashSet<>();
+        this.localSchemas.put(SQLG_SCHEMA, SQLG_SCHEMA_SCHEMA);
+
+        Set<String> schemas = new HashSet<>();
+        schemas.add(SQLG_SCHEMA);
+        this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA, schemas);
+        this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL, schemas);
+        this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL, schemas);
+        this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY, schemas);
+
+        this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, schemas);
+        this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE, schemas);
+        this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE, schemas);
+        this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, schemas);
+        this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, schemas);
+
+        Map<String, PropertyType> columns = new HashedMap<>();
+        columns.put("name", PropertyType.STRING);
+        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA, columns);
+        columns = new HashedMap<>();
+        columns.put("name", PropertyType.STRING);
+        columns.put("schemaVertex", PropertyType.STRING);
+        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL, columns);
+        columns = new HashedMap<>();
+        columns.put("name", PropertyType.STRING);
+        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL, columns);
+        columns = new HashedMap<>();
+        columns.put("name", PropertyType.STRING);
+        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        columns.put("type", PropertyType.STRING);
+        this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY, columns);
+
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, Collections.emptyMap());
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE, Collections.emptyMap());
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE, Collections.emptyMap());
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, Collections.emptyMap());
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, Collections.emptyMap());
+
+        Set<String> foreignKeys = new HashSet<>();
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA + OUT_VERTEX_COLUMN_END);
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL + IN_VERTEX_COLUMN_END);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, foreignKeys);
+        foreignKeys = new HashSet<>();
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL + OUT_VERTEX_COLUMN_END);
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL + IN_VERTEX_COLUMN_END);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE, foreignKeys);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE, foreignKeys);
+        foreignKeys = new HashSet<>();
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL + OUT_VERTEX_COLUMN_END);
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY + IN_VERTEX_COLUMN_END);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, foreignKeys);
+        foreignKeys = new HashSet<>();
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL + OUT_VERTEX_COLUMN_END);
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY + IN_VERTEX_COLUMN_END);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, foreignKeys);
+
+        Pair<Set<SchemaTable>, Set<SchemaTable>> labels = Pair.of(new HashSet<>(), new HashSet<>());
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE));
+        this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA), labels);
+        labels = Pair.of(new HashSet<>(), new HashSet<>());
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE));
+        this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL), labels);
+        labels = Pair.of(new HashSet<>(), new HashSet<>());
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE));
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE));
+        this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL), labels);
+        labels = Pair.of(new HashSet<>(), new HashSet<>());
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE));
+        this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY), labels);
+
+    }
+
+    /**
+     * Load the schema from the topology.
+     */
+    private void loadUserSchema() {
+        GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(this.sqlgGraph);
+        List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+        for (Vertex schema : schemas) {
+            String schemaName = schema.value("name");
+            this.localSchemas.put(schemaName, schemaName);
+
+            List<Vertex> vertexLabels = traversalSource.V(schema).out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).toList();
+            for (Vertex vertexLabel : vertexLabels) {
+                String tableName = vertexLabel.value("name");
+
+                Set<String> schemaNames = this.localLabelSchemas.get(VERTEX_PREFIX + tableName);
+                if (schemaNames == null) {
+                    schemaNames = new HashSet<>();
+                    this.localLabelSchemas.put(VERTEX_PREFIX + tableName, schemaNames);
+                }
+                schemaNames.add(schemaName);
+
+                Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
+                List<Vertex> properties = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
+                for (Vertex property : properties) {
+                    String propertyName = property.value("name");
+                    uncommittedColumns.put(propertyName, PropertyType.valueOf(property.value("type")));
+                }
+                this.localTables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
+
+                List<Vertex> outEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_OUT_EDGES_EDGE).toList();
+//                Set<String> foreignKeys = new HashSet<>();
+                for (Vertex outEdge : outEdges) {
+                    String edgeName = outEdge.value("name");
+
+                    if (!this.localLabelSchemas.containsKey(EDGE_PREFIX + edgeName)) {
+                        this.localLabelSchemas.put(EDGE_PREFIX + edgeName, schemaNames);
                     }
-                    schemaNames.add(tableName);
-                    this.localLabelSchemas.put(tableName, schemaNames);
-
-                    Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
-                    List<Vertex> properties = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES).toList();
+                    uncommittedColumns = new ConcurrentHashMap<>();
+                    properties = traversalSource.V(outEdge).out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).toList();
                     for (Vertex property : properties) {
                         String propertyName = property.value("name");
                         uncommittedColumns.put(propertyName, PropertyType.valueOf(property.value("type")));
                     }
-                    this.localTables.put(schemaName + "." + tableName, uncommittedColumns);
+                    this.localTables.put(schemaName + "." + EDGE_PREFIX + edgeName, uncommittedColumns);
 
-                    List<Vertex> outEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_EDGE_OUT_EDGES).toList();
-                    for (Vertex outEdge : outEdges) {
-                        this.localEdgeForeignKeys.put(schemaName + "." + tableName, foreignKeys);
+                    List<Vertex> inVertices = traversalSource.V(outEdge).in(SQLG_SCHEMA_IN_EDGES_EDGE).toList();
+                    if (inVertices.size() != 1) {
+                        throw new IllegalStateException("Schema information for edge " + outEdge.id() + " is incorrect. Expected exactly 1 in edge but found " + inVertices.size() + ". This is a BUG!");
                     }
-                    List<Vertex> inEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_EDGE_IN_EDGES).toList();
-                    for (Vertex inEdge : inEdges) {
-                        this.localEdgeForeignKeys.put(schemaName + "." + tableName, foreignKeys);
+                    Vertex inVertex = inVertices.get(0);
+                    String inTableName = inVertex.value("name");
+                    //Get the inVertex's schema
+                    List<Vertex> inVertexSchemas = traversalSource.V(inVertex).in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).toList();
+                    if (inVertexSchemas.size() != 1) {
+                        throw new IllegalStateException("Vertex must be in one and one only schema, found " + inVertexSchemas.size());
                     }
+                    Vertex inVertexSchema = inVertexSchemas.get(0);
+                    String inVertexSchemaName = inVertexSchema.value("name");
+
+
+                    Set<String> foreignKeys = this.localEdgeForeignKeys.get(schemaName + "." + EDGE_PREFIX + edgeName);
+                    if (foreignKeys == null) {
+                        foreignKeys = new HashSet<>();
+                        this.localEdgeForeignKeys.put(schemaName + "." + EDGE_PREFIX + edgeName, foreignKeys);
+                    }
+                    foreignKeys.add(schemaName + "." + tableName + SchemaManager.OUT_VERTEX_COLUMN_END);
+                    foreignKeys.add(inVertexSchemaName + "." + inTableName + SchemaManager.IN_VERTEX_COLUMN_END);
+
+                    SchemaTable outSchemaTable = SchemaTable.of(schemaName, VERTEX_PREFIX + tableName);
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(outSchemaTable);
+                    if (labels == null) {
+                        labels = Pair.of(new HashSet<>(), new HashSet<>());
+                        this.localTableLabels.put(outSchemaTable, labels);
+                    }
+                    labels.getRight().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
+
+                    SchemaTable inSchemaTable = SchemaTable.of(inVertexSchemaName, VERTEX_PREFIX + inTableName);
+                    labels = this.localTableLabels.get(inSchemaTable);
+                    if (labels == null) {
+                        labels = Pair.of(new HashSet<>(), new HashSet<>());
+                        this.localTableLabels.put(inSchemaTable, labels);
+                    }
+                    labels.getLeft().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
                 }
+
             }
         }
 
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try {
-            DatabaseMetaData metadata = conn.getMetaData();
-            if (this.sqlDialect.supportSchemas()) {
-                String catalog = null;
-                String schemaPattern = null;
-                String tableNamePattern = null;
-                String[] types = new String[]{"TABLE"};
-                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (tablesRs.next()) {
-                    //ignore sqlg_schema
-                    if (tablesRs.getString(2).equals(SQLG_SCHEMA)) {
-                        continue;
-                    }
-                    String table = tablesRs.getString(3);
-                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
-                        continue;
-                    }
-                    Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
-                    Set<String> foreignKeys = null;
-                    //get the columns
-                    String previousSchema = "";
-                    ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
-                    while (columnsRs.next()) {
-                        String schema = columnsRs.getString(2);
-                        if (this.sqlDialect.getGisSchemas().contains(schema)) {
-                            continue;
-                        }
-                        this.localSchemas.put(schema, schema);
-                        if (!previousSchema.equals(schema)) {
-                            foreignKeys = new HashSet<>();
-                            uncommittedColumns = new ConcurrentHashMap<>();
-                        }
-                        previousSchema = schema;
-                        String column = columnsRs.getString(4);
-                        if (!column.equals(SchemaManager.ID)) {
-                            int columnType = columnsRs.getInt(5);
-                            String typeName = columnsRs.getString("TYPE_NAME");
-                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                            uncommittedColumns.put(column, propertyType);
-                        }
-                        this.localTables.put(schema + "." + table, uncommittedColumns);
-                        Set<String> schemas = this.localLabelSchemas.get(table);
-                        if (schemas == null) {
-                            schemas = new HashSet<>();
-                        }
-                        schemas.add(schema);
-                        this.localLabelSchemas.put(table, schemas);
-                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
-                            foreignKeys.add(column);
-                            this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
-                            SchemaTable schemaTable = SchemaTable.of(column.split("\\.")[0], SchemaManager.VERTEX_PREFIX + column.split("\\.")[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
-                            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(schemaTable);
-                            if (labels == null) {
-                                labels = Pair.of(new HashSet<>(), new HashSet<>());
-                                this.localTableLabels.put(schemaTable, labels);
-                            }
-                            if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                                labels.getLeft().add(SchemaTable.of(schema, table));
-                            } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                                labels.getRight().add(SchemaTable.of(schema, table));
-                            }
-                        }
-                    }
-                }
-            } else {
-                //mariadb
-                String catalog = null;
-                String schemaPattern = null;
-                String tableNamePattern = null;
-                String[] types = new String[]{"TABLE"};
-                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (tablesRs.next()) {
-                    String db = tablesRs.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(db)) {
-                        String table = tablesRs.getString(3);
-                        final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
-                        final Set<String> foreignKeys = new HashSet<>();
-                        //get the columns
-                        ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
-                        while (columnsRs.next()) {
-                            String schema = columnsRs.getString(1);
-                            this.localSchemas.put(schema, schema);
-                            String column = columnsRs.getString(4);
-                            int columnType = columnsRs.getInt(5);
-                            String typeName = columnsRs.getString("TYPE_NAME");
-                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-                            uncomitedColumns.put(column, propertyType);
-                            this.localTables.put(schema + "." + table, uncomitedColumns);
-                            Set<String> schemas = this.localLabelSchemas.get(table);
-                            if (schemas == null) {
-                                schemas = new HashSet<>();
-                                this.localLabelSchemas.put(table, schemas);
-                            }
-                            schemas.add(schema);
-                            if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
-                                foreignKeys.add(column);
-                                this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
-                            }
-                        }
-                    }
-                }
-            }
-            if (distributed) {
-                this.schemas.putAll(this.localSchemas);
-                this.labelSchemas.putAll(this.localLabelSchemas);
-                this.tables.putAll(this.localTables);
-                this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void addPublicSchema() {
@@ -1112,11 +1266,11 @@ public class SchemaManager {
 
     private void deleteDummyDataInSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Arrays.asList(SQLG_SCHEMA_EDGE_IN_EDGES, SQLG_SCHEMA_EDGE_OUT_EDGES, SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES, SQLG_SCHEMA_EDGE_EDGE_PROPERTIES, SQLG_SCHEMA_EDGE_SCHEMA_VERTEX)
+        Arrays.asList(SQLG_SCHEMA_IN_EDGES_EDGE, SQLG_SCHEMA_OUT_EDGES_EDGE, SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                 .forEach(table -> {
                     try {
                         try (Statement st = conn.createStatement()) {
-                            String sql = "TRUNCATE " + this.sqlDialect.maybeWrapInQoutes(SQLG_SCHEMA) + "." + this.sqlDialect.maybeWrapInQoutes("E_" + table);
+                            String sql = "DELETE FROM " + this.sqlDialect.maybeWrapInQoutes(SQLG_SCHEMA) + "." + this.sqlDialect.maybeWrapInQoutes("E_" + table);
                             if (this.sqlDialect.needsSemicolon()) {
                                 sql += ";";
                             }
@@ -1129,7 +1283,7 @@ public class SchemaManager {
         Arrays.asList(SQLG_SCHEMA_SCHEMA, SQLG_SCHEMA_VERTEX_LABEL, SQLG_SCHEMA_EDGE_LABEL, SQLG_SCHEMA_PROPERTY).forEach(table -> {
             try {
                 try (Statement st = conn.createStatement()) {
-                    String sql = "TRUNCATE " + this.sqlDialect.maybeWrapInQoutes(SQLG_SCHEMA) + "." + this.sqlDialect.maybeWrapInQoutes("V_" + table);
+                    String sql = "DELETE FROM " + this.sqlDialect.maybeWrapInQoutes(SQLG_SCHEMA) + "." + this.sqlDialect.maybeWrapInQoutes("V_" + table);
                     if (this.sqlDialect.needsSemicolon()) {
                         sql += ";";
                     }
@@ -1143,7 +1297,7 @@ public class SchemaManager {
 
     private void createSqlgSchema() {
         Vertex schema = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA, "name", "deleteMe", "createdOn", LocalDateTime.now());
-        Vertex vertex = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL, "name", "deleteMe", "createdOn", LocalDateTime.now());
+        Vertex vertex = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL, "name", "deleteMe", "schemaVertex", "deleteMe", "createdOn", LocalDateTime.now());
         Vertex edge = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL, "name", "deleteMe", "createdOn", LocalDateTime.now());
         Vertex properties = this.sqlgGraph.addVertex(
                 T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
@@ -1151,11 +1305,11 @@ public class SchemaManager {
                 "createdOn", LocalDateTime.now(),
                 "type", String.class.getName()
         );
-        schema.addEdge(SQLG_SCHEMA_EDGE_SCHEMA_VERTEX, vertex);
-        vertex.addEdge(SQLG_SCHEMA_EDGE_IN_EDGES, edge);
-        vertex.addEdge(SQLG_SCHEMA_EDGE_OUT_EDGES, edge);
-        vertex.addEdge(SQLG_SCHEMA_EDGE_VERTEX_PROPERTIES, properties);
-        vertex.addEdge(SQLG_SCHEMA_EDGE_EDGE_PROPERTIES, properties);
+        schema.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
+        vertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edge);
+        vertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edge);
+        vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, properties);
+        edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, properties);
     }
 
     private boolean existSqlgSchema() {
@@ -1291,18 +1445,18 @@ public class SchemaManager {
         if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
             result.putAll(this.uncommittedTables);
         }
-        filter.forEach(s->result.remove(s));
+        filter.forEach(s -> result.remove(s));
         return Collections.unmodifiableMap(result);
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
         Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
-        this.localTables.forEach((k,v)-> {
-            if (selectFrom.contains(k)) result.put(k,v);
+        this.localTables.forEach((k, v) -> {
+            if (selectFrom.contains(k)) result.put(k, v);
         });
         if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
-            this.uncommittedTables.forEach((k,v)-> {
-                if (selectFrom.contains(k)) result.put(k,v);
+            this.uncommittedTables.forEach((k, v) -> {
+                if (selectFrom.contains(k)) result.put(k, v);
             });
         }
         return Collections.unmodifiableMap(result);

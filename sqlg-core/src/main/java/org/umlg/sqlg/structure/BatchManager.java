@@ -49,6 +49,7 @@ public class BatchManager {
 
     private int batchCount;
     private long batchIndex;
+    private boolean isBusyFlushing;
 
     public enum BatchModeType {
         NONE, NORMAL, STREAMING, STREAMING_WITH_LOCK
@@ -210,6 +211,7 @@ public class BatchManager {
     }
 
     public Map<SchemaTable, Pair<Long, Long>> flush() {
+        this.isBusyFlushing = true;
         Map<SchemaTable, Pair<Long, Long>> verticesRange = this.sqlDialect.flushVertexCache(this.sqlgGraph, this.vertexCache);
         this.sqlDialect.flushEdgeCache(this.sqlgGraph, this.edgeCache);
         this.sqlDialect.flushVertexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
@@ -218,6 +220,7 @@ public class BatchManager {
         this.sqlDialect.flushRemovedVertices(this.sqlgGraph, this.removeVertexCache);
         this.clear();
         this.close();
+        this.isBusyFlushing = false;
         return verticesRange;
     }
 
@@ -495,5 +498,9 @@ public class BatchManager {
 
     private boolean isStreamingEdges() {
         return !this.streamingEdgeOutputStreamCache.isEmpty();
+    }
+
+    boolean isBusyFlushing() {
+        return isBusyFlushing;
     }
 }

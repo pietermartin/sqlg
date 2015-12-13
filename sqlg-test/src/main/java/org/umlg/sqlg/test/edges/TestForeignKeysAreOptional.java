@@ -93,7 +93,9 @@ public class TestForeignKeysAreOptional extends BaseTest {
         v1.addEdge("Edge1", v2);
         g.tx().commit();
         Connection conn = g.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement("select * from information_schema.constraint_table_usage where CONSTRAINT_NAME like '%FK%'")) {
+        try (PreparedStatement preparedStatement = conn.prepareStatement(
+                "select * from information_schema.constraint_table_usage " +
+                "where TABLE_NAME = 'E_Edge1' and CONSTRAINT_NAME like '%FK%'")) {
             ResultSet rs = preparedStatement.executeQuery();
             Assert.assertFalse(rs.next());
         }

@@ -270,14 +270,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         SqlgStep sqlgStep = null;
         Step previous = null;
         ReplacedStep<?, ?> lastReplacedStep = null;
-//        Class repeatStepClass;
-//        Class loopTraversalClass;
-//        try {
-//            repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
-//            loopTraversalClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal");
-//        } catch (ClassNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
 
         int pathCount = 0;
         boolean alreadyReplacedGraphStep = false;

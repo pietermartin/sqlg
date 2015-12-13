@@ -84,7 +84,6 @@ public class SchemaTableTree {
         }
     };
 
-
     enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -98,6 +97,7 @@ public class SchemaTableTree {
         this.hasContainers = new ArrayList<>();
         this.comparators = new ArrayList<>();
         this.labels = new HashSet<>();
+        this.filteredAllTables = sqlgGraph.getSchemaManager().getAllTables();
     }
 
     /**

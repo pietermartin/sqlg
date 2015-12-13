@@ -521,21 +521,4 @@ public class ReplacedStep<S, E> {
         this.hasContainers.addAll(hasContainers);
     }
 
-    /**
-     * This is invoked from the SqlgGraphStrategy and SqlgVertexStrategy, just after having set the hasContainers by calling {@link #addHasContainers(List)}
-     * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
-     * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
-     */
-    public void calculateFilteredAllTables() {
-        this.filteredAllTables = SqlgUtil.filterHasContainers(this.schemaManager, this.hasContainers);
-        //remove the TopologyStrategy hasContainer
-        Optional<HasContainer> fromHascontainer = this.hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
-        Optional<HasContainer> withoutHascontainer = this.hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
-        if (fromHascontainer.isPresent()) {
-            this.hasContainers.remove(fromHascontainer.get());
-        }
-        if (withoutHascontainer.isPresent()) {
-            this.hasContainers.remove(withoutHascontainer.get());
-        }
-    }
 }
