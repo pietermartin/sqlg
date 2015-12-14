@@ -583,34 +583,6 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(Long.valueOf(2), vertexTraversal(person).out().count().next());
     }
-
-    @Test
-    public void testBatchCommit() {
-        Assume.assumeTrue(this.sqlgGraph.features().supportsBatchMode());
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 111; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
-            this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
-        }
-        Map<SchemaTable, Pair<Long, Long>> result = this.sqlgGraph.tx().batchCommit();
-        Assert.assertEquals(1l, result.get(SchemaTable.of("public", "Person1")).getLeft(), 0);
-        Assert.assertEquals(111l, result.get(SchemaTable.of("public", "Person1")).getRight(), 0);
-        Assert.assertEquals(1l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
-        Assert.assertEquals(111l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
-
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 111; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person1", "name", i);
-            this.sqlgGraph.addVertex(T.label, "Person2", "name", i);
-        }
-        result = this.sqlgGraph.tx().batchCommit();
-        Assert.assertEquals(112l, result.get(SchemaTable.of("public", "Person1")).getLeft(), 0);
-        Assert.assertEquals(222l, result.get(SchemaTable.of("public", "Person1")).getRight(), 0);
-        Assert.assertEquals(112l, result.get(SchemaTable.of("public", "Person2")).getLeft(), 0);
-        Assert.assertEquals(222l, result.get(SchemaTable.of("public", "Person2")).getRight(), 0);
-
-    }
-
     @Test
     public void testCacheAndUpdateVERTICESLabels() {
         this.sqlgGraph.tx().normalBatchModeOn();

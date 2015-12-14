@@ -56,9 +56,7 @@ public class TopologyManager {
             }
 
         } finally {
-            if (sqlgGraph.tx().isInBatchMode()) {
-                sqlgGraph.tx().batchMode(batchModeType);
-            }
+            sqlgGraph.tx().batchMode(batchModeType);
         }
 
     }
@@ -123,9 +121,7 @@ public class TopologyManager {
 
             }
         } finally {
-            if (sqlgGraph.tx().isInBatchMode()) {
-                sqlgGraph.tx().batchMode(batchModeType);
-            }
+            sqlgGraph.tx().batchMode(batchModeType);
         }
 
     }
@@ -160,9 +156,7 @@ public class TopologyManager {
             vertex.addEdge(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
 
         } finally {
-            if (sqlgGraph.tx().isInBatchMode()) {
-                sqlgGraph.tx().batchMode(batchModeType);
-            }
+            sqlgGraph.tx().batchMode(batchModeType);
         }
 
     }
@@ -199,9 +193,7 @@ public class TopologyManager {
             );
             edge.addEdge(SchemaManager.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
         } finally {
-            if (sqlgGraph.tx().isInBatchMode()) {
-                sqlgGraph.tx().batchMode(batchModeType);
-            }
+            sqlgGraph.tx().batchMode(batchModeType);
         }
 
     }
