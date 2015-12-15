@@ -28,8 +28,6 @@ public class SchemaManager {
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
     public static final String VERTICES = "VERTICES";
-    public static final String VERTEX_IN_LABELS = "IN_LABELS";
-    public static final String VERTEX_OUT_LABELS = "OUT_LABELS";
     public static final String EDGES = "EDGES";
     public static final String ID = "ID";
     public static final String VERTEX_SCHEMA = "VERTEX_SCHEMA";
@@ -959,7 +957,8 @@ public class SchemaManager {
                         if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
                             foreignKeys.add(column);
                             this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
-                            SchemaTable schemaTable = SchemaTable.of(column.split("\\.")[0], SchemaManager.VERTEX_PREFIX + column.split("\\.")[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
+                            String[] split = column.split("\\.");
+                            SchemaTable schemaTable = SchemaTable.of(split[0], SchemaManager.VERTEX_PREFIX + split[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
                             Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(schemaTable);
                             if (labels == null) {
                                 labels = Pair.of(new HashSet<>(), new HashSet<>());

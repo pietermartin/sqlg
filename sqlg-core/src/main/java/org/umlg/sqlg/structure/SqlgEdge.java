@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -259,15 +260,17 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-//            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
             String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
             if (properName == null) {
                 properName = columnName;
             }
-            String[] splittedColumn = properName.split("\\.");
-            if (splittedColumn.length < 4 || (splittedColumn.length == 4 && (splittedColumn[3].endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || splittedColumn[3].endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)))) {
+            String[] splittedColumn = properName.split(SchemaTableTree.ALIAS_SEPARATOR);
+            if (!properName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) && (splittedColumn.length < 4 || (splittedColumn[3].endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || splittedColumn[3].endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)))) {
+
                 Object o = resultSet.getObject(columnName);
                 String name = schemaTableTree.propertyNameFromAlias(properName);
+                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
+
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
@@ -301,7 +304,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-//            String properName = schemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
             String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
             if (properName == null) {
                 properName = columnName;
@@ -309,6 +311,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
             Object o = resultSet.getObject(columnName);
             if (schemaTableTree.containsLabelledColumn(properName)) {
                 String name = schemaTableTree.propertyNameFromLabeledAlias(properName);
+                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
+
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&

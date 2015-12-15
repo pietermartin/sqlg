@@ -213,8 +213,9 @@ public class ReplacedStep<S, E> {
         Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on
         for (String foreignKey : foreignKeys) {
-            String foreignKeySchema = foreignKey.split("\\.")[0];
-            String foreignKeyTable = foreignKey.split("\\.")[1];
+            String[] split = foreignKey.split("\\.");
+            String foreignKeySchema = split[0];
+            String foreignKeyTable = split[1];
             if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                         SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable)),
@@ -249,8 +250,9 @@ public class ReplacedStep<S, E> {
         Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on
         for (String foreignKey : foreignKeys) {
-            String foreignKeySchema = foreignKey.split("\\.")[0];
-            String foreignKeyTable = foreignKey.split("\\.")[1];
+            String[] split = foreignKey.split("\\.");
+            String foreignKeySchema = split[0];
+            String foreignKeyTable = split[1];
             if (direction == Direction.IN && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                 SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
                         SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable)),

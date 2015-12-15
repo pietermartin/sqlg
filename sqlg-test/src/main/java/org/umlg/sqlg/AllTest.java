@@ -54,6 +54,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
         TestBatch.class,
+        TestBatchUpdate.class,
         TestForeignKeyIndexPerformance.class,
         TestMultiThreadedBatch.class,
         TestRemoveEdge.class,
@@ -102,7 +103,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRepeatStepGraphBoth.class,
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
-        TestGremlinMod.class
+        TestGremlinMod.class,
+        TestAlias.class
 })
 public class AllTest {
 }
