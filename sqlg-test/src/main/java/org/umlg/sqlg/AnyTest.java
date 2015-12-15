@@ -5,7 +5,11 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.TestVertexNavToEdges;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.docs.DocumentationUsecases;
+import org.umlg.sqlg.test.edges.TestLoadEdge;
 import org.umlg.sqlg.test.gremlincompile.*;
+import org.umlg.sqlg.test.mod.TestRemoveProperty;
+import org.umlg.sqlg.test.mod.TestUpdateVertex;
+import org.umlg.sqlg.test.mod.TestVertexCreation;
 
 /**
  * Date: 2014/07/16
@@ -13,7 +17,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatStepGraphBoth.class
+        TestRepeatStepGraphOut.class
         })
 public class AnyTest {
 }

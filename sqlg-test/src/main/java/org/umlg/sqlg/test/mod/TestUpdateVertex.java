@@ -39,4 +39,15 @@ public class TestUpdateVertex extends BaseTest {
 
     }
 
+    @Test
+    public void testUpdatePropertyWithPeriod() {
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "test.A", "test");
+        this.sqlgGraph.tx().commit();
+        v = this.sqlgGraph.traversal().V(v).next();
+        v.property("test.A", "test1");
+        this.sqlgGraph.tx().commit();
+        v = this.sqlgGraph.traversal().V(v).next();
+        Assert.assertEquals("test1", v.property("test.A").value());
+    }
+
 }
