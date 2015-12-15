@@ -787,7 +787,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                     String columnName = resultSetMetaData.getColumnLabel(i);
                                     if (!(columnName.equals("ID") ||
-                                            columnName.equals(SchemaManager.VERTEX_IN_LABELS) || columnName.equals(SchemaManager.VERTEX_OUT_LABELS) ||
                                             inVertexColumnNames.contains(columnName) || outVertexColumnNames.contains(columnName))) {
                                         //this values end up in SqlElement.properties.
                                         //Its a ConcurrentHashMap which does not allow null key or value
@@ -933,13 +932,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-//            String properName = SchemaTableTree.threadLocalAliasColumnNameMap.get().get(columnName);
             String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
             if (properName == null) {
                 properName = columnName;
             }
-            if (properName.split("\\.").length < 4) {
+            if (properName.split(SchemaTableTree.ALIAS_SEPARATOR).length < 4) {
                 String name = schemaTableTree.propertyNameFromAlias(properName);
+                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
 
                 //Collect emit edge names, they must not be loaded
                 SchemaTableTree root = schemaTableTree.getRoot();
@@ -950,8 +949,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                 Object o = resultSet.getObject(columnName);
                 if (!name.equals("ID")
-                        && !name.equals(SchemaManager.VERTEX_IN_LABELS)
-                        && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
                         && !name.equals(SchemaManager.VERTEX_SCHEMA)
                         && !name.equals(SchemaManager.VERTEX_TABLE)
                         && !Objects.isNull(o)) {
@@ -972,9 +969,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (schemaTableTree.containsLabelledColumn(columnName)) {
                 Object o = resultSet.getObject(columnCount);
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
+                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
+
                 if (!name.endsWith("ID")
-                        && !name.equals(SchemaManager.VERTEX_IN_LABELS)
-                        && !name.equals(SchemaManager.VERTEX_OUT_LABELS)
                         && !name.equals(SchemaManager.VERTEX_SCHEMA)
                         && !name.equals(SchemaManager.VERTEX_TABLE)
                         && !Objects.isNull(o)) {
@@ -1000,8 +997,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             String columnName = resultSetMetaData.getColumnLabel(i);
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID")
-                    && !columnName.equals(SchemaManager.VERTEX_IN_LABELS)
-                    && !columnName.equals(SchemaManager.VERTEX_OUT_LABELS)
                     && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
                     && !columnName.equals(SchemaManager.VERTEX_TABLE)
                     && !Objects.isNull(o)) {

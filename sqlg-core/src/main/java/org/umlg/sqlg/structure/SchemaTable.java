@@ -9,6 +9,7 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -47,7 +48,12 @@ public class SchemaTable implements DataSerializable, Serializable {
 
     public static SchemaTable from(SqlgGraph sqlgGraph, final String label, String defaultSchema) {
         Objects.requireNonNull(label, "label may not be null!");
-        String[] schemaLabel = label.split("\\.");
+        String[] schemaLabel;
+        if (label.contains(SchemaTableTree.ALIAS_SEPARATOR)) {
+            schemaLabel = label.split("\\.");
+        } else {
+            schemaLabel = label.split("\\.");
+        }
         final String schema;
         final String table;
         if (schemaLabel.length > 1) {

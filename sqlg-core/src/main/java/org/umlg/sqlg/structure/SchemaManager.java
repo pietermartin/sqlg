@@ -79,6 +79,7 @@ public class SchemaManager {
     public static final String VERTICES = "VERTICES";
     public static final String VERTEX_IN_LABELS = "IN_LABELS";
     public static final String VERTEX_OUT_LABELS = "OUT_LABELS";
+    public static final String EDGES = "EDGES";
     public static final String ID = "ID";
     public static final String VERTEX_SCHEMA = "VERTEX_SCHEMA";
     public static final String VERTEX_TABLE = "VERTEX_TABLE";

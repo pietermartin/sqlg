@@ -27,9 +27,19 @@ public class TestLoadEdge extends BaseTest {
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person");
         Edge friend = person1.addEdge("friend", person2, "name", "edge1");
         this.sqlgGraph.tx().commit();
-
         Property p = this.sqlgGraph.traversal().E(friend).next().property("name", "edge2");
         Assert.assertTrue(p.isPresent());
+    }
+
+    @Test
+    public void testEdgePropertyWithPeriod() {
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person");
+        Edge friend = person1.addEdge("friend", person2, "name.A", "edge1");
+        this.sqlgGraph.tx().commit();
+        Property p = this.sqlgGraph.traversal().E(friend).next().property("name.A");
+        Assert.assertTrue(p.isPresent());
+        Assert.assertEquals("edge1", p.value());
     }
 
     @Test

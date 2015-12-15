@@ -47,7 +47,7 @@ public class SqlgUtil {
             ResultSet resultSet, SchemaTableTree leafSchemaTableTree) throws SQLException {
 
         SchemaTable schemaTable = leafSchemaTableTree.getSchemaTable();
-        String idProperty = schemaTable.getSchema() + "." + schemaTable.getTable() + "." + SchemaManager.ID;
+        String idProperty = schemaTable.getSchema() + SchemaTableTree.ALIAS_SEPARATOR + schemaTable.getTable() + SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID;
         Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
         Integer columnCount = propertyColumnsCounts.iterator().next();
         Long id = resultSet.getLong(columnCount);

@@ -105,6 +105,43 @@ public class TestRepeatStepGraphOut extends BaseTest {
 
     @Test
     //This is not optimized
+    public void testRepeatWithUnoptimizableInternalStepsAndPRopertyWithPeriod() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name.A", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name.A", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name.A", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name.A", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name.A", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name.A", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name.A", "c3");
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        this.sqlgGraph.tx().commit();
+
+        List<Map<String, Vertex>> t = this.sqlgGraph.traversal().V().repeat(__.groupCount("m").by("name.A").out()).times(2).<Map<String, Vertex>>cap("m").toList();
+        Assert.assertEquals(1, t.size());
+        Assert.assertTrue(t.get(0).containsKey("a1"));
+        Assert.assertTrue(t.get(0).containsKey("b1"));
+        Assert.assertTrue(t.get(0).containsKey("b1"));
+        Assert.assertTrue(t.get(0).containsKey("b1"));
+        Assert.assertTrue(t.get(0).containsKey("c1"));
+        Assert.assertTrue(t.get(0).containsKey("c1"));
+        Assert.assertTrue(t.get(0).containsKey("c1"));
+
+        Assert.assertEquals(1l, t.get(0).get("a1"));
+        Assert.assertEquals(2l, t.get(0).get("b1"));
+        Assert.assertEquals(2l, t.get(0).get("b2"));
+        Assert.assertEquals(2l, t.get(0).get("b3"));
+        Assert.assertEquals(2l, t.get(0).get("c1"));
+        Assert.assertEquals(2l, t.get(0).get("c2"));
+        Assert.assertEquals(2l, t.get(0).get("c3"));
+    }
+
+    @Test
+    //This is not optimized
     public void testRepeatNoLimit() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -144,13 +181,6 @@ public class TestRepeatStepGraphOut extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").times(0).repeat(__.out("ab").out("bc")).toList();
         Assert.assertEquals(1, vertices.size());
         Assert.assertTrue(vertices.contains(a1));
-
-        //TODO talk to Mr Marko, whats up with the 0
-//        vertices = this.sqlgGraph.traversal().V().hasLabel("A").repeat(__.out("ab").out("bc")).times(0).toList();
-//        Assert.assertEquals(3, vertices.size());
-//        Assert.assertTrue(vertices.contains(c1));
-//        Assert.assertTrue(vertices.contains(c2));
-//        Assert.assertTrue(vertices.contains(c3));
 
         vertices = this.sqlgGraph.traversal().V().hasLabel("A").repeat(__.out("ab", "bc")).times(1).toList();
         Assert.assertEquals(3, vertices.size());
@@ -241,6 +271,112 @@ public class TestRepeatStepGraphOut extends BaseTest {
         Assert.assertTrue(vertices.remove(d2));
         Assert.assertTrue(vertices.remove(d3));
         Assert.assertTrue(vertices.isEmpty());
+    }
+
+    @Test
+    public void testRepeatWithEmitFirstWithPerion() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name.AA", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name.AA", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name.AA", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name.AA", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name.AA", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name.AA", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name.AA", "c3");
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "name.AA", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "name.AA", "d2");
+        Vertex d3 = this.sqlgGraph.addVertex(T.label, "D", "name.AA", "d3");
+        c1.addEdge("cd", d1);
+        c1.addEdge("cd", d2);
+        c1.addEdge("cd", d3);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc", "cd")).times(3).toList();
+        Assert.assertEquals(14, vertices.size());
+        Assert.assertTrue(vertices.remove(a1));
+        Assert.assertTrue(vertices.remove(b1));
+        Assert.assertTrue(vertices.remove(b2));
+        Assert.assertTrue(vertices.remove(b3));
+        Assert.assertTrue(vertices.remove(c1));
+        Assert.assertTrue(vertices.remove(c1));
+        Assert.assertTrue(vertices.remove(c2));
+        Assert.assertTrue(vertices.remove(c3));
+        Assert.assertTrue(vertices.remove(d1));
+        Assert.assertTrue(vertices.remove(d2));
+        Assert.assertTrue(vertices.remove(d3));
+        Assert.assertTrue(vertices.remove(d1));
+        Assert.assertTrue(vertices.remove(d2));
+        Assert.assertTrue(vertices.remove(d3));
+        Assert.assertTrue(vertices.isEmpty());
+    }
+
+    @Test
+    public void testRepeatWithEmitFirstPathWithPeriod() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name.AA", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "name", "d1");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D", "name", "d2");
+        Vertex d3 = this.sqlgGraph.addVertex(T.label, "D", "name", "d3");
+        c1.addEdge("cd", d1);
+        c1.addEdge("cd", d2);
+        c1.addEdge("cd", d3);
+        this.sqlgGraph.tx().commit();
+
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "bc", "cd")).times(3).path().toList();
+        Assert.assertEquals(14, paths.size());
+        for (Path path : paths) {
+            System.out.println(path);
+        }
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1) && ((Vertex)p.get(0)).value("name.AA").equals("a1")));
+        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().get());
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)).findAny().get());
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)).findAny().get());
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d3)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d3)).findAny().get());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test

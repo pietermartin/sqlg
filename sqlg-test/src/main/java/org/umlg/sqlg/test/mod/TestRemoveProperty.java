@@ -78,4 +78,14 @@ public class TestRemoveProperty extends BaseTest {
         Assert.assertFalse(v1.property("ages").isPresent());
     }
 
+    @Test
+    public void testRemovePropertyWithPeriod() {
+        Vertex v1 = sqlgGraph.addVertex("name", "marko", "test.A", "test");
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(v1.property("test.A").isPresent());
+        v1.property("test.A").remove();
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(v1.property("test.A").isPresent());
+    }
+
 }
