@@ -4,7 +4,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
@@ -52,6 +54,7 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
 
     @Test
     public void testCaptureSchemaTableLabelsRollback() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsTransactionalSchema());
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "pieter");
         Vertex car1 = this.sqlgGraph.addVertex(T.label, "Car", "name", "bmw");
         person1.addEdge("drives", car1);
@@ -63,9 +66,12 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
         car2.addEdge("model", toyota);
         this.sqlgGraph.tx().rollback();
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTables = this.sqlgGraph.getSchemaManager().getLocalTableLabels();
-        if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
-            Assert.assertTrue(localTables.isEmpty());
-        }
+        Assert.assertTrue(localTables.containsKey(SchemaTable.of(SchemaManager.SQLG_SCHEMA, "V_vertex")));
+        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
+        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
+        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
+        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_drives")));
+        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_model")));
     }
 
     @Test
