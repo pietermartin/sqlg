@@ -619,13 +619,13 @@ public class SqlgGraph implements Graph {
             @Override
             @FeatureDescriptor(name = FEATURE_ADD_PROPERTY)
             public boolean supportsAddProperty() {
-                return false;
+                return true;
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_REMOVE_PROPERTY)
             public boolean supportsRemoveProperty() {
-                return false;
+                return true;
             }
 
             @Override
@@ -637,7 +637,7 @@ public class SqlgGraph implements Graph {
             @Override
             @FeatureDescriptor(name = FEATURE_NUMERIC_IDS)
             public boolean supportsNumericIds() {
-                return false;
+                return true;
             }
 
             @Override
