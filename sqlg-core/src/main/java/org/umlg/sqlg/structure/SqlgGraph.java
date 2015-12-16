@@ -108,6 +108,10 @@ import java.util.stream.Stream;
         test = "org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutorPerformanceTest",
         method = "executorEval",
         reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
+        method = "shouldHaveStandardStringRepresentation",
+        reason = "SqlgGraph includes the jdbc connection url.")
 public class SqlgGraph implements Graph {
 
     private final SqlgDataSource sqlgDataSource;
@@ -122,6 +126,12 @@ public class SqlgGraph implements Graph {
     private Configuration configuration = new BaseConfiguration();
     private final ISqlGFeatures features = new SqlGFeatures();
 
+    static {
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy()));
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy()));
+        TraversalStrategies.GlobalCache.getStrategies(Graph.class).setTraverserGeneratorFactory(new SqlgTraverserGeneratorFactory());
+    }
+
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
@@ -129,15 +139,7 @@ public class SqlgGraph implements Graph {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
-
-        TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgVertexStepStrategy.class);
-        TraversalStrategies.GlobalCache.getStrategies(Graph.class).removeStrategies(SqlgGraphStepStrategy.class);
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy(sqlgGraph)));
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy(sqlgGraph)));
-        TraversalStrategies.GlobalCache.getStrategies(Graph.class).setTraverserGeneratorFactory(new SqlgTraverserGeneratorFactory());
-
         sqlgGraph.schemaManager.loadSchema();
-
         return (G) sqlgGraph;
     }
 
@@ -450,8 +452,9 @@ public class SqlgGraph implements Graph {
         return (I) builder.graph(this).registry(new SqlgIoRegistry()).create();
     }
 
+    @Override
     public String toString() {
-        return StringFactory.graphString(this, "SqlGraph");
+        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty("jdbc.url") + ")";
     }
 
     public ISqlGFeatures features() {

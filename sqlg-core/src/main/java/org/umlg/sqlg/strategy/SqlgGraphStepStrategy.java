@@ -28,8 +28,8 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
-    public SqlgGraphStepStrategy(SqlgGraph sqlgGraph) {
-        super(sqlgGraph);
+    public SqlgGraphStepStrategy() {
+        super();
     }
 
     @Override
@@ -40,6 +40,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         if (!(startStep instanceof GraphStep)) {
             return;
         }
+        this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
 
         final GraphStep originalGraphStep = (GraphStep) startStep;
 

@@ -27,12 +27,13 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
-    public SqlgVertexStepStrategy(SqlgGraph sqlgGraph) {
-        super(sqlgGraph);
+    public SqlgVertexStepStrategy() {
+        super();
     }
 
     @Override
     public void apply(final Traversal.Admin<?, ?> traversal) {
+        this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {

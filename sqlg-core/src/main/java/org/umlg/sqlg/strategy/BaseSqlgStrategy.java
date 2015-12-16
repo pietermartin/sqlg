@@ -49,8 +49,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
 
-    public BaseSqlgStrategy(SqlgGraph sqlgGraph) {
-        this.sqlgGraph = sqlgGraph;
+    public BaseSqlgStrategy() {
     }
 
     protected abstract void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);

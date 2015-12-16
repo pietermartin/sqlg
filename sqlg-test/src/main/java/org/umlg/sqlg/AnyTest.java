@@ -20,7 +20,7 @@ import org.umlg.sqlg.test.schema.TestSqlgSchema;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestSqlgSchema.class,
-        TestBatch.class
+        TestSqlgSchema.class
         })
 public class AnyTest {
 }
