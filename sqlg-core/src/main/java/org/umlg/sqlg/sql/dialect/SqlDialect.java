@@ -417,4 +417,6 @@ public interface SqlDialect {
     default List<String> columnsToIgnore() {
         return Collections.emptyList();
     }
+
+    List<String> sqlgTopologyCreationScripts();
 }

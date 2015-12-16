@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test.rollback;
 
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
@@ -22,14 +24,14 @@ public class TestRollback extends BaseTest {
         }
     }
 
-//    @Test
-//    public void testRollback() {
-//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-//        this.sqlgGraph.tx().commit();
-//        v1.property("name", "john");
-//        this.sqlgGraph.tx().rollback();
-//        Assert.assertFalse(v1.property("name").isPresent());
-//    }
+    @Test
+    public void testRollback() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+        this.sqlgGraph.tx().commit();
+        v1.property("name", "john");
+        this.sqlgGraph.tx().rollback();
+        Assert.assertFalse(v1.property("name").isPresent());
+    }
 
     public static void validateException(final Throwable expected, final Throwable actual) {
         System.out.println(actual);

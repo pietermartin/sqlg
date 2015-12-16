@@ -943,24 +943,23 @@ public class SchemaManager {
             logger.debug("SchemaManager.loadSchema()...");
         }
         //check if the topology schema exists, if not create it
-        if (!existSqlgSchema()) {
+        boolean existSqlgSchema = existSqlgSchema();
+        if (!existSqlgSchema) {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
             createSqlgSchema();
             //committing here will ensure that sqlg creates the tables.
             this.sqlgGraph.tx().commit();
             stopWatch.stop();
-            System.out.println(stopWatch.toString());
-            //now delete the data in the tables as they are dummy entries used to create the tables.
-            deleteDummyDataInSqlgSchema();
-            this.sqlgGraph.tx().commit();
-            //add in the public schema
+            logger.debug("Time to create sqlg topology: " + stopWatch.toString());
+        }
+        loadTopology();
+        if (!existSqlgSchema) {
             addPublicSchema();
             this.sqlgGraph.tx().commit();
-        } else {
-            loadTopology();
-            loadUserSchema();
         }
+        loadUserSchema();
+        this.sqlgGraph.tx().commit();
         if (distributed) {
             this.schemas.putAll(this.localSchemas);
             this.labelSchemas.putAll(this.localLabelSchemas);
@@ -1265,52 +1264,18 @@ public class SchemaManager {
         );
     }
 
-    private void deleteDummyDataInSqlgSchema() {
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        Arrays.asList(SQLG_SCHEMA_IN_EDGES_EDGE, SQLG_SCHEMA_OUT_EDGES_EDGE, SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                .forEach(table -> {
-                    try {
-                        try (Statement st = conn.createStatement()) {
-                            String sql = "DELETE FROM " + this.sqlDialect.maybeWrapInQoutes(SQLG_SCHEMA) + "." + this.sqlDialect.maybeWrapInQoutes("E_" + table);
-                            if (this.sqlDialect.needsSemicolon()) {
-                                sql += ";";
-                            }
-                            st.execute(sql);
-                        }
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-        Arrays.asList(SQLG_SCHEMA_SCHEMA, SQLG_SCHEMA_VERTEX_LABEL, SQLG_SCHEMA_EDGE_LABEL, SQLG_SCHEMA_PROPERTY).forEach(table -> {
-            try {
-                try (Statement st = conn.createStatement()) {
-                    String sql = "DELETE FROM " + this.sqlDialect.maybeWrapInQoutes(SQLG_SCHEMA) + "." + this.sqlDialect.maybeWrapInQoutes("V_" + table);
-                    if (this.sqlDialect.needsSemicolon()) {
-                        sql += ";";
-                    }
-                    st.execute(sql);
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
     private void createSqlgSchema() {
-        Vertex schema = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA, "name", "deleteMe", "createdOn", LocalDateTime.now());
-        Vertex vertex = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL, "name", "deleteMe", "schemaVertex", "deleteMe", "createdOn", LocalDateTime.now());
-        Vertex edge = this.sqlgGraph.addVertex(T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL, "name", "deleteMe", "createdOn", LocalDateTime.now());
-        Vertex properties = this.sqlgGraph.addVertex(
-                T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY,
-                "name", "deleteMe",
-                "createdOn", LocalDateTime.now(),
-                "type", String.class.getName()
-        );
-        schema.addEdge(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
-        vertex.addEdge(SQLG_SCHEMA_IN_EDGES_EDGE, edge);
-        vertex.addEdge(SQLG_SCHEMA_OUT_EDGES_EDGE, edge);
-        vertex.addEdge(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, properties);
-        edge.addEdge(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, properties);
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            Statement statement = conn.createStatement();
+            List<String> creationScripts = this.sqlDialect.sqlgTopologyCreationScripts();
+            //Hsqldb can not do this in one go
+            for (String creationScript : creationScripts) {
+                statement.execute(creationScript);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private boolean existSqlgSchema() {
