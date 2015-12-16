@@ -265,7 +265,7 @@ public class SqlgUtil {
                 case PERIOD:
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
                     preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getMonths());
-                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getYears());
+                    preparedStatement.setInt(parameterStartIndex++, ((Period) pair.right).getDays());
                     break;
                 case DURATION:
                     preparedStatement.setLong(parameterStartIndex++, ((Duration) pair.right).getSeconds());

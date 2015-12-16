@@ -33,9 +33,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.*;
 
 /**
@@ -1038,14 +1036,14 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"DATE"};
             case LOCALDATETIME:
                 return new String[]{"TIMESTAMP WITH TIME ZONE"};
-//            case ZONEDDATETIME:
-//                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
+            case ZONEDDATETIME:
+                return new String[]{"TIMESTAMP WITH TIME ZONE", "TEXT"};
             case LOCALTIME:
                 return new String[]{"TIME WITH TIME ZONE"};
-//            case PERIOD:
-//                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
-//            case DURATION:
-//                return new String[]{"BIGINT", "INTEGER"};
+            case PERIOD:
+                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
+            case DURATION:
+                return new String[]{"BIGINT", "INTEGER"};
             case STRING:
                 return new String[]{"TEXT"};
             case JSON:
@@ -1218,21 +1216,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof LocalDateTime) {
             return;
         }
-        //TODO, needs schema db with types as it classes with regular LOCALDATETIME
-//        if (value instanceof ZonedDateTime) {
-//            return;
-//        }
+        if (value instanceof ZonedDateTime) {
+            return;
+        }
         if (value instanceof LocalTime) {
             return;
         }
-        //TODO, needs schema db with types as it classes with regular Integer
-//        if (value instanceof Period) {
-//            return;
-//        }
-        //TODO, needs schema db with types as it classes with regular Long
-//        if (value instanceof Duration) {
-//            return;
-//        }
+        if (value instanceof Period) {
+            return;
+        }
+        if (value instanceof Duration) {
+            return;
+        }
         if (value instanceof JsonNode) {
             return;
         }

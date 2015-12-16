@@ -19,6 +19,10 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.lang.reflect.Array;
 import java.sql.*;
 import java.sql.Date;
+import java.time.Duration;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -524,7 +528,7 @@ public abstract class SqlgElement implements Element {
         return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
-    protected void loadProperty(ResultSetMetaData resultSetMetaData, ResultSet resultSet, int i, String columnName, Object o) throws SQLException {
+    protected void loadProperty(ResultSetMetaData resultSetMetaData, ResultSet resultSet, int i, String columnName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap) throws SQLException {
         if (columnName.endsWith(SchemaManager.ZONEID) ||
                 columnName.endsWith(SchemaManager.MONTHS) ||
                 columnName.endsWith(SchemaManager.DAYS) ||
@@ -544,38 +548,39 @@ public abstract class SqlgElement implements Element {
                 PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case DURATION:
-//                        long seconds = (Long) o;
+                        long seconds = (Long) o;
                         //load the months and days as its needed to construct the Period
-//                        Collection<String> aliasedNanos = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[0]);
-//                        if (aliasedNanos.isEmpty()) {
-//                            aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-//                        }
-//                        int nanos = resultSet.getInt(aliasedNanos.iterator().next());
-//                        this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
-                        throw new IllegalStateException("Duration not yet supported!");
+                        String nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                        Collection<String> aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
+                        if (aliasedNanos.isEmpty()) {
+                            aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                        }
+                        int nanos = resultSet.getInt(aliasedNanos.iterator().next());
+                        this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
+                        break;
                     default:
                         this.properties.put(columnName, o);
                 }
                 break;
             case Types.INTEGER:
-//                propertyType = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString()).get(columnName);
                 propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case PERIOD:
-//                        int years = (Integer) o;
-//                        //load the months and days as its needed to construct the Period
-//                        Collection<String> aliasedMonth = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[0]);
-//                        if (aliasedMonth.isEmpty()) {
-//                            aliasedMonth = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-//                        }
-//                        int months = resultSet.getInt(aliasedMonth.iterator().next());
-//                        Collection<String> aliasedDay = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[1]);
-//                        if (aliasedDay.isEmpty()) {
-//                            aliasedDay = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
-//                        }
-//                        int days = resultSet.getInt(aliasedDay.iterator().next());
-//                        this.properties.put(columnName, Period.of(years, months, days));
-                        throw new IllegalStateException("Period not yet supported!");
+                        int years = (Integer) o;
+                        String monthColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                        Collection<String> aliasedMonth = threadLocalColumnNameAliasMap.get(monthColumn);
+                        if (aliasedMonth.isEmpty()) {
+                            aliasedMonth = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                        }
+                        int months = resultSet.getInt(aliasedMonth.iterator().next());
+                        String dayColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
+                        Collection<String> aliasedDay = threadLocalColumnNameAliasMap.get(dayColumn);
+                        if (aliasedDay.isEmpty()) {
+                            aliasedDay = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
+                        }
+                        int days = resultSet.getInt(aliasedDay.iterator().next());
+                        this.properties.put(columnName, Period.of(years, months, days));
+                        break;
                     default:
                         this.properties.put(columnName, o);
                 }
@@ -596,16 +601,17 @@ public abstract class SqlgElement implements Element {
                         this.properties.put(columnName, ((Timestamp) o).toLocalDateTime());
                         break;
                     case ZONEDDATETIME:
-//                        //load the months and days as its needed to construct the Period
-//                        Collection<String> zonedId = SchemaTableTree.threadLocalColumnNameAliasMap.get().get(getSchemaTablePrefixed() + "." + columnName + propertyType.getPostFixes()[0]);
-//                        if (zonedId.isEmpty()) {
-//                            zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-//                        }
-//                        String zoneId = resultSet.getString(zonedId.iterator().next());
-//                        ZoneId zoneId1 = ZoneId.of(zoneId);
-//                        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
-//                        this.properties.put(columnName, zonedDateTimeAGT);
-                        throw new IllegalStateException("ZonedDateTime not yet supported!");
+                        //load the months and days as its needed to construct the Period
+                        String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                        Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
+                        if (zonedId.isEmpty()) {
+                            zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                        }
+                        String zoneId = resultSet.getString(zonedId.iterator().next());
+                        ZoneId zoneId1 = ZoneId.of(zoneId);
+                        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
+                        this.properties.put(columnName, zonedDateTimeAGT);
+                        break;
                     default:
                         throw new IllegalStateException("Database timestamp column must be either for a LocalDateTime or ZonedDateTime, found " + propertyType.name());
                 }

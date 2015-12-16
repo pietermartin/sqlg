@@ -953,7 +953,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         && !name.equals(SchemaManager.VERTEX_TABLE)
                         && !Objects.isNull(o)) {
 
-                    loadProperty(resultSetMetaData, resultSet, i, name, o);
+                    loadProperty(resultSetMetaData, resultSet, i, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 }
             }
         }
@@ -977,7 +977,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         && !Objects.isNull(o)) {
 
                     toRemove.put(columnName, columnCount);
-                    loadProperty(resultSetMetaData, resultSet, columnCount, name, o);
+                    loadProperty(resultSetMetaData, resultSet, columnCount, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 }
             }
         }
@@ -1003,7 +1003,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     && !this.sqlgGraph.getSqlDialect().columnsToIgnore().contains(columnName)
                     && !Objects.isNull(o)) {
 
-                loadProperty(resultSetMetaData, resultSet, i, columnName, o);
+                loadProperty(resultSetMetaData, resultSet, i, columnName, o, ArrayListMultimap.create());
             }
         }
     }

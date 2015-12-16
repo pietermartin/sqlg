@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -21,27 +22,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
     private Logger logger = LoggerFactory.getLogger(SqlgEdge.class.getName());
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
-
-    /**
-     * This is called when creating a new edge. from vin.addEdge(label, vout)
-     *
-     * @param sqlgGraph
-     * @param schema
-     * @param table
-     * @param inVertex
-     * @param outVertex
-     * @param keyValues
-     */
-//    public SqlgEdge(SqlgGraph sqlgGraph, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
-//        super(sqlgGraph, schema, table);
-//        this.inVertex = inVertex;
-//        this.outVertex = outVertex;
-//        try {
-//            insertEdge(keyValues);
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
 
     public SqlgEdge(SqlgGraph sqlgGraph, boolean complete, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
         super(sqlgGraph, schema, table);
@@ -276,7 +256,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                    loadProperty(resultSetMetaData, resultSet, i, name, o);
+                    loadProperty(resultSetMetaData, resultSet, i, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
 
                 }
                 if (!Objects.isNull(o)) {
@@ -318,7 +298,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                    loadProperty(resultSetMetaData, resultSet, i, name, o);
+                    loadProperty(resultSetMetaData, resultSet, i, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 } else if (!Objects.isNull(o)) {
                     if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                         inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
@@ -350,7 +330,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                loadProperty(resultSetMetaData, resultSet, i, columnName, o);
+                loadProperty(resultSetMetaData, resultSet, i, columnName, o, ArrayListMultimap.create());
 
             }
             if (!Objects.isNull(o)) {
