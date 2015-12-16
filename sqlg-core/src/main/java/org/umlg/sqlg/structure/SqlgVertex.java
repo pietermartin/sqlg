@@ -891,7 +891,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     protected void load() {
-        //if in batch mode only load vertexes that are not new.
+        //if in batch mode, only load vertexes that are not new.
         //new vertexes have no id, impossible to load, but then all its properties are already cached.
         if ((!this.sqlgGraph.tx().isInBatchMode() && this.properties.isEmpty()) ||
                 (this.properties.isEmpty() && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() &&
@@ -990,6 +990,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
+    //TODO optimize the if statement here to be outside the main ResultSet loop
     @Override
     public void loadResultSet(ResultSet resultSet) throws SQLException {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
@@ -999,6 +1000,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (!columnName.equals("ID")
                     && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
                     && !columnName.equals(SchemaManager.VERTEX_TABLE)
+                    && !this.sqlgGraph.getSqlDialect().columnsToIgnore().contains(columnName)
                     && !Objects.isNull(o)) {
 
                 loadProperty(resultSetMetaData, resultSet, i, columnName, o);

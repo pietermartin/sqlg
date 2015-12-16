@@ -201,7 +201,7 @@ public class TopologyManager {
     private static BatchManager.BatchModeType flushAndSetTxToNone(SqlgGraph sqlgGraph) {
         //topology elements can not be added in batch mode because on flushing the topology
         //needs to be queries and yet the elements are still in the cache.
-        BatchManager.BatchModeType batchModeType = null;
+        BatchManager.BatchModeType batchModeType = sqlgGraph.tx().getBatchModeType();
         if (sqlgGraph.tx().isInBatchMode()) {
             batchModeType = sqlgGraph.tx().getBatchModeType();
             sqlgGraph.tx().flush();

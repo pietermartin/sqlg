@@ -14,10 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.*;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.*;
 
 public interface SqlDialect {
 
@@ -411,4 +408,13 @@ public interface SqlDialect {
     boolean supportsBulkWithinOut();
 
     String afterCreateTemporaryTableStatement();
+
+    /**
+     * These are internal columns used by sqlg that must be ignored when loading elements.
+     * eg. '_copy_dummy' when doing using the copy command on postgresql.
+     * @return
+     */
+    default List<String> columnsToIgnore() {
+        return Collections.emptyList();
+    }
 }

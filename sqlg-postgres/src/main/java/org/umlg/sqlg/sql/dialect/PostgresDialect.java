@@ -47,6 +47,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     private static final String BATCH_NULL = "\\N";
     private static final String COPY_COMMAND_SEPARATOR = "\t";
     private static final int PARAMETER_LIMIT = 32767;
+    private static final String COPY_DUMMY = "_copy_dummy";
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
 
     public PostgresDialect(Configuration configurator) {
@@ -164,8 +165,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         sqlgGraph.getSchemaManager().ensureColumnExist(
                                 schemaTable.getSchema(),
                                 SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
-                                ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
-                        sql.append(maybeWrapInQoutes("_copy_dummy"));
+                                ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
+                        sql.append(maybeWrapInQoutes(COPY_DUMMY));
                     } else {
                         int count = 1;
                         for (String key : vertices.getLeft()) {
@@ -473,8 +474,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sqlgGraph.getSchemaManager().ensureColumnExist(
                     vertex.getSchema(),
                     SchemaManager.VERTEX_PREFIX + vertex.getTable(),
-                    ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
-            sql.append(maybeWrapInQoutes("_copy_dummy"));
+                    ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
+            sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {
             int count = 1;
             for (String key : keyValueMap.keySet()) {
@@ -508,8 +509,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sqlgGraph.getSchemaManager().ensureColumnExist(
                     schemaTable.getSchema(),
                     SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
-                    ImmutablePair.of("_copy_dummy", PropertyType.from(0)));
-            sql.append(maybeWrapInQoutes("_copy_dummy"));
+                    ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
+            sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {
             int count = 1;
             for (String key : keyValueMap.keySet()) {
@@ -1703,5 +1704,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public String afterCreateTemporaryTableStatement() {
         return "ON COMMIT DROP";
+    }
+
+    @Override
+    public List<String> columnsToIgnore() {
+        return Arrays.asList(COPY_DUMMY);
     }
 }

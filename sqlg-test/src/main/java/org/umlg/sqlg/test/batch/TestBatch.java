@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -14,7 +13,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
@@ -475,8 +473,11 @@ public class TestBatch extends BaseTest {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         Edge sqlgEdge = root.addEdge("rootGod", god);
-
-        Assert.assertEquals(sqlgEdge, vertexTraversal(root).outE("rootGod").next());
+        Assert.assertNull(sqlgEdge.id());
+        Edge rootGodEdge = vertexTraversal(root).outE("rootGod").next();
+        //Querying triggers the cache to be flushed, so the result will have an id
+        Assert.assertNotNull(rootGodEdge);
+        Assert.assertNotNull(rootGodEdge.id());
         this.sqlgGraph.tx().commit();
     }
 
