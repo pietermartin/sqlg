@@ -16,11 +16,16 @@ import java.util.Map;
 public class TopologyManager {
 
     static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
-        return sqlgGraph.addVertex(
-                T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA,
-                "name", schema,
-                "createdOn", LocalDateTime.now()
-        );
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            return sqlgGraph.addVertex(
+                    T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA,
+                    "name", schema,
+                    "createdOn", LocalDateTime.now()
+            );
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
     }
 
     static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
