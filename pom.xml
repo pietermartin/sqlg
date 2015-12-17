@@ -31,7 +31,7 @@
         <url>git@github.com:pietermartin/sqlg.git</url>
     </scm>
     <properties>
-        <sqlg.version>1.1.1-SNAPSHOT</sqlg.version>
+        <sqlg.version>1.2.0-SNAPSHOT</sqlg.version>
         <tinkerpop.version>3.1.0-incubating</tinkerpop.version>
     </properties>
     <developers>
