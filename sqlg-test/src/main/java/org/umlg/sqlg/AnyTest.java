@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.mod.TestRemoveProperty;
 import org.umlg.sqlg.test.mod.TestUpdateVertex;
 import org.umlg.sqlg.test.mod.TestVertexCreation;
+import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
 /**
  * Date: 2014/07/16
@@ -17,7 +18,13 @@ import org.umlg.sqlg.test.mod.TestVertexCreation;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatStepGraphOut.class
+        TestBatch.class,
+        TestBatchedStreaming.class,
+        TestBatchServerSideEdgeCreation.class,
+        TestBatchUpdate.class,
+        TestMultiThreadedBatch.class,
+        TestStreamingEdge.class,
+        TestStreamVertex.class
         })
 public class AnyTest {
 }

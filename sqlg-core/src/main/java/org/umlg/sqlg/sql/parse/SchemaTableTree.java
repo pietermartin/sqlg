@@ -657,7 +657,7 @@ public class SchemaTableTree {
             } else {
                 withInOutMap.put("without", "unused");
             }
-            String copySql = sqlgGraph.getSqlDialect().constructManualCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
+            String copySql = sqlgGraph.getSqlDialect().temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
             OutputStream out = sqlgGraph.getSqlDialect().streamSql(this.sqlgGraph, copySql);
 
             for (Object withInOutValue : withInOuts) {
