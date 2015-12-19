@@ -1,17 +1,17 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -21,6 +21,7 @@ import java.util.Optional;
  */
 public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
+    private Logger logger = LoggerFactory.getLogger(BatchManager.class.getName());
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
@@ -103,7 +104,12 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             return;
         try {
             if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
-                this.threadLocalTx.get().getBatchManager().close();
+                try {
+                    this.threadLocalTx.get().getBatchManager().close();
+                } catch (Exception e) {
+                    //swallow
+                    logger.debug("exception closing streams on rollback", e);
+                }
             }
             Connection connection = threadLocalTx.get().getConnection();
             connection.rollback();
