@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -12,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -936,9 +938,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (properName == null) {
                 properName = columnName;
             }
-            if (properName.split(SchemaTableTree.ALIAS_SEPARATOR).length < 4) {
+            if (!properName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) && !properName.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
+//            if (properName.split(SchemaTableTree.ALIAS_SEPARATOR).length < 4) {
                 String name = schemaTableTree.propertyNameFromAlias(properName);
-                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
+
+                //Optimized!!, using String.replace is slow
+                Iterator<String> split = Splitter.on(SchemaTableTree.ALIAS_SEPARATOR).split(name).iterator();
+                name = split.next();
+                if (split.hasNext()) {
+                    name += "." + split.next() + "." + split.next();
+                }
 
                 //Collect emit edge names, they must not be loaded
                 SchemaTableTree root = schemaTableTree.getRoot();
@@ -969,7 +978,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (schemaTableTree.containsLabelledColumn(columnName)) {
                 Object o = resultSet.getObject(columnCount);
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
+//                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
 
                 if (!name.endsWith("ID")
                         && !name.equals(SchemaManager.VERTEX_SCHEMA)

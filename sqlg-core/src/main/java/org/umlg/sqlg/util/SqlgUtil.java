@@ -37,8 +37,7 @@ public class SqlgUtil {
             LinkedList<SchemaTableTree> subQueryStack, int subQueryCount, AliasMapHolder copyAliasMapHolder,
             Multimap<String, Integer> columnNameCountMap) throws SQLException {
 
-        Multimap<String, Emit<E>> labeledResult = loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, subQueryCount, copyAliasMapHolder);
-        return labeledResult;
+        return loadLabeledElements(sqlgGraph, columnNameCountMap, resultSet, subQueryStack, subQueryCount, copyAliasMapHolder);
     }
 
     public static <E> Optional<E> loadElement(
@@ -121,6 +120,7 @@ public class SqlgUtil {
 
         while (resultSet.next()) {
             AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
+
             //First load all labeled entries from the resultSet
             Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
             Multimap<String, Integer> columnNameCountMap2 = ArrayListMultimap.create();
@@ -131,6 +131,7 @@ public class SqlgUtil {
                 columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
                 columnNameCountMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
             }
+
             int subQueryDepth = 0;
             List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
             Multimap<String, Emit<E>> previousLabeledElements = null;

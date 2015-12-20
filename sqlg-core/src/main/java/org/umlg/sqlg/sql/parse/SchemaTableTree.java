@@ -1,6 +1,7 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -48,7 +49,9 @@ public class SchemaTableTree {
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
     private List<Comparator> comparators = new ArrayList<>();
+    //labels are immutable
     private Set<String> labels;
+    private String reducedLabels;
     //untilFirst is for the repeatStep optimization
     private boolean untilFirst;
     private boolean emitFirst;
@@ -99,7 +102,7 @@ public class SchemaTableTree {
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
         this.comparators = new ArrayList<>();
-        this.labels = new HashSet<>();
+        this.labels = Collections.emptySet();
     }
 
     /**
@@ -128,7 +131,7 @@ public class SchemaTableTree {
         this(sqlgGraph, schemaTable, stepDepth);
         this.hasContainers = hasContainers;
         this.comparators = comparators;
-        this.labels = labels;
+        this.labels = Collections.unmodifiableSet(labels);
         this.stepType = stepType;
         this.emit = emit;
         this.untilFirst = untilFirst;
@@ -205,7 +208,7 @@ public class SchemaTableTree {
         schemaTableTree.direction = direction;
         this.children.add(schemaTableTree);
         schemaTableTree.stepType = isEdgeVertexStep ? STEP_TYPE.EDGE_VERTEX_STEP : STEP_TYPE.VERTEX_STEP;
-        schemaTableTree.labels = labels;
+        schemaTableTree.labels = Collections.unmodifiableSet(labels);
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.emitFirst = emitFirst;
@@ -265,10 +268,6 @@ public class SchemaTableTree {
         return emit;
     }
 
-    public void setLabels(Set<String> labels) {
-        this.labels = labels;
-    }
-
     public AliasMapHolder getAliasMapHolder() {
         Preconditions.checkState(getParent() == null, "The aliasMapHolder is only on the root SchemaTableTree");
         return aliasMapHolder;
@@ -283,10 +282,9 @@ public class SchemaTableTree {
     public boolean containsLabelledColumn(String columnName) {
         if (columnName.startsWith(this.reducedLabels() + ALIAS_SEPARATOR)) {
             String column = columnName.substring(this.reducedLabels().length() + ALIAS_SEPARATOR.length());
-            String[] splittedColumn = column.split(ALIAS_SEPARATOR);
-            String schema = splittedColumn[0];
-            String table = splittedColumn[1];
-            Preconditions.checkState(table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX), "SchemaTableTree.containsColumn table must be prefixed! table = " + table);
+            Iterator<String> split = Splitter.on(ALIAS_SEPARATOR).split(column).iterator();
+            String schema = split.next();
+            String table = split.next();
             return schema.equals(this.schemaTable.getSchema()) && table.equals(this.schemaTable.getTable());
         } else {
             return false;
@@ -1350,8 +1348,8 @@ public class SchemaTableTree {
     }
 
     public String calculateLabeledAliasId() {
-        String labels = reducedLabels();
-        String result = labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
+        String reducedLabels = reducedLabels();
+        String result = reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
         String alias = rootAliasAndIncrement();
         this.getThreadLocalColumnNameAliasMap().put(result, alias);
         this.getThreadLocalAliasColumnNameMap().put(alias, result);
@@ -1359,8 +1357,8 @@ public class SchemaTableTree {
     }
 
     public String calculateLabeledAliasPropertyName(String propertyName) {
-        String labels = reducedLabels();
-        String result = labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
+        String reducedLabels = reducedLabels();
+        String result = reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
         String alias = rootAliasAndIncrement();
         this.getThreadLocalColumnNameAliasMap().put(result, alias);
         this.getThreadLocalAliasColumnNameMap().put(alias, result);
@@ -1396,15 +1394,15 @@ public class SchemaTableTree {
     }
 
     public String labeledMappedAliasPropertyName(String propertyName, Multimap<String, String> columnNameAliasMapCopy) {
-        String labels = reducedLabels();
-        String result = labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
+        String reducedLabels = reducedLabels();
+        String result = reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
         List<String> strings = (List<String>) columnNameAliasMapCopy.get(result);
         return strings.remove(0);
     }
 
     public String labeledMappedAliasId(Multimap<String, String> columnNameAliasMapCopy) {
-        String labels = reducedLabels();
-        String result = labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
+        String reducedLabels = reducedLabels();
+        String result = reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
         List<String> strings = (List<String>) columnNameAliasMapCopy.get(result);
         return strings.remove(0);
     }
@@ -1434,7 +1432,13 @@ public class SchemaTableTree {
     }
 
     public String propertyNameFromAlias(String alias) {
-        return alias.replace(getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR, "");
+        //this code is optimized for speed, used to use String.replace but its slow
+        int lastIndexOfAlisSeparator = alias.lastIndexOf(ALIAS_SEPARATOR);
+        if (lastIndexOfAlisSeparator != -1) {
+            return alias.substring(lastIndexOfAlisSeparator + ALIAS_SEPARATOR.length());
+        } else {
+            return alias;
+        }
     }
 
     public String aliasPropertyName(String propertyName) {
@@ -1443,13 +1447,13 @@ public class SchemaTableTree {
 
 
     public String labeledAliasPropertyName(String propertyName) {
-        String labels = reducedLabels();
-        return labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
+        String reducedLabels = reducedLabels();
+        return reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
     }
 
     public String labeledAliasId() {
-        String labels = reducedLabels();
-        return labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
+        String reducedLabels = reducedLabels();
+        return reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
     }
 
 
@@ -1467,13 +1471,17 @@ public class SchemaTableTree {
 
 
     public String propertyNameFromLabeledAlias(String alias) {
-        String labels = reducedLabels();
-        return alias.replace(labels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR, "");
+        //this code is optimized for speed, used to use String.replace but its slow
+        String reducedLabels = reducedLabels();
+        int lengthToWack = reducedLabels.length() + ALIAS_SEPARATOR.length() + getSchemaTable().getSchema().length() + ALIAS_SEPARATOR.length() + getSchemaTable().getTable().length() + ALIAS_SEPARATOR.length();
+        return alias.substring(lengthToWack);
     }
 
-    public String reducedLabels() {
-        String labels = getLabels().stream().reduce((a, b) -> a + ALIAS_SEPARATOR + b).get();
-        return labels;
+    private String reducedLabels() {
+        if (this.reducedLabels == null) {
+            this.reducedLabels = getLabels().stream().reduce((a, b) -> a + ALIAS_SEPARATOR + b).get();
+        }
+        return this.reducedLabels;
     }
 
     private LinkedList<SchemaTableTree> constructQueryStackFromLeaf() {
@@ -1831,7 +1839,7 @@ public class SchemaTableTree {
     }
 
     public Set<String> getLabels() {
-        return labels;
+        return this.labels;
     }
 
     public boolean isEdgeVertexStep() {

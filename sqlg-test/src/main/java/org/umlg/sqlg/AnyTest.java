@@ -18,13 +18,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatch.class,
-        TestBatchedStreaming.class,
-        TestBatchServerSideEdgeCreation.class,
-        TestBatchUpdate.class,
-        TestMultiThreadedBatch.class,
-        TestStreamingEdge.class,
-        TestStreamVertex.class
+        TestRepeatStepGraphOut.class
         })
 public class AnyTest {
 }
