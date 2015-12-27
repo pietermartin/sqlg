@@ -1,17 +1,17 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -24,6 +24,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
+    private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
 
     protected final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
         protected TransactionCache initialValue() {
@@ -211,6 +212,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!this.isInBatchMode()) {
             throw new IllegalStateException("Transaction must be in batch mode to flush");
         }
+        this.logger.debug("flushing transaction!!!");
         if (!this.getBatchManager().isBusyFlushing()) {
             this.getBatchManager().flush();
         }
