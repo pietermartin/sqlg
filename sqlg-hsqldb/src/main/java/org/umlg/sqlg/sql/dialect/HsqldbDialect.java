@@ -61,11 +61,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushVertexLabelCache(SqlgGraph sqlgGraph, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
     public String getBatchNull() {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }

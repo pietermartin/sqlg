@@ -244,64 +244,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     copyManager.copyIn(sql.toString(), is);
                 }
             }
-
-
         } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    public void flushVertexLabelCache(SqlgGraph sqlgGraph, Map<SqlgVertex, Pair<String, String>> vertexOutInLabelMap) {
-        if (!vertexOutInLabelMap.isEmpty()) {
-            Connection conn = sqlgGraph.tx().getConnection();
-            StringBuilder sql = new StringBuilder();
-            sql.append("UPDATE \"VERTICES\" a\n" +
-                    "SET (\"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\") =\n" +
-                    "\t(v.\"VERTEX_SCHEMA\", v.\"VERTEX_TABLE\", v.\"IN_LABELS\", v.\"OUT_LABELS\")\n" +
-                    "FROM ( \n" +
-                    "    VALUES \n");
-            int count = 1;
-            for (SqlgVertex sqlgVertex : vertexOutInLabelMap.keySet()) {
-                Pair<String, String> outInLabel = vertexOutInLabelMap.get(sqlgVertex);
-                sql.append("        (");
-                sql.append(sqlgVertex.id());
-                sql.append(", '");
-                sql.append(sqlgVertex.getSchema());
-                sql.append("', '");
-                sql.append(sqlgVertex.getTable());
-                sql.append("', ");
-                if (outInLabel.getRight() == null) {
-                    sql.append("null");
-                } else {
-                    sql.append("'");
-                    sql.append(outInLabel.getRight());
-                    sql.append("'");
-                }
-                sql.append(", ");
-
-                if (outInLabel.getLeft() == null) {
-                    sql.append("null");
-                } else {
-                    sql.append("'");
-                    sql.append(outInLabel.getLeft());
-                    sql.append("'");
-                }
-                sql.append(")");
-                if (count++ < vertexOutInLabelMap.size()) {
-                    sql.append(",        \n");
-                }
-            }
-            sql.append("\n) AS v(id, \"VERTEX_SCHEMA\", \"VERTEX_TABLE\", \"IN_LABELS\", \"OUT_LABELS\")");
-            sql.append("\nWHERE a.\"ID\" = v.id");
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            try (Statement statement = conn.createStatement()) {
-                statement.execute(sql.toString());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
