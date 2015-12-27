@@ -104,7 +104,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
         TestGremlinMod.class,
-        TestAlias.class
+        TestAlias.class,
+        TestBatchEdge.class
 })
 public class AllTest {
 }

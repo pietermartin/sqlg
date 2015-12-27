@@ -128,7 +128,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     /**
      * flushes the cache via the copy command.
-     * first writes the
      *
      * @param vertexCache A rather complex object.
      *                    The map's key is the vertex being cached.
@@ -213,6 +212,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
             for (SchemaTable schemaTable : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(schemaTable);
+                long endHigh;
+                long numberInserted;
                 try (InputStream is = mapToEdge_InputStream(triples)) {
                     StringBuffer sql = new StringBuffer();
                     sql.append("COPY ");
@@ -241,7 +242,18 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
-                    copyManager.copyIn(sql.toString(), is);
+                    numberInserted = copyManager.copyIn(sql.toString(), is);
+                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.EDGE_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        resultSet.next();
+                        endHigh = resultSet.getLong(1);
+                        resultSet.close();
+                    }
+                    //set the id on the vertex
+                    long id = endHigh - numberInserted + 1;
+                    for (SqlgEdge sqlgEdge: triples.getRight().keySet()) {
+                        sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                    }
                 }
             }
         } catch (Exception e) {
@@ -251,20 +263,29 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> schemaVertexPropertyCache) {
+        flushElementPropertyCache(sqlgGraph, true, schemaVertexPropertyCache);
+    }
+
+    @Override
+    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
+        flushElementPropertyCache(sqlgGraph, false, edgePropertyCache);
+    }
+
+    public <T extends SqlgElement> void flushElementPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<T, Map<String, Object>>>> schemaVertexPropertyCache) {
 
         Connection conn = sqlgGraph.tx().getConnection();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
-            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<T, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
             SortedSet<String> keys = vertexKeysPropertyCache.getLeft();
-            Map<SqlgVertex, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
+            Map<? extends SqlgElement, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
 
 
             StringBuilder sql = new StringBuilder();
             sql.append("UPDATE ");
             sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
-            sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+            sql.append(maybeWrapInQoutes((forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
             sql.append(" a \nSET\n\t(");
             int count = 1;
             for (String key : keys) {
@@ -284,7 +305,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
             sql.append(")\nFROM (\nVALUES\n\t");
             count = 1;
-            for (SqlgVertex sqlgVertex : vertexPropertyCache.keySet()) {
+            for (SqlgElement sqlgVertex : vertexPropertyCache.keySet()) {
                 Map<String, Object> properties = vertexPropertyCache.get(sqlgVertex);
                 sql.append("(");
                 sql.append(((RecordId) sqlgVertex.id()).getId());
@@ -401,6 +422,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         }
     }
+
 
     @Override
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
@@ -551,10 +573,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
 
-    @Override
-    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
-
-    }
 
     @Override
     public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
