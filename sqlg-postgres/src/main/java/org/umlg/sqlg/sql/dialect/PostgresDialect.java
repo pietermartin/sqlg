@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -20,8 +21,9 @@ import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
+import org.postgresql.core.types.PGByte;
 import org.postgresql.jdbc4.Jdbc4Connection;
-import org.postgresql.util.PGobject;
+import org.postgresql.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.gis.GeographyPoint;
@@ -35,6 +37,7 @@ import java.security.SecureRandom;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
+import java.util.Base64;
 
 /**
  * Date: 2014/07/16
@@ -251,7 +254,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     //set the id on the vertex
                     long id = endHigh - numberInserted + 1;
-                    for (SqlgEdge sqlgEdge: triples.getRight().keySet()) {
+                    for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
                         sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
                     }
                 }
@@ -299,6 +302,33 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             for (String key : keys) {
                 sql.append("v.");
                 sql.append(maybeWrapInQoutes(key));
+                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                switch (propertyType) {
+                    case BOOLEAN_ARRAY:
+                        sql.append("::boolean[]");
+                        break;
+                    case BYTE_ARRAY:
+                        sql.append("::bytea");
+                        break;
+                    case SHORT_ARRAY:
+                        sql.append("::smallint[]");
+                        break;
+                    case INTEGER_ARRAY:
+                        sql.append("::int[]");
+                        break;
+                    case LONG_ARRAY:
+                        sql.append("::bigint[]");
+                        break;
+                    case FLOAT_ARRAY:
+                        sql.append("::real[]");
+                        break;
+                    case DOUBLE_ARRAY:
+                        sql.append("::double precision[]");
+                        break;
+                    case STRING_ARRAY:
+                        sql.append("::text[]");
+                        break;
+                }
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
@@ -364,20 +394,99 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append("'::JSONB");
                                 break;
                             case BOOLEAN_ARRAY:
+                                sql.append("'{");
+                                boolean[] booleanArray = (boolean[]) value;
+                                int countBooleanArray = 1;
+                                for (Boolean b : booleanArray) {
+                                    sql.append(b);
+                                    if (countBooleanArray++ < booleanArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case BYTE_ARRAY:
+                                try {
+                                    sql.append("'");
+                                    sql.append(PGbytea.toPGString((byte[]) value));
+                                    sql.append("'");
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
                                 break;
                             case SHORT_ARRAY:
+                                sql.append("'{");
+                                short[] shortArray = (short[]) value;
+                                int countShortArray = 1;
+                                for (Short s : shortArray) {
+                                    sql.append(s);
+                                    if (countShortArray++ < shortArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case INTEGER_ARRAY:
+                                sql.append("'{");
+                                int[] intArray = (int[]) value;
+                                int countIntArray = 1;
+                                for (Integer i : intArray) {
+                                    sql.append(i);
+                                    if (countIntArray++ < intArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case LONG_ARRAY:
+                                sql.append("'{");
+                                long[] longArray = (long[]) value;
+                                int countLongArray = 1;
+                                for (Long l : longArray) {
+                                    sql.append(l);
+                                    if (countLongArray++ < longArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case FLOAT_ARRAY:
+                                sql.append("'{");
+                                float[] floatArray = (float[]) value;
+                                int countFloatArray = 1;
+                                for (Float f : floatArray) {
+                                    sql.append(f);
+                                    if (countFloatArray++ < floatArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case DOUBLE_ARRAY:
+                                sql.append("'{");
+                                double[] doubleArray = (double[]) value;
+                                int countDoubleArray = 1;
+                                for (Double d : doubleArray) {
+                                    sql.append(d);
+                                    if (countDoubleArray++ < doubleArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case STRING_ARRAY:
+                                sql.append("'{");
+                                String[] stringArray = (String[]) value;
+                                int countStringArray = 1;
+                                for (String s : stringArray) {
+                                    sql.append("\"");
+                                    sql.append(s);
+                                    sql.append("\"");
+                                    if (countStringArray++ < stringArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             default:
                                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -571,7 +680,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
         return sql.toString();
     }
-
 
 
     @Override
@@ -945,16 +1053,25 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     if (value == null) {
                         sb.append(getBatchNull());
                     } else if (value.getClass().isArray()) {
-                        sb.append("{");
-                        int length = java.lang.reflect.Array.getLength(value);
-                        for (int i = 0; i < length; i++) {
-                            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                            sb.append(escapeSpecialCharacters(valueOfArray));
-                            if (i < length - 1) {
-                                sb.append(",");
+                        if (value.getClass().getName().equals("[B")) {
+                            try {
+                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
+                                sb.append(valueOfArrayAsString);
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
                             }
+                        } else {
+                            sb.append("{");
+                            int length = java.lang.reflect.Array.getLength(value);
+                            for (int i = 0; i < length; i++) {
+                                String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                                sb.append(escapeSpecialCharacters(valueOfArray));
+                                if (i < length - 1) {
+                                    sb.append(",");
+                                }
+                            }
+                            sb.append("}");
                         }
-                        sb.append("}");
                     } else {
                         sb.append(escapeSpecialCharacters(value.toString()));
                     }
