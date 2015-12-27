@@ -21,7 +21,7 @@ import org.umlg.sqlg.test.schema.TestSqlgSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        LocalDateTest.class,
+        TestBatchEdge.class,
 //        TestRollback.class
         })
 public class AnyTest {
