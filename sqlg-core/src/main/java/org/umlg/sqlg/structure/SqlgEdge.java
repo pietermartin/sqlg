@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -249,7 +250,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
                 Object o = resultSet.getObject(columnName);
                 String name = schemaTableTree.propertyNameFromAlias(properName);
-                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
+
+                //Optimized!!, using String.replace is slow
+                Iterator<String> split = Splitter.on(SchemaTableTree.ALIAS_SEPARATOR).split(name).iterator();
+                name = split.next();
+                if (split.hasNext()) {
+                    name += "." + split.next() + "." + split.next();
+                }
+//                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
 
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&
@@ -291,7 +299,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
             Object o = resultSet.getObject(columnName);
             if (schemaTableTree.containsLabelledColumn(properName)) {
                 String name = schemaTableTree.propertyNameFromLabeledAlias(properName);
-                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
 
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&

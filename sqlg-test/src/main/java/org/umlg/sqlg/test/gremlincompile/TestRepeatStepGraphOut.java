@@ -1,16 +1,19 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -1235,5 +1238,82 @@ public class TestRepeatStepGraphOut extends BaseTest {
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(a2) && p.get(2).equals(b1)));
         paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(a2) && p.get(2).equals(b1)).findAny().get());
         Assert.assertTrue(paths.isEmpty());
+    }
+
+    @Test
+    public void testRepeatStepPerformance() throws InterruptedException {
+        Vertex group = this.sqlgGraph.addVertex(T.label, "Group", "name", "MTN");
+        Vertex network = this.sqlgGraph.addVertex(T.label, "Network", "name", "SouthAfrica");
+        Vertex ericssonGsm = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "EricssonGsm");
+        Vertex ericssonUmts = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "EricssonUmts");
+        Vertex ericssonLte = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "EricssonLte");
+        Vertex huaweiGsm = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "HuaweiGsm");
+        Vertex huaweiUmts = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "HuaweiUmts");
+        Vertex huaweiLte = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "HuaweiLte");
+
+        group.addEdge("group_network", network);
+        network.addEdge("network_networkSoftwareVersion", ericssonGsm);
+        network.addEdge("network_networkSoftwareVersion", ericssonUmts);
+        network.addEdge("network_networkSoftwareVersion", ericssonLte);
+        network.addEdge("network_networkSoftwareVersion", huaweiGsm);
+        network.addEdge("network_networkSoftwareVersion", huaweiUmts);
+        network.addEdge("network_networkSoftwareVersion", huaweiLte);
+
+
+        Vertex ericssonGsmNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonGsmNetworkNodeGroup");
+        Vertex ericssonUmtsNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonUmtsNetworkNodeGroup");
+        Vertex ericssonLteNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "EricssonLteNetworkNodeGroup");
+        Vertex huaweiGsmNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiGsmNetworkNodeGroup");
+        Vertex huaweiUmtsNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiUmtsNetworkNodeGroup");
+        Vertex huaweiLteNetworkNodeGroup= this.sqlgGraph.addVertex(T.label, "NetworkNodeGroup", "name", "HuaweiLteNetworkNodeGroup");
+
+        ericssonGsm.addEdge("networkSoftwareVersion_networkNodeGroup", ericssonGsmNetworkNodeGroup);
+        ericssonUmts.addEdge("networkSoftwareVersion_networkNodeGroup", ericssonUmtsNetworkNodeGroup);
+        ericssonLte.addEdge("networkSoftwareVersion_networkNodeGroup", ericssonLteNetworkNodeGroup);
+        huaweiGsm.addEdge("networkSoftwareVersion_networkNodeGroup", huaweiGsmNetworkNodeGroup);
+        huaweiUmts.addEdge("networkSoftwareVersion_networkNodeGroup", huaweiUmtsNetworkNodeGroup);
+        huaweiLte.addEdge("networkSoftwareVersion_networkNodeGroup", huaweiLteNetworkNodeGroup);
+
+        for (int i = 0; i < 1000; i++) {
+            Vertex ericssonGsmNode = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "ericssonGsm" + i);
+            ericssonGsmNetworkNodeGroup.addEdge("networkNodeGroup_networkNode", ericssonGsmNode);
+            Vertex ericssonUmtsNode = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "ericssonUmts" + i);
+            ericssonUmtsNetworkNodeGroup.addEdge("networkNodeGroup_networkNode", ericssonUmtsNode);
+            Vertex ericssonLteNode = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "ericssonLte" + i);
+            ericssonLteNetworkNodeGroup.addEdge("networkNodeGroup_networkNode", ericssonLteNode);
+            Vertex huaweiGsmNode = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "huaweiGsm" + i);
+            huaweiGsmNetworkNodeGroup.addEdge("networkNodeGroup_networkNode", huaweiGsmNode);
+            Vertex huaweiUmtsNode = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "huaweiUmts" + i);
+            huaweiUmtsNetworkNodeGroup.addEdge("networkNodeGroup_networkNode", huaweiUmtsNode);
+            Vertex huaweiLteNode = this.sqlgGraph.addVertex(T.label, "NetworkNode", "name", "huaweiLte" + i);
+            huaweiLteNetworkNodeGroup.addEdge("networkNodeGroup_networkNode", huaweiLteNode);
+        }
+
+        this.sqlgGraph.tx().commit();
+
+//        Thread.sleep(20000);
+        System.out.println("go");
+        for (int i = 0; i < 1; i++) {
+            Tree tree = this.sqlgGraph.traversal().V()
+                    .hasLabel("Group")
+                    .emit().repeat(__.out("group_network", "network_networkSoftwareVersion", "networkSoftwareVersion_networkNodeGroup", "networkNodeGroup_networkNode"))
+                    .times(4)
+                    .tree()
+                    .next();
+        }
+        StopWatch stopWatch1 = new StopWatch();
+        stopWatch1.start();
+
+        Tree tree = this.sqlgGraph.traversal().V()
+                .hasLabel("Group")
+                .emit().repeat(__.out("group_network", "network_networkSoftwareVersion", "networkSoftwareVersion_networkNodeGroup", "networkNodeGroup_networkNode"))
+                .times(4)
+                .tree()
+                .next();
+        stopWatch1.stop();
+        System.out.println(stopWatch1.toString());
+
+
+
     }
 }

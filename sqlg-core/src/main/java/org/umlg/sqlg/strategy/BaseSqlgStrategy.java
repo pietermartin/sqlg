@@ -64,33 +64,15 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         List<Step> toCome = steps.subList(index, steps.size());
         boolean repeatExist = toCome.stream().anyMatch(s -> s.getClass().equals(RepeatStep.class));
         if (repeatExist) {
-            //TODO tp3 3.1.0-incubating
-            Class repeatStepClass;
-            try {
-                repeatStepClass = Class.forName("org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep");
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-
             boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
-                try {
-                    Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
-                    untilTraversalField.setAccessible(true);
-                    return untilTraversalField.get(r) != null;
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+                RepeatStep repeatStep = (RepeatStep)r;
+                return repeatStep.getUntilTraversal() != null;
             });
             boolean hasUnoptimizableUntil = false;
             if (hasUntil) {
                 hasUnoptimizableUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
-                    try {
-                        Field untilTraversalField = repeatStepClass.getDeclaredField("untilTraversal");
-                        untilTraversalField.setAccessible(true);
-                        return !(untilTraversalField.get(r) instanceof LoopTraversal);
-                    } catch (NoSuchFieldException | IllegalAccessException e) {
-                        throw new RuntimeException(e);
-                    }
+                    RepeatStep repeatStep = (RepeatStep)r;
+                    return !(repeatStep.getUntilTraversal() instanceof LoopTraversal);
                 });
             }
             boolean badRepeat = !hasUntil || hasUnoptimizableUntil;

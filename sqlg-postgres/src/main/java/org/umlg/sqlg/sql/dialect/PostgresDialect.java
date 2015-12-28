@@ -45,8 +45,10 @@ import java.util.Base64;
  */
 public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
-    private static final String BATCH_NULL = "\\N";
-    private static final String COPY_COMMAND_SEPARATOR = "\t";
+    private static final String BATCH_NULL = "";
+    private static final String COPY_COMMAND_DELIMITER = "\t";
+    //this strange character is apparently an illegal json char so its good as a quote
+    private static final String COPY_COMMAND_QUOTE = "e'\\x01'";
     private static final int PARAMETER_LIMIT = 32767;
     private static final String COPY_DUMMY = "_copy_dummy";
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
@@ -178,9 +180,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         }
                     }
                     sql.append(")");
-                    sql.append(" FROM stdin DELIMITER '");
-                    sql.append(COPY_COMMAND_SEPARATOR);
-                    sql.append("';");
+
+                    sql.append(" FROM stdin CSV DELIMITER '");
+                    sql.append(COPY_COMMAND_DELIMITER);
+                    sql.append("' ");
+                    sql.append("QUOTE ");
+                    sql.append(COPY_COMMAND_QUOTE);
+                    sql.append(";");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
@@ -239,9 +245,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         break;
                     }
                     sql.append(") ");
-                    sql.append(" FROM stdin DELIMITER '");
-                    sql.append(COPY_COMMAND_SEPARATOR);
-                    sql.append("';");
+
+                    sql.append(" FROM stdin CSV DELIMITER '");
+                    sql.append(COPY_COMMAND_DELIMITER);
+                    sql.append("' ");
+                    sql.append("QUOTE ");
+                    sql.append(COPY_COMMAND_QUOTE);
+                    sql.append(";");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
@@ -560,9 +570,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         }
         sql.append(")");
-        sql.append(" FROM stdin DELIMITER '");
-        sql.append(COPY_COMMAND_SEPARATOR);
-        sql.append("';");
+        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(COPY_COMMAND_DELIMITER);
+        sql.append("' ");
+        sql.append("QUOTE ");
+        sql.append(COPY_COMMAND_QUOTE);
+        sql.append(";");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -570,10 +583,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public String constructManualCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
+    public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
         StringBuffer sql = new StringBuffer();
         sql.append("COPY ");
-        //Temo tables only
+        //Temp tables only
         sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
         sql.append(" (");
         if (keyValueMap.isEmpty()) {
@@ -595,9 +608,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         }
         sql.append(")");
-        sql.append(" FROM stdin DELIMITER '");
-        sql.append(COPY_COMMAND_SEPARATOR);
-        sql.append("';");
+        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(COPY_COMMAND_DELIMITER);
+        sql.append("' ");
+        sql.append("QUOTE ");
+        sql.append(COPY_COMMAND_QUOTE);
+        sql.append(";");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -613,7 +629,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             } else {
                 for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
                     if (countKeys > 1 && countKeys <= keyValueMap.size()) {
-                        out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                        out.write(COPY_COMMAND_DELIMITER.getBytes());
                     }
                     countKeys++;
                     Object value = entry.getValue();
@@ -635,10 +651,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         try {
             String encoding = "UTF-8";
             out.write(((RecordId) outVertex.id()).getId().toString().getBytes(encoding));
-            out.write(COPY_COMMAND_SEPARATOR.getBytes(encoding));
+            out.write(COPY_COMMAND_DELIMITER.getBytes(encoding));
             out.write(((RecordId) inVertex.id()).getId().toString().getBytes(encoding));
             for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
-                out.write(COPY_COMMAND_SEPARATOR.getBytes(encoding));
+                out.write(COPY_COMMAND_DELIMITER.getBytes(encoding));
                 Object value = entry.getValue();
                 if (value == null) {
                     out.write(getBatchNull().getBytes(encoding));
@@ -672,9 +688,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sql.append(maybeWrapInQoutes(key));
         }
         sql.append(") ");
-        sql.append(" FROM stdin DELIMITER '");
-        sql.append(COPY_COMMAND_SEPARATOR);
-        sql.append("';");
+
+        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(COPY_COMMAND_DELIMITER);
+        sql.append("' ");
+        sql.append("QUOTE ");
+        sql.append(COPY_COMMAND_QUOTE);
+        sql.append(";");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -999,10 +1019,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         int count = 1;
         for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
             sb.append(((RecordId) triple.getLeft().id()).getId());
-            sb.append(COPY_COMMAND_SEPARATOR);
+            sb.append(COPY_COMMAND_DELIMITER);
             sb.append(((RecordId) triple.getMiddle().id()).getId());
             if (!edgeCache.getLeft().isEmpty()) {
-                sb.append(COPY_COMMAND_SEPARATOR);
+                sb.append(COPY_COMMAND_DELIMITER);
             }
             int countKeys = 1;
             for (String key : edgeCache.getLeft()) {
@@ -1024,7 +1044,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sb.append(escapeSpecialCharacters(value.toString()));
                 }
                 if (countKeys < edgeCache.getLeft().size()) {
-                    sb.append(COPY_COMMAND_SEPARATOR);
+                    sb.append(COPY_COMMAND_DELIMITER);
                 }
                 countKeys++;
             }
@@ -1046,7 +1066,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 int countKeys = 1;
                 for (String key : vertexCache.getLeft()) {
                     if (countKeys > 1 && countKeys <= vertexCache.getLeft().size()) {
-                        sb.append(COPY_COMMAND_SEPARATOR);
+                        sb.append(COPY_COMMAND_DELIMITER);
                     }
                     countKeys++;
                     Object value = triple.get(key);
@@ -1567,7 +1587,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
             sql.append(")");
             sql.append(" FROM stdin DELIMITER '");
-            sql.append(COPY_COMMAND_SEPARATOR);
+            sql.append(COPY_COMMAND_DELIMITER);
             sql.append("';");
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
@@ -1575,7 +1595,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             OutputStream out = streamSql(sqlgGraph, sql.toString());
             for (Pair<String, String> uid : uids) {
                 out.write(uid.getLeft().getBytes());
-                out.write(COPY_COMMAND_SEPARATOR.getBytes());
+                out.write(COPY_COMMAND_DELIMITER.getBytes());
                 out.write(uid.getRight().getBytes());
                 out.write("\n".getBytes());
             }

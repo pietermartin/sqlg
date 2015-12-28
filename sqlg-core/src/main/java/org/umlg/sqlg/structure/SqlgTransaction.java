@@ -21,6 +21,7 @@ import java.util.Map;
  */
 public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
+    private Logger logger = LoggerFactory.getLogger(BatchManager.class.getName());
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
@@ -104,7 +105,12 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             return;
         try {
             if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
-                this.threadLocalTx.get().getBatchManager().close();
+                try {
+                    this.threadLocalTx.get().getBatchManager().close();
+                } catch (Exception e) {
+                    //swallow
+                    logger.debug("exception closing streams on rollback", e);
+                }
             }
             Connection connection = threadLocalTx.get().getConnection();
             connection.rollback();

@@ -119,4 +119,32 @@ public class TestBulkWithin extends BaseTest {
         System.out.println(stopWatch.toString());
 
     }
+
+    @Test
+    public void testBulkWithinWithPercentageInJoinProperties() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
+            this.sqlgGraph.tx().normalBatchModeOn();
+        }
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+        List<String> uuids = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            String uuid = UUID.randomUUID().toString();
+            uuids.add("\"BLRNC5->CXC4030052~%%%~FAJ1211373~%%%~2015-07-19~%%%~9999-12-31~%%%~Enabled~%%%~Licensed~%%%~Improved~%%%~compressed~%%%~mode~%%%~handling.~%%%~Restricted:~%%%~\"\"Partial.~%%%~Feature~%%%~is~%%%~restricted~%%%~in~%%%~RNC~%%%~W12B~%%%~SW.~%%%~RNC~%%%~W13.0.1.1~%%%~or~%%%~later~%%%~SW~%%%~is~%%%~required~%%%~in~%%%~order~%%%~to~%%%~run~%%%~this~%%%~feature.~%%%~For~%%%~RBS~%%%~W12.1.2.2/~%%%~W13.0.0.0~%%%~or~%%%~later~%%%~is~%%%~required.~%%%~OSS-RC~%%%~12.2~%%%~or~%%%~later~%%%~is~%%%~required.\"\".~%%%~GA:~%%%~W13A\"" + uuid);
+            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "idNumber", "\"BLRNC5->CXC4030052~%%%~FAJ1211373~%%%~2015-07-19~%%%~9999-12-31~%%%~Enabled~%%%~Licensed~%%%~Improved~%%%~compressed~%%%~mode~%%%~handling.~%%%~Restricted:~%%%~\"\"Partial.~%%%~Feature~%%%~is~%%%~restricted~%%%~in~%%%~RNC~%%%~W12B~%%%~SW.~%%%~RNC~%%%~W13.0.1.1~%%%~or~%%%~later~%%%~SW~%%%~is~%%%~required~%%%~in~%%%~order~%%%~to~%%%~run~%%%~this~%%%~feature.~%%%~For~%%%~RBS~%%%~W12.1.2.2/~%%%~W13.0.0.0~%%%~or~%%%~later~%%%~is~%%%~required.~%%%~OSS-RC~%%%~12.2~%%%~or~%%%~later~%%%~is~%%%~required.\"\".~%%%~GA:~%%%~W13A\"" + uuid);
+            god.addEdge("creator", person);
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.within(uuids.subList(0, 2).toArray())).toList();
+        Assert.assertEquals(2, persons.size());
+        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.within(uuids.toArray())).toList();
+        Assert.assertEquals(100, persons.size());
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
 }
