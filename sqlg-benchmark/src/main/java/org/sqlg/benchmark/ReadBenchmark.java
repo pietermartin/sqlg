@@ -51,7 +51,9 @@ public class ReadBenchmark extends BaseBenchmark {
     @Setup(Level.Iteration)
     public void setup() throws Exception {
         System.out.println("setup");
-        dropDb();
+        this.sqlgGraph = getSqlgGraph();
+        this.sqlgGraph.drop();
+        this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
         this.gt = this.sqlgGraph.traversal();
 

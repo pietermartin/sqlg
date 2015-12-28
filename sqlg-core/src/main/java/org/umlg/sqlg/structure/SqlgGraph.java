@@ -214,7 +214,7 @@ public class SqlgGraph implements Graph {
         return this.traversal(GraphTraversalSource.build().with(TopologyStrategy.build().create()));
     }
 
-    public GraphTraversalSource traversal(TraversalStrategy ... traversalStrategy) {
+    public GraphTraversalSource traversal(TraversalStrategy... traversalStrategy) {
         GraphTraversalSource.Builder builder = GraphTraversalSource.build();
         for (TraversalStrategy strategy : traversalStrategy) {
             builder.with(strategy);
@@ -1195,5 +1195,76 @@ public class SqlgGraph implements Graph {
 
     public SqlgDataSource getSqlgDataSource() {
         return sqlgDataSource;
+    }
+
+    public void drop() {
+        Connection conn = this.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            String catalog = null;
+            String schemaPattern = null;
+            String tableNamePattern = "%";
+            String[] types = {"TABLE"};
+            ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+            while (result.next()) {
+                String schema = result.getString(2);
+                String table = result.getString(3);
+                if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
+                StringBuilder sql = new StringBuilder("DROP TABLE ");
+                sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                sql.append(".");
+                sql.append(sqlDialect.maybeWrapInQoutes(table));
+                sql.append(" CASCADE");
+                if (sqlDialect.needsSemicolon()) {
+                    sql.append(";");
+                }
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    preparedStatement.executeUpdate();
+                }
+            }
+            catalog = null;
+            schemaPattern = null;
+            result = metadata.getSchemas(catalog, schemaPattern);
+            while (result.next()) {
+                String schema = result.getString(1);
+                if (!sqlDialect.getDefaultSchemas().contains(schema) && !sqlDialect.getGisSchemas().contains(schema)) {
+                    StringBuilder sql = new StringBuilder("DROP SCHEMA ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    }
+                }
+            }
+
+            //For prosperity, MariaDb needs this
+//                } else if (!sqlDialect.supportSchemas()) {
+//                    ResultSet result = metadata.getCatalogs();
+//                    while (result.next()) {
+//                        StringBuilder sql = new StringBuilder("DROP DATABASE ");
+//                        String database = result.getString(1);
+//                        if (!sqlDialect.getDefaultSchemas().contains(database)) {
+//                            sql.append(sqlDialect.maybeWrapInQoutes(database));
+//                            if (sqlDialect.needsSemicolon()) {
+//                                sql.append(";");
+//                            }
+//                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+//                                preparedStatement.executeUpdate();
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    conn.setAutoCommit(false);
+//                    JDBC.dropSchema(metadata, "APP");
+//                    conn.commit();
+//                }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

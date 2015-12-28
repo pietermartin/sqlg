@@ -50,7 +50,9 @@ public class MultipleGraphSimpleReadBenchmark extends BaseBenchmark {
     @Setup(Level.Iteration)
     public void setup() throws Exception {
         System.out.println("setup");
-        dropDb();
+        this.sqlgGraph1 = getSqlgGraph(true);
+        this.sqlgGraph1.drop();
+        this.sqlgGraph1.tx().commit();
         this.sqlgGraph1 = getSqlgGraph(true);
         this.gt1 = this.sqlgGraph1.traversal();
         this.sqlgGraph2 = getSqlgGraph(true);

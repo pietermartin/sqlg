@@ -68,7 +68,9 @@ public class SimpleInsertBenchmark extends BaseBenchmark {
 
     @Setup(Level.Iteration)
     public void setup() throws Exception {
-        dropDb();
+        this.sqlgGraph = getSqlgGraph();
+        this.sqlgGraph.drop();
+        this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
     }
 

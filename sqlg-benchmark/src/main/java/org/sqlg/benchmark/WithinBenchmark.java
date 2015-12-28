@@ -76,7 +76,9 @@ public class WithinBenchmark extends BaseBenchmark {
     public void setup() throws Exception {
         this.uids.clear();
         this.smallUidSet.clear();
-        dropDb();
+        this.sqlgGraph = getSqlgGraph();
+        this.sqlgGraph.drop();
+        this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
         this.gt = this.sqlgGraph.traversal();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
