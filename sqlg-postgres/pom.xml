@@ -35,6 +35,10 @@
             <artifactId>postgis-jdbc</artifactId>
             <exclusions>
                 <exclusion>
+                    <groupId>postgresql</groupId>
+                    <artifactId>postgresql</artifactId>
+                </exclusion>
+                <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
