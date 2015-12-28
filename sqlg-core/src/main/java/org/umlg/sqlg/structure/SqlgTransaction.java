@@ -21,7 +21,6 @@ import java.util.Map;
  */
 public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
-    private Logger logger = LoggerFactory.getLogger(BatchManager.class.getName());
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
