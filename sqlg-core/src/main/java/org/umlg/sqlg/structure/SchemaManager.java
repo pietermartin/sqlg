@@ -125,6 +125,9 @@ public class SchemaManager {
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTableLabels = new HashMap<>();
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedTableLabels = new HashMap<>();
 
+    //temporary tables
+    private Map<String, Map<String, PropertyType>> localTemporaryTables = new ConcurrentHashMap<>();
+
     private Lock schemaLock;
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
@@ -162,6 +165,7 @@ public class SchemaManager {
         }
 
         this.sqlgGraph.tx().afterCommit(() -> {
+            this.localTemporaryTables.clear();
             if (this.isLockedByCurrentThread()) {
                 for (String schema : this.uncommittedSchemas) {
                     if (distributed) {
@@ -217,6 +221,7 @@ public class SchemaManager {
             }
         });
         this.sqlgGraph.tx().afterRollback(() -> {
+            this.localTemporaryTables.clear();
             if (this.isLockedByCurrentThread()) {
                 if (this.getSqlDialect().supportsTransactionalSchema()) {
                     this.uncommittedSchemas.clear();
@@ -366,6 +371,17 @@ public class SchemaManager {
         }
         //ensure columns exist
         ensureColumnsExist(schema, prefixedTable, columns);
+    }
+
+    void ensureVertexTemporaryTableExist(final String schema, final String table, final Object... keyValues) {
+        Objects.requireNonNull(schema, "Given tables must not be null");
+        Objects.requireNonNull(table, "Given table must not be null");
+        final String prefixedTable = VERTEX_PREFIX + table;
+        final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        if (!this.localTemporaryTables.containsKey(prefixedTable)) {
+            this.localTemporaryTables.put(prefixedTable, new HashMap<>());
+            createTempTable(prefixedTable, columns);
+        }
     }
 
     boolean schemaExist(String schema) {

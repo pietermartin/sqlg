@@ -275,26 +275,38 @@ public class SqlgGraph implements Graph {
         streamVertex(keyValues1);
     }
 
-//    public void streamVertexWithLock(String label) {
-//        this.streamVertexWithLock(label, new LinkedHashMap<>());
-//    }
-//
-//    public SqlgVertex streamVertexWithLock(Object... keyValues) {
-//        if (!this.tx().isInStreamingWithLockBatchMode()) {
-//            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + "mode for streamVertexWithLock(Object ... keyValues)");
-//        }
-//        return internalStreamVertex(keyValues);
-//    }
-//
-//    public SqlgVertex streamVertexWithLock(String label, LinkedHashMap<String, Object> keyValues) {
-//        if (!this.tx().isInStreamingWithLockBatchMode()) {
-//            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + "mode for streamVertexWithLock(Object ... keyValues)");
-//        }
-//        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
-//        tmp.put(T.label, label);
-//        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
-//        return internalStreamVertex(keyValues1);
-//    }
+    public void streamTemporaryVertex(String label, LinkedHashMap<String, Object> keyValues) {
+        if (!this.tx().isInStreamingBatchMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+        }
+        Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
+        tmp.put(T.label, label);
+        Object[] keyValues1 = SqlgUtil.mapTokeyValues(tmp);
+        streamTemporaryVertex(keyValues1);
+    }
+
+    public void streamTemporaryVertex(Object... keyValues) {
+        if (!this.tx().isInStreamingBatchMode()) {
+            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+        }
+        internalStreamTemporaryVertex(keyValues);
+    }
+
+    private SqlgVertex internalStreamTemporaryVertex(Object... keyValues) {
+        final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
+        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+
+        SchemaTable streamingBatchModeVertexSchemaTable = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
+        if (streamingBatchModeVertexSchemaTable != null && !streamingBatchModeVertexSchemaTable.toString().equals(schemaTablePair.toString())) {
+            throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
+        }
+        List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
+        validateVertexKeysValues(keyValues, keys);
+
+        this.tx().readWrite();
+        this.schemaManager.ensureVertexTemporaryTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, schemaTablePair.getTable(), keyValues);
+    }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);

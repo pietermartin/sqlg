@@ -22,7 +22,7 @@ import org.umlg.sqlg.test.schema.TestSqlgSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestVertexCreation.class
+        TestBatchTemporaryVertex.class
         })
 public class AnyTest {
 }

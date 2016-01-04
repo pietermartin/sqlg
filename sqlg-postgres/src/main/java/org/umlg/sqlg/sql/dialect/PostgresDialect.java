@@ -542,13 +542,23 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
+    @Override
+    public String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        return internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, true, vertex, keyValueMap);
+    }
 
     @Override
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        return internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, false, vertex, keyValueMap);
+    }
+
+    private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         StringBuffer sql = new StringBuffer();
         sql.append("COPY ");
-        sql.append(maybeWrapInQoutes(vertex.getSchema()));
-        sql.append(".");
+        if (!isTemp) {
+            sql.append(maybeWrapInQoutes(vertex.getSchema()));
+            sql.append(".");
+        }
         sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + vertex.getTable()));
         sql.append(" (");
         if (keyValueMap.isEmpty()) {

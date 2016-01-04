@@ -71,6 +71,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+    }
+
+    @Override
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }

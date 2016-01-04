@@ -86,7 +86,19 @@ public class BatchManager {
         this.batchModeType = batchModeType;
     }
 
-    public void addVertex(boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
+    void addTemporaryVertex(SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
+        SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable());
+        OutputStream out = this.streamingVertexOutputStreamCache.get(schemaTable);
+        if (out == null) {
+            String sql = this.sqlDialect.constructCompleteCopyCommandTemporarySqlVertex(sqlgGraph, sqlgVertex, keyValueMap);
+            out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
+            this.streamingVertexOutputStreamCache.put(schemaTable, out);
+        }
+        this.sqlDialect.writeStreamingVertex(out, keyValueMap);
+
+    }
+
+    void addVertex(boolean streaming, SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
         SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable());
         if (!streaming) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> pairs = this.vertexCache.get(schemaTable);

@@ -43,6 +43,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
+    SqlgVertex(SqlgGraph sqlgGraph, String table, Object... keyValues) {
+        super(sqlgGraph, "", table);
+        insertTemporaryVertex(keyValues);
+    }
+
     public static SqlgVertex of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         if (!sqlgGraph.tx().isInBatchMode()) {
             return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, RecordId.from(SchemaTable.of(schema, table), id));
@@ -470,6 +475,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void insertTemporaryVertex(Object... keyValues) {
+        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        this.sqlgGraph.tx().getBatchManager().addTemporaryVertex(this, keyValueMap);
     }
 
     private void insertVertex(boolean complete, Object... keyValues) {
