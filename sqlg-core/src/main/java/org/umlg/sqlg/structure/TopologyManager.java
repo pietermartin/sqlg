@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.strategy.TopologyStrategy;
@@ -83,8 +84,8 @@ public class TopologyManager {
                     .out(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", foreignKeyOut.getTable())
                     .toList();
-            Preconditions.checkState(!outVertices.isEmpty(), "Out vertex " + foreignKeyIn.toString() + " does not exist in Sqlg's topology. BUG!!!");
-            Preconditions.checkState(outVertices.size() == 1, "Multiple out vertices " + foreignKeyIn.toString() + " found in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(!outVertices.isEmpty(), "Out vertex " + foreignKeyOut.toString() + " does not exist in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(outVertices.size() == 1, "Multiple out vertices " + foreignKeyOut.toString() + " found in Sqlg's topology. BUG!!!");
             Preconditions.checkState(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX));
             Vertex outVertex = outVertices.get(0);
 
@@ -125,6 +126,56 @@ public class TopologyManager {
                 edgeVertex.addEdge(SchemaManager.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
 
             }
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+
+    static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(sqlgGraph);
+            List<Vertex> schemas = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .toList();
+            Preconditions.checkState(!schemas.isEmpty(), "Schema " + schema + " does not exist in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(schemas.size() == 1, "Multiple " + schema + " found in Sqlg's topology. BUG!!!");
+            Vertex schemaVertex = schemas.get(0);
+
+            Preconditions.checkState(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX));
+            List<Vertex> edgeVertices = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
+                    .has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length()))
+                    .toList();
+            Preconditions.checkState(!edgeVertices.isEmpty(), "Edge vertex " + foreignKey.toString() + " does not exist in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices " + foreignKey.toString() + " found in Sqlg's topology. BUG!!!");
+            Vertex edgeVertex = edgeVertices.get(0);
+
+            String vertexTable;
+            if (in)  {
+                vertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
+            } else {
+                vertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
+            }
+            List<Vertex> foreignKeyVertices = traversalSource.V(schemaVertex)
+                    .out(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", vertexTable)
+                    .toList();
+            Preconditions.checkState(!foreignKeyVertices.isEmpty(), "Out vertex " + foreignKey.toString() + " does not exist in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(foreignKeyVertices.size() == 1, "Multiple out vertices " + foreignKey.toString() + " found in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX));
+            Vertex foreignKeyVertex = foreignKeyVertices.get(0);
+
+            if (in) {
+                foreignKeyVertex.addEdge(SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+            } else {
+                foreignKeyVertex.addEdge(SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+            }
+//            outVertex.addEdge(SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
+//            inVertex.addEdge(SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
+
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

@@ -612,6 +612,11 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             lock(schema, prefixedTable);
             if (!uncommittedForeignKeys.contains(foreignKey)) {
+
+                if (!SQLG_SCHEMA.equals(schema)) {
+                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, prefixedTable, in, foreignKey);
+                }
+
                 addEdgeForeignKey(schema, prefixedTable, foreignKey);
                 uncommittedForeignKeys.add(vertexSchemaTable.getSchema() + "." + foreignKey.getTable());
                 this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, uncommittedForeignKeys);
@@ -1212,7 +1217,6 @@ public class SchemaManager {
                 this.localTables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
 
                 List<Vertex> outEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_OUT_EDGES_EDGE).toList();
-//                Set<String> foreignKeys = new HashSet<>();
                 for (Vertex outEdge : outEdges) {
                     String edgeName = outEdge.value("name");
 
@@ -1228,43 +1232,41 @@ public class SchemaManager {
                     this.localTables.put(schemaName + "." + EDGE_PREFIX + edgeName, uncommittedColumns);
 
                     List<Vertex> inVertices = traversalSource.V(outEdge).in(SQLG_SCHEMA_IN_EDGES_EDGE).toList();
-                    if (inVertices.size() != 1) {
-                        throw new IllegalStateException("Schema information for edge " + outEdge.id() + " is incorrect. Expected exactly 1 in edge but found " + inVertices.size() + ". This is a BUG!");
-                    }
-                    Vertex inVertex = inVertices.get(0);
-                    String inTableName = inVertex.value("name");
-                    //Get the inVertex's schema
-                    List<Vertex> inVertexSchemas = traversalSource.V(inVertex).in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).toList();
-                    if (inVertexSchemas.size() != 1) {
-                        throw new IllegalStateException("Vertex must be in one and one only schema, found " + inVertexSchemas.size());
-                    }
-                    Vertex inVertexSchema = inVertexSchemas.get(0);
-                    String inVertexSchemaName = inVertexSchema.value("name");
+                    for (Vertex inVertex : inVertices) {
 
+                        String inTableName = inVertex.value("name");
+                        //Get the inVertex's schema
+                        List<Vertex> inVertexSchemas = traversalSource.V(inVertex).in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).toList();
+                        if (inVertexSchemas.size() != 1) {
+                            throw new IllegalStateException("Vertex must be in one and one only schema, found " + inVertexSchemas.size());
+                        }
+                        Vertex inVertexSchema = inVertexSchemas.get(0);
+                        String inVertexSchemaName = inVertexSchema.value("name");
 
-                    Set<String> foreignKeys = this.localEdgeForeignKeys.get(schemaName + "." + EDGE_PREFIX + edgeName);
-                    if (foreignKeys == null) {
-                        foreignKeys = new HashSet<>();
-                        this.localEdgeForeignKeys.put(schemaName + "." + EDGE_PREFIX + edgeName, foreignKeys);
-                    }
-                    foreignKeys.add(schemaName + "." + tableName + SchemaManager.OUT_VERTEX_COLUMN_END);
-                    foreignKeys.add(inVertexSchemaName + "." + inTableName + SchemaManager.IN_VERTEX_COLUMN_END);
+                        Set<String> foreignKeys = this.localEdgeForeignKeys.get(schemaName + "." + EDGE_PREFIX + edgeName);
+                        if (foreignKeys == null) {
+                            foreignKeys = new HashSet<>();
+                            this.localEdgeForeignKeys.put(schemaName + "." + EDGE_PREFIX + edgeName, foreignKeys);
+                        }
+                        foreignKeys.add(schemaName + "." + tableName + SchemaManager.OUT_VERTEX_COLUMN_END);
+                        foreignKeys.add(inVertexSchemaName + "." + inTableName + SchemaManager.IN_VERTEX_COLUMN_END);
 
-                    SchemaTable outSchemaTable = SchemaTable.of(schemaName, VERTEX_PREFIX + tableName);
-                    Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(outSchemaTable);
-                    if (labels == null) {
-                        labels = Pair.of(new HashSet<>(), new HashSet<>());
-                        this.localTableLabels.put(outSchemaTable, labels);
-                    }
-                    labels.getRight().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
+                        SchemaTable outSchemaTable = SchemaTable.of(schemaName, VERTEX_PREFIX + tableName);
+                        Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(outSchemaTable);
+                        if (labels == null) {
+                            labels = Pair.of(new HashSet<>(), new HashSet<>());
+                            this.localTableLabels.put(outSchemaTable, labels);
+                        }
+                        labels.getRight().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
 
-                    SchemaTable inSchemaTable = SchemaTable.of(inVertexSchemaName, VERTEX_PREFIX + inTableName);
-                    labels = this.localTableLabels.get(inSchemaTable);
-                    if (labels == null) {
-                        labels = Pair.of(new HashSet<>(), new HashSet<>());
-                        this.localTableLabels.put(inSchemaTable, labels);
+                        SchemaTable inSchemaTable = SchemaTable.of(inVertexSchemaName, VERTEX_PREFIX + inTableName);
+                        labels = this.localTableLabels.get(inSchemaTable);
+                        if (labels == null) {
+                            labels = Pair.of(new HashSet<>(), new HashSet<>());
+                            this.localTableLabels.put(inSchemaTable, labels);
+                        }
+                        labels.getLeft().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
                     }
-                    labels.getLeft().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
                 }
 
             }
