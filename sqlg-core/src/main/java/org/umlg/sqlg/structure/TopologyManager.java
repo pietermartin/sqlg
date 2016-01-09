@@ -147,7 +147,12 @@ public class TopologyManager {
             Preconditions.checkState(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX));
             List<Vertex> edgeVertices = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
-                    .has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length()))
+                    .has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length())).as("a")
+                    .in(SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE)
+                    .in(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", schema)
+                    .<Vertex>select("a")
+                    .dedup()
                     .toList();
             Preconditions.checkState(!edgeVertices.isEmpty(), "Edge vertex " + foreignKey.toString() + " does not exist in Sqlg's topology. BUG!!!");
             Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices " + foreignKey.toString() + " found in Sqlg's topology. BUG!!!");
@@ -173,8 +178,6 @@ public class TopologyManager {
             } else {
                 foreignKeyVertex.addEdge(SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
             }
-//            outVertex.addEdge(SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertex);
-//            inVertex.addEdge(SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
 
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);

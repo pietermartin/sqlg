@@ -14,6 +14,7 @@ import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.mod.TestVertexCreation;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
+import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.schema.TestSqlgSchema;
 
 /**

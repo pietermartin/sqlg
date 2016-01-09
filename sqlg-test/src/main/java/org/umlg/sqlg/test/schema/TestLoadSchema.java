@@ -251,13 +251,12 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testMulitpleInEdges() throws Exception {
+    public void testMultipleInEdges() throws Exception {
 
         Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
         Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
         Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
         report1.addEdge("label", favouriteReport);
-        this.sqlgGraph.tx().commit();
         report1.addEdge("label", policyReport);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -270,13 +269,12 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
-    public void testMulitpleOutEdges() throws Exception {
+    public void testMultipleOutEdges() throws Exception {
 
         Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
         Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
         Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
         favouriteReport.addEdge("label", report1);
-        this.sqlgGraph.tx().commit();
         policyReport.addEdge("label", report1);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -286,6 +284,19 @@ public class TestLoadSchema extends BaseTest {
         report1 = this.sqlgGraph.traversal().V().hasLabel("Report").next();
         Assert.assertEquals(2, this.sqlgGraph.traversal().V(report1).in("label").count().next(), 0);
 
+    }
+
+    @Test
+    public void testMoreMultipleInEdges() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D");
+        a1.addEdge("hi", b1);
+        a1.addEdge("hi", c1);
+        a1.addEdge("hi", d1);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(3, this.sqlgGraph.traversal().V(a1).out().count().next(), 0);
     }
 
 }
