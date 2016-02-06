@@ -979,6 +979,10 @@ public class SchemaManager {
             addPublicSchema();
             this.sqlgGraph.tx().commit();
         }
+        if (!existSqlgSchema) {
+            //old versions of sqlg needs the topology populated from the information_schema table.
+            upgradeSqlgToTopologySchema();
+        }
         loadUserSchema();
         this.sqlgGraph.tx().commit();
         if (distributed) {
@@ -1100,6 +1104,10 @@ public class SchemaManager {
 //        } catch (SQLException e) {
 //            throw new RuntimeException(e);
 //        }
+    }
+
+    private void upgradeSqlgToTopologySchema() {
+
     }
 
     /**
