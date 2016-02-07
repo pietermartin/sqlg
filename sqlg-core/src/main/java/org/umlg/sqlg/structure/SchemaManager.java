@@ -7,6 +7,7 @@ import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -992,121 +993,126 @@ public class SchemaManager {
             this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
         }
 
-//        Connection conn = this.sqlgGraph.tx().getConnection();
-//        try {
-//            DatabaseMetaData metadata = conn.getMetaData();
-//            if (this.sqlDialect.supportSchemas()) {
-//                String catalog = null;
-//                String schemaPattern = null;
-//                String tableNamePattern = null;
-//                String[] types = new String[]{"TABLE"};
-//                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-//                while (tablesRs.next()) {
-//                    //ignore sqlg_schema
-//                    if (tablesRs.getString(2).equals(SQLG_SCHEMA)) {
-//                        continue;
-//                    }
-//                    String table = tablesRs.getString(3);
-//                    if (this.sqlDialect.getSpacialRefTable().contains(table)) {
-//                        continue;
-//                    }
-//                    Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
-//                    Set<String> foreignKeys = null;
-//                    //get the columns
-//                    String previousSchema = "";
-//                    ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
-//                    while (columnsRs.next()) {
-//                        String schema = columnsRs.getString(2);
-//                        if (this.sqlDialect.getGisSchemas().contains(schema)) {
-//                            continue;
-//                        }
-//                        this.localSchemas.put(schema, schema);
-//                        if (!previousSchema.equals(schema)) {
-//                            foreignKeys = new HashSet<>();
-//                            uncommittedColumns = new ConcurrentHashMap<>();
-//                        }
-//                        previousSchema = schema;
-//                        String column = columnsRs.getString(4);
-//                        if (!column.equals(SchemaManager.ID)) {
-//                            int columnType = columnsRs.getInt(5);
-//                            String typeName = columnsRs.getString("TYPE_NAME");
-//                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-//                            uncommittedColumns.put(column, propertyType);
-//                        }
-//                        this.localTables.put(schema + "." + table, uncommittedColumns);
-//                        Set<String> schemas = this.localLabelSchemas.get(table);
-//                        if (schemas == null) {
-//                            schemas = new HashSet<>();
-//                        }
-//                        schemas.add(schema);
-//                        this.localLabelSchemas.put(table, schemas);
-//                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
-//                            foreignKeys.add(column);
-//                            this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
-//                            SchemaTable schemaTable = SchemaTable.of(column.split("\\.")[0], SchemaManager.VERTEX_PREFIX + column.split("\\.")[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
-//                            Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.localTableLabels.get(schemaTable);
-//                            if (labels == null) {
-//                                labels = Pair.of(new HashSet<>(), new HashSet<>());
-//                                this.localTableLabels.put(schemaTable, labels);
-//                            }
-//                            if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-//                                labels.getLeft().add(SchemaTable.of(schema, table));
-//                            } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-//                                labels.getRight().add(SchemaTable.of(schema, table));
-//                            }
-//                        }
-//                    }
-//                }
-//            } else {
-//                //mariadb
-//                String catalog = null;
-//                String schemaPattern = null;
-//                String tableNamePattern = null;
-//                String[] types = new String[]{"TABLE"};
-//                ResultSet tablesRs = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-//                while (tablesRs.next()) {
-//                    String db = tablesRs.getString(1);
-//                    if (!sqlDialect.getDefaultSchemas().contains(db)) {
-//                        String table = tablesRs.getString(3);
-//                        final Map<String, PropertyType> uncomitedColumns = new ConcurrentHashMap<>();
-//                        final Set<String> foreignKeys = new HashSet<>();
-//                        //get the columns
-//                        ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
-//                        while (columnsRs.next()) {
-//                            String schema = columnsRs.getString(1);
-//                            this.localSchemas.put(schema, schema);
-//                            String column = columnsRs.getString(4);
-//                            int columnType = columnsRs.getInt(5);
-//                            String typeName = columnsRs.getString("TYPE_NAME");
-//                            PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
-//                            uncomitedColumns.put(column, propertyType);
-//                            this.localTables.put(schema + "." + table, uncomitedColumns);
-//                            Set<String> schemas = this.localLabelSchemas.get(table);
-//                            if (schemas == null) {
-//                                schemas = new HashSet<>();
-//                                this.localLabelSchemas.put(table, schemas);
-//                            }
-//                            schemas.add(schema);
-//                            if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
-//                                foreignKeys.add(column);
-//                                this.localEdgeForeignKeys.put(schema + "." + table, foreignKeys);
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//            if (distributed) {
-//                this.schemas.putAll(this.localSchemas);
-//                this.labelSchemas.putAll(this.localLabelSchemas);
-//                this.tables.putAll(this.localTables);
-//                this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
-//            }
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
     }
 
     private void upgradeSqlgToTopologySchema() {
+
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            String catalog = null;
+            String schemaPattern = null;
+            String tableNamePattern = null;
+            String[] types = new String[]{"TABLE"};
+            ResultSet schemaRs = metadata.getSchemas();
+            while (schemaRs.next()) {
+                String schema = schemaRs.getString(1);
+                if (schema.equals(SQLG_SCHEMA) ||
+                        this.sqlDialect.getDefaultSchemas().contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                TopologyManager.addSchema(this.sqlgGraph, schema);
+            }
+            ResultSet vertexRs = metadata.getTables(catalog, schemaPattern, "V_%", types);
+            while (vertexRs.next()) {
+                String schema = vertexRs.getString(2);
+                String table = vertexRs.getString(3);
+
+                //check if is internal, if so ignore.
+                Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
+                schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
+                if (schema.equals(SQLG_SCHEMA) ||
+                        schemasToIgnore.contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
+
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
+                Map<String, PropertyType> columns = new ConcurrentHashMap<>();
+                //get the columns
+                String previousSchema = "";
+                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                while (columnsRs.next()) {
+                    String column = columnsRs.getString(4);
+                    if (!column.equals(SchemaManager.ID)) {
+                        int columnType = columnsRs.getInt(5);
+                        String typeName = columnsRs.getString("TYPE_NAME");
+                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                        columns.put(column, propertyType);
+                    }
+
+                }
+                TopologyManager.addVertexLabel(this.sqlgGraph, schema, table, columns);
+            }
+            ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types);
+            while (edgeRs.next()) {
+                String schema = edgeRs.getString(2);
+                String table = edgeRs.getString(3);
+
+                //check if is internal, if so ignore.
+                Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
+                schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
+                if (schema.equals(SQLG_SCHEMA) ||
+                        schemasToIgnore.contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
+
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
+                Map<String, PropertyType> columns = new ConcurrentHashMap<>();
+                //get the columns
+                String previousSchema = "";
+                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                while (columnsRs.next()) {
+                    String column = columnsRs.getString(4);
+                    if (!column.equals(SchemaManager.ID)) {
+                        int columnType = columnsRs.getInt(5);
+                        String typeName = columnsRs.getString("TYPE_NAME");
+                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                        columns.put(column, propertyType);
+                    }
+
+                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
+                        SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
+                        String[] split = column.split("\\.");
+                        SchemaTable schemaTable = SchemaTable.of(split[0], split[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
+                        if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
+                                inSchemaTable.setLeft(schemaTable);
+                            } else {
+                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
+                            }
+                        } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
+                                outSchemaTable.setRight(schemaTable);
+                            } else {
+                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
+                            }
+                        }
+                    }
+                }
+                for (Map.Entry<SchemaTable, MutablePair<SchemaTable, SchemaTable>> schemaTableMutablePairEntry : inOutSchemaTable.entrySet()) {
+                    TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, schemaTableMutablePairEntry.getValue().getLeft(), schemaTableMutablePairEntry.getValue().getRight(), columns);
+                }
+            }
+            if (distributed) {
+                this.schemas.putAll(this.localSchemas);
+                this.labelSchemas.putAll(this.localLabelSchemas);
+                this.tables.putAll(this.localTables);
+                this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 

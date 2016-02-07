@@ -18,6 +18,8 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
+import org.umlg.sqlg.test.travers.TestTraversals;
+import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 
@@ -105,7 +107,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestOtherVertex.class,
         TestGremlinMod.class,
         TestAlias.class,
-        TestBatchEdge.class
+        TestBatchEdge.class,
+        TestTopologyUpgrade.class,
+        TestTraversals.class
 })
 public class AllTest {
 }

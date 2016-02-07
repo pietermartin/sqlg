@@ -243,6 +243,10 @@ public abstract class BaseTest {
 
     protected void loadModern() {
         Graph g = this.sqlgGraph;
+        loadModern(g);
+    }
+
+    protected void loadModern(Graph g) {
         final GraphReader initreader = GryoReader.build().create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
             initreader.readGraph(stream, g);
@@ -252,13 +256,6 @@ public abstract class BaseTest {
     }
 
     protected void loadGratefulDead() {
-//        Graph g = this.sqlgGraph;
-//        final GraphReader initreader = GryoReader.build().workingDirectory(File.separator + "tmp").create();
-//        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
-//            initreader.readGraph(stream, g);
-//        } catch (IOException e){
-//            Assert.fail(e.getMessage());
-//        }
         try {
             final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo");
             final GraphReader gryoReader = GryoReader.build()

@@ -460,8 +460,8 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public List<String> getSpacialRefTable() {
-        return Collections.emptyList();
+    public Set<String> getSpacialRefTable() {
+        return Collections.emptySet();
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
@@ -64,7 +65,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Set<String> getDefaultSchemas() {
-        return new HashSet<>(Arrays.asList("pg_catalog", "public", "information_schema"));
+        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "public", "information_schema"));
+    }
+
+    @Override
+    public Set<String> getSpacialRefTable() {
+        return ImmutableSet.copyOf(Arrays.asList("spatial_ref_sys"));
+    }
+
+    @Override
+    public List<String> getGisSchemas() {
+        return Arrays.asList("tiger", "tiger_data", "topology");
     }
 
     @Override
@@ -1470,15 +1481,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return Boolean.TRUE;
     }
 
-    @Override
-    public List<String> getSpacialRefTable() {
-        return Arrays.asList("spatial_ref_sys");
-    }
-
-    @Override
-    public List<String> getGisSchemas() {
-        return Arrays.asList("tiger", "tiger_data", "topology");
-    }
 
     @Override
     public void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode json) {

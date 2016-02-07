@@ -105,7 +105,7 @@ public class SqlgDataSource {
         }
     }
 
-    final static Set TO_STRING_IGNORE_PROPS = new HashSet(Arrays.asList(new String[]{
+    final static Set<String> TO_STRING_IGNORE_PROPS = new HashSet<>(Arrays.asList(new String[]{
             "connection",
             "lastAcquisitionFailureDefaultUser",
             "lastCheckinFailureDefaultUser",

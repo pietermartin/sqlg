@@ -16,6 +16,8 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.schema.TestSchema;
 import org.umlg.sqlg.test.schema.TestSqlgSchema;
+import org.umlg.sqlg.test.travers.TestTraversals;
+import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -23,7 +25,7 @@ import org.umlg.sqlg.test.schema.TestSqlgSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLoadSchema.class
+        TestTraversals.class
         })
 public class AnyTest {
 }

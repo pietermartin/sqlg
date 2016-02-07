@@ -265,6 +265,7 @@ public interface SqlDialect {
         return "public";
     }
 
+
     public default String indexName(SchemaTable schemaTable, String prefix, String column) {
         StringBuilder sb = new StringBuilder();
         sb.append(schemaTable.getSchema());
@@ -363,7 +364,7 @@ public interface SqlDialect {
         return Boolean.FALSE;
     }
 
-    List<String> getSpacialRefTable();
+    Set<String> getSpacialRefTable();
 
     List<String> getGisSchemas();
 
