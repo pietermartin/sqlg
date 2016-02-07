@@ -1004,6 +1004,7 @@ public class SchemaManager {
             String schemaPattern = null;
             String tableNamePattern = null;
             String[] types = new String[]{"TABLE"};
+            //load the schemas
             ResultSet schemaRs = metadata.getSchemas();
             while (schemaRs.next()) {
                 String schema = schemaRs.getString(1);
@@ -1014,6 +1015,7 @@ public class SchemaManager {
                 }
                 TopologyManager.addSchema(this.sqlgGraph, schema);
             }
+            //load the vertices
             ResultSet vertexRs = metadata.getTables(catalog, schemaPattern, "V_%", types);
             while (vertexRs.next()) {
                 String schema = vertexRs.getString(2);
@@ -1048,6 +1050,7 @@ public class SchemaManager {
                 }
                 TopologyManager.addVertexLabel(this.sqlgGraph, schema, table, columns);
             }
+            //load the edges without their properties
             ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types);
             while (edgeRs.next()) {
                 String schema = edgeRs.getString(2);
@@ -1066,43 +1069,90 @@ public class SchemaManager {
                 }
 
                 Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
-                Map<String, PropertyType> columns = new ConcurrentHashMap<>();
+                Map<String, PropertyType> columns = Collections.emptyMap();
                 //get the columns
                 String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
-                    if (!column.equals(SchemaManager.ID)) {
+                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
+                        SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
+                        String[] split = column.split("\\.");
+                        SchemaTable foreignKey = SchemaTable.of(split[0], split[1]);
+                        if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                            SchemaTable schemaTable = SchemaTable.of(
+                                    split[0],
+                                    split[1].substring(0, split[1].length() - SchemaManager.IN_VERTEX_COLUMN_END.length())
+                            );
+                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
+                                if (inSchemaTable.getLeft() == null) {
+                                    inSchemaTable.setLeft(schemaTable);
+                                } else {
+                                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
+                                }
+                            } else {
+                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
+                            }
+                        } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                            SchemaTable schemaTable = SchemaTable.of(
+                                    split[0],
+                                    split[1].substring(0, split[1].length() - SchemaManager.OUT_VERTEX_COLUMN_END.length())
+                            );
+                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
+                                if (outSchemaTable.getRight() == null) {
+                                    outSchemaTable.setRight(schemaTable);
+                                } else {
+                                    TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, false, foreignKey);
+                                }
+                            } else {
+                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
+                            }
+                        }
+                        MutablePair<SchemaTable, SchemaTable> inOutLabels = inOutSchemaTable.get(edgeSchemaTable);
+                        if (!edgeAdded && inOutLabels.getLeft() != null && inOutLabels.getRight() != null) {
+                            TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, inOutLabels.getLeft(), inOutLabels.getRight(), columns);
+                            edgeAdded = true;
+                        }
+                    }
+                }
+            }
+            //load the edges without their in and out vertices
+            edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types);
+            while (edgeRs.next()) {
+                String schema = edgeRs.getString(2);
+                String table = edgeRs.getString(3);
+
+                //check if is internal, if so ignore.
+                Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
+                schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
+                if (schema.equals(SQLG_SCHEMA) ||
+                        schemasToIgnore.contains(schema) ||
+                        this.sqlDialect.getGisSchemas().contains(schema)) {
+                    continue;
+                }
+                if (this.sqlDialect.getSpacialRefTable().contains(table)) {
+                    continue;
+                }
+
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
+                Map<String, PropertyType> columns = new HashMap<>();
+                //get the columns
+                String previousSchema = "";
+                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                boolean edgeAdded = false;
+                while (columnsRs.next()) {
+                    String column = columnsRs.getString(4);
+                    if (!column.equals(SchemaManager.ID) && !column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) && !column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                         int columnType = columnsRs.getInt(5);
                         String typeName = columnsRs.getString("TYPE_NAME");
                         PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
                         columns.put(column, propertyType);
                     }
-
-                    if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
-                        SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
-                        String[] split = column.split("\\.");
-                        SchemaTable schemaTable = SchemaTable.of(split[0], split[1].replace(SchemaManager.IN_VERTEX_COLUMN_END, "").replace(SchemaManager.OUT_VERTEX_COLUMN_END, ""));
-                        if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
-                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
-                                inSchemaTable.setLeft(schemaTable);
-                            } else {
-                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
-                            }
-                        } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
-                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
-                                outSchemaTable.setRight(schemaTable);
-                            } else {
-                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
-                            }
-                        }
-                    }
                 }
-                for (Map.Entry<SchemaTable, MutablePair<SchemaTable, SchemaTable>> schemaTableMutablePairEntry : inOutSchemaTable.entrySet()) {
-                    TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, schemaTableMutablePairEntry.getValue().getLeft(), schemaTableMutablePairEntry.getValue().getRight(), columns);
-                }
+                TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
             }
             if (distributed) {
                 this.schemas.putAll(this.localSchemas);

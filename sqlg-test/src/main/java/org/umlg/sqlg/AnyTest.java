@@ -25,7 +25,7 @@ import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTraversals.class
+        TestTopologyUpgrade.class
         })
 public class AnyTest {
 }

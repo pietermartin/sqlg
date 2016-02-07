@@ -220,6 +220,12 @@ public class TopologyManager {
 
     }
 
+    public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column) {
+        for (Map.Entry<String, PropertyType> stringPropertyTypeEntry : column.entrySet()) {
+            addEdgeColumn(sqlgGraph, schema, prefixedTable, stringPropertyTypeEntry);
+        }
+    }
+
     public static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {

@@ -17,6 +17,7 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.io.InputStream;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -89,6 +90,29 @@ public class TestTopologyUpgrade extends BaseTest {
         Assert.assertEquals(1, sqlgGraph1.traversal().V(a).outE("knows").properties("name").count().next().intValue());
         Assert.assertTrue(sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().isPresent());
         Assert.assertEquals("hithere", sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
+        sqlgGraph1.close();
+    }
+
+    @Test
+    public void testUpgradeMultipleInOutEdges() throws Exception {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Object a1Id = a1.id();
+        a1.addEdge("ab", b1, "weight", 5);
+        a1.addEdge("ab", c1, "weight", 6);
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        Statement statement = conn.createStatement();
+        statement.execute("DROP SCHEMA sqlg_schema CASCADE");
+        statement.close();
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        //topology will be recreated
+        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        Assert.assertEquals(2, sqlgGraph1.traversal().V(a1Id).out().count().next().intValue());
         sqlgGraph1.close();
     }
 
