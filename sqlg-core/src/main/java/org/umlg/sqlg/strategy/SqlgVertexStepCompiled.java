@@ -38,7 +38,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     }
 
     @Override
-    protected Traverser<E> processNextStart() {
+    protected Traverser.Admin<E> processNextStart() {
         while (true) {
             Traverser.Admin<S> originalHead;
             if (this.currentEmitTree != null || this.iterator.hasNext()) {

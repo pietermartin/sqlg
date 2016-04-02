@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.util.StandardTraversalMetrics;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -308,7 +307,4 @@ public class TestGremlinCompileV extends BaseTest {
         return g.V().both().both().count();
     }
 
-    public Traversal<Vertex, StandardTraversalMetrics> get_g_V_out_out_profile(GraphTraversalSource g) {
-        return (Traversal) g.V().out().out().profile();
-    }
 }

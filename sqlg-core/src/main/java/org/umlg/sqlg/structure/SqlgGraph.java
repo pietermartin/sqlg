@@ -19,7 +19,6 @@ import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.SqlgTraverserGeneratorFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
@@ -129,7 +128,7 @@ public class SqlgGraph implements Graph {
     static {
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy()));
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy()));
-        TraversalStrategies.GlobalCache.getStrategies(Graph.class).setTraverserGeneratorFactory(new SqlgTraverserGeneratorFactory());
+//        TraversalStrategies.GlobalCache.getStrategies(Graph.class).setTraverserGeneratorFactory(new SqlgTraverserGeneratorFactory());
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {

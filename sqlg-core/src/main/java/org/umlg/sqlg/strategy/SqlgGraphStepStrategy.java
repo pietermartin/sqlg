@@ -103,7 +103,8 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
-            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
+            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) )) {
+//            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
                 iterator.remove();
                 traversal.removeStep(currentStep);
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());

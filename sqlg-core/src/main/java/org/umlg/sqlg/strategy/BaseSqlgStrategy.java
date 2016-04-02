@@ -14,7 +14,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEf
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -26,9 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.util.SqlgUtil;
 
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -164,24 +161,24 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 ((ElementValueComparator) c).getValueComparator() == Order.decr));
     }
 
-    static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
-        for (Object o : orderGlobalStep.getComparators()) {
-            if (o instanceof TraversalComparator) {
-                TraversalComparator traversalComparator = (TraversalComparator) o;
-                List<Step> traversalComparatorSteps = traversalComparator.getTraversal().getSteps();
-                return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
-            } else {
-                return false;
-            }
-        }
-        if (orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator)) {
-        } else {
-            return false;
-        }
-        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator
-                && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
-                ((ElementValueComparator) c).getValueComparator() == Order.decr));
-    }
+//    static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
+//        for (Object o : orderGlobalStep.getComparators()) {
+//            if (o instanceof TraversalComparator) {
+//                TraversalComparator traversalComparator = (TraversalComparator) o;
+//                List<Step> traversalComparatorSteps = traversalComparator.getTraversal().getSteps();
+//                return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
+//            } else {
+//                return false;
+//            }
+//        }
+//        if (orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator)) {
+//        } else {
+//            return false;
+//        }
+//        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator
+//                && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
+//                ((ElementValueComparator) c).getValueComparator() == Order.decr));
+//    }
 
     private boolean isSingleBiPredicate(List<HasContainer> hasContainers) {
         if (hasContainers.size() == 1) {

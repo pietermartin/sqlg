@@ -10,11 +10,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
@@ -778,48 +775,51 @@ public class SchemaTableTree {
                 } else {
                     throw new RuntimeException("Only handle Order.incr and Order.decr, not " + elementValueComparator.getValueComparator().toString());
                 }
-            } else if (comparator instanceof TraversalComparator) {
-                TraversalComparator traversalComparator = (TraversalComparator) comparator;
-                Preconditions.checkState(traversalComparator.getTraversal().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
-                Preconditions.checkState(traversalComparator.getTraversal().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
-                SelectOneStep selectOneStep = (SelectOneStep) traversalComparator.getTraversal().getSteps().get(0);
-                Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
-                Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
-                Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
-                //need to find the schemaTable that the select is for.
-                //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
-                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String) selectOneStep.getScopeKeys().iterator().next());
-                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
 
-                String prefix;
-                if (selectSchemaTableTree.children.isEmpty()) {
-                    //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    prefix = "";
-                } else {
-                    prefix = selectSchemaTableTree.labels.iterator().next();
-                    prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                }
-                prefix += selectSchemaTableTree.getSchemaTable().getSchema();
-                prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                prefix += selectSchemaTableTree.getSchemaTable().getTable();
-                prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                prefix += elementValueTraversal.getPropertyKey();
-                String alias;
-                if (counter == -1) {
-                    //counter is -1 for single queries, i.e. they are not prefixed with ax
-                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
-                } else {
-                    //TODO its a multi map because multiple elements may have the same label
-                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
-                }
-                result += " " + alias;
-                if (traversalComparator.getComparator() == Order.incr) {
-                    result += " ASC";
-                } else if (traversalComparator.getComparator() == Order.decr) {
-                    result += " DESC";
-                } else {
-                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + traversalComparator.getComparator().toString());
-                }
+                //TODO redo this via SqlgOrderGlobalStep
+
+//            } else if (comparator instanceof TraversalComparator) {
+//                TraversalComparator traversalComparator = (TraversalComparator) comparator;
+//                Preconditions.checkState(traversalComparator.getTraversal().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
+//                Preconditions.checkState(traversalComparator.getTraversal().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
+//                SelectOneStep selectOneStep = (SelectOneStep) traversalComparator.getTraversal().getSteps().get(0);
+//                Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
+//                Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
+//                Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+//                //need to find the schemaTable that the select is for.
+//                //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
+//                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String) selectOneStep.getScopeKeys().iterator().next());
+//                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
+//
+//                String prefix;
+//                if (selectSchemaTableTree.children.isEmpty()) {
+//                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+//                    prefix = "";
+//                } else {
+//                    prefix = selectSchemaTableTree.labels.iterator().next();
+//                    prefix += SchemaTableTree.ALIAS_SEPARATOR;
+//                }
+//                prefix += selectSchemaTableTree.getSchemaTable().getSchema();
+//                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+//                prefix += selectSchemaTableTree.getSchemaTable().getTable();
+//                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+//                prefix += elementValueTraversal.getPropertyKey();
+//                String alias;
+//                if (counter == -1) {
+//                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+//                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
+//                } else {
+//                    //TODO its a multi map because multiple elements may have the same label
+//                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
+//                }
+//                result += " " + alias;
+//                if (traversalComparator.getComparator() == Order.incr) {
+//                    result += " ASC";
+//                } else if (traversalComparator.getComparator() == Order.decr) {
+//                    result += " DESC";
+//                } else {
+//                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + traversalComparator.getComparator().toString());
+//                }
             }
         }
         return result;

@@ -92,7 +92,8 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step currentStep = iterator.next();
-            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
+//            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
+            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) )) {
                 iterator.remove();
                 TraversalHelper.replaceStep(currentStep, new SqlgOrderGlobalStep<>((OrderGlobalStep) currentStep), traversal);
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());

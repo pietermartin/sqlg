@@ -51,7 +51,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     }
 
     @Override
-    protected Traverser<S> processNextStart() {
+    protected Traverser.Admin<S> processNextStart() {
 
         if (this.first) {
             this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator(this.iteratorSupplier.get(), this, 1l));

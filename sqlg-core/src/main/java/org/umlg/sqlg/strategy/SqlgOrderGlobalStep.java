@@ -1,15 +1,18 @@
 package org.umlg.sqlg.strategy;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.CollectingBarrierStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.TraversalComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.util.function.ChainedComparator;
+import org.javatuples.Pair;
 
 import java.io.Serializable;
 import java.util.*;
@@ -18,10 +21,11 @@ import java.util.stream.Collectors;
 /**
  * Created by pieter on 2015/09/05.
  */
-public class SqlgOrderGlobalStep<S> extends CollectingBarrierStep<S> implements ComparatorHolder<S>, TraversalParent {
+public class SqlgOrderGlobalStep<S, C extends Comparable> extends CollectingBarrierStep<S> implements ComparatorHolder<S, C>, TraversalParent {
 
-    private OrderGlobalStep<S> orderGlobalStep;
-    private List<Comparator<S>> comparators = new ArrayList<>();
+    private ChainedComparator<S, C> chainedComparator = null;
+    private OrderGlobalStep<S, C> orderGlobalStep;
+    private List<Pair<Traversal.Admin<S, C>, Comparator<C>>> comparators = new ArrayList<>();
     //ignore indicates whether the order by clause has been executed by the rdbms.
     //if so then there is no need to do so in java, else do so.
     private boolean ignore = false;
@@ -42,13 +46,13 @@ public class SqlgOrderGlobalStep<S> extends CollectingBarrierStep<S> implements 
     }
 
     @Override
-    public void addComparator(Comparator<S> comparator) {
-        this.orderGlobalStep.addComparator(comparator);
+    public void addComparator(final Traversal.Admin<S, C> traversal, final Comparator<C> comparator) {
+        this.comparators.add(new Pair<>(this.integrateChild(traversal), comparator));
     }
 
     @Override
-    public List<Comparator<S>> getComparators() {
-        return this.orderGlobalStep.getComparators();
+    public List<Pair<Traversal.Admin<S, C>, Comparator<C>>> getComparators() {
+        return this.comparators.isEmpty() ? Collections.singletonList(new Pair<>(new IdentityTraversal(), (Comparator) Order.incr)) : Collections.unmodifiableList(this.comparators);
     }
 
     @Override
@@ -59,8 +63,8 @@ public class SqlgOrderGlobalStep<S> extends CollectingBarrierStep<S> implements 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        for (final Comparator<S> comparator : getComparators()) {
-            result ^= comparator.hashCode();
+        for (int i = 0; i < this.comparators.size(); i++) {
+            result ^= this.comparators.get(i).hashCode() * (i+1);
         }
         return result;
     }
@@ -71,33 +75,20 @@ public class SqlgOrderGlobalStep<S> extends CollectingBarrierStep<S> implements 
     }
 
     @Override
-    public <S, E> List<Traversal.Admin<S, E>> getLocalChildren() {
-        return Collections.unmodifiableList(getComparators().stream()
-                .filter(comparator -> comparator instanceof TraversalComparator)
-                .map(traversalComparator -> ((TraversalComparator<S, E>) traversalComparator).getTraversal())
-                .collect(Collectors.toList()));
+    public List<Traversal.Admin<S, C>> getLocalChildren() {
+        return (List) this.comparators.stream().map(Pair::getValue0).collect(Collectors.toList());
     }
 
     @Override
-    public void addLocalChild(final Traversal.Admin<?, ?> localChildTraversal) {
-        throw new UnsupportedOperationException("Use OrderGlobalStep.addComparator(" + TraversalComparator.class.getSimpleName() + ") to add a local child traversal:" + this);
-    }
-
-    @Override
-    public SqlgOrderGlobalStep<S> clone() {
-        final SqlgOrderGlobalStep<S> clone = (SqlgOrderGlobalStep<S>) super.clone();
+    public SqlgOrderGlobalStep<S, C> clone() {
+        final SqlgOrderGlobalStep<S, C> clone = (SqlgOrderGlobalStep<S, C>) super.clone();
         clone.comparators = new ArrayList<>();
-        for (final Comparator<S> comparator : getComparators()) {
-            if (comparator instanceof TraversalComparator) {
-                final TraversalComparator<S, ?> clonedTraversalComparator = ((TraversalComparator<S, ?>) comparator).clone();
-                clone.integrateChild(clonedTraversalComparator.getTraversal());
-                clone.comparators.add(clonedTraversalComparator);
-            } else
-                clone.comparators.add(comparator);
+        for (final Pair<Traversal.Admin<S, C>, Comparator<C>> comparator : this.comparators) {
+            clone.comparators.add(new Pair<>(comparator.getValue0().clone(), comparator.getValue1()));
         }
+        clone.chainedComparator = null;
         return clone;
     }
-
 
     /////
 
