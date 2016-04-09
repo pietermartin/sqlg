@@ -160,7 +160,7 @@ public class SqlgUtil {
                                 sqlgGraph, columnNameCountMap2, resultSet, subQueryStack.getLast()
                         );
                         //TODO Optional must go all the way up the stack
-                        resultIterator.add(Pair.of((e.isPresent() ? e.get() : null), previousLabeledElements));
+                        resultIterator.add(Pair.of((e.isPresent() ? e.get() : (E) new Dummy()), previousLabeledElements));
                     }
                 }
                 subQueryDepth++;

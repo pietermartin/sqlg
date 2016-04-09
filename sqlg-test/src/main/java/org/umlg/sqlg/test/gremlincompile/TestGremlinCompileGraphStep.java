@@ -1,13 +1,14 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
-
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
@@ -21,6 +22,8 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inE;
 
 /**
  * Created by pieter on 2015/07/19.
@@ -37,6 +40,15 @@ public class TestGremlinCompileGraphStep extends BaseTest {
             reader.readGraph(stream, g);
         }
 //        assertModernGraph(g, true, false);
+
+        List<Map<String, Vertex>> vertices = this.sqlgGraph.traversal()
+                .V().as("a")
+                .out("created")
+                .in("created")
+                .where(P.neq("a")).as("b")
+                .<Vertex>select("a", "b").toList();
+        Assert.assertEquals(6, vertices.size());
+
         final GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("created")

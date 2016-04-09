@@ -13,7 +13,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -1312,8 +1311,5 @@ public class TestRepeatStepGraphOut extends BaseTest {
                 .next();
         stopWatch1.stop();
         System.out.println(stopWatch1.toString());
-
-
-
     }
 }
