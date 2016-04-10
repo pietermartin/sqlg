@@ -113,6 +113,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
         Edge e6 = b2.addEdge("outC", c2, "edgeName", "edge6");
 
         this.sqlgGraph.tx().commit();
+        List<Map<String, Vertex>> restul = this.sqlgGraph.traversal().V(a1).as("a").out().as("b").<Vertex>select("a", "b").toList();
         GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(a1)
                 .out("outB")
                 .out("outC")

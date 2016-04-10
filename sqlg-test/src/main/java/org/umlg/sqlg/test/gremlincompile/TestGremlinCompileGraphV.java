@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -13,6 +14,18 @@ import java.util.List;
  * Time: 8:05 PM
  */
 public class TestGremlinCompileGraphV extends BaseTest {
+
+    @Test
+    public void testGraphStepWithAs() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        this.sqlgGraph.tx().commit();
+        List<Path> result = this.sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path().toList();
+        Assert.assertEquals(1, result.size());
+    }
 
     @Test
     public void testGraphVHas() {

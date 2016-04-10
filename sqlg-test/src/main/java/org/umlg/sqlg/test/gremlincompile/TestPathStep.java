@@ -72,6 +72,9 @@ public class TestPathStep extends BaseTest {
         }
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
+        List<Path> paths = g.V().out().path().toList();
+        Assert.assertEquals(6, paths.size());
+
         final Traversal<Vertex, Path> traversal = g.V().out().path().by("age").by("name");
         printTraversalForm(traversal);
         int counter = 0;

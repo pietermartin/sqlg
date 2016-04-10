@@ -39,6 +39,11 @@ public class Dummy extends SqlgElement {
     }
 
     @Override
+    public boolean equals(final Object object) {
+        return object == this;
+    }
+
+    @Override
     public int hashCode() {
         return -1;
     }

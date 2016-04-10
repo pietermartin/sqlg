@@ -26,46 +26,11 @@ public class EmitTree<E extends SqlgElement> {
         return emit;
     }
 
-    public EmitTree getParent() {
-        return parent;
-    }
-
     public EmitTree<E> addEmit(int degree, Emit<E> emit) {
         EmitTree child = new EmitTree(degree, emit);
         child.parent = this;
         this.children.add(child);
         return child;
-    }
-
-    public boolean emitEquals(E e) {
-        return this.emit.getElementPlusEdgeId().getLeft().equals(e);
-    }
-
-    public EmitTree<E> getRoot() {
-        if (this.parent == null) {
-            return this;
-        } else {
-            return this.parent.getRoot();
-        }
-    }
-
-    public boolean isRoot() {
-        return this.parent != null;
-    }
-
-    public EmitTree<E> getLastChildForDegree(int degree) {
-        if (this.degree == (degree - 1)) {
-            if (this.children.isEmpty()) {
-                return null;
-            } else {
-                return this.children.get(this.children.size() - 1);
-            }
-        } else {
-            for (EmitTree child : this.children) {
-                return child.getLastChildForDegree(degree);
-            }
-        }
-        return null;
     }
 
     public boolean hasChild(Pair elementPlusEdgeId) {

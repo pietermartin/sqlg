@@ -1,13 +1,14 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
-
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
@@ -21,6 +22,8 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.inE;
 
 /**
  * Created by pieter on 2015/07/19.
@@ -36,7 +39,15 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
             reader.readGraph(stream, g);
         }
-//        assertModernGraph(g, true, false);
+        assertModernGraph(g, true, false);
+        List<Map<String, Vertex>> vertices = this.sqlgGraph.traversal()
+                .V().as("a")
+                .out("created")
+                .in("created")
+                .where(P.neq("a")).as("b")
+                .<Vertex>select("a", "b").toList();
+        Assert.assertEquals(6, vertices.size());
+
         final GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("created")
@@ -44,8 +55,6 @@ public class TestGremlinCompileGraphStep extends BaseTest {
                 .where(P.neq("a")).as("b")
                 .<Vertex>select("a", "b")
                 .addInE("a", "co-developer", "b", "year", 2009);
-//        printTraversalForm(traversal);
-//        printTraversalForm(traversal);
         int count = 0;
         while (traversal.hasNext()) {
             final Edge edge = traversal.next();
@@ -64,7 +73,7 @@ public class TestGremlinCompileGraphStep extends BaseTest {
         Assert.assertEquals(6, IteratorUtils.count(this.sqlgGraph.vertices()));
     }
 
-//    @Test
+    @Test
     public void g_V_asXaX_outXcreatedX_inXcreatedX_whereXneqXaXX_asXbX_selectXa_bX_addInEXa_codeveloper_b_year_2009X() throws IOException {
         Graph g = this.sqlgGraph;
         final GraphReader reader = GryoReader.build()

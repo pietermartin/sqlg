@@ -13,7 +13,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -144,7 +143,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
     }
 
     @Test
-    //This is not optimized
+    //This is not optimized because there is no until not times
     public void testRepeatNoLimit() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -277,7 +276,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
     }
 
     @Test
-    public void testRepeatWithEmitFirstWithPerion() {
+    public void testRepeatWithEmitFirstWithPeriod() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name.AA", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name.AA", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name.AA", "b2");
@@ -786,6 +785,8 @@ public class TestRepeatStepGraphOut extends BaseTest {
         josh.addEdge("created", lop);
         this.sqlgGraph.tx().commit();
         List<Path> paths = this.sqlgGraph.traversal().V().repeat(__.out()).times(2).emit().path().toList();
+        Assert.assertEquals(4, paths.size());
+
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(marko) && p.get(1).equals(lop)));
         paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(marko) && p.get(1).equals(lop)).findAny().get());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(josh) && p.get(1).equals(lop)));
@@ -1312,8 +1313,5 @@ public class TestRepeatStepGraphOut extends BaseTest {
                 .next();
         stopWatch1.stop();
         System.out.println(stopWatch1.toString());
-
-
-
     }
 }

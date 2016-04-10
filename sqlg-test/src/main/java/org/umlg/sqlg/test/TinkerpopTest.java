@@ -1,39 +1,26 @@
 package org.umlg.sqlg.test;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
-import org.apache.tinkerpop.gremlin.FeatureRequirementSet;
-import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.engine.StandardTraversalEngine;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.PartitionStrategy;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedEdge;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedFactory;
-import org.apache.tinkerpop.gremlin.structure.util.detached.DetachedVertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/07/13
@@ -54,17 +41,10 @@ public class TinkerpopTest extends BaseTest {
         }
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
+        List<Vertex> traversala2 =  g.V().hasId(convertToVertexId("marko")).toList();
+        Assert.assertEquals(1, traversala2.size());
+        Assert.assertEquals(convertToVertex(graph, "marko"), traversala2.get(0));
 
-        final Traversal<Vertex, String> traversal = g.V().choose(__.label().is("person"), __.union(__.out().values("lang"), __.out().values("name")), __.in().label());
-        printTraversalForm(traversal);
-        checkResults(new HashMap<String, Long>() {{
-            put("lop", 3l);
-            put("ripple", 1l);
-            put("java", 4l);
-            put("josh", 1l);
-            put("vadas", 1l);
-            put("person", 4l);
-        }}, traversal);
     }
 
     public static <T> void checkResults(final Map<T, Long> expectedResults, final Traversal<?, T> traversal) {

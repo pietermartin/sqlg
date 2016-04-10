@@ -16,13 +16,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2015/01/01
  * Time: 4:38 PM
  */
 public class TestGremlinCompileV extends BaseTest {
+
+    @Test
+    public void testSimpleOutOut() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        a.addEdge("ab", b);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = vertexTraversal(a).out().toList();
+        assertEquals(1, vertices.size());
+    }
 
     @Test
     public void testOutOut() {
@@ -270,8 +282,7 @@ public class TestGremlinCompileV extends BaseTest {
     @Test
     public void testEmptyTraversal() {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "B");
-        v1.addEdge("ab", v2);
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "B"); //        v1.addEdge("ab", v2);
         this.sqlgGraph.tx().commit();
         vertexTraversal(v1).out("test");
     }

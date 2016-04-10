@@ -6,16 +6,18 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
+import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.SqlGraphStepWithPathTraverser;
+import org.umlg.sqlg.process.SqlgRawIteratorToEmitIterator;
 import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.structure.Dummy;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -32,89 +34,78 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep {
+public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent  {
 
-    private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
-    private EmitTree<E> currentEmitTree;
-    private Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> iteratorSupplier;
+    private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
+
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private SqlgGraph sqlgGraph;
-    private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
-    private Emit lastEmit = null;
-    private boolean first = true;
+
+    protected transient Supplier<Iterator<Emit<E>>> iteratorSupplier;
+    private Iterator<Emit<E>> iterator = EmptyIterator.instance();
+    private Traverser.Admin<E> head = null;
+
 
     public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
-        this.iteratorSupplier = this::elements;
+        this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this::elements);
     }
 
     @Override
-    protected Traverser.Admin<S> processNextStart() {
+    protected Traverser.Admin<E> processNextStart() {
+        while (true) {
+            if (this.iterator.hasNext()) {
+                Traverser.Admin<E> traverser;
+                Emit<E> emit = this.iterator.next();
+                E element = emit.getElementPlusEdgeId().getLeft();
 
-        if (this.first) {
-            this.starts.add(this.getTraversal().getTraverserGenerator().generateIterator(this.iteratorSupplier.get(), this, 1l));
-            this.first = false;
-        }
+                if (emit.getPath() != null) {
 
-        SqlGraphStepWithPathTraverser sqlGraphStepWithPathTraverser = (SqlGraphStepWithPathTraverser) this.starts.next();
-        Iterator<Emit<E>> toEmit = sqlGraphStepWithPathTraverser.getToEmit().iterator();
-        while (toEmit.hasNext()) {
-            Emit emit = toEmit.next();
-            toEmit.remove();
-            lastEmit = emit;
-            if (this.currentEmitTree == null) {
-                //get it from the roots
-                for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-                    if (rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-                        this.currentEmitTree = rootEmitTree;
-                        break;
+                    E e = (E)emit.getPath().objects().get(0);
+                    if (this.isStart) {
+                        traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1l);
+                    } else {
+                        traverser = this.head.split(e, this);
                     }
-                }
-            }
-            if ((this.rootEmitTrees.isEmpty() || (!this.rootEmitTrees.isEmpty() && this.currentEmitTree == null)) ||
-                    (!rootEmitTreeContains(this.rootEmitTrees, emit) && !this.currentEmitTree.hasChild(emit.getElementPlusEdgeId()))) {
+                    traverser.addLabels(emit.getPath().labels().get(0));
 
-                this.starts.add(sqlGraphStepWithPathTraverser);
-                SqlGraphStepWithPathTraverser emitTraverser = new SqlGraphStepWithPathTraverser<>((S) emit.getElementPlusEdgeId().getLeft(), this, 1l);
-                emitTraverser.setPath(emit.getPath());
-                if (this.currentEmitTree == null) {
-                    this.currentEmitTree = new EmitTree<>(emit.getDegree(), emit);
-                    this.rootEmitTrees.add(this.currentEmitTree);
+                    for (int i = 1; i < emit.getPath().size(); i++) {
+                        e = (E)emit.getPath().objects().get(i);
+                        traverser = traverser.split(e, EmptyStep.instance());
+                        traverser.addLabels(emit.getPath().labels().get(i));
+                    }
+
                 } else {
-                    this.currentEmitTree = this.currentEmitTree.addEmit(emit.getDegree(), emit);
+
+                    if (this.isStart) {
+                        traverser = this.getTraversal().getTraverserGenerator().generate(element, this, 1l);
+                    } else {
+                        traverser = this.head.split(element, this);
+                    }
+
                 }
-                return emitTraverser;
+                return traverser;
             } else {
-                if (!this.currentEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-                    this.currentEmitTree = this.currentEmitTree.getChild(emit.getElementPlusEdgeId());
+                if (this.isStart) {
+                    if (this.done)
+                        throw FastNoSuchElementException.instance();
+                    else {
+                        this.done = true;
+                        this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
+                    }
+                } else {
+                    this.head = this.starts.next();
+                    this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
                 }
-            }
-        }
-        if (sqlGraphStepWithPathTraverser.get() instanceof Dummy) {
-            //reset the tree to the root
-            this.currentEmitTree = null;
-            return EmptyTraverser.instance();
-        } else {
-            if (this.currentEmitTree != null) {
-                this.currentEmitTree = null;
-            }
-            //if emit and times are both at the end or start then only emit or return but not both.
-            if (lastEmit != null && lastEmit.emitAndUntilBothAtStart()) {
-                return sqlGraphStepWithPathTraverser;
-            } else  if (lastEmit != null && this.lastEmit.emitAndUntilBothAtEnd()) {
-                return EmptyTraverser.instance();
-            } else {
-                return sqlGraphStepWithPathTraverser;
             }
         }
     }
-
 
     @Override
     public Set<TraverserRequirement> getRequirements() {
-        return EnumSet.of(TraverserRequirement.OBJECT);
+        return this.getSelfAndChildRequirements(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);
     }
 
     private Iterator<Pair<E, Multimap<String, Emit<E>>>> elements() {

@@ -202,10 +202,10 @@ public class TestVertexStepOrderBy extends BaseTest {
         Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
         Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
         Vertex fantasy4 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan4");
-        god.addEdge("godDream", fantasy1);
-        god.addEdge("godDream", fantasy2);
-        god.addEdge("godDream", fantasy3);
-        god.addEdge("godDream", fantasy4);
+        god.addEdge("godDream", fantasy1, "sequence", 1);
+        god.addEdge("godDream", fantasy2, "sequence", 2);
+        god.addEdge("godDream", fantasy3, "sequence", 3);
+        god.addEdge("godDream", fantasy4, "sequence", 4);
         this.sqlgGraph.tx().commit();
         List<Vertex> result = this.sqlgGraph.traversal().V(god)
                 .outE("godDream").as("e")
