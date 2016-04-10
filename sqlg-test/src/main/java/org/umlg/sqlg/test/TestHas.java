@@ -5,11 +5,25 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.List;
+
 /**
  * Date: 2014/07/13
  * Time: 6:36 PM
  */
 public class TestHas extends BaseTest {
+
+    @Test
+    public void testHasId() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasId(a1.id()).toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(a1, vertices.get(0));
+    }
 
     @Test
     public void testHas() {
