@@ -377,9 +377,16 @@ public class ReplacedStep<S, E> {
                 }
 
             }
-
         }
 
+        //if hasContainer is for T.id add in the label
+        List<HasContainer> labelHasContainers = new ArrayList<>();
+        this.hasContainers.stream().filter(
+                h -> h.getKey().equals(T.id.getAccessor())
+        ).forEach(
+                h -> labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(((RecordId)h.getValue()).getSchemaTable().toString())))
+        );
+        this.hasContainers.addAll(labelHasContainers);
 
         Set<SchemaTableTree> result = new HashSet<>();
 
