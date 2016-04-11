@@ -26,9 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.util.SqlgUtil;
 
-import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
@@ -308,6 +306,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
+                    } else {
+                        repeatStepAdded = false;
                     }
 
                     pathCount++;

@@ -12,11 +12,24 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
+
 /**
  * Date: 2015/10/21
  * Time: 8:18 PM
  */
 public class TestRepeatStepGraphBoth extends BaseTest {
+
+    @Test
+    public void testRepeatAndOut(){
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().repeat(both()).times(1).out().toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(b1, vertices.get(0));
+    }
 
     @Test
     public void testRepeatBoth() {
@@ -26,7 +39,7 @@ public class TestRepeatStepGraphBoth extends BaseTest {
         a1.addEdge("ab", b1);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V(b1).repeat(__.both()).times(3).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(b1).repeat(both()).times(3).toList();
         Assert.assertEquals(4, vertices.size());
     }
 
