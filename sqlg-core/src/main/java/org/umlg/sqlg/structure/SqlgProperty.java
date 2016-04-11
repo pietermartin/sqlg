@@ -90,11 +90,14 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
         return StringFactory.propertyString(this);
     }
 
+    @Override
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);
     }
 
+    @Override
     public int hashCode() {
-        return this.key.hashCode() + this.value.hashCode() + this.element.hashCode();
+        return ElementHelper.hashCode(this);
+//        return this.key.hashCode() + this.value.hashCode() + this.element.hashCode();
     }
 }

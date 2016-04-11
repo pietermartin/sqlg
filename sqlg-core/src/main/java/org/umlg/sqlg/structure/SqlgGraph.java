@@ -43,79 +43,118 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "modern_V_out_out_profileXmetricsX",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "grateful_V_out_out_profileXmetricsX",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "g_V_repeat_both_profileXmetricsX",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "grateful_V_out_out_profile",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "g_V_repeat_both_profile",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "modern_V_out_out_profile",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "testProfileStrategyCallback",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
-//        method = "testProfileStrategyCallbackSideEffect",
-//        reason = "Assertions are TinkerGraph specific.")
-//
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONTest",
-//        method = "shouldSerializeTraversalMetrics",
-//        reason = "Assertions are TinkerGraph specific.")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
-//        method = "g_V_repeatXoutX_timesX3X_count",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
-//        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
-//        method = "g_V_repeatXoutX_timesX8X_count",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
-//        method = "g_V_repeatXoutX_timesX3X_count",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
-//        method = "g_V_repeatXoutX_timesX8X_count",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
-//        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
-//        method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutorPerformanceTest",
-//        method = "executorEval",
-//        reason = "Takes too long")
-//@Graph.OptOut(
-//        test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
-//        method = "shouldHaveStandardStringRepresentation",
-//        reason = "SqlgGraph includes the jdbc connection url.")
+
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasTest$Traversals",
+        method = "g_V_hasId_compilationEquality",
+        reason = "Temporary.")
+
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "modern_V_out_out_profileXmetricsX",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "grateful_V_out_out_profileXmetricsX",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "g_V_repeat_both_profileXmetricsX",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "grateful_V_out_out_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "g_V_repeat_both_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "modern_V_out_out_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "testProfileStrategyCallback",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
+        method = "testProfileStrategyCallbackSideEffect",
+        reason = "Assertions are TinkerGraph specific.")
+
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "modern_V_out_out_profileXmetricsX",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "grateful_V_out_out_profileXmetricsX",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "g_V_repeat_both_profileXmetricsX",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "grateful_V_out_out_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "g_V_repeat_both_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "modern_V_out_out_profile",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "testProfileStrategyCallback",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyProfileTest$Traversals",
+        method = "testProfileStrategyCallbackSideEffect",
+        reason = "Assertions are TinkerGraph specific.")
+
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONTest",
+        method = "shouldSerializeTraversalMetrics",
+        reason = "Assertions are TinkerGraph specific.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX3X_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX3X_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX8X_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.GroovyCountTest$Traversals",
+        method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatTest$Traversals",
+        method = "g_V_repeatXbothX_timesX10X_asXaX_out_asXbX_selectXa_bX",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutorPerformanceTest",
+        method = "executorEval",
+        reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
+        method = "shouldHaveStandardStringRepresentation",
+        reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
 public class SqlgGraph implements Graph {
 
     private final SqlgDataSource sqlgDataSource;
@@ -133,7 +172,6 @@ public class SqlgGraph implements Graph {
     static {
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy()));
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy()));
-//        TraversalStrategies.GlobalCache.getStrategies(Graph.class).setTraverserGeneratorFactory(new SqlgTraverserGeneratorFactory());
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {

@@ -318,7 +318,8 @@ public abstract class SqlgElement implements Element {
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
             return super.hashCode();
         } else {
-            return this.id().hashCode();
+            return ElementHelper.hashCode(this);
+//            return this.id().hashCode();
         }
     }
 
