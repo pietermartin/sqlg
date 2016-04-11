@@ -305,6 +305,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
+                    } else {
+                        repeatStepAdded = false;
                     }
 
                     pathCount++;
