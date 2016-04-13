@@ -21,6 +21,8 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.structure.T.id;
+
 /**
  * Date: 2015/06/27
  * Time: 6:05 PM
@@ -196,13 +198,13 @@ public class ReplacedStep<S, E> {
         return idFilteredResult;
     }
 
-    private Set<SchemaTableTree> filterVertexOnIdHasContainers(Set<SchemaTableTree> inLabelsToTraversers) {
-        Set<SchemaTableTree> idFilteredResult = new HashSet<>(inLabelsToTraversers);
+    private Set<SchemaTableTree> filterVertexOnIdHasContainers(Set<SchemaTableTree> labelsToTraversers) {
+        Set<SchemaTableTree> idFilteredResult = new HashSet<>(labelsToTraversers);
         //Filter out labels if there is a hasContainer on the id field
         for (HasContainer idHasContainer : getIdHasContainer()) {
             SchemaTable hasContainerSchemaTable = RecordId.from(idHasContainer.getValue().toString()).getSchemaTable();
             hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + hasContainerSchemaTable.getTable());
-            for (SchemaTableTree schemaTableTree : inLabelsToTraversers) {
+            for (SchemaTableTree schemaTableTree : labelsToTraversers) {
                 if (!schemaTableTree.getSchemaTable().equals(hasContainerSchemaTable)) {
                     idFilteredResult.remove(schemaTableTree);
                 }
@@ -315,7 +317,7 @@ public class ReplacedStep<S, E> {
     }
 
     private List<HasContainer> getIdHasContainer() {
-        return this.hasContainers.stream().filter(h -> h.getKey().equals(T.id.getAccessor())).collect(Collectors.toList());
+        return this.hasContainers.stream().filter(h -> h.getKey().equals(id.getAccessor())).collect(Collectors.toList());
     }
 
     @Override
@@ -360,16 +362,7 @@ public class ReplacedStep<S, E> {
 
             for (SchemaTable schemaTable : groupedIds.keySet()) {
                 //if the label is already in the hasContainers do not add it again.
-                boolean containsLabel = false;
-                for (HasContainer hasContainer : this.hasContainers) {
-                    if (hasContainer.getKey().equals(T.label.getAccessor())) {
-                        SchemaTable hasContainerSchemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, (String) hasContainer.getValue());
-                        containsLabel = !hasContainer.getValue().equals(hasContainerSchemaTable.toString());
-                        if (containsLabel) {
-                            break;
-                        }
-                    }
-                }
+                boolean containsLabel = isContainsLabel(sqlgGraph, schemaTable);
                 if (!containsLabel) {
                     //add the label
                     HasContainer labelHasContainer = new HasContainer(T.label.getAccessor(), P.eq(schemaTable.toString()));
@@ -382,26 +375,31 @@ public class ReplacedStep<S, E> {
 
         //if hasContainer is for T.id add in the label
         List<HasContainer> labelHasContainers = new ArrayList<>();
+        List<HasContainer> idHasContainersToRemove = new ArrayList<>();
         this.hasContainers.stream().filter(
-                h -> h.getKey().equals(T.id.getAccessor())
+                h -> h.getKey().equals(id.getAccessor())
         ).forEach(
                 h -> {
                     if (h.getValue() instanceof Collection) {
                         Collection<RecordId> coll = (Collection) h.getValue();
-                        Set<String> distinctLabels = new HashSet<>();
+                        Set<SchemaTable> distinctLabels = new HashSet<>();
                         for (RecordId recordId : coll) {
-                            distinctLabels.add(recordId.getSchemaTable().toString());
+                            distinctLabels.add(recordId.getSchemaTable());
                             groupedIds.put(recordId.getSchemaTable(), recordId);
                         }
-                        for (String distinctLabel : distinctLabels) {
-                            labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(distinctLabel)));
+                        for (SchemaTable distinctLabel : distinctLabels) {
+                            boolean containsLabel = isContainsLabel(sqlgGraph, distinctLabel);
+                            if (!containsLabel) {
+                                labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(distinctLabel.toString())));
+                            }
                         }
-                        toRemove.add(h);
+                        idHasContainersToRemove.add(h);
                     } else {
                         labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(((RecordId) h.getValue()).getSchemaTable().toString())));
                     }
                 }
         );
+        this.hasContainers.removeAll(idHasContainersToRemove);
         this.hasContainers.addAll(labelHasContainers);
 
         Set<SchemaTableTree> result = new HashSet<>();
@@ -446,8 +444,9 @@ public class ReplacedStep<S, E> {
 
                     List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
                     if (!groupedIds.isEmpty()) {
-                        Collection<RecordId> ids = groupedIds.get(schemaTable);
-                        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(ids));
+                        Collection<RecordId> recordIds = groupedIds.get(schemaTable);
+                        List<Long> ids = recordIds.stream().map(id -> id.getId()).collect(Collectors.toList());
+                        HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
                         hasContainers.add(idHasContainer);
                         toRemove.add(idHasContainer);
                     }
@@ -473,6 +472,20 @@ public class ReplacedStep<S, E> {
         SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
 
         return result;
+    }
+
+    private boolean isContainsLabel(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+        boolean containsLabel = false;
+        for (HasContainer hasContainer : this.hasContainers) {
+            if (hasContainer.getKey().equals(T.label.getAccessor())) {
+                SchemaTable hasContainerSchemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, (String) hasContainer.getValue());
+                containsLabel = schemaTable.equals(hasContainerSchemaTable);
+                if (containsLabel) {
+                    break;
+                }
+            }
+        }
+        return containsLabel;
     }
 
     private void groupIdsBySchemaTable(GraphStep graphStep, Multimap<SchemaTable, RecordId> groupedIds) {

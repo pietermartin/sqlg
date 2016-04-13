@@ -646,10 +646,14 @@ public class SchemaTableTree {
             Set<Object> withInOuts = new HashSet<>(withInList);
 
             Map<String, PropertyType> columns = new HashMap<>();
+            Object next = withInOuts.iterator().next();
+//            if (next instanceof RecordId) {
+//                next = ((RecordId) next).getId();
+//            }
             if (hasContainer.getBiPredicate() == Contains.within) {
-                columns.put("within", PropertyType.from(withInOuts.iterator().next()));
+                columns.put("within", PropertyType.from(next));
             } else if (hasContainer.getBiPredicate() == Contains.without) {
-                columns.put("without", PropertyType.from(withInOuts.iterator().next()));
+                columns.put("without", PropertyType.from(next));
             } else {
                 throw new UnsupportedOperationException("Only Contains.within and Contains.without is supported!");
             }
