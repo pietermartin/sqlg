@@ -13,7 +13,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Created by pieter on 2015/08/03.
@@ -51,7 +51,7 @@ public class WhereClause {
             } else {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
-            result += containsToSql((Contains) p.getBiPredicate(), ((List) p.getValue()).size());
+            result += containsToSql((Contains) p.getBiPredicate(), ((Collection) p.getValue()).size());
             return result;
         } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
             result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
@@ -190,10 +190,11 @@ public class WhereClause {
             keyValueMap.put(hasContainer.getKey(), p1.getValue());
             keyValueMap.put(hasContainer.getKey(), p2.getValue());
         } else if (p.getBiPredicate() == Contains.within || p.getBiPredicate() == Contains.without) {
-            List values = (List) hasContainer.getValue();
+            Collection values = (Collection) hasContainer.getValue();
             for (Object value : values) {
                 if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                    keyValueMap.put("ID", value);
+//                    keyValueMap.put("ID", value);
+                    keyValueMap.put(T.id.getAccessor(), value);
                 } else {
                     keyValueMap.put(hasContainer.getKey(), value);
                 }

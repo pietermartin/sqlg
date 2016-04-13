@@ -172,6 +172,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 return false;
             }
         }
+        System.out.println("wtf");
         if (orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator)) {
         } else {
             return false;
@@ -226,7 +227,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     private boolean isWithinOut(List<HasContainer> hasContainers) {
         return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
-                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
+//                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
                 (hasContainers.get(0).getBiPredicate() == Contains.without || hasContainers.get(0).getBiPredicate() == Contains.within));
     }
 
