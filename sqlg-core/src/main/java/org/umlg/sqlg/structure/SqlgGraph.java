@@ -43,12 +43,10 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
-
 //@Graph.OptOut(
 //        test = "org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasTest$Traversals",
 //        method = "g_V_hasId_compilationEquality",
-//        reason = "Temporary.")
-
+//        reason = "Assertions are TinkerGraph specific.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",
         method = "modern_V_out_out_profileXmetricsX",
@@ -119,10 +117,10 @@ import java.util.stream.Stream;
         test = "org.apache.tinkerpop.gremlin.structure.SerializationTest$GraphSONTest",
         method = "shouldSerializeTraversalMetrics",
         reason = "Assertions are TinkerGraph specific.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
-        method = "g_V_repeatXoutX_timesX3X_count",
-        reason = "Takes too long")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+//        method = "g_V_repeatXoutX_timesX3X_count",
+//        reason = "Takes too long")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",

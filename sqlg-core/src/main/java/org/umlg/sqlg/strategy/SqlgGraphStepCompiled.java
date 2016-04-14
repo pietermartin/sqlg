@@ -192,4 +192,13 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         return replacedSteps;
     }
 
+    @Override
+    public int hashCode() {
+        int result = super.hashCode() ^ this.returnClass.hashCode();
+        for (final Object id : this.ids) {
+            result ^= id.hashCode();
+        }
+        return result;
+    }
+
 }

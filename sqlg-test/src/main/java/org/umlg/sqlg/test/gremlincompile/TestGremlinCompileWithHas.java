@@ -41,6 +41,24 @@ import java.util.stream.Collectors;
 public class TestGremlinCompileWithHas extends BaseTest {
 
     @Test
+    public void testHasIdRecompilation() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+
+        GraphTraversal gt1 = this.sqlgGraph.traversal().V(a1.id());
+        GraphTraversal gt2 = this.sqlgGraph.traversal().V().hasId(a1.id());
+        List<Vertex> vertices1 = gt1.toList();
+        Assert.assertEquals(1, vertices1.size());
+        Assert.assertEquals(a1, vertices1.get(0));
+        List<Vertex> vertices2 = gt2.toList();
+        Assert.assertEquals(1, vertices2.size());
+        Assert.assertEquals(a1, vertices2.get(0));
+        Assert.assertEquals(gt1, gt2);
+    }
+
+    @Test
     public void testHasIdIn() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -311,7 +329,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
         Traversal<Vertex, Map<String, Vertex>> t = g.traversal().V().as("a").both().as("b").dedup("a", "b").by(T.label).select("a", "b");
         printTraversalForm(t);
-        List<Map<String,Vertex>> result = t.toList();
+        List<Map<String, Vertex>> result = t.toList();
         System.out.println(result);
     }
 
@@ -577,7 +595,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
     }
 
-//    @Test
+    //    @Test
     public void testSingleCompileWithHasLabelOut() {
         SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -646,7 +664,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(3, vertexTraversal(c1).in().in().has(T.label, "A").count().next().intValue());
     }
 
-//    @Test
+    //    @Test
     public void testHasOnProperty() {
         SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");

@@ -380,6 +380,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
         HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(recordsIds.toArray()));
         replacedStep.addHasContainers(Collections.singletonList(idHasContainer));
+        sqlgGraphStepCompiled.clearIds();
     }
 
 }

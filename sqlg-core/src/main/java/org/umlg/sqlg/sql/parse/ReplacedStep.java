@@ -521,9 +521,15 @@ public class ReplacedStep<S, E> {
         ).forEach(
                 h -> {
                     if (h.getValue() instanceof Collection) {
-                        Collection<RecordId> coll = (Collection) h.getValue();
+                        Collection<Object> coll = (Collection) h.getValue();
                         Set<SchemaTable> distinctLabels = new HashSet<>();
-                        for (RecordId recordId : coll) {
+                        for (Object id : coll) {
+                            RecordId recordId;
+                            if (id instanceof RecordId) {
+                                recordId = (RecordId)id;
+                            } else {
+                                recordId = RecordId.from(id);
+                            }
                             distinctLabels.add(recordId.getSchemaTable());
                             groupedIds.put(recordId.getSchemaTable(), recordId);
                         }
