@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgVertex;
@@ -38,6 +39,265 @@ import java.util.stream.Collectors;
  * Time: 6:22 AM
  */
 public class TestGremlinCompileWithHas extends BaseTest {
+
+    @Test
+    public void testHasIdIn() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C");
+        b1.addEdge("ab", a1);
+        b2.addEdge("ab", a1);
+        b3.addEdge("ab", a1);
+        b4.addEdge("ab", a1);
+        c1.addEdge("ac", a1);
+        c2.addEdge("ac", a1);
+        c3.addEdge("ac", a1);
+        c4.addEdge("ac", a1);
+        this.sqlgGraph.tx().commit();
+
+        RecordId recordIda1 = RecordId.from(SchemaTable.of("public", "A"), 1l);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of("public", "A"), 2l);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of("public", "A"), 3l);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of("public", "A"), 4l);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of("public", "B"), 1l);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of("public", "B"), 2l);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of("public", "B"), 3l);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of("public", "B"), 4l);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of("public", "C"), 1l);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of("public", "C"), 2l);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of("public", "C"), 3l);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of("public", "C"), 4l);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1).hasLabel("A").toList();
+        Assert.assertEquals(1, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1)).toList();
+        Assert.assertEquals(3, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1)).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1).toList();
+        Assert.assertEquals(4, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(recordIda1)).toList();
+        Assert.assertEquals(1, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).in().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+        Assert.assertEquals(3, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIda1).toList();
+        Assert.assertEquals(0, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1, recordIdb2).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString()).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdb2.toString()).toList();
+        Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdc2.toString()).toList();
+        Assert.assertEquals(2, vertices.size());
+    }
+
+    @Test
+    public void testHasIdInJoin() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D");
+        Vertex d3 = this.sqlgGraph.addVertex(T.label, "D");
+        Vertex d4 = this.sqlgGraph.addVertex(T.label, "D");
+        b1.addEdge("ab", a1);
+        b2.addEdge("ab", a2);
+        b3.addEdge("ab", a3);
+        b4.addEdge("ab", a4);
+        c1.addEdge("ac", b1);
+        c1.addEdge("ac", b2);
+        c1.addEdge("ac", b3);
+        c1.addEdge("ac", b4);
+        d1.addEdge("ac", c1);
+        d2.addEdge("ac", c2);
+        d3.addEdge("ac", c3);
+        d4.addEdge("ac", c4);
+        this.sqlgGraph.tx().commit();
+
+        RecordId recordIda1 = RecordId.from(SchemaTable.of("public", "A"), 1l);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of("public", "A"), 2l);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of("public", "A"), 3l);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of("public", "A"), 4l);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of("public", "B"), 1l);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of("public", "B"), 2l);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of("public", "B"), 3l);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of("public", "B"), 4l);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of("public", "C"), 1l);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of("public", "C"), 2l);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of("public", "C"), 3l);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of("public", "C"), 4l);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).in().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).in()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(a1, a2, a3, a4).in()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(a1, a2, a3, a4).in()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+        Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
+    public void testHasIdOutJoin() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D");
+        Vertex d2 = this.sqlgGraph.addVertex(T.label, "D");
+        Vertex d3 = this.sqlgGraph.addVertex(T.label, "D");
+        Vertex d4 = this.sqlgGraph.addVertex(T.label, "D");
+        a1.addEdge("ab", b1);
+        a2.addEdge("ab", b2);
+        a3.addEdge("ab", b3);
+        a4.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        a1.addEdge("ac", c4);
+        c1.addEdge("ac", d1);
+        c2.addEdge("ac", d2);
+        c3.addEdge("ac", d3);
+        c4.addEdge("ac", d4);
+        this.sqlgGraph.tx().commit();
+
+        RecordId recordIda1 = RecordId.from(SchemaTable.of("public", "A"), 1l);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of("public", "A"), 2l);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of("public", "A"), 3l);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of("public", "A"), 4l);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of("public", "B"), 1l);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of("public", "B"), 2l);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of("public", "B"), 3l);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of("public", "B"), 4l);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of("public", "C"), 1l);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of("public", "C"), 2l);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of("public", "C"), 3l);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of("public", "C"), 4l);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).out().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).out()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(a1, a2, a3, a4).out()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(a1, a2, a3, a4).out()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+        Assert.assertEquals(3, vertices.size());
+    }
+
+    @Test
+    public void testHasIdOut() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        a1.addEdge("ac", c4);
+        this.sqlgGraph.tx().commit();
+
+        RecordId recordIda1 = RecordId.from(SchemaTable.of("public", "A"), 1l);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of("public", "A"), 2l);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of("public", "A"), 3l);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of("public", "A"), 4l);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of("public", "B"), 1l);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of("public", "B"), 2l);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of("public", "B"), 3l);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of("public", "B"), 4l);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of("public", "C"), 1l);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of("public", "C"), 2l);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of("public", "C"), 3l);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of("public", "C"), 4l);
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1).hasLabel("A").toList();
+        Assert.assertEquals(1, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1)).toList();
+        Assert.assertEquals(3, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1)).toList();
+        Assert.assertEquals(3, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1).toList();
+        Assert.assertEquals(4, vertices.size());
+        vertices = this.sqlgGraph.traversal().V().has(T.id, P.within(recordIda1)).toList();
+        Assert.assertEquals(1, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).out().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+        Assert.assertEquals(3, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIda1).toList();
+        Assert.assertEquals(0, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1, recordIdb2).toList();
+        Assert.assertEquals(2, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString()).toList();
+        Assert.assertEquals(1, vertices.size());
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdb2.toString()).toList();
+        Assert.assertEquals(2, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdc2.toString()).toList();
+        Assert.assertEquals(2, vertices.size());
+
+    }
 
     @Test
     public void g_V_asXaX_both_asXbX_dedupXa_bX_byXlabelX_selectXa_bX() throws IOException {

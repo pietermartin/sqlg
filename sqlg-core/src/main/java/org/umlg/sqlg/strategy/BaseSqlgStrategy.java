@@ -225,7 +225,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     private boolean isWithinOut(List<HasContainer> hasContainers) {
         return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
-                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
+//                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
                 (hasContainers.get(0).getBiPredicate() == Contains.without || hasContainers.get(0).getBiPredicate() == Contains.within));
     }
 

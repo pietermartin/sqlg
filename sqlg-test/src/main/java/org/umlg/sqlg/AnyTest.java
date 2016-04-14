@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGremlinCompileWithHas.class
-})
+        TestGremlinCompileWithHas.class,
+        })
 public class AnyTest {
 }
