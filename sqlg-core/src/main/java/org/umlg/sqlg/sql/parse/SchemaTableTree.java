@@ -6,10 +6,9 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.Compare;
-import org.apache.tinkerpop.gremlin.process.traversal.Contains;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -46,7 +45,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
-    private List<Comparator> comparators = new ArrayList<>();
+    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators = new ArrayList<>();
     //labels are immutable
     private Set<String> labels;
     private String reducedLabels;
@@ -118,7 +117,7 @@ public class SchemaTableTree {
      */
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
                     List<HasContainer> hasContainers,
-                    List<Comparator> comparators,
+                    List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
                     STEP_TYPE stepType,
                     boolean emit,
                     boolean untilFirst,
@@ -187,7 +186,7 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
-            List<Comparator> comparators,
+            List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
             int stepDepth,
             boolean isEdgeVertexStep,
             boolean emit,
@@ -745,15 +744,15 @@ public class SchemaTableTree {
 
     private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy, int counter) {
         String result = "";
-        for (Comparator comparator : this.getComparators()) {
+        for (org.javatuples.Pair<Traversal.Admin, Comparator> comparator : this.getComparators()) {
             if (!printedOrderBy.booleanValue()) {
                 printedOrderBy.setTrue();
                 result += "\nORDER BY\n\t";
             } else {
                 result += ",\n\t";
             }
-            if (comparator instanceof ElementValueComparator) {
-                ElementValueComparator elementValueComparator = (ElementValueComparator) comparator;
+            if (comparator.getValue1() instanceof ElementValueComparator) {
+                ElementValueComparator elementValueComparator = (ElementValueComparator) comparator.getValue1();
                 String prefix = this.getSchemaTable().getSchema();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.getSchemaTable().getTable();
@@ -778,48 +777,48 @@ public class SchemaTableTree {
 
                 //TODO redo this via SqlgOrderGlobalStep
 
-//            } else if (comparator instanceof TraversalComparator) {
-//                TraversalComparator traversalComparator = (TraversalComparator) comparator;
-//                Preconditions.checkState(traversalComparator.getTraversal().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
-//                Preconditions.checkState(traversalComparator.getTraversal().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
-//                SelectOneStep selectOneStep = (SelectOneStep) traversalComparator.getTraversal().getSteps().get(0);
-//                Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
-//                Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
-//                Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
-//                //need to find the schemaTable that the select is for.
-//                //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
-//                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String) selectOneStep.getScopeKeys().iterator().next());
-//                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
-//
-//                String prefix;
-//                if (selectSchemaTableTree.children.isEmpty()) {
-//                    //counter is -1 for single queries, i.e. they are not prefixed with ax
-//                    prefix = "";
-//                } else {
-//                    prefix = selectSchemaTableTree.labels.iterator().next();
-//                    prefix += SchemaTableTree.ALIAS_SEPARATOR;
-//                }
-//                prefix += selectSchemaTableTree.getSchemaTable().getSchema();
-//                prefix += SchemaTableTree.ALIAS_SEPARATOR;
-//                prefix += selectSchemaTableTree.getSchemaTable().getTable();
-//                prefix += SchemaTableTree.ALIAS_SEPARATOR;
-//                prefix += elementValueTraversal.getPropertyKey();
-//                String alias;
-//                if (counter == -1) {
-//                    //counter is -1 for single queries, i.e. they are not prefixed with ax
-//                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
-//                } else {
-//                    //TODO its a multi map because multiple elements may have the same label
-//                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
-//                }
-//                result += " " + alias;
-//                if (traversalComparator.getComparator() == Order.incr) {
-//                    result += " ASC";
-//                } else if (traversalComparator.getComparator() == Order.decr) {
-//                    result += " DESC";
-//                } else {
-//                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + traversalComparator.getComparator().toString());
-//                }
+            } else {
+                Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
+                Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");
+                SelectOneStep selectOneStep = (SelectOneStep) comparator.getValue0().getSteps().get(0);
+                Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
+                Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
+                Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+
+                //need to find the schemaTable that the select is for.
+                //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
+                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String) selectOneStep.getScopeKeys().iterator().next());
+                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
+
+                String prefix;
+                if (selectSchemaTableTree.children.isEmpty()) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    prefix = "";
+                } else {
+                    prefix = selectSchemaTableTree.labels.iterator().next();
+                    prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                }
+                prefix += selectSchemaTableTree.getSchemaTable().getSchema();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += selectSchemaTableTree.getSchemaTable().getTable();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += elementValueTraversal.getPropertyKey();
+                String alias;
+                if (counter == -1) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
+                } else {
+                    //TODO its a multi map because multiple elements may have the same label
+                    alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
+                }
+                result += " " + alias;
+                if (comparator.getValue1() == Order.incr) {
+                    result += " ASC";
+                } else if (comparator.getValue1() == Order.decr) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.toString());
+                }
             }
         }
         return result;
@@ -1728,11 +1727,11 @@ public class SchemaTableTree {
         this.hasContainers = hasContainers;
     }
 
-    public List<Comparator> getComparators() {
-        return comparators;
+    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
+        return this.comparators;
     }
 
-    public void setComparators(List<Comparator> comparators) {
+    public void setComparators(List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators) {
         this.comparators = comparators;
     }
 

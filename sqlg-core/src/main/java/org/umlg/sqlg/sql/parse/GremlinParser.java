@@ -7,7 +7,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -70,7 +69,7 @@ public class GremlinParser<S extends Element, E extends Element> {
      */
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
         if (replacedSteps.get(0).isGraphStep()) {
-            throw new IllegalStateException("is this really stil firing!!!");
+            throw new IllegalStateException("is this really still firing!!!");
 //            //this happens for the repeatStep optimization where the query is build including the root vertex step.
 //            Set<SchemaTableTree> rootSchemaTableTrees = parse(replacedSteps);
 //            //there is only one

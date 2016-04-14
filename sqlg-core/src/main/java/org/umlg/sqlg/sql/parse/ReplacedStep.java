@@ -3,6 +3,7 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
@@ -29,7 +30,7 @@ public class ReplacedStep<S, E> {
     private AbstractStep<S, E> step;
     private Set<String> labels;
     private List<HasContainer> hasContainers;
-    private List<Comparator> comparators;
+    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
     private boolean emit;
@@ -59,11 +60,11 @@ public class ReplacedStep<S, E> {
     }
 
     public List<HasContainer> getHasContainers() {
-        return hasContainers;
+        return this.hasContainers;
     }
 
-    public List<Comparator> getComparators() {
-        return comparators;
+    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
+        return this.comparators;
     }
 
     public void addLabel(String label) {

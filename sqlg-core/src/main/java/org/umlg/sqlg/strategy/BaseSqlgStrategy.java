@@ -3,6 +3,7 @@ package org.umlg.sqlg.strategy;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
@@ -19,7 +20,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.Text;
@@ -62,13 +63,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         boolean repeatExist = toCome.stream().anyMatch(s -> s.getClass().equals(RepeatStep.class));
         if (repeatExist) {
             boolean hasUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
-                RepeatStep repeatStep = (RepeatStep)r;
+                RepeatStep repeatStep = (RepeatStep) r;
                 return repeatStep.getUntilTraversal() != null;
             });
             boolean hasUnoptimizableUntil = false;
             if (hasUntil) {
                 hasUnoptimizableUntil = toCome.stream().filter(s -> s.getClass().equals(RepeatStep.class)).allMatch(r -> {
-                    RepeatStep repeatStep = (RepeatStep)r;
+                    RepeatStep repeatStep = (RepeatStep) r;
                     return !(repeatStep.getUntilTraversal() instanceof LoopTraversal);
                 });
             }
@@ -125,6 +126,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             isOutside(((HasContainerHolder) currentStep).getHasContainers()) ||
                             isWithinOut(((HasContainerHolder) currentStep).getHasContainers()) ||
                             isTextContains(((HasContainerHolder) currentStep).getHasContainers()))) {
+
                 if (!currentStep.getLabels().isEmpty()) {
                     final IdentityStep identityStep = new IdentityStep<>(traversal);
                     currentStep.getLabels().forEach(l -> replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l));
@@ -161,16 +163,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 ((ElementValueComparator) c).getValueComparator() == Order.decr));
     }
 
-//    static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
-//        for (Object o : orderGlobalStep.getComparators()) {
-//            if (o instanceof TraversalComparator) {
-//                TraversalComparator traversalComparator = (TraversalComparator) o;
-//                List<Step> traversalComparatorSteps = traversalComparator.getTraversal().getSteps();
-//                return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
-//            } else {
-//                return false;
-//            }
-//        }
+    static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
+        for (final Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>> pair : ((ComparatorHolder<Object, Comparable>) orderGlobalStep).getComparators()) {
+            Traversal.Admin<Object, Comparable> traversal = pair.getValue0();
+            Comparator<Comparable> comparator = pair.getValue1();
+            List<Step> traversalComparatorSteps = traversal.getSteps();
+            return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
+        }
 //        if (orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator)) {
 //        } else {
 //            return false;
@@ -178,7 +177,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 //        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator
 //                && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
 //                ((ElementValueComparator) c).getValueComparator() == Order.decr));
-//    }
+        return false;
+    }
 
     private boolean isSingleBiPredicate(List<HasContainer> hasContainers) {
         if (hasContainers.size() == 1) {
@@ -344,6 +344,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
                         sqlgStep.addReplacedStep(replacedStep);
                         handleFirstReplacedStep(step, sqlgStep, traversal);
+                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
+                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
+                        }
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                     } else {
                         sqlgStep.addReplacedStep(replacedStep);
@@ -365,42 +368,18 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    protected void readFromCache(final Traversal.Admin<?, ?> traversal) {
-        List<VertexStep> vertexSteps = TraversalHelper.getStepsOfClass(VertexStep.class, traversal);
-
-        vertexSteps.forEach(
-                (s) -> {
-                    VertexStep<? extends Element> vs = (VertexStep<? extends Element>) s;
-                    SqlgVertexStep<? extends Element> insertStep = new SqlgVertexStep<>(s.getTraversal(), vs.getReturnClass(), vs.getDirection(), vs.getEdgeLabels());
-                    TraversalHelper.replaceStep(s, insertStep, traversal);
-                }
-        );
-
-        //The HasSteps following directly after a VertexStep is merged into the SqlgVertexStep
-        Set<Step> toRemove = new HashSet<>();
-        for (Step<?, ?> step : traversal.asAdmin().getSteps()) {
-            if (step instanceof SqlgVertexStep && Vertex.class.isAssignableFrom(((SqlgVertexStep) step).getReturnClass())) {
-                SqlgVertexStep sqlgVertexStep = (SqlgVertexStep) step;
-                Step<?, ?> currentStep = sqlgVertexStep.getNextStep();
-                while (true) {
-                    if (currentStep instanceof HasContainerHolder) {
-                        sqlgVertexStep.hasContainers.addAll(((HasContainerHolder) currentStep).getHasContainers());
-                        if (!currentStep.getLabels().isEmpty()) {
-                            final IdentityStep identityStep = new IdentityStep<>(traversal);
-                            currentStep.getLabels().forEach(identityStep::addLabel);
-                            TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-                        }
-                        toRemove.add(currentStep);
-                    } else if (currentStep instanceof IdentityStep) {
-                        // do nothing
-                    } else {
-                        break;
-                    }
-                    currentStep = currentStep.getNextStep();
-                }
+    private void addHasContainerForIds(SqlgGraphStepCompiled sqlgGraphStepCompiled, ReplacedStep replacedStep) {
+        Object[] ids = sqlgGraphStepCompiled.getIds();
+        List<Object> recordsIds = new ArrayList<>();
+        for (Object id : ids) {
+            if (id instanceof Element) {
+                recordsIds.add(((Element) id).id());
+            } else {
+                recordsIds.add(id);
             }
         }
-        toRemove.forEach(traversal::removeStep);
+        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(recordsIds.toArray()));
+        replacedStep.addHasContainers(Collections.singletonList(idHasContainer));
     }
 
 }
