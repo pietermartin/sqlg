@@ -647,9 +647,9 @@ public class SchemaTableTree {
 
             Map<String, PropertyType> columns = new HashMap<>();
             Object next = withInOuts.iterator().next();
-//            if (next instanceof RecordId) {
-//                next = ((RecordId) next).getId();
-//            }
+            if (next instanceof RecordId) {
+                next = ((RecordId) next).getId();
+            }
             if (hasContainer.getBiPredicate() == Contains.within) {
                 columns.put("within", PropertyType.from(next));
             } else if (hasContainer.getBiPredicate() == Contains.without) {
@@ -675,6 +675,9 @@ public class SchemaTableTree {
             OutputStream out = sqlgGraph.getSqlDialect().streamSql(this.sqlgGraph, copySql);
 
             for (Object withInOutValue : withInOuts) {
+                if (withInOutValue instanceof RecordId) {
+                    withInOutValue = ((RecordId)withInOutValue).getId();
+                }
                 withInOutMap = new HashMap<>();
                 if (hasContainer.getBiPredicate() == Contains.within) {
                     withInOutMap.put("within", withInOutValue);
