@@ -21,6 +21,7 @@ import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
 import org.postgresql.jdbc4.Jdbc4Connection;
+import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,10 @@ import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
@@ -318,20 +322,29 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> schemaVertexPropertyCache) {
+        flushElementPropertyCache(sqlgGraph, true, schemaVertexPropertyCache);
+    }
+
+    @Override
+    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
+        flushElementPropertyCache(sqlgGraph, false, edgePropertyCache);
+    }
+
+    public <T extends SqlgElement> void flushElementPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<T, Map<String, Object>>>> schemaVertexPropertyCache) {
 
         Connection conn = sqlgGraph.tx().getConnection();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
-            Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
+            Pair<SortedSet<String>, Map<T, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
             SortedSet<String> keys = vertexKeysPropertyCache.getLeft();
-            Map<SqlgVertex, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
+            Map<? extends SqlgElement, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
 
 
             StringBuilder sql = new StringBuilder();
             sql.append("UPDATE ");
             sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
             sql.append(".");
-            sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+            sql.append(maybeWrapInQoutes((forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
             sql.append(" a \nSET\n\t(");
             int count = 1;
             for (String key : keys) {
@@ -345,13 +358,40 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             for (String key : keys) {
                 sql.append("v.");
                 sql.append(maybeWrapInQoutes(key));
+                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                switch (propertyType) {
+                    case BOOLEAN_ARRAY:
+                        sql.append("::boolean[]");
+                        break;
+                    case BYTE_ARRAY:
+                        sql.append("::bytea");
+                        break;
+                    case SHORT_ARRAY:
+                        sql.append("::smallint[]");
+                        break;
+                    case INTEGER_ARRAY:
+                        sql.append("::int[]");
+                        break;
+                    case LONG_ARRAY:
+                        sql.append("::bigint[]");
+                        break;
+                    case FLOAT_ARRAY:
+                        sql.append("::real[]");
+                        break;
+                    case DOUBLE_ARRAY:
+                        sql.append("::double precision[]");
+                        break;
+                    case STRING_ARRAY:
+                        sql.append("::text[]");
+                        break;
+                }
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
             }
             sql.append(")\nFROM (\nVALUES\n\t");
             count = 1;
-            for (SqlgVertex sqlgVertex : vertexPropertyCache.keySet()) {
+            for (SqlgElement sqlgVertex : vertexPropertyCache.keySet()) {
                 Map<String, Object> properties = vertexPropertyCache.get(sqlgVertex);
                 sql.append("(");
                 sql.append(((RecordId) sqlgVertex.id()).getId());
@@ -410,20 +450,99 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append("'::JSONB");
                                 break;
                             case BOOLEAN_ARRAY:
+                                sql.append("'{");
+                                boolean[] booleanArray = (boolean[]) value;
+                                int countBooleanArray = 1;
+                                for (Boolean b : booleanArray) {
+                                    sql.append(b);
+                                    if (countBooleanArray++ < booleanArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case BYTE_ARRAY:
+                                try {
+                                    sql.append("'");
+                                    sql.append(PGbytea.toPGString((byte[]) value));
+                                    sql.append("'");
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
                                 break;
                             case SHORT_ARRAY:
+                                sql.append("'{");
+                                short[] shortArray = (short[]) value;
+                                int countShortArray = 1;
+                                for (Short s : shortArray) {
+                                    sql.append(s);
+                                    if (countShortArray++ < shortArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case INTEGER_ARRAY:
+                                sql.append("'{");
+                                int[] intArray = (int[]) value;
+                                int countIntArray = 1;
+                                for (Integer i : intArray) {
+                                    sql.append(i);
+                                    if (countIntArray++ < intArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case LONG_ARRAY:
+                                sql.append("'{");
+                                long[] longArray = (long[]) value;
+                                int countLongArray = 1;
+                                for (Long l : longArray) {
+                                    sql.append(l);
+                                    if (countLongArray++ < longArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case FLOAT_ARRAY:
+                                sql.append("'{");
+                                float[] floatArray = (float[]) value;
+                                int countFloatArray = 1;
+                                for (Float f : floatArray) {
+                                    sql.append(f);
+                                    if (countFloatArray++ < floatArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case DOUBLE_ARRAY:
+                                sql.append("'{");
+                                double[] doubleArray = (double[]) value;
+                                int countDoubleArray = 1;
+                                for (Double d : doubleArray) {
+                                    sql.append(d);
+                                    if (countDoubleArray++ < doubleArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             case STRING_ARRAY:
+                                sql.append("'{");
+                                String[] stringArray = (String[]) value;
+                                int countStringArray = 1;
+                                for (String s : stringArray) {
+                                    sql.append("\"");
+                                    sql.append(s);
+                                    sql.append("\"");
+                                    if (countStringArray++ < stringArray.length) {
+                                        sql.append(",");
+                                    }
+                                }
+                                sql.append("}'");
                                 break;
                             default:
                                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -625,12 +744,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             logger.debug(sql.toString());
         }
         return sql.toString();
-    }
-
-
-    @Override
-    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
-
     }
 
     @Override
