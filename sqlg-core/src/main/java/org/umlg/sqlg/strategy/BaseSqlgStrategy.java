@@ -243,7 +243,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 ));
     }
 
-    protected void combineSteps(Traversal.Admin<?, ?> traversal, List<Step> steps, ListIterator<Step> stepIterator) {
+    void combineSteps(Traversal.Admin<?, ?> traversal, List<Step> steps, ListIterator<Step> stepIterator) {
         //Replace all consecutive VertexStep and HasStep with one step
         SqlgStep sqlgStep = null;
         Step previous = null;

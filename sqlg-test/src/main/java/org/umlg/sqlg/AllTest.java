@@ -109,7 +109,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestAlias.class,
         TestBatchEdge.class,
         TestTopologyUpgrade.class,
-        TestTraversals.class
+        TestTraversals.class,
+        TestGremlinOptional.class
 })
 public class AllTest {
 }
