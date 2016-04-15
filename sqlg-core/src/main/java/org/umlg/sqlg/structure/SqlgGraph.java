@@ -620,7 +620,7 @@ public class SqlgGraph implements Graph {
             @Override
             @FeatureDescriptor(name = FEATURE_NUMERIC_IDS)
             public boolean supportsNumericIds() {
-                return false;
+                return true;
             }
 
             @Override
