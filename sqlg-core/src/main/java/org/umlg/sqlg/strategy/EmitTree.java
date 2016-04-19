@@ -11,14 +11,10 @@ import java.util.List;
  */
 public class EmitTree<E extends SqlgElement> {
 
-    private int degree;
     private Emit<E> emit;
     private List<EmitTree> children = new ArrayList<>();
-    private EmitTree parent = null;
-    private EmitTree<E> root;
 
-    public EmitTree(int degree, Emit<E> emit) {
-        this.degree = degree;
+    public EmitTree(Emit<E> emit) {
         this.emit = emit;
     }
 
@@ -26,9 +22,8 @@ public class EmitTree<E extends SqlgElement> {
         return emit;
     }
 
-    public EmitTree<E> addEmit(int degree, Emit<E> emit) {
-        EmitTree child = new EmitTree(degree, emit);
-        child.parent = this;
+    public EmitTree<E> addEmit(Emit<E> emit) {
+        EmitTree child = new EmitTree(emit);
         this.children.add(child);
         return child;
     }

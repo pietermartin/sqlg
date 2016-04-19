@@ -40,6 +40,8 @@ public class ReplacedStep<S, E> {
     private boolean emit;
     private boolean untilFirst;
     private boolean emitFirst;
+    //indicate left join, coming from optional step optimization
+    private boolean leftJoin;
     //This is indicate whether a where clause is needed in the sql
     private boolean isVertexGraphStep = false;
     //This represents all tables filtered by TopologyStrategy
@@ -142,7 +144,9 @@ public class ReplacedStep<S, E> {
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        inLabelsToTravers, Direction.IN, elementClass,
+                        inLabelsToTravers,
+                        Direction.IN,
+                        elementClass,
                         this,
                         this.labels);
                 result.add(schemaTableTreeChild);
@@ -169,7 +173,7 @@ public class ReplacedStep<S, E> {
                                         this,
                                         Collections.emptySet());
                             }
-                            result.addAll(calculatePathFromVertexToEdgeAgain(schemaTableTreeChild, schemaTableTo, Direction.IN));
+                            result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, schemaTableTo, Direction.IN));
                         }
                     }
                 }
@@ -185,7 +189,9 @@ public class ReplacedStep<S, E> {
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        outLabelsToTravers, Direction.OUT, elementClass,
+                        outLabelsToTravers,
+                        Direction.OUT,
+                        elementClass,
                         this,
                         this.labels);
                 result.add(schemaTableTreeChild);
@@ -206,11 +212,13 @@ public class ReplacedStep<S, E> {
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
-                                        outLabelsToTravers, Direction.OUT, elementClass,
+                                        outLabelsToTravers,
+                                        Direction.OUT,
+                                        elementClass,
                                         this,
                                         Collections.emptySet());
                             }
-                            result.addAll(calculatePathFromVertexToEdgeAgain(schemaTableTreeChild, schemaTableTo, Direction.OUT));
+                            result.addAll(calculatePathFromVertexToEdge(schemaTableTreeChild, schemaTableTo, Direction.OUT));
                         }
                     }
                 }
@@ -245,7 +253,7 @@ public class ReplacedStep<S, E> {
         boolean result = !getIdHasContainer().isEmpty();
         for (HasContainer idHasContainer : getIdHasContainer()) {
             if (idHasContainer.getValue() instanceof Collection) {
-                Collection<Object> recordIds = (Collection<Object>)idHasContainer.getValue();
+                Collection<Object> recordIds = (Collection<Object>) idHasContainer.getValue();
                 for (Object id : recordIds) {
                     RecordId recordId;
                     if (id instanceof String) {
@@ -335,7 +343,7 @@ public class ReplacedStep<S, E> {
         return result;
     }
 
-    private Set<SchemaTableTree> calculatePathFromVertexToEdgeAgain(SchemaTableTree schemaTableTree, SchemaTable schemaTableTo, Direction direction) {
+    private Set<SchemaTableTree> calculatePathFromVertexToEdge(SchemaTableTree schemaTableTree, SchemaTable schemaTableTo, Direction direction) {
         Set<SchemaTableTree> result = new HashSet<>();
         //add the child for schemaTableTo to the tree
         SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
@@ -353,11 +361,11 @@ public class ReplacedStep<S, E> {
             List<Long> idsToAdd = new ArrayList<>();
             Object o = idHasContainer.getValue();
             if (o instanceof Collection) {
-                Collection<Object> ids = (Collection<Object>)o;
+                Collection<Object> ids = (Collection<Object>) o;
                 for (Object id : ids) {
                     RecordId recordId;
                     if (id instanceof RecordId) {
-                        recordId = (RecordId)id;
+                        recordId = (RecordId) id;
                     } else {
                         recordId = RecordId.from(id);
                     }
@@ -384,43 +392,6 @@ public class ReplacedStep<S, E> {
         }
         schemaTableTree1.getHasContainers().removeAll(toRemove);
         result.add(schemaTableTree1);
-        return result;
-    }
-
-    private Set<SchemaTableTree> calculatePathFromVertexToEdge(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction) {
-        Preconditions.checkArgument(!labelToTravers.isVertexTable());
-        Set<SchemaTableTree> result = new HashSet<>();
-        Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getAllEdgeForeignKeys();
-        //join from the edge table to the incoming vertex table
-        Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
-        //Every foreignKey for the given direction must be joined on
-        for (String foreignKey : foreignKeys) {
-            String[] split = foreignKey.split("\\.");
-            String foreignKeySchema = split[0];
-            String foreignKeyTable = split[1];
-            if (direction == Direction.IN && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
-                SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
-                        schemaTableTo,
-                        direction,
-                        Vertex.class,
-                        this,
-                        this.labels
-                );
-                result.add(schemaTableTree1);
-            } else if (direction == Direction.OUT && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
-                SchemaTableTree schemaTableTree1 = schemaTableTree.addChild(
-                        schemaTableTo,
-                        direction,
-                        Vertex.class,
-                        this,
-                        this.labels
-                );
-                result.add(schemaTableTree1);
-            }
-        }
-//        return filterVertexOnIdHasContainers(result);
         return result;
     }
 
@@ -526,7 +497,7 @@ public class ReplacedStep<S, E> {
                         for (Object id : coll) {
                             RecordId recordId;
                             if (id instanceof RecordId) {
-                                recordId = (RecordId)id;
+                                recordId = (RecordId) id;
                             } else {
                                 recordId = RecordId.from(id);
                             }
@@ -570,6 +541,7 @@ public class ReplacedStep<S, E> {
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
                             ReplacedStep.this.emitFirst,
+                            ReplacedStep.this.leftJoin,
                             ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
@@ -606,6 +578,7 @@ public class ReplacedStep<S, E> {
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
                             ReplacedStep.this.emitFirst,
+                            ReplacedStep.this.leftJoin,
                             ReplacedStep.this.isVertexGraphStep,
                             ReplacedStep.this.labels
                     );
@@ -663,6 +636,14 @@ public class ReplacedStep<S, E> {
 
     public void setEmit(boolean emit) {
         this.emit = emit;
+    }
+
+    public void setLeftJoin(boolean leftJoin) {
+        this.leftJoin = leftJoin;
+    }
+
+    public boolean isLeftJoin() {
+        return leftJoin;
     }
 
     public boolean isUntilFirst() {

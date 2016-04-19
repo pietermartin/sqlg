@@ -58,6 +58,9 @@ public class SchemaTableTree {
     private int rootAliasCounter = 1;
     private boolean emit;
 
+    //left join, as required by the optimized ChooseStep via the optional step
+    private boolean optionalLeftJoin;
+
     //Only root SchemaTableTrees have these maps;
     private AliasMapHolder aliasMapHolder;
     private boolean leadNodeIsEmpty;
@@ -66,7 +69,7 @@ public class SchemaTableTree {
     private int tmpTableAliasCounter = 1;
 
     //This represents all tables filtered by TopologyStrategy
-    private Map<String, Map<String, PropertyType>>  filteredAllTables;
+    private Map<String, Map<String, PropertyType>> filteredAllTables;
 
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
@@ -100,7 +103,7 @@ public class SchemaTableTree {
 
     /**
      * This constructor is called for the root SchemaTableTree(s)
-     *
+     * <p>
      * This is invoked from {@link ReplacedStep} when creating the root {@link SchemaTableTree}s.
      * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
@@ -122,6 +125,7 @@ public class SchemaTableTree {
                     boolean emit,
                     boolean untilFirst,
                     boolean emitFirst,
+                    boolean optionalLeftJoin,
                     boolean vertexGraphStep,
                     Set<String> labels
     ) {
@@ -133,6 +137,7 @@ public class SchemaTableTree {
         this.emit = emit;
         this.untilFirst = untilFirst;
         this.emitFirst = emitFirst;
+        this.optionalLeftJoin = optionalLeftJoin;
         this.vertexGraphStep = vertexGraphStep;
         this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
         SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
@@ -158,6 +163,7 @@ public class SchemaTableTree {
                 replacedStep.isEmit(),
                 replacedStep.isUntilFirst(),
                 replacedStep.isEmitFirst(),
+                replacedStep.isLeftJoin(),
                 labels);
     }
 
@@ -178,6 +184,7 @@ public class SchemaTableTree {
                 replacedStep.isEmit(),
                 replacedStep.isUntilFirst(),
                 replacedStep.isEmitFirst(),
+                replacedStep.isLeftJoin(),
                 labels);
     }
 
@@ -192,6 +199,7 @@ public class SchemaTableTree {
             boolean emit,
             boolean untilFirst,
             boolean emitFirst,
+            boolean leftJoin,
             Set<String> labels) {
 
         SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth);
@@ -208,6 +216,7 @@ public class SchemaTableTree {
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
         schemaTableTree.emitFirst = emitFirst;
+        schemaTableTree.optionalLeftJoin = leftJoin;
         return schemaTableTree;
     }
 
@@ -258,7 +267,7 @@ public class SchemaTableTree {
     }
 
     private void collectEmitEdges(List<String> edgeIds) {
-        if (this.hasParent() && this.schemaTable.isVertexTable() && this.emit) {
+        if (this.hasParent() && this.schemaTable.isVertexTable() && (this.isEmit() || this.isOptionalLeftJoin())) {
             SchemaTable parentSchemaTable = this.parent.getSchemaTable();
             String edgeId = parentSchemaTable.getEmitEdgeId();
             edgeIds.add(edgeId);
@@ -274,6 +283,14 @@ public class SchemaTableTree {
 
     public boolean isEmit() {
         return emit;
+    }
+
+    public void setOptionalLeftJoin(boolean optionalLeftJoin) {
+        this.optionalLeftJoin = optionalLeftJoin;
+    }
+
+    public boolean isOptionalLeftJoin() {
+        return this.optionalLeftJoin;
     }
 
     public AliasMapHolder getAliasMapHolder() {
@@ -349,6 +366,7 @@ public class SchemaTableTree {
     public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
         Preconditions.checkState(this.parent == null, "constructSql may only be called on the root object");
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
+        //noinspection Convert2streamapi
         for (SchemaTableTree leafNode : this.leafNodes) {
             result.add(leafNode.constructQueryStackFromLeaf());
         }
@@ -385,7 +403,7 @@ public class SchemaTableTree {
             singlePathSql += sql;
             if (count == 1) {
                 SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-                if (beforeLastSchemaTableTree.isEmit()) {
+                if (beforeLastSchemaTableTree.isEmit() || beforeLastSchemaTableTree.isOptionalLeftJoin()) {
                     singlePathSql += "\n) a" + count++ + " LEFT JOIN (";
                 } else {
                     singlePathSql += "\n) a" + count++ + " INNER JOIN (";
@@ -396,7 +414,7 @@ public class SchemaTableTree {
                 singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
                     SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-                    if (beforeLastSchemaTableTree.isEmit()) {
+                    if (beforeLastSchemaTableTree.isEmit() || beforeLastSchemaTableTree.isOptionalLeftJoin()) {
                         singlePathSql += " LEFT JOIN (";
                     } else {
                         singlePathSql += " INNER JOIN (";
@@ -432,7 +450,7 @@ public class SchemaTableTree {
                     result = schemaTableTree.printLabeledOuterFromClause(result, countOuter, columnNameAliasMapCopy);
                     result += ", ";
                 }
-                if (schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
+                if (schemaTableTree.getSchemaTable().isEdgeTable() && (schemaTableTree.isEmit() || schemaTableTree.isOptionalLeftJoin())) {
                     result += schemaTableTree.printEmitMappedAliasIdForOuterFromClause(countOuter, columnNameAliasMapCopy);
                     result += ", ";
                 }
@@ -672,7 +690,7 @@ public class SchemaTableTree {
 
             for (Object withInOutValue : withInOuts) {
                 if (withInOutValue instanceof RecordId) {
-                    withInOutValue = ((RecordId)withInOutValue).getId();
+                    withInOutValue = ((RecordId) withInOutValue).getId();
                 }
                 withInOutMap = new HashMap<>();
                 if (hasContainer.getBiPredicate() == Contains.within) {
@@ -1111,7 +1129,7 @@ public class SchemaTableTree {
     }
 
     private static String constructEmitEdgeIdFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, String sql) {
-        List<SchemaTableTree> emitted = distinctQueryStack.stream().filter(d -> d.getSchemaTable().isEdgeTable() && d.isEmit()).collect(Collectors.toList());
+        List<SchemaTableTree> emitted = distinctQueryStack.stream().filter(d -> d.getSchemaTable().isEdgeTable() && (d.isEmit() || d.isOptionalLeftJoin())).collect(Collectors.toList());
         if (!emitted.isEmpty()) {
             sql += ",\n\t ";
         }
@@ -1142,7 +1160,7 @@ public class SchemaTableTree {
         int count = 1;
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (count > 1) {
-                if (!schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.emit) {
+                if (!schemaTableTree.getSchemaTable().isEdgeTable() && (schemaTableTree.isEmit() || schemaTableTree.isOptionalLeftJoin())) {
                     //if the VertexStep is for an edge table there is no need to print edge ids as its already printed.
                     sql += ",\n\t";
                     sql = printEdgeId(sqlgGraph, schemaTableTree.parent, sql);
@@ -1521,7 +1539,7 @@ public class SchemaTableTree {
             rawLabelToTravers = labelToTravers.getTable();
         }
         String joinSql;
-        if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit())) {
+        if (fromSchemaTableTree.isOptionalLeftJoin() || fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && (fromSchemaTableTree.getParent().isEmit() || fromSchemaTableTree.getParent().isOptionalLeftJoin()))) {
             joinSql = " LEFT JOIN\n\t";
         } else {
             joinSql = " INNER JOIN\n\t";
@@ -1587,11 +1605,11 @@ public class SchemaTableTree {
         queue.add(this);
         while (!queue.isEmpty()) {
             SchemaTableTree current = queue.remove();
-            if (current.stepDepth < depth && current.children.isEmpty() && !current.isEmit()) {
+            if (current.stepDepth < depth && current.children.isEmpty() && !current.isEmit() && !current.isOptionalLeftJoin()) {
                 removeNode(current);
             } else {
                 queue.addAll(current.children);
-                if ((current.stepDepth == depth && current.children.isEmpty()) || (current.isEmit() && current.children.isEmpty())) {
+                if ((current.stepDepth == depth && current.children.isEmpty()) || (current.isEmit() && current.children.isEmpty()) || current.isOptionalLeftJoin() && current.children.isEmpty()) {
                     this.leafNodes.add(current);
                 }
             }

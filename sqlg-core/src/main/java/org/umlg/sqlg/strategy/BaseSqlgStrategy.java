@@ -1,10 +1,13 @@
 package org.umlg.sqlg.strategy;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
@@ -14,6 +17,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueS
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.TreeSideEffectStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
@@ -57,6 +61,49 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep);
 
     protected abstract SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep);
+
+    private boolean unoptimizableChooseStep(List<Step> steps, int index) {
+        List<Step> toCome = steps.subList(index, steps.size());
+        Step step = toCome.get(0);
+        Preconditions.checkState(step instanceof ChooseStep, "Expected ChooseStep, found " + step.getClass().getSimpleName() + " instead. BUG!");
+        ChooseStep chooseStep = (ChooseStep) step;
+
+        List<Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
+        Preconditions.checkState(traversalAdmins.size() == 2);
+
+        Traversal.Admin<?,?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
+        List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
+        predicateSteps.remove(predicate.getSteps().size() - 1);
+
+        Traversal.Admin<?,?> globalChildOne = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(0);
+        List<Step> globalChildOneSteps = new ArrayList<>(globalChildOne.getSteps());
+        globalChildOneSteps.remove(globalChildOneSteps.size() - 1);
+
+        Traversal.Admin<?,?> globalChildTwo = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(1);
+        List<Step> globalChildTwoSteps = new ArrayList<>(globalChildTwo.getSteps());
+        globalChildTwoSteps.remove(globalChildTwoSteps.size() - 1);
+
+
+        boolean hasIdentity = globalChildOne.getSteps().stream().anyMatch(s -> s instanceof IdentityStep);
+        if (!hasIdentity) {
+            hasIdentity = globalChildTwo.getSteps().stream().anyMatch(s -> s instanceof IdentityStep);
+            if (hasIdentity) {
+                //Identity found check predicate and true are the same
+                if (!predicateSteps.equals(globalChildOneSteps)) {
+                    return true;
+                }
+            } else {
+                //Identity not found
+                return true;
+            }
+        } else {
+            //Identity found check predicate and true are the same
+            if (!predicateSteps.equals(globalChildTwoSteps)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     protected boolean unoptimizableRepeat(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
@@ -170,13 +217,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
             List<Step> traversalComparatorSteps = traversal.getSteps();
             return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
         }
-//        if (orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator)) {
-//        } else {
-//            return false;
-//        }
-//        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof TraversalComparator
-//                && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
-//                ((ElementValueComparator) c).getValueComparator() == Order.decr));
         return false;
     }
 
@@ -225,7 +265,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     private boolean isWithinOut(List<HasContainer> hasContainers) {
         return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
-//                !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
                 (hasContainers.get(0).getBiPredicate() == Contains.without || hasContainers.get(0).getBiPredicate() == Contains.within));
     }
 
@@ -252,44 +291,26 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         int pathCount = 0;
         boolean alreadyReplacedGraphStep = false;
         boolean repeatStepAdded = false;
-        int repeatStepsAdded = 0;
+        boolean chooseStepAdded = false;
+        MutableInt repeatStepsAdded = new MutableInt(0);
         while (stepIterator.hasNext()) {
             Step step = stepIterator.next();
 
             //Check for RepeatStep(s) and insert them into the stepIterator
             if (step instanceof RepeatStep) {
-                if (unoptimizableRepeat(steps, stepIterator.previousIndex())) {
-                    this.logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+                try {
+                    //flatten the RepeatStep's repetitions into the stepIterator
+                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep)step, traversal, repeatStepsAdded);
+                } catch (UnoptimizableException e) {
+                    //swallow as it is used for process flow only.
                     return;
                 }
-                repeatStepsAdded = 0;
-                repeatStepAdded = false;
-                RepeatStep repeatStep = (RepeatStep) step;
-                List<Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
-                Traversal.Admin admin = repeatTraversals.get(0);
-                List<Step> repeatStepInternalVertexSteps = admin.getSteps();
-                //this is guaranteed by the previous check unoptimizableRepeat(...)
-                LoopTraversal loopTraversal;
-                long numberOfLoops;
-                loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
-                numberOfLoops = loopTraversal.getMaxLoops();
-                for (int i = 0; i < numberOfLoops; i++) {
-                    for (Step internalVertexStep : repeatStepInternalVertexSteps) {
-                        if (internalVertexStep instanceof RepeatStep.RepeatEndStep) {
-                            break;
-                        }
-                        internalVertexStep.setPreviousStep(repeatStep.getPreviousStep());
-                        stepIterator.add(internalVertexStep);
-                        stepIterator.previous();
-                        stepIterator.next();
-                        repeatStepAdded = true;
-                        repeatStepsAdded++;
-                    }
-                }
-                traversal.removeStep(repeatStep);
-                //this is needed for the stepIterator.next() to be the newly inserted steps
-                for (int i = 0; i < repeatStepsAdded; i++) {
-                    stepIterator.previous();
+            } else if (step instanceof ChooseStep) {
+                try {
+                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep)step, traversal);
+                } catch (UnoptimizableException e) {
+                    //swallow as it is used for process flow only.
+                    return;
                 }
             } else {
 
@@ -299,8 +320,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     boolean emit = false;
                     boolean emitFirst = false;
                     boolean untilFirst = false;
-                    if (repeatStepsAdded > 0) {
-                        repeatStepsAdded--;
+                    if (repeatStepsAdded.getValue() > 0) {
+                        repeatStepsAdded.decrement();
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
@@ -328,10 +349,21 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         previousReplacedStep.setEmitFirst(emitFirst);
                         previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
-                        previousReplacedStep.getLabels().remove((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         if (emitFirst) {
                             pathCount++;
                         }
+                    }
+                    if (chooseStepAdded) {
+                        pathCount--;
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                        previousReplacedStep.setLeftJoin(true);
+                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        pathCount++;
+                        System.out.println("asdas");
                     }
                     if (replacedStep.getLabels().isEmpty()) {
                         boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
@@ -350,7 +382,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
                     } else {
                         sqlgStep.addReplacedStep(replacedStep);
-                        if (!repeatStepAdded) {
+                        if (!repeatStepAdded && !chooseStepAdded) {
                             //its not in the traversal, so do not remove it
                             traversal.removeStep(step);
                         }
@@ -358,6 +390,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
                     previous = step;
                     lastReplacedStep = replacedStep;
+                    chooseStepAdded = false;
                 } else {
                     if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
                         doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
@@ -366,6 +399,100 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             }
         }
+    }
+
+    private boolean flattenChooseStep(List<Step> steps, ListIterator<Step> stepIterator, ChooseStep chooseStep, Traversal.Admin<?, ?> traversal) {
+        int stepsAdded = 0;
+        if (unoptimizableChooseStep(steps, stepIterator.previousIndex())) {
+            this.logger.debug("gremlin not optimized due to ChooseStep with ... " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            throw new UnoptimizableException();
+        }
+        boolean chooseStepAdded = false;
+        List<Traversal.Admin<?, ?>> localChildren = chooseStep.getLocalChildren();
+        Preconditions.checkState(localChildren.size() == 1, "ChooseStep's localChildren must have size 1, one for the predicate traversal");
+        Traversal.Admin<?, ?> predicateTraversal = localChildren.get(0);
+
+        List<Traversal.Admin<?, ?>> globalChildren = chooseStep.getGlobalChildren();
+        Preconditions.checkState(globalChildren.size() == 2, "ChooseStep's globalChildren must have size 2, one for true and one for false");
+        //Talk to Marko about the assumption made regarding the order of the GlobalChildren
+        Traversal.Admin<?, ?> trueTraversal;
+        Traversal.Admin<?, ?> falseTraversal;
+        Traversal.Admin<?, ?> a = globalChildren.get(0);
+        Traversal.Admin<?, ?> b = globalChildren.get(1);
+        if (a.getSteps().stream().filter(s -> s instanceof IdentityStep).findAny().isPresent()) {
+            falseTraversal = a;
+            trueTraversal = b;
+        } else {
+            trueTraversal = a;
+            falseTraversal = b;
+        }
+
+        boolean addedNestedChooseStep = false;
+        List<Step> chooseStepInternalVertexSteps = trueTraversal.getSteps();
+        for (Step internalVertexStep : chooseStepInternalVertexSteps) {
+            if (internalVertexStep instanceof ChooseStep.EndStep) {
+                break;
+            }
+            internalVertexStep.setPreviousStep(chooseStep.getPreviousStep());
+            stepIterator.add(internalVertexStep);
+            stepIterator.previous();
+            stepIterator.next();
+            stepsAdded++;
+            chooseStepAdded = true;
+            if (internalVertexStep instanceof ChooseStep) {
+                addedNestedChooseStep = true;
+            }
+        }
+        if (!addedNestedChooseStep) {
+            stepIterator.add(EmptyStep.instance());
+            stepIterator.previous();
+            stepIterator.next();
+            stepsAdded++;
+        }
+        if (traversal.getSteps().contains(chooseStep)) {
+            traversal.removeStep(chooseStep);
+        }
+        //this is needed for the stepIterator.next() to be the newly inserted steps
+        for (int i = 0; i < stepsAdded; i++) {
+            stepIterator.previous();
+        }
+        return chooseStepAdded;
+    }
+
+    private boolean flattenRepeatStep(List<Step> steps, ListIterator<Step> stepIterator, RepeatStep repeatStep, Traversal.Admin<?, ?> traversal, MutableInt repeatStepsAdded) {
+        if (unoptimizableRepeat(steps, stepIterator.previousIndex())) {
+            this.logger.debug("gremlin not optimized due to RepeatStep with emit. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
+            throw new UnoptimizableException();
+        }
+        repeatStepsAdded.setValue(0);
+        boolean repeatStepAdded = false;
+        List<Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
+        Traversal.Admin admin = repeatTraversals.get(0);
+        List<Step> repeatStepInternalVertexSteps = admin.getSteps();
+        //this is guaranteed by the previous check unoptimizableRepeat(...)
+        LoopTraversal loopTraversal;
+        long numberOfLoops;
+        loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
+        numberOfLoops = loopTraversal.getMaxLoops();
+        for (int i = 0; i < numberOfLoops; i++) {
+            for (Step internalVertexStep : repeatStepInternalVertexSteps) {
+                if (internalVertexStep instanceof RepeatStep.RepeatEndStep) {
+                    break;
+                }
+                internalVertexStep.setPreviousStep(repeatStep.getPreviousStep());
+                stepIterator.add(internalVertexStep);
+                stepIterator.previous();
+                stepIterator.next();
+                repeatStepAdded = true;
+                repeatStepsAdded.increment();
+            }
+        }
+        traversal.removeStep(repeatStep);
+        //this is needed for the stepIterator.next() to be the newly inserted steps
+        for (int i = 0; i < repeatStepsAdded.getValue(); i++) {
+            stepIterator.previous();
+        }
+        return repeatStepAdded;
     }
 
     private void addHasContainerForIds(SqlgGraphStepCompiled sqlgGraphStepCompiled, ReplacedStep replacedStep) {
@@ -383,4 +510,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         sqlgGraphStepCompiled.clearIds();
     }
 
+    private class UnoptimizableException extends RuntimeException {
+    }
 }

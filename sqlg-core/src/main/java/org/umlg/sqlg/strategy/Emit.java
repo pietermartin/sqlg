@@ -11,7 +11,7 @@ import java.util.Optional;
  */
 public class Emit<E extends SqlgElement> {
 
-    private int degree = -1;
+    boolean useCurrentEmitTree;
     private Path path;
     private Pair<E, Optional<Long>> elementPlusEdgeId;
     private boolean untilFirst;
@@ -23,12 +23,12 @@ public class Emit<E extends SqlgElement> {
         this.emitFirst = emitFirst;
     }
 
-    public int getDegree() {
-        return degree;
+    public boolean isUseCurrentEmitTree() {
+        return useCurrentEmitTree;
     }
 
-    public void setDegree(int degree) {
-        this.degree = degree;
+    public void setUseCurrentEmitTree(boolean useCurrentEmitTree) {
+        this.useCurrentEmitTree = useCurrentEmitTree;
     }
 
     public Path getPath() {
@@ -70,7 +70,8 @@ public class Emit<E extends SqlgElement> {
             result += this.path.toString();
             result += ", ";
         }
-        result += elementPlusEdgeId.toString() + ", " + this.degree;
+//        result += elementPlusEdgeId.toString() + ", " + this.degree;
+        result += elementPlusEdgeId.toString() + ", useCurrentEmitTree=" + this.useCurrentEmitTree;
         return result;
     }
 }

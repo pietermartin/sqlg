@@ -102,7 +102,7 @@ public class SqlgUtil {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     sqlgElement.loadLabeledResultSet(resultSet, columnNameCountMap, schemaTableTree);
-                    //if its the first element in that stack then the edgeId is in the previous stack.
+                    //if its the first element in the stack then the edgeId is in the previous stack.
                     //This means the edgeId is in the previous subQuery
                     final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, subQueryCount, copyAliasMapHolder);
                     schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst(), schemaTableTree.isEmitFirst())));
@@ -169,7 +169,7 @@ public class SqlgUtil {
     }
 
     private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet, int subQueryCount, AliasMapHolder copyAliasMapHolder) throws SQLException {
-        if (schemaTableTree.hasParent() && schemaTableTree.isEmit()) {
+        if (schemaTableTree.hasParent() && (schemaTableTree.isEmit() || schemaTableTree.isOptionalLeftJoin())) {
             //Need to load the edge id. It is used in the traverser to calculate if the element needs to be emitted or not.
             long edgeId = resultSet.getLong(schemaTableTree.getParent().mappedAliasIdFor(subQueryCount, copyAliasMapHolder));
             if (resultSet.wasNull()) {

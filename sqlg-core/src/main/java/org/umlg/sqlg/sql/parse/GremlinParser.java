@@ -70,12 +70,6 @@ public class GremlinParser<S extends Element, E extends Element> {
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
         if (replacedSteps.get(0).isGraphStep()) {
             throw new IllegalStateException("is this really still firing!!!");
-//            //this happens for the repeatStep optimization where the query is build including the root vertex step.
-//            Set<SchemaTableTree> rootSchemaTableTrees = parse(replacedSteps);
-//            //there is only one
-//            Optional<SchemaTableTree> rootSchemaTableTree = rootSchemaTableTrees.stream().filter(s->s.getSchemaTable().equals(schemaTable)).findAny();
-//            Preconditions.checkState(rootSchemaTableTree.isPresent());
-//            return rootSchemaTableTree.get();
         } else {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
             SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);

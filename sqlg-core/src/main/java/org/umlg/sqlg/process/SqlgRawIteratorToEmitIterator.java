@@ -69,7 +69,7 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     Emit<E> emit = iter.next();
                     iter.remove();
 
-                    if (emit.getDegree() != -1) {
+                    if (emit.isUseCurrentEmitTree()) {
 
                         if (this.currentEmitTree == null) {
                             //get it from the roots
@@ -85,10 +85,10 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                                 (!rootEmitTreeContains(this.rootEmitTrees, emit) && !this.currentEmitTree.hasChild(emit.getElementPlusEdgeId()))) {
 
                             if (this.currentEmitTree == null) {
-                                this.currentEmitTree = new EmitTree<>(emit.getDegree(), emit);
+                                this.currentEmitTree = new EmitTree<>(emit);
                                 this.rootEmitTrees.add(this.currentEmitTree);
                             } else {
-                                this.currentEmitTree = this.currentEmitTree.addEmit(emit.getDegree(), emit);
+                                this.currentEmitTree = this.currentEmitTree.addEmit(emit);
                             }
                             if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy)) {
                                 result = true;
@@ -103,7 +103,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
 
                     } else {
 
-                        if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy)) {
+                        //currentEmitTree logic is only for repeat emittings
+                        if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy) || this.currentEmitTree == null) {
                             result = true;
                             this.toEmit.add(emit);
                         }
@@ -135,25 +136,28 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                 //If the same object has multiple labels it will be present many times in the sql result set.
                 //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
                 Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
+                int count = 0;
                 for (String label : sortedKeys) {
+                    count++;
                     String realLabel;
                     String pathLabel;
-                    int degree;
                     if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
                         realLabel = label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
                         pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
-                        degree = Integer.valueOf(pathLabel.substring(0, pathLabel.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX)));
                     } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
                         realLabel = label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
                         pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
-                        degree = Integer.valueOf(pathLabel.substring(0, pathLabel.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)));
                     } else {
-                        throw new IllegalStateException();
+                        throw new IllegalStateException("label must contain " + BaseSqlgStrategy.PATH_LABEL_SUFFIX + " or " + BaseSqlgStrategy.EMIT_LABEL_SUFFIX);
                     }
 
+                    int emitCount = 0;
                     Collection<Emit<E>> emits = labeledElements.get(label);
                     for (Emit<E> emit : emits) {
+                        emitCount++;
                         E e = emit.getElementPlusEdgeId().getLeft();
+                        //This is to avoid emitting the element twice.
+                        //Or if its not labeled but last then it needs to be emitted.
                         if (addElement && e.equals(element)) {
                             addElement = false;
                         }
@@ -167,12 +171,19 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                             allLabeledElementsAsSet.add(e);
                             if (pathLabel.endsWith(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
                                 emit.setPath(this.currentPath.clone());
-                                emit.setDegree(degree);
+                                emit.setUseCurrentEmitTree(true);
                                 flattenedEmit.add(emit);
                                 lastEmit = emit;
+//                            } else {
+//                                //if element is a dummy and this is the last emit then emit it.
+//                                if (element instanceof Dummy && count == sortedKeys.size() && emitCount == emits.size()) {
+//                                    emit.setPath(this.currentPath.clone());
+//                                    emit.setUseCurrentEmitTree(true);
+//                                    flattenedEmit.add(emit);
+//                                }
                             }
                         } else {
-                            //this basically adds the label to the path
+                            //this adds the label to the path
                             this.currentPath = this.currentPath.extend(Collections.singleton(realLabel));
                         }
                     }
@@ -183,13 +194,9 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     this.currentPath = this.currentPath.clone().extend(element, Collections.emptySet());
                 }
 
-                //if emit and times are both at the end or start then only emit or return but not both.
-                if (lastEmit != null && lastEmit.emitAndUntilBothAtStart()) {
-                    Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false);
-                    emit.setPath(this.currentPath.clone());
-                    flattenedEmit.add(emit);
-                } else if (lastEmit != null && lastEmit.emitAndUntilBothAtEnd()) {
+                if (lastEmit != null && lastEmit.emitAndUntilBothAtEnd()) {
                     //do nothing, nothing to emit
+                    //If I remember correctly this is because the element will be emitted anyhow as it will have an emit E label.
                 } else {
                     Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false);
                     emit.setPath(this.currentPath.clone());
