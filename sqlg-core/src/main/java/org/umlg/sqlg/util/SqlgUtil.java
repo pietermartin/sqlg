@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
@@ -487,6 +488,77 @@ public class SqlgUtil {
             return foreignKey.substring(0, foreignKey.length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
         } else {
             return foreignKey;
+        }
+    }
+
+    public static void dropDb(SqlgGraph sqlgGraph) {
+        try {
+            SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+            Connection conn = sqlgGraph.tx().getConnection();
+            DatabaseMetaData metadata = conn.getMetaData();
+            if (sqlDialect.supportsCascade()) {
+                String catalog = null;
+                String schemaPattern = null;
+                String tableNamePattern = "%";
+                String[] types = {"TABLE"};
+                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
+                while (result.next()) {
+                    String schema = result.getString(2);
+                    String table = result.getString(3);
+                    if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
+                        continue;
+                    }
+                    StringBuilder sql = new StringBuilder("DROP TABLE ");
+                    sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                    sql.append(".");
+                    sql.append(sqlDialect.maybeWrapInQoutes(table));
+                    sql.append(" CASCADE");
+                    if (sqlDialect.needsSemicolon()) {
+                        sql.append(";");
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                        preparedStatement.executeUpdate();
+                    }
+                }
+                catalog = null;
+                schemaPattern = null;
+                result = metadata.getSchemas(catalog, schemaPattern);
+                while (result.next()) {
+                    String schema = result.getString(1);
+                    if (!sqlDialect.getDefaultSchemas().contains(schema)) {
+                        StringBuilder sql = new StringBuilder("DROP SCHEMA ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        sql.append(" CASCADE");
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
+                    }
+                }
+            } else if (!sqlDialect.supportSchemas()) {
+                ResultSet result = metadata.getCatalogs();
+                while (result.next()) {
+                    StringBuilder sql = new StringBuilder("DROP DATABASE ");
+                    String database = result.getString(1);
+                    if (!sqlDialect.getDefaultSchemas().contains(database)) {
+                        sql.append(sqlDialect.maybeWrapInQoutes(database));
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
+                    }
+                }
+            } else {
+//                conn.setAutoCommit(false);
+//                JDBC.dropSchema(metadata, "APP");
+//                conn.commit();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
