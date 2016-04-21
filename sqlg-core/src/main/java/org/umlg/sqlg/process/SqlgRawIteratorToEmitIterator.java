@@ -136,9 +136,7 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                 //If the same object has multiple labels it will be present many times in the sql result set.
                 //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
                 Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
-                int count = 0;
                 for (String label : sortedKeys) {
-                    count++;
                     String realLabel;
                     String pathLabel;
                     if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
@@ -151,10 +149,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                         throw new IllegalStateException("label must contain " + BaseSqlgStrategy.PATH_LABEL_SUFFIX + " or " + BaseSqlgStrategy.EMIT_LABEL_SUFFIX);
                     }
 
-                    int emitCount = 0;
                     Collection<Emit<E>> emits = labeledElements.get(label);
                     for (Emit<E> emit : emits) {
-                        emitCount++;
                         E e = emit.getElementPlusEdgeId().getLeft();
                         //This is to avoid emitting the element twice.
                         //Or if its not labeled but last then it needs to be emitted.
@@ -174,13 +170,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                                 emit.setUseCurrentEmitTree(true);
                                 flattenedEmit.add(emit);
                                 lastEmit = emit;
-//                            } else {
-//                                //if element is a dummy and this is the last emit then emit it.
-//                                if (element instanceof Dummy && count == sortedKeys.size() && emitCount == emits.size()) {
-//                                    emit.setPath(this.currentPath.clone());
-//                                    emit.setUseCurrentEmitTree(true);
-//                                    flattenedEmit.add(emit);
-//                                }
                             }
                         } else {
                             //this adds the label to the path

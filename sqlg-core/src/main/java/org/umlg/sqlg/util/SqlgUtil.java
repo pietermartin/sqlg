@@ -105,7 +105,7 @@ public class SqlgUtil {
                     //if its the first element in the stack then the edgeId is in the previous stack.
                     //This means the edgeId is in the previous subQuery
                     final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, subQueryCount, copyAliasMapHolder);
-                    schemaTableTree.getLabels().forEach(l -> result.put(l, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst(), schemaTableTree.isEmitFirst())));
+                    schemaTableTree.getLabels().forEach(label -> result.put(label, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst(), schemaTableTree.isEmitFirst())));
                 }
             }
         }
@@ -149,15 +149,21 @@ public class SqlgUtil {
                 }
                 //The last subQuery
                 if (subQueryDepth == subQueryStacks.size() - 1) {
-                    if (subQueryStack.getLast().isLeafNodeIsEmpty()) {
+                    SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
+                    if (lastSchemaTableTree.isLeafNodeIsEmpty() && !lastSchemaTableTree.isOptionalLeftJoin()) {
                         //write in a empty element indicating that the traversal actually returns nothing.
                         //this only happens for emit queries where a left join is used.
                         //if the last VertexStep does not exist it is excluded from the sql so a empty needs to be written.
                         //The empty is used in processNextStart() to know whether the last element should be emitted ot not.
                         resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));
+                    } else if (lastSchemaTableTree.isLeafNodeIsEmpty() && lastSchemaTableTree.isOptionalLeftJoin()) {
+                        List<String> sortedKeys = new ArrayList<>(previousLabeledElements.keySet());
+                        Collections.sort(sortedKeys);
+                        String lastLabel = sortedKeys.get(sortedKeys.size() - 1);
+                        resultIterator.add(Pair.of(previousLabeledElements.get(lastLabel).iterator().next().getElementPlusEdgeId().getLeft(), previousLabeledElements));
                     } else {
                         Optional<E> e = SqlgUtil.loadElement(
-                                sqlgGraph, columnNameCountMap2, resultSet, subQueryStack.getLast()
+                                sqlgGraph, columnNameCountMap2, resultSet, lastSchemaTableTree
                         );
                         //TODO Optional must go all the way up the stack
                         resultIterator.add(Pair.of((e.isPresent() ? e.get() : (E) new Dummy()), previousLabeledElements));
