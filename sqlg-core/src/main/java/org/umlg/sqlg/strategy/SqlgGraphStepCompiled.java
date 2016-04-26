@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent  {
+public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
 
@@ -63,7 +63,8 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
 
                 if (emit.getPath() != null) {
 
-                    E e = (E)emit.getPath().objects().get(0);
+                    //create a traverser for the first element
+                    E e = (E) emit.getPath().objects().get(0);
                     if (this.isStart) {
                         traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1l);
                     } else {
@@ -71,8 +72,9 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                     }
                     traverser.addLabels(emit.getPath().labels().get(0));
 
+                    //create traversers for the rest of the elements, i.e. skipping the first
                     for (int i = 1; i < emit.getPath().size(); i++) {
-                        e = (E)emit.getPath().objects().get(i);
+                        e = (E) emit.getPath().objects().get(i);
                         traverser = traverser.split(e, EmptyStep.instance());
                         traverser.addLabels(emit.getPath().labels().get(i));
                     }
@@ -147,6 +149,38 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                     rootSchemaTableTree.resetThreadVars();
                 }
             }
+        }
+        //Do it again to find optional joined values
+        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result = new ArrayList<>();
+            SchemaTableTree.constructDistinctOptionalQueries(rootSchemaTableTree, 0, result);
+            AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
+//            List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctOptionalQueries();
+//            for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
+//                String sql = rootSchemaTableTree.constructSqlForOptional(distinctQueryStack);
+//                try {
+//                    Connection conn = this.sqlgGraph.tx().getConnection();
+//                    if (logger.isDebugEnabled()) {
+//                        logger.debug(sql);
+//                    }
+//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+//                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 1);
+//                        ResultSet resultSet = preparedStatement.executeQuery();
+//                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+//
+//                        SqlgUtil.loadResultSetIntoResultIterator(
+//                                this.sqlgGraph,
+//                                resultSetMetaData, resultSet,
+//                                rootSchemaTableTree, distinctQueryStack,
+//                                aliasMapHolder,
+//                                resultIterator);
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                } finally {
+//                    rootSchemaTableTree.resetThreadVars();
+//                }
+//            }
         }
 
         stopWatch.stop();

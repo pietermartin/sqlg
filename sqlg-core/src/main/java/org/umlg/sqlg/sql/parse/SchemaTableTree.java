@@ -91,6 +91,16 @@ public class SchemaTableTree {
         EDGE_VERTEX_STEP
     }
 
+    private SchemaTableTree(SchemaTableTree schemaTableTree) {
+        this.sqlgGraph = schemaTableTree.sqlgGraph;
+        this.schemaTable = schemaTableTree.schemaTable;
+        this.stepDepth = schemaTableTree.stepDepth;
+        this.hasContainers = schemaTableTree.hasContainers;
+        this.comparators = schemaTableTree.comparators;
+        this.labels = schemaTableTree.labels;
+        this.filteredAllTables = this.sqlgGraph.getSchemaManager().getAllTables();
+    }
+
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
@@ -285,12 +295,12 @@ public class SchemaTableTree {
         return emit;
     }
 
-    public void setOptionalLeftJoin(boolean optionalLeftJoin) {
-        this.optionalLeftJoin = optionalLeftJoin;
-    }
-
     public boolean isOptionalLeftJoin() {
         return this.optionalLeftJoin;
+    }
+
+    public void setOptionalLeftJoin(boolean optionalLeftJoin) {
+        this.optionalLeftJoin = optionalLeftJoin;
     }
 
     public AliasMapHolder getAliasMapHolder() {
@@ -364,7 +374,7 @@ public class SchemaTableTree {
     }
 
     public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
-        Preconditions.checkState(this.parent == null, "constructSql may only be called on the root object");
+        Preconditions.checkState(this.parent == null, "constructDistinctQueries may only be called on the root object");
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
         //noinspection Convert2streamapi
         for (SchemaTableTree leafNode : this.leafNodes) {
@@ -376,6 +386,21 @@ public class SchemaTableTree {
             }
         }
         return result;
+    }
+
+    public static void constructDistinctOptionalQueries(SchemaTableTree current, int depth, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
+
+        LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
+        if (current.isOptionalLeftJoin()) {
+            Set<SchemaTableTree> leftyChildren = new HashSet<>();
+            leftyChildren.addAll(current.children);
+            Pair p = Pair.of(stack, leftyChildren);
+            result.add(p);
+        }
+        for (SchemaTableTree child : current.children) {
+            constructDistinctOptionalQueries(child, depth++, result);
+        }
+
     }
 
     /**
@@ -403,7 +428,7 @@ public class SchemaTableTree {
             singlePathSql += sql;
             if (count == 1) {
                 SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-                if (beforeLastSchemaTableTree.isEmit() || beforeLastSchemaTableTree.isOptionalLeftJoin()) {
+                if (beforeLastSchemaTableTree.isEmit()) {
                     singlePathSql += "\n) a" + count++ + " LEFT JOIN (";
                 } else {
                     singlePathSql += "\n) a" + count++ + " INNER JOIN (";
@@ -414,7 +439,7 @@ public class SchemaTableTree {
                 singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
                     SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-                    if (beforeLastSchemaTableTree.isEmit() || beforeLastSchemaTableTree.isOptionalLeftJoin()) {
+                    if (beforeLastSchemaTableTree.isEmit()) {
                         singlePathSql += " LEFT JOIN (";
                     } else {
                         singlePathSql += " INNER JOIN (";
@@ -1539,7 +1564,7 @@ public class SchemaTableTree {
             rawLabelToTravers = labelToTravers.getTable();
         }
         String joinSql;
-        if (fromSchemaTableTree.isOptionalLeftJoin() || fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && (fromSchemaTableTree.getParent().isEmit() || fromSchemaTableTree.getParent().isOptionalLeftJoin()))) {
+        if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit())) {
             joinSql = " LEFT JOIN\n\t";
         } else {
             joinSql = " INNER JOIN\n\t";
@@ -1885,5 +1910,11 @@ public class SchemaTableTree {
 
     public int getTmpTableAliasCounter() {
         return tmpTableAliasCounter;
+    }
+
+    @Override
+    public SchemaTableTree clone() {
+        SchemaTableTree clone = new SchemaTableTree(this);
+        return clone;
     }
 }

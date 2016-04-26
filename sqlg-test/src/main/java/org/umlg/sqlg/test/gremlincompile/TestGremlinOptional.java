@@ -290,35 +290,35 @@ public class TestGremlinOptional extends BaseTest {
 //        }
 //        assertTrue(paths.isEmpty());
 //    }
-
-    @Test
-    public void testCurrentTreeLabelToSelf1() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        a1.addEdge("aa", a2);
-        a1.addEdge("ab", b1);
-        this.sqlgGraph.tx().commit();
-
-        List<Path> paths = this.sqlgGraph.traversal().V().optional(out().optional(out())).path().toList();
-        for (Path path : paths) {
-            System.out.println(path.toString());
-        }
-        assertEquals(4, paths.size());
-
-        List<Predicate<Path>> pathsToAssert = Arrays.asList(
-                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1),
-                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(a2),
-                p -> p.size() == 1 && p.get(0).equals(a2),
-                p -> p.size() == 1 && p.get(0).equals(b1)
-        );
-        for (Predicate<Path> pathPredicate : pathsToAssert) {
-            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
-        }
-        assertTrue(paths.isEmpty());
-    }
+//
+//    @Test
+//    public void testCurrentTreeLabelToSelf1() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+//        a1.addEdge("aa", a2);
+//        a1.addEdge("ab", b1);
+//        this.sqlgGraph.tx().commit();
+//
+//        List<Path> paths = this.sqlgGraph.traversal().V().optional(out().optional(out())).path().toList();
+//        for (Path path : paths) {
+//            System.out.println(path.toString());
+//        }
+//        assertEquals(4, paths.size());
+//
+//        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+//                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1),
+//                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(a2),
+//                p -> p.size() == 1 && p.get(0).equals(a2),
+//                p -> p.size() == 1 && p.get(0).equals(b1)
+//        );
+//        for (Predicate<Path> pathPredicate : pathsToAssert) {
+//            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+//            assertTrue(path.isPresent());
+//            assertTrue(paths.remove(path.get()));
+//        }
+//        assertTrue(paths.isEmpty());
+//    }
 //
 //    @Test
 //    public void testCurrentTreeLabelToSelfRepeatEmit3() {
@@ -422,4 +422,40 @@ public class TestGremlinOptional extends BaseTest {
 //        }
 //        assertTrue(paths.isEmpty());
 //    }
+
+    @Test
+    public void testOptionalLeftJoin() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "name", "d1");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        b1.addEdge("bc", c1);
+        b2.addEdge("bd", d1);
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = this.sqlgGraph.traversal().V(a1).optional(out().optional(out())).path().toList();
+        for (Path path : paths) {
+            System.out.println(path.toString());
+        }
+        assertEquals(3, paths.size());
+
+        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+                p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1),
+                p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(d1),
+                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)
+        );
+        for (Predicate<Path> pathPredicate : pathsToAssert) {
+            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+            assertTrue(path.isPresent());
+            assertTrue(paths.remove(path.get()));
+        }
+        assertTrue(paths.isEmpty());
+    }
+
+
+
 }

@@ -12,15 +12,19 @@ import java.util.Optional;
 public class Emit<E extends SqlgElement> {
 
     boolean useCurrentEmitTree;
+    boolean useOptionalTree;
     private Path path;
+//    private int numberOfSteps;
     private Pair<E, Optional<Long>> elementPlusEdgeId;
     private boolean untilFirst;
     private boolean emitFirst;
 
-    public Emit(Pair<E, Optional<Long>> elementPlusEdgeId, boolean untilFirst, boolean emitFirst) {
+    public Emit(Pair<E, Optional<Long>> elementPlusEdgeId, boolean untilFirst, boolean emitFirst, boolean useOptionalTree/*, int numberOfSteps*/) {
         this.elementPlusEdgeId = elementPlusEdgeId;
         this.untilFirst = untilFirst;
         this.emitFirst = emitFirst;
+        this.useOptionalTree = useOptionalTree;
+//        this.numberOfSteps = numberOfSteps;
     }
 
     public boolean isUseCurrentEmitTree() {
@@ -30,6 +34,14 @@ public class Emit<E extends SqlgElement> {
     public void setUseCurrentEmitTree(boolean useCurrentEmitTree) {
         this.useCurrentEmitTree = useCurrentEmitTree;
     }
+
+    public boolean isUseOptionalTree() {
+        return useOptionalTree;
+    }
+
+//    public int getNumberOfSteps() {
+//        return numberOfSteps;
+//    }
 
     public Path getPath() {
         return path;
@@ -56,11 +68,11 @@ public class Emit<E extends SqlgElement> {
     }
 
     public boolean emitAndUntilBothAtStart() {
-        return this.untilFirst && this.emitFirst;
+        return this.untilFirst && this.emitFirst && !this.useOptionalTree;
     }
 
     public boolean emitAndUntilBothAtEnd() {
-        return !this.untilFirst && !this.emitFirst;
+        return !this.untilFirst && !this.emitFirst && !this.useOptionalTree;
     }
 
     @Override

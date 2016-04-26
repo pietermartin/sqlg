@@ -105,7 +105,17 @@ public class SqlgUtil {
                     //if its the first element in the stack then the edgeId is in the previous stack.
                     //This means the edgeId is in the previous subQuery
                     final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, subQueryCount, copyAliasMapHolder);
-                    schemaTableTree.getLabels().forEach(label -> result.put(label, new Emit<>(Pair.of((E) sqlgElement, edgeId), schemaTableTree.isUntilFirst(), schemaTableTree.isEmitFirst())));
+                    schemaTableTree.getLabels().forEach(
+                            label -> result.put(
+                                    label,
+                                    new Emit<>(
+                                            Pair.of((E) sqlgElement, edgeId),
+                                            schemaTableTree.isUntilFirst(),
+                                            schemaTableTree.isEmitFirst(),
+                                            schemaTableTree.isOptionalLeftJoin()
+                                    )
+                            )
+                    );
                 }
             }
         }
@@ -150,17 +160,12 @@ public class SqlgUtil {
                 //The last subQuery
                 if (subQueryDepth == subQueryStacks.size() - 1) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
-                    if (lastSchemaTableTree.isLeafNodeIsEmpty() && !lastSchemaTableTree.isOptionalLeftJoin()) {
+                    if (lastSchemaTableTree.isLeafNodeIsEmpty()) {
                         //write in a empty element indicating that the traversal actually returns nothing.
                         //this only happens for emit queries where a left join is used.
                         //if the last VertexStep does not exist it is excluded from the sql so a empty needs to be written.
                         //The empty is used in processNextStart() to know whether the last element should be emitted ot not.
                         resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));
-                    } else if (lastSchemaTableTree.isLeafNodeIsEmpty() && lastSchemaTableTree.isOptionalLeftJoin()) {
-                        List<String> sortedKeys = new ArrayList<>(previousLabeledElements.keySet());
-                        Collections.sort(sortedKeys);
-                        String lastLabel = sortedKeys.get(sortedKeys.size() - 1);
-                        resultIterator.add(Pair.of(previousLabeledElements.get(lastLabel).iterator().next().getElementPlusEdgeId().getLeft(), previousLabeledElements));
                     } else {
                         Optional<E> e = SqlgUtil.loadElement(
                                 sqlgGraph, columnNameCountMap2, resultSet, lastSchemaTableTree
@@ -514,9 +519,9 @@ public class SqlgUtil {
         //from and without are mutually exclusive, only one will ever be set.
         Map<String, Map<String, PropertyType>> filteredAllTables;
         if (fromHasContainer != null) {
-            filteredAllTables = schemaManager.getAllTablesFrom((List<String>)fromHasContainer.getPredicate().getValue());
+            filteredAllTables = schemaManager.getAllTablesFrom((List<String>) fromHasContainer.getPredicate().getValue());
         } else if (withoutHasContainer != null) {
-            filteredAllTables = schemaManager.getAllTablesWithout((List<String>)withoutHasContainer.getPredicate().getValue());
+            filteredAllTables = schemaManager.getAllTablesWithout((List<String>) withoutHasContainer.getPredicate().getValue());
         } else {
             filteredAllTables = schemaManager.getAllTables();
         }
@@ -525,8 +530,8 @@ public class SqlgUtil {
 
     public static void removeTopologyStrategyHasContainer(List<HasContainer> hasContainers) {
         //remove the TopologyStrategy hasContainer
-        Optional<HasContainer> fromHascontainer = hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
-        Optional<HasContainer> withoutHascontainer = hasContainers.stream().filter(h->h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
+        Optional<HasContainer> fromHascontainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
+        Optional<HasContainer> withoutHascontainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
         if (fromHascontainer.isPresent()) {
             hasContainers.remove(fromHascontainer.get());
         }
@@ -535,4 +540,30 @@ public class SqlgUtil {
         }
     }
 
+    public static void calculateLeftJoins(List<LinkedList<SchemaTableTree>> distinctQueries) {
+        Set<List<SchemaTable>> lastSchemaTableTrees = new HashSet<>();
+        for (LinkedList<SchemaTableTree> distinctQuery : distinctQueries) {
+
+            List<SchemaTable> list = new ArrayList<>();
+            for (SchemaTableTree schemaTableTree : distinctQuery) {
+
+                if (!list.isEmpty()) {
+                    list = new ArrayList<>(list);
+                }
+                list.add(schemaTableTree.getSchemaTable());
+
+                if (!lastSchemaTableTrees.contains(list)) {
+
+                    lastSchemaTableTrees.add(list);
+
+                } else {
+                    if (schemaTableTree.isOptionalLeftJoin()) {
+                        schemaTableTree.setOptionalLeftJoin(false);
+                    }
+                }
+
+            }
+        }
+
+    }
 }

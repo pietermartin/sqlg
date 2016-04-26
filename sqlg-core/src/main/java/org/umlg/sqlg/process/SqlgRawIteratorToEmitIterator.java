@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.EmitTree;
+import org.umlg.sqlg.strategy.OptionalLeaveNodes;
 import org.umlg.sqlg.structure.Dummy;
 import org.umlg.sqlg.structure.SqlgElement;
 
@@ -21,6 +22,7 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
 
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
+    private OptionalLeaveNodes<E> currentOptionalLeaveNodes;
 
     private Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> supplier;
     private Iterator<Pair<E, Multimap<String, Emit<E>>>> iterator;
@@ -91,8 +93,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                                 this.currentEmitTree = this.currentEmitTree.addEmit(emit);
                             }
                             if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy)) {
-                                result = true;
                                 this.toEmit.add(emit);
+                                result = true;
                             }
 
                         } else {
@@ -101,12 +103,23 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                             }
                         }
 
+                    } else if (emit.isUseOptionalTree()) {
+
+//                        if (this.currentOptionalLeaveNodes == null) {
+//                            this.currentOptionalLeaveNodes = new OptionalLeaveNodes<>(emit.getNumberOfSteps());
+//                        }
+//                        if (!this.currentOptionalLeaveNodes.containsPath(emit.getPath())) {
+//                        this.currentOptionalLeaveNodes.addPath(emit.getPath());
+                        this.toEmit.add(emit);
+                        result = true;
+//                        }
+
                     } else {
 
                         //currentEmitTree logic is only for repeat emittings
-                        if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy) || this.currentEmitTree == null) {
-                            result = true;
+                        if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy)) {
                             this.toEmit.add(emit);
+                            result = true;
                         }
 
                     }
@@ -169,8 +182,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                                 emit.setPath(this.currentPath.clone());
                                 emit.setUseCurrentEmitTree(true);
                                 flattenedEmit.add(emit);
-                                lastEmit = emit;
                             }
+                            lastEmit = emit;
                         } else {
                             //this adds the label to the path
                             this.currentPath = this.currentPath.extend(Collections.singleton(realLabel));
@@ -183,17 +196,21 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     this.currentPath = this.currentPath.clone().extend(element, Collections.emptySet());
                 }
 
-                if (lastEmit != null && lastEmit.emitAndUntilBothAtEnd()) {
-                    //do nothing, nothing to emit
-                    //If I remember correctly this is because the element will be emitted anyhow as it will have an emit E label.
+//                if (lastEmit != null && lastEmit.emitAndUntilBothAtEnd()) {
+                //do nothing, nothing to emit
+                //If I remember correctly this is because the element will be emitted anyhow as it will have an emit 'E' label.
+//                } else if (lastEmit != null) {
+                if (lastEmit != null) {
+                    lastEmit.setPath(this.currentPath.clone());
+                    flattenedEmit.add(lastEmit);
                 } else {
-                    Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false);
+                    Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
                     emit.setPath(this.currentPath.clone());
                     flattenedEmit.add(emit);
                 }
 
             } else {
-                Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false);
+                Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
                 flattenedEmit.add(emit);
             }
         }
