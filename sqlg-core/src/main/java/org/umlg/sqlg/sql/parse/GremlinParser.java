@@ -28,13 +28,17 @@ public class GremlinParser<S extends Element, E extends Element> {
         return result;
     }
 
+    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
+        return parse(replacedSteps, true);
+    }
+
     /**
      * This is for the GraphStep
      * The first replacedStep has the starting SchemaTable.
      * @param replacedSteps
      * @return
      */
-    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
+    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps, boolean removeAllButLeaveNodes) {
         ReplacedStep startReplacedStep = replacedSteps.remove(0);
         Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph);
@@ -46,7 +50,9 @@ public class GremlinParser<S extends Element, E extends Element> {
                 //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
-            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
+            if (removeAllButLeaveNodes) {
+                rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
+            }
             //TODO think about how to remove the root node itself
             boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
             if (remove) {

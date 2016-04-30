@@ -85,6 +85,7 @@ public class SchemaTableTree {
         }
     };
 
+
     enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -277,7 +278,7 @@ public class SchemaTableTree {
     }
 
     private void collectEmitEdges(List<String> edgeIds) {
-        if (this.hasParent() && this.schemaTable.isVertexTable() && (this.isEmit() || this.isOptionalLeftJoin())) {
+        if (this.hasParent() && this.schemaTable.isVertexTable() && this.isEmit()) {
             SchemaTable parentSchemaTable = this.parent.getSchemaTable();
             String edgeId = parentSchemaTable.getEmitEdgeId();
             edgeIds.add(edgeId);
@@ -344,6 +345,17 @@ public class SchemaTableTree {
         }
     }
 
+    public String constructSqlForOptional(LinkedList<SchemaTableTree> innerJoinStack, Set<SchemaTableTree> leftJoinOn) {
+        Preconditions.checkState(this.parent == null, "constructSql may only be called on the root object");
+        if (duplicatesInStack(innerJoinStack)) {
+            List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(innerJoinStack);
+            return constructDuplicatePathSql(this.sqlgGraph, subQueryStacks, leftJoinOn);
+        } else {
+            //If there are no duplicates in the path then one select statement will suffice.
+            return constructSinglePathSql(this.sqlgGraph, false, innerJoinStack, null, null, leftJoinOn);
+        }
+    }
+
     /**
      * @return A Triple. SchemaTableTree is the root of the tree that formed the sql statement.
      * It is needed to set the values in the where clause.
@@ -388,19 +400,28 @@ public class SchemaTableTree {
         return result;
     }
 
-    public static void constructDistinctOptionalQueries(SchemaTableTree current, int depth, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
-
+    public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
-        if (current.isOptionalLeftJoin()) {
+        //left joins but not the leave nodes as they are already present in the main sql result set.
+        if (current.isOptionalLeftJoin() && !current.children.isEmpty()) {
             Set<SchemaTableTree> leftyChildren = new HashSet<>();
             leftyChildren.addAll(current.children);
             Pair p = Pair.of(stack, leftyChildren);
             result.add(p);
         }
         for (SchemaTableTree child : current.children) {
-            constructDistinctOptionalQueries(child, depth++, result);
+            if (child.isVertexStep() && child.getSchemaTable().isVertexTable()) {
+                constructDistinctOptionalQueries(child, result);
+            } else {
+                for (SchemaTableTree vertexChild : child.children) {
+                    constructDistinctOptionalQueries(vertexChild, result);
+                }
+            }
         }
+    }
 
+    private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+        return constructDuplicatePathSql(sqlgGraph, subQueryLinkedLists, Collections.emptySet());
     }
 
     /**
@@ -410,7 +431,7 @@ public class SchemaTableTree {
      * @param subQueryLinkedLists
      * @return
      */
-    private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+    private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists, Set<SchemaTableTree> leftJoinOn) {
         String singlePathSql = "\nFROM (";
         int count = 1;
         SchemaTableTree lastOfPrevious = null;
@@ -424,7 +445,12 @@ public class SchemaTableTree {
             }
             SchemaTableTree firstSchemaTableTree = subQueryLinkedList.getFirst();
 
-            String sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext);
+            String sql;
+            if (last) {
+                sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext, leftJoinOn);
+            } else {
+                sql = constructSinglePathSql(sqlgGraph, true, subQueryLinkedList, lastOfPrevious, firstOfNext);
+            }
             singlePathSql += sql;
             if (count == 1) {
                 SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
@@ -475,7 +501,7 @@ public class SchemaTableTree {
                     result = schemaTableTree.printLabeledOuterFromClause(result, countOuter, columnNameAliasMapCopy);
                     result += ", ";
                 }
-                if (schemaTableTree.getSchemaTable().isEdgeTable() && (schemaTableTree.isEmit() || schemaTableTree.isOptionalLeftJoin())) {
+                if (schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
                     result += schemaTableTree.printEmitMappedAliasIdForOuterFromClause(countOuter, columnNameAliasMapCopy);
                     result += ", ";
                 }
@@ -592,6 +618,10 @@ public class SchemaTableTree {
         return result;
     }
 
+    private static String constructSinglePathSql(SqlgGraph sqlgGraph, boolean partOfDuplicateQuery, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
+        return constructSinglePathSql(sqlgGraph, partOfDuplicateQuery, distinctQueryStack, lastOfPrevious, firstOfNextStack, Collections.emptySet());
+    }
+
     /**
      * Constructs a sql select statement from the SchemaTableTree call stack.
      * The SchemaTableTree is not used as a tree. It is used only as as SchemaTable with a direction.
@@ -606,7 +636,14 @@ public class SchemaTableTree {
      * @param lastOfPrevious
      * @return
      */
-    private static String constructSinglePathSql(SqlgGraph sqlgGraph, boolean partOfDuplicateQuery, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree lastOfPrevious, SchemaTableTree firstOfNextStack) {
+    private static String constructSinglePathSql(
+            SqlgGraph sqlgGraph,
+            boolean partOfDuplicateQuery,
+            LinkedList<SchemaTableTree> distinctQueryStack,
+            SchemaTableTree lastOfPrevious,
+            SchemaTableTree firstOfNextStack,
+            Set<SchemaTableTree> leftJoinOn) {
+
         String singlePathSql = "\nSELECT\n\t";
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
@@ -624,6 +661,10 @@ public class SchemaTableTree {
             }
             singlePathSql += constructJoinBetweenSchemaTables(sqlgGraph, previous, schemaTableTree);
             previous = schemaTableTree;
+        }
+
+        for (SchemaTableTree schemaTableTree : leftJoinOn) {
+            singlePathSql += constructJoinBetweenSchemaTables(sqlgGraph, previous, schemaTableTree, true);
         }
 
         //Check if there is a hasContainer with a P.within more than x.
@@ -655,6 +696,11 @@ public class SchemaTableTree {
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             singlePathSql += schemaTableTree.toWhereClause(sqlgGraph, mutableWhere);
         }
+        //add in the is null where clause for the optional left joins
+        for (SchemaTableTree schemaTableTree : leftJoinOn) {
+            singlePathSql += schemaTableTree.toOptionalLeftJoinWhereClause(sqlgGraph, mutableWhere);
+        }
+
         //if partOfDuplicateQuery then the order by clause is on the outer select
         if (!partOfDuplicateQuery) {
             //construct the order by clause for the comparators
@@ -665,6 +711,7 @@ public class SchemaTableTree {
 
         return singlePathSql;
     }
+
 
     private boolean hasBulkWithinOrOut(SqlgGraph sqlgGraph) {
         return this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).findAny().isPresent();
@@ -762,6 +809,27 @@ public class SchemaTableTree {
 
         }
         return sb.toString();
+    }
+
+    private String toOptionalLeftJoinWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
+        final StringBuilder result = new StringBuilder();
+        if (!printedWhere.booleanValue()) {
+            printedWhere.setTrue();
+            result.append("\nWHERE\n\t(");
+        } else {
+            result.append(" AND (");
+        }
+        String rawLabel = this.parent.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
+        result.append(".");
+        result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));
+        result.append(".");
+        result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                this.parent.getSchemaTable().getSchema() + "." + rawLabel +
+                        (this.getDirection() == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END)));
+
+        result.append(" IS NULL)");
+        return result.toString();
     }
 
     private String toWhereClause(SqlgGraph sqlgGraph, MutableBoolean printedWhere) {
@@ -1154,13 +1222,14 @@ public class SchemaTableTree {
     }
 
     private static String constructEmitEdgeIdFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, String sql) {
-        List<SchemaTableTree> emitted = distinctQueryStack.stream().filter(d -> d.getSchemaTable().isEdgeTable() && (d.isEmit() || d.isOptionalLeftJoin())).collect(Collectors.toList());
+        List<SchemaTableTree> emitted = distinctQueryStack.stream()
+                .filter(d -> d.getSchemaTable().isEdgeTable() && d.isEmit())
+                .collect(Collectors.toList());
         if (!emitted.isEmpty()) {
             sql += ",\n\t ";
         }
         int count = 1;
         for (SchemaTableTree schemaTableTree : emitted) {
-//            sql = printLabeledIDFromClauseFor(sqlgGraph, schemaTableTree, sql);
             sql = printEdgeId(sqlgGraph, schemaTableTree, sql);
             if (count++ < emitted.size()) {
                 sql += ",\n\t ";
@@ -1185,7 +1254,7 @@ public class SchemaTableTree {
         int count = 1;
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (count > 1) {
-                if (!schemaTableTree.getSchemaTable().isEdgeTable() && (schemaTableTree.isEmit() || schemaTableTree.isOptionalLeftJoin())) {
+                if (!schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
                     //if the VertexStep is for an edge table there is no need to print edge ids as its already printed.
                     sql += ",\n\t";
                     sql = printEdgeId(sqlgGraph, schemaTableTree.parent, sql);
@@ -1542,6 +1611,10 @@ public class SchemaTableTree {
     }
 
     private static String constructJoinBetweenSchemaTables(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree) {
+        return constructJoinBetweenSchemaTables(sqlgGraph, fromSchemaTableTree, labelToTraversTree, false);
+    }
+
+    private static String constructJoinBetweenSchemaTables(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree, boolean leftJoin) {
         SchemaTable fromSchemaTable = fromSchemaTableTree.getSchemaTable();
         SchemaTable labelToTravers = labelToTraversTree.getSchemaTable();
 
@@ -1564,7 +1637,7 @@ public class SchemaTableTree {
             rawLabelToTravers = labelToTravers.getTable();
         }
         String joinSql;
-        if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit())) {
+        if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit()) || leftJoin) {
             joinSql = " LEFT JOIN\n\t";
         } else {
             joinSql = " INNER JOIN\n\t";
@@ -1894,6 +1967,10 @@ public class SchemaTableTree {
 
     public boolean isEdgeVertexStep() {
         return this.stepType == STEP_TYPE.EDGE_VERTEX_STEP;
+    }
+
+    public boolean isVertexStep() {
+        return this.stepType == STEP_TYPE.VERTEX_STEP;
     }
 
     void setStepType(STEP_TYPE stepType) {

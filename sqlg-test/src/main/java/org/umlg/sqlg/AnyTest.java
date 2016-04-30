@@ -10,11 +10,12 @@ import org.umlg.sqlg.test.gremlincompile.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestRepeatStepGraphOut.class,
+
+        TestRepeatStepGraphOut.class,
 //        TestRepeatStepGraphIn.class,
 //        TestRepeatStepVertexOut.class,
 //        TestRepeatStepGraphBoth.class,
-        TestGremlinOptional.class
+//        TestGremlinOptional.class
 //        TestGremlinCompileVertexStep.class
         })
 public class AnyTest {

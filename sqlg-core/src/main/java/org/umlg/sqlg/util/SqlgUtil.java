@@ -180,7 +180,7 @@ public class SqlgUtil {
     }
 
     private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet, int subQueryCount, AliasMapHolder copyAliasMapHolder) throws SQLException {
-        if (schemaTableTree.hasParent() && (schemaTableTree.isEmit() || schemaTableTree.isOptionalLeftJoin())) {
+        if (schemaTableTree.hasParent() && schemaTableTree.isEmit()) {
             //Need to load the edge id. It is used in the traverser to calculate if the element needs to be emitted or not.
             long edgeId = resultSet.getLong(schemaTableTree.getParent().mappedAliasIdFor(subQueryCount, copyAliasMapHolder));
             if (resultSet.wasNull()) {

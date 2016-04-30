@@ -7,7 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.EmitTree;
-import org.umlg.sqlg.strategy.OptionalLeaveNodes;
 import org.umlg.sqlg.structure.Dummy;
 import org.umlg.sqlg.structure.SqlgElement;
 
@@ -22,7 +21,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
 
     private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
     private EmitTree<E> currentEmitTree;
-    private OptionalLeaveNodes<E> currentOptionalLeaveNodes;
 
     private Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> supplier;
     private Iterator<Pair<E, Multimap<String, Emit<E>>>> iterator;
@@ -105,14 +103,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
 
                     } else if (emit.isUseOptionalTree()) {
 
-//                        if (this.currentOptionalLeaveNodes == null) {
-//                            this.currentOptionalLeaveNodes = new OptionalLeaveNodes<>(emit.getNumberOfSteps());
-//                        }
-//                        if (!this.currentOptionalLeaveNodes.containsPath(emit.getPath())) {
-//                        this.currentOptionalLeaveNodes.addPath(emit.getPath());
                         this.toEmit.add(emit);
                         result = true;
-//                        }
 
                     } else {
 

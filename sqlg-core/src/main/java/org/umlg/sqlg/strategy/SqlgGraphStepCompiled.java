@@ -152,35 +152,37 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         }
         //Do it again to find optional joined values
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-            List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result = new ArrayList<>();
-            SchemaTableTree.constructDistinctOptionalQueries(rootSchemaTableTree, 0, result);
+            //leftJoinResult is a Pair. Left represents the inner join query and right the inner join where there is nothing to join on.
+            List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
+            SchemaTableTree.constructDistinctOptionalQueries(rootSchemaTableTree, leftJoinResult);
             AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
-//            List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctOptionalQueries();
-//            for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
-//                String sql = rootSchemaTableTree.constructSqlForOptional(distinctQueryStack);
-//                try {
-//                    Connection conn = this.sqlgGraph.tx().getConnection();
-//                    if (logger.isDebugEnabled()) {
-//                        logger.debug(sql);
-//                    }
-//                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
-//                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 1);
-//                        ResultSet resultSet = preparedStatement.executeQuery();
-//                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-//
-//                        SqlgUtil.loadResultSetIntoResultIterator(
-//                                this.sqlgGraph,
-//                                resultSetMetaData, resultSet,
-//                                rootSchemaTableTree, distinctQueryStack,
-//                                aliasMapHolder,
-//                                resultIterator);
-//                    } catch (Exception e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                } finally {
-//                    rootSchemaTableTree.resetThreadVars();
-//                }
+            for (Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> leftJoinQuery : leftJoinResult) {
+                String sql = rootSchemaTableTree.constructSqlForOptional(leftJoinQuery.getLeft(), leftJoinQuery.getRight());
+                try {
+                    Connection conn = this.sqlgGraph.tx().getConnection();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql);
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, leftJoinQuery.getLeft(), conn, preparedStatement, 1);
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+                        SqlgUtil.loadResultSetIntoResultIterator(
+                                this.sqlgGraph,
+                                resultSetMetaData, resultSet,
+                                rootSchemaTableTree,
+                                leftJoinQuery.getLeft(),
+                                aliasMapHolder,
+                                resultIterator);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } finally {
+                    rootSchemaTableTree.resetThreadVars();
+                }
 //            }
+            }
         }
 
         stopWatch.stop();
