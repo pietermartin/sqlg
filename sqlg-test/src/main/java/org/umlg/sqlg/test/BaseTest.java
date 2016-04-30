@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -59,7 +60,16 @@ public abstract class BaseTest {
     }
 
     @Before
-    public void before() throws IOException {
+    public void before() throws Exception {
+        this.sqlgGraph = SqlgGraph.open(configuration);
+        SqlgUtil.dropDb(this.sqlgGraph);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+    }
+
+//    @Before
+    public void beforeOld() throws IOException {
         SqlgDataSource sqlgDataSource = null;
         SqlDialect sqlDialect;
         try {
