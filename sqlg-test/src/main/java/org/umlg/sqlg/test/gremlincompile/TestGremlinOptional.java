@@ -243,7 +243,6 @@ public class TestGremlinOptional extends BaseTest {
         assertTrue(paths.isEmpty());
     }
 
-
     @Test
     public void testOptionalOutNotThere() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
@@ -252,7 +251,6 @@ public class TestGremlinOptional extends BaseTest {
         this.sqlgGraph.tx().commit();
         List<Path> paths = this.sqlgGraph.traversal().V(a1).optional(out("knows")).path().toList();
         assertEquals(1, paths.size());
-
     }
 
     @Test

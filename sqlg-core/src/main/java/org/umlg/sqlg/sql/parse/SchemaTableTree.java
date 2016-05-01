@@ -71,6 +71,8 @@ public class SchemaTableTree {
     //This represents all tables filtered by TopologyStrategy
     private Map<String, Map<String, PropertyType>> filteredAllTables;
 
+    private int replacedStepDepth;
+
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
     public static final ThreadLocal<Multimap<String, String>> threadLocalColumnNameAliasMap = new ThreadLocal<Multimap<String, String>>() {
@@ -99,16 +101,18 @@ public class SchemaTableTree {
         this.hasContainers = schemaTableTree.hasContainers;
         this.comparators = schemaTableTree.comparators;
         this.labels = schemaTableTree.labels;
+        this.replacedStepDepth = schemaTableTree.replacedStepDepth;
         this.filteredAllTables = this.sqlgGraph.getSchemaManager().getAllTables();
     }
 
-    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth) {
+    SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth, int replacedStepDepth) {
         this.sqlgGraph = sqlgGraph;
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
         this.comparators = new ArrayList<>();
         this.labels = Collections.emptySet();
+        this.replacedStepDepth = replacedStepDepth;
         this.filteredAllTables = sqlgGraph.getSchemaManager().getAllTables();
     }
 
@@ -138,9 +142,10 @@ public class SchemaTableTree {
                     boolean emitFirst,
                     boolean optionalLeftJoin,
                     boolean vertexGraphStep,
+                    int replacedStepDepth,
                     Set<String> labels
     ) {
-        this(sqlgGraph, schemaTable, stepDepth);
+        this(sqlgGraph, schemaTable, stepDepth, replacedStepDepth);
         this.hasContainers = hasContainers;
         this.comparators = comparators;
         this.labels = Collections.unmodifiableSet(labels);
@@ -154,7 +159,6 @@ public class SchemaTableTree {
         SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
         initializeAliasColumnNameMaps();
     }
-
 
     public SchemaTableTree addChild(
             SchemaTable schemaTable,
@@ -213,7 +217,7 @@ public class SchemaTableTree {
             boolean leftJoin,
             Set<String> labels) {
 
-        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth);
+        SchemaTableTree schemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, stepDepth, this.replacedStepDepth);
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
@@ -396,12 +400,28 @@ public class SchemaTableTree {
         return result;
     }
 
+//    public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
+//        Preconditions.checkState(this.parent == null, "constructDistinctQueries may only be called on the root object");
+//        List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
+//        //noinspection Convert2streamapi
+//        for (SchemaTableTree leafNode : this.leafNodes) {
+//            result.add(leafNode.constructQueryStackFromLeaf());
+//        }
+//        for (LinkedList<SchemaTableTree> schemaTableTrees : result) {
+//            if (schemaTableTrees.get(0).getParent() != null) {
+//                throw new IllegalStateException("Expected root SchemaTableTree for the first SchemaTableTree in the LinkedList");
+//            }
+//        }
+//        return result;
+//    }
     public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
         Preconditions.checkState(this.parent == null, "constructDistinctQueries may only be called on the root object");
         List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
         //noinspection Convert2streamapi
         for (SchemaTableTree leafNode : this.leafNodes) {
-            result.add(leafNode.constructQueryStackFromLeaf());
+            if (leafNode.getStepDepth() == this.replacedStepDepth) {
+                result.add(leafNode.constructQueryStackFromLeaf());
+            }
         }
         for (LinkedList<SchemaTableTree> schemaTableTrees : result) {
             if (schemaTableTrees.get(0).getParent() != null) {
@@ -414,7 +434,7 @@ public class SchemaTableTree {
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
-        if (current.isOptionalLeftJoin() && !current.children.isEmpty()) {
+        if (current.isOptionalLeftJoin()  && (current.getStepDepth() < current.getReplacedStepDepth())) {
             Set<SchemaTableTree> leftyChildren = new HashSet<>();
             leftyChildren.addAll(current.children);
             Pair p = Pair.of(stack, leftyChildren);
@@ -433,7 +453,8 @@ public class SchemaTableTree {
 
     public static void constructDistinctEmitBeforeQueries(SchemaTableTree current, List<LinkedList<SchemaTableTree>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
-        if (current.isEmit() && !(current.children.isEmpty() && current.isEmitLast())) {
+        //if its at the full depth it has already been loaded.
+        if (current.isEmit() && (current.getStepDepth() < current.getReplacedStepDepth())) {
             Set<SchemaTableTree> children = new HashSet<>();
             children.add(current);
             result.add(stack);
@@ -1734,10 +1755,12 @@ public class SchemaTableTree {
         while (!queue.isEmpty()) {
             SchemaTableTree current = queue.remove();
             if (current.stepDepth < depth && current.children.isEmpty() && !current.isEmit() && !current.isOptionalLeftJoin()) {
+//            if (current.stepDepth < depth && current.children.isEmpty()) {
                 removeNode(current);
             } else {
                 queue.addAll(current.children);
                 if ((current.stepDepth == depth && current.children.isEmpty()) || (current.isEmit() && current.children.isEmpty()) || current.isOptionalLeftJoin() && current.children.isEmpty()) {
+//                if ((current.stepDepth == depth && current.children.isEmpty())) {
                     this.leafNodes.add(current);
                 }
             }
@@ -1868,6 +1891,10 @@ public class SchemaTableTree {
         return parent;
     }
 
+    public boolean isRoot() {
+        return this.parent == null;
+    }
+
     public Direction getDirection() {
         return direction;
     }
@@ -1888,6 +1915,14 @@ public class SchemaTableTree {
         this.comparators = comparators;
     }
 
+    public int getStepDepth() {
+        return stepDepth;
+    }
+
+    public int getReplacedStepDepth() {
+        return replacedStepDepth;
+    }
+
     public int depth() {
         AtomicInteger depth = new AtomicInteger();
         walk(v -> {
@@ -1896,7 +1931,7 @@ public class SchemaTableTree {
             }
             return null;
         });
-        return depth.incrementAndGet();
+        return depth.get();
     }
 
     public int numberOfNodes() {

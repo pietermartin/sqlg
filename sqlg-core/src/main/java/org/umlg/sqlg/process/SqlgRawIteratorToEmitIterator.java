@@ -87,7 +87,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
     private List<Emit<E>> flattenRawIterator() {
         List<Emit<E>> flattenedEmit = new ArrayList<>();
         if (this.iterator.hasNext()) {
-//            boolean addElement = true;
             this.currentPath = ImmutablePath.make();
             Pair<E, Multimap<String, Emit<E>>> raw = this.iterator.next();
             E element = raw.getLeft();
@@ -117,11 +116,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     Collection<Emit<E>> emits = labeledElements.get(label);
                     for (Emit<E> emit : emits) {
                         E e = emit.getElementPlusEdgeId().getLeft();
-                        //This is to avoid emitting the element twice.
-                        //Or if its not labeled but last then it needs to be emitted.
-//                        if (addElement && e.equals(element)) {
-//                            addElement = false;
-//                        }
                         Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);
                         if (allLabeledElementsAsSet == null) {
                             allLabeledElementsAsSet = new HashSet<>();
@@ -130,18 +124,10 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                         if (!allLabeledElementsAsSet.contains(e)) {
                             this.currentPath = this.currentPath.extend(e, Collections.singleton(realLabel));
                             allLabeledElementsAsSet.add(e);
-//                            if (pathLabel.endsWith(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) && emit.isUntilFirst()) {
-//                                emit.setPath(this.currentPath.clone());
-//                                emit.setUseCurrentEmitTree(true);
-//                                flattenedEmit.add(emit);
-//                            } else if (countEmits == sortedKeys.size()) {
                             if (countEmits == sortedKeys.size()) {
                                 emit.setPath(this.currentPath.clone());
                                 emit.setUseCurrentEmitTree(true);
                                 flattenedEmit.add(emit);
-                                if (emit.isUntilFirst() && !emit.isEmitFirst()) {
-                                    flattenedEmit.add(emit);
-                                }
                             }
                         } else {
                             //this adds the label to the path
@@ -149,14 +135,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                         }
                     }
                 }
-//                if (addElement) {
-//                    //tp relies on all elements traversed being on the path.
-//                    //if the element is not labelled put it on the path
-//                    this.currentPath = this.currentPath.clone().extend(element, Collections.emptySet());
-////                    Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
-////                    emit.setPath(this.currentPath.clone());
-////                    flattenedEmit.add(emit);
-//                }
             } else {
                 Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
                 flattenedEmit.add(emit);

@@ -455,9 +455,10 @@ public class ReplacedStep<S, E> {
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      *
      * @param sqlgGraph The graph.
+     * @param replacedStepDepth
      * @return A set of SchemaTableTree. A SchemaTableTree for each root label.
      */
-    Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph) {
+    Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph, int replacedStepDepth) {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
 
@@ -543,6 +544,7 @@ public class ReplacedStep<S, E> {
                             ReplacedStep.this.emitFirst,
                             ReplacedStep.this.leftJoin,
                             ReplacedStep.this.isVertexGraphStep,
+                            replacedStepDepth,
                             ReplacedStep.this.labels
                     );
 
@@ -580,6 +582,7 @@ public class ReplacedStep<S, E> {
                             ReplacedStep.this.emitFirst,
                             ReplacedStep.this.leftJoin,
                             ReplacedStep.this.isVertexGraphStep,
+                            replacedStepDepth,
                             ReplacedStep.this.labels
                     );
                     result.add(schemaTableTree);

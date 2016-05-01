@@ -28,20 +28,16 @@ public class GremlinParser<S extends Element, E extends Element> {
         return result;
     }
 
-    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
-        return parse(replacedSteps, true);
-    }
-
     /**
      * This is for the GraphStep
      * The first replacedStep has the starting SchemaTable.
      * @param replacedSteps
      * @return
      */
-    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps, boolean removeAllButLeaveNodes) {
+    public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
         ReplacedStep startReplacedStep = replacedSteps.remove(0);
         Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
-        Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph);
+        Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedSteps.size());
         Set<SchemaTableTree> toRemove = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
@@ -50,9 +46,7 @@ public class GremlinParser<S extends Element, E extends Element> {
                 //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
-            if (removeAllButLeaveNodes) {
-                rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
-            }
+            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
             //TODO think about how to remove the root node itself
             boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
             if (remove) {
@@ -78,7 +72,7 @@ public class GremlinParser<S extends Element, E extends Element> {
             throw new IllegalStateException("is this really still firing!!!");
         } else {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
-            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0);
+            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size());
             rootSchemaTableTree.initializeAliasColumnNameMaps();
             //TODO what about the emit, untilFirst flag????
             rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);

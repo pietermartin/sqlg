@@ -160,14 +160,18 @@ public class SqlgUtil {
                 //The last subQuery
                 if (subQueryDepth == subQueryStacks.size() - 1) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
-                        Optional<E> e = SqlgUtil.loadElement(
-                                sqlgGraph, columnNameCountMap2, resultSet, lastSchemaTableTree
-                        );
-                        if (e.isPresent()) {
+                    Optional<E> e = SqlgUtil.loadElement(
+                            sqlgGraph, columnNameCountMap2, resultSet, lastSchemaTableTree
+                    );
+                    if (e.isPresent()) {
+                        resultIterator.add(Pair.of(e.get(), previousLabeledElements));
+                        //This is for when times is before and emit after, in this case the element is emitted twice.
+                        if (lastSchemaTableTree.getReplacedStepDepth() == lastSchemaTableTree.getStepDepth() && lastSchemaTableTree.isEmit() && lastSchemaTableTree.isUntilFirst()) {
                             resultIterator.add(Pair.of(e.get(), previousLabeledElements));
-                        } else {
-                            throw new IllegalStateException("Element e must be present, BUG!!");
                         }
+                    } else {
+                        throw new IllegalStateException("Element e must be present, BUG!!");
+                    }
                 }
                 subQueryDepth++;
             }
