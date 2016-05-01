@@ -150,7 +150,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                 }
             }
         }
-        //Do it again to find optional joined values
+        //Do it again to find optional queries
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             //leftJoinResult is a Pair. Left represents the inner join query and right the inner join where there is nothing to join on.
             List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
@@ -181,7 +181,39 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                 } finally {
                     rootSchemaTableTree.resetThreadVars();
                 }
-//            }
+            }
+        }
+        //Do it again to find emit before queries
+        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            //leftJoinResult is a Pair. Left represents the inner join query and right the inner join where there is nothing to join on.
+            List<LinkedList<SchemaTableTree>> leftJoinResult = new ArrayList<>();
+            SchemaTableTree.constructDistinctEmitBeforeQueries(rootSchemaTableTree, leftJoinResult);
+            AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
+            for (LinkedList<SchemaTableTree> leftJoinQuery : leftJoinResult) {
+                String sql = rootSchemaTableTree.constructSqlForEmit(leftJoinQuery);
+                try {
+                    Connection conn = this.sqlgGraph.tx().getConnection();
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql);
+                    }
+                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+                        SqlgUtil.setParametersOnStatement(this.sqlgGraph, leftJoinQuery, conn, preparedStatement, 1);
+                        ResultSet resultSet = preparedStatement.executeQuery();
+                        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+                        SqlgUtil.loadResultSetIntoResultIterator(
+                                this.sqlgGraph,
+                                resultSetMetaData, resultSet,
+                                rootSchemaTableTree,
+                                leftJoinQuery,
+                                aliasMapHolder,
+                                resultIterator);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } finally {
+                    rootSchemaTableTree.resetThreadVars();
+                }
             }
         }
 

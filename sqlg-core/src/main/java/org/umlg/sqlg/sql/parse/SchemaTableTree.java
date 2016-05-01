@@ -356,6 +356,17 @@ public class SchemaTableTree {
         }
     }
 
+    public String constructSqlForEmit(LinkedList<SchemaTableTree> innerJoinStack) {
+        Preconditions.checkState(this.parent == null, "constructSql may only be called on the root object");
+        if (duplicatesInStack(innerJoinStack)) {
+            List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(innerJoinStack);
+            return constructDuplicatePathSql(this.sqlgGraph, subQueryStacks);
+        } else {
+            //If there are no duplicates in the path then one select statement will suffice.
+            return constructSinglePathSql(this.sqlgGraph, false, innerJoinStack, null, null);
+        }
+    }
+
     /**
      * @return A Triple. SchemaTableTree is the root of the tree that formed the sql statement.
      * It is needed to set the values in the where clause.
@@ -403,7 +414,7 @@ public class SchemaTableTree {
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
-        if ((current.isOptionalLeftJoin() || current.isEmit()) && !current.children.isEmpty()) {
+        if (current.isOptionalLeftJoin() && !current.children.isEmpty()) {
             Set<SchemaTableTree> leftyChildren = new HashSet<>();
             leftyChildren.addAll(current.children);
             Pair p = Pair.of(stack, leftyChildren);
@@ -415,6 +426,24 @@ public class SchemaTableTree {
             } else {
                 for (SchemaTableTree vertexChild : child.children) {
                     constructDistinctOptionalQueries(vertexChild, result);
+                }
+            }
+        }
+    }
+
+    public static void constructDistinctEmitBeforeQueries(SchemaTableTree current, List<LinkedList<SchemaTableTree>> result) {
+        LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
+        if (current.isEmit() && !(current.children.isEmpty() && current.isEmitLast())) {
+            Set<SchemaTableTree> children = new HashSet<>();
+            children.add(current);
+            result.add(stack);
+        }
+        for (SchemaTableTree child : current.children) {
+            if (child.isVertexStep() && child.getSchemaTable().isVertexTable()) {
+                constructDistinctEmitBeforeQueries(child, result);
+            } else {
+                for (SchemaTableTree vertexChild : child.children) {
+                    constructDistinctEmitBeforeQueries(vertexChild, result);
                 }
             }
         }
@@ -454,22 +483,22 @@ public class SchemaTableTree {
             singlePathSql += sql;
             if (count == 1) {
                 SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-                if (beforeLastSchemaTableTree.isEmit()) {
-                    singlePathSql += "\n) a" + count++ + " LEFT JOIN (";
-                } else {
+//                if (beforeLastSchemaTableTree.isEmit()) {
+//                    singlePathSql += "\n) a" + count++ + " LEFT JOIN (";
+//                } else {
                     singlePathSql += "\n) a" + count++ + " INNER JOIN (";
-                }
+//                }
             } else {
                 //join the last with the first
                 singlePathSql += "\n) a" + count + " ON ";
                 singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
                     SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-                    if (beforeLastSchemaTableTree.isEmit()) {
-                        singlePathSql += " LEFT JOIN (";
-                    } else {
+//                    if (beforeLastSchemaTableTree.isEmit()) {
+//                        singlePathSql += " LEFT JOIN (";
+//                    } else {
                         singlePathSql += " INNER JOIN (";
-                    }
+//                    }
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();
@@ -1984,6 +2013,10 @@ public class SchemaTableTree {
 
     public boolean isEmitFirst() {
         return emitFirst;
+    }
+
+    public boolean isEmitLast() {
+        return !emitFirst;
     }
 
     public int getTmpTableAliasCounter() {

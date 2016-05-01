@@ -62,6 +62,128 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     protected abstract SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep);
 
+    void combineSteps(Traversal.Admin<?, ?> traversal, List<Step> steps, ListIterator<Step> stepIterator) {
+        //Replace all consecutive VertexStep and HasStep with one step
+        SqlgStep sqlgStep = null;
+        Step previous = null;
+        ReplacedStep<?, ?> lastReplacedStep = null;
+
+        int pathCount = 0;
+        boolean alreadyReplacedGraphStep = false;
+        boolean repeatStepAdded = false;
+        boolean chooseStepAdded = false;
+        MutableInt repeatStepsAdded = new MutableInt(0);
+        while (stepIterator.hasNext()) {
+            Step step = stepIterator.next();
+
+            //Check for RepeatStep(s) and insert them into the stepIterator
+            if (step instanceof RepeatStep) {
+                try {
+                    //flatten the RepeatStep's repetitions into the stepIterator
+                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep)step, traversal, repeatStepsAdded);
+                } catch (UnoptimizableException e) {
+                    //swallow as it is used for process flow only.
+                    return;
+                }
+            } else if (step instanceof ChooseStep) {
+                try {
+                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep)step, traversal);
+                } catch (UnoptimizableException e) {
+                    //swallow as it is used for process flow only.
+                    return;
+                }
+            } else {
+
+                if (isReplaceableStep(step.getClass(), alreadyReplacedGraphStep)) {
+
+                    //check if repeat steps were added to the stepIterator
+                    boolean emit = false;
+                    boolean emitFirst = false;
+                    boolean untilFirst = false;
+                    if (repeatStepsAdded.getValue() > 0) {
+                        repeatStepsAdded.decrement();
+                        RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
+                        emit = repeatStep.getEmitTraversal() != null;
+                        emitFirst = repeatStep.emitFirst;
+                        untilFirst = repeatStep.untilFirst;
+                    } else {
+                        repeatStepAdded = false;
+                    }
+
+                    pathCount++;
+                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    if (emit) {
+                        //the previous step must be marked as emit.
+                        //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
+                        //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+                        ReplacedStep previousReplacedStep;
+                        if (emitFirst) {
+                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                            pathCount--;
+                        } else {
+                            previousReplacedStep = replacedStep;
+                        }
+                        previousReplacedStep.setEmit(true);
+                        previousReplacedStep.setUntilFirst(untilFirst);
+                        previousReplacedStep.setEmitFirst(emitFirst);
+                        previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        if (emitFirst) {
+                            pathCount++;
+                        }
+                    }
+                    if (chooseStepAdded) {
+                        pathCount--;
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                        previousReplacedStep.setLeftJoin(true);
+                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        pathCount++;
+                    }
+                    if (replacedStep.getLabels().isEmpty()) {
+                        boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
+                        if (precedesPathStep) {
+                            replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        }
+                    }
+                    if (previous == null) {
+                        sqlgStep = constructSqlgStep(traversal, step);
+                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
+                        sqlgStep.addReplacedStep(replacedStep);
+                        handleFirstReplacedStep(step, sqlgStep, traversal);
+                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
+                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
+                        }
+                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+                    } else {
+                        sqlgStep.addReplacedStep(replacedStep);
+                        if (!repeatStepAdded && !chooseStepAdded) {
+                            //its not in the traversal, so do not remove it
+                            traversal.removeStep(step);
+                        }
+                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+                    }
+                    previous = step;
+                    lastReplacedStep = replacedStep;
+                    chooseStepAdded = false;
+                } else {
+                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
+                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
+                    }
+                    break;
+                }
+            }
+        }
+        if (lastReplacedStep != null && !lastReplacedStep.isEmit()) {
+            lastReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+        }
+    }
+
+
     private boolean unoptimizableChooseStep(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         Step step = toCome.get(0);
@@ -280,125 +402,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         hasContainers.get(0).getBiPredicate() == Text.endsWith ||
                         hasContainers.get(0).getBiPredicate() == Text.nendsWith
                 ));
-    }
-
-    void combineSteps(Traversal.Admin<?, ?> traversal, List<Step> steps, ListIterator<Step> stepIterator) {
-        //Replace all consecutive VertexStep and HasStep with one step
-        SqlgStep sqlgStep = null;
-        Step previous = null;
-        ReplacedStep<?, ?> lastReplacedStep = null;
-
-        int pathCount = 0;
-        boolean alreadyReplacedGraphStep = false;
-        boolean repeatStepAdded = false;
-        boolean chooseStepAdded = false;
-        MutableInt repeatStepsAdded = new MutableInt(0);
-        while (stepIterator.hasNext()) {
-            Step step = stepIterator.next();
-
-            //Check for RepeatStep(s) and insert them into the stepIterator
-            if (step instanceof RepeatStep) {
-                try {
-                    //flatten the RepeatStep's repetitions into the stepIterator
-                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep)step, traversal, repeatStepsAdded);
-                } catch (UnoptimizableException e) {
-                    //swallow as it is used for process flow only.
-                    return;
-                }
-            } else if (step instanceof ChooseStep) {
-                try {
-                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep)step, traversal);
-                } catch (UnoptimizableException e) {
-                    //swallow as it is used for process flow only.
-                    return;
-                }
-            } else {
-
-                if (isReplaceableStep(step.getClass(), alreadyReplacedGraphStep)) {
-
-                    //check if repeat steps were added to the stepIterator
-                    boolean emit = false;
-                    boolean emitFirst = false;
-                    boolean untilFirst = false;
-                    if (repeatStepsAdded.getValue() > 0) {
-                        repeatStepsAdded.decrement();
-                        RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
-                        emit = repeatStep.getEmitTraversal() != null;
-                        emitFirst = repeatStep.emitFirst;
-                        untilFirst = repeatStep.untilFirst;
-                    } else {
-                        repeatStepAdded = false;
-                    }
-
-                    pathCount++;
-                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
-                    if (emit) {
-                        //the previous step must be marked as emit.
-                        //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
-                        //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
-                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-                        ReplacedStep previousReplacedStep;
-                        if (emitFirst) {
-                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
-                            pathCount--;
-                        } else {
-                            previousReplacedStep = replacedStep;
-                        }
-                        previousReplacedStep.setEmit(true);
-                        previousReplacedStep.setUntilFirst(untilFirst);
-                        previousReplacedStep.setEmitFirst(emitFirst);
-                        previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
-                        previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        if (emitFirst) {
-                            pathCount++;
-                        }
-                    }
-                    if (chooseStepAdded) {
-                        pathCount--;
-                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
-                        previousReplacedStep.setLeftJoin(true);
-                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
-                        previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        pathCount++;
-                        System.out.println("asdas");
-                    }
-                    if (replacedStep.getLabels().isEmpty()) {
-                        boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
-                        if (precedesPathStep) {
-                            replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
-                        }
-                    }
-                    if (previous == null) {
-                        sqlgStep = constructSqlgStep(traversal, step);
-                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
-                        sqlgStep.addReplacedStep(replacedStep);
-                        handleFirstReplacedStep(step, sqlgStep, traversal);
-                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
-                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
-                        }
-                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
-                    } else {
-                        sqlgStep.addReplacedStep(replacedStep);
-                        if (!repeatStepAdded && !chooseStepAdded) {
-                            //its not in the traversal, so do not remove it
-                            traversal.removeStep(step);
-                        }
-                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
-                    }
-                    previous = step;
-                    lastReplacedStep = replacedStep;
-                    chooseStepAdded = false;
-                } else {
-                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
-                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
-                    }
-                    break;
-                }
-            }
-        }
     }
 
     private boolean flattenChooseStep(List<Step> steps, ListIterator<Step> stepIterator, ChooseStep chooseStep, Traversal.Admin<?, ?> traversal) {

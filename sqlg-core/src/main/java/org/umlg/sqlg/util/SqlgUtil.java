@@ -160,13 +160,6 @@ public class SqlgUtil {
                 //The last subQuery
                 if (subQueryDepth == subQueryStacks.size() - 1) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
-//                    if (lastSchemaTableTree.isLeafNodeIsEmpty()) {
-//                        //write in a empty element indicating that the traversal actually returns nothing.
-//                        //this only happens for emit queries where a left join is used.
-//                        //if the last VertexStep does not exist it is excluded from the sql so a empty needs to be written.
-//                        //The empty is used in processNextStart() to know whether the last element should be emitted ot not.
-//                        resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));
-//                    } else {
                         Optional<E> e = SqlgUtil.loadElement(
                                 sqlgGraph, columnNameCountMap2, resultSet, lastSchemaTableTree
                         );
@@ -174,9 +167,7 @@ public class SqlgUtil {
                             resultIterator.add(Pair.of(e.get(), previousLabeledElements));
                         } else {
                             throw new IllegalStateException("Element e must be present, BUG!!");
-//                            resultIterator.add(Pair.of((E) new Dummy(), previousLabeledElements));
                         }
-//                    }
                 }
                 subQueryDepth++;
             }
