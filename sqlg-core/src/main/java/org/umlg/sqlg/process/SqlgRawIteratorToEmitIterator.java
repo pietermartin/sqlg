@@ -6,8 +6,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ImmutablePath;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.Emit;
-import org.umlg.sqlg.strategy.EmitTree;
-import org.umlg.sqlg.structure.Dummy;
 import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.*;
@@ -18,9 +16,6 @@ import java.util.function.Supplier;
  * Time: 8:54 PM
  */
 public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Iterator<Emit<E>>, Supplier<Iterator<Emit<E>>> {
-
-    private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
-    private EmitTree<E> currentEmitTree;
 
     private Supplier<Iterator<Pair<E, Multimap<String, Emit<E>>>>> supplier;
     private Iterator<Pair<E, Multimap<String, Emit<E>>>> iterator;
@@ -69,50 +64,15 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     Emit<E> emit = iter.next();
                     iter.remove();
 
-                    if (emit.isUseCurrentEmitTree()) {
-
-                        if (this.currentEmitTree == null) {
-                            //get it from the roots
-                            for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-                                if (rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-                                    this.currentEmitTree = rootEmitTree;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if ((this.rootEmitTrees.isEmpty() || (!this.rootEmitTrees.isEmpty() && this.currentEmitTree == null)) ||
-                                (!rootEmitTreeContains(this.rootEmitTrees, emit) && !this.currentEmitTree.hasChild(emit.getElementPlusEdgeId()))) {
-
-                            if (this.currentEmitTree == null) {
-                                this.currentEmitTree = new EmitTree<>(emit);
-                                this.rootEmitTrees.add(this.currentEmitTree);
-                            } else {
-                                this.currentEmitTree = this.currentEmitTree.addEmit(emit);
-                            }
-                            if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy)) {
-                                this.toEmit.add(emit);
-                                result = true;
-                            }
-
-                        } else {
-                            if (!this.currentEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-                                this.currentEmitTree = this.currentEmitTree.getChild(emit.getElementPlusEdgeId());
-                            }
-                        }
-
-                    } else if (emit.isUseOptionalTree()) {
+                    if (emit.isUseOptionalTree() || emit.isUseCurrentEmitTree()) {
 
                         this.toEmit.add(emit);
                         result = true;
 
                     } else {
 
-                        //currentEmitTree logic is only for repeat emittings
-                        if (!(emit.getElementPlusEdgeId().getLeft() instanceof Dummy)) {
-                            this.toEmit.add(emit);
-                            result = true;
-                        }
+                        this.toEmit.add(emit);
+                        result = true;
 
                     }
                 }
@@ -120,7 +80,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                 //no more raw results so exit the loop. result will be false;
                 break;
             }
-            this.currentEmitTree = null;
         }
         return result;
     }
@@ -128,7 +87,6 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
     private List<Emit<E>> flattenRawIterator() {
         List<Emit<E>> flattenedEmit = new ArrayList<>();
         if (this.iterator.hasNext()) {
-            Emit<E> lastEmit = null;
             boolean addElement = true;
             this.currentPath = ImmutablePath.make();
             Pair<E, Multimap<String, Emit<E>>> raw = this.iterator.next();
@@ -141,7 +99,9 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                 //If the same object has multiple labels it will be present many times in the sql result set.
                 //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
                 Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
+                int countEmits = 0;
                 for (String label : sortedKeys) {
+                    countEmits++;
                     String realLabel;
                     String pathLabel;
                     if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
@@ -174,33 +134,22 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                                 emit.setPath(this.currentPath.clone());
                                 emit.setUseCurrentEmitTree(true);
                                 flattenedEmit.add(emit);
+                            } else if (countEmits == sortedKeys.size()) {
+                                emit.setPath(this.currentPath.clone());
+                                emit.setUseCurrentEmitTree(true);
+                                flattenedEmit.add(emit);
                             }
-                            lastEmit = emit;
                         } else {
                             //this adds the label to the path
                             this.currentPath = this.currentPath.extend(Collections.singleton(realLabel));
                         }
                     }
                 }
-                if (addElement && !(element instanceof Dummy)) {
+                if (addElement) {
                     //tp relies on all elements traversed being on the path.
                     //if the element is not labelled put it on the path
                     this.currentPath = this.currentPath.clone().extend(element, Collections.emptySet());
                 }
-
-//                if (lastEmit != null && lastEmit.emitAndUntilBothAtEnd()) {
-                //do nothing, nothing to emit
-                //If I remember correctly this is because the element will be emitted anyhow as it will have an emit 'E' label.
-//                } else if (lastEmit != null) {
-                if (lastEmit != null) {
-                    lastEmit.setPath(this.currentPath.clone());
-                    flattenedEmit.add(lastEmit);
-                } else {
-                    Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
-                    emit.setPath(this.currentPath.clone());
-                    flattenedEmit.add(emit);
-                }
-
             } else {
                 Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
                 flattenedEmit.add(emit);
@@ -214,21 +163,4 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
         return this;
     }
 
-    private boolean rootEmitTreeContains(List<EmitTree<E>> rootEmitTrees, Emit emit) {
-        for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-
-            if (rootEmitTree.getEmit().getPath() == null && emit.getPath() == null) {
-
-                if (rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-                    return true;
-                }
-
-            } else if (rootEmitTree.getEmit().getPath().get(0).equals(emit.getPath().get(0)) &&
-                    rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
-
-                return true;
-            }
-        }
-        return false;
-    }
 }

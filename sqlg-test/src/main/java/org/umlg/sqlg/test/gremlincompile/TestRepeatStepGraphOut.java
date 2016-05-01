@@ -8,7 +8,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2015/10/21
@@ -154,6 +159,45 @@ public class TestRepeatStepGraphOut extends BaseTest {
 //        List<Vertex> vertices = this.sqlgGraph.traversal().V().repeat(__.out("ab").out("bc")).toList();
 //        Assert.assertTrue(vertices.isEmpty());
 //    }
+//
+    @Test
+    public void testRepeatSimpleTimesEmitBefore() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = this.sqlgGraph.traversal().V(a1).times(1).emit().repeat(__.out()).path().toList();
+        Assert.assertEquals(2, paths.size());
+        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+                p -> p.size() == 1 && p.get(0).equals(a1),
+                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)
+        );
+        for (Predicate<Path> pathPredicate : pathsToAssert) {
+            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+            assertTrue(path.isPresent());
+            assertTrue(paths.remove(path.get()));
+        }
+        assertTrue(paths.isEmpty());
+    }
+
+    @Test
+    public void testRepeatSimpleTimeEmitAfter() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = this.sqlgGraph.traversal().V(a1).repeat(__.out()).times(1).emit().path().toList();
+        Assert.assertEquals(1, paths.size());
+        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)
+        );
+        for (Predicate<Path> pathPredicate : pathsToAssert) {
+            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+            assertTrue(path.isPresent());
+            assertTrue(paths.remove(path.get()));
+        }
+        assertTrue(paths.isEmpty());
+    }
 //
 //    @Test
 //    public void testRepeat() {
@@ -892,32 +936,32 @@ public class TestRepeatStepGraphOut extends BaseTest {
 //        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out("ab", "ba")).times(2).toList();
 //        Assert.assertEquals(4, vertices.size());
 //    }
-
-    @Test
-    public void testOnDuplicatePathsFromVertexTimesAfter() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        a1.addEdge("ab", b1);
-        b1.addEdge("ba", a2);
-        this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V().emit().repeat(__.out("ab", "ba")).times(2).path().toList();
-        Assert.assertEquals(6, paths.size());
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1)));
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)));
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(a2)));
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a2)));
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(b1)));
-        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(b1) && p.get(1).equals(a2)));
-        Assert.assertTrue(paths.isEmpty());
-        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().get());
-        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)).findAny().get());
-        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(a2)).findAny().get());
-        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a2)).findAny().get());
-        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(b1)).findAny().get());
-        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(b1) && p.get(1).equals(a2)).findAny().get());
-    }
-
+//
+//    @Test
+//    public void testOnDuplicatePathsFromVertexTimesAfter() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        a1.addEdge("ab", b1);
+//        b1.addEdge("ba", a2);
+//        this.sqlgGraph.tx().commit();
+//        List<Path> paths = this.sqlgGraph.traversal().V().emit().repeat(__.out("ab", "ba")).times(2).path().toList();
+//        Assert.assertEquals(6, paths.size());
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(a2)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a2)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(b1)));
+//        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(b1) && p.get(1).equals(a2)));
+//        Assert.assertTrue(paths.isEmpty());
+//        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().get());
+//        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)).findAny().get());
+//        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(a2)).findAny().get());
+//        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a2)).findAny().get());
+//        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(b1)).findAny().get());
+//        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(b1) && p.get(1).equals(a2)).findAny().get());
+//    }
+//
 //    @Test
 //    public void testOnDuplicatePathsFromVertexTimes1After() {
 //        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

@@ -403,7 +403,7 @@ public class SchemaTableTree {
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
-        if (current.isOptionalLeftJoin() && !current.children.isEmpty()) {
+        if ((current.isOptionalLeftJoin() || current.isEmit()) && !current.children.isEmpty()) {
             Set<SchemaTableTree> leftyChildren = new HashSet<>();
             leftyChildren.addAll(current.children);
             Pair p = Pair.of(stack, leftyChildren);
@@ -817,7 +817,7 @@ public class SchemaTableTree {
             printedWhere.setTrue();
             result.append("\nWHERE\n\t(");
         } else {
-            result.append(" AND (");
+            result.append(" AND\n\t(");
         }
         String rawLabel = this.parent.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
         result.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
@@ -1637,7 +1637,8 @@ public class SchemaTableTree {
             rawLabelToTravers = labelToTravers.getTable();
         }
         String joinSql;
-        if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit()) || leftJoin) {
+//        if (fromSchemaTableTree.isEmit() || (fromSchemaTableTree.hasParent() && fromSchemaTableTree.getParent().isEmit()) || leftJoin) {
+        if (leftJoin) {
             joinSql = " LEFT JOIN\n\t";
         } else {
             joinSql = " INNER JOIN\n\t";
