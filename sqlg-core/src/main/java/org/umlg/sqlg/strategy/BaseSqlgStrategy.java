@@ -178,7 +178,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             }
         }
-        if (lastReplacedStep != null && !lastReplacedStep.isEmit()) {
+        if (lastReplacedStep != null && !lastReplacedStep.isEmit() && lastReplacedStep.getLabels().isEmpty()) {
             lastReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
         }
     }
