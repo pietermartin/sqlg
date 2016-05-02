@@ -89,9 +89,9 @@
                         <!-- this is still failing on travis -->
                         <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
                         <!--<include>**/SqlgPostgresProcessStandardTest.java</include>-->
-                        <!--<include>**/PostgresAllTest.java</include>-->
+                        <include>**/PostgresAllTest.java</include>
                     </includes>
-                    <argLine>-Xmx2048m</argLine>
+                    <argLine>-Xmx3072m</argLine>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <!--<argLine>-Xmx1024m</argLine>-->
                     <!--<argLine>-Xmx128m</argLine>-->
