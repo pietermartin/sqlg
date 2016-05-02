@@ -400,7 +400,7 @@ public class SchemaTableTree {
         return result;
     }
 
-//    public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
+    //    public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
 //        Preconditions.checkState(this.parent == null, "constructDistinctQueries may only be called on the root object");
 //        List<LinkedList<SchemaTableTree>> result = new ArrayList<>();
 //        //noinspection Convert2streamapi
@@ -434,7 +434,7 @@ public class SchemaTableTree {
     public static void constructDistinctOptionalQueries(SchemaTableTree current, List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //left joins but not the leave nodes as they are already present in the main sql result set.
-        if (current.isOptionalLeftJoin()  && (current.getStepDepth() < current.getReplacedStepDepth())) {
+        if (current.isOptionalLeftJoin() && (current.getStepDepth() < current.getReplacedStepDepth())) {
             Set<SchemaTableTree> leftyChildren = new HashSet<>();
             leftyChildren.addAll(current.children);
             Pair p = Pair.of(stack, leftyChildren);
@@ -503,33 +503,23 @@ public class SchemaTableTree {
             }
             singlePathSql += sql;
             if (count == 1) {
-                SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-//                if (beforeLastSchemaTableTree.isEmit()) {
-//                    singlePathSql += "\n) a" + count++ + " LEFT JOIN (";
-//                } else {
-                    singlePathSql += "\n) a" + count++ + " INNER JOIN (";
-//                }
+                singlePathSql += "\n) a" + count++ + " INNER JOIN (";
             } else {
                 //join the last with the first
                 singlePathSql += "\n) a" + count + " ON ";
                 singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
-                    SchemaTableTree beforeLastSchemaTableTree = subQueryLinkedList.getLast().getParent();
-//                    if (beforeLastSchemaTableTree.isEmit()) {
-//                        singlePathSql += " LEFT JOIN (";
-//                    } else {
-                        singlePathSql += " INNER JOIN (";
-//                    }
+                    singlePathSql += " INNER JOIN (";
                 }
             }
             lastOfPrevious = subQueryLinkedList.getLast();
         }
         singlePathSql += constructOuterOrderByClause(sqlgGraph, subQueryLinkedLists);
-        String result = "SELECT\n\t" + constructOuterFromClause(sqlgGraph, subQueryLinkedLists);
+        String result = "SELECT\n\t" + constructOuterFromClause(subQueryLinkedLists);
         return result + singlePathSql;
     }
 
-    private static String constructOuterFromClause(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
+    private static String constructOuterFromClause(List<LinkedList<SchemaTableTree>> subQueryLinkedLists) {
         String result = "";
         int countOuter = 1;
         Multimap<String, String> columnNameAliasMapCopy = null;
@@ -1553,7 +1543,7 @@ public class SchemaTableTree {
     public String mappedAliasVertexForeignKeyColumnEnd(SchemaTableTree previousSchemaTableTree, Direction direction, String rawFromLabel) {
         String result = getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR +
                 previousSchemaTableTree.getSchemaTable().getSchema() +
-                //This must be a dot as its the foreign key column, i.e. balh__I
+                //This must be a dot as its the foreign key column, i.e. blah__I
                 "." + rawFromLabel + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END);
         List<String> strings = (List<String>) this.getThreadLocalColumnNameAliasMap().get(result);
         return strings.get(strings.size() - 1);

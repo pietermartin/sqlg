@@ -565,10 +565,14 @@ public class ReplacedStep<S, E> {
                     List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
                     if (!groupedIds.isEmpty()) {
                         Collection<RecordId> recordIds = groupedIds.get(schemaTable);
-                        List<Long> ids = recordIds.stream().map(id -> id.getId()).collect(Collectors.toList());
-                        HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
-                        hasContainers.add(idHasContainer);
-                        toRemove.add(idHasContainer);
+                        if (!recordIds.isEmpty()) {
+                            List<Long> ids = recordIds.stream().map(id -> id.getId()).collect(Collectors.toList());
+                            HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
+                            hasContainers.add(idHasContainer);
+                            toRemove.add(idHasContainer);
+                        } else {
+                            continue;
+                        }
                     }
                     SchemaTableTree schemaTableTree = new SchemaTableTree(
                             sqlgGraph,

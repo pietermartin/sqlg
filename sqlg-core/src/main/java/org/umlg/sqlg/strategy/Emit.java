@@ -14,7 +14,6 @@ public class Emit<E extends SqlgElement> {
     boolean useCurrentEmitTree;
     boolean useOptionalTree;
     private Path path;
-//    private int numberOfSteps;
     private Pair<E, Optional<Long>> elementPlusEdgeId;
     private boolean untilFirst;
     private boolean emitFirst;
@@ -24,7 +23,6 @@ public class Emit<E extends SqlgElement> {
         this.untilFirst = untilFirst;
         this.emitFirst = emitFirst;
         this.useOptionalTree = useOptionalTree;
-//        this.numberOfSteps = numberOfSteps;
     }
 
     public boolean isUseCurrentEmitTree() {
@@ -39,10 +37,6 @@ public class Emit<E extends SqlgElement> {
         return useOptionalTree;
     }
 
-//    public int getNumberOfSteps() {
-//        return numberOfSteps;
-//    }
-
     public Path getPath() {
         return path;
     }
@@ -55,26 +49,6 @@ public class Emit<E extends SqlgElement> {
         return elementPlusEdgeId;
     }
 
-    public boolean isUntilFirst() {
-        return untilFirst;
-    }
-
-    public boolean isEmitFirst() {
-        return emitFirst;
-    }
-
-    public boolean emitUntilBothStartOrEnd() {
-        return emitAndUntilBothAtStart() && emitAndUntilBothAtEnd();
-    }
-
-    public boolean emitAndUntilBothAtStart() {
-        return this.untilFirst && this.emitFirst;
-    }
-
-    public boolean emitAndUntilBothAtEnd() {
-        return !this.untilFirst && !this.emitFirst;
-    }
-
     @Override
     public String toString() {
         String result = "";
@@ -82,7 +56,6 @@ public class Emit<E extends SqlgElement> {
             result += this.path.toString();
             result += ", ";
         }
-//        result += elementPlusEdgeId.toString() + ", " + this.degree;
         result += elementPlusEdgeId.toString() + ", useCurrentEmitTree=" + this.useCurrentEmitTree;
         return result;
     }

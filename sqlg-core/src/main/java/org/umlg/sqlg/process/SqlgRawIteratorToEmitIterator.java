@@ -132,6 +132,11 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                         } else {
                             //this adds the label to the path
                             this.currentPath = this.currentPath.extend(Collections.singleton(realLabel));
+                            if (countEmits == sortedKeys.size()) {
+                                emit.setPath(this.currentPath.clone());
+                                emit.setUseCurrentEmitTree(true);
+                                flattenedEmit.add(emit);
+                            }
                         }
                     }
                 }

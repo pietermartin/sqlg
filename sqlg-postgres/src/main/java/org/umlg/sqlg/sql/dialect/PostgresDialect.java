@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -22,9 +21,9 @@ import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
-import org.postgresql.core.types.PGByte;
 import org.postgresql.jdbc4.Jdbc4Connection;
-import org.postgresql.util.*;
+import org.postgresql.util.PGbytea;
+import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.gis.GeographyPoint;
@@ -32,13 +31,15 @@ import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
-import java.util.Base64;
 
 /**
  * Date: 2014/07/16
@@ -1197,7 +1198,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
-    //TODO
+    /**
+     * This is only used for upgrading from pre sqlg_schema sqlg to a sqlg_schema
+     * @param sqlType
+     * @param typeName
+     * @return
+     */
     @Override
     public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
         switch (sqlType) {

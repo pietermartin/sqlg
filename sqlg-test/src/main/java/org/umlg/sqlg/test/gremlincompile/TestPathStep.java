@@ -142,7 +142,15 @@ public class TestPathStep extends BaseTest {
         Assert.assertEquals(a1, p.get(0));
         Assert.assertEquals(b1, p.get(1));
         Assert.assertEquals(a1, p.get(2));
-        System.out.println(p);
+    }
+
+    @Test
+    public void testSimplePath() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1", "age", 1);
+        this.sqlgGraph.tx().commit();
+        List<Path> paths = this.sqlgGraph.traversal().V().as("a").has("name", "a1").as("b").has("age", 1).as("c").path().toList();
+        Assert.assertEquals(1, paths.size());
+        Assert.assertEquals(1, paths.get(0).size());
     }
 
     @Test

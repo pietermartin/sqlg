@@ -11,13 +11,13 @@ import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.InputStream;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -39,7 +39,7 @@ public class TestTopologyUpgrade extends BaseTest {
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA sqlg_schema CASCADE");
+        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
         statement.close();
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -105,7 +105,7 @@ public class TestTopologyUpgrade extends BaseTest {
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA sqlg_schema CASCADE");
+        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
         statement.close();
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -118,6 +118,7 @@ public class TestTopologyUpgrade extends BaseTest {
 
     @Test
     public void testGratefulDeadDBUpgrade() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         Graph g = this.sqlgGraph;
         GraphReader reader = GryoReader.build()
                 .mapper(g.io(GryoIo.build()).mapper().create())
@@ -132,7 +133,7 @@ public class TestTopologyUpgrade extends BaseTest {
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA sqlg_schema CASCADE");
+        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
         statement.close();
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
@@ -180,7 +181,7 @@ public class TestTopologyUpgrade extends BaseTest {
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
         Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA sqlg_schema CASCADE");
+        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
         statement.close();
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();

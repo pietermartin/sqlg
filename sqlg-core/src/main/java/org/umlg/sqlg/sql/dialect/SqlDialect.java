@@ -18,9 +18,9 @@ import java.util.*;
 
 public interface SqlDialect {
 
-    public void setConfiguration(Configuration configuration);
+    void setConfiguration(Configuration configuration);
 
-    public Configuration getConfiguration();
+    Configuration getConfiguration();
 
     Set<String> getDefaultSchemas();
 
@@ -30,11 +30,11 @@ public interface SqlDialect {
 
     void validateProperty(Object key, Object value);
 
-    public default boolean needsSemicolon() {
+    default boolean needsSemicolon() {
         return true;
     }
 
-    public default boolean supportsCascade() {
+    default boolean supportsCascade() {
         return true;
     }
 
@@ -50,61 +50,61 @@ public interface SqlDialect {
 
     String getForeignKeyTypeDefinition();
 
-    public default String maybeWrapInQoutes(String field) {
+    default String maybeWrapInQoutes(String field) {
         StringBuilder sb = new StringBuilder(getColumnEscapeKey());
         sb.append(field);
         sb.append(getColumnEscapeKey());
         return sb.toString();
     }
 
-    public default boolean supportsFloatValues() {
+    default boolean supportsFloatValues() {
         return true;
     }
 
-    public default boolean supportsByteValues() {
+    default boolean supportsByteValues() {
         return false;
     }
 
-    public default boolean supportsTransactionalSchema() {
+    default boolean supportsTransactionalSchema() {
         return true;
     }
 
-    public default boolean supportsBooleanArrayValues() {
+    default boolean supportsBooleanArrayValues() {
         return true;
     }
 
-    public default boolean supportsByteArrayValues() {
+    default boolean supportsByteArrayValues() {
         return true;
     }
 
-    public default boolean supportsDoubleArrayValues() {
+    default boolean supportsDoubleArrayValues() {
         return true;
     }
 
-    public default boolean supportsFloatArrayValues() {
+    default boolean supportsFloatArrayValues() {
         return true;
     }
 
-    public default boolean supportsIntegerArrayValues() {
+    default boolean supportsIntegerArrayValues() {
         return true;
     }
 
-    public default boolean supportsShortArrayValues() {
+    default boolean supportsShortArrayValues() {
         return true;
     }
 
-    public default boolean supportsLongArrayValues() {
+    default boolean supportsLongArrayValues() {
         return true;
     }
 
-    public default boolean supportsStringArrayValues() {
+    default boolean supportsStringArrayValues() {
         return true;
     }
 
-    public default void assertTableName(String tableName) {
+    default void assertTableName(String tableName) {
     }
 
-    public default void putJsonObject(ObjectNode obj, String columnName, int sqlType, Object o) {
+    default void putJsonObject(ObjectNode obj, String columnName, int sqlType, Object o) {
         try {
             switch (sqlType) {
                 case Types.BIT:
@@ -182,7 +182,7 @@ public interface SqlDialect {
 
     }
 
-    public default void putJsonMetaObject(ObjectMapper mapper, ArrayNode metaNodeArray, String columnName, int sqlType, Object o) {
+    default void putJsonMetaObject(ObjectMapper mapper, ArrayNode metaNodeArray, String columnName, int sqlType, Object o) {
         try {
             ObjectNode metaNode = mapper.createObjectNode();
             metaNode.put("name", columnName);
@@ -249,24 +249,24 @@ public interface SqlDialect {
 
     String getArrayDriverType(PropertyType booleanArray);
 
-    public default String createTableStatement() {
+    default String createTableStatement() {
         return "CREATE TABLE ";
     }
 
-    public default String createTemporaryTableStatement() {
+    default String createTemporaryTableStatement() {
         return "CREATE TEMPORARY TABLE ";
     }
 
-    public default void prepareDB(Connection conn) {
+    default void prepareDB(Connection conn) {
 
     }
 
-    public default String getPublicSchema() {
+    default String getPublicSchema() {
         return "public";
     }
 
 
-    public default String indexName(SchemaTable schemaTable, String prefix, String column) {
+    default String indexName(SchemaTable schemaTable, String prefix, String column) {
         StringBuilder sb = new StringBuilder();
         sb.append(schemaTable.getSchema());
         sb.append("_");
@@ -281,7 +281,7 @@ public interface SqlDialect {
     String existIndexQuery(SchemaTable schemaTable, String prefix, String indexName);
 
     //This is needed for mariadb, which does not support schemas, so need to drop the database instead
-    public default boolean supportSchemas() {
+    default boolean supportSchemas() {
         return true;
     }
 
@@ -289,11 +289,11 @@ public interface SqlDialect {
 
     void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache);
 
-    public default boolean supportsBatchMode() {
+    default boolean supportsBatchMode() {
         return false;
     }
 
-    public default boolean supportsJson() {
+    default boolean supportsJson() {
         return false;
     }
 
@@ -303,7 +303,7 @@ public interface SqlDialect {
 
     void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache);
 
-    public default String hasContainerKeyToColumn(String key) {
+    default String hasContainerKeyToColumn(String key) {
 
         if (key.equals(T.id.getAccessor()))
             return "ID";
@@ -317,50 +317,50 @@ public interface SqlDialect {
 
     String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap);
 
-    public String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
+    String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
 
-    public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
+    String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
 
-    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
+    String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
 
     void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
 
     void writeCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
-    public default boolean needForeignKeyIndex() {
+    default boolean needForeignKeyIndex() {
         return false;
     }
 
-    public default boolean supportsClientInfo() {
+    default boolean supportsClientInfo() {
         return false;
     }
 
-    public default void validateSchemaName(String schema) {
+    default void validateSchemaName(String schema) {
     }
 
-    public default void validateTableName(String table) {
+    default void validateTableName(String table) {
     }
 
-    public default void validateColumnName(String column) {
+    default void validateColumnName(String column) {
     }
 
-    public default int getMinimumSchemaNameLength() {
+    default int getMinimumSchemaNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    public default int getMinimumTableNameLength() {
+    default int getMinimumTableNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    public default int getMinimumColumnNameLength() {
+    default int getMinimumColumnNameLength() {
         return Integer.MAX_VALUE;
     }
 
-    public default boolean supportsILike() {
+    default boolean supportsILike() {
         return Boolean.FALSE;
     }
 
-    public default boolean needsTimeZone() {
+    default boolean needsTimeZone() {
         return Boolean.FALSE;
     }
 
@@ -378,11 +378,11 @@ public interface SqlDialect {
 
     void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
 
-    public default boolean isPostgresql() {
+    default boolean isPostgresql() {
         return false;
     }
 
-    public default void registerGisDataTypes(Connection connection) {
+    default void registerGisDataTypes(Connection connection) {
         //do nothing
     }
 
@@ -420,4 +420,8 @@ public interface SqlDialect {
     }
 
     List<String> sqlgTopologyCreationScripts();
+
+    default Long getPrimaryKeyStartValue() {
+        return 1l;
+    }
 }

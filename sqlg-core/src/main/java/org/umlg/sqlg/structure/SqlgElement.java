@@ -556,7 +556,7 @@ public abstract class SqlgElement implements Element {
                         if (aliasedNanos.isEmpty()) {
                             aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
                         }
-                        int nanos = resultSet.getInt(aliasedNanos.iterator().next());
+                        int nanos = resultSet.getInt(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
                         this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
                         break;
                     default:
@@ -573,13 +573,13 @@ public abstract class SqlgElement implements Element {
                         if (aliasedMonth.isEmpty()) {
                             aliasedMonth = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
                         }
-                        int months = resultSet.getInt(aliasedMonth.iterator().next());
+                        int months = resultSet.getInt(new ArrayList<>(aliasedMonth).get(aliasedMonth.size() - 1));
                         String dayColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
                         Collection<String> aliasedDay = threadLocalColumnNameAliasMap.get(dayColumn);
                         if (aliasedDay.isEmpty()) {
                             aliasedDay = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
                         }
-                        int days = resultSet.getInt(aliasedDay.iterator().next());
+                        int days = resultSet.getInt(new ArrayList<>(aliasedDay).get(aliasedDay.size() - 1));
                         this.properties.put(columnName, Period.of(years, months, days));
                         break;
                     default:
@@ -608,7 +608,7 @@ public abstract class SqlgElement implements Element {
                         if (zonedId.isEmpty()) {
                             zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
                         }
-                        String zoneId = resultSet.getString(zonedId.iterator().next());
+                        String zoneId = resultSet.getString(new ArrayList<>(zonedId).get(zonedId.size() - 1));
                         ZoneId zoneId1 = ZoneId.of(zoneId);
                         ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
                         this.properties.put(columnName, zonedDateTimeAGT);
