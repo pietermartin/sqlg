@@ -85,11 +85,10 @@
                     <includes>
                         <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
                         <!--<include>**/SqlgHsqldbProcessStandardTest.java</include>-->
-                        <!--<include>**/HsqldbAllTest.java</include>-->
-                        <!-- this is still failing on travis -->
+                        <include>**/HsqldbAllTest.java</include>
                         <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
                         <!--<include>**/SqlgPostgresProcessStandardTest.java</include>-->
-                        <include>**/PostgresAllTest.java</include>
+                        <!--<include>**/PostgresAllTest.java</include>-->
                     </includes>
                     <argLine>-Xmx3072m</argLine>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
