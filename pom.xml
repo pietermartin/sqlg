@@ -92,7 +92,7 @@
                         <!--<include>**/PostgresAllTest.java</include>-->
                     </includes>
                     <argLine>-Xmx2048m</argLine>
-                    <!--<argLine>-Xmx12288m</argLine>-->
+                    <argLine>-Xmx1024m</argLine>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <!--<argLine>-Xmx1024m</argLine>-->
                     <!--<argLine>-Xmx128m</argLine>-->
