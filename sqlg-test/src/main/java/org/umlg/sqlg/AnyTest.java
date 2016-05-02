@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
+import org.umlg.sqlg.test.travers.TestTraversals;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyUpgrade.class,
+        TestTraversals.class,
 //        TestHas.class,
 })
 public class AnyTest {

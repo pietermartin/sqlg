@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;

@@ -110,7 +110,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestBatchEdge.class,
         TestTopologyUpgrade.class,
         TestTraversals.class,
-        TestGremlinOptional.class
+        TestGremlinOptional.class,
         TestAlias.class,
         TestGithub.class
 })

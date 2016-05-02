@@ -66,6 +66,7 @@ public abstract class BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
+        this.gt = this.sqlgGraph.traversal();
     }
 
 //    @Before
@@ -246,14 +247,18 @@ public abstract class BaseTest {
         if (!muted) System.out.println("  post-strategy:" + traversal);
     }
 
-    protected void loadModern() {
-        Graph g = this.sqlgGraph;
+    protected void loadModern(SqlgGraph sqlgGraph) {
+        Graph g = sqlgGraph;
         final GraphReader initreader = GryoReader.build().create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
             initreader.readGraph(stream, g);
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
+    }
+
+    protected void loadModern() {
+        loadModern(this.sqlgGraph);
     }
 
     protected void loadGratefulDead() {
