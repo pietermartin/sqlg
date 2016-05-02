@@ -69,6 +69,12 @@ public abstract class BaseTest {
         this.gt = this.sqlgGraph.traversal();
     }
 
+    @After
+    public void after() throws Exception {
+        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+        this.sqlgGraph.close();
+    }
+
 //    @Before
     public void beforeOld() throws IOException {
         SqlgDataSource sqlgDataSource = null;
@@ -162,11 +168,6 @@ public abstract class BaseTest {
         this.gt = this.sqlgGraph.traversal();
     }
 
-    @After
-    public void after() throws Exception {
-        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
-        this.sqlgGraph.close();
-    }
 
     protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
         return this.sqlgGraph.traversal().V(v);
