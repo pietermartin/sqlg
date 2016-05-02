@@ -1,3 +1,4 @@
 #!/bin/sh
 
-mvn -q test
+#mvn -q test
+mvn -e test

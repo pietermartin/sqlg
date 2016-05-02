@@ -4,7 +4,7 @@ jdk:
   - oraclejdk8
 env:
     - MAVEN_OPTS="-Xms2048m -Xmx=2048m"
-#script: "./run-tests.sh"
+script: "./run-tests.sh"
 addons:
   postgresql: "9.4"
 before_script:
