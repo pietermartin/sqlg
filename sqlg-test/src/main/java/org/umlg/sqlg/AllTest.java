@@ -6,6 +6,7 @@ import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
+import org.umlg.sqlg.test.github.TestGithub;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
@@ -106,11 +107,12 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
         TestGremlinMod.class,
-        TestAlias.class,
         TestBatchEdge.class,
         TestTopologyUpgrade.class,
         TestTraversals.class,
         TestGremlinOptional.class
+        TestAlias.class,
+        TestGithub.class
 })
 public class AllTest {
 }

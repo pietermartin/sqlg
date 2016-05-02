@@ -5,6 +5,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.net.URL;
 
@@ -24,6 +25,12 @@ public class BaseBenchmark {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected void dropDb() {
+        SqlgGraph sqlgGraph = getSqlgGraph();
+        SqlgUtil.dropDb(sqlgGraph);
+        closeSqlgGraph(sqlgGraph);
     }
 
     protected SqlgGraph getSqlgGraph() {
