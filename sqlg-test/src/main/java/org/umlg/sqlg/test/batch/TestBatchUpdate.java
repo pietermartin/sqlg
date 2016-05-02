@@ -9,8 +9,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.List;
-
 /**
  * Date: 2015/12/14
  * Time: 8:56 PM
@@ -110,7 +108,7 @@ public class TestBatchUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertTrue(this.sqlgGraph.traversal().V().hasLabel("Person").hasNext());
         Assert.assertTrue(this.sqlgGraph.traversal().V().hasLabel("Person").next().property("names").isPresent());
-        Assert.assertArrayEquals(new String[]{"A", "B"}, this.sqlgGraph.traversal().V().hasLabel("Person").next().value("names"));
+        Assert.assertArrayEquals(new String[]{"A", "B"}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<String[]>value("names"));
         Assert.assertArrayEquals(new byte[]{1, 2}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<byte[]>value("bytes"));
         this.sqlgGraph.tx().normalBatchModeOn();
         v.property("names", new String[]{"C", "D"});
@@ -122,9 +120,9 @@ public class TestBatchUpdate extends BaseTest {
         v.property("shorts", new short[]{3, 4});
         v.property("bytes", new byte[]{3, 4});
         this.sqlgGraph.tx().commit();
-        Assert.assertArrayEquals(new String[]{"C", "D"}, this.sqlgGraph.traversal().V().hasLabel("Person").next().value("names"));
-        Assert.assertArrayEquals(new int[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().value("integers"));
-        Assert.assertArrayEquals(new boolean[]{false, false}, this.sqlgGraph.traversal().V().hasLabel("Person").next().value("booleans"));
+        Assert.assertArrayEquals(new String[]{"C", "D"}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<String[]>value("names"));
+        Assert.assertArrayEquals(new int[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<int[]>value("integers"));
+        Assert.assertArrayEquals(new boolean[]{false, false}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<boolean[]>value("booleans"));
         Assert.assertArrayEquals(new double[]{3d, 4d}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<double[]>value("doubles"), 0d);
         Assert.assertArrayEquals(new long[]{3l, 4l}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<long[]>value("longs"));
         Assert.assertArrayEquals(new float[]{3f, 4f}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<float[]>value("floats"), 0f);
