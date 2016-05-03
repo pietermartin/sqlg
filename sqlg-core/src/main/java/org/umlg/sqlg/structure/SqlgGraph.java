@@ -129,6 +129,10 @@ import java.util.stream.Stream;
         reason = "Takes too long, and too much memory at present.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
+        method = "g_V_both_both_count",
+        reason = "Travis times out.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.CountTest$Traversals",
         method = "g_V_repeatXoutX_timesX5X_asXaX_outXwrittenByX_asXbX_selectXa_bX_count",
         reason = "Takes too long")
 @Graph.OptOut(
@@ -155,6 +159,11 @@ import java.util.stream.Stream;
         test = "org.apache.tinkerpop.gremlin.groovy.engine.GremlinExecutorPerformanceTest",
         method = "executorEval",
         reason = "Takes too long")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
+        method = "shouldHaveStandardStringRepresentation",
+        reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
+
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.GraphTest",
         method = "shouldHaveStandardStringRepresentation",
