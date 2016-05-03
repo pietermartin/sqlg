@@ -1,24 +1,15 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2015/01/01
@@ -297,21 +288,6 @@ public class TestGremlinCompileV extends BaseTest {
         assertFalse(vertexTraversal(a2).out().hasNext());
         assertFalse(vertexTraversal(a1).in().hasNext());
         assertTrue(vertexTraversal(a2).in().hasNext());
-    }
-
-    @Test
-    public void g_V_both_both_count() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
-            reader.readGraph(stream, g);
-        }
-        final Traversal<Vertex, Long> traversal = get_g_V_both_both_count(g.traversal());
-        printTraversalForm(traversal);
-        assertEquals(new Long(1406914), traversal.next());
-        assertFalse(traversal.hasNext());
     }
 
     public Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {

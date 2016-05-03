@@ -44,12 +44,6 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 
-
-@Graph.OptOut(
-        test = "org.umlg.sqlg.test.upgrade.TestTopologyUpgrade",
-        method = "testGratefulDeadDBUpgrade",
-        reason = "Takes too long, //TODO")
-
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ExplainTest$Traversals",
         method = "g_V_outE_identity_inV_explain",
