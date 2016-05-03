@@ -3,7 +3,7 @@ language: java
 jdk:
   - oraclejdk8
 env:
-    - MAVEN_OPTS="-Xms2048m -Xmx=3072m"
+    - MAVEN_OPTS="-Xms2048m -Xmx3072m"
 script: "./run-tests.sh"
 addons:
   postgresql: "9.4"
