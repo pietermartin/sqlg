@@ -33,7 +33,7 @@ public class EmitTree<E extends SqlgElement> {
             return false;
         } else {
             for (EmitTree child : children) {
-                if (child.emit.getElementPlusEdgeId().equals(elementPlusEdgeId)) {
+                if (child.emit.getElement().equals(elementPlusEdgeId)) {
                     return true;
                 }
             }
@@ -43,7 +43,7 @@ public class EmitTree<E extends SqlgElement> {
 
     public EmitTree<E> getChild(Pair elementPlusEdgeId) {
         for (EmitTree child : children) {
-            if (child.emit.getElementPlusEdgeId().equals(elementPlusEdgeId)) {
+            if (child.emit.getElement().equals(elementPlusEdgeId)) {
                 return child;
             }
         }

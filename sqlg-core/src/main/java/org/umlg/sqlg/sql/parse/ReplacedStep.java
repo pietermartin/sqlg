@@ -42,10 +42,6 @@ public class ReplacedStep<S, E> {
     private boolean emitFirst;
     //indicate left join, coming from optional step optimization
     private boolean leftJoin;
-    //This is indicate whether a where clause is needed in the sql
-    private boolean isVertexGraphStep = false;
-    //This represents all tables filtered by TopologyStrategy
-    private Map<String, Map<String, PropertyType>> filteredAllTables;
 
     private ReplacedStep() {
 
@@ -61,11 +57,7 @@ public class ReplacedStep<S, E> {
         return replacedStep;
     }
 
-    public void setVertexGraphStep(boolean vertexGraphStep) {
-        isVertexGraphStep = vertexGraphStep;
-    }
-
-    public List<HasContainer> getHasContainers() {
+    List<HasContainer> getHasContainers() {
         return this.hasContainers;
     }
 
@@ -81,7 +73,7 @@ public class ReplacedStep<S, E> {
         return this.labels;
     }
 
-    public Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
+    private Set<SchemaTableTree> appendPath(SchemaTableTree schemaTableTree) {
         if (this.step instanceof VertexStep) {
             return appendPathForVertexStep(schemaTableTree);
         } else if (this.step instanceof EdgeVertexStep) {
@@ -180,12 +172,6 @@ public class ReplacedStep<S, E> {
             }
         }
 
-        //if emit and no where to traverse to add in a dummy.
-        //this is required for the SqlgGraphStepCompiled to know that their is no last element to emit
-        if (inLabelsToTraversers.isEmpty() && (vertexStep.getDirection() == Direction.BOTH || vertexStep.getDirection() == Direction.IN)) {
-            schemaTableTree.leafNodeIsEmpty();
-        }
-
         for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
@@ -223,11 +209,6 @@ public class ReplacedStep<S, E> {
                     }
                 }
             }
-        }
-        //if emit and no where to traverse to add in a dummy.
-        //this is required for the SqlgGraphStepCompiled to know that their is no last element to emit
-        if (outLabelsToTraversers.isEmpty() && (vertexStep.getDirection() == Direction.BOTH || vertexStep.getDirection() == Direction.OUT)) {
-            schemaTableTree.leafNodeIsEmpty();
         }
         return result;
     }
@@ -277,34 +258,6 @@ public class ReplacedStep<S, E> {
         }
         return result;
     }
-
-//    private Set<SchemaTableTree> filterVertexOnIdHasContainers(Set<SchemaTableTree> labelsToTraversers) {
-//        Set<SchemaTableTree> idFilteredResult = new HashSet<>(labelsToTraversers);
-//        //Filter out labels if there is a hasContainer on the id field
-//        for (HasContainer idHasContainer : getIdHasContainer()) {
-//            if (idHasContainer.getValue() instanceof Collection) {
-//                Collection<RecordId> coll = (Collection) idHasContainer.getValue();
-//                for (RecordId recordId : coll) {
-//                    SchemaTable hasContainerSchemaTable = RecordId.from(recordId.toString()).getSchemaTable();
-//                    hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + hasContainerSchemaTable.getTable());
-//                    for (SchemaTableTree schemaTableTree : labelsToTraversers) {
-//                        if (!schemaTableTree.getSchemaTable().equals(hasContainerSchemaTable)) {
-//                            idFilteredResult.remove(schemaTableTree);
-//                        }
-//                    }
-//                }
-//            } else {
-//                SchemaTable hasContainerSchemaTable = RecordId.from(idHasContainer.getValue().toString()).getSchemaTable();
-//                hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + hasContainerSchemaTable.getTable());
-//                for (SchemaTableTree schemaTableTree : labelsToTraversers) {
-//                    if (!schemaTableTree.getSchemaTable().equals(hasContainerSchemaTable)) {
-//                        idFilteredResult.remove(schemaTableTree);
-//                    }
-//                }
-//            }
-//        }
-//        return idFilteredResult;
-//    }
 
     private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction) {
         Preconditions.checkArgument(labelToTravers.isEdgeTable());
@@ -395,7 +348,7 @@ public class ReplacedStep<S, E> {
         return result;
     }
 
-    public Set<SchemaTableTree> calculatePathForStep(Set<SchemaTableTree> schemaTableTrees) {
+    Set<SchemaTableTree> calculatePathForStep(Set<SchemaTableTree> schemaTableTrees) {
         Set<SchemaTableTree> result = new HashSet<>();
         for (SchemaTableTree schemaTableTree : schemaTableTrees) {
             result.addAll(this.appendPath(schemaTableTree));
@@ -454,15 +407,13 @@ public class ReplacedStep<S, E> {
      * The hasContainers at this stage contains the {@link TopologyStrategy} from or without hasContainer.
      * After doing the filtering it must be removed from the hasContainers as it must not partake in sql generation.
      *
-     * @param sqlgGraph The graph.
-     * @param replacedStepDepth
      * @return A set of SchemaTableTree. A SchemaTableTree for each root label.
      */
     Set<SchemaTableTree> getRootSchemaTableTrees(SqlgGraph sqlgGraph, int replacedStepDepth) {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
 
-        this.filteredAllTables = SqlgUtil.filterHasContainers(this.schemaManager, this.hasContainers);
+        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.schemaManager, this.hasContainers);
 
         //This list is to reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();
@@ -527,7 +478,7 @@ public class ReplacedStep<S, E> {
 
         if (hasContainersWithLabel.isEmpty()) {
             //this means all vertices or edges except for as filtered by the TopologyStrategy
-            this.filteredAllTables.forEach((t, p) -> {
+            filteredAllTables.forEach((t, p) -> {
                 if ((graphStep.getReturnClass().isAssignableFrom(Vertex.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
                         (graphStep.getReturnClass().isAssignableFrom(Edge.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
 
@@ -541,9 +492,7 @@ public class ReplacedStep<S, E> {
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
-                            ReplacedStep.this.emitFirst,
                             ReplacedStep.this.leftJoin,
-                            ReplacedStep.this.isVertexGraphStep,
                             replacedStepDepth,
                             ReplacedStep.this.labels
                     );
@@ -560,7 +509,7 @@ public class ReplacedStep<S, E> {
                 String table = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
                 SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
 
-                if (this.filteredAllTables.containsKey(schemaTableForLabel.toString())) {
+                if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
 
                     List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
                     if (!groupedIds.isEmpty()) {
@@ -583,9 +532,7 @@ public class ReplacedStep<S, E> {
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
-                            ReplacedStep.this.emitFirst,
                             ReplacedStep.this.leftJoin,
-                            ReplacedStep.this.isVertexGraphStep,
                             replacedStepDepth,
                             ReplacedStep.this.labels
                     );

@@ -115,7 +115,7 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
 
                     Collection<Emit<E>> emits = labeledElements.get(label);
                     for (Emit<E> emit : emits) {
-                        E e = emit.getElementPlusEdgeId().getLeft();
+                        E e = emit.getElement();
                         Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);
                         if (allLabeledElementsAsSet == null) {
                             allLabeledElementsAsSet = new HashSet<>();
@@ -141,7 +141,7 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     }
                 }
             } else {
-                Emit<E> emit = new Emit<>(Pair.of(element, Optional.empty()), false, false, false);
+                Emit<E> emit = new Emit<>(element, false);
                 flattenedEmit.add(emit);
             }
         }

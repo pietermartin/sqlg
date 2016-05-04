@@ -66,8 +66,6 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         } else {
             TraversalHelper.insertAfterStep(sqlgStep, stepToReplace.getPreviousStep(), traversal);
         }
-        ReplacedStep r = (ReplacedStep) sqlgStep.getReplacedSteps().get(0);
-        r.setVertexGraphStep(true);
     }
 
     @Override

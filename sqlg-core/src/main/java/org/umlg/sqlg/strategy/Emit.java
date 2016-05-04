@@ -1,10 +1,7 @@
 package org.umlg.sqlg.strategy;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.umlg.sqlg.structure.SqlgElement;
-
-import java.util.Optional;
 
 /**
  * Created by pieter on 2015/10/26.
@@ -14,14 +11,10 @@ public class Emit<E extends SqlgElement> {
     boolean useCurrentEmitTree;
     boolean useOptionalTree;
     private Path path;
-    private Pair<E, Optional<Long>> elementPlusEdgeId;
-    private boolean untilFirst;
-    private boolean emitFirst;
+    private E element;
 
-    public Emit(Pair<E, Optional<Long>> elementPlusEdgeId, boolean untilFirst, boolean emitFirst, boolean useOptionalTree/*, int numberOfSteps*/) {
-        this.elementPlusEdgeId = elementPlusEdgeId;
-        this.untilFirst = untilFirst;
-        this.emitFirst = emitFirst;
+    public Emit(E element, boolean useOptionalTree) {
+        this.element = element;
         this.useOptionalTree = useOptionalTree;
     }
 
@@ -45,8 +38,8 @@ public class Emit<E extends SqlgElement> {
         this.path = path;
     }
 
-    public Pair<E, Optional<Long>> getElementPlusEdgeId() {
-        return elementPlusEdgeId;
+    public E getElement() {
+        return element;
     }
 
     @Override
@@ -56,7 +49,7 @@ public class Emit<E extends SqlgElement> {
             result += this.path.toString();
             result += ", ";
         }
-        result += elementPlusEdgeId.toString() + ", useCurrentEmitTree=" + this.useCurrentEmitTree;
+        result += element.toString() + ", useCurrentEmitTree=" + this.useCurrentEmitTree;
         return result;
     }
 }

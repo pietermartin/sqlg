@@ -103,16 +103,11 @@ public class SqlgUtil {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     sqlgElement.loadLabeledResultSet(resultSet, columnNameCountMap, schemaTableTree);
-                    //if its the first element in the stack then the edgeId is in the previous stack.
-                    //This means the edgeId is in the previous subQuery
-                    final Optional<Long> edgeId = edgeId(schemaTableTree, resultSet, subQueryCount, copyAliasMapHolder);
                     schemaTableTree.getLabels().forEach(
                             label -> result.put(
                                     label,
                                     new Emit<>(
-                                            Pair.of((E) sqlgElement, edgeId),
-                                            schemaTableTree.isUntilFirst(),
-                                            schemaTableTree.isEmitFirst(),
+                                            (E) sqlgElement,
                                             schemaTableTree.isOptionalLeftJoin()
                                     )
                             )

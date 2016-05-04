@@ -19,7 +19,7 @@ public interface SqlgStep<S extends SqlgElement, E extends SqlgElement> extends 
     default boolean rootEmitTreeContains(List<EmitTree<E>> rootEmitTrees, Emit emit) {
         for (EmitTree<E> rootEmitTree : rootEmitTrees) {
             if (rootEmitTree.getEmit().getPath().get(0).equals(emit.getPath().get(0)) &&
-                    rootEmitTree.getEmit().getElementPlusEdgeId().equals(emit.getElementPlusEdgeId())) {
+                    rootEmitTree.getEmit().getElement().equals(emit.getElement())) {
 
                 return true;
             }

@@ -59,7 +59,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
             if (this.iterator.hasNext()) {
                 Traverser.Admin<E> traverser;
                 Emit<E> emit = this.iterator.next();
-                E element = emit.getElementPlusEdgeId().getLeft();
+                E element = emit.getElement();
 
                 if (emit.getPath() != null) {
 

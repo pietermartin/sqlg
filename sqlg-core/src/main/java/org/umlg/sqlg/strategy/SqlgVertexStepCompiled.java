@@ -31,9 +31,6 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
     private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
-    private List<EmitTree<E>> rootEmitTrees = new ArrayList<>();
-    private EmitTree<E> currentEmitTree;
-//    private SqlGraphStepWithPathTraverser<E, E> sqlGraphStepWithPathTraverser;
 
     public SqlgVertexStepCompiled(final Traversal.Admin traversal) {
         super(traversal);
@@ -42,11 +39,11 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
-            if (this.currentEmitTree != null || this.iterator.hasNext()) {
+            if (this.iterator.hasNext()) {
 
                 Traverser.Admin<E> traverser = this.head;
                 Emit<E> emit = this.iterator.next();
-                E element = emit.getElementPlusEdgeId().getLeft();
+                E element = emit.getElement();
                 if (emit.getPath() != null) {
                     for (int i = 0; i < emit.getPath().size(); i++) {
                         E e = (E)emit.getPath().objects().get(i);
