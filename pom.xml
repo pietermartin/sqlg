@@ -88,8 +88,8 @@
                         <include>**/SqlgHsqldbStructureStandardTest.java</include>
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgPostgresProcessStandardTest.java</include>
+                        <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
+                        <!--<include>**/SqlgPostgresProcessStandardTest.java</include>-->
                         <include>**/PostgresAllTest.java</include>
                     </includes>
                     <!--<argLine>-Xmx1024m</argLine>-->
