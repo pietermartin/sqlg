@@ -26,7 +26,9 @@ import java.util.stream.Stream;
  */
 public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class, ChooseStep.class);
+    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
+            VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class, ChooseStep.class
+    );
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgGraphStepStrategy() {
