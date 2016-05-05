@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.travers.TestTraversals;
+import org.umlg.sqlg.test.vertexstep.edgevertexstep.TestVertexStepEdgeVertexStep;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,7 @@ import org.umlg.sqlg.test.travers.TestTraversals;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTraversals.class,
-//        TestHas.class,
+        TestVertexStepEdgeVertexStep.class,
 })
 public class AnyTest {
 }

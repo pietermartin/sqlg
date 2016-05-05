@@ -199,7 +199,6 @@ public class SchemaTableTree {
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
-//        schemaTableTree.emitFirst = emitFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
         return schemaTableTree;
     }

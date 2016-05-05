@@ -139,7 +139,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
                         ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
                         previousReplacedStep.setLeftJoin(true);
-                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        //Remove the path label if there is one. No need for 2 labels.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         pathCount++;

@@ -10,10 +10,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Array;
@@ -265,36 +265,7 @@ public abstract class SqlgElement implements Element {
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
         SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        AliasMapHolder aliasMapHolder = rootSchemaTableTree.getAliasMapHolder();
-        List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
-        for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
-            String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
-            try {
-                Connection conn = this.sqlgGraph.tx().getConnection();
-                if (logger.isDebugEnabled()) {
-                    logger.debug(sql);
-                }
-                try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
-                    preparedStatement.setLong(1, this.recordId.getId());
-                    SqlgUtil.setParametersOnStatement(this.sqlgGraph, distinctQueryStack, conn, preparedStatement, 2);
-                    ResultSet resultSet = preparedStatement.executeQuery();
-                    ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
-                    SqlgUtil.loadResultSetIntoResultIterator(
-                            this.sqlgGraph,
-                            resultSetMetaData, resultSet,
-                            rootSchemaTableTree, distinctQueryStack,
-                            aliasMapHolder,
-                            resultIterator);
-
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            } finally {
-                if (rootSchemaTableTree != null)
-                    rootSchemaTableTree.resetThreadVars();
-            }
-        }
+        SqlgSqlExecutor.executeRegularQueries(this.sqlgGraph, rootSchemaTableTree, this.recordId, resultIterator);
         return resultIterator;
     }
 
