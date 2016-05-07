@@ -51,7 +51,8 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                         traverser.addLabels(emit.getPath().labels().get(i));
                     }
                 } else {
-                    traverser = this.head.split(element, EmptyStep.instance());
+                    traverser.set(element);
+//                    traverser = traverser.split(element, EmptyStep.instance());
                 }
 
                 return traverser;

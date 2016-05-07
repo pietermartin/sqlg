@@ -72,14 +72,20 @@ public class GremlinParser<S extends Element, E extends Element> {
             throw new IllegalStateException("is this really still firing!!!");
         } else {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
-            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size());
+            //replacedSteps contains a fake label representing the incoming vertex for the SqlgVertexStepStrategy.
+            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size() - 1);
+            if (replacedSteps.get(0).isLeftJoin()) {
+                rootSchemaTableTree.setOptionalLeftJoin(true);
+            }
             rootSchemaTableTree.initializeAliasColumnNameMaps();
             //TODO what about the emit, untilFirst flag????
             rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
             schemaTableTrees.add(rootSchemaTableTree);
             for (ReplacedStep<S, E> replacedStep : replacedSteps) {
-                //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
-                schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+                if (!replacedStep.isFake()) {
+                    //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
+                    schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+                }
             }
             rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
             rootSchemaTableTree.removeNodesInvalidatedByHas();

@@ -266,6 +266,7 @@ public abstract class SqlgElement implements Element {
         SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
         SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         SqlgSqlExecutor.executeRegularQueries(this.sqlgGraph, rootSchemaTableTree, this.recordId, resultIterator);
+        SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, rootSchemaTableTree, this.recordId, resultIterator);
         return resultIterator;
     }
 

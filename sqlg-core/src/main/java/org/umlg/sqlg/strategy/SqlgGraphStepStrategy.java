@@ -73,6 +73,12 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
+    protected ReplacedStep getPreviousReplacedStep(SqlgStep sqlgStep) {
+        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+        return previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+    }
+
+    @Override
     protected boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep) {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass) && !(stepClass.isAssignableFrom(GraphStep.class) && alreadyReplacedGraphStep);
     }

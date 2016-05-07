@@ -111,7 +111,19 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
 
                     pathCount++;
+
                     ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    if (sqlgStep == null) {
+                        sqlgStep = constructSqlgStep(traversal, step);
+                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
+                        sqlgStep.addReplacedStep(replacedStep);
+                        handleFirstReplacedStep(step, sqlgStep, traversal);
+                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
+                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
+                        }
+                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+                    }
+
                     if (emit) {
                         //the previous step must be marked as emit.
                         //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
@@ -136,8 +148,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
                     if (chooseStepAdded) {
                         pathCount--;
-                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+                        ReplacedStep previousReplacedStep = getPreviousReplacedStep(sqlgStep);
                         previousReplacedStep.setLeftJoin(true);
                         //Remove the path label if there is one. No need for 2 labels.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
@@ -150,16 +161,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         }
                     }
-                    if (previous == null) {
-                        sqlgStep = constructSqlgStep(traversal, step);
-                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
-                        sqlgStep.addReplacedStep(replacedStep);
-                        handleFirstReplacedStep(step, sqlgStep, traversal);
-                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
-                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
-                        }
-                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
-                    } else {
+                    if (previous != null) {
                         sqlgStep.addReplacedStep(replacedStep);
                         if (!repeatStepAdded && !chooseStepAdded) {
                             //its not in the traversal, so do not remove it
@@ -183,6 +185,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
+    protected abstract ReplacedStep getPreviousReplacedStep(SqlgStep sqlgStep);
 
     private boolean unoptimizableChooseStep(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());

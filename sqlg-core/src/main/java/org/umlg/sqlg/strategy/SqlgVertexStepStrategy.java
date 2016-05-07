@@ -51,7 +51,22 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
-        return new SqlgVertexStepCompiled(traversal);
+        SqlgVertexStepCompiled sqlgStep = new SqlgVertexStepCompiled(traversal);
+        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager());
+        sqlgStep.addReplacedStep(replacedStep);
+        return sqlgStep;
+    }
+
+    /**
+     * For SqlgVertexStepStrategy there is a fake ReplacedStep inserted before the current step shifteing the previous
+     * ReplacedStep's position by 1.
+     * @param sqlgStep
+     * @return
+     */
+    @Override
+    protected ReplacedStep getPreviousReplacedStep(SqlgStep sqlgStep) {
+        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+        return previousReplacedSteps.get(previousReplacedSteps.size() - 2);
     }
 
     @Override
