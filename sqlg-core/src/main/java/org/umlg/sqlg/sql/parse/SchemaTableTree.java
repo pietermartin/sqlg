@@ -1932,6 +1932,10 @@ public class SchemaTableTree {
         return untilFirst;
     }
 
+    public void setUntilFirst(boolean untilFirst) {
+        this.untilFirst = untilFirst;
+    }
+
     int getTmpTableAliasCounter() {
         return tmpTableAliasCounter;
     }

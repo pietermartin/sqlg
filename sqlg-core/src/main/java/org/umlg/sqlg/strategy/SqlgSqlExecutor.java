@@ -122,7 +122,11 @@ public class SqlgSqlExecutor {
                     logger.debug(sql);
                 }
                 try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
-                    SqlgUtil.setParametersOnStatement(sqlgGraph, leftJoinQuery, conn, preparedStatement, 1);
+                    int parameterCount = 1;
+                    if (recordId != null) {
+                        preparedStatement.setLong(parameterCount++, recordId.getId());
+                    }
+                    SqlgUtil.setParametersOnStatement(sqlgGraph, leftJoinQuery, conn, preparedStatement, parameterCount);
                     ResultSet resultSet = preparedStatement.executeQuery();
                     ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 

@@ -129,17 +129,19 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         //the previous step must be marked as emit.
                         //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
                         //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
-                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-                        ReplacedStep previousReplacedStep;
+                        ReplacedStep previousReplacedStep = getPreviousReplacedStep(sqlgStep);
+//                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+//                        ReplacedStep previousReplacedStep;
                         if (emitFirst) {
-                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+//                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
+//                            previousReplacedStep = getPreviousReplacedStep(sqlgStep);
                             pathCount--;
                         } else {
                             previousReplacedStep = replacedStep;
                         }
                         previousReplacedStep.setEmit(true);
                         previousReplacedStep.setUntilFirst(untilFirst);
-                        previousReplacedStep.setEmitFirst(emitFirst);
+//                        previousReplacedStep.setEmitFirst(emitFirst);
                         previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);

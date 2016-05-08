@@ -39,7 +39,6 @@ public class ReplacedStep<S, E> {
     private int depth;
     private boolean emit;
     private boolean untilFirst;
-    private boolean emitFirst;
     //indicate left join, coming from optional step optimization
     private boolean leftJoin;
     private boolean fake;
@@ -634,14 +633,6 @@ public class ReplacedStep<S, E> {
 
     public void setUntilFirst(boolean untilFirst) {
         this.untilFirst = untilFirst;
-    }
-
-    public boolean isEmitFirst() {
-        return emitFirst;
-    }
-
-    public void setEmitFirst(boolean emitFirst) {
-        this.emitFirst = emitFirst;
     }
 
     public int getDepth() {
