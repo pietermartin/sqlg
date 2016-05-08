@@ -197,8 +197,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    protected abstract ReplacedStep getPreviousReplacedStep(SqlgStep sqlgStep);
-
     private boolean unoptimizableChooseStep(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         Step step = toCome.get(0);

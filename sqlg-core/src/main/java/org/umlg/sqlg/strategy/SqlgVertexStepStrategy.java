@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -24,7 +25,8 @@ import java.util.stream.Stream;
  */
 public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
+    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, EdgeOtherVertexStep.class);
+//    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgVertexStepStrategy() {
@@ -55,18 +57,6 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager());
         sqlgStep.addReplacedStep(replacedStep);
         return sqlgStep;
-    }
-
-    /**
-     * For SqlgVertexStepStrategy there is a fake ReplacedStep inserted before the current step shifteing the previous
-     * ReplacedStep's position by 1.
-     * @param sqlgStep
-     * @return
-     */
-    @Override
-    protected ReplacedStep getPreviousReplacedStep(SqlgStep sqlgStep) {
-        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-        return previousReplacedSteps.get(previousReplacedSteps.size() - 2);
     }
 
     @Override

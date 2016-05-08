@@ -23,6 +23,8 @@ import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
+import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalEdgeOtherVertexStep;
+import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalEdgeVertexStep;
 import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepOptional;
 import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatStep;
 
@@ -116,7 +118,9 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestAlias.class,
         TestGithub.class,
         TestLocalVertexStepOptional.class,
-        TestLocalVertexStepRepeatStep.class
+        TestLocalVertexStepRepeatStep.class,
+        TestLocalEdgeVertexStep.class,
+        TestLocalEdgeOtherVertexStep.class
 })
 public class AllTest {
 }
