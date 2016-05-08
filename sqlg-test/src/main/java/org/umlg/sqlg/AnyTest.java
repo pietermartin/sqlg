@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.compilelocalstep.TestLocalStepCompile;
+import org.umlg.sqlg.test.localvertexstep.TestLocalRepeatStep;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.compilelocalstep.TestLocalStepCompile;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLocalStepCompile.class,
+        TestLocalRepeatStep.class,
 //        TestHas.class,
 })
 public class AnyTest {
