@@ -199,7 +199,6 @@ public class SchemaTableTree {
         schemaTableTree.labels = Collections.unmodifiableSet(labels);
         schemaTableTree.emit = emit;
         schemaTableTree.untilFirst = untilFirst;
-//        schemaTableTree.emitFirst = emitFirst;
         schemaTableTree.optionalLeftJoin = leftJoin;
         return schemaTableTree;
     }
@@ -1931,6 +1930,10 @@ public class SchemaTableTree {
 
     public boolean isUntilFirst() {
         return untilFirst;
+    }
+
+    public void setUntilFirst(boolean untilFirst) {
+        this.untilFirst = untilFirst;
     }
 
     int getTmpTableAliasCounter() {

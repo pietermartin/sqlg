@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
@@ -54,7 +55,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     public BaseSqlgStrategy() {
     }
 
-    protected abstract void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
+    protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
 
     protected abstract void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
@@ -80,14 +81,18 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
             if (step instanceof RepeatStep) {
                 try {
                     //flatten the RepeatStep's repetitions into the stepIterator
-                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep)step, traversal, repeatStepsAdded);
+                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep) step, traversal, repeatStepsAdded);
+                    //This sucks again, this logic is for times(0) where the incoming vertex needs to be returned.
+                    if (this instanceof SqlgVertexStepStrategy && !repeatStepAdded) {
+                        traversal.addStep(new IdentityStep<>(traversal));
+                    }
                 } catch (UnoptimizableException e) {
                     //swallow as it is used for process flow only.
                     return;
                 }
             } else if (step instanceof ChooseStep) {
                 try {
-                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep)step, traversal);
+                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep) step, traversal);
                 } catch (UnoptimizableException e) {
                     //swallow as it is used for process flow only.
                     return;
@@ -111,7 +116,26 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
 
                     pathCount++;
+
                     ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    if (sqlgStep == null) {
+                        sqlgStep = constructSqlgStep(traversal, step);
+                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
+                        //TODO this suck but brain is stuck.
+                        if (this instanceof SqlgGraphStepStrategy) {
+                            sqlgStep.addReplacedStep(replacedStep);
+                        } else if (this instanceof SqlgVertexStepStrategy) {
+                            previous = step;
+                        } else {
+                            throw new IllegalStateException("Unknown strategy " + this.getClass().getName());
+                        }
+                        replaceStepInTraversal(step, sqlgStep, traversal);
+                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
+                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
+                        }
+                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+                    }
+
                     if (emit) {
                         //the previous step must be marked as emit.
                         //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
@@ -126,7 +150,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         }
                         previousReplacedStep.setEmit(true);
                         previousReplacedStep.setUntilFirst(untilFirst);
-                        previousReplacedStep.setEmitFirst(emitFirst);
                         previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
@@ -139,30 +162,21 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
                         ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
                         previousReplacedStep.setLeftJoin(true);
-                        //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
+                        //Remove the path label if there is one. No need for 2 labels.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         pathCount++;
                     }
                     if (replacedStep.getLabels().isEmpty()) {
-                        boolean precedesPathStep = precedesPathOrTreeStep(steps, stepIterator.nextIndex());
+                        boolean precedesPathStep = precedesPathOrTreeStep(traversal, steps, stepIterator.nextIndex());
                         if (precedesPathStep) {
                             replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         }
                     }
-                    if (previous == null) {
-                        sqlgStep = constructSqlgStep(traversal, step);
-                        alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
+                    if (previous != null) {
                         sqlgStep.addReplacedStep(replacedStep);
-                        handleFirstReplacedStep(step, sqlgStep, traversal);
-                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
-                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
-                        }
-                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
-                    } else {
-                        sqlgStep.addReplacedStep(replacedStep);
-                        if (!repeatStepAdded && !chooseStepAdded) {
-                            //its not in the traversal, so do not remove it
+                        int index = TraversalHelper.stepIndex(step, traversal);
+                        if (index != -1) {
                             traversal.removeStep(step);
                         }
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
@@ -183,7 +197,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-
     private boolean unoptimizableChooseStep(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         Step step = toCome.get(0);
@@ -193,15 +206,15 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         List<Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
         Preconditions.checkState(traversalAdmins.size() == 2);
 
-        Traversal.Admin<?,?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
+        Traversal.Admin<?, ?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
         List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
         predicateSteps.remove(predicate.getSteps().size() - 1);
 
-        Traversal.Admin<?,?> globalChildOne = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(0);
+        Traversal.Admin<?, ?> globalChildOne = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(0);
         List<Step> globalChildOneSteps = new ArrayList<>(globalChildOne.getSteps());
         globalChildOneSteps.remove(globalChildOneSteps.size() - 1);
 
-        Traversal.Admin<?,?> globalChildTwo = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(1);
+        Traversal.Admin<?, ?> globalChildTwo = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(1);
         List<Step> globalChildTwoSteps = new ArrayList<>(globalChildTwo.getSteps());
         globalChildTwoSteps.remove(globalChildTwoSteps.size() - 1);
 
@@ -264,7 +277,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         }
     }
 
-    protected boolean canNotBeOptimized(List<Step> steps, int index) {
+    boolean canNotBeOptimized(List<Step> steps, int index) {
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
                 s.getClass().equals(Order.class) ||
@@ -273,7 +286,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         s.getClass().equals(SackStep.class));
     }
 
-    protected boolean precedesPathOrTreeStep(List<Step> steps, int index) {
+    private boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal, List<Step> steps, int index) {
+        if (traversal.getParent() != null && traversal.getParent() instanceof LocalStep) {
+            LocalStep localStep = (LocalStep) traversal.getParent();
+            if (precedesPathOrTreeStep(localStep.getTraversal(), localStep.getTraversal().getSteps(), 0)) {
+                return true;
+            }
+        }
         List<Step> toCome = steps.subList(index, steps.size());
         return toCome.stream().anyMatch(s ->
                 (s.getClass().equals(PathStep.class) ||
@@ -284,7 +303,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         s.getClass().equals(EdgeOtherVertexStep.class)));
     }
 
-    protected void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
+    private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();

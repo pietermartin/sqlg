@@ -39,12 +39,30 @@ public class ReplacedStep<S, E> {
     private int depth;
     private boolean emit;
     private boolean untilFirst;
-    private boolean emitFirst;
     //indicate left join, coming from optional step optimization
     private boolean leftJoin;
+    private boolean fake;
 
     private ReplacedStep() {
 
+    }
+
+    /**
+     * Used for SqlgVertexStepStrategy. It is a fake ReplacedStep to simulate the incoming vertex from which the traversal continues.
+     * @param schemaManager
+     * @param <S>
+     * @param <E>
+     * @return
+     */
+    public static <S, E> ReplacedStep from(SchemaManager schemaManager) {
+        ReplacedStep replacedStep = new ReplacedStep<>();
+        replacedStep.step = null;
+        replacedStep.labels = new HashSet<>();
+        replacedStep.hasContainers = new ArrayList<>();
+        replacedStep.comparators = new ArrayList<>();
+        replacedStep.schemaManager = schemaManager;
+        replacedStep.fake = true;
+        return replacedStep;
     }
 
     public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, int pathCount) {
@@ -54,7 +72,12 @@ public class ReplacedStep<S, E> {
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
         replacedStep.schemaManager = schemaManager;
+        replacedStep.fake = false;
         return replacedStep;
+    }
+
+    public boolean isFake() {
+        return fake;
     }
 
     List<HasContainer> getHasContainers() {
@@ -386,7 +409,11 @@ public class ReplacedStep<S, E> {
 
     @Override
     public String toString() {
-        return this.step.toString() + " :: " + this.hasContainers.toString();
+        if (this.step != null) {
+            return this.step.toString() + " :: " + this.hasContainers.toString();
+        } else {
+            return "fakeStep :: " + this.hasContainers.toString();
+        }
     }
 
     public boolean isGraphStep() {
@@ -606,14 +633,6 @@ public class ReplacedStep<S, E> {
 
     public void setUntilFirst(boolean untilFirst) {
         this.untilFirst = untilFirst;
-    }
-
-    public boolean isEmitFirst() {
-        return emitFirst;
-    }
-
-    public void setEmitFirst(boolean emitFirst) {
-        this.emitFirst = emitFirst;
     }
 
     public int getDepth() {

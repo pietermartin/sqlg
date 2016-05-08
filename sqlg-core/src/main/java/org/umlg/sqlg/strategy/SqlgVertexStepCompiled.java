@@ -51,9 +51,8 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                         traverser.addLabels(emit.getPath().labels().get(i));
                     }
                 } else {
-                    traverser = this.head.split(element, EmptyStep.instance());
+                    traverser.set(element);
                 }
-
                 return traverser;
 
             } else {
@@ -101,8 +100,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
     @Override
     public void addReplacedStep(ReplacedStep replacedStep) {
-        //depth is + 1 because there is always a root node who's depth is 0
-        replacedStep.setDepth(this.replacedSteps.size() + 1);
+        replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
     }
 

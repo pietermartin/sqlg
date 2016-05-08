@@ -60,7 +60,7 @@ public class GremlinParser<S extends Element, E extends Element> {
 
     /**
      * Constructs the label paths from the given schemaTable to the leaf vertex labels for the gremlin query.
-     * For each path Sqlg will execute a sql query. The union of the queries is the result the gremlin query.
+     * For each path Sqlg will executeRegularQueries a sql query. The union of the queries is the result the gremlin query.
      * The vertex labels can be calculated from the steps.
      *
      * @param schemaTable
@@ -72,16 +72,23 @@ public class GremlinParser<S extends Element, E extends Element> {
             throw new IllegalStateException("is this really still firing!!!");
         } else {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
-            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size());
+            //replacedSteps contains a fake label representing the incoming vertex for the SqlgVertexStepStrategy.
+            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size() - 1);
+            rootSchemaTableTree.setOptionalLeftJoin(replacedSteps.get(0).isLeftJoin());
+            rootSchemaTableTree.setEmit(replacedSteps.get(0).isEmit());
+            rootSchemaTableTree.setUntilFirst(replacedSteps.get(0).isUntilFirst());
+//            rootSchemaTableTree.set(replacedSteps.get(0).isEmit());
             rootSchemaTableTree.initializeAliasColumnNameMaps();
             //TODO what about the emit, untilFirst flag????
             rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
             schemaTableTrees.add(rootSchemaTableTree);
             for (ReplacedStep<S, E> replacedStep : replacedSteps) {
-                //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
-                schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+                if (!replacedStep.isFake()) {
+                    //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
+                    schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+                }
             }
-            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
+            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size() - 1);
             rootSchemaTableTree.removeNodesInvalidatedByHas();
             return rootSchemaTableTree;
         }

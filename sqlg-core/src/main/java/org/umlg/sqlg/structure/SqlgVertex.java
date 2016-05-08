@@ -645,12 +645,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                     for (SchemaTable joinSchemaTable : tables) {
 
-                        StringBuilder sql = new StringBuilder("SELECT b.*");
-                        sql.append(", a.");
+                        StringBuilder sql = new StringBuilder("\nSELECT\n\tb.*");
+                        sql.append(",\n\ta.");
                         switch (d) {
                             case IN:
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-                                sql.append(" FROM ");
+                                sql.append("\nFROM\n\t");
 
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                                 sql.append(".");
@@ -665,7 +665,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
                                 sql.append(" = b.");
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-                                sql.append(" WHERE ");
+                                sql.append("\nWHERE\n\t");
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
                                 sql.append(" = ? ");
 
@@ -681,7 +681,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 break;
                             case OUT:
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                                sql.append(" FROM ");
+                                sql.append("\nFROM\n\t");
 
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                                 sql.append(".");
@@ -696,7 +696,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(joinSchemaTable.getSchema() + "." + joinSchemaTable.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
                                 sql.append(" = b.");
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-                                sql.append(" WHERE ");
+                                sql.append("\nWHERE\n\t");
                                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
                                 sql.append(" = ? ");
 

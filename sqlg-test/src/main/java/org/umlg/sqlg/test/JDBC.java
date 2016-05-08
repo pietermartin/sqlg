@@ -335,7 +335,7 @@ public class JDBC {
      * TODO: Handle errors to ensure all objects are dropped,
      * probably requires interaction with its caller.
      *
-     * @param s        Statement object used to execute the DROP commands.
+     * @param s        Statement object used to executeRegularQueries the DROP commands.
      * @param rs       DatabaseMetaData ResultSet
      * @param schema   Schema the objects are contained in
      * @param mdColumn The column name used to extract the object's

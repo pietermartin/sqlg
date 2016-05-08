@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -24,7 +25,8 @@ import java.util.stream.Stream;
  */
 public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
+    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, EdgeOtherVertexStep.class);
+//    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgVertexStepStrategy() {
@@ -51,7 +53,10 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
-        return new SqlgVertexStepCompiled(traversal);
+        SqlgVertexStepCompiled sqlgStep = new SqlgVertexStepCompiled(traversal);
+        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager());
+        sqlgStep.addReplacedStep(replacedStep);
+        return sqlgStep;
     }
 
     @Override
@@ -60,7 +65,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
+    protected void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
         if (traversal.getSteps().contains(stepToReplace)) {
             TraversalHelper.replaceStep(stepToReplace, sqlgStep, traversal);
         } else {
