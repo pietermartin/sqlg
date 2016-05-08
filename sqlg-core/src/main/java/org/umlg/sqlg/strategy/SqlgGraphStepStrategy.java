@@ -84,7 +84,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected void handleFirstReplacedStep(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
+    protected void replaceStepInTraversal(Step firstStep, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
         TraversalHelper.replaceStep(firstStep, sqlgStep, traversal);
     }
 

@@ -1268,7 +1268,6 @@ public class TestRepeatStepGraphOut extends BaseTest {
         List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").times(3).repeat(out()).path().toList();
         assertEquals(1, paths.size());
         assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)));
-        System.out.println("--------------------");
         paths = this.sqlgGraph.traversal().V().hasLabel("A").repeat(out()).times(4).path().toList();
         assertEquals(0, paths.size());
     }

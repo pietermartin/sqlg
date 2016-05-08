@@ -75,7 +75,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
+    protected void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal) {
         if (traversal.getSteps().contains(stepToReplace)) {
             TraversalHelper.replaceStep(stepToReplace, sqlgStep, traversal);
         } else {

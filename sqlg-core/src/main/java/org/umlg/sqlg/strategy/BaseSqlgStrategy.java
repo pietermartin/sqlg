@@ -55,7 +55,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     public BaseSqlgStrategy() {
     }
 
-    protected abstract void handleFirstReplacedStep(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
+    protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
 
     protected abstract void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
 
@@ -81,14 +81,18 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
             if (step instanceof RepeatStep) {
                 try {
                     //flatten the RepeatStep's repetitions into the stepIterator
-                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep)step, traversal, repeatStepsAdded);
+                    repeatStepAdded = flattenRepeatStep(steps, stepIterator, (RepeatStep) step, traversal, repeatStepsAdded);
+                    //This sucks again, this logic is for times(0) where the incoming vertex needs to be returned.
+                    if (this instanceof SqlgVertexStepStrategy && !repeatStepAdded) {
+                        traversal.addStep(new IdentityStep<>(traversal));
+                    }
                 } catch (UnoptimizableException e) {
                     //swallow as it is used for process flow only.
                     return;
                 }
             } else if (step instanceof ChooseStep) {
                 try {
-                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep)step, traversal);
+                    chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep) step, traversal);
                 } catch (UnoptimizableException e) {
                     //swallow as it is used for process flow only.
                     return;
@@ -117,8 +121,15 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     if (sqlgStep == null) {
                         sqlgStep = constructSqlgStep(traversal, step);
                         alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
-                        sqlgStep.addReplacedStep(replacedStep);
-                        handleFirstReplacedStep(step, sqlgStep, traversal);
+                        //TODO this suck but brain is stuck.
+                        if (this instanceof SqlgGraphStepStrategy) {
+                            sqlgStep.addReplacedStep(replacedStep);
+                        } else if (this instanceof SqlgVertexStepStrategy) {
+                            previous = step;
+                        } else {
+                            throw new IllegalStateException("Unknown strategy " + this.getClass().getName());
+                        }
+                        replaceStepInTraversal(step, sqlgStep, traversal);
                         if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
                             addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
                         }
@@ -129,19 +140,16 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         //the previous step must be marked as emit.
                         //this is because emit() before repeat() indicates that the incoming element for every repeat must be emitted.
                         //i.e. g.V().hasLabel('A').emit().repeat(out('b', 'c')) means A and B must be emitted
-                        ReplacedStep previousReplacedStep = getPreviousReplacedStep(sqlgStep);
-//                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
-//                        ReplacedStep previousReplacedStep;
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+                        ReplacedStep previousReplacedStep;
                         if (emitFirst) {
-//                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
-//                            previousReplacedStep = getPreviousReplacedStep(sqlgStep);
+                            previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
                             pathCount--;
                         } else {
                             previousReplacedStep = replacedStep;
                         }
                         previousReplacedStep.setEmit(true);
                         previousReplacedStep.setUntilFirst(untilFirst);
-//                        previousReplacedStep.setEmitFirst(emitFirst);
                         previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
@@ -151,7 +159,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
                     if (chooseStepAdded) {
                         pathCount--;
-                        ReplacedStep previousReplacedStep = getPreviousReplacedStep(sqlgStep);
+                        List<ReplacedStep> previousReplacedSteps = sqlgStep.getReplacedSteps();
+                        ReplacedStep previousReplacedStep = previousReplacedSteps.get(previousReplacedSteps.size() - 1);
                         previousReplacedStep.setLeftJoin(true);
                         //Remove the path label if there is one. No need for 2 labels.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
@@ -166,8 +175,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
                     if (previous != null) {
                         sqlgStep.addReplacedStep(replacedStep);
-                        if (!repeatStepAdded && !chooseStepAdded) {
-                            //its not in the traversal, so do not remove it
+                        int index = TraversalHelper.stepIndex(step, traversal);
+                        if (index != -1) {
                             traversal.removeStep(step);
                         }
                         collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
@@ -199,15 +208,15 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         List<Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
         Preconditions.checkState(traversalAdmins.size() == 2);
 
-        Traversal.Admin<?,?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
+        Traversal.Admin<?, ?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
         List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
         predicateSteps.remove(predicate.getSteps().size() - 1);
 
-        Traversal.Admin<?,?> globalChildOne = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(0);
+        Traversal.Admin<?, ?> globalChildOne = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(0);
         List<Step> globalChildOneSteps = new ArrayList<>(globalChildOne.getSteps());
         globalChildOneSteps.remove(globalChildOneSteps.size() - 1);
 
-        Traversal.Admin<?,?> globalChildTwo = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(1);
+        Traversal.Admin<?, ?> globalChildTwo = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(1);
         List<Step> globalChildTwoSteps = new ArrayList<>(globalChildTwo.getSteps());
         globalChildTwoSteps.remove(globalChildTwoSteps.size() - 1);
 
@@ -282,7 +291,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     private boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal, List<Step> steps, int index) {
         if (traversal.getParent() != null && traversal.getParent() instanceof LocalStep) {
             LocalStep localStep = (LocalStep) traversal.getParent();
-            if (precedesPathOrTreeStep(localStep.getTraversal(), localStep.getTraversal().getSteps(), index)) {
+            if (precedesPathOrTreeStep(localStep.getTraversal(), localStep.getTraversal().getSteps(), 0)) {
                 return true;
             }
         }
