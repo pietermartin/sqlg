@@ -1,5 +1,6 @@
 ##1.2.0
 
+* Add all optimizations to LocalStep.
 * Refactor `RepeatStep` optimization to follow the same sql pattern as the `OptionalStep` optimization.
 * Optimized the `OptionalStep`.
 * Optimize `hasId(...)`
