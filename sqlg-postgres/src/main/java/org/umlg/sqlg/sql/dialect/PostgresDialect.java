@@ -31,10 +31,7 @@ import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
@@ -163,10 +160,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
             for (SchemaTable schemaTable : vertexCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
+                //get one vertex's properties, its needed later
+                Map<String, Object> keyValues = vertices.getRight().values().iterator().next();
+
                 //insert the labeled vertices
                 long endHigh;
                 long numberInserted;
-                try (InputStream is = mapToLabeledVertex_InputStream(vertices)) {
+                try (InputStream is = mapVertexToInputStream(vertices)) {
                     StringBuffer sql = new StringBuffer();
                     sql.append("COPY ");
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
@@ -188,7 +188,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(", ");
                             }
                             count++;
-                            sql.append(maybeWrapInQoutes(key));
+                            Object value = keyValues.get(key);
+                            appendKeyForStream(value, sql, key);
                         }
                     }
                     sql.append(")");
@@ -233,9 +234,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
             for (SchemaTable schemaTable : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(schemaTable);
+
+                //get one edge's properties, its needed later
+                Map<String, Object> keyValues = triples.getRight().values().iterator().next().getRight();
+
                 long endHigh;
                 long numberInserted;
-                try (InputStream is = mapToEdge_InputStream(triples)) {
+                try (InputStream is = mapEdgeToInputStream(triples)) {
                     StringBuffer sql = new StringBuffer();
                     sql.append("COPY ");
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
@@ -252,7 +257,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(", ");
                             }
                             count++;
-                            sql.append(maybeWrapInQoutes(key));
+                            Object value = keyValues.get(key);
+                            appendKeyForStream(value, sql, key);
                         }
                         break;
                     }
@@ -588,7 +594,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(", ");
                 }
                 count++;
-                sql.append(maybeWrapInQoutes(key));
+                Object value = keyValueMap.get(key);
+                appendKeyForStream(value, sql, key);
             }
         }
         sql.append(")");
@@ -603,6 +610,57 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
         return sql.toString();
     }
+
+    @Override
+    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+        StringBuffer sql = new StringBuffer();
+        sql.append("COPY ");
+        sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + sqlgEdge.getTable()));
+        sql.append(" (");
+        sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(", ");
+        sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+        int count = 1;
+        for (String key : keyValueMap.keySet()) {
+            if (count <= keyValueMap.size()) {
+                sql.append(", ");
+            }
+            count++;
+            Object value = keyValueMap.get(key);
+            appendKeyForStream(value, sql, key);
+        }
+        sql.append(") ");
+
+        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(COPY_COMMAND_DELIMITER);
+        sql.append("' ");
+        sql.append("QUOTE ");
+        sql.append(COPY_COMMAND_QUOTE);
+        sql.append(";");
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        return sql.toString();
+    }
+
+    private void appendKeyForStream(Object value, StringBuffer sql, String key) {
+        PropertyType propertyType = PropertyType.from(value);
+        String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyType);
+        int countPerKey = 1;
+        for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+            if (countPerKey > 1) {
+                sql.append(maybeWrapInQoutes(key + propertyType.getPostFixes()[countPerKey - 2]));
+            } else {
+                sql.append(maybeWrapInQoutes(key));
+            }
+            if (countPerKey++ < sqlDefinitions.length) {
+                sql.append(",");
+            }
+        }
+    }
+
 
     @Override
     public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
@@ -655,11 +713,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     countKeys++;
                     Object value = entry.getValue();
-                    if (value == null) {
-                        out.write(getBatchNull().getBytes());
-                    } else {
-                        out.write(value.toString().getBytes());
-                    }
+                    PropertyType propertyType = PropertyType.from(value);
+                    out.write(valueToStreamBytes(propertyType, value));
                 }
             }
             out.write("\n".getBytes());
@@ -669,7 +724,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void writeCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         try {
             String encoding = "UTF-8";
             out.write(((RecordId) outVertex.id()).getId().toString().getBytes(encoding));
@@ -678,11 +733,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
                 out.write(COPY_COMMAND_DELIMITER.getBytes(encoding));
                 Object value = entry.getValue();
-                if (value == null) {
-                    out.write(getBatchNull().getBytes(encoding));
-                } else {
-                    out.write(value.toString().getBytes(encoding));
-                }
+                PropertyType propertyType = PropertyType.from(value);
+                out.write(valueToStreamBytes(propertyType, value));
             }
             out.write("\n".getBytes(encoding));
         } catch (Exception e) {
@@ -690,37 +742,36 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
-    @Override
-    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        StringBuffer sql = new StringBuffer();
-        sql.append("COPY ");
-        sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
-        sql.append(".");
-        sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + sqlgEdge.getTable()));
-        sql.append(" (");
-        sql.append(maybeWrapInQoutes(outVertex.getSchema() + "." + outVertex.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-        sql.append(", ");
-        sql.append(maybeWrapInQoutes(inVertex.getSchema() + "." + inVertex.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-        int count = 1;
-        for (String key : keyValueMap.keySet()) {
-            if (count <= keyValueMap.size()) {
-                sql.append(", ");
-            }
-            count++;
-            sql.append(maybeWrapInQoutes(key));
-        }
-        sql.append(") ");
+    private byte[] valueToStreamBytes(PropertyType propertyType, Object value) throws UnsupportedEncodingException {
+        String encoding = "UTF-8";
+        return valueToStreamString(propertyType, value).getBytes(encoding);
+    }
 
-        sql.append(" FROM stdin CSV DELIMITER '");
-        sql.append(COPY_COMMAND_DELIMITER);
-        sql.append("' ");
-        sql.append("QUOTE ");
-        sql.append(COPY_COMMAND_QUOTE);
-        sql.append(";");
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+    private String valueToStreamString(PropertyType propertyType, Object value) {
+        String result;
+        if (value == null) {
+            result = getBatchNull();
+        } else {
+            switch (propertyType) {
+                case ZONEDDATETIME:
+                    ZonedDateTime zonedDateTime = (ZonedDateTime)value;
+                    LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                    result = localDateTime.toString() + COPY_COMMAND_DELIMITER + timeZone.getID().toString();
+                    break;
+                case PERIOD:
+                    Period period = (Period)value;
+                    result = period.getYears() + COPY_COMMAND_DELIMITER + period.getMonths() + COPY_COMMAND_DELIMITER  + period.getDays();
+                    break;
+                case DURATION:
+                    Duration duration = (Duration)value;
+                    result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
+                    break;
+                default:
+                    result = escapeSpecialCharacters(value.toString());
+            }
         }
-        return sql.toString();
+        return result;
     }
 
 
@@ -1036,48 +1087,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return BATCH_NULL;
     }
 
-    private InputStream mapToEdge_InputStream(Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
-        StringBuilder sb = new StringBuilder();
-        int count = 1;
-        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
-            sb.append(((RecordId) triple.getLeft().id()).getId());
-            sb.append(COPY_COMMAND_DELIMITER);
-            sb.append(((RecordId) triple.getMiddle().id()).getId());
-            if (!edgeCache.getLeft().isEmpty()) {
-                sb.append(COPY_COMMAND_DELIMITER);
-            }
-            int countKeys = 1;
-            for (String key : edgeCache.getLeft()) {
-                Object value = triple.getRight().get(key);
-                if (value == null) {
-                    sb.append(getBatchNull());
-                } else if (value.getClass().isArray()) {
-                    sb.append("{");
-                    int length = java.lang.reflect.Array.getLength(value);
-                    for (int i = 0; i < length; i++) {
-                        String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                        sb.append(escapeSpecialCharacters(valueOfArray));
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                } else {
-                    sb.append(escapeSpecialCharacters(value.toString()));
-                }
-                if (countKeys < edgeCache.getLeft().size()) {
-                    sb.append(COPY_COMMAND_DELIMITER);
-                }
-                countKeys++;
-            }
-            if (count++ < edgeCache.getRight().size()) {
-                sb.append("\n");
-            }
-        }
-        return new ByteArrayInputStream(sb.toString().getBytes());
-    }
 
-    private InputStream mapToLabeledVertex_InputStream(Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
+    private InputStream mapVertexToInputStream(Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
@@ -1115,13 +1126,58 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             sb.append("}");
                         }
                     } else {
-                        sb.append(escapeSpecialCharacters(value.toString()));
+                        //TODO add in arrays to the valueToStreamString method
+                        PropertyType propertyType = PropertyType.from(value);
+                        sb.append(valueToStreamString(propertyType, value));
                     }
                 }
             } else {
                 sb.append("0");
             }
             if (count++ < vertexCache.getRight().size()) {
+                sb.append("\n");
+            }
+        }
+        return new ByteArrayInputStream(sb.toString().getBytes());
+    }
+
+    private InputStream mapEdgeToInputStream(Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+        StringBuilder sb = new StringBuilder();
+        int count = 1;
+        for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
+            sb.append(((RecordId) triple.getLeft().id()).getId());
+            sb.append(COPY_COMMAND_DELIMITER);
+            sb.append(((RecordId) triple.getMiddle().id()).getId());
+            if (!edgeCache.getLeft().isEmpty()) {
+                sb.append(COPY_COMMAND_DELIMITER);
+            }
+            int countKeys = 1;
+            for (String key : edgeCache.getLeft()) {
+                Object value = triple.getRight().get(key);
+                if (value == null) {
+                    sb.append(getBatchNull());
+                } else if (value.getClass().isArray()) {
+                    sb.append("{");
+                    int length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                        sb.append(escapeSpecialCharacters(valueOfArray));
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                } else {
+                    //TODO add in arrays to the valueToStreamString method
+                    PropertyType propertyType = PropertyType.from(value);
+                    sb.append(valueToStreamString(propertyType, value));
+                }
+                if (countKeys < edgeCache.getLeft().size()) {
+                    sb.append(COPY_COMMAND_DELIMITER);
+                }
+                countKeys++;
+            }
+            if (count++ < edgeCache.getRight().size()) {
                 sb.append("\n");
             }
         }
@@ -1200,6 +1256,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     /**
      * This is only used for upgrading from pre sqlg_schema sqlg to a sqlg_schema
+     *
      * @param sqlType
      * @param typeName
      * @return

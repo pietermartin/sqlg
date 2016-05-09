@@ -93,7 +93,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestPathStep.class,
         LocalDateTest.class,
         TestStreamVertex.class,
-        TestStreamingEdge.class,
+        TestStreamEdge.class,
         JsonTest.class,
         TestSchemaManagerGetTablesFor.class,
         TestBatchServerSideEdgeCreation.class,
@@ -120,7 +120,10 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestLocalVertexStepOptional.class,
         TestLocalVertexStepRepeatStep.class,
         TestLocalEdgeVertexStep.class,
-        TestLocalEdgeOtherVertexStep.class
+        TestLocalEdgeOtherVertexStep.class,
+        TestBatchDateTime.class,
+        TestBatchEdgeDateTime.class,
+        TestBatchJson.class
 })
 public class AllTest {
 }

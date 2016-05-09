@@ -15,9 +15,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -307,6 +305,45 @@ public class TestStreamVertex extends BaseTest {
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
         Assert.assertEquals(10, vertices.size());
         Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+    }
+
+    @Test
+    public void testStreamZonedDateTime() {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "createOn", zonedDateTime);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(zonedDateTime, vertices.get(0).<ZonedDateTime>value("createOn"));
+    }
+
+    @Test
+    public void testStreamPeriod() {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        Period period = Period.of(1,2,3);
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "period", period);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(period, vertices.get(0).<Period>value("period"));
+    }
+
+    @Test
+    public void testStreamDuration() {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        Duration duration = Duration.ofHours(19);
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "duration", duration);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(duration, vertices.get(0).<Period>value("duration"));
     }
 
     @Test

@@ -212,7 +212,7 @@ public class BatchManager {
                 this.streamingEdgeOutputStreamCache.put(outSchemaTable, out);
             }
             try {
-                this.sqlDialect.writeCompleteEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
+                this.sqlDialect.writeStreamingEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
                 if (this.isInStreamingModeWithLock()) {
                     this.batchCount++;
                 }

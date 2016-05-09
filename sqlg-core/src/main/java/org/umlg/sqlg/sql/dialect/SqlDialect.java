@@ -325,7 +325,7 @@ public interface SqlDialect {
 
     void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
 
-    void writeCompleteEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
+    void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
     default boolean needForeignKeyIndex() {
         return false;
