@@ -71,7 +71,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
         int pathCount = 0;
         boolean alreadyReplacedGraphStep = false;
-        boolean repeatStepAdded = false;
+        boolean repeatStepAdded;
         boolean chooseStepAdded = false;
         MutableInt repeatStepsAdded = new MutableInt(0);
         while (stepIterator.hasNext()) {
@@ -111,8 +111,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
-                    } else {
-                        repeatStepAdded = false;
                     }
 
                     pathCount++;
@@ -354,7 +352,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
         for (final Pair<Traversal.Admin<Object, Comparable>, Comparator<Comparable>> pair : ((ComparatorHolder<Object, Comparable>) orderGlobalStep).getComparators()) {
             Traversal.Admin<Object, Comparable> traversal = pair.getValue0();
-            Comparator<Comparable> comparator = pair.getValue1();
             List<Step> traversalComparatorSteps = traversal.getSteps();
             return traversalComparatorSteps.size() == 1 && traversalComparatorSteps.get(0) instanceof SelectOneStep;
         }
@@ -432,7 +429,6 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         boolean chooseStepAdded = false;
         List<Traversal.Admin<?, ?>> localChildren = chooseStep.getLocalChildren();
         Preconditions.checkState(localChildren.size() == 1, "ChooseStep's localChildren must have size 1, one for the predicate traversal");
-        Traversal.Admin<?, ?> predicateTraversal = localChildren.get(0);
 
         List<Traversal.Admin<?, ?>> globalChildren = chooseStep.getGlobalChildren();
         Preconditions.checkState(globalChildren.size() == 2, "ChooseStep's globalChildren must have size 2, one for true and one for false");
@@ -442,11 +438,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         Traversal.Admin<?, ?> a = globalChildren.get(0);
         Traversal.Admin<?, ?> b = globalChildren.get(1);
         if (a.getSteps().stream().filter(s -> s instanceof IdentityStep).findAny().isPresent()) {
-            falseTraversal = a;
             trueTraversal = b;
         } else {
             trueTraversal = a;
-            falseTraversal = b;
         }
 
         boolean addedNestedChooseStep = false;
