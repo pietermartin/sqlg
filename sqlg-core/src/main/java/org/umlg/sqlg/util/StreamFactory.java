@@ -10,6 +10,8 @@ import java.util.stream.StreamSupport;
  */
 public class StreamFactory {
 
+    private StreamFactory() {}
+
     public  static <T> Stream<T> stream(Iterator<T> iter) {
         Iterable<T> iterable = () -> iter;
         return StreamSupport.stream(iterable.spliterator(), false);
