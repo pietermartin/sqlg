@@ -160,14 +160,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
             for (SchemaTable schemaTable : vertexCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-                //get one vertex's properties, its needed later
-                Map<String, Object> keyValues = vertices.getRight().values().iterator().next();
+                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
 
                 //insert the labeled vertices
                 long endHigh;
                 long numberInserted;
                 try (InputStream is = mapVertexToInputStream(vertices)) {
-                    StringBuffer sql = new StringBuffer();
+                    StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
                     sql.append(".");
@@ -188,8 +187,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(", ");
                             }
                             count++;
-                            Object value = keyValues.get(key);
-                            appendKeyForStream(value, sql, key);
+                            appendKeyForStream(propertyTypeMap.get(key), sql, key);
                         }
                     }
                     sql.append(")");
@@ -235,13 +233,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             for (SchemaTable schemaTable : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(schemaTable);
 
-                //get one edge's properties, its needed later
-                Map<String, Object> keyValues = triples.getRight().values().iterator().next().getRight();
+                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.EDGE_PREFIX + schemaTable.getTable());
 
                 long endHigh;
                 long numberInserted;
                 try (InputStream is = mapEdgeToInputStream(triples)) {
-                    StringBuffer sql = new StringBuffer();
+                    StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
                     sql.append(".");
@@ -257,8 +254,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 sql.append(", ");
                             }
                             count++;
-                            Object value = keyValues.get(key);
-                            appendKeyForStream(value, sql, key);
+                            appendKeyForStream(propertyTypeMap.get(key), sql, key);
                         }
                         break;
                     }
@@ -311,7 +307,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             SortedSet<String> keys = vertexKeysPropertyCache.getLeft();
             Map<? extends SqlgElement, Map<String, Object>> vertexPropertyCache = vertexKeysPropertyCache.getRight();
 
-
             StringBuilder sql = new StringBuilder();
             sql.append("UPDATE ");
             sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
@@ -320,7 +315,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sql.append(" a \nSET\n\t(");
             int count = 1;
             for (String key : keys) {
-                sql.append(maybeWrapInQoutes(key));
+                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                appendKeyForBatchUpdate(propertyType, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
@@ -329,8 +325,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             count = 1;
             for (String key : keys) {
                 sql.append("v.");
-                sql.append(maybeWrapInQoutes(key));
                 PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                appendKeyForBatchUpdate(propertyType, sql, key, true);
                 switch (propertyType) {
                     case BOOLEAN_ARRAY:
                         sql.append("::boolean[]");
@@ -371,178 +367,219 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 int countProperties = 1;
                 for (String key : keys) {
                     Object value = properties.get(key);
-                    if (value != null) {
-                        PropertyType propertyType = PropertyType.from(value);
-                        switch (propertyType) {
-                            case BOOLEAN:
-                                sql.append(value);
-                                break;
-                            case BYTE:
-                                sql.append(value);
-                                break;
-                            case SHORT:
-                                sql.append(value);
-                                break;
-                            case INTEGER:
-                                sql.append(value);
-                                break;
-                            case LONG:
-                                sql.append(value);
-                                break;
-                            case FLOAT:
-                                sql.append(value);
-                                break;
-                            case DOUBLE:
-                                sql.append(value);
-                                break;
-                            case STRING:
-                                //Postgres supports custom quoted strings using the 'with token' clause
-                                sql.append("$token$");
-                                sql.append(value);
-                                sql.append("$token$");
-                                break;
-                            case LOCALDATETIME:
-                                sql.append("'");
-                                sql.append(value.toString());
-                                sql.append("'::TIMESTAMP");
-                                break;
-                            case LOCALDATE:
-                                sql.append("'");
-                                sql.append(value.toString());
-                                sql.append("'::DATE");
-                                break;
-                            case LOCALTIME:
-                                sql.append("'");
-                                sql.append(value.toString());
-                                sql.append("'::TIME");
-                                break;
-                            case JSON:
-                                sql.append("'");
-                                sql.append(value.toString());
-                                sql.append("'::JSONB");
-                                break;
-                            case BOOLEAN_ARRAY:
-                                sql.append("'{");
-                                boolean[] booleanArray = (boolean[]) value;
-                                int countBooleanArray = 1;
-                                for (Boolean b : booleanArray) {
-                                    sql.append(b);
-                                    if (countBooleanArray++ < booleanArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            case BYTE_ARRAY:
-                                try {
-                                    sql.append("'");
-                                    sql.append(PGbytea.toPGString((byte[]) value));
-                                    sql.append("'");
-                                } catch (SQLException e) {
-                                    throw new RuntimeException(e);
-                                }
-                                break;
-                            case SHORT_ARRAY:
-                                sql.append("'{");
-                                short[] shortArray = (short[]) value;
-                                int countShortArray = 1;
-                                for (Short s : shortArray) {
-                                    sql.append(s);
-                                    if (countShortArray++ < shortArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            case INTEGER_ARRAY:
-                                sql.append("'{");
-                                int[] intArray = (int[]) value;
-                                int countIntArray = 1;
-                                for (Integer i : intArray) {
-                                    sql.append(i);
-                                    if (countIntArray++ < intArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            case LONG_ARRAY:
-                                sql.append("'{");
-                                long[] longArray = (long[]) value;
-                                int countLongArray = 1;
-                                for (Long l : longArray) {
-                                    sql.append(l);
-                                    if (countLongArray++ < longArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            case FLOAT_ARRAY:
-                                sql.append("'{");
-                                float[] floatArray = (float[]) value;
-                                int countFloatArray = 1;
-                                for (Float f : floatArray) {
-                                    sql.append(f);
-                                    if (countFloatArray++ < floatArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            case DOUBLE_ARRAY:
-                                sql.append("'{");
-                                double[] doubleArray = (double[]) value;
-                                int countDoubleArray = 1;
-                                for (Double d : doubleArray) {
-                                    sql.append(d);
-                                    if (countDoubleArray++ < doubleArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            case STRING_ARRAY:
-                                sql.append("'{");
-                                String[] stringArray = (String[]) value;
-                                int countStringArray = 1;
-                                for (String s : stringArray) {
-                                    sql.append("\"");
-                                    sql.append(s);
-                                    sql.append("\"");
-                                    if (countStringArray++ < stringArray.length) {
-                                        sql.append(",");
-                                    }
-                                }
-                                sql.append("}'");
-                                break;
-                            default:
-                                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
-                        }
-                    } else {
-                        //set it to what it is
+                    if (value == null) {
                         if (sqlgVertex.property(key).isPresent()) {
-                            sql.append("$token$");
-                            sql.append((Object) sqlgVertex.value(key));
-                            sql.append("$token$");
-
+                            value = sqlgVertex.value(key);
                         } else {
-                            sql.append("null");
+                            value = "null";
                         }
                     }
+                    PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                    switch (propertyType) {
+                        case BOOLEAN:
+                            sql.append(value);
+                            break;
+                        case BYTE:
+                            sql.append(value);
+                            break;
+                        case SHORT:
+                            sql.append(value);
+                            break;
+                        case INTEGER:
+                            sql.append(value);
+                            break;
+                        case LONG:
+                            sql.append(value);
+                            break;
+                        case FLOAT:
+                            sql.append(value);
+                            break;
+                        case DOUBLE:
+                            sql.append(value);
+                            break;
+                        case STRING:
+                            //Postgres supports custom quoted strings using the 'with token' clause
+                            sql.append("$token$");
+                            sql.append(value);
+                            sql.append("$token$");
+                            break;
+                        case LOCALDATETIME:
+                            sql.append("'");
+                            sql.append(value.toString());
+                            sql.append("'::TIMESTAMP");
+                            break;
+                        case LOCALDATE:
+                            sql.append("'");
+                            sql.append(value.toString());
+                            sql.append("'::DATE");
+                            break;
+                        case LOCALTIME:
+                            sql.append("'");
+                            sql.append(value.toString());
+                            sql.append("'::TIME");
+                            break;
+                        case ZONEDDATETIME:
+                            ZonedDateTime zonedDateTime = (ZonedDateTime) value;
+                            LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                            TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                            sql.append("'");
+                            sql.append(localDateTime.toString());
+                            sql.append("'::TIMESTAMP");
+                            sql.append(",'");
+                            sql.append(timeZone.getID());
+                            sql.append("'");
+                            break;
+                        case DURATION:
+                            Duration duration = (Duration) value;
+                            sql.append("'");
+                            sql.append(duration.getSeconds());
+                            sql.append("'::BIGINT");
+                            sql.append(",'");
+                            sql.append(duration.getNano());
+                            sql.append("'::INTEGER");
+                            break;
+                        case PERIOD:
+                            Period period = (Period) value;
+                            sql.append("'");
+                            sql.append(period.getYears());
+                            sql.append("'::INTEGER");
+                            sql.append(",'");
+                            sql.append(period.getMonths());
+                            sql.append("'::INTEGER");
+                            sql.append(",'");
+                            sql.append(period.getDays());
+                            sql.append("'::INTEGER");
+                            break;
+                        case JSON:
+                            sql.append("'");
+                            sql.append(value.toString());
+                            sql.append("'::JSONB");
+                            break;
+                        case BOOLEAN_ARRAY:
+                            sql.append("'{");
+                            boolean[] booleanArray = (boolean[]) value;
+                            int countBooleanArray = 1;
+                            for (Boolean b : booleanArray) {
+                                sql.append(b);
+                                if (countBooleanArray++ < booleanArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case BYTE_ARRAY:
+                            try {
+                                sql.append("'");
+                                sql.append(PGbytea.toPGString((byte[]) value));
+                                sql.append("'");
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                            break;
+                        case SHORT_ARRAY:
+                            sql.append("'{");
+                            short[] shortArray = (short[]) value;
+                            int countShortArray = 1;
+                            for (Short s : shortArray) {
+                                sql.append(s);
+                                if (countShortArray++ < shortArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case INTEGER_ARRAY:
+                            sql.append("'{");
+                            int[] intArray = (int[]) value;
+                            int countIntArray = 1;
+                            for (Integer i : intArray) {
+                                sql.append(i);
+                                if (countIntArray++ < intArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case LONG_ARRAY:
+                            sql.append("'{");
+                            long[] longArray = (long[]) value;
+                            int countLongArray = 1;
+                            for (Long l : longArray) {
+                                sql.append(l);
+                                if (countLongArray++ < longArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case FLOAT_ARRAY:
+                            sql.append("'{");
+                            float[] floatArray = (float[]) value;
+                            int countFloatArray = 1;
+                            for (Float f : floatArray) {
+                                sql.append(f);
+                                if (countFloatArray++ < floatArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case DOUBLE_ARRAY:
+                            sql.append("'{");
+                            double[] doubleArray = (double[]) value;
+                            int countDoubleArray = 1;
+                            for (Double d : doubleArray) {
+                                sql.append(d);
+                                if (countDoubleArray++ < doubleArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case STRING_ARRAY:
+                            sql.append("'{");
+                            String[] stringArray = (String[]) value;
+                            int countStringArray = 1;
+                            for (String s : stringArray) {
+                                sql.append("\"");
+                                sql.append(s);
+                                sql.append("\"");
+                                if (countStringArray++ < stringArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                    }
+//                    //set it to what it is
+//                    if (sqlgVertex.property(key).isPresent()) {
+//                        sql.append("$token$");
+//                        Object oldValue = sqlgVertex.value(key);
+//                        sql.append(oldValue);
+//                        sql.append("$token$");
+//
+//                    } else {
+//                        sql.append("null");
+//                    }
+
                     if (countProperties++ < keys.size()) {
                         sql.append(", ");
                     }
+
                 }
                 sql.append(")");
                 if (count++ < vertexPropertyCache.size()) {
                     sql.append(",\n\t");
                 }
             }
+
             sql.append("\n) AS v(id, ");
             count = 1;
             for (String key : keys) {
-                sql.append(maybeWrapInQoutes(key));
+                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                appendKeyForBatchUpdate(propertyType, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
                 }
@@ -558,6 +595,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 throw new RuntimeException(e);
             }
         }
+
     }
 
     @Override
@@ -571,7 +609,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        StringBuffer sql = new StringBuffer();
+        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(vertex.getSchema() + "." + SchemaManager.VERTEX_PREFIX + vertex.getTable());
+        StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         if (!isTemp) {
             sql.append(maybeWrapInQoutes(vertex.getSchema()));
@@ -594,8 +633,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     sql.append(", ");
                 }
                 count++;
-                Object value = keyValueMap.get(key);
-                appendKeyForStream(value, sql, key);
+                appendKeyForStream(propertyTypeMap.get(key), sql, key);
             }
         }
         sql.append(")");
@@ -613,7 +651,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        StringBuffer sql = new StringBuffer();
+        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(sqlgEdge.getSchema() + "." + SchemaManager.EDGE_PREFIX + sqlgEdge.getTable());
+        StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
         sql.append(".");
@@ -628,8 +667,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 sql.append(", ");
             }
             count++;
-            Object value = keyValueMap.get(key);
-            appendKeyForStream(value, sql, key);
+            appendKeyForStream(propertyTypeMap.get(key), sql, key);
         }
         sql.append(") ");
 
@@ -645,12 +683,29 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return sql.toString();
     }
 
-    private void appendKeyForStream(Object value, StringBuffer sql, String key) {
-        PropertyType propertyType = PropertyType.from(value);
+    private void appendKeyForStream(PropertyType propertyType, StringBuilder sql, String key) {
         String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyType);
         int countPerKey = 1;
         for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
             if (countPerKey > 1) {
+                sql.append(maybeWrapInQoutes(key + propertyType.getPostFixes()[countPerKey - 2]));
+            } else {
+                sql.append(maybeWrapInQoutes(key));
+            }
+            if (countPerKey++ < sqlDefinitions.length) {
+                sql.append(",");
+            }
+        }
+    }
+
+    private void appendKeyForBatchUpdate(PropertyType propertyType, StringBuilder sql, String key, boolean withV) {
+        String[] sqlDefinitions = propertyTypeToSqlDefinition(propertyType);
+        int countPerKey = 1;
+        for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+            if (countPerKey > 1) {
+                if (withV) {
+                    sql.append("v.");
+                }
                 sql.append(maybeWrapInQoutes(key + propertyType.getPostFixes()[countPerKey - 2]));
             } else {
                 sql.append(maybeWrapInQoutes(key));
@@ -754,17 +809,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         } else {
             switch (propertyType) {
                 case ZONEDDATETIME:
-                    ZonedDateTime zonedDateTime = (ZonedDateTime)value;
+                    ZonedDateTime zonedDateTime = (ZonedDateTime) value;
                     LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
                     TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
                     result = localDateTime.toString() + COPY_COMMAND_DELIMITER + timeZone.getID().toString();
                     break;
                 case PERIOD:
-                    Period period = (Period)value;
-                    result = period.getYears() + COPY_COMMAND_DELIMITER + period.getMonths() + COPY_COMMAND_DELIMITER  + period.getDays();
+                    Period period = (Period) value;
+                    result = period.getYears() + COPY_COMMAND_DELIMITER + period.getMonths() + COPY_COMMAND_DELIMITER + period.getDays();
                     break;
                 case DURATION:
-                    Duration duration = (Duration)value;
+                    Duration duration = (Duration) value;
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
                     break;
                 default:

@@ -12,10 +12,10 @@ import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.*;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -40,10 +40,21 @@ import static org.junit.Assert.fail;
  */
 public abstract class BaseTest {
 
-    private Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
     protected SqlgGraph sqlgGraph;
     protected GraphTraversalSource gt;
     protected static Configuration configuration;
+
+    @Rule
+    public TestRule watcher = new TestWatcher() {
+        protected void starting(Description description) {
+            logger.info("Starting test: " + description.getClass() + "." + description.getMethodName());
+        }
+
+        protected void finished(Description description) {
+            logger.info("Finished test: " + description.getClass() + "." + description.getMethodName());
+        }
+    };
 
     @BeforeClass
     public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
@@ -75,7 +86,7 @@ public abstract class BaseTest {
         this.sqlgGraph.close();
     }
 
-//    @Before
+    //    @Before
     public void beforeOld() throws IOException {
         SqlgDataSource sqlgDataSource = null;
         SqlDialect sqlDialect;

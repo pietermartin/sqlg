@@ -9,6 +9,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.time.*;
+
 /**
  * Date: 2015/12/14
  * Time: 8:56 PM
@@ -128,5 +130,79 @@ public class TestBatchUpdate extends BaseTest {
         Assert.assertArrayEquals(new float[]{3f, 4f}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<float[]>value("floats"), 0f);
         Assert.assertArrayEquals(new short[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<short[]>value("shorts"));
         Assert.assertArrayEquals(new byte[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<byte[]>value("bytes"));
+    }
+
+    @Test
+    public void testLocalDateTime() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTime", LocalDateTime.of(1974, 6, 6, 6, 6));
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        LocalDateTime localDateTime = LocalDateTime.now();
+        a1.property("localDateTime", localDateTime);
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1).next();
+        Assert.assertEquals(localDateTime, a1.value("localDateTime"));
+    }
+
+    @Test
+    public void testLocalDate() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTime", LocalDate.of(1974, 6, 6));
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        LocalDate localDate = LocalDate.now();
+        a1.property("localDate", localDate);
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1).next();
+        Assert.assertEquals(localDate, a1.value("localDate"));
+    }
+
+    @Test
+    public void testLocalTime() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localTime", LocalTime.of(4, 6, 6), "localDate", LocalDate.of(1974,1,1));
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        LocalTime localTime = LocalTime.now();
+        LocalDate localDate = LocalDate.now();
+        a1.property("localTime", localTime);
+        a1.property("localDate", localDate);
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1).next();
+        Assert.assertEquals(localTime.toSecondOfDay(), a1.<LocalTime>value("localTime").toSecondOfDay());
+    }
+
+    @Test
+    public void testZonedDateTime() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTime", ZonedDateTime.of(LocalDate.of(4, 6, 6), LocalTime.of(1, 1), ZoneId.systemDefault()));
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        a1.property("zonedDateTime", zonedDateTime);
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1).next();
+        Assert.assertEquals(zonedDateTime, a1.value("zonedDateTime"));
+    }
+
+    @Test
+    public void testDuration() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "duration", Duration.ofHours(5));
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Duration duration = Duration.ofHours(10);
+        a1.property("duration", duration);
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1).next();
+        Assert.assertEquals(duration, a1.value("duration"));
+    }
+
+    @Test
+    public void testPeriod() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "duration", Period.of(5, 5, 5));
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Period period = Period.of(10, 1, 1);
+        a1.property("period", period);
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1).next();
+        Assert.assertEquals(period, a1.value("period"));
     }
 }

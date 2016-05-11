@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchJson;
+import org.umlg.sqlg.test.batch.TestBatchUpdate;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.batch.TestBatchJson;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchJson.class,
+        TestBatchUpdate.class,
 })
 public class AnyTest {
 }

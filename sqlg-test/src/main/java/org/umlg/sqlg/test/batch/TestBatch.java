@@ -1013,7 +1013,7 @@ public class TestBatch extends BaseTest {
         sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
         sqlgVertex1.property("property1", "a11");
         sqlgVertex2.property("property2", "b22");
-        sqlgVertex3.property("property3", "b33");
+        sqlgVertex3.property("property3", "c33");
         this.sqlgGraph.tx().commit();
 
         Assert.assertEquals("a11", sqlgVertex1.value("property1"));
@@ -1024,6 +1024,16 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals("a11", sqlgVertex1.value("property1"));
         Assert.assertEquals("b1", sqlgVertex1.value("property2"));
         Assert.assertEquals("c1", sqlgVertex1.value("property3"));
+
+        sqlgVertex2 = this.sqlgGraph.v(sqlgVertex2.id());
+        Assert.assertEquals("a2", sqlgVertex2.value("property1"));
+        Assert.assertEquals("b22", sqlgVertex2.value("property2"));
+        Assert.assertEquals("c2", sqlgVertex2.value("property3"));
+
+        sqlgVertex3 = this.sqlgGraph.v(sqlgVertex3.id());
+        Assert.assertEquals("a3", sqlgVertex3.value("property1"));
+        Assert.assertEquals("b3", sqlgVertex3.value("property2"));
+        Assert.assertEquals("c33", sqlgVertex3.value("property3"));
 
     }
 
