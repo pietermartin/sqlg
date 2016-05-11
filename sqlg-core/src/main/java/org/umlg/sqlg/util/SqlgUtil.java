@@ -34,6 +34,8 @@ public class SqlgUtil {
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
     private final static int BULK_WITHIN_COUNT = 1;
 
+    private SqlgUtil() {}
+
     public static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph, final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack, int subQueryCount, AliasMapHolder copyAliasMapHolder,
