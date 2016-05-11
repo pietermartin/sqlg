@@ -340,7 +340,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             //Only one in out pair should ever be set per row
                             for (String inColumnName : inVertexColumnNames) {
                                 if (inId != null) {
-                                    Long tempInId = resultSet.getLong(inColumnName);
                                     if (!resultSet.wasNull()) {
                                         throw new IllegalStateException("Multiple in columns are set in vertex row!");
                                     }
@@ -354,7 +353,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             }
                             for (String outColumnName : outVertexColumnNames) {
                                 if (outId != null) {
-                                    Long tempOutId = resultSet.getLong(outColumnName);
                                     if (!resultSet.wasNull()) {
                                         throw new IllegalStateException("Multiple out columns are set in vertex row!");
                                     }

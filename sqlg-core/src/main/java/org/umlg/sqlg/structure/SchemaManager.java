@@ -1002,7 +1002,6 @@ public class SchemaManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
-            String tableNamePattern = null;
             String[] types = new String[]{"TABLE"};
             //load the schemas
             ResultSet schemaRs = metadata.getSchemas();
@@ -1033,10 +1032,8 @@ public class SchemaManager {
                     continue;
                 }
 
-                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new ConcurrentHashMap<>();
                 //get the columns
-                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
@@ -1071,7 +1068,6 @@ public class SchemaManager {
                 Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = Collections.emptyMap();
                 //get the columns
-                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                 boolean edgeAdded = false;
                 while (columnsRs.next()) {
@@ -1137,12 +1133,9 @@ public class SchemaManager {
                     continue;
                 }
 
-                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new HashMap<>();
                 //get the columns
-                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
-                boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
                     if (!column.equals(SchemaManager.ID) && !column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) && !column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
