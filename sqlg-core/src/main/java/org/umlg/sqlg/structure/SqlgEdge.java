@@ -191,7 +191,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
             i = SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
             preparedStatement.setLong(i++, this.inVertex.recordId.getId());
-            preparedStatement.setLong(i++, this.outVertex.recordId.getId());
+            preparedStatement.setLong(i, this.outVertex.recordId.getId());
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
