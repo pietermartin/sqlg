@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchUpdate;
+import org.umlg.sqlg.test.batch.TestBatchedStreaming;
+import org.umlg.sqlg.test.batch.TestStreamVertex;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,8 @@ import org.umlg.sqlg.test.batch.TestBatchUpdate;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestBatchUpdate.class,
+        TestStreamVertex.class,
+        TestBatchedStreaming.class
 })
 public class AnyTest {
 }

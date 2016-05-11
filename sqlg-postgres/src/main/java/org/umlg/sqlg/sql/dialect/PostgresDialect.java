@@ -823,6 +823,29 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
                     break;
                 default:
+                    if (value.getClass().isArray()) {
+                        if (value.getClass().getName().equals("[B")) {
+                            try {
+                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
+                                return (valueOfArrayAsString);
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else {
+                            StringBuilder sb = new StringBuilder();
+                            sb.append("{");
+                            int length = java.lang.reflect.Array.getLength(value);
+                            for (int i = 0; i < length; i++) {
+                                String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                                sb.append(escapeSpecialCharacters(valueOfArray));
+                                if (i < length - 1) {
+                                    sb.append(",");
+                                }
+                            }
+                            sb.append("}");
+                            return sb.toString();
+                        }
+                    }
                     result = escapeSpecialCharacters(value.toString());
             }
         }
