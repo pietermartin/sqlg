@@ -26,6 +26,8 @@ public class SqlgSqlExecutor {
 
     private static Logger logger = LoggerFactory.getLogger(SqlgSqlExecutor.class.getName());
 
+    private SqlgSqlExecutor() {}
+
     public static <E extends SqlgElement> void executeRegularQueries(
             SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
             SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator) {

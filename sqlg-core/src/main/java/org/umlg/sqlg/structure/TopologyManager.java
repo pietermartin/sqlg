@@ -16,6 +16,8 @@ import java.util.Map;
  */
 public class TopologyManager {
 
+    private TopologyManager() {}
+
     static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {

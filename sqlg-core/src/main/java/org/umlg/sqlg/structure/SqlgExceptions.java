@@ -6,6 +6,8 @@ package org.umlg.sqlg.structure;
  */
 public class SqlgExceptions {
 
+    private SqlgExceptions() {}
+
     public static InvalidIdException invalidId(String invalidId) {
         return new InvalidIdException("Sqlg ids must be a String with the format 'label:::id' The id must be a long. The given id " + invalidId + " is invalid.");
     }
