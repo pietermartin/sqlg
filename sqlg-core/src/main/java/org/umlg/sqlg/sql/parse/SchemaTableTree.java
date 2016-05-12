@@ -536,11 +536,11 @@ public class SchemaTableTree {
             sql += ", ";
         }
         int propertyCount = 1;
-        for (String propertyName : propertyTypeMap.keySet()) {
-            sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyName) + "\"";
-            for (String postFix : propertyTypeMap.get(propertyName).getPostFixes()) {
+        for (Map.Entry<String, PropertyType> propertyNameEntry : propertyTypeMap.entrySet()) {
+            sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyNameEntry.getKey()) + "\"";
+            for (String postFix : propertyNameEntry.getValue().getPostFixes()) {
                 sql += ", ";
-                sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyName + postFix) + "\"";
+                sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyNameEntry.getKey() + postFix) + "\"";
             }
             if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ", ";
@@ -1264,15 +1264,15 @@ public class SchemaTableTree {
         finalFromSchemaTableName += ".";
         finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
         int propertyCount = 1;
-        for (String propertyName : propertyTypeMap.keySet()) {
-            sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
+        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
+            sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey());
             sql += " AS ";
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateAliasPropertyName(propertyName));
-            for (String postFix : propertyTypeMap.get(propertyName).getPostFixes()) {
+            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey()));
+            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
                 sql += ", ";
-                sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName + postFix);
+                sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey() + postFix);
                 sql += " AS ";
-                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateAliasPropertyName(propertyName + postFix));
+                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix));
             }
             if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ",\n\t";
@@ -1313,16 +1313,16 @@ public class SchemaTableTree {
         finalFromSchemaTableName += ".";
         finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
         int count = 1;
-        for (String propertyName : propertyTypeMap.keySet()) {
-            sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName);
+        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
+            sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey());
             sql += " AS ";
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyName));
+            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey()));
 
-            for (String postFix : propertyTypeMap.get(propertyName).getPostFixes()) {
+            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
                 sql += ",\n\t ";
-                sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyName + postFix);
+                sql += finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey() + postFix);
                 sql += " AS ";
-                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateAliasPropertyName(propertyName + postFix));
+                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix));
             }
 
             if (count++ < propertyTypeMap.size()) {

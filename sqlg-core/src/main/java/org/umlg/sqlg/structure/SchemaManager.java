@@ -174,44 +174,44 @@ public class SchemaManager {
                     }
                     this.localSchemas.put(schema, schema);
                 }
-                for (String table : this.uncommittedTables.keySet()) {
+                for (Map.Entry<String, Map<String, PropertyType>> uncommittedTablesEntry : this.uncommittedTables.entrySet()) {
                     if (distributed) {
-                        this.tables.put(table, this.uncommittedTables.get(table));
+                        this.tables.put(uncommittedTablesEntry.getKey(), uncommittedTablesEntry.getValue());
                     }
-                    this.localTables.put(table, this.uncommittedTables.get(table));
+                    this.localTables.put(uncommittedTablesEntry.getKey(), uncommittedTablesEntry.getValue());
                 }
-                for (String table : this.uncommittedLabelSchemas.keySet()) {
-                    Set<String> schemas = this.localLabelSchemas.get(table);
+                for (Map.Entry<String, Set<String>> uncommittedLabelSchemasEntry : this.uncommittedLabelSchemas.entrySet()) {
+                    Set<String> schemas = uncommittedLabelSchemasEntry.getValue();
                     if (schemas == null) {
                         if (distributed) {
-                            this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                            this.labelSchemas.put(uncommittedLabelSchemasEntry.getKey(), uncommittedLabelSchemasEntry.getValue());
                         }
-                        this.localLabelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                        this.localLabelSchemas.put(uncommittedLabelSchemasEntry.getKey(), this.uncommittedLabelSchemas.get(uncommittedLabelSchemasEntry.getKey()));
                     } else {
-                        schemas.addAll(this.uncommittedLabelSchemas.get(table));
+                        schemas.addAll(this.uncommittedLabelSchemas.get(uncommittedLabelSchemasEntry.getKey()));
                         if (distributed) {
-                            this.labelSchemas.put(table, schemas);
+                            this.labelSchemas.put(uncommittedLabelSchemasEntry.getKey(), schemas);
                         }
-                        this.localLabelSchemas.put(table, schemas);
+                        this.localLabelSchemas.put(uncommittedLabelSchemasEntry.getKey(), schemas);
                     }
                 }
-                for (String table : this.uncommittedEdgeForeignKeys.keySet()) {
+                for (Map.Entry<String, Set<String>> uncommittedEdgeForeignKeysEntry : this.uncommittedEdgeForeignKeys.entrySet()) {
                     if (distributed) {
-                        this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                        this.edgeForeignKeys.put(uncommittedEdgeForeignKeysEntry.getKey(), uncommittedEdgeForeignKeysEntry.getValue());
                     }
-                    this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                    this.localEdgeForeignKeys.put(uncommittedEdgeForeignKeysEntry.getKey(), uncommittedEdgeForeignKeysEntry.getValue());
                 }
-                for (SchemaTable schemaTable : this.uncommittedTableLabels.keySet()) {
-                    Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.localTableLabels.get(schemaTable);
+                for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableEntry : this.uncommittedTableLabels.entrySet()) {
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = schemaTableEntry.getValue();
                     if (tableLabels == null) {
                         tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
                     }
-                    tableLabels.getLeft().addAll(this.uncommittedTableLabels.get(schemaTable).getLeft());
-                    tableLabels.getRight().addAll(this.uncommittedTableLabels.get(schemaTable).getRight());
+                    tableLabels.getLeft().addAll(schemaTableEntry.getValue().getLeft());
+                    tableLabels.getRight().addAll(schemaTableEntry.getValue().getRight());
                     if (distributed) {
-                        this.tableLabels.put(schemaTable, tableLabels);
+                        this.tableLabels.put(schemaTableEntry.getKey(), tableLabels);
                     }
-                    this.localTableLabels.put(schemaTable, tableLabels);
+                    this.localTableLabels.put(schemaTableEntry.getKey(), tableLabels);
                 }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
@@ -237,44 +237,44 @@ public class SchemaManager {
                         }
                         this.localSchemas.put(table, table);
                     }
-                    for (String table : this.uncommittedTables.keySet()) {
+                    for (Map.Entry<String, Map<String, PropertyType>> tableEntry : this.uncommittedTables.entrySet()) {
                         if (distributed) {
-                            this.tables.put(table, this.uncommittedTables.get(table));
+                            this.tables.put(tableEntry.getKey(), tableEntry.getValue());
                         }
-                        this.localTables.put(table, this.uncommittedTables.get(table));
+                        this.localTables.put(tableEntry.getKey(), tableEntry.getValue());
                     }
-                    for (String table : this.uncommittedLabelSchemas.keySet()) {
-                        Set<String> schemas = this.localLabelSchemas.get(table);
+                    for (Map.Entry<String, Set<String>> tableEntry : this.uncommittedLabelSchemas.entrySet()) {
+                        Set<String> schemas = tableEntry.getValue();
                         if (schemas == null) {
                             if (distributed) {
-                                this.labelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                                this.labelSchemas.put(tableEntry.getKey(), tableEntry.getValue());
                             }
-                            this.localLabelSchemas.put(table, this.uncommittedLabelSchemas.get(table));
+                            this.localLabelSchemas.put(tableEntry.getKey(), tableEntry.getValue());
                         } else {
-                            schemas.addAll(this.uncommittedLabelSchemas.get(table));
+                            schemas.addAll(tableEntry.getValue());
                             if (distributed) {
-                                this.labelSchemas.put(table, schemas);
+                                this.labelSchemas.put(tableEntry.getKey(), schemas);
                             }
-                            this.localLabelSchemas.put(table, schemas);
+                            this.localLabelSchemas.put(tableEntry.getKey(), schemas);
                         }
                     }
-                    for (String table : this.uncommittedEdgeForeignKeys.keySet()) {
+                    for (Map.Entry<String, Set<String>> tableEntry : this.uncommittedEdgeForeignKeys.entrySet()) {
                         if (distributed) {
-                            this.edgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                            this.edgeForeignKeys.put(tableEntry.getKey(), tableEntry.getValue());
                         }
-                        this.localEdgeForeignKeys.put(table, this.uncommittedEdgeForeignKeys.get(table));
+                        this.localEdgeForeignKeys.put(tableEntry.getKey(), tableEntry.getValue());
                     }
-                    for (SchemaTable schemaTable : this.uncommittedTableLabels.keySet()) {
-                        Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.localTableLabels.get(schemaTable);
+                    for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableEntry : this.uncommittedTableLabels.entrySet()) {
+                        Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = schemaTableEntry.getValue();
                         if (tableLabels == null) {
                             tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
                         }
-                        tableLabels.getLeft().addAll(this.uncommittedTableLabels.get(schemaTable).getLeft());
-                        tableLabels.getRight().addAll(this.uncommittedTableLabels.get(schemaTable).getRight());
+                        tableLabels.getLeft().addAll(schemaTableEntry.getValue().getLeft());
+                        tableLabels.getRight().addAll(schemaTableEntry.getValue().getRight());
                         if (distributed) {
-                            this.tableLabels.put(schemaTable, tableLabels);
+                            this.tableLabels.put(schemaTableEntry.getKey(), tableLabels);
                         }
-                        this.localTableLabels.put(schemaTable, tableLabels);
+                        this.localTableLabels.put(schemaTableEntry.getKey(), tableLabels);
                     }
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
@@ -1421,14 +1421,14 @@ public class SchemaManager {
         result.putAll(this.localEdgeForeignKeys);
         if (!this.uncommittedEdgeForeignKeys.isEmpty() && this.isLockedByCurrentThread()) {
             result.putAll(this.uncommittedEdgeForeignKeys);
-            for (String schemaTable : this.uncommittedEdgeForeignKeys.keySet()) {
-                Set<String> foreignKeys = result.get(schemaTable);
+            for (Map.Entry<String, Set<String>> schemaTableEntry : this.uncommittedEdgeForeignKeys.entrySet()) {
+                Set<String> foreignKeys = result.get(schemaTableEntry.getKey());
                 if (foreignKeys == null) {
                     foreignKeys = new HashSet<>();
                 }
-                foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
-                foreignKeys.addAll(this.uncommittedEdgeForeignKeys.get(schemaTable));
-                result.put(schemaTable, foreignKeys);
+                foreignKeys.addAll(schemaTableEntry.getValue());
+                foreignKeys.addAll(schemaTableEntry.getValue());
+                result.put(schemaTableEntry.getKey(), foreignKeys);
             }
         }
         return Collections.unmodifiableMap(result);
