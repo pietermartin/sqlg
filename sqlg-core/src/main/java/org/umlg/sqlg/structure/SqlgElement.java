@@ -33,6 +33,7 @@ import java.util.stream.Stream;
  */
 public abstract class SqlgElement implements Element {
 
+    public static final String PROPERTY_ARRAY_VALUE_ELEMENTS_NOT_NULL = "Property array value elements may not be null.";
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
     protected String schema;
@@ -353,7 +354,7 @@ public abstract class SqlgElement implements Element {
     private <T> T copy(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_NOT_NULL);
             }
             Array.set(target, i, value[i]);
         }
@@ -363,7 +364,7 @@ public abstract class SqlgElement implements Element {
     private <T> T copyToTinyInt(Integer[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_NOT_NULL);
             }
             Array.set(target, i, value[i].byteValue());
         }
@@ -373,7 +374,7 @@ public abstract class SqlgElement implements Element {
     private <T> T copyToSmallInt(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_NOT_NULL);
             }
             Array.set(target, i, ((Number) value[i]).shortValue());
         }
