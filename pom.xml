@@ -85,12 +85,12 @@
                     <argLine>-Xms2048m -Xmx3072m</argLine>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <includes>
-                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
-                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+                        <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
+                        <!--<include>**/SqlgHsqldbProcessStandardTest.java</include>-->
                         <include>**/HsqldbAllTest.java</include>
                         <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
                         <!--<include>**/SqlgPostgresProcessStandardTest.java</include>-->
-                        <include>**/PostgresAllTest.java</include>
+                        <!--<include>**/PostgresAllTest.java</include>-->
                     </includes>
                     <!--<argLine>-Xmx1024m</argLine>-->
                     <!--<argLine>-Xmx128m</argLine>-->
