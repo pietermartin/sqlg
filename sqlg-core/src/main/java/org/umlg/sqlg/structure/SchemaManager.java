@@ -181,12 +181,12 @@ public class SchemaManager {
                     this.localTables.put(uncommittedTablesEntry.getKey(), uncommittedTablesEntry.getValue());
                 }
                 for (Map.Entry<String, Set<String>> uncommittedLabelSchemasEntry : this.uncommittedLabelSchemas.entrySet()) {
-                    Set<String> schemas = uncommittedLabelSchemasEntry.getValue();
+                    Set<String> schemas = this.localLabelSchemas.get(uncommittedLabelSchemasEntry.getKey());
                     if (schemas == null) {
                         if (distributed) {
                             this.labelSchemas.put(uncommittedLabelSchemasEntry.getKey(), uncommittedLabelSchemasEntry.getValue());
                         }
-                        this.localLabelSchemas.put(uncommittedLabelSchemasEntry.getKey(), this.uncommittedLabelSchemas.get(uncommittedLabelSchemasEntry.getKey()));
+                        this.localLabelSchemas.put(uncommittedLabelSchemasEntry.getKey(), uncommittedLabelSchemasEntry.getValue());
                     } else {
                         schemas.addAll(this.uncommittedLabelSchemas.get(uncommittedLabelSchemasEntry.getKey()));
                         if (distributed) {
@@ -202,7 +202,7 @@ public class SchemaManager {
                     this.localEdgeForeignKeys.put(uncommittedEdgeForeignKeysEntry.getKey(), uncommittedEdgeForeignKeysEntry.getValue());
                 }
                 for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableEntry : this.uncommittedTableLabels.entrySet()) {
-                    Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = schemaTableEntry.getValue();
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.localTableLabels.get(schemaTableEntry.getKey());
                     if (tableLabels == null) {
                         tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
                     }
@@ -244,7 +244,7 @@ public class SchemaManager {
                         this.localTables.put(tableEntry.getKey(), tableEntry.getValue());
                     }
                     for (Map.Entry<String, Set<String>> tableEntry : this.uncommittedLabelSchemas.entrySet()) {
-                        Set<String> schemas = tableEntry.getValue();
+                        Set<String> schemas = this.localLabelSchemas.get(tableEntry.getKey());
                         if (schemas == null) {
                             if (distributed) {
                                 this.labelSchemas.put(tableEntry.getKey(), tableEntry.getValue());
@@ -265,7 +265,7 @@ public class SchemaManager {
                         this.localEdgeForeignKeys.put(tableEntry.getKey(), tableEntry.getValue());
                     }
                     for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableEntry : this.uncommittedTableLabels.entrySet()) {
-                        Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = schemaTableEntry.getValue();
+                        Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.localTableLabels.get(schemaTableEntry.getKey());
                         if (tableLabels == null) {
                             tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
                         }
@@ -1002,6 +1002,7 @@ public class SchemaManager {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
+            String tableNamePattern = null;
             String[] types = new String[]{"TABLE"};
             //load the schemas
             ResultSet schemaRs = metadata.getSchemas();
@@ -1032,8 +1033,10 @@ public class SchemaManager {
                     continue;
                 }
 
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new ConcurrentHashMap<>();
                 //get the columns
+                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
@@ -1068,6 +1071,7 @@ public class SchemaManager {
                 Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = Collections.emptyMap();
                 //get the columns
+                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
                 boolean edgeAdded = false;
                 while (columnsRs.next()) {
@@ -1133,9 +1137,12 @@ public class SchemaManager {
                     continue;
                 }
 
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new HashMap<>();
                 //get the columns
+                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
                     if (!column.equals(SchemaManager.ID) && !column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) && !column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
