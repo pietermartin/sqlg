@@ -362,9 +362,9 @@ public class SqlgUtil {
     public static Object[] mapTokeyValues(Map<Object, Object> keyValues) {
         Object[] result = new Object[keyValues.size() * 2];
         int i = 0;
-        for (Object key : keyValues.keySet()) {
-            result[i++] = key;
-            result[i++] = keyValues.get(key);
+        for (Map.Entry<Object, Object> entry : keyValues.entrySet()) {
+            result[i++] = entry.getKey();
+            result[i++] = entry.getValue();
         }
         return result;
     }
@@ -372,9 +372,9 @@ public class SqlgUtil {
     public static Object[] mapToStringKeyValues(Map<String, Object> keyValues) {
         Object[] result = new Object[keyValues.size() * 2];
         int i = 0;
-        for (Object key : keyValues.keySet()) {
-            result[i++] = key;
-            result[i++] = keyValues.get(key);
+        for (Map.Entry<String, Object> entry : keyValues.entrySet()) {
+            result[i++] = entry.getKey();
+            result[i++] = entry.getValue();
         }
         return result;
     }
@@ -451,11 +451,11 @@ public class SqlgUtil {
 
     public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Map<String, Object> keyValues) {
         List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
-        for (String key : keyValues.keySet()) {
-            Object value = keyValues.get(key);
+        for (Map.Entry<String, Object> entry : keyValues.entrySet()) {
+            Object value = entry.getValue();
             //value
             //skip the label as that is not a property but the table
-            if (key.equals(T.label)) {
+            if (entry.getKey().equals(T.label)) {
                 continue;
             }
             result.add(ImmutablePair.of(PropertyType.from(value), value));
