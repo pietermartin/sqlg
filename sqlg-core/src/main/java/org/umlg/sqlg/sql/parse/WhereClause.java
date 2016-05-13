@@ -20,6 +20,8 @@ import java.util.Collection;
  */
 public class WhereClause {
 
+    public static final String LIKE = " like ?";
+    public static final String NOT_LIKE = " not like ?";
     private P p;
 
     private WhereClause(P p) {
@@ -138,10 +140,10 @@ public class WhereClause {
         String result;
         switch (text) {
             case contains:
-                result = " like ?";
+                result = LIKE;
                 break;
             case ncontains:
-                result = " not like ?";
+                result = NOT_LIKE;
                 break;
             case containsCIS:
                 if (!sqlDialect.supportsILike()) {
@@ -164,16 +166,16 @@ public class WhereClause {
                 }
                 break;
             case startsWith:
-                result = " like ?";
+                result = LIKE;
                 break;
             case nstartsWith:
-                result = " not like ?";
+                result = NOT_LIKE;
                 break;
             case endsWith:
-                result = " like ?";
+                result = LIKE;
                 break;
             case nendsWith:
-                result = " not like ?";
+                result = NOT_LIKE;
                 break;
             default:
                 throw new RuntimeException("Unknown Contains " + text.name());

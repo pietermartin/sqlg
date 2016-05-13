@@ -20,6 +20,7 @@ import java.util.*;
  */
 public class SqlgEdge extends SqlgElement implements Edge {
 
+    public static final String IN_OR_OUT_VERTEX_ID_NOT_SET = "in or out vertex id not set!!!!";
     private Logger logger = LoggerFactory.getLogger(SqlgEdge.class.getName());
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
@@ -281,7 +282,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
         }
         if (this.inVertex == null || this.outVertex == null) {
-            throw new IllegalStateException("in or out vertex id not set!!!!");
+            throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
         }
     }
 
@@ -320,7 +321,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
         }
         if (this.inVertex == null || this.outVertex == null) {
-            throw new IllegalStateException("in or out vertex id not set!!!!");
+            throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
         }
     }
 
@@ -349,7 +350,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
             }
         }
         if (inVertexColumnName == null || outVertexColumnName == null) {
-            throw new IllegalStateException("in or out vertex id not set!!!!");
+            throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
         }
         Long inId = resultSet.getLong(inVertexColumnName.getSchema() + "." + inVertexColumnName.getTable());
         Long outId = resultSet.getLong(outVertexColumnName.getSchema() + "." + outVertexColumnName.getTable());
