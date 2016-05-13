@@ -20,4 +20,5 @@ class TestByteArray extends BaseTest {
         Assert.assertEquals(v1, v2);
         Assert.assertArrayEquals(bytea, v2.property("bytea").value());
     }
+
 }
