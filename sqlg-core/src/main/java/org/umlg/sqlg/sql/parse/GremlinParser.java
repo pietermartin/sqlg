@@ -60,7 +60,7 @@ public class GremlinParser<S extends Element, E extends Element> {
 
     /**
      * Constructs the label paths from the given schemaTable to the leaf vertex labels for the gremlin query.
-     * For each path Sqlg will executeRegularQueries a sql query. The union of the queries is the result the gremlin query.
+     * For each path Sqlg will executeRegularQuery a sql query. The union of the queries is the result the gremlin query.
      * The vertex labels can be calculated from the steps.
      *
      * @param schemaTable

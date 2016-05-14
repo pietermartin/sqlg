@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.Emit;
-import org.umlg.sqlg.strategy.SqlgSqlExecutor;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Array;
@@ -43,7 +42,6 @@ public abstract class SqlgElement implements Element {
     protected Map<String, Object> properties = new ConcurrentHashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     protected boolean removed = false;
-
 
     /**
      * Constructor only used for the Dummy element.
@@ -82,7 +80,6 @@ public abstract class SqlgElement implements Element {
     }
 
     class SqlgElementElementPropertyRollback implements ElementPropertyRollback {
-
         @Override
         public void clearProperties() {
             SqlgElement.this.properties.clear();
@@ -263,11 +260,10 @@ public abstract class SqlgElement implements Element {
      */
     private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         SchemaTable schemaTable = getSchemaTablePrefixed();
-        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
         SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        SqlgSqlExecutor.executeRegularQueries(this.sqlgGraph, rootSchemaTableTree, this.recordId, resultIterator);
-        SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, rootSchemaTableTree, this.recordId, resultIterator);
-        SqlgSqlExecutor.executeEmitQuery(this.sqlgGraph, rootSchemaTableTree, this.recordId, resultIterator);
+        Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
+        rootSchemaTableTrees.add(rootSchemaTableTree);
+        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, this.recordId);
         return resultIterator;
     }
 
@@ -292,7 +288,6 @@ public abstract class SqlgElement implements Element {
             return super.hashCode();
         } else {
             return ElementHelper.hashCode(this);
-//            return this.id().hashCode();
         }
     }
 

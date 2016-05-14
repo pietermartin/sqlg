@@ -114,23 +114,11 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
-        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>();
-        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-            SqlgSqlExecutor.executeRegularQueries(this.sqlgGraph, rootSchemaTableTree, null, resultIterator);
-        }
-        //Do it again to find optional queries
-        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-            SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, rootSchemaTableTree, null, resultIterator);
-        }
-        //Do it again to find emit before queries
-        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-            SqlgSqlExecutor.executeEmitQuery(this.sqlgGraph, rootSchemaTableTree, null, resultIterator);
-        }
+        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
         stopWatch.stop();
         if (logger.isDebugEnabled()) {
             logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
         }
-
         return resultIterator;
     }
 

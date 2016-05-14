@@ -1012,7 +1012,7 @@ public class SqlgGraph implements Graph {
     /**
      * This is executes a sql query and returns the result as a json string.
      *
-     * @param query The sql to executeRegularQueries.
+     * @param query The sql to executeRegularQuery.
      * @return The query result as json.
      */
     public String query(String query) {

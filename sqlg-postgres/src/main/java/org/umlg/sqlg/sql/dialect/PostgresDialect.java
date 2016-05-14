@@ -1774,7 +1774,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
         sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
         this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids);
-        //executeRegularQueries copy from select. select the edge ids to copy into the new table by joining on the temp table
+        //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
         sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
 
         StringBuilder sql = new StringBuilder("INSERT INTO \n");
