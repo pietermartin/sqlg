@@ -9,7 +9,7 @@ import java.util.List;
  * Date: 2016/05/15
  * Time: 2:24 PM
  */
-public class PreparedStatementCache {
+class PreparedStatementCache {
 
     private List<PreparedStatement> cache = new ArrayList<>();
 
