@@ -177,7 +177,8 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
-    boolean isInBatchMode() {
+    @SuppressWarnings("WeakerAccess")
+    public boolean isInBatchMode() {
         return isInNormalBatchMode() || isInStreamingBatchMode() || isInStreamingWithLockBatchMode();
     }
 
