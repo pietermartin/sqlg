@@ -672,7 +672,6 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        this.sqlgGraph.tx().setSchemaModification(true);
     }
 
     private void buildColumns(Map<String, PropertyType> columns, StringBuilder sql) {
@@ -780,7 +779,6 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        this.sqlgGraph.tx().setSchemaModification(true);
     }
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
@@ -873,7 +871,6 @@ public class SchemaManager {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-            this.sqlgGraph.tx().setSchemaModification(true);
         }
     }
 

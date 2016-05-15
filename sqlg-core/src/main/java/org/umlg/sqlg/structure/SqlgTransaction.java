@@ -201,10 +201,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         return threadLocalTx.get().getBatchManager();
     }
 
-    void setSchemaModification(boolean schemaModification) {
-        threadLocalTx.get().setSchemaModification(schemaModification);
-    }
-
     public Connection getConnection() {
         if (!isOpen()) {
             readWrite();

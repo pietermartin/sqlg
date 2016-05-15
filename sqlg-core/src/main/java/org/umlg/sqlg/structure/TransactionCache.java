@@ -83,12 +83,4 @@ public class TransactionCache {
         }
     }
 
-    boolean isSchemaModification() {
-        return schemaModification;
-    }
-
-    void setSchemaModification(boolean schemaModification) {
-        this.schemaModification = schemaModification;
-    }
-
 }

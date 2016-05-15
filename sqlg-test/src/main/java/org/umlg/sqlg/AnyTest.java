@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.memory.TestMemoryUsage;
+import org.umlg.sqlg.test.vertex.TestVertexCache;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.memory.TestMemoryUsage;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestMemoryUsage.class
+//        TestMemoryUsage.class
+        TestVertexCache.class
 })
 public class AnyTest {
 }
