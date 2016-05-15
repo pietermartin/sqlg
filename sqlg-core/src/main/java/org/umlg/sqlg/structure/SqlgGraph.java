@@ -379,12 +379,12 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
-    public void bulkAddEdges(String in, String out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
+    public void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
         if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
-        SchemaTable inSchemaTable = SchemaTable.from(this, in, this.sqlDialect.getPublicSchema());
-        SchemaTable outSchemaTable = SchemaTable.from(this, out, this.sqlDialect.getPublicSchema());
+        SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
+        SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
         this.sqlDialect.bulkAddEdges(this, inSchemaTable, outSchemaTable, edgeLabel, idFields, uids);
     }
 
