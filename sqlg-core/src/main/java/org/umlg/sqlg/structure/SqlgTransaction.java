@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
@@ -60,7 +59,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 //                } catch (UnknownHostException e) {
 //                    connection.setClientInfo("ClientHostname", "failed");
 //                }
-                threadLocalTx.set(TransactionCache.of(connection, new ArrayList<>(), new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
+                threadLocalTx.set(TransactionCache.of(connection, new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -116,7 +115,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             if (this.afterRollbackFunction != null) {
                 this.afterRollbackFunction.doAfterRollback();
             }
-            for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback()) {
+            for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback().keySet()) {
                 elementPropertyRollback.clearProperties();
             }
             connection.close();
@@ -263,7 +262,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!isOpen()) {
             throw new IllegalStateException("A transaction must be in progress to add a elementPropertyRollback function!");
         }
-        threadLocalTx.get().getElementPropertyRollback().add(elementPropertyRollback);
+        threadLocalTx.get().getElementPropertyRollback().put(elementPropertyRollback, null);
     }
 
     public void afterCommit(AfterCommit afterCommitFunction) {
