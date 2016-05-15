@@ -31,13 +31,34 @@ public class SqlgSqlExecutor {
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
         String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
+        return executeQuery(sqlgGraph, recordId, sql, distinctQueryStack);
+    }
+
+    public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeOptionalQuery(
+            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
+            Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> leftJoinQuery) {
+
+        String sql = rootSchemaTableTree.constructSqlForOptional(leftJoinQuery.getLeft(), leftJoinQuery.getRight());
+        LinkedList<SchemaTableTree> distinctQueryStack = leftJoinQuery.getLeft();
+        return executeQuery(sqlgGraph, recordId, sql, distinctQueryStack);
+    }
+
+    public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeEmitQuery(
+            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
+            LinkedList<SchemaTableTree> leftJoinQuery) {
+
+        String sql = rootSchemaTableTree.constructSqlForEmit(leftJoinQuery);
+        return executeQuery(sqlgGraph, recordId, sql, leftJoinQuery);
+    }
+
+    private static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeQuery(SqlgGraph sqlgGraph, RecordId recordId, String sql, LinkedList<SchemaTableTree> distinctQueryStack) {
         try {
             Connection conn = sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql);
             }
-            //TODO great danger, not being closed!!!!
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
+            sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
             if (recordId != null) {
                 preparedStatement.setLong(parameterCount++, recordId.getId());
@@ -47,63 +68,6 @@ public class SqlgSqlExecutor {
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             return Triple.of(resultSet, resultSetMetaData, preparedStatement);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeOptionalQuery(
-            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
-            Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> leftJoinQuery) {
-
-        String sql = rootSchemaTableTree.constructSqlForOptional(leftJoinQuery.getLeft(), leftJoinQuery.getRight());
-        try {
-            Connection conn = sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql);
-            }
-            PreparedStatement preparedStatement = conn.prepareStatement(sql);
-            int parameterCount = 1;
-            if (recordId != null) {
-                preparedStatement.setLong(parameterCount++, recordId.getId());
-            }
-            SqlgUtil.setParametersOnStatement(sqlgGraph, leftJoinQuery.getLeft(), conn, preparedStatement, parameterCount);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-            return Triple.of(resultSet, resultSetMetaData, preparedStatement);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeEmitQuery(
-            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
-            LinkedList<SchemaTableTree> leftJoinQuery) {
-
-        String sql = rootSchemaTableTree.constructSqlForEmit(leftJoinQuery);
-        try {
-            Connection conn = sqlgGraph.tx().getConnection();
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql);
-            }
-            PreparedStatement preparedStatement = conn.prepareStatement(sql);
-            int parameterCount = 1;
-            if (recordId != null) {
-                preparedStatement.setLong(parameterCount++, recordId.getId());
-            }
-            SqlgUtil.setParametersOnStatement(sqlgGraph, leftJoinQuery, conn, preparedStatement, parameterCount);
-            ResultSet resultSet = preparedStatement.executeQuery();
-            ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-            return Triple.of(resultSet, resultSetMetaData, preparedStatement);
-
-
-//            loadResultSetIntoResultIterator(
-//                    sqlgGraph,
-//                    resultSetMetaData, resultSet,
-//                    rootSchemaTableTree,
-//                    leftJoinQuery,
-//                    aliasMapHolder,
-//                    resultIterator);
-        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

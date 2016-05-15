@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -8,9 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * This class is a singleton. Instantiated and owned by SqlG.
@@ -25,14 +23,20 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private AfterRollback afterRollbackFunction;
     private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
 
-    protected final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
+    private final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
         protected TransactionCache initialValue() {
             return null;
         }
     };
 
+    private final ThreadLocal<PreparedStatementCache> threadLocalPreparedStatementTx = new ThreadLocal<PreparedStatementCache>() {
+        protected PreparedStatementCache initialValue() {
+            return new PreparedStatementCache();
+        }
+    };
 
-    public SqlgTransaction(Graph sqlgGraph) {
+
+    SqlgTransaction(Graph sqlgGraph) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph) sqlgGraph;
     }
@@ -52,13 +56,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }
-                //Not supported by postgres, //TODO add dialect indirection
-//                connection.setClientInfo("ClientUser", "//TODO");
-//                try {
-//                    connection.setClientInfo("ClientHostname", InetAddress.getLocalHost().getHostAddress());
-//                } catch (UnknownHostException e) {
-//                    connection.setClientInfo("ClientHostname", "failed");
-//                }
                 threadLocalTx.set(TransactionCache.of(connection, new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -68,9 +65,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @Override
     protected void doCommit() throws TransactionException {
-        if (!isOpen())
+        if (!isOpen()) {
             return;
-
+        }
         try {
             if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 this.threadLocalTx.get().getBatchManager().flush();
@@ -81,6 +78,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             if (this.afterCommitFunction != null) {
                 this.afterCommitFunction.doAfterCommit();
             }
+            threadLocalPreparedStatementTx.get().close();
             connection.close();
         } catch (Exception e) {
             this.rollback();
@@ -99,8 +97,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @Override
     protected void doRollback() throws TransactionException {
-        if (!isOpen())
+        if (!isOpen()) {
             return;
+        }
         try {
             if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
                 try {
@@ -115,9 +114,11 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             if (this.afterRollbackFunction != null) {
                 this.afterRollbackFunction.doAfterRollback();
             }
+            //noinspection Convert2streamapi
             for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback().keySet()) {
                 elementPropertyRollback.clearProperties();
             }
+            threadLocalPreparedStatementTx.get().close();
             connection.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -176,7 +177,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
-    public boolean isInBatchMode() {
+    boolean isInBatchMode() {
         return isInNormalBatchMode() || isInStreamingBatchMode() || isInStreamingWithLockBatchMode();
     }
 
@@ -192,7 +193,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         return isOpen() && threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
     }
 
-    public BatchManager.BatchModeType getBatchModeType() {
+    BatchManager.BatchModeType getBatchModeType() {
         assert isOpen() : "SqlgTransaction.getBatchModeType() must be called within a transaction.";
         return threadLocalTx.get().getBatchManager().getBatchModeType();
     }
@@ -218,54 +219,18 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
     }
 
-    public Map<SchemaTable, Pair<Long, Long>> batchCommit() {
-        if (!threadLocalTx.get().getBatchManager().isInBatchMode()) {
-            throw new IllegalStateException("Must be in batch mode to batchCommit! Current mode is " + threadLocalTx.get().getBatchManager().getBatchModeType().name());
-        }
-
-        if (!isOpen()) {
-            return Collections.emptyMap();
-        }
-
-        try {
-            Map<SchemaTable, Pair<Long, Long>> verticesRange = this.threadLocalTx.get().getBatchManager().flush();
-            Connection connection = this.threadLocalTx.get().getConnection();
-            connection.commit();
-            connection.setAutoCommit(true);
-            if (this.afterCommitFunction != null) {
-                this.afterCommitFunction.doAfterCommit();
-            }
-            connection.close();
-            return verticesRange;
-        } catch (Exception e) {
-            this.rollback();
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
-        } finally {
-            //this is null after a rollback.
-            //might occur if sqlg has a bug and there is a SqlException
-            if (this.threadLocalTx.get() != null) {
-                this.threadLocalTx.get().clear();
-                this.threadLocalTx.remove();
-            }
-        }
-    }
-
-    public void addElementPropertyRollback(ElementPropertyRollback elementPropertyRollback) {
+    void addElementPropertyRollback(ElementPropertyRollback elementPropertyRollback) {
         if (!isOpen()) {
             throw new IllegalStateException("A transaction must be in progress to add a elementPropertyRollback function!");
         }
         threadLocalTx.get().getElementPropertyRollback().put(elementPropertyRollback, null);
     }
 
-    public void afterCommit(AfterCommit afterCommitFunction) {
+    void afterCommit(AfterCommit afterCommitFunction) {
         this.afterCommitFunction = afterCommitFunction;
     }
 
-    public void afterRollback(AfterRollback afterCommitFunction) {
+    void afterRollback(AfterRollback afterCommitFunction) {
         this.afterRollbackFunction = afterCommitFunction;
     }
 
@@ -286,5 +251,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     //Called for new vertices
     void add(SqlgVertex sqlgVertex) {
         this.threadLocalTx.get().add(sqlgVertex);
+    }
+
+    public void add(PreparedStatement preparedStatement) {
+        this.threadLocalPreparedStatementTx.get().add(preparedStatement);
+    }
+
+    // only used for tests
+    public PreparedStatementCache getPreparedStatementCache() {
+        return threadLocalPreparedStatementTx.get();
     }
 }

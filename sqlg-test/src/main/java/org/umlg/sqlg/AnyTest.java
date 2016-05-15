@@ -2,8 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestAddVertexViaMap;
-import org.umlg.sqlg.test.TestAllEdges;
+import org.umlg.sqlg.test.preparedStatement.TestClosingPreparedStatement;
 
 /**
  * Date: 2014/07/16
@@ -11,8 +10,7 @@ import org.umlg.sqlg.test.TestAllEdges;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAddVertexViaMap.class,
-        TestAllEdges.class
+        TestClosingPreparedStatement.class,
 })
 public class AnyTest {
 }
