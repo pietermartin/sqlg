@@ -61,10 +61,9 @@ public abstract class BaseTest {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
             configuration = new PropertiesConfiguration(sqlProperties);
-
-            if (!configuration.containsKey("jdbc.url"))
+            if (!configuration.containsKey("jdbc.url")) {
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
-
+            }
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
