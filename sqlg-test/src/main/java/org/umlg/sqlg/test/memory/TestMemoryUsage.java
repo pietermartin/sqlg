@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test.memory;
 
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -12,6 +14,11 @@ import static org.junit.Assert.assertTrue;
  * Time: 8:22 AM
  */
 public class TestMemoryUsage extends BaseTest {
+
+    @Before
+    public void beforeTest() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
 
     @Test
     public void testMemoryUsage() throws InterruptedException {
