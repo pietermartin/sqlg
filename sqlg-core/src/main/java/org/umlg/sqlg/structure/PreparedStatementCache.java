@@ -9,7 +9,8 @@ import java.util.List;
  * Date: 2016/05/15
  * Time: 2:24 PM
  */
-class PreparedStatementCache {
+@SuppressWarnings("ALL")
+public class PreparedStatementCache {
 
     private List<PreparedStatement> cache = new ArrayList<>();
 
