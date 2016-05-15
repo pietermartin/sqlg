@@ -1,5 +1,6 @@
 ##1.2.0
 
+* Add thread local `PreparedStatement` cache, to close all statements on commit or rollback.
 * Refactor the vertex transaction cache to use a `WeakHashMap`.
 * Refactor Sqlg to lazily iterate the sql `ResultSet`.
 * Add all optimizations to `LocalStep`.
