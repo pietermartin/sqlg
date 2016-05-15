@@ -32,6 +32,6 @@ public class TestMemoryUsage extends BaseTest {
         assertEquals(1_000_000, this.sqlgGraph.traversal().V().count().next(), 0);
         System.gc();
         Thread.sleep(3000);
-        assertTrue(Runtime.getRuntime().freeMemory() < 731_082_048);
+        assertTrue(Runtime.getRuntime().freeMemory() < 1_000_000_000);
     }
 }
