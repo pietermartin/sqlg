@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/05/15
@@ -19,15 +20,11 @@ public class TestMemoryUsage extends BaseTest {
             this.sqlgGraph.streamVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        System.out.println("sleeping 1");
-        Thread.sleep(10000);
         System.gc();
-        System.out.println("sleeping 2");
-        Thread.sleep(10000);
+        Thread.sleep(3000);
         assertEquals(1_000_000, this.sqlgGraph.traversal().V().count().next(), 0);
-        System.out.println("sleeping 3");
         System.gc();
-        System.out.println("sleeping 4");
-        Thread.sleep(10000);
+        Thread.sleep(3000);
+        assertTrue(Runtime.getRuntime().freeMemory() < 731_082_048);
     }
 }

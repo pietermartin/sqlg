@@ -56,22 +56,46 @@ public class TransactionCache {
         }
     }
 
+    /**
+     * The recordId is not referenced in the SqlgVertex.
+     * It is important that the value of the WeakHashMap does not reference the key.
+     *
+     * @param sqlgGraph
+     * @param recordId
+     * @return
+     */
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
         if (!this.vertexCache.containsKey(recordId)) {
             SqlgVertex sqlgVertex = new SqlgVertex(sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable());
             this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {
-            return this.vertexCache.get(recordId);
+            SqlgVertex sqlgVertex = this.vertexCache.get(recordId);
+            if (sqlgVertex != null) {
+                return sqlgVertex;
+            } else {
+                sqlgVertex = new SqlgVertex(sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable());
+                this.vertexCache.put(recordId, sqlgVertex);
+                return sqlgVertex;
+            }
         }
     }
 
     SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
         if (!this.vertexCache.containsKey(sqlgVertex.id())) {
-            this.vertexCache.put((RecordId)sqlgVertex.id(), sqlgVertex);
+            //copy the RecordId so that the WeakHashMap value does not reference the key
+            RecordId vertexRecordId = (RecordId) sqlgVertex.id();
+            RecordId recordId = RecordId.from(SchemaTable.of(vertexRecordId.getSchemaTable().getSchema(), vertexRecordId.getSchemaTable().getTable()), vertexRecordId.getId());
+//            this.vertexCache.put((RecordId)sqlgVertex.id(), sqlgVertex);
+            this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {
-            return this.vertexCache.get(sqlgVertex.id());
+            SqlgVertex sqlgVertexFromCache = this.vertexCache.get(sqlgVertex.id());
+            if (sqlgVertexFromCache != null) {
+                return sqlgVertexFromCache;
+            } else {
+                return sqlgVertex;
+            }
         }
     }
 
@@ -79,7 +103,10 @@ public class TransactionCache {
         if (this.vertexCache.containsKey(sqlgVertex.id())) {
             throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
         } else {
-            this.vertexCache.put((RecordId) sqlgVertex.id(), sqlgVertex);
+            RecordId vertexRecordId = (RecordId) sqlgVertex.id();
+            RecordId recordId = RecordId.from(SchemaTable.of(vertexRecordId.getSchemaTable().getSchema(), vertexRecordId.getSchemaTable().getTable()), vertexRecordId.getId());
+//            this.vertexCache.put((RecordId) sqlgVertex.id(), sqlgVertex);
+            this.vertexCache.put(recordId, sqlgVertex);
         }
     }
 

@@ -1,6 +1,8 @@
 ##1.2.0
 
-* Add all optimizations to LocalStep.
+* Refactor the vertex transaction cache to use a `WeakHashMap`.
+* Refactor Sqlg to lazily iterate the sql `ResultSet`.
+* Add all optimizations to `LocalStep`.
 * Refactor `RepeatStep` optimization to follow the same sql pattern as the `OptionalStep` optimization.
 * Optimized the `OptionalStep`.
 * Optimize `hasId(...)`

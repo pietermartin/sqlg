@@ -14,6 +14,7 @@ import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
+import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
@@ -123,7 +124,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestLocalEdgeOtherVertexStep.class,
         TestBatchDateTime.class,
         TestBatchEdgeDateTime.class,
-        TestBatchJson.class
+        TestBatchJson.class,
+        TestMemoryUsage.class
 })
 public class AllTest {
 }
