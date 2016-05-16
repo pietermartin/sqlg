@@ -10,7 +10,6 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
-import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
@@ -23,7 +22,6 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Constructor;
@@ -266,15 +264,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public GraphTraversalSource traversal() {
-        return this.traversal(GraphTraversalSource.build().with(TopologyStrategy.build().create()));
-    }
-
-    public GraphTraversalSource traversal(TraversalStrategy... traversalStrategy) {
-        GraphTraversalSource.Builder builder = GraphTraversalSource.build();
-        for (TraversalStrategy strategy : traversalStrategy) {
-            builder.with(strategy);
-        }
-        return this.traversal(builder);
+        return this.traversal(SqlgGraphTraversalSource.class);
     }
 
     @Override

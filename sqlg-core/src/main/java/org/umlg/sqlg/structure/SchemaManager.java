@@ -1252,7 +1252,7 @@ public class SchemaManager {
      * Load the schema from the topology.
      */
     private void loadUserSchema() {
-        GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(this.sqlgGraph);
+        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
         List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schema : schemas) {
             String schemaName = schema.value("name");

@@ -7,7 +7,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -235,6 +234,39 @@ public class TestLoadSchema extends BaseTest {
         Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
         Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
         Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
+    }
+
+    @Test
+    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdges() throws Exception {
+        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
+        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
+        realBsc.addEdge("workspaceElement", realBscWE);
+        realBsc.addEdge("workspaceElement", planBsc);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+
+        Assert.assertEquals(2, vertexTraversal(this.sqlgGraph.v(realBsc.id())).out("workspaceElement").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(planBsc.id())).in("workspaceElement").count().next().intValue());
+    }
+
+    @Test
+    public void testSameEdgeToDifferentVertexLabels() throws Exception {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C.C", "name", "c1");
+        Object a1Id = a1.id();
+        Object b1Id = b1.id();
+        a1.addEdge("ab", b1, "weight", 5);
+        a1.addEdge("ab", c1, "weight", 6);
+        b1.addEdge("ba", a1, "wtf", "wtf1");
+        b1.addEdge("ba", c1, "wtf", "wtf1");
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V(a1Id).out().count().next().intValue());
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V(b1Id).out().count().next().intValue());
     }
 
     @Test

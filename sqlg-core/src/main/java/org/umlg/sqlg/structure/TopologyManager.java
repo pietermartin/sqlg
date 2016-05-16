@@ -33,7 +33,7 @@ public class TopologyManager {
     static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-            GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(sqlgGraph);
+            GraphTraversalSource traversalSource = sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
@@ -72,7 +72,7 @@ public class TopologyManager {
     static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-            GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(sqlgGraph);
+            GraphTraversalSource traversalSource = sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
@@ -136,20 +136,28 @@ public class TopologyManager {
     static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
-            GraphTraversalSource traversalSource = GraphTraversalSource.build().with(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create()).create(sqlgGraph);
+            GraphTraversalSource traversalSource = sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
                     .has("name", schema)
                     .toList();
             Preconditions.checkState(!schemas.isEmpty(), "Schema " + schema + " does not exist in Sqlg's topology. BUG!!!");
             Preconditions.checkState(schemas.size() == 1, "Multiple " + schema + " found in Sqlg's topology. BUG!!!");
-            Vertex schemaVertex = schemas.get(0);
+
+            String foreignKeySchema = foreignKey.getSchema();
+            schemas = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                    .has("name", foreignKeySchema)
+                    .toList();
+            Preconditions.checkState(!schemas.isEmpty(), "Schema " + foreignKeySchema + " does not exist in Sqlg's topology. BUG!!!");
+            Preconditions.checkState(schemas.size() == 1, "Multiple " + foreignKeySchema + " found in Sqlg's topology. BUG!!!");
+            Vertex foreignKeySchemaVertex = schemas.get(0);
 
             Preconditions.checkState(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX));
             List<Vertex> edgeVertices = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
                     .has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length())).as("a")
-                    .in(SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE)
+                    .in(in ? SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE : SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE)
                     .in(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", schema)
                     .<Vertex>select("a")
@@ -159,15 +167,15 @@ public class TopologyManager {
             Preconditions.checkState(edgeVertices.size() == 1, "Multiple edge vertices " + foreignKey.toString() + " found in Sqlg's topology. BUG!!!");
             Vertex edgeVertex = edgeVertices.get(0);
 
-            String vertexTable;
+            String foreignKeyVertexTable;
             if (in)  {
-                vertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
+                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
             } else {
-                vertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
+                foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
             }
-            List<Vertex> foreignKeyVertices = traversalSource.V(schemaVertex)
+            List<Vertex> foreignKeyVertices = traversalSource.V(foreignKeySchemaVertex)
                     .out(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                    .has("name", vertexTable)
+                    .has("name", foreignKeyVertexTable)
                     .toList();
             Preconditions.checkState(!foreignKeyVertices.isEmpty(), "Out vertex " + foreignKey.toString() + " does not exist in Sqlg's topology. BUG!!!");
             Preconditions.checkState(foreignKeyVertices.size() == 1, "Multiple out vertices " + foreignKey.toString() + " found in Sqlg's topology. BUG!!!");
@@ -190,7 +198,7 @@ public class TopologyManager {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + prefixedTable);
-            GraphTraversalSource traversalSource = sqlgGraph.traversal(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
+            GraphTraversalSource traversalSource = sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
 
             List<Vertex> vertices = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
@@ -231,7 +239,7 @@ public class TopologyManager {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);
-            GraphTraversalSource traversalSource = sqlgGraph.traversal(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
+            GraphTraversalSource traversalSource = sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
 
             List<Vertex> edges = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)

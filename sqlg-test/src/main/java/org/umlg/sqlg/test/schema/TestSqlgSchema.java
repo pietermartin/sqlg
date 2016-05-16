@@ -29,11 +29,11 @@ public class TestSqlgSchema  extends BaseTest {
 
         SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
 
-        GraphTraversalSource traversalSource = GraphTraversalSource.build().with(
+        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
                 TopologyStrategy.build().selectFrom(
                         SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES
                 ).create()
-        ).create(sqlgGraph1);
+        );
         //Assert the schema
         List<Vertex> schemas = traversalSource.V()
                 .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)

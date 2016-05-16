@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestFriendsterLike;
+import org.umlg.sqlg.test.schema.TestLoadSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.batch.TestFriendsterLike;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestFriendsterLike.class,
+//        TestTopologyUpgrade.class,
+        TestLoadSchema.class
 })
 public class AnyTest {
 }
