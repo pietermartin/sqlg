@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmi:version="20131001" xmlns:xmi="http://www.omg.org/spec/XMI/20131001" xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML" xmi:id="_aefV0MzgEeW174sSW5_77g" name="sqlgtopology">
+  <packageImport xmi:type="uml:PackageImport" xmi:id="_amATEMzgEeW174sSW5_77g">
+    <importedPackage xmi:type="uml:Model" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"/>
+  </packageImport>
+  <packagedElement xmi:type="uml:Package" xmi:id="_itGWAMzgEeW174sSW5_77g" name="org">
+    <packagedElement xmi:type="uml:Package" xmi:id="_mnUI0MzgEeW174sSW5_77g" name="umlg">
+      <packagedElement xmi:type="uml:Package" xmi:id="_qQcysMzgEeW174sSW5_77g" name="sqlg">
+        <packagedElement xmi:type="uml:Package" xmi:id="_uo1vQMzgEeW174sSW5_77g" name="topology">
+          <packagedElement xmi:type="uml:Class" xmi:id="_xeNZ4MzgEeW174sSW5_77g" name="Schema">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_n6rGwMzjEeW174sSW5_77g" name="vertexLabel" type="_zuWQgMzgEeW174sSW5_77g" association="_n6oqgMzjEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_tsRR8MzjEeW174sSW5_77g"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_tsTHIMzjEeW174sSW5_77g" value="*"/>
+            </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_zuWQgMzgEeW174sSW5_77g" name="VertexLabel">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_z9WOc8zjEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_z9WOcMzjEeW174sSW5_77g"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_LlMCcszkEeW174sSW5_77g" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="_LlLbYMzkEeW174sSW5_77g"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_3NWG8MzgEeW174sSW5_77g" name="EdgeLabel">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_HHGGgszkEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_HHFfcMzkEeW174sSW5_77g"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_4-gikMzgEeW174sSW5_77g" name="Property"/>
+          <packagedElement xmi:type="uml:Association" xmi:id="_n6oqgMzjEeW174sSW5_77g" name="schema_vertex" memberEnd="_n6rGwMzjEeW174sSW5_77g _n6rt0MzjEeW174sSW5_77g" navigableOwnedEnd="_n6rt0MzjEeW174sSW5_77g">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_n6qfsMzjEeW174sSW5_77g" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_n6qfsczjEeW174sSW5_77g" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_n6rt0MzjEeW174sSW5_77g" name="schema" type="_xeNZ4MzgEeW174sSW5_77g" association="_n6oqgMzjEeW174sSW5_77g"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_z9WOcMzjEeW174sSW5_77g" name="vertex_property" memberEnd="_z9WOc8zjEeW174sSW5_77g _z9WOdMzjEeW174sSW5_77g" navigableOwnedEnd="_z9WOdMzjEeW174sSW5_77g">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_z9WOcczjEeW174sSW5_77g" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_z9WOcszjEeW174sSW5_77g" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_z9WOdMzjEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="_z9WOcMzjEeW174sSW5_77g"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="__qz7IMzjEeW174sSW5_77g" name="out_edges" memberEnd="__q0iMszjEeW174sSW5_77g __q0iM8zjEeW174sSW5_77g" navigableOwnedEnd="__q0iM8zjEeW174sSW5_77g">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="__q0iMMzjEeW174sSW5_77g" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="__q0iMczjEeW174sSW5_77g" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="__q0iM8zjEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_HHFfcMzkEeW174sSW5_77g" name="edge_property" memberEnd="_HHGGgszkEeW174sSW5_77g _HHGGg8zkEeW174sSW5_77g" navigableOwnedEnd="_HHGGg8zkEeW174sSW5_77g">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_HHGGgMzkEeW174sSW5_77g" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_HHGGgczkEeW174sSW5_77g" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_HHGGg8zkEeW174sSW5_77g" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="_HHFfcMzkEeW174sSW5_77g"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_LlLbYMzkEeW174sSW5_77g" name="in_edges" memberEnd="_LlMCcszkEeW174sSW5_77g _LlMCc8zkEeW174sSW5_77g" navigableOwnedEnd="_LlMCc8zkEeW174sSW5_77g">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_LlMCcMzkEeW174sSW5_77g" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_LlMCcczkEeW174sSW5_77g" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_LlMCc8zkEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="_LlLbYMzkEeW174sSW5_77g"/>
+          </packagedElement>
+        </packagedElement>
+      </packagedElement>
+    </packagedElement>
+  </packagedElement>
+</uml:Model>
