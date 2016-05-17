@@ -1069,7 +1069,7 @@ public class SchemaManager {
                 Map<String, PropertyType> columns = Collections.emptyMap();
                 //get the columns
                 String previousSchema = "";
-                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                 boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
@@ -1138,7 +1138,7 @@ public class SchemaManager {
                 Map<String, PropertyType> columns = new HashMap<>();
                 //get the columns
                 String previousSchema = "";
-                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                 boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);

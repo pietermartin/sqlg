@@ -254,6 +254,23 @@ public class TestLoadSchema extends BaseTest {
     }
 
     @Test
+    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdgesOtherWayAround() throws Exception {
+        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
+        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
+        Vertex planBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+        realBscWE.addEdge("workspaceElement", realBsc);
+        planBscWE.addEdge("workspaceElement", planBsc);
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        this.sqlgGraph = SqlgGraph.open(configuration);
+
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).out("workspaceElement").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(planBscWE.id())).out("workspaceElement").count().next().intValue());
+    }
+
+    @Test
     public void testSameEdgeToDifferentVertexLabels() throws Exception {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");

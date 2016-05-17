@@ -148,6 +148,31 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
+    public void mulitpleSchemas() throws Exception {
+
+        Vertex aPublic = this.sqlgGraph.addVertex(T.label, "APUBLIC", "name", "aPublic");
+        Vertex aReal = this.sqlgGraph.addVertex(T.label, "REAL.AREAL", "name", "aReal");
+        aPublic.addEdge("a", aReal);
+        aReal.addEdge("a", aPublic);
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        Statement statement = conn.createStatement();
+        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        statement.close();
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        //topology will be recreated
+        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        Assert.assertEquals(1, sqlgGraph1.traversal().V(aPublic.id()).in().count().next().intValue());
+        Assert.assertEquals(1, sqlgGraph1.traversal().V(aPublic.id()).out().count().next().intValue());
+        sqlgGraph1.close();
+
+    }
+
+    @Test
     public void testGratefulDeadDBUpgrade() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         Graph g = this.sqlgGraph;
@@ -200,6 +225,7 @@ public class TestTopologyUpgrade extends BaseTest {
         Assert.assertFalse(traversal.hasNext());
         sqlgGraph1.close();
     }
+
 
     @Test
     public void testModernGraph() throws Exception {

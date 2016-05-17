@@ -7,6 +7,11 @@ import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -57,5 +62,53 @@ public class TestFriendsterLike extends BaseTest {
             assertEquals(9, this.sqlgGraph.traversal().V(RecordId.from(SchemaTable.of("public", "Person"), Long.valueOf(i))).out().count().next(), 0);
         }
         System.out.println(this.sqlgGraph.traversal().V().both().both().count().next());
+    }
+
+//    @Test
+    public void testFriendsterLoad() throws IOException {
+//        String dir = "/home/pieter/Downloads/friendster/friendster-dataset-201107/";
+        String dir = "/home/pieter/Downloads/friendster/friendsterSmall/";
+        int count = 1;
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        try (DirectoryStream<java.nio.file.Path> directoryStream = Files.newDirectoryStream(Paths.get(dir))) {
+            for (java.nio.file.Path path : directoryStream) {
+                BufferedReader bufferedReader = Files.newBufferedReader(path);
+                bufferedReader.lines().forEach(line -> {
+
+                    String[] parts = line.split("\\|");
+                    String id = parts[0];
+                    this.sqlgGraph.streamVertex(T.label, "Person", "index", id);
+
+                });
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().streamingBatchModeOn();
+                System.out.println("Vertex Load " + count++);
+            }
+        }
+        System.out.println("Done Vertex Loading");
+
+        count = 1;
+        try (DirectoryStream<java.nio.file.Path> directoryStream = Files.newDirectoryStream(Paths.get(dir))) {
+            for (java.nio.file.Path path : directoryStream) {
+                List<Pair<String, String>> uids = new ArrayList<>();
+                BufferedReader bufferedReader = Files.newBufferedReader(path);
+                bufferedReader.lines().forEach(line -> {
+
+                    String[] parts = line.split("\\|");
+                    String id = parts[0];
+                    String friends = parts[1];
+                    String[] friendIds = friends.split(",");
+                    for (String friendId : friendIds) {
+                        uids.add(Pair.of(id, friendId));
+                    }
+
+                });
+                this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("index", "index"), uids);
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().streamingBatchModeOn();
+                System.out.println("Edge Load " + count++);
+            }
+        }
+        System.out.println("Done Edge Loading");
     }
 }
