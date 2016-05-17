@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestLoadSchema;
+import org.umlg.sqlg.test.batch.TestStreamVertex;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,7 @@ import org.umlg.sqlg.test.schema.TestLoadSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTopologyUpgrade.class,
-        TestLoadSchema.class
+        TestStreamVertex.class
 })
 public class AnyTest {
 }

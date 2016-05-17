@@ -42,7 +42,10 @@ public enum PropertyType {
     LONG_ARRAY(long[].class.getName(), new String[]{}),
     FLOAT_ARRAY(float[].class.getName(), new String[]{}),
     DOUBLE_ARRAY(double[].class.getName(), new String[]{}),
-    STRING_ARRAY(String[].class.getName(), new String[]{});
+    STRING_ARRAY(String[].class.getName(), new String[]{}),
+    LOCALDATETIME_ARRAY(LocalDateTime[].class.getName(), new String[]{}),
+    LOCALDATE_ARRAY(LocalDate[].class.getName(), new String[]{}),
+    LOCALTIME_ARRAY(LocalTime[].class.getName(), new String[]{});
 
     private String javaClassName;
     //This postfix is for composite properties where one java type maps to multiple columns.

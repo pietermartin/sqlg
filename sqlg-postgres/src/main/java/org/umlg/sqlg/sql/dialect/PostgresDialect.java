@@ -1327,6 +1327,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"DOUBLE PRECISION[]"};
             case STRING_ARRAY:
                 return new String[]{"TEXT[]"};
+            case LOCALDATETIME_ARRAY:
+                return new String[]{"TIMESTAMP WITH TIME ZONE[]"};
+            case LOCALDATE_ARRAY:
+                return new String[]{"DATE[]"};
+            case LOCALTIME_ARRAY:
+                return new String[]{"TIME WITH TIME ZONE[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -1547,6 +1553,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             return;
         }
         if (value instanceof Double[]) {
+            return;
+        }
+        if (value instanceof LocalDateTime[]) {
+            return;
+        }
+        if (value instanceof LocalDate[]) {
+            return;
+        }
+        if (value instanceof LocalTime[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);

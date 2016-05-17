@@ -18,10 +18,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.lang.reflect.Array;
 import java.sql.*;
 import java.sql.Date;
-import java.time.Duration;
-import java.time.Period;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -314,6 +311,12 @@ public abstract class SqlgElement implements Element {
                 return copy(value, new double[value.length]);
             case Types.VARCHAR:
                 return copy(value, new String[value.length]);
+            case Types.TIMESTAMP:
+                return copyToLocalDateTime((Timestamp[]) value, new LocalDateTime[value.length]);
+            case Types.DATE:
+                return copyToLocalDate((Date[]) value, new LocalDate[value.length]);
+            case Types.TIME:
+                return copyToLocalTime((Time[]) value, new LocalTime[value.length]);
         }
         if (value instanceof Integer[]) {
             switch (baseType) {
@@ -371,6 +374,36 @@ public abstract class SqlgElement implements Element {
                 throw new IllegalArgumentException("Property array value elements may not be null.");
             }
             Array.set(target, i, ((Number) value[i]).shortValue());
+        }
+        return target;
+    }
+
+    private <T> T copyToLocalDateTime(Timestamp[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].toLocalDateTime());
+        }
+        return target;
+    }
+
+    private <T> T copyToLocalDate(Date[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].toLocalDate());
+        }
+        return target;
+    }
+
+    private <T> T copyToLocalTime(Time[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].toLocalTime());
         }
         return target;
     }
