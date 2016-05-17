@@ -148,12 +148,16 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
-    public void mulitpleSchemas() throws Exception {
+    public void multipleSchemas() throws Exception {
 
         Vertex aPublic = this.sqlgGraph.addVertex(T.label, "APUBLIC", "name", "aPublic");
         Vertex aReal = this.sqlgGraph.addVertex(T.label, "REAL.AREAL", "name", "aReal");
-        aPublic.addEdge("a", aReal);
-        aReal.addEdge("a", aPublic);
+        aPublic.addEdge("a", aReal, "name", "asd");
+        aReal.addEdge("a", aPublic, "name", "dsa");
+        Vertex bPublic = this.sqlgGraph.addVertex(T.label, "BPUBLIC", "name", "bPublic");
+        Vertex bReal = this.sqlgGraph.addVertex(T.label, "REAL.BREAL", "name", "bReal");
+        bPublic.addEdge("a", bReal, "name", "asd");
+        bReal.addEdge("a", bPublic, "name", "dsa");
         this.sqlgGraph.tx().commit();
 
         //Delete the topology

@@ -2,6 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.umlg.sqlg.test.schema.TestLoadSchema;
 import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
 
 /**
@@ -11,7 +12,7 @@ import org.umlg.sqlg.test.upgrade.TestTopologyUpgrade;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestTopologyUpgrade.class,
-//        TestLoadSchema.class
+        TestLoadSchema.class
 })
 public class AnyTest {
 }

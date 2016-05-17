@@ -547,7 +547,7 @@ public class SchemaManager {
         return uncommitedColumns;
     }
 
-    void ensureColumnsExist(String schema, String prefixedTable, Map<String, PropertyType> columns) {
+    private void ensureColumnsExist(String schema, String prefixedTable, Map<String, PropertyType> columns) {
         boolean isVertex = prefixedTable.startsWith(VERTEX_PREFIX);
         boolean isEdge = prefixedTable.startsWith(EDGE_PREFIX);
         if (!isVertex && !isEdge) {
@@ -1065,16 +1065,16 @@ public class SchemaManager {
                     continue;
                 }
 
-                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
+                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTableMap = new HashMap<>();
                 Map<String, PropertyType> columns = Collections.emptyMap();
                 //get the columns
                 String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
+                SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
                 boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
                     if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
-                        SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
                         String[] split = column.split("\\.");
                         SchemaTable foreignKey = SchemaTable.of(split[0], split[1]);
                         if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
@@ -1082,33 +1082,33 @@ public class SchemaManager {
                                     split[0],
                                     split[1].substring(0, split[1].length() - SchemaManager.IN_VERTEX_COLUMN_END.length())
                             );
-                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
-                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
+                            if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
                                 if (inSchemaTable.getLeft() == null) {
                                     inSchemaTable.setLeft(schemaTable);
                                 } else {
                                     TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, true, foreignKey);
                                 }
                             } else {
-                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
+                                inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
                             }
                         } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                             SchemaTable schemaTable = SchemaTable.of(
                                     split[0],
                                     split[1].substring(0, split[1].length() - SchemaManager.OUT_VERTEX_COLUMN_END.length())
                             );
-                            if (inOutSchemaTable.containsKey(edgeSchemaTable)) {
-                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTable.get(edgeSchemaTable);
+                            if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
+                                MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
                                 if (outSchemaTable.getRight() == null) {
                                     outSchemaTable.setRight(schemaTable);
                                 } else {
                                     TopologyManager.addLabelToEdge(this.sqlgGraph, schema, table, false, foreignKey);
                                 }
                             } else {
-                                inOutSchemaTable.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
+                                inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(null, schemaTable));
                             }
                         }
-                        MutablePair<SchemaTable, SchemaTable> inOutLabels = inOutSchemaTable.get(edgeSchemaTable);
+                        MutablePair<SchemaTable, SchemaTable> inOutLabels = inOutSchemaTableMap.get(edgeSchemaTable);
                         if (!edgeAdded && inOutLabels.getLeft() != null && inOutLabels.getRight() != null) {
                             TopologyManager.addEdgeLabel(this.sqlgGraph, schema, table, inOutLabels.getLeft(), inOutLabels.getRight(), columns);
                             edgeAdded = true;

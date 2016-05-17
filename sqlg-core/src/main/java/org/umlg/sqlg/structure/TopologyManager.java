@@ -9,6 +9,7 @@ import org.umlg.sqlg.strategy.TopologyStrategy;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by pieter on 2015/12/08.
@@ -65,9 +66,7 @@ public class TopologyManager {
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
-
     }
-
 
     static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
@@ -157,7 +156,7 @@ public class TopologyManager {
             List<Vertex> edgeVertices = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
                     .has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length())).as("a")
-                    .in(in ? SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE : SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE)
+                    .in(SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE)
                     .in(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", schema)
                     .<Vertex>select("a")
@@ -241,7 +240,7 @@ public class TopologyManager {
             Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);
             GraphTraversalSource traversalSource = sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
 
-            List<Vertex> edges = traversalSource.V()
+            Set<Vertex> edges = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
                     .has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length()))
                     .as("a")
@@ -249,15 +248,14 @@ public class TopologyManager {
                     .in(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                     .has("name", schema)
                     .<Vertex>select("a")
-                    .toList();
+                    .toSet();
             if (edges.size() == 0) {
                 throw new IllegalStateException("Found no edge for " + prefixedTable);
             }
             if (edges.size() > 1) {
                 throw new IllegalStateException("Found more than one edge for " + prefixedTable);
             }
-            Vertex edge = edges.get(0);
-
+            Vertex edge = edges.iterator().next();
 
             Vertex property = sqlgGraph.addVertex(
                     T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_PROPERTY,
