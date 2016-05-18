@@ -124,6 +124,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return "float";
             case STRING_ARRAY:
                 return "varchar";
+            case LOCALDATETIME_ARRAY:
+                return "timestamp";
+            case LOCALDATE_ARRAY:
+                return "date";
+            case LOCALTIME_ARRAY:
+                return "time";
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
         }
@@ -822,6 +828,23 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     Duration duration = (Duration) value;
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
                     break;
+                case ZONEDDATETIME_ARRAY:
+                    ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("{");
+                    int length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        zonedDateTime  = zonedDateTimes[i];
+                        localDateTime = zonedDateTime.toLocalDateTime();
+                        timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                        result = localDateTime.toString() + COPY_COMMAND_DELIMITER + timeZone.getID().toString();
+                        sb.append(result);
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    return sb.toString();
                 default:
                     if (value.getClass().isArray()) {
                         if (value.getClass().getName().equals("[B")) {
@@ -832,9 +855,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                                 throw new RuntimeException(e);
                             }
                         } else {
-                            StringBuilder sb = new StringBuilder();
+                            sb = new StringBuilder();
                             sb.append("{");
-                            int length = java.lang.reflect.Array.getLength(value);
+                            length = java.lang.reflect.Array.getLength(value);
                             for (int i = 0; i < length; i++) {
                                 String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
                                 sb.append(escapeSpecialCharacters(valueOfArray));
@@ -1333,6 +1356,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"DATE[]"};
             case LOCALTIME_ARRAY:
                 return new String[]{"TIME WITH TIME ZONE[]"};
+            case ZONEDDATETIME_ARRAY:
+                return new String[]{"TIMESTAMP WITH TIME ZONE[]", "TEXT[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -1562,6 +1587,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             return;
         }
         if (value instanceof LocalTime[]) {
+            return;
+        }
+        if (value instanceof ZonedDateTime[]) {
             return;
         }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);

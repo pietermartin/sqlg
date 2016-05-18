@@ -45,7 +45,8 @@ public enum PropertyType {
     STRING_ARRAY(String[].class.getName(), new String[]{}),
     LOCALDATETIME_ARRAY(LocalDateTime[].class.getName(), new String[]{}),
     LOCALDATE_ARRAY(LocalDate[].class.getName(), new String[]{}),
-    LOCALTIME_ARRAY(LocalTime[].class.getName(), new String[]{});
+    LOCALTIME_ARRAY(LocalTime[].class.getName(), new String[]{}),
+    ZONEDDATETIME_ARRAY(ZonedDateTime[].class.getName(), new String[]{SchemaManager.ZONEID});
 
     private String javaClassName;
     //This postfix is for composite properties where one java type maps to multiple columns.

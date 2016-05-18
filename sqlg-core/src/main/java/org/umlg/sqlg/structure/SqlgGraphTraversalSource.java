@@ -13,7 +13,7 @@ import org.umlg.sqlg.strategy.TopologyStrategy;
 public class SqlgGraphTraversalSource extends GraphTraversalSource {
 
     public SqlgGraphTraversalSource(Graph graph) {
-        super(graph, TraversalStrategies.GlobalCache.getStrategies(graph.getClass()).addStrategies(TopologyStrategy.build().create()));
+        super(graph, TraversalStrategies.GlobalCache.getStrategies(graph.getClass()).clone().addStrategies(TopologyStrategy.build().create()));
     }
 
     public SqlgGraphTraversalSource(Graph graph, TraversalStrategies traversalStrategies) {

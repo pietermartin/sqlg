@@ -324,8 +324,11 @@ public class SqlgUtil {
                 case ZONEDDATETIME:
                     if (sqlgGraph.getSqlDialect().needsTimeZone()) {
                         //This is for postgresql that adjust the timestamp to the server's timezone
-                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()),
-                                Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId())));
+                        preparedStatement.setTimestamp(
+                                parameterStartIndex++,
+                                Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()),
+                                Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId()))
+                        );
                     } else {
                         preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()));
                     }
@@ -396,6 +399,32 @@ public class SqlgUtil {
                     java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, stringArray);
                     break;
+                case LOCALDATETIME_ARRAY:
+                    java.sql.Array localDateTimeArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, localDateTimeArray);
+                    break;
+                case LOCALDATE_ARRAY:
+                    java.sql.Array localDateArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALDATE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, localDateArray);
+                    break;
+                case LOCALTIME_ARRAY:
+                    java.sql.Array localTimeArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALTIME_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, localTimeArray);
+                    break;
+//                case ZONEDDATETIME_ARRAY:
+//                    if (sqlgGraph.getSqlDialect().needsTimeZone()) {
+//                        //This is for postgresql that adjust the timestamp to the server's timezone
+//                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()),
+//                                Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId())));
+//                    } else {
+//                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()));
+//                    }
+//                    if (mod)
+//                        preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
+//                    break;
+//                    java.sql.Array zonedDateTimeArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALTIME_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+//                    preparedStatement.setArray(parameterStartIndex++, localTimeArray);
+//                    break;
                 default:
                     throw new IllegalStateException("Unhandled type " + pair.left.name());
             }

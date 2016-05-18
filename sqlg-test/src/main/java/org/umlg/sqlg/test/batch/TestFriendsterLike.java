@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.batch;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.junit.Test;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestFriendsterLike extends BaseTest {
 
-    @Test
+//    @Test
     public void testSeparateThread() {
         List<String> lines = new ArrayList<>();
         lines.add("1|2,3,4,5,6,7,8,9,10");
@@ -67,7 +67,11 @@ public class TestFriendsterLike extends BaseTest {
 //    @Test
     public void testFriendsterLoad() throws IOException {
 //        String dir = "/home/pieter/Downloads/friendster/friendster-dataset-201107/";
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         String dir = "/home/pieter/Downloads/friendster/friendsterSmall/";
+        String NOT_FOUND = "notfound";
+        String PRIVATE = "private";
         int count = 1;
         this.sqlgGraph.tx().streamingBatchModeOn();
         try (DirectoryStream<java.nio.file.Path> directoryStream = Files.newDirectoryStream(Paths.get(dir))) {
@@ -75,9 +79,19 @@ public class TestFriendsterLike extends BaseTest {
                 BufferedReader bufferedReader = Files.newBufferedReader(path);
                 bufferedReader.lines().forEach(line -> {
 
-                    String[] parts = line.split("\\|");
+                    String[] parts = line.split(":");
                     String id = parts[0];
-                    this.sqlgGraph.streamVertex(T.label, "Person", "index", id);
+                    String last;
+                    if (parts.length > 1) {
+                        last = parts[1];
+                    } else {
+                        last = "-";
+                    }
+                    if (last.equals(NOT_FOUND) || last.equals(PRIVATE)) {
+                        this.sqlgGraph.streamVertex(T.label, "Person", "index", id, "friend", last);
+                    } else {
+                        this.sqlgGraph.streamVertex(T.label, "Person", "index", id, "friend", "_");
+                    }
 
                 });
                 this.sqlgGraph.tx().commit();
@@ -94,12 +108,16 @@ public class TestFriendsterLike extends BaseTest {
                 BufferedReader bufferedReader = Files.newBufferedReader(path);
                 bufferedReader.lines().forEach(line -> {
 
-                    String[] parts = line.split("\\|");
+                    String[] parts = line.split(":");
                     String id = parts[0];
-                    String friends = parts[1];
-                    String[] friendIds = friends.split(",");
-                    for (String friendId : friendIds) {
-                        uids.add(Pair.of(id, friendId));
+                    if (parts.length > 1) {
+                        String friends = parts[1];
+                        if (!friends.equals(NOT_FOUND) && !friends.equals(PRIVATE)) {
+                            String[] friendIds = friends.split(",");
+                            for (String friendId : friendIds) {
+                                uids.add(Pair.of(id, friendId));
+                            }
+                        }
                     }
 
                 });
@@ -110,5 +128,7 @@ public class TestFriendsterLike extends BaseTest {
             }
         }
         System.out.println("Done Edge Loading");
+        stopWatch.stop();
+        System.out.println("Time taken = " + stopWatch.toString());
     }
 }
