@@ -400,7 +400,10 @@ public class SqlgUtil {
                     preparedStatement.setArray(parameterStartIndex++, stringArray);
                     break;
                 case LOCALDATETIME_ARRAY:
-                    java.sql.Array localDateTimeArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array localDateTimeArray = conn.createArrayOf(
+                            sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY),
+                            SqlgUtil.transformArrayToInsertValue(pair.left, pair.right)
+                    );
                     preparedStatement.setArray(parameterStartIndex++, localDateTimeArray);
                     break;
                 case LOCALDATE_ARRAY:
@@ -565,14 +568,20 @@ public class SqlgUtil {
      * @return
      */
     public static Object[] transformArrayToInsertValue(PropertyType propertyType, Object value) {
-        return getArray(value);
+        return getArray(propertyType, value);
     }
 
-    private static Object[] getArray(Object val) {
+    private static Object[] getArray(PropertyType propertyType, Object val) {
         int arrlength = Array.getLength(val);
         Object[] outputArray = new Object[arrlength];
         for (int i = 0; i < arrlength; ++i) {
-            outputArray[i] = Array.get(val, i);
+            switch (propertyType) {
+                case LOCALDATETIME_ARRAY:
+                    outputArray[i] = Timestamp.valueOf((LocalDateTime) Array.get(val, i));
+                    break;
+                default:
+                    outputArray[i] = Array.get(val, i);
+            }
         }
         return outputArray;
     }

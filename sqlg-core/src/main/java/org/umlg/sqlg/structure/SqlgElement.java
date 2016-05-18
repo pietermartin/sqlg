@@ -313,6 +313,9 @@ public abstract class SqlgElement implements Element {
                 return copy(value, new String[value.length]);
             case Types.TIMESTAMP:
                 return copyToLocalDateTime((Timestamp[]) value, new LocalDateTime[value.length]);
+            //HSQLDB timestamp
+            case 95:
+                return copyToLocalDateTime(value, new LocalDateTime[value.length]);
             case Types.DATE:
                 return copyToLocalDate((Date[]) value, new LocalDate[value.length]);
             case Types.TIME:
@@ -374,6 +377,16 @@ public abstract class SqlgElement implements Element {
                 throw new IllegalArgumentException("Property array value elements may not be null.");
             }
             Array.set(target, i, ((Number) value[i]).shortValue());
+        }
+        return target;
+    }
+
+    private <T> T copyToLocalDateTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, ((Timestamp)value[i]).toLocalDateTime());
         }
         return target;
     }

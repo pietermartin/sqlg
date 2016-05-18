@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.HashSet;
 import java.util.List;
@@ -40,6 +41,7 @@ public class GremlinParser<S extends Element, E extends Element> {
         Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedSteps.size());
         Set<SchemaTableTree> toRemove = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            SqlgUtil.removeTopologyStrategyHasContainer(rootSchemaTableTree.getHasContainers());
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
             schemaTableTrees.add(rootSchemaTableTree);
             for (ReplacedStep<S, E> replacedStep : replacedSteps) {

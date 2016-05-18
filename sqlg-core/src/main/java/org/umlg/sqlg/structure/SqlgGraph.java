@@ -22,6 +22,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
+import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Constructor;
@@ -181,8 +182,10 @@ public class SqlgGraph implements Graph {
     private final ISqlGFeatures features = new SqlGFeatures();
 
     static {
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgVertexStepStrategy()));
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone().addStrategies(new SqlgGraphStepStrategy()));
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
+                .addStrategies(new SqlgVertexStepStrategy())
+                .addStrategies(new SqlgGraphStepStrategy())
+                .addStrategies(TopologyStrategy.build().create()));
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {
@@ -265,6 +268,10 @@ public class SqlgGraph implements Graph {
     @Override
     public GraphTraversalSource traversal() {
         return this.traversal(SqlgGraphTraversalSource.class);
+    }
+
+    public GraphTraversalSource topology() {
+        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
     }
 
     @Override

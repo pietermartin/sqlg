@@ -5,15 +5,14 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.hsqldb.jdbc.JDBCArrayBasic;
+import org.hsqldb.types.Type;
 import org.umlg.sqlg.structure.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 
@@ -214,6 +213,18 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof Double[]) {
             return;
         }
+        if (value instanceof LocalDateTime[]) {
+            return;
+        }
+        if (value instanceof LocalDate[]) {
+            return;
+        }
+        if (value instanceof LocalTime[]) {
+            return;
+        }
+        if (value instanceof ZonedDateTime[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -289,6 +300,14 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
             case STRING_ARRAY:
                 return new String[]{"LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
+            case LOCALDATETIME_ARRAY:
+                return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
+            case LOCALDATE_ARRAY:
+                return new String[]{"DATE[]"};
+            case LOCALTIME_ARRAY:
+                return new String[]{"TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
+            case ZONEDDATETIME_ARRAY:
+                return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -427,6 +446,14 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return "DOUBLE";
             case STRING_ARRAY:
                 return "VARCHAR";
+            case LOCALDATETIME_ARRAY:
+//                org.hsqldb.types.Type type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+//                return type.getNameString();
+                return "TIMESTAMP";
+            case LOCALDATE_ARRAY:
+                return "DATE";
+            case LOCALTIME_ARRAY:
+                return "TIME";
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
         }
@@ -579,5 +606,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public Long getPrimaryKeyStartValue() {
         return 0l;
+    }
+
+    @Override
+    public Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
+        org.hsqldb.types.Type type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+        return new JDBCArrayBasic(data, type);
     }
 }

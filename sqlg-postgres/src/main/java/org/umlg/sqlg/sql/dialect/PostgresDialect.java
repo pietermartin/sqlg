@@ -2026,4 +2026,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
         return result;
     }
+
+    @Override
+    public Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
+        try {
+            return conn.createArrayOf(getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY), data);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

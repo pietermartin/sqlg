@@ -3,7 +3,6 @@ package org.umlg.sqlg.structure;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 
 /**
  * Date: 2016/05/16
@@ -13,7 +12,7 @@ import org.umlg.sqlg.strategy.TopologyStrategy;
 public class SqlgGraphTraversalSource extends GraphTraversalSource {
 
     public SqlgGraphTraversalSource(Graph graph) {
-        super(graph, TraversalStrategies.GlobalCache.getStrategies(graph.getClass()).clone().addStrategies(TopologyStrategy.build().create()));
+        super(graph, TraversalStrategies.GlobalCache.getStrategies(graph.getClass()));
     }
 
     public SqlgGraphTraversalSource(Graph graph, TraversalStrategies traversalStrategies) {

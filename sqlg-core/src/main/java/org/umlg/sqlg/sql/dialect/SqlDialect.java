@@ -424,4 +424,7 @@ public interface SqlDialect {
     default Long getPrimaryKeyStartValue() {
         return 1l;
     }
+
+    Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data);
+
 }

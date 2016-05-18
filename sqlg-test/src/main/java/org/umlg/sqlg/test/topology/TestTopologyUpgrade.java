@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.upgrade;
+package org.umlg.sqlg.test.topology;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -13,12 +13,15 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.List;
 
 /**
  * Date: 2016/02/06
@@ -252,6 +255,25 @@ public class TestTopologyUpgrade extends BaseTest {
         Assert.assertEquals(new Long(30), traversal.next());
         Assert.assertFalse(traversal.hasNext());
         sqlgGraph1.close();
+    }
+
+    @Test
+    public void testTopologyFilter() {
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God", "name", "god1");
+        Vertex universe = this.sqlgGraph.addVertex(T.label, "Universe", "name", "universe1");
+        god.addEdge("universe", universe);
+        this.sqlgGraph.tx().commit();
+        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
+                TopologyStrategy.build().selectFrom(
+                        SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES
+                ).create()
+        );
+        List<Vertex> schemas = traversalSource.V()
+                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                .toList();
+        Assert.assertEquals(1, schemas.size());
+        Long count = this.sqlgGraph.topology().V().count().next();
+        Assert.assertEquals(6, count, 0);
     }
 
     public Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
