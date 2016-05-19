@@ -979,7 +979,9 @@ public class SchemaManager {
         }
         if (!existSqlgSchema) {
             //old versions of sqlg needs the topology populated from the information_schema table.
+            logger.info("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             upgradeSqlgToTopologySchema();
+            logger.info("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
         }
         loadUserSchema();
         this.sqlgGraph.tx().commit();
