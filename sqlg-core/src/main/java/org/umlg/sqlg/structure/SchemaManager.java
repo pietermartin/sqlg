@@ -993,13 +993,11 @@ public class SchemaManager {
     }
 
     private void upgradeSqlgToTopologySchema() {
-
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
-            String tableNamePattern = null;
             String[] types = new String[]{"TABLE"};
             //load the schemas
             ResultSet schemaRs = metadata.getSchemas();
@@ -1033,8 +1031,7 @@ public class SchemaManager {
                 Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new ConcurrentHashMap<>();
                 //get the columns
-                String previousSchema = "";
-                ResultSet columnsRs = metadata.getColumns(catalog, schemaPattern, table, null);
+                ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
                     if (!column.equals(SchemaManager.ID)) {
@@ -1068,7 +1065,6 @@ public class SchemaManager {
                 Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTableMap = new HashMap<>();
                 Map<String, PropertyType> columns = Collections.emptyMap();
                 //get the columns
-                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                 SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
                 boolean edgeAdded = false;
@@ -1134,12 +1130,9 @@ public class SchemaManager {
                     continue;
                 }
 
-                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new HashMap<>();
                 //get the columns
-                String previousSchema = "";
                 ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
-                boolean edgeAdded = false;
                 while (columnsRs.next()) {
                     String column = columnsRs.getString(4);
                     if (!column.equals(SchemaManager.ID) && !column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) && !column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {

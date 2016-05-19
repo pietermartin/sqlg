@@ -276,7 +276,34 @@ public class TestTopologyUpgrade extends BaseTest {
         Assert.assertEquals(6, count, 0);
     }
 
-    public Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
+    @Test
+    public void testUpgradePropertiesAcrossSchema() throws Exception {
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "name1", "a11");
+        this.sqlgGraph.addVertex(T.label, "B.A", "name", "b1", "name2", "b22");
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        Statement statement = conn.createStatement();
+        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        statement.close();
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+        Assert.assertEquals(1, schemaVertices.size());
+        List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                .out("schema_vertex")
+                .has("name", "A")
+                .out("vertex_property").toList();
+        Assert.assertEquals(2, propertyVertices.size());
+        propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "B")
+                .out("schema_vertex").has("name", "A")
+                .out("vertex_property").toList();
+        Assert.assertEquals(2, propertyVertices.size());
+        sqlgGraph1.close();
+    }
+
+    private Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
         return g.V().both().both().count();
     }
 }
