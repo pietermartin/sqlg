@@ -610,7 +610,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
-        org.hsqldb.types.Type type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+        org.hsqldb.types.Type type = null;
+        switch (propertyType) {
+            case LOCALDATETIME_ARRAY:
+                type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+                break;
+        }
         return new JDBCArrayBasic(data, type);
     }
 }
