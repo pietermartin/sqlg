@@ -125,7 +125,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestBatchDateTime.class,
         TestBatchEdgeDateTime.class,
         TestBatchJson.class,
-        TestMemoryUsage.class
+        TestMemoryUsage.class,
+        TestBatchTemporaryVertex.class
 })
 public class AllTest {
 }
