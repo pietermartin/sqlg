@@ -400,10 +400,7 @@ public class SqlgUtil {
                     preparedStatement.setArray(parameterStartIndex++, stringArray);
                     break;
                 case LOCALDATETIME_ARRAY:
-                    java.sql.Array localDateTimeArray = conn.createArrayOf(
-                            sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY),
-                            SqlgUtil.transformArrayToInsertValue(pair.left, pair.right)
-                    );
+                    java.sql.Array localDateTimeArray =   sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALDATETIME_ARRAY,  SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, localDateTimeArray);
                     break;
                 case LOCALDATE_ARRAY:
