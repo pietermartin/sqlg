@@ -380,7 +380,7 @@ public class SchemaManager {
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTemporaryTables.containsKey(prefixedTable)) {
-            this.localTemporaryTables.put(prefixedTable, new HashMap<>());
+            this.localTemporaryTables.put(prefixedTable, columns);
             createTempTable(prefixedTable, columns);
         }
     }
@@ -1482,6 +1482,7 @@ public class SchemaManager {
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
         Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         result.putAll(this.localTables);
+        result.putAll(this.localTemporaryTables);
         if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
             result.putAll(this.uncommittedTables);
         }

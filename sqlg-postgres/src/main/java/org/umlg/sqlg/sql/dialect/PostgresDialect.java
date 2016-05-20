@@ -615,7 +615,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(vertex.getSchema() + "." + SchemaManager.VERTEX_PREFIX + vertex.getTable());
+        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get((isTemp == false ? vertex.getSchema() + "." : "") + SchemaManager.VERTEX_PREFIX + vertex.getTable());
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         if (!isTemp) {
