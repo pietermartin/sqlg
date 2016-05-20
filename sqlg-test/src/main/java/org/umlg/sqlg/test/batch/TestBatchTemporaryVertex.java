@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test.batch;
 
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -15,6 +17,11 @@ import java.util.LinkedHashMap;
  * Time: 9:14 AM
  */
 public class TestBatchTemporaryVertex extends BaseTest {
+
+    @Before
+    public void beforeTest() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
 
     @Test
     public void testTempBatch() throws SQLException {
