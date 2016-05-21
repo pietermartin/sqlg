@@ -35,18 +35,28 @@ public enum PropertyType {
     GEOGRAPHY_POINT("org.umlg.sqlg.gis.GeographyPoint", new String[]{}),
     GEOGRAPHY_POLYGON("org.umlg.sqlg.gis.GeographyPolygon", new String[]{}),
 
-    BOOLEAN_ARRAY(boolean[].class.getName(), new String[]{}),
-    BYTE_ARRAY(byte[].class.getName(), new String[]{}),
-    SHORT_ARRAY(short[].class.getName(), new String[]{}),
-    INTEGER_ARRAY(int[].class.getName(), new String[]{}),
-    LONG_ARRAY(long[].class.getName(), new String[]{}),
-    FLOAT_ARRAY(float[].class.getName(), new String[]{}),
-    DOUBLE_ARRAY(double[].class.getName(), new String[]{}),
+    boolean_ARRAY(boolean[].class.getName(), new String[]{}),
+    BOOLEAN_ARRAY(Boolean[].class.getName(), new String[]{}),
+    byte_ARRAY(byte[].class.getName(), new String[]{}),
+    BYTE_ARRAY(Byte[].class.getName(), new String[]{}),
+    short_ARRAY(short[].class.getName(), new String[]{}),
+    SHORT_ARRAY(Short[].class.getName(), new String[]{}),
+    INT_ARRAY(int[].class.getName(), new String[]{}),
+    INTEGER_ARRAY(Integer[].class.getName(), new String[]{}),
+    long_ARRAY(long[].class.getName(), new String[]{}),
+    LONG_ARRAY(Long[].class.getName(), new String[]{}),
+    float_ARRAY(float[].class.getName(), new String[]{}),
+    FLOAT_ARRAY(Float[].class.getName(), new String[]{}),
+    double_ARRAY(double[].class.getName(), new String[]{}),
+    DOUBLE_ARRAY(Double[].class.getName(), new String[]{}),
     STRING_ARRAY(String[].class.getName(), new String[]{}),
     LOCALDATETIME_ARRAY(LocalDateTime[].class.getName(), new String[]{}),
     LOCALDATE_ARRAY(LocalDate[].class.getName(), new String[]{}),
     LOCALTIME_ARRAY(LocalTime[].class.getName(), new String[]{}),
-    ZONEDDATETIME_ARRAY(ZonedDateTime[].class.getName(), new String[]{SchemaManager.ZONEID});
+    ZONEDDATETIME_ARRAY(ZonedDateTime[].class.getName(), new String[]{SchemaManager.ZONEID}),
+    DURATION_ARRAY(Duration[].class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
+    PERIOD_ARRAY(Period[].class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS});
+//    JSON_ARRAY(JsonNode[].class.getName(), new String[]{});
 
     private String javaClassName;
     //This postfix is for composite properties where one java type maps to multiple columns.
@@ -70,6 +80,8 @@ public enum PropertyType {
         PropertyType propertyType = javaClassNameToEnum.get(o.getClass().getName());
         if (propertyType == null && (o instanceof JsonNode)) {
             propertyType = javaClassNameToEnum.get(JsonNode.class.getName());
+        } else if (propertyType == null && (o instanceof JsonNode[])) {
+            propertyType = javaClassNameToEnum.get(JsonNode[].class.getName());
         }
         if (propertyType == null) {
             throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(o);

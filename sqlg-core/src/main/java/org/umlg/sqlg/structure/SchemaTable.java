@@ -23,7 +23,6 @@ import java.util.Objects;
 public class SchemaTable implements DataSerializable, Serializable {
     private String schema;
     private String table;
-    public static SchemaTable DUMMY = SchemaTable.of("dummy", "dummy");
 
     //Needed for Hazelcast
     public SchemaTable() {

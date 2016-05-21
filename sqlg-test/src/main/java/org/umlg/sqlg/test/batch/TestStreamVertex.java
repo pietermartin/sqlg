@@ -509,23 +509,112 @@ public class TestStreamVertex extends BaseTest {
         Assert.assertArrayEquals(localTimes1.toArray(), vertices.get(0).<LocalTime[]>value("names"));
     }
 
+    @Test
+    public void testZonedDateTimeArray() {
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now().minusHours(1), ZonedDateTime.now()};
+        this.sqlgGraph.addVertex(T.label, "Person", "names", zonedDateTimes);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "names", zonedDateTimes);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(11, vertices.size());
+        List<ZonedDateTime> zonedDateTimes1 = new ArrayList<>();
+        for (ZonedDateTime zonedDateTime : zonedDateTimes) {
+            zonedDateTimes1.add(zonedDateTime);
+        }
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(0).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(1).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(2).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(3).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(4).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(5).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(6).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(7).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(8).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(9).<ZonedDateTime[]>value("names"));
+        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(10).<ZonedDateTime[]>value("names"));
+    }
+
+    @Test
+    public void testDurationArray() {
+        Duration[] durations = new Duration[]{Duration.ofHours(5), Duration.ofHours(10)};
+        this.sqlgGraph.addVertex(T.label, "Person", "names", durations);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "names", durations);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(11, vertices.size());
+        List<Duration> durations1 = new ArrayList<>();
+        for (Duration duration: durations) {
+            durations1.add(duration);
+        }
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(0).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(1).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(2).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(3).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(4).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(5).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(6).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(7).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(8).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(9).<Duration[]>value("names"));
+        Assert.assertArrayEquals(durations1.toArray(), vertices.get(10).<Duration[]>value("names"));
+    }
+
+    @Test
+    public void testPeriodArray() {
+        Period[] periods = new Period[]{Period.of(2016,1,1), Period.of(2017,2,2)};
+        this.sqlgGraph.addVertex(T.label, "Person", "names", periods);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "names", periods);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(11, vertices.size());
+        List<Period> periods1 = new ArrayList<>();
+        for (Period period: periods) {
+            periods1.add(period);
+        }
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(0).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(1).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(2).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(3).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(4).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(5).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(6).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(7).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(8).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(9).<Duration[]>value("names"));
+        Assert.assertArrayEquals(periods1.toArray(), vertices.get(10).<Duration[]>value("names"));
+    }
+
 //    @Test
-//    public void testZonedDateTimeArray() {
-//        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now().minusHours(1), ZonedDateTime.now()};
-//        this.sqlgGraph.addVertex(T.label, "Person", "names", zonedDateTimes);
-//        this.sqlgGraph.tx().commit();
+//    public void testStreamJsonAsArray() {
+//        ObjectMapper objectMapper =  new ObjectMapper();
+//        ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
+//        json1.put("username", "john1");
+//        ObjectNode json2 = new ObjectNode(objectMapper.getNodeFactory());
+//        json2.put("username", "john2");
+//
+////        JsonNode[] jsonNodes = new JsonNode[]{json1, json2};
+//        JsonNode[] jsonNodes = new JsonNode[]{json1};
 //        this.sqlgGraph.tx().streamingBatchModeOn();
 //        for (int i = 0; i < 10; i++) {
-//            this.sqlgGraph.streamVertex(T.label, "Person", "names", zonedDateTimes);
+//            this.sqlgGraph.streamVertex(T.label, "Person", "docs", jsonNodes);
 //        }
 //        this.sqlgGraph.tx().commit();
 //        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
 //        Assert.assertEquals(10, vertices.size());
-//        List<ZonedDateTime> zonedDateTimes1 = new ArrayList<>();
-//        for (ZonedDateTime zonedDateTime : zonedDateTimes) {
-//            zonedDateTimes1.add(zonedDateTime);
-//        }
-//        Assert.assertArrayEquals(zonedDateTimes1.toArray(), vertices.get(0).<ZonedDateTime[]>value("names"));
+//        JsonNode[] value = vertices.get(0).value("docs");
+//        Assert.assertArrayEquals(jsonNodes, value);
 //    }
 
 }

@@ -515,4 +515,5 @@ public class BatchManager {
     boolean isBusyFlushing() {
         return isBusyFlushing;
     }
+
 }

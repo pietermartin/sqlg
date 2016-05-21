@@ -15,13 +15,14 @@ import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.lang.reflect.Array;
 import java.sql.*;
 import java.sql.Date;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+import static org.umlg.sqlg.util.SqlgUtil.convertObjectArrayToPrimitiveArray;
 
 /**
  * Date: 2014/07/12
@@ -288,138 +289,6 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected Object convertObjectArrayToPrimitiveArray(Object[] value, int baseType) {
-        if (value instanceof String[]) {
-            return value;
-        }
-        switch (baseType) {
-            case Types.BIT:
-                return copy(value, new boolean[value.length]);
-            case Types.BOOLEAN:
-                return copy(value, new boolean[value.length]);
-            case Types.TINYINT:
-                return copyToTinyInt((Integer[]) value, new byte[value.length]);
-            case Types.SMALLINT:
-                return copyToSmallInt(value, new short[value.length]);
-            case Types.INTEGER:
-                return copy(value, new int[value.length]);
-            case Types.BIGINT:
-                return copy(value, new long[value.length]);
-            case Types.REAL:
-                return copy(value, new float[value.length]);
-            case Types.DOUBLE:
-                return copy(value, new double[value.length]);
-            case Types.VARCHAR:
-                return copy(value, new String[value.length]);
-            case Types.TIMESTAMP:
-                return copyToLocalDateTime((Timestamp[]) value, new LocalDateTime[value.length]);
-            //HSQLDB timestamp
-            case 95:
-                return copyToLocalDateTime(value, new LocalDateTime[value.length]);
-            case Types.DATE:
-                return copyToLocalDate((Date[]) value, new LocalDate[value.length]);
-            case Types.TIME:
-                return copyToLocalTime((Time[]) value, new LocalTime[value.length]);
-        }
-        if (value instanceof Integer[]) {
-            switch (baseType) {
-                case Types.TINYINT:
-                    return copyToTinyInt((Integer[]) value, new byte[value.length]);
-                case Types.SMALLINT:
-                    return copyToSmallInt(value, new short[value.length]);
-                default:
-                    return copy(value, new int[value.length]);
-            }
-        }
-        if (value instanceof Long[]) {
-            return copy(value, new long[value.length]);
-        }
-        if (value instanceof Double[]) {
-            return copy(value, new double[value.length]);
-        }
-        if (value instanceof Float[]) {
-            return copy(value, new float[value.length]);
-        }
-        if (value instanceof Boolean[]) {
-            return copy(value, new boolean[value.length]);
-        }
-        if (value instanceof Character[]) {
-            return copy(value, new char[value.length]);
-        }
-        throw new IllegalArgumentException(
-                String.format("%s[] is not a supported property value type",
-                        value.getClass().getComponentType().getName()));
-    }
-
-    private <T> T copy(Object[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, value[i]);
-        }
-        return target;
-    }
-
-    private <T> T copyToTinyInt(Integer[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, value[i].byteValue());
-        }
-        return target;
-    }
-
-    private <T> T copyToSmallInt(Object[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, ((Number) value[i]).shortValue());
-        }
-        return target;
-    }
-
-    private <T> T copyToLocalDateTime(Object[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, ((Timestamp)value[i]).toLocalDateTime());
-        }
-        return target;
-    }
-
-    private <T> T copyToLocalDateTime(Timestamp[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, value[i].toLocalDateTime());
-        }
-        return target;
-    }
-
-    private <T> T copyToLocalDate(Date[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, value[i].toLocalDate());
-        }
-        return target;
-    }
-
-    private <T> T copyToLocalTime(Time[] value, T target) {
-        for (int i = 0; i < value.length; i++) {
-            if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
-            }
-            Array.set(target, i, value[i].toLocalTime());
-        }
-        return target;
-    }
 
     public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
@@ -461,31 +330,31 @@ public abstract class SqlgElement implements Element {
                     break;
 
                 //TODO the array properties are hardcoded according to postgres's jdbc driver
-                case BOOLEAN_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case boolean_ARRAY:
+                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.boolean_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, booleanArray);
                     break;
-                case BYTE_ARRAY:
+                case byte_ARRAY:
                     preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
                     break;
-                case SHORT_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case short_ARRAY:
+                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.short_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, shortArray);
                     break;
-                case INTEGER_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case INT_ARRAY:
+                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, intArray);
                     break;
-                case LONG_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case long_ARRAY:
+                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.long_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, longArray);
                     break;
-                case FLOAT_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case float_ARRAY:
+                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.float_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, floatArray);
                     break;
-                case DOUBLE_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case double_ARRAY:
+                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.double_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, doubleArray);
                     break;
                 case STRING_ARRAY:
@@ -551,6 +420,7 @@ public abstract class SqlgElement implements Element {
                 ) {
             return;
         }
+        PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
         int type = resultSetMetaData.getColumnType(i);
         switch (type) {
             case Types.SMALLINT:
@@ -560,7 +430,6 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(columnName, ((Integer) o).byteValue());
                 break;
             case Types.BIGINT:
-                PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case DURATION:
                         long seconds = (Long) o;
@@ -578,7 +447,6 @@ public abstract class SqlgElement implements Element {
                 }
                 break;
             case Types.INTEGER:
-                propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case PERIOD:
                         int years = (Integer) o;
@@ -610,13 +478,11 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(columnName, ((Date) o).toLocalDate());
                 break;
             case Types.TIMESTAMP:
-                propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
                 switch (propertyType) {
                     case LOCALDATETIME:
                         this.properties.put(columnName, ((Timestamp) o).toLocalDateTime());
                         break;
                     case ZONEDDATETIME:
-                        //load the months and days as its needed to construct the Period
                         String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
                         Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
                         if (zonedId.isEmpty()) {
@@ -637,11 +503,116 @@ public abstract class SqlgElement implements Element {
             case Types.ARRAY:
                 java.sql.Array array = (java.sql.Array) o;
                 int baseType = array.getBaseType();
-                Object[] objectArray = (Object[]) array.getArray();
-                this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                switch (propertyType) {
+                    case ZONEDDATETIME_ARRAY:
+                        Object[] objectArray = (Object[]) array.getArray();
+                        String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                        Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
+                        if (zonedId.isEmpty()) {
+                            zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                        }
+                        java.sql.Array zoneIdArray = resultSet.getArray(new ArrayList<>(zonedId).get(zonedId.size() - 1));
+                        String[] objectZoneIdArray = (String[]) convertObjectArrayToPrimitiveArray((Object[]) zoneIdArray.getArray(), Types.VARCHAR);
+                        LocalDateTime[] localDateTimes = (LocalDateTime[]) convertObjectArrayToPrimitiveArray(objectArray, baseType);
+
+                        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[localDateTimes.length];
+                        int count = 0;
+                        for (LocalDateTime localDateTime : localDateTimes) {
+                            ZoneId zoneId1 = ZoneId.of(objectZoneIdArray[count]);
+                            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId1);
+                            zonedDateTimes[count++] = zonedDateTime;
+                        }
+                        this.properties.put(columnName, zonedDateTimes);
+                        break;
+                    case DURATION_ARRAY:
+                        objectArray = (Object[]) array.getArray();
+                        String nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                        Collection<String> aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
+                        if (aliasedNanos.isEmpty()) {
+                            aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                        }
+                        long[] seconds = (long[]) convertObjectArrayToPrimitiveArray(objectArray, baseType);
+                        java.sql.Array nanosArray = resultSet.getArray(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
+                        int[] nanoArray = (int[]) convertObjectArrayToPrimitiveArray((Object[]) nanosArray.getArray(), Types.INTEGER);
+                        Duration[] durations = new Duration[seconds.length];
+                        count = 0;
+                        for (Long second: seconds) {
+                            durations[count] = Duration.ofSeconds(second, nanoArray[count++]);;
+                        }
+                        this.properties.put(columnName, durations);
+                        break;
+                    case PERIOD_ARRAY:
+                        objectArray = (Object[]) array.getArray();
+                        String monthsColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                        Collection<String> aliasedMonths = threadLocalColumnNameAliasMap.get(monthsColumn);
+                        if (aliasedMonths.isEmpty()) {
+                            aliasedMonths = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
+                        }
+                        String daysColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
+                        Collection<String> aliasedDays = threadLocalColumnNameAliasMap.get(daysColumn);
+                        if (aliasedDays.isEmpty()) {
+                            aliasedDays = Arrays.asList(columnName + propertyType.getPostFixes()[2]);
+                        }
+                        int[] years = (int[]) convertObjectArrayToPrimitiveArray(objectArray, baseType);
+                        java.sql.Array monthsArray = resultSet.getArray(new ArrayList<>(aliasedMonths).get(aliasedMonths.size() - 1));
+                        int[] monthArray = (int[]) convertObjectArrayToPrimitiveArray((Object[]) monthsArray.getArray(), Types.INTEGER);
+                        java.sql.Array daysArray = resultSet.getArray(new ArrayList<>(aliasedDays).get(aliasedDays.size() - 1));
+                        int[] dayArray = (int[]) convertObjectArrayToPrimitiveArray((Object[]) daysArray.getArray(), Types.INTEGER);
+                        Period[] periods = new Period[years.length];
+                        count = 0;
+                        for (Integer year: years) {
+                            periods[count] = Period.of(year, monthArray[count], dayArray[count++]);
+                        }
+                        this.properties.put(columnName, periods);
+                        break;
+                    case BOOLEAN_ARRAY:
+                        objectArray = (Boolean[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                        break;
+                    case BYTE_ARRAY:
+                        sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
+                        objectArray = (Byte[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                        break;
+                    case SHORT_ARRAY:
+                        objectArray = (Short[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                    case INTEGER_ARRAY:
+                        objectArray = (Integer[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                        break;
+                    case LONG_ARRAY:
+                        objectArray = (Long[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                    case FLOAT_ARRAY:
+                        objectArray = (Float[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                    case DOUBLE_ARRAY:
+                        objectArray = (Double[]) array.getArray();
+                        this.properties.put(columnName, objectArray);
+                        break;
+//                    case JSON_ARRAY:
+//                        sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o);
+//                        break;
+                    default:
+                        objectArray = (Object[]) array.getArray();
+                        this.properties.put(columnName, convertObjectArrayToPrimitiveArray(objectArray, baseType));
+                }
+                break;
+            case Types.BINARY:
+                switch (propertyType) {
+                    case BYTE_ARRAY:
+                        this.properties.put(columnName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[])o));
+                        break;
+                    case byte_ARRAY:
+                        this.properties.put(columnName, o);
+                        break;
+                    default:
+                        throw new IllegalStateException("binary data not supported for " + propertyType.name());
+                }
                 break;
             case Types.OTHER:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o);
+                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
                 break;
             default:
                 this.properties.put(columnName, o);

@@ -225,6 +225,12 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         if (value instanceof ZonedDateTime[]) {
             return;
         }
+        if (value instanceof Duration[]) {
+            return;
+        }
+        if (value instanceof Period[]) {
+            return;
+        }
         throw Property.Exceptions.dataTypeOfPropertyValueNotSupported(value);
     }
 
@@ -284,30 +290,34 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 throw new IllegalStateException("HSQLDB does not support gis types!");
             case GEOGRAPHY_POLYGON:
                 throw new IllegalStateException("HSQLDB does not support gis types!");
-            case BYTE_ARRAY:
+            case byte_ARRAY:
                 return new String[]{"LONGVARBINARY"};
-            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
                 return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
-            case SHORT_ARRAY:
+            case short_ARRAY:
                 return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
-            case INTEGER_ARRAY:
+            case INT_ARRAY:
                 return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
-            case LONG_ARRAY:
+            case long_ARRAY:
                 return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
-            case FLOAT_ARRAY:
+            case float_ARRAY:
                 return new String[]{"REAL ARRAY DEFAULT ARRAY[]"};
-            case DOUBLE_ARRAY:
+            case double_ARRAY:
                 return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
             case STRING_ARRAY:
                 return new String[]{"LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
             case LOCALDATETIME_ARRAY:
                 return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
             case LOCALDATE_ARRAY:
-                return new String[]{"DATE[]"};
+                return new String[]{"DATE ARRAY DEFAULT ARRAY[]"};
             case LOCALTIME_ARRAY:
                 return new String[]{"TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
             case ZONEDDATETIME_ARRAY:
-                return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
+                return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]", "LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
+            case DURATION_ARRAY:
+                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
+            case PERIOD_ARRAY:
+                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -341,19 +351,19 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case JSON:
                 //TODO support other others like Geometry...
                 return Types.OTHER;
-            case BYTE_ARRAY:
+            case byte_ARRAY:
                 return Types.ARRAY;
-            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
                 return Types.ARRAY;
-            case SHORT_ARRAY:
+            case short_ARRAY:
                 return Types.ARRAY;
-            case INTEGER_ARRAY:
+            case INT_ARRAY:
                 return Types.ARRAY;
-            case LONG_ARRAY:
+            case long_ARRAY:
                 return Types.ARRAY;
-            case FLOAT_ARRAY:
+            case float_ARRAY:
                 return Types.ARRAY;
-            case DOUBLE_ARRAY:
+            case double_ARRAY:
                 return Types.ARRAY;
             case STRING_ARRAY:
                 return Types.ARRAY;
@@ -386,19 +396,19 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case Types.TIME:
                 return PropertyType.LOCALTIME;
             case Types.VARBINARY:
-                return PropertyType.BYTE_ARRAY;
+                return PropertyType.byte_ARRAY;
             case Types.ARRAY:
                 switch (typeName) {
                     case "BOOLEAN ARRAY":
-                        return PropertyType.BOOLEAN_ARRAY;
+                        return PropertyType.boolean_ARRAY;
                     case "SMALLINT ARRAY":
-                        return PropertyType.SHORT_ARRAY;
+                        return PropertyType.short_ARRAY;
                     case "INTEGER ARRAY":
-                        return PropertyType.INTEGER_ARRAY;
+                        return PropertyType.INT_ARRAY;
                     case "BIGINT ARRAY":
-                        return PropertyType.LONG_ARRAY;
+                        return PropertyType.long_ARRAY;
                     case "DOUBLE ARRAY":
-                        return PropertyType.DOUBLE_ARRAY;
+                        return PropertyType.double_ARRAY;
                     default:
                         if (typeName.contains("VARCHAR") && typeName.contains("ARRAY")) {
                             return PropertyType.STRING_ARRAY;
@@ -434,21 +444,19 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
         switch (propertyType) {
-            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
                 return "BOOLEAN";
-            case SHORT_ARRAY:
+            case short_ARRAY:
                 return "SMALLINT";
-            case INTEGER_ARRAY:
+            case INT_ARRAY:
                 return "INTEGER";
-            case LONG_ARRAY:
+            case long_ARRAY:
                 return "BIGINT";
-            case DOUBLE_ARRAY:
+            case double_ARRAY:
                 return "DOUBLE";
             case STRING_ARRAY:
                 return "VARCHAR";
             case LOCALDATETIME_ARRAY:
-//                org.hsqldb.types.Type type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
-//                return type.getNameString();
                 return "TIMESTAMP";
             case LOCALDATE_ARRAY:
                 return "DATE";
@@ -517,7 +525,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void handleOther(Map<String, Object> properties, String columnName, Object o) {
+    public void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType) {
         throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
     }
 
@@ -610,11 +618,31 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
-        org.hsqldb.types.Type type = null;
+        org.hsqldb.types.Type type;
         switch (propertyType) {
+            case STRING_ARRAY:
+                type = Type.SQL_VARCHAR;
+                break;
+            case long_ARRAY:
+                type = Type.SQL_BIGINT;
+                break;
+            case INT_ARRAY:
+                type = Type.SQL_INTEGER;
+                break;
             case LOCALDATETIME_ARRAY:
                 type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
                 break;
+            case LOCALDATE_ARRAY:
+                type = Type.SQL_DATE;
+                break;
+            case LOCALTIME_ARRAY:
+                type = Type.SQL_TIME;
+                break;
+            case ZONEDDATETIME_ARRAY:
+                type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
+                break;
+            default:
+                throw new IllegalStateException("Unhandled array type " + propertyType.name());
         }
         return new JDBCArrayBasic(data, type);
     }

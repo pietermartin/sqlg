@@ -19,10 +19,12 @@ import org.umlg.sqlg.structure.*;
 
 import java.lang.reflect.Array;
 import java.sql.*;
+import java.sql.Date;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -330,13 +332,16 @@ public class SqlgUtil {
                                 Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId()))
                         );
                     } else {
-                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()));
+                        preparedStatement.setTimestamp(
+                                parameterStartIndex++,
+                                Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime())
+                        );
                     }
                     if (mod)
                         preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
                     break;
                 case LOCALTIME:
-                    //looses nanos
+                    //looses nano seconds
                     preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
                     break;
                 case PERIOD:
@@ -368,31 +373,31 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
-                case BOOLEAN_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case boolean_ARRAY:
+                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.boolean_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, booleanArray);
                     break;
-                case BYTE_ARRAY:
+                case byte_ARRAY:
                     preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
                     break;
-                case SHORT_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case short_ARRAY:
+                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.short_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, shortArray);
                     break;
-                case INTEGER_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case INT_ARRAY:
+                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, intArray);
                     break;
-                case LONG_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case long_ARRAY:
+                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.long_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, longArray);
                     break;
-                case FLOAT_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case float_ARRAY:
+                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.float_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, floatArray);
                     break;
-                case DOUBLE_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                case double_ARRAY:
+                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.double_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, doubleArray);
                     break;
                 case STRING_ARRAY:
@@ -400,30 +405,54 @@ public class SqlgUtil {
                     preparedStatement.setArray(parameterStartIndex++, stringArray);
                     break;
                 case LOCALDATETIME_ARRAY:
-                    java.sql.Array localDateTimeArray =   sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALDATETIME_ARRAY,  SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array localDateTimeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, localDateTimeArray);
                     break;
                 case LOCALDATE_ARRAY:
-                    java.sql.Array localDateArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALDATE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array localDateArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, localDateArray);
                     break;
                 case LOCALTIME_ARRAY:
-                    java.sql.Array localTimeArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALTIME_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    java.sql.Array localTimeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, localTimeArray);
                     break;
-//                case ZONEDDATETIME_ARRAY:
-//                    if (sqlgGraph.getSqlDialect().needsTimeZone()) {
-//                        //This is for postgresql that adjust the timestamp to the server's timezone
-//                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()),
-//                                Calendar.getInstance(TimeZone.getTimeZone(((ZonedDateTime) pair.right).getZone().getId())));
-//                    } else {
-//                        preparedStatement.setTimestamp(parameterStartIndex++, Timestamp.valueOf(((ZonedDateTime) pair.right).toLocalDateTime()));
-//                    }
-//                    if (mod)
-//                        preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
-//                    break;
-//                    java.sql.Array zonedDateTimeArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LOCALTIME_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-//                    preparedStatement.setArray(parameterStartIndex++, localTimeArray);
+                case ZONEDDATETIME_ARRAY:
+                    java.sql.Array zonedDateTimeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
+                    preparedStatement.setArray(parameterStartIndex++, zonedDateTimeArray);
+                    if (mod) {
+                        List<String> zones = (Arrays.asList((ZonedDateTime[]) pair.right)).stream().map(z -> z.getZone().getId()).collect(Collectors.toList());
+                        java.sql.Array zonedArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
+                        preparedStatement.setArray(parameterStartIndex++, zonedArray);
+                    }
+                    break;
+                case DURATION_ARRAY:
+                    Duration[] durations = (Duration[]) pair.getRight();
+                    List<Long> seconds = Arrays.stream(durations).map(d -> d.getSeconds()).collect(Collectors.toList());
+                    List<Integer> nanos = Arrays.stream(durations).map(d -> d.getNano()).collect(Collectors.toList());
+                    java.sql.Array secondsArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
+                    preparedStatement.setArray(parameterStartIndex++, secondsArray);
+                    java.sql.Array nanoArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.INT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
+                    preparedStatement.setArray(parameterStartIndex++, nanoArray);
+                    break;
+                case PERIOD_ARRAY:
+                    Period[] periods = (Period[]) pair.getRight();
+                    List<Integer> years = Arrays.stream(periods).map(d -> d.getYears()).collect(Collectors.toList());
+                    List<Integer> months = Arrays.stream(periods).map(d -> d.getMonths()).collect(Collectors.toList());
+                    List<Integer> days = Arrays.stream(periods).map(d -> d.getDays()).collect(Collectors.toList());
+                    java.sql.Array yearsArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.INT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
+                    preparedStatement.setArray(parameterStartIndex++, yearsArray);
+                    java.sql.Array monthsArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.INT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
+                    preparedStatement.setArray(parameterStartIndex++, monthsArray);
+                    java.sql.Array daysArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.INT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
+                    preparedStatement.setArray(parameterStartIndex++, daysArray);
+                    break;
+//                case JSON_ARRAY:
+////                    ObjectNode[] objectNodes = (ObjectNode[]) pair.getRight();
+//                    JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
+//                    java.sql.Array objectNodeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
+//                    preparedStatement.setArray(parameterStartIndex++, objectNodeArray);
+////                    sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
+////                    parameterStartIndex++;
 //                    break;
                 default:
                     throw new IllegalStateException("Unhandled type " + pair.left.name());
@@ -575,6 +604,16 @@ public class SqlgUtil {
             switch (propertyType) {
                 case LOCALDATETIME_ARRAY:
                     outputArray[i] = Timestamp.valueOf((LocalDateTime) Array.get(val, i));
+                    break;
+                case LOCALDATE_ARRAY:
+                    outputArray[i] = Timestamp.valueOf(((LocalDate) Array.get(val, i)).atStartOfDay());
+                    break;
+                case LOCALTIME_ARRAY:
+                    outputArray[i] = Time.valueOf(((LocalTime) Array.get(val, i)));
+                    break;
+                case ZONEDDATETIME_ARRAY:
+                    ZonedDateTime zonedDateTime = (ZonedDateTime) Array.get(val, i);
+                    outputArray[i] = Timestamp.valueOf(zonedDateTime.toLocalDateTime());
                     break;
                 default:
                     outputArray[i] = Array.get(val, i);
@@ -733,6 +772,181 @@ public class SqlgUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static Byte[] convertPrimitiveByteArrayToByteArray(byte[] value) {
+        Byte[] target = new Byte[value.length];
+        for (int i = 0; i < value.length; i++) {
+            Array.set(target, i, value[i]);
+        }
+        return target;
+    }
+
+    public static Object convertByteArrayToPrimitiveArray(Byte[] value) {
+        byte[] target = new byte[value.length];
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].byteValue());
+        }
+        return target;
+    }
+
+    public static Object convertObjectArrayToPrimitiveArray(Object[] value, int baseType) {
+        if (value instanceof String[]) {
+            return value;
+        }
+        switch (baseType) {
+            case Types.BIT:
+                return copy(value, new boolean[value.length]);
+            case Types.BOOLEAN:
+                return copy(value, new boolean[value.length]);
+            case Types.TINYINT:
+                return copyToTinyInt((Integer[]) value, new byte[value.length]);
+            case Types.SMALLINT:
+                return copyToSmallInt(value, new short[value.length]);
+            case Types.INTEGER:
+                return copy(value, new int[value.length]);
+            case Types.BIGINT:
+                return copy(value, new long[value.length]);
+            case Types.REAL:
+                return copy(value, new float[value.length]);
+            case Types.DOUBLE:
+                return copy(value, new double[value.length]);
+            case Types.VARCHAR:
+                return copy(value, new String[value.length]);
+            case Types.TIMESTAMP:
+                return copyToLocalDateTime((Timestamp[]) value, new LocalDateTime[value.length]);
+            //HSQLDB timestamp
+            case 95:
+                return copyToLocalDateTime(value, new LocalDateTime[value.length]);
+            //HSQLDB time
+            case 94:
+                return copyToLocalTime(value, new LocalTime[value.length]);
+            case Types.DATE:
+                return copyToLocalDate(value, new LocalDate[value.length]);
+            case Types.TIME:
+                return copyToLocalTime(value, new LocalTime[value.length]);
+        }
+        if (value instanceof Integer[]) {
+            switch (baseType) {
+                case Types.TINYINT:
+                    return copyToTinyInt((Integer[]) value, new byte[value.length]);
+                case Types.SMALLINT:
+                    return copyToSmallInt(value, new short[value.length]);
+                default:
+                    return copy(value, new int[value.length]);
+            }
+        }
+        if (value instanceof Long[]) {
+            return copy(value, new long[value.length]);
+        }
+        if (value instanceof Double[]) {
+            return copy(value, new double[value.length]);
+        }
+        if (value instanceof Float[]) {
+            return copy(value, new float[value.length]);
+        }
+        if (value instanceof Boolean[]) {
+            return copy(value, new boolean[value.length]);
+        }
+        if (value instanceof Character[]) {
+            return copy(value, new char[value.length]);
+        }
+        throw new IllegalArgumentException(
+                String.format("%s[] is not a supported property value type",
+                        value.getClass().getComponentType().getName()));
+    }
+
+    private static <T> T copy(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i]);
+        }
+        return target;
+    }
+
+    private static <T> T copyToTinyInt(Integer[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].byteValue());
+        }
+        return target;
+    }
+
+    private static <T> T copyToSmallInt(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, ((Number) value[i]).shortValue());
+        }
+        return target;
+    }
+
+    private static <T> T copyToLocalDateTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, ((Timestamp)value[i]).toLocalDateTime());
+        }
+        return target;
+    }
+
+    private static <T> T copyToLocalDateTime(Timestamp[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].toLocalDateTime());
+        }
+        return target;
+    }
+
+    private static <T> T copyToLocalDate(Date[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, value[i].toLocalDate());
+        }
+        return target;
+    }
+
+    private static <T> T copyToLocalDate(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, ((Date)value[i]).toLocalDate());
+        }
+        return target;
+    }
+
+//    private <T> T copyToLocalDate(Object[] value, T target) {
+//        for (int i = 0; i < value.length; i++) {
+//            if (value[i] == null) {
+//                throw new IllegalArgumentException("Property array value elements may not be null.");
+//            }
+//            Array.set(target, i, value[i].toLocalDate());
+//        }
+//        return target;
+//    }
+
+    private static <T> T copyToLocalTime(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException("Property array value elements may not be null.");
+            }
+            Array.set(target, i, ((Time)value[i]).toLocalTime());
+        }
+        return target;
     }
 
 }

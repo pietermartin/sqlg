@@ -214,22 +214,22 @@ public interface SqlDialect {
                     int baseType = array.getBaseType();
                     switch (baseType) {
                         case Types.BIT:
-                            metaNode.put("type", PropertyType.BOOLEAN_ARRAY.name());
+                            metaNode.put("type", PropertyType.boolean_ARRAY.name());
                             break;
                         case Types.SMALLINT:
-                            metaNode.put("type", PropertyType.SHORT_ARRAY.name());
+                            metaNode.put("type", PropertyType.short_ARRAY.name());
                             break;
                         case Types.INTEGER:
-                            metaNode.put("type", PropertyType.INTEGER_ARRAY.name());
+                            metaNode.put("type", PropertyType.INT_ARRAY.name());
                             break;
                         case Types.BIGINT:
-                            metaNode.put("type", PropertyType.LONG_ARRAY.name());
+                            metaNode.put("type", PropertyType.long_ARRAY.name());
                             break;
                         case Types.REAL:
-                            metaNode.put("type", PropertyType.FLOAT_ARRAY.name());
+                            metaNode.put("type", PropertyType.float_ARRAY.name());
                             break;
                         case Types.DOUBLE:
-                            metaNode.put("type", PropertyType.DOUBLE_ARRAY.name());
+                            metaNode.put("type", PropertyType.double_ARRAY.name());
                             break;
                         case Types.VARCHAR:
                             metaNode.put("type", PropertyType.STRING_ARRAY.name());
@@ -370,7 +370,7 @@ public interface SqlDialect {
 
     void setJson(PreparedStatement preparedStatement, int parameterStartIndex, JsonNode right);
 
-    void handleOther(Map<String, Object> properties, String columnName, Object o);
+    void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
     void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
 
