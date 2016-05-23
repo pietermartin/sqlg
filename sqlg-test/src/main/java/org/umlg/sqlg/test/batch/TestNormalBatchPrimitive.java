@@ -91,7 +91,6 @@ public class TestNormalBatchPrimitive extends BaseTest {
         Set<Boolean> edgeNameSet = new HashSet<>();
         for (int i = 0; i < 10; i++) {
             Boolean b = i % 2 == 0;
-            ;
             Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "A");
             Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "A");
             edgeSet.add(vertex1.addEdge("test", vertex2, "name", new Boolean(b)));
@@ -111,7 +110,6 @@ public class TestNormalBatchPrimitive extends BaseTest {
         boolean[] vertexNameArray = new boolean[10];
         for (int i = 0; i < 10; i++) {
             boolean b = i % 2 == 0;
-            ;
             this.sqlgGraph.addVertex(T.label, "A", "name", b);
             Array.set(vertexNameArray, i, b);
         }

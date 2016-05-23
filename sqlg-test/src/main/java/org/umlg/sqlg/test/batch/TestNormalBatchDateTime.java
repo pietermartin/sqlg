@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
  * Date: 2016/05/09
  * Time: 8:03 PM
  */
-public class TestBatchDateTime extends BaseTest {
+public class TestNormalBatchDateTime extends BaseTest {
 
     @Before
     public void beforeTest() {
@@ -157,115 +157,5 @@ public class TestBatchDateTime extends BaseTest {
         assertEquals(period3, vertices.get(3).<Period>value("period"));
     }
 
-    @Test
-    public void batchUpdateLocalDateTime() {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        LocalDateTime now = LocalDateTime.now();
-        for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
-        }
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(now, vertices.get(0).value("createOn"));
-        this.sqlgGraph.tx().normalBatchModeOn();
-        LocalDateTime nowAgain = LocalDateTime.now();
-        for (Vertex vertex : vertices) {
-            vertex.property("createOn", nowAgain);
-        }
-        this.sqlgGraph.tx().commit();
-        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(nowAgain, vertices.get(0).value("createOn"));
-    }
-
-    @Test
-    public void batchUpdateLocalDate() {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        LocalDate now = LocalDate.now();
-        for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
-        }
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(now, vertices.get(0).value("createOn"));
-        this.sqlgGraph.tx().normalBatchModeOn();
-        LocalDate nowAgain = LocalDate.now();
-        for (Vertex vertex : vertices) {
-            vertex.property("createOn", nowAgain);
-        }
-        this.sqlgGraph.tx().commit();
-        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(nowAgain, vertices.get(0).value("createOn"));
-    }
-
-    @Test
-    public void batchUpdateLocalTime() throws InterruptedException {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        LocalTime now = LocalTime.now();
-        for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "createOn", now);
-        }
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
-        this.sqlgGraph.tx().normalBatchModeOn();
-        Thread.sleep(1000);
-        LocalTime nowAgain = LocalTime.now();
-        for (Vertex vertex : vertices) {
-            vertex.property("createOn", nowAgain);
-        }
-        this.sqlgGraph.tx().commit();
-        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(nowAgain.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
-    }
-
-    @Test
-    public void batchUpdateDuration() throws InterruptedException {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        Duration duration = Duration.ofHours(5);
-        for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "duration", duration);
-        }
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(duration, vertices.get(0).<Duration>value("duration"));
-        this.sqlgGraph.tx().normalBatchModeOn();
-        duration = Duration.ofHours(10);
-        for (Vertex vertex : vertices) {
-            vertex.property("duration", duration);
-        }
-        this.sqlgGraph.tx().commit();
-        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(duration, vertices.get(0).<Duration>value("duration"));
-    }
-
-    @Test
-    public void batchUpdatePeriod() throws InterruptedException {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        Period period = Period.of(5, 5, 5);
-        for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "period", period);
-        }
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(period, vertices.get(0).<Duration>value("period"));
-        this.sqlgGraph.tx().normalBatchModeOn();
-        period = Period.of(10, 1, 1);
-        for (Vertex vertex : vertices) {
-            vertex.property("period", period);
-        }
-        this.sqlgGraph.tx().commit();
-        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(period, vertices.get(0).<Duration>value("period"));
-    }
 
 }

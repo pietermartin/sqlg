@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.batch;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -9,6 +10,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.BatchManager;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,4 +36,48 @@ public class TestBatchJson extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals(json, this.sqlgGraph.traversal().V(a1).values("doc").next());
     }
+
+    @Test
+    public void batchJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        assertEquals(json, value);
+    }
+
+    @Test
+    public void batchUpdateJson() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        assertEquals(10, vertices.size());
+        JsonNode value = vertices.get(0).value("doc");
+        assertEquals(json, value);
+        this.sqlgGraph.tx().normalBatchModeOn();
+        json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "pete");
+        for (Vertex vertex : vertices) {
+            vertex.property("doc", json);
+        }
+        this.sqlgGraph.tx().commit();
+        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        assertEquals(10, vertices.size());
+        value = vertices.get(0).value("doc");
+        assertEquals(json, value);
+    }
+
 }

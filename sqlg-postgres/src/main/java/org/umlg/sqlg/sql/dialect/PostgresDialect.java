@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,6 +41,8 @@ import java.sql.*;
 import java.sql.Date;
 import java.time.*;
 import java.util.*;
+
+import static org.umlg.sqlg.structure.PropertyType.JSON_ARRAY;
 
 /**
  * Date: 2014/07/16
@@ -153,8 +156,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return "timetz";
             case ZONEDDATETIME_ARRAY:
                 return "timestamptz";
-//            case JSON_ARRAY:
-//                return "jsonb";
+            case JSON_ARRAY:
+                return "jsonb";
             default:
                 throw new IllegalStateException("propertyType " + propertyType.name() + " unknown!");
         }
@@ -268,7 +271,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 long endHigh;
                 long numberInserted;
-                try (InputStream is = mapEdgeToInputStream(triples)) {
+                try (InputStream is = mapEdgeToInputStream(propertyTypeMap, triples)) {
                     StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
@@ -890,6 +893,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     countKeys++;
                     Object value = entry.getValue();
                     PropertyType propertyType = PropertyType.from(value);
+                    if (JSON_ARRAY == propertyType) {
+                        throw SqlgExceptions.invalidPropertyType(propertyType);
+                    }
                     out.write(valueToStreamBytes(propertyType, value));
                 }
             }
@@ -1420,29 +1426,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             break;
                         default:
                             sb.append(valueToStreamString(propertyType, value));
-
                     }
-//                    if (value.getClass().isArray()) {
-//                        if (value.getClass().getName().equals("[B")) {
-//                            try {
-//                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
-//                                sb.append(valueOfArrayAsString);
-//                            } catch (SQLException e) {
-//                                throw new RuntimeException(e);
-//                            }
-//                        } else {
-//                            try {
-//                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[])value));
-//                                sb.append(valueOfArrayAsString);
-//                            } catch (SQLException e) {
-//                                throw new RuntimeException(e);
-//                            }
-//                        }
-//                    } else {
-//                        //TODO add in arrays to the valueToStreamString method
-////                        PropertyType propertyType = PropertyType.from(value);
-//                        sb.append(valueToStreamString(propertyType, value));
-//                    }
                 }
             } else {
                 sb.append("0");
@@ -1454,7 +1438,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
-    private InputStream mapEdgeToInputStream(Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) {
+    private InputStream mapEdgeToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> edgeCache) throws SQLException {
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : edgeCache.getRight().values()) {
@@ -1466,24 +1450,22 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
             int countKeys = 1;
             for (String key : edgeCache.getLeft()) {
+                PropertyType propertyType = propertyTypeMap.get(key);
                 Object value = triple.getRight().get(key);
                 if (value == null) {
                     sb.append(getBatchNull());
-                } else if (value.getClass().isArray()) {
-                    sb.append("{");
-                    int length = java.lang.reflect.Array.getLength(value);
-                    for (int i = 0; i < length; i++) {
-                        String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                        sb.append(escapeSpecialCharacters(valueOfArray));
-                        if (i < length - 1) {
-                            sb.append(",");
-                        }
-                    }
-                    sb.append("}");
-                } else {
-                    //TODO add in arrays to the valueToStreamString method
-                    PropertyType propertyType = PropertyType.from(value);
-                    sb.append(valueToStreamString(propertyType, value));
+                }
+                switch (propertyType) {
+                    case BYTE_ARRAY:
+                        String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+                        sb.append(valueOfArrayAsString);
+                        break;
+                    case byte_ARRAY:
+                        valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
+                        sb.append(valueOfArrayAsString);
+                        break;
+                    default:
+                        sb.append(valueToStreamString(propertyType, value));
                 }
                 if (countKeys < edgeCache.getLeft().size()) {
                     sb.append(COPY_COMMAND_DELIMITER);
@@ -1588,8 +1570,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"REAL[]"};
             case DOUBLE_ARRAY:
                 return new String[]{"DOUBLE PRECISION[]"};
-//            case JSON_ARRAY:
-//                return new String[]{"JSONB[]"};
+            case JSON_ARRAY:
+                return new String[]{"JSONB[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -2363,8 +2345,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     return conn.createArrayOf(getArrayDriverType(PropertyType.LOCALTIME_ARRAY), data);
                 case ZONEDDATETIME_ARRAY:
                     return conn.createArrayOf(getArrayDriverType(PropertyType.ZONEDDATETIME_ARRAY), data);
-//                case JSON_ARRAY:
-//                    return conn.createArrayOf(getArrayDriverType(PropertyType.JSON_ARRAY), data);
+                case JSON_ARRAY:
+                    return conn.createArrayOf(getArrayDriverType(JSON_ARRAY), data);
                 default:
                     throw new IllegalStateException("Unhandled array type " + propertyType.name());
             }
@@ -2407,6 +2389,28 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case LOCALTIME_ARRAY:
                 Time[] times = (Time[]) array.getArray();
                 return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
+            case JSON_ARRAY:
+                String arrayAsString = array.toString();
+                //remove the wrapping curly brackets
+                arrayAsString = arrayAsString.substring(1);
+                arrayAsString = arrayAsString.substring(0, arrayAsString.length() - 1);
+                arrayAsString = StringEscapeUtils.unescapeJava(arrayAsString);
+                //remove the wrapping qoutes
+                arrayAsString = arrayAsString.substring(1);
+                arrayAsString = arrayAsString.substring(0, arrayAsString.length() - 1);
+                String[] jsons = arrayAsString.split("\",\"");
+                JsonNode[] jsonNodes = new JsonNode[jsons.length];
+                ObjectMapper objectMapper = new ObjectMapper();
+                int count = 0;
+                for (String json : jsons) {
+                    try {
+                        JsonNode jsonNode = objectMapper.readTree(json);
+                        jsonNodes[count++] = jsonNode;
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                return jsonNodes;
             default:
                 throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }

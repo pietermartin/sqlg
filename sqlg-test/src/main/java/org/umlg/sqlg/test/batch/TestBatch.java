@@ -1,8 +1,5 @@
 package org.umlg.sqlg.test.batch;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -1091,47 +1088,5 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
-    @Test
-    public void batchJson() {
-        ObjectMapper objectMapper =  new ObjectMapper();
-        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
-        json.put("username", "john");
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 10; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
-        }
-        this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        Assert.assertEquals(10, vertices.size());
-        JsonNode value = vertices.get(0).value("doc");
-        Assert.assertEquals(json, value);
-    }
-
-//    @Test
-//    public void batchUpdateJson() {
-//        ObjectMapper objectMapper =  new ObjectMapper();
-//        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
-//        json.put("username", "john");
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        for (int i = 0; i < 10; i++) {
-//            this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
-//        }
-//        this.sqlgGraph.tx().commit();
-//        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-//        Assert.assertEquals(10, vertices.size());
-//        JsonNode value = vertices.get(0).value("doc");
-//        Assert.assertEquals(json, value);
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        json = new ObjectNode(objectMapper.getNodeFactory());
-//        json.put("username", "pete");
-//        for (Vertex vertex : vertices) {
-//            vertex.property("doc", json);
-//        }
-//        this.sqlgGraph.tx().commit();
-//        vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-//        Assert.assertEquals(10, vertices.size());
-//        value = vertices.get(0).value("doc");
-//        Assert.assertEquals(json, value);
-//    }
 
 }

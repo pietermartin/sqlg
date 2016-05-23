@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.*;
+import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestBatchJson;
 
 /**
  * Date: 2014/07/16
@@ -11,19 +12,7 @@ import org.umlg.sqlg.test.batch.*;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestBatch.class,
-        TestBatchDateTime.class,
-        TestBatchEdgeDateTime.class,
-        TestBatchedStreaming.class,
-        TestBatchJson.class,
-        TestBatchServerSideEdgeCreation.class,
-        TestBatchTemporaryVertex.class,
-        TestBatchUpdate.class,
-        TestMultiThreadedBatch.class,
-        TestNormalBatchPrimitive.class,
-        TestNormalBatchPrimitiveArrays.class,
-        TestNormalBatchUpdatePrimitiveArrays.class,
-        TestStreamEdge.class,
-        TestStreamVertex.class
+        TestBatchJson.class
 })
 public class AnyTest {
 }

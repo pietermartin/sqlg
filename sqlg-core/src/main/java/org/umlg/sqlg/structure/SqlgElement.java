@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -297,11 +298,6 @@ public abstract class SqlgElement implements Element {
         return i;
     }
 
-    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, Multimap<String, Object> keyValues) throws SQLException {
-        List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
-        return setKeyValueAsParameter(sqlgGraph, parameterStartIndex, conn, preparedStatement, typeAndValues);
-    }
-
     private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
             switch (pair.left) {
@@ -361,6 +357,14 @@ public abstract class SqlgElement implements Element {
                 case STRING_ARRAY:
                     java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     preparedStatement.setArray(parameterStartIndex++, stringArray);
+                    break;
+                case JSON:
+                    sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex++, (JsonNode) pair.getRight());
+                    break;
+                case JSON_ARRAY:
+                    JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
+                    java.sql.Array objectNodeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
+                    preparedStatement.setArray(parameterStartIndex++, objectNodeArray);
                     break;
                 default:
                     throw new IllegalStateException("Unhandled type " + pair.left.name());
@@ -609,6 +613,9 @@ public abstract class SqlgElement implements Element {
                         this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
                         break;
                     case STRING_ARRAY:
+                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                        break;
+                    case JSON_ARRAY:
                         this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
                         break;
                     default:

@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -596,25 +597,24 @@ public class TestStreamVertex extends BaseTest {
         Assert.assertArrayEquals(periods1.toArray(), vertices.get(10).<Duration[]>value("names"));
     }
 
-//    @Test
-//    public void testStreamJsonAsArray() {
-//        ObjectMapper objectMapper =  new ObjectMapper();
-//        ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
-//        json1.put("username", "john1");
-//        ObjectNode json2 = new ObjectNode(objectMapper.getNodeFactory());
-//        json2.put("username", "john2");
-//
-////        JsonNode[] jsonNodes = new JsonNode[]{json1, json2};
-//        JsonNode[] jsonNodes = new JsonNode[]{json1};
-//        this.sqlgGraph.tx().streamingBatchModeOn();
-//        for (int i = 0; i < 10; i++) {
-//            this.sqlgGraph.streamVertex(T.label, "Person", "docs", jsonNodes);
-//        }
-//        this.sqlgGraph.tx().commit();
-//        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-//        Assert.assertEquals(10, vertices.size());
-//        JsonNode[] value = vertices.get(0).value("docs");
-//        Assert.assertArrayEquals(jsonNodes, value);
-//    }
+    @Test(expected = SqlgExceptions.InvalidPropertyTypeException.class)
+    public void testStreamJsonAsArray() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json1 = new ObjectNode(objectMapper.getNodeFactory());
+        json1.put("username", "john1");
+        ObjectNode json2 = new ObjectNode(objectMapper.getNodeFactory());
+        json2.put("username", "john2");
+
+        JsonNode[] jsonNodes = new JsonNode[]{json1};
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 0; i < 10; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "docs", jsonNodes);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
+        Assert.assertEquals(10, vertices.size());
+        JsonNode[] value = vertices.get(0).value("docs");
+        Assert.assertArrayEquals(jsonNodes, value);
+    }
 
 }

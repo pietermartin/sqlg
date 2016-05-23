@@ -13,6 +13,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.json.JsonTest;
+import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
@@ -20,8 +21,8 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
-import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
+import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalEdgeOtherVertexStep;
@@ -62,7 +63,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
         TestBatch.class,
-        TestBatchUpdate.class,
+        TestNormalBatchUpdate.class,
         TestForeignKeyIndexPerformance.class,
         TestMultiThreadedBatch.class,
         TestRemoveEdge.class,
@@ -121,14 +122,16 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestLocalVertexStepRepeatStep.class,
         TestLocalEdgeVertexStep.class,
         TestLocalEdgeOtherVertexStep.class,
-        TestBatchDateTime.class,
+        TestNormalBatchDateTime.class,
         TestBatchEdgeDateTime.class,
         TestBatchJson.class,
         TestMemoryUsage.class,
         TestBatchTemporaryVertex.class,
         TestNormalBatchPrimitiveArrays.class,
         TestNormalBatchPrimitive.class,
-        TestNormalBatchUpdatePrimitiveArrays.class
+        TestNormalBatchUpdatePrimitiveArrays.class,
+        TestJsonUpdate.class,
+        TestNormalBatchUpdateDateTime.class
 })
 public class AllTest {
 }

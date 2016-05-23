@@ -28,6 +28,10 @@ public class SqlgExceptions {
         return new IllegalStateException(message);
     }
 
+    public static InvalidPropertyTypeException invalidPropertyType(PropertyType propertyType) {
+        return new InvalidPropertyTypeException("Property of type " + propertyType.name() + " is not supported");
+    }
+
     public static class InvalidIdException extends RuntimeException {
 
         public InvalidIdException(String message) {
@@ -60,4 +64,11 @@ public class SqlgExceptions {
 
     }
 
+    public static class InvalidPropertyTypeException extends RuntimeException {
+
+        public InvalidPropertyTypeException(String message) {
+            super(message);
+        }
+
+    }
 }

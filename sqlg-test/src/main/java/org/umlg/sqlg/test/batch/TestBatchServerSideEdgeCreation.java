@@ -150,7 +150,6 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         }
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        person = SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person");
         this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
 

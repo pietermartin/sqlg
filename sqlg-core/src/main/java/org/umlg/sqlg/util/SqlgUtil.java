@@ -474,14 +474,11 @@ public class SqlgUtil {
                     java.sql.Array daysArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
                     preparedStatement.setArray(parameterStartIndex++, daysArray);
                     break;
-//                case JSON_ARRAY:
-////                    ObjectNode[] objectNodes = (ObjectNode[]) pair.getRight();
-//                    JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
-//                    java.sql.Array objectNodeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
-//                    preparedStatement.setArray(parameterStartIndex++, objectNodeArray);
-////                    sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex, (JsonNode) pair.getRight());
-////                    parameterStartIndex++;
-//                    break;
+                case JSON_ARRAY:
+                    JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
+                    java.sql.Array objectNodeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
+                    preparedStatement.setArray(parameterStartIndex++, objectNodeArray);
+                    break;
                 default:
                     throw new IllegalStateException("Unhandled type " + pair.left.name());
             }
@@ -825,30 +822,6 @@ public class SqlgUtil {
         return target;
     }
 
-    public static Short[] convertIntegerArrayToShort(Integer[] shortAsIntegerArray) {
-        Short[] target = new Short[shortAsIntegerArray.length];
-        for (int i = 0; i < shortAsIntegerArray.length; i++) {
-            Array.set(target, i, shortAsIntegerArray[i].shortValue());
-        }
-        return target;
-    }
-
-    public static short[] convertIntegerArrayToPrimitiveShort(Integer[] shortAsIntegerArray) {
-        short[] target = new short[shortAsIntegerArray.length];
-        for (int i = 0; i < shortAsIntegerArray.length; i++) {
-            Array.set(target, i, shortAsIntegerArray[i].shortValue());
-        }
-        return target;
-    }
-
-    public static boolean[] convertBooleanArrayToPrimitiveBoolean(Boolean[] booleanArray) {
-        boolean[] target = new boolean[booleanArray.length];
-        for (int i = 0; i < booleanArray.length; i++) {
-            Array.set(target, i, booleanArray[i].booleanValue());
-        }
-        return target;
-    }
-
     public static byte[] convertObjectArrayToBytePrimitiveArray(Object[] byteArray) {
         byte[] target = new byte[byteArray.length];
         for (int i = 0; i < byteArray.length; i++) {
@@ -946,34 +919,10 @@ public class SqlgUtil {
         return target;
     }
 
-    public static int[] convertIntegerArrayToPrimitiveInt(Integer[] integerArray) {
-        int[] target = new int[integerArray.length];
-        for (int i = 0; i < integerArray.length; i++) {
-            Array.set(target, i, integerArray[i].intValue());
-        }
-        return target;
-    }
-
-    public static long[] convertLongArrayToPrimitiveLong(Long[] longArray) {
-        long[] target = new long[longArray.length];
-        for (int i = 0; i < longArray.length; i++) {
-            Array.set(target, i, longArray[i].intValue());
-        }
-        return target;
-    }
-
     public static float[] convertFloatArrayToPrimitiveFloat(Float[] floatArray) {
         float[] target = new float[floatArray.length];
         for (int i = 0; i < floatArray.length; i++) {
             Array.set(target, i, floatArray[i].floatValue());
-        }
-        return target;
-    }
-
-    public static double[] convertDoubleArrayToPrimitiveDouble(Double[] doubleArray) {
-        double[] target = new double[doubleArray.length];
-        for (int i = 0; i < doubleArray.length; i++) {
-            Array.set(target, i, doubleArray[i].doubleValue());
         }
         return target;
     }
