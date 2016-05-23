@@ -384,13 +384,14 @@ public class LocalDateTest extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime[]>properties("zonedDateTimes").toList();
-        Assert.assertEquals(1, properties.size());
-        Assert.assertTrue(properties.get(0).isPresent());
-        ZonedDateTime[] value = properties.get(0).<ZonedDateTime[]>value();
-        Assert.assertArrayEquals(zonedDateTimes, value);
-        sqlgGraph1.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime[]>properties("zonedDateTimes").toList();
+            Assert.assertEquals(1, properties.size());
+            Assert.assertTrue(properties.get(0).isPresent());
+            ZonedDateTime[] value = properties.get(0).<ZonedDateTime[]>value();
+            Assert.assertArrayEquals(zonedDateTimes, value);
+            sqlgGraph1.close();
+        }
     }
 
     @Test

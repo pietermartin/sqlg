@@ -37,6 +37,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
+import java.sql.Date;
 import java.time.*;
 import java.util.*;
 
@@ -114,15 +115,31 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public String getArrayDriverType(PropertyType propertyType) {
         switch (propertyType) {
+            case BYTE_ARRAY:
+                return "bytea";
+            case byte_ARRAY:
+                return "bytea";
             case boolean_ARRAY:
                 return "bool";
+            case BOOLEAN_ARRAY:
+                return "bool";
+            case SHORT_ARRAY:
+                return "smallint";
             case short_ARRAY:
                 return "smallint";
-            case INT_ARRAY:
+            case INTEGER_ARRAY:
                 return "integer";
+            case int_ARRAY:
+                return "integer";
+            case LONG_ARRAY:
+                return "bigint";
             case long_ARRAY:
                 return "bigint";
+            case FLOAT_ARRAY:
+                return "float";
             case float_ARRAY:
+                return "float";
+            case DOUBLE_ARRAY:
                 return "float";
             case double_ARRAY:
                 return "float";
@@ -179,7 +196,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 //insert the labeled vertices
                 long endHigh;
                 long numberInserted;
-                try (InputStream is = mapVertexToInputStream(vertices)) {
+                try (InputStream is = mapVertexToInputStream(propertyTypeMap, vertices)) {
                     StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
@@ -351,7 +368,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     case short_ARRAY:
                         sql.append("::smallint[]");
                         break;
-                    case INT_ARRAY:
+                    case int_ARRAY:
                         sql.append("::int[]");
                         break;
                     case long_ARRAY:
@@ -534,17 +551,29 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             break;
                         case short_ARRAY:
                             sql.append("'{");
-                            short[] shortArray = (short[]) value;
+                            short[] sortArray = (short[]) value;
                             int countShortArray = 1;
-                            for (Short s : shortArray) {
+                            for (Short s : sortArray) {
                                 sql.append(s);
-                                if (countShortArray++ < shortArray.length) {
+                                if (countShortArray++ < sortArray.length) {
                                     sql.append(",");
                                 }
                             }
                             sql.append("}'");
                             break;
-                        case INT_ARRAY:
+                        case SHORT_ARRAY:
+                            sql.append("'{");
+                            Short[] shortObjectArray = (Short[]) value;
+                            for (int i = 0; i < shortObjectArray.length; i++) {
+                                Short s = shortObjectArray[i];
+                                sql.append(s);
+                                if (i < shortObjectArray.length - 1) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case int_ARRAY:
                             sql.append("'{");
                             int[] intArray = (int[]) value;
                             int countIntArray = 1;
@@ -568,9 +597,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             }
                             sql.append("}'");
                             break;
-                        case long_ARRAY:
+                        case LONG_ARRAY:
                             sql.append("'{");
-                            long[] longArray = (long[]) value;
+                            Long[] longArray = (Long[]) value;
                             int countLongArray = 1;
                             for (Long l : longArray) {
                                 sql.append(l);
@@ -580,9 +609,21 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             }
                             sql.append("}'");
                             break;
-                        case float_ARRAY:
+                        case long_ARRAY:
                             sql.append("'{");
-                            float[] floatArray = (float[]) value;
+                            long[] longPrimitiveArray = (long[]) value;
+                            int countLongPrimitiveArray = 1;
+                            for (Long l : longPrimitiveArray) {
+                                sql.append(l);
+                                if (countLongPrimitiveArray++ < longPrimitiveArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case FLOAT_ARRAY:
+                            sql.append("'{");
+                            Float[] floatArray = (Float[]) value;
                             int countFloatArray = 1;
                             for (Float f : floatArray) {
                                 sql.append(f);
@@ -592,13 +633,37 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             }
                             sql.append("}'");
                             break;
-                        case double_ARRAY:
+                        case float_ARRAY:
                             sql.append("'{");
-                            double[] doubleArray = (double[]) value;
+                            float[] floatPrimitiveArray = (float[]) value;
+                            int countFloatPrimitiveArray = 1;
+                            for (Float f : floatPrimitiveArray) {
+                                sql.append(f);
+                                if (countFloatPrimitiveArray++ < floatPrimitiveArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case DOUBLE_ARRAY:
+                            sql.append("'{");
+                            Double[] doubleArray = (Double[]) value;
                             int countDoubleArray = 1;
                             for (Double d : doubleArray) {
                                 sql.append(d);
                                 if (countDoubleArray++ < doubleArray.length) {
+                                    sql.append(",");
+                                }
+                            }
+                            sql.append("}'");
+                            break;
+                        case double_ARRAY:
+                            sql.append("'{");
+                            double[] doublePrimitiveArray = (double[]) value;
+                            int countDoublePrimitiveArray = 1;
+                            for (Double d : doublePrimitiveArray) {
+                                sql.append(d);
+                                if (countDoublePrimitiveArray++ < doublePrimitiveArray.length) {
                                     sql.append(",");
                                 }
                             }
@@ -1325,7 +1390,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
 
-    private InputStream mapVertexToInputStream(Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) {
+    private InputStream mapVertexToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) throws SQLException {
         //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
@@ -1335,6 +1400,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             if (!vertexCache.getLeft().isEmpty()) {
                 int countKeys = 1;
                 for (String key : vertexCache.getLeft()) {
+                    PropertyType propertyType = propertyTypeMap.get(key);
                     if (countKeys > 1 && countKeys <= vertexCache.getLeft().size()) {
                         sb.append(COPY_COMMAND_DELIMITER);
                     }
@@ -1342,27 +1408,41 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     Object value = triple.get(key);
                     if (value == null) {
                         sb.append(getBatchNull());
-                    } else if (value.getClass().isArray()) {
-                        if (value.getClass().getName().equals("[B")) {
-                            try {
-                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
-                                sb.append(valueOfArrayAsString);
-                            } catch (SQLException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else {
-                            try {
-                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[])value));
-                                sb.append(valueOfArrayAsString);
-                            } catch (SQLException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    } else {
-                        //TODO add in arrays to the valueToStreamString method
-                        PropertyType propertyType = PropertyType.from(value);
-                        sb.append(valueToStreamString(propertyType, value));
                     }
+                    switch (propertyType) {
+                        case BYTE_ARRAY:
+                            String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+                            sb.append(valueOfArrayAsString);
+                            break;
+                        case byte_ARRAY:
+                            valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
+                            sb.append(valueOfArrayAsString);
+                            break;
+                        default:
+                            sb.append(valueToStreamString(propertyType, value));
+
+                    }
+//                    if (value.getClass().isArray()) {
+//                        if (value.getClass().getName().equals("[B")) {
+//                            try {
+//                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
+//                                sb.append(valueOfArrayAsString);
+//                            } catch (SQLException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                        } else {
+//                            try {
+//                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[])value));
+//                                sb.append(valueOfArrayAsString);
+//                            } catch (SQLException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                        }
+//                    } else {
+//                        //TODO add in arrays to the valueToStreamString method
+////                        PropertyType propertyType = PropertyType.from(value);
+//                        sb.append(valueToStreamString(propertyType, value));
+//                    }
                 }
             } else {
                 sb.append("0");
@@ -1472,7 +1552,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"BOOLEAN[]"};
             case short_ARRAY:
                 return new String[]{"SMALLINT[]"};
-            case INT_ARRAY:
+            case int_ARRAY:
                 return new String[]{"INTEGER[]"};
             case long_ARRAY:
                 return new String[]{"BIGINT[]"};
@@ -1558,7 +1638,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     case "_int2":
                         return PropertyType.short_ARRAY;
                     case "_int4":
-                        return PropertyType.INT_ARRAY;
+                        return PropertyType.int_ARRAY;
                     case "_int8":
                         return PropertyType.long_ARRAY;
                     case "_float4":
@@ -1607,7 +1687,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return Types.ARRAY;
             case short_ARRAY:
                 return Types.ARRAY;
-            case INT_ARRAY:
+            case int_ARRAY:
                 return Types.ARRAY;
             case long_ARRAY:
                 return Types.ARRAY;
@@ -2273,8 +2353,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     return conn.createArrayOf(getArrayDriverType(PropertyType.STRING_ARRAY), data);
                 case long_ARRAY:
                     return conn.createArrayOf(getArrayDriverType(PropertyType.long_ARRAY), data);
-                case INT_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.INT_ARRAY), data);
+                case int_ARRAY:
+                    return conn.createArrayOf(getArrayDriverType(PropertyType.int_ARRAY), data);
                 case LOCALDATETIME_ARRAY:
                     return conn.createArrayOf(getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY), data);
                 case LOCALDATE_ARRAY:
@@ -2290,6 +2370,45 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
+        switch (propertyType) {
+            case BOOLEAN_ARRAY:
+                return array.getArray();
+            case boolean_ARRAY:
+                return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
+            case SHORT_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
+            case short_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
+            case INTEGER_ARRAY:
+                return array.getArray();
+            case int_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
+            case LONG_ARRAY:
+                return array.getArray();
+            case long_ARRAY:
+                return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
+            case DOUBLE_ARRAY:
+                return array.getArray();
+            case double_ARRAY:
+                return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
+            case STRING_ARRAY:
+                return array.getArray();
+            case LOCALDATETIME_ARRAY:
+                Timestamp[] timestamps = (Timestamp[]) array.getArray();
+                return SqlgUtil.copyToLocalDateTime(timestamps, new LocalDateTime[timestamps.length]);
+            case LOCALDATE_ARRAY:
+                Date[] dates = (Date[]) array.getArray();
+                return SqlgUtil.copyToLocalDate(dates, new LocalDate[dates.length]);
+            case LOCALTIME_ARRAY:
+                Time[] times = (Time[]) array.getArray();
+                return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
+            default:
+                throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }
     }
 }

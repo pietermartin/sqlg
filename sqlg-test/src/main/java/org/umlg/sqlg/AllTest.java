@@ -112,7 +112,6 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
         TestGremlinMod.class,
-        TestBatchEdge.class,
         TestTopologyUpgrade.class,
         TestTraversals.class,
         TestGremlinOptional.class,
@@ -126,7 +125,10 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestBatchEdgeDateTime.class,
         TestBatchJson.class,
         TestMemoryUsage.class,
-        TestBatchTemporaryVertex.class
+        TestBatchTemporaryVertex.class,
+        TestNormalBatchPrimitiveArrays.class,
+        TestNormalBatchPrimitive.class,
+        TestNormalBatchUpdatePrimitiveArrays.class
 })
 public class AllTest {
 }

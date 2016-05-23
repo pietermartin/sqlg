@@ -41,7 +41,7 @@ public enum PropertyType {
     BYTE_ARRAY(Byte[].class.getName(), new String[]{}),
     short_ARRAY(short[].class.getName(), new String[]{}),
     SHORT_ARRAY(Short[].class.getName(), new String[]{}),
-    INT_ARRAY(int[].class.getName(), new String[]{}),
+    int_ARRAY(int[].class.getName(), new String[]{}),
     INTEGER_ARRAY(Integer[].class.getName(), new String[]{}),
     long_ARRAY(long[].class.getName(), new String[]{}),
     LONG_ARRAY(Long[].class.getName(), new String[]{}),

@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.types.Type;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -290,18 +291,30 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 throw new IllegalStateException("HSQLDB does not support gis types!");
             case GEOGRAPHY_POLYGON:
                 throw new IllegalStateException("HSQLDB does not support gis types!");
+            case BYTE_ARRAY:
+                return new String[]{"LONGVARBINARY"};
             case byte_ARRAY:
                 return new String[]{"LONGVARBINARY"};
             case boolean_ARRAY:
                 return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
+            case BOOLEAN_ARRAY:
+                return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
+            case SHORT_ARRAY:
+                return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
             case short_ARRAY:
                 return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
-            case INT_ARRAY:
+            case int_ARRAY:
                 return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
+            case INTEGER_ARRAY:
+                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
+            case LONG_ARRAY:
+                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
             case long_ARRAY:
                 return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
             case float_ARRAY:
                 return new String[]{"REAL ARRAY DEFAULT ARRAY[]"};
+            case DOUBLE_ARRAY:
+                return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
             case double_ARRAY:
                 return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
             case STRING_ARRAY:
@@ -357,7 +370,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return Types.ARRAY;
             case short_ARRAY:
                 return Types.ARRAY;
-            case INT_ARRAY:
+            case int_ARRAY:
                 return Types.ARRAY;
             case long_ARRAY:
                 return Types.ARRAY;
@@ -404,7 +417,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                     case "SMALLINT ARRAY":
                         return PropertyType.short_ARRAY;
                     case "INTEGER ARRAY":
-                        return PropertyType.INT_ARRAY;
+                        return PropertyType.int_ARRAY;
                     case "BIGINT ARRAY":
                         return PropertyType.long_ARRAY;
                     case "DOUBLE ARRAY":
@@ -446,12 +459,22 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         switch (propertyType) {
             case boolean_ARRAY:
                 return "BOOLEAN";
+            case BOOLEAN_ARRAY:
+                return "BOOLEAN";
+            case SHORT_ARRAY:
+                return "SMALLINT";
             case short_ARRAY:
                 return "SMALLINT";
-            case INT_ARRAY:
+            case INTEGER_ARRAY:
                 return "INTEGER";
+            case int_ARRAY:
+                return "INTEGER";
+            case LONG_ARRAY:
+                return "BIGINT";
             case long_ARRAY:
                 return "BIGINT";
+            case DOUBLE_ARRAY:
+                return "DOUBLE";
             case double_ARRAY:
                 return "DOUBLE";
             case STRING_ARRAY:
@@ -626,7 +649,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case long_ARRAY:
                 type = Type.SQL_BIGINT;
                 break;
-            case INT_ARRAY:
+            case int_ARRAY:
                 type = Type.SQL_INTEGER;
                 break;
             case LOCALDATETIME_ARRAY:
@@ -645,5 +668,44 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 throw new IllegalStateException("Unhandled array type " + propertyType.name());
         }
         return new JDBCArrayBasic(data, type);
+    }
+
+    @Override
+    public Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException {
+        switch (propertyType) {
+            case BOOLEAN_ARRAY:
+                return SqlgUtil.convertObjectArrayToBooleanArray((Object[]) array.getArray());
+            case boolean_ARRAY:
+                return SqlgUtil.convertObjectArrayToBooleanPrimitiveArray((Object[]) array.getArray());
+            case SHORT_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToShortArray((Object[]) array.getArray());
+            case short_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToShortPrimitiveArray((Object[]) array.getArray());
+            case INTEGER_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToIntegerArray((Object[]) array.getArray());
+            case int_ARRAY:
+                return SqlgUtil.convertObjectOfIntegersArrayToIntegerPrimitiveArray((Object[]) array.getArray());
+            case LONG_ARRAY:
+                return SqlgUtil.convertObjectOfLongsArrayToLongArray((Object[]) array.getArray());
+            case long_ARRAY:
+                return SqlgUtil.convertObjectOfLongsArrayToLongPrimitiveArray((Object[]) array.getArray());
+            case DOUBLE_ARRAY:
+                return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
+            case double_ARRAY:
+                return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
+            case STRING_ARRAY:
+                return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
+            case LOCALDATETIME_ARRAY:
+                Object[] timestamps = (Object[]) array.getArray();
+                return SqlgUtil.copyObjectArrayOfTimestampToLocalDateTime(timestamps, new LocalDateTime[(timestamps).length]);
+            case LOCALDATE_ARRAY:
+                Object[] dates = (Object[]) array.getArray();
+                return SqlgUtil.copyObjectArrayOfDateToLocalDate(dates, new LocalDate[dates.length]);
+            case LOCALTIME_ARRAY:
+                Object[] times = (Object[]) array.getArray();
+                return SqlgUtil.copyObjectArrayOfTimeToLocalTime(times, new LocalTime[times.length]);
+            default:
+                throw new IllegalStateException("Unhandled property type " + propertyType.name());
+        }
     }
 }

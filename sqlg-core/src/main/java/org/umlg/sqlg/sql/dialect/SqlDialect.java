@@ -220,7 +220,7 @@ public interface SqlDialect {
                             metaNode.put("type", PropertyType.short_ARRAY.name());
                             break;
                         case Types.INTEGER:
-                            metaNode.put("type", PropertyType.INT_ARRAY.name());
+                            metaNode.put("type", PropertyType.int_ARRAY.name());
                             break;
                         case Types.BIGINT:
                             metaNode.put("type", PropertyType.long_ARRAY.name());
@@ -427,4 +427,5 @@ public interface SqlDialect {
 
     Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data);
 
+    Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException;
 }

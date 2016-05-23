@@ -1,13 +1,14 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.Arrays;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/07/19
@@ -16,280 +17,198 @@ import java.util.Arrays;
 public class TestArrayProperties extends BaseTest {
 
     @Test
-    public void testBooleanArrayProperties() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new boolean[]{true, false, true, false, true});
+    public void testBytePrimitiveArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new byte[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new byte[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new byte[]{1, 2, 3, 4, 5});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new byte[]{1, 2, 3, 4, 5}, (byte[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new byte[]{1, 2, 3, 4, 5}, (byte[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testByteArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Byte[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Byte[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new Byte[]{1, 2, 3, 4, 5});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new Byte[]{1, 2, 3, 4, 5}, (Byte[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Byte[]{1, 2, 3, 4, 5}, (Byte[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testBooleanPrimitiveArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new boolean[]{true, false, true, false, true});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new boolean[]{true, false, true, false, true});
+        vertex1.addEdge("test", vertex2, "age", new boolean[]{true, false, true, false, true});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testBooleanArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Boolean[]{true, false, true, false, true});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Boolean[]{true, false, true, false, true});
+        vertex1.addEdge("test", vertex2, "age", new Boolean[]{true, false, true, false, true});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new Boolean[]{true, false, true, false, true}, (Boolean[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Boolean[]{true, false, true, false, true}, (Boolean[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testShortPrimitiveArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new short[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new short[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new short[]{1, 2, 3, 4, 5});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) e.property("age").value()));
     }
 
     @Test
     public void testShortArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new short[]{1, 2, 3, 4, 5});
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Short[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Short[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new Short[]{1, 2, 3, 4, 5});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new Short[]{1, 2, 3, 4, 5}, (Short[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Short[]{1, 2, 3, 4, 5}, (Short[]) e.property("age").value()));
     }
 
     @Test
-    public void testIntArrayProperties() {
+    public void testIntPrimitiveArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new int[]{1, 2, 3, 4, 5});
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new int[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new int[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new int[]{1, 2, 3, 4, 5});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testIntegerArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Integer[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Integer[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new Integer[]{1, 2, 3, 4, 5});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new Integer[]{1, 2, 3, 4, 5}, (Integer[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Integer[]{1, 2, 3, 4, 5}, (Integer[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testLongPrimitiveArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new long[]{1, 2, 3, 4, 5});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new long[]{1, 2, 3, 4, 5});
+        vertex1.addEdge("test", vertex2, "age", new long[]{1, 2, 3, 4, 5});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) e.property("age").value()));
     }
 
     @Test
     public void testLongArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new long[]{1, 2, 3, 4, 5});
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Long[]{1L, 2L, 3L, 4L, 5L});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Long[]{1L, 2L, 3L, 4L, 5L});
+        vertex1.addEdge("test", vertex2, "age", new Long[]{1L, 2L, 3L, 4L, 5L});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new Long[]{1L, 2L, 3L, 4L, 5L}, (Long[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Long[]{1L, 2L, 3L, 4L, 5L}, (Long[]) e.property("age").value()));
     }
 
     @Test
     public void testFloatArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new float[]{1f, 2f, 3f, 4f, 5f});
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Float[]{1F, 2F, 3F, 4F, 5F});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Float[]{1F, 2F, 3F, 4F, 5F});
+        vertex1.addEdge("test", vertex2, "age", new Float[]{1F, 2F, 3F, 4F, 5F});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new float[]{1, 2, 3, 4, 5}, (float[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new Float[]{1F, 2F, 3F, 4F, 5F}, (Float[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Float[]{1F, 2F, 3F, 4F, 5F}, (Float[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testFloatPrimitiveArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new float[]{1F, 2F, 3F, 4F, 5f});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new float[]{1F, 2F, 3F, 4F, 5f});
+        vertex1.addEdge("test", vertex2, "age", new float[]{1F, 2F, 3F, 4F, 5f});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new float[]{1F, 2F, 3F, 4F, 5F}, (float[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new float[]{1F, 2F, 3F, 4F, 5F}, (float[]) e.property("age").value()));
     }
 
     @Test
     public void testDoubleArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new double[]{1d, 2d, 3d, 4d, 5d});
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Double[]{1D, 2D, 3D, 4D, 5D});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new Double[]{1D, 2D, 3D, 4D, 5D});
+        vertex1.addEdge("test", vertex2, "age", new Double[]{1D, 2D, 3D, 4D, 5D});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new Double[]{1D, 2D, 3D, 4D, 5D}, (Double[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new Double[]{1D, 2D, 3D, 4D, 5D}, (Double[]) e.property("age").value()));
+    }
+
+    @Test
+    public void testDoublePrimitiveArrayProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new double[]{1d, 2d, 3d, 4d, 5d});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new double[]{1d, 2d, 3d, 4d, 5d});
+        vertex1.addEdge("test", vertex2, "age", new double[]{1d, 2d, 3d, 4d, 5d});
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.traversal().V().next();
+        assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) e.property("age").value()));
     }
 
     @Test
     public void testStringArrayProperties() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
-        this.sqlgGraph.addVertex(T.label, "Person", "age", new String[]{"a", "b", "c", "d", "e"});
+        Vertex vertex1 = this.sqlgGraph.addVertex(T.label, "Person", "age", new String[]{"a", "b", "c", "d", "e"});
+        Vertex vertex2 = this.sqlgGraph.addVertex(T.label, "Person", "age", new String[]{"a", "b", "c", "d", "e"});
+        vertex1.addEdge("test", vertex2, "age", new String[]{"a", "b", "c", "d", "e"});
         this.sqlgGraph.tx().commit();
         Vertex v = this.sqlgGraph.traversal().V().next();
-        Assert.assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) v.property("age").value()));
+        assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) v.property("age").value()));
+        Edge e = this.sqlgGraph.traversal().E().next();
+        assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) e.property("age").value()));
     }
 
-    @Test
-    public void testBooleanArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new boolean[]{true, false, true, false, true});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testShortArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new short[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testIntArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new int[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testLongArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new long[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testFloatArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new float[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new float[]{1, 2, 3, 4, 5}, (float[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testDoubleArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new double[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testStringArrayEdgeProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2, "weight", new String[]{"a", "b", "c", "d", "e"});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) e.property("weight").value()));
-    }
-
-    @Test
-    public void testAddBooleanArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
-        Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
-        v.property("age", new boolean[]{true, false, true, false, true});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) v.property("age").value()));
-    }
-
-    @Test
-    public void testAddShortArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
-        Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
-        v.property("age", new short[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) v.property("age").value()));
-    }
-
-    @Test
-    public void testAddIntArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
-        Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
-        v.property("age", new int[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) v.property("age").value()));
-    }
-
-    @Test
-    public void testAddLongArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
-        Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
-        v.property("age", new long[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) v.property("age").value()));
-    }
-
-    @Test
-    public void testAddDoubleArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
-        Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
-        v.property("age", new double[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) v.property("age").value()));
-    }
-
-    @Test
-    public void testAddStringArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
-        Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
-        v.property("age", new String[]{"a", "b", "c", "d", "e"});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) v.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeBooleanArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new boolean[]{true, false, true, false, true});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new boolean[]{true, false, true, false, true}, (boolean[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeShortArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new short[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new short[]{1, 2, 3, 4, 5}, (short[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeIntArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new int[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 5}, (int[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeLongArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new long[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new long[]{1, 2, 3, 4, 5}, (long[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeFloatArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new float[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new float[]{1, 2, 3, 4, 5}, (float[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeDoubleArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new double[]{1, 2, 3, 4, 5});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new double[]{1, 2, 3, 4, 5}, (double[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testAddEdgeStringArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new String[]{"a", "b", "c", "d", "e"});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) e.property("age").value()));
-    }
-
-    @Test
-    public void testUpdateEdgeStringArrayProperty() {
-        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge e = v1.addEdge("friend", v2);
-        e.property("age", new String[]{"a", "b", "c", "d", "e"});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new String[]{"a", "b", "c", "d", "e"}, (String[]) e.property("age").value()));
-        e.property("age", new String[]{"e", "d", "c", "b", "a"});
-        this.sqlgGraph.tx().commit();
-        Assert.assertTrue(Arrays.equals(new String[]{"e", "d", "c", "b", "a"}, (String[]) e.property("age").value()));
-    }
 }
