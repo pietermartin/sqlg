@@ -48,11 +48,11 @@ public abstract class BaseTest {
     @Rule
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
-            logger.info("Starting test: " + description.getClass() + "." + description.getMethodName());
+            logger.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
         }
 
         protected void finished(Description description) {
-            logger.info("Finished test: " + description.getClass() + "." + description.getMethodName());
+            logger.info("Finished test: " + description.getClassName() + "." + description.getMethodName());
         }
     };
 
