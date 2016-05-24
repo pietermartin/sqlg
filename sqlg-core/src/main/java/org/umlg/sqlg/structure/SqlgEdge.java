@@ -264,7 +264,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                    loadProperty(resultSetMetaData, resultSet, i, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
+                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
 
                 }
                 if (!Objects.isNull(o)) {
@@ -305,7 +305,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                         !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                         !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                    loadProperty(resultSetMetaData, resultSet, i, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
+                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 } else if (!Objects.isNull(o)) {
                     if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                         inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
@@ -337,7 +337,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                loadProperty(resultSetMetaData, resultSet, i, columnName, o, ArrayListMultimap.create());
+                loadProperty(resultSet, columnName, o, ArrayListMultimap.create());
 
             }
             if (!Objects.isNull(o)) {

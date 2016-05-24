@@ -974,7 +974,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         && !name.equals(SchemaManager.VERTEX_TABLE)
                         && !Objects.isNull(o)) {
 
-                    loadProperty(resultSetMetaData, resultSet, i, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
+                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 }
             }
         }
@@ -982,7 +982,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     @Override
     public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         Multimap<String, Integer> toRemove = ArrayListMultimap.create();
         for (String columnName : columnMap.keySet()) {
             Collection<Integer> columnCounts = columnMap.get(columnName);
@@ -990,15 +989,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (schemaTableTree.containsLabelledColumn(columnName)) {
                 Object o = resultSet.getObject(columnCount);
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-//                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
-
                 if (!name.endsWith("ID")
                         && !name.equals(SchemaManager.VERTEX_SCHEMA)
                         && !name.equals(SchemaManager.VERTEX_TABLE)
                         && !Objects.isNull(o)) {
 
                     toRemove.put(columnName, columnCount);
-                    loadProperty(resultSetMetaData, resultSet, columnCount, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
+                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 }
             }
         }
@@ -1024,7 +1021,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     && !this.sqlgGraph.getSqlDialect().columnsToIgnore().contains(columnName)
                     && !Objects.isNull(o)) {
 
-                loadProperty(resultSetMetaData, resultSet, i, columnName, o, ArrayListMultimap.create());
+                loadProperty(resultSet, columnName, o, ArrayListMultimap.create());
             }
         }
     }
