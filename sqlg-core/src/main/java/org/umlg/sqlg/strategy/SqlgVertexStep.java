@@ -39,4 +39,22 @@ public class SqlgVertexStep<E extends Element> extends VertexStep<E> {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SqlgVertexStep<?> that = (SqlgVertexStep<?>) o;
+
+        return hasContainers != null ? hasContainers.equals(that.hasContainers) : that.hasContainers == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (hasContainers != null ? hasContainers.hashCode() : 0);
+        return result;
+    }
 }

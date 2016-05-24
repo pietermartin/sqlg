@@ -158,6 +158,27 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SqlgGraphStepCompiled<?, ?> that = (SqlgGraphStepCompiled<?, ?>) o;
+
+        if (logger != null ? !logger.equals(that.logger) : that.logger != null) return false;
+        if (replacedSteps != null ? !replacedSteps.equals(that.replacedSteps) : that.replacedSteps != null)
+            return false;
+        if (sqlgGraph != null ? !sqlgGraph.equals(that.sqlgGraph) : that.sqlgGraph != null) return false;
+        if (parsedForStrategySql != null ? !parsedForStrategySql.equals(that.parsedForStrategySql) : that.parsedForStrategySql != null)
+            return false;
+        if (iteratorSupplier != null ? !iteratorSupplier.equals(that.iteratorSupplier) : that.iteratorSupplier != null)
+            return false;
+        if (iterator != null ? !iterator.equals(that.iterator) : that.iterator != null) return false;
+        return head != null ? head.equals(that.head) : that.head == null;
+
+    }
+
+    @Override
     public int hashCode() {
         int result = super.hashCode() ^ this.returnClass.hashCode();
         for (final Object id : this.ids) {

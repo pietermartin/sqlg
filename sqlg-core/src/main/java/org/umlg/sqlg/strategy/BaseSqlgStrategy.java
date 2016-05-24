@@ -528,4 +528,25 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     private class UnoptimizableException extends RuntimeException {
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        BaseSqlgStrategy that = (BaseSqlgStrategy) o;
+
+        if (sqlgGraph != null ? !sqlgGraph.equals(that.sqlgGraph) : that.sqlgGraph != null) return false;
+        return logger != null ? logger.equals(that.logger) : that.logger == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (sqlgGraph != null ? sqlgGraph.hashCode() : 0);
+        result = 31 * result + (logger != null ? logger.hashCode() : 0);
+        return result;
+    }
 }
