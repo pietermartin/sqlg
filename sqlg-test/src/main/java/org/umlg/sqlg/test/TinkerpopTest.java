@@ -76,8 +76,8 @@ public class TinkerpopTest extends BaseTest {
         final Map<T, Long> expectedResultsCount = new HashMap<>();
         final Map<T, Long> resultsCount = new HashMap<>();
         assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
-        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
-        results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
+        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1L));
+        results.forEach(t -> MapHelper.incr(resultsCount, t, 1L));
         expectedResultsCount.forEach((k, v) -> assertEquals("Checking result group counts", v, resultsCount.get(k)));
         Assert.assertFalse(traversal.hasNext());
     }

@@ -60,7 +60,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                     //create a traverser for the first element
                     E e = (E) emit.getPath().objects().get(0);
                     if (this.isStart) {
-                        traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1l);
+                        traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1L);
                     } else {
                         traverser = this.head.split(e, this);
                     }
@@ -76,7 +76,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                 } else {
 
                     if (this.isStart) {
-                        traverser = this.getTraversal().getTraverserGenerator().generate(element, this, 1l);
+                        traverser = this.getTraversal().getTraverserGenerator().generate(element, this, 1L);
                     } else {
                         traverser = this.head.split(element, this);
                     }

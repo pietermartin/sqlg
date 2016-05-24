@@ -162,7 +162,7 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         uids.stream().forEach(u -> this.sqlgGraph.streamVertex(T.label, "R_HG.Person", "name", u));
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0l);
+        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0L);
     }
 
 
@@ -181,8 +181,8 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         this.sqlgGraph.streamVertex("Person", new LinkedHashMap<>());
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Dog").count().next(), 0l);
+        Assert.assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Dog").count().next(), 0L);
     }
 
     @Test
