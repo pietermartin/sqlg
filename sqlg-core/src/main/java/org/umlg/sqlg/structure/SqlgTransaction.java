@@ -49,10 +49,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             try {
                 Connection connection = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
                 connection.setAutoCommit(false);
-                //this does not seem needed
-//                if (this.sqlgGraph.getSqlDialect().isPostgresql() && this.sqlgGraph.configuration().getBoolean("sqlg.postgres.gis", false)) {
-//                    this.sqlgGraph.getSqlDialect().registerGisDataTypes(connection);
-//                }
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }

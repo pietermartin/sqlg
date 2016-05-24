@@ -99,7 +99,6 @@ public class SchemaTableTree {
         this.comparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-//        this.filteredAllTables = sqlgGraph.getSchemaManager().getAllTables();
         this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
     }
 
@@ -129,7 +128,6 @@ public class SchemaTableTree {
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
         this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
-//        SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
         initializeAliasColumnNameMaps();
     }
 
@@ -211,10 +209,6 @@ public class SchemaTableTree {
     void initializeAliasColumnNameMaps() {
         this.aliasMapHolder = new AliasMapHolder();
     }
-
-//    void leafNodeIsEmpty() {
-//        this.leadNodeIsEmpty = true;
-//    }
 
     public Multimap<String, String> getThreadLocalColumnNameAliasMap() {
         return this.getRoot().aliasMapHolder.getColumnNameAliasMap();

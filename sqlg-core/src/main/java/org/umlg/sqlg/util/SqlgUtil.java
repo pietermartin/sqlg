@@ -187,62 +187,6 @@ public class SqlgUtil {
         return result;
     }
 
-//    public static <E extends SqlgElement> void loadResultSetIntoResultIterator(
-//            SqlgGraph sqlgGraph,
-//            ResultSetMetaData resultSetMetaData, ResultSet resultSet,
-//            SchemaTableTree rootSchemaTableTree, LinkedList<SchemaTableTree> distinctQueryStack,
-//            AliasMapHolder aliasMapHolder,
-//            SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator) throws SQLException {
-//
-//        while (resultSet.next()) {
-//            AliasMapHolder copyAliasMapHolder = aliasMapHolder.copy();
-//
-//            //First load all labeled entries from the resultSet
-//            Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
-//            Multimap<String, Integer> columnNameCountMap2 = ArrayListMultimap.create();
-//            //Translate the columns back from alias to meaningful column headings
-//            for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-//                String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-//                String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-//                columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
-//                columnNameCountMap2.put(unaliased != null ? unaliased : columnLabel, columnCount);
-//            }
-//
-//            int subQueryDepth = 0;
-//            List<LinkedList<SchemaTableTree>> subQueryStacks = SchemaTableTree.splitIntoSubStacks(distinctQueryStack);
-//            Multimap<String, Emit<E>> previousLabeledElements = null;
-//
-//            //Copy the alias map
-//            for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
-//                Multimap<String, Emit<E>> labeledElements = SqlgUtil.loadLabeledElements(
-//                        sqlgGraph, resultSet, subQueryStack, subQueryDepth, copyAliasMapHolder, columnNameCountMap
-//                );
-//                if (previousLabeledElements == null) {
-//                    previousLabeledElements = labeledElements;
-//                } else {
-//                    previousLabeledElements.putAll(labeledElements);
-//                }
-//                //The last subQuery
-//                if (subQueryDepth == subQueryStacks.size() - 1) {
-//                    SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
-//                    Optional<E> e = SqlgUtil.loadElement(
-//                            sqlgGraph, columnNameCountMap2, resultSet, lastSchemaTableTree
-//                    );
-//                    if (e.isPresent()) {
-//                        resultIterator.add(Pair.of(e.get(), previousLabeledElements));
-//                        //This is for when times is before and emit after, in this case the element is emitted twice.
-//                        if (lastSchemaTableTree.getReplacedStepDepth() == lastSchemaTableTree.getStepDepth() && lastSchemaTableTree.isEmit() && lastSchemaTableTree.isUntilFirst()) {
-//                            resultIterator.add(Pair.of(e.get(), previousLabeledElements));
-//                        }
-//                    } else {
-//                        throw new IllegalStateException("Element e must be present, BUG!!");
-//                    }
-//                }
-//                subQueryDepth++;
-//            }
-//        }
-//    }
-
     private static Optional<Long> edgeId(SchemaTableTree schemaTableTree, ResultSet resultSet, int subQueryCount, AliasMapHolder copyAliasMapHolder) throws SQLException {
         if (schemaTableTree.hasParent() && schemaTableTree.isEmit()) {
             //Need to load the edge id. It is used in the traverser to calculate if the element needs to be emitted or not.
@@ -793,10 +737,6 @@ public class SqlgUtil {
                         }
                     }
                 }
-            } else {
-//                conn.setAutoCommit(false);
-//                JDBC.dropSchema(metadata, "APP");
-//                conn.commit();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
