@@ -35,6 +35,7 @@ public class SqlgUtil {
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
     private final static int BULK_WITHIN_COUNT = 1;
+    public static final String PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL = "Property array value elements may not be null.";
 
     private SqlgUtil() {
     }
@@ -815,7 +816,7 @@ public class SqlgUtil {
         byte[] target = new byte[value.length];
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, value[i].byteValue());
         }
@@ -930,7 +931,7 @@ public class SqlgUtil {
     public static <T> T copyToLocalDateTime(Timestamp[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, value[i].toLocalDateTime());
         }
@@ -940,7 +941,7 @@ public class SqlgUtil {
     public static <T> T copyObjectArrayOfTimestampToLocalDateTime(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, ((Timestamp)value[i]).toLocalDateTime());
         }
@@ -950,7 +951,7 @@ public class SqlgUtil {
     public static <T> T copyToLocalDate(Date[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, value[i].toLocalDate());
         }
@@ -960,7 +961,7 @@ public class SqlgUtil {
     public static <T> T copyObjectArrayOfDateToLocalDate(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, ((Date)value[i]).toLocalDate());
         }
@@ -970,7 +971,7 @@ public class SqlgUtil {
     private static <T> T copyToLocalDate(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, ((Date) value[i]).toLocalDate());
         }
@@ -979,7 +980,7 @@ public class SqlgUtil {
     public static <T> T copyToLocalTime(Time[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, (value[i]).toLocalTime());
         }
@@ -989,7 +990,7 @@ public class SqlgUtil {
     public static <T> T copyObjectArrayOfTimeToLocalTime(Object[] value, T target) {
         for (int i = 0; i < value.length; i++) {
             if (value[i] == null) {
-                throw new IllegalArgumentException("Property array value elements may not be null.");
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, ((Time)value[i]).toLocalTime());
         }

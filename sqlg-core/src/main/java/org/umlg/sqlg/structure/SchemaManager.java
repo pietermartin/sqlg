@@ -32,6 +32,11 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class SchemaManager {
 
+    public static final String JDBC_URL = "jdbc.url";
+    public static final String GIVEN_TABLES_MUST_NOT_BE_NULL = "Given tables must not be null";
+    public static final String GIVEN_TABLE_MUST_NOT_BE_NULL = "Given table must not be null";
+    public static final String CREATED_ON = "createdOn";
+    public static final String SHOULD_NOT_HAPPEN = "Should not happen!";
     private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
 
     /**
@@ -147,11 +152,11 @@ public class SchemaManager {
 
         if (this.distributed) {
             this.hazelcastInstance = Hazelcast.newHazelcastInstance(configHazelcast(configuration));
-            this.schemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
-            this.labelSchemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
-            this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
-            this.edgeForeignKeys = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
-            this.tableLabels = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLE_LABELS_HAZELCAST_MAP);
+            this.schemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + SCHEMAS_HAZELCAST_MAP);
+            this.labelSchemas = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + LABEL_SCHEMAS_HAZELCAST_MAP);
+            this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLES_HAZELCAST_MAP);
+            this.edgeForeignKeys = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
+            this.tableLabels = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLE_LABELS_HAZELCAST_MAP);
             ((IMap) this.schemas).addEntryListener(new SchemasMapEntryListener(), true);
             ((IMap) this.labelSchemas).addEntryListener(new LabelSchemasMapEntryListener(), true);
             ((IMap) this.tables).addEntryListener(new TablesMapEntryListener(), true);
@@ -302,27 +307,27 @@ public class SchemaManager {
         NearCacheConfig nearCacheConfig = new NearCacheConfig();
 
         MapConfig schemaMapConfig = new MapConfig();
-        schemaMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + SCHEMAS_HAZELCAST_MAP);
+        schemaMapConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + SCHEMAS_HAZELCAST_MAP);
         schemaMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(schemaMapConfig);
 
         MapConfig labelSchemasMapConfig = new MapConfig();
-        labelSchemasMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + LABEL_SCHEMAS_HAZELCAST_MAP);
+        labelSchemasMapConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + LABEL_SCHEMAS_HAZELCAST_MAP);
         labelSchemasMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(labelSchemasMapConfig);
 
         MapConfig tableMapConfig = new MapConfig();
-        tableMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLES_HAZELCAST_MAP);
+        tableMapConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLES_HAZELCAST_MAP);
         tableMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableMapConfig);
 
         MapConfig edgeForeignKeysMapConfig = new MapConfig();
-        edgeForeignKeysMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
+        edgeForeignKeysMapConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
         edgeForeignKeysMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(edgeForeignKeysMapConfig);
 
         MapConfig tableLabelMapConfig = new MapConfig();
-        tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString("jdbc.url") + TABLE_LABELS_HAZELCAST_MAP);
+        tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLE_LABELS_HAZELCAST_MAP);
         tableLabelMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableLabelMapConfig);
         return config;
@@ -334,8 +339,8 @@ public class SchemaManager {
     }
 
     void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
-        Objects.requireNonNull(schema, "Given tables must not be null");
-        Objects.requireNonNull(table, "Given table must not be null");
+        Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
+        Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
@@ -372,8 +377,8 @@ public class SchemaManager {
     }
 
     void ensureVertexTemporaryTableExist(final String schema, final String table, final Object... keyValues) {
-        Objects.requireNonNull(schema, "Given tables must not be null");
-        Objects.requireNonNull(table, "Given table must not be null");
+        Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
+        Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         final String prefixedTable = VERTEX_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTemporaryTables.containsKey(prefixedTable)) {
@@ -414,8 +419,8 @@ public class SchemaManager {
      * @param keyValues
      */
     public void ensureEdgeTableExist(final String schema, final String table, final SchemaTable foreignKeyIn, final SchemaTable foreignKeyOut, Object... keyValues) {
-        Objects.requireNonNull(schema, "Given tables must not be null");
-        Objects.requireNonNull(table, "Given table must not be null");
+        Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
+        Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Objects.requireNonNull(foreignKeyIn.getSchema(), "Given inTable must not be null");
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final String prefixedTable = EDGE_PREFIX + table;
@@ -484,8 +489,8 @@ public class SchemaManager {
      * @param keyValues
      */
     public void ensureEdgeTableExist(final String schema, final String table, Object... keyValues) {
-        Objects.requireNonNull(schema, "Given tables must not be null");
-        Objects.requireNonNull(table, "Given table must not be null");
+        Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
+        Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         final String prefixedTable = EDGE_PREFIX + table;
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
@@ -1178,20 +1183,20 @@ public class SchemaManager {
 
         Map<String, PropertyType> columns = new HashedMap<>();
         columns.put("name", PropertyType.STRING);
-        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA, columns);
         columns = new HashedMap<>();
         columns.put("name", PropertyType.STRING);
         columns.put("schemaVertex", PropertyType.STRING);
-        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL, columns);
         columns = new HashedMap<>();
         columns.put("name", PropertyType.STRING);
-        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL, columns);
         columns = new HashedMap<>();
         columns.put("name", PropertyType.STRING);
-        columns.put("createdOn", PropertyType.LOCALDATETIME);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put("type", PropertyType.STRING);
         this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY, columns);
 
@@ -1331,7 +1336,7 @@ public class SchemaManager {
         this.sqlgGraph.addVertex(
                 T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA,
                 "name", this.sqlDialect.getPublicSchema(),
-                "createdOn", LocalDateTime.now()
+                CREATED_ON, LocalDateTime.now()
         );
     }
 
@@ -1547,17 +1552,17 @@ public class SchemaManager {
 
         @Override
         public void entryEvicted(EntryEvent<String, String> event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapEvicted(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapCleared(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
     }
 
@@ -1585,17 +1590,17 @@ public class SchemaManager {
 
         @Override
         public void entryEvicted(EntryEvent<String, Set<String>> event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapEvicted(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapCleared(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
     }
 
@@ -1623,17 +1628,17 @@ public class SchemaManager {
 
         @Override
         public void entryEvicted(EntryEvent<String, Map<String, PropertyType>> event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapEvicted(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapCleared(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
     }
 
@@ -1661,17 +1666,17 @@ public class SchemaManager {
 
         @Override
         public void entryEvicted(EntryEvent<String, Set<String>> event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapEvicted(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapCleared(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
     }
 
@@ -1699,17 +1704,17 @@ public class SchemaManager {
 
         @Override
         public void entryEvicted(EntryEvent<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapEvicted(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
 
         @Override
         public void mapCleared(MapEvent event) {
-            throw new IllegalStateException("Should not happen!");
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
         }
     }
 

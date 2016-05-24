@@ -169,6 +169,9 @@ import java.util.stream.Stream;
         reason = "SQLGGRAPH INCLUDES THE JDBC CONNECTION URL.")
 public class SqlgGraph implements Graph {
 
+    public static final String JDBC_URL = "jdbc.url";
+    public static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
+    public static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
     private final SqlgDataSource sqlgDataSource;
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
@@ -191,8 +194,8 @@ public class SqlgGraph implements Graph {
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
 
-        if (!configuration.containsKey("jdbc.url"))
-            throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", "jdbc.url"));
+        if (!configuration.containsKey(JDBC_URL))
+            throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", JDBC_URL));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
         sqlgGraph.schemaManager.loadSchema();
@@ -223,13 +226,13 @@ public class SqlgGraph implements Graph {
             throw new RuntimeException(e);
         }
         try {
-            this.jdbcUrl = configuration.getString("jdbc.url");
+            this.jdbcUrl = configuration.getString(JDBC_URL);
             this.sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(),
                     configuration);
 
-            logger.info("Connection url = " + configuration.getString("jdbc.url") + ", maxPoolSize =  " + configuration.getInt("maxPoolSize", 100));
-            this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection());
+            logger.info("Connection url = " + configuration.getString(JDBC_URL) + ", maxPoolSize =  " + configuration.getInt("maxPoolSize", 100));
+            this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -312,14 +315,14 @@ public class SqlgGraph implements Graph {
 
     public void streamVertex(Object... keyValues) {
         if (!this.tx().isInStreamingBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+            throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + this.tx().getBatchModeType().toString() + MODE_FOR_STREAM_VERTEX);
         }
         internalStreamVertex(keyValues);
     }
 
     public void streamVertex(String label, LinkedHashMap<String, Object> keyValues) {
         if (!this.tx().isInStreamingBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+            throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + this.tx().getBatchModeType().toString() + MODE_FOR_STREAM_VERTEX);
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         tmp.put(T.label, label);
@@ -329,7 +332,7 @@ public class SqlgGraph implements Graph {
 
     public void streamTemporaryVertex(String label, LinkedHashMap<String, Object> keyValues) {
         if (!this.tx().isInStreamingBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+            throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + this.tx().getBatchModeType().toString() + MODE_FOR_STREAM_VERTEX);
         }
         Map<Object, Object> tmp = new LinkedHashMap<>(keyValues);
         tmp.put(T.label, label);
@@ -339,7 +342,7 @@ public class SqlgGraph implements Graph {
 
     public void streamTemporaryVertex(Object... keyValues) {
         if (!this.tx().isInStreamingBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction must be in " + this.tx().getBatchModeType().toString() + " mode for streamVertex");
+            throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + this.tx().getBatchModeType().toString() + MODE_FOR_STREAM_VERTEX);
         }
         internalStreamTemporaryVertex(keyValues);
     }
@@ -378,7 +381,7 @@ public class SqlgGraph implements Graph {
 
     public void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
         if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingWithLockBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
+            throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
         SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
@@ -518,7 +521,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty("jdbc.url") + ")";
+        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")";
     }
 
     public ISqlGFeatures features() {

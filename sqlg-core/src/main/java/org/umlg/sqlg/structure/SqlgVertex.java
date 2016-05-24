@@ -25,6 +25,8 @@ import java.util.*;
  */
 public class SqlgVertex extends SqlgElement implements Vertex {
 
+    public static final String WHERE = " WHERE ";
+    public static final String BUG_DIRECTION_BOTH_SHOULD_NEVER_FIRE_HERE = "BUG: Direction.BOTH should never fire here!";
     private Logger logger = LoggerFactory.getLogger(SqlgVertex.class.getName());
 
     /**
@@ -280,7 +282,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                             sql.append(".");
                             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getTable()));
-                            sql.append(" WHERE ");
+                            sql.append(WHERE);
                             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.IN_VERTEX_COLUMN_END));
                             sql.append(" = ?");
                             break;
@@ -288,12 +290,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                             sql.append(".");
                             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTable.getTable()));
-                            sql.append(" WHERE ");
+                            sql.append(WHERE);
                             sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + SchemaManager.OUT_VERTEX_COLUMN_END));
                             sql.append(" = ?");
                             break;
                         case BOTH:
-                            throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                            throw new IllegalStateException(BUG_DIRECTION_BOTH_SHOULD_NEVER_FIRE_HERE);
                     }
                     if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                         sql.append(";");
@@ -311,7 +313,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 preparedStatement.setLong(1, this.recordId.getId());
                                 break;
                             case BOTH:
-                                throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                                throw new IllegalStateException(BUG_DIRECTION_BOTH_SHOULD_NEVER_FIRE_HERE);
                         }
 
                         ResultSet resultSet = preparedStatement.executeQuery();
@@ -461,7 +463,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getSchema()));
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(edgeSchemaTable.getTable()));
-        sql.append(" WHERE ");
+        sql.append(WHERE);
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema + "." + this.table + (direction == Direction.OUT ? SchemaManager.OUT_VERTEX_COLUMN_END : SchemaManager.IN_VERTEX_COLUMN_END)));
         sql.append(" = ?");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
@@ -642,7 +644,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             tables = transformToInSchemaTables(edgeForeignKeys, hasContainerLabels);
                             break;
                         default:
-                            throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                            throw new IllegalStateException(BUG_DIRECTION_BOTH_SHOULD_NEVER_FIRE_HERE);
                     }
 
                     for (SchemaTable joinSchemaTable : tables) {
@@ -713,7 +715,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                                 break;
                             default:
-                                throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                                throw new IllegalStateException(BUG_DIRECTION_BOTH_SHOULD_NEVER_FIRE_HERE);
                         }
                         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                             sql.append(";");
@@ -731,7 +733,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     preparedStatement.setLong(1, this.recordId.getId());
                                     break;
                                 case BOTH:
-                                    throw new IllegalStateException("BUG: Direction.BOTH should never fire here!");
+                                    throw new IllegalStateException(BUG_DIRECTION_BOTH_SHOULD_NEVER_FIRE_HERE);
                             }
                             int countHasContainers = 2;
                             for (HasContainer hasContainer : hasContainers) {
@@ -915,7 +917,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
-            sql.append(" WHERE ");
+            sql.append(WHERE);
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {

@@ -18,6 +18,7 @@ import java.sql.SQLException;
  */
 public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
+    public static final String BATCH_MODE_NOT_SUPPORTED = "Batch mode not supported!";
     private SqlgGraph sqlgGraph;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
@@ -135,7 +136,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_LOCK);
         } else {
-            throw new IllegalStateException("Batch mode not supported!");
+            throw new IllegalStateException(BATCH_MODE_NOT_SUPPORTED);
         }
     }
 
@@ -144,7 +145,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
         } else {
-            throw new IllegalStateException("Batch mode not supported!");
+            throw new IllegalStateException(BATCH_MODE_NOT_SUPPORTED);
         }
     }
 
@@ -173,7 +174,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             readWrite();
             threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
         } else {
-            throw new IllegalStateException("Batch mode not supported!");
+            throw new IllegalStateException(BATCH_MODE_NOT_SUPPORTED);
         }
     }
 
