@@ -426,231 +426,232 @@ public abstract class SqlgElement implements Element {
             return;
         }
         PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(columnName);
-        int type = resultSetMetaData.getColumnType(i);
-        switch (type) {
-            case Types.SMALLINT:
-                this.properties.put(columnName, ((Integer) o).shortValue());
+        switch (propertyType) {
+
+            case BOOLEAN:
+                this.properties.put(columnName, o);
                 break;
-            case Types.TINYINT:
+            case BYTE:
                 this.properties.put(columnName, ((Integer) o).byteValue());
                 break;
-            case Types.BIGINT:
-                switch (propertyType) {
-                    case DURATION:
-                        long seconds = (Long) o;
-                        //load the months and days as its needed to construct the Period
-                        String nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
-                        Collection<String> aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
-                        if (aliasedNanos.isEmpty()) {
-                            aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-                        }
-                        int nanos = resultSet.getInt(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
-                        this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
-                        break;
-                    default:
-                        this.properties.put(columnName, o);
-                }
+            case SHORT:
+                this.properties.put(columnName, ((Integer) o).shortValue());
                 break;
-            case Types.INTEGER:
-                switch (propertyType) {
-                    case PERIOD:
-                        int years = (Integer) o;
-                        String monthColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
-                        Collection<String> aliasedMonth = threadLocalColumnNameAliasMap.get(monthColumn);
-                        if (aliasedMonth.isEmpty()) {
-                            aliasedMonth = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-                        }
-                        int months = resultSet.getInt(new ArrayList<>(aliasedMonth).get(aliasedMonth.size() - 1));
-                        String dayColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
-                        Collection<String> aliasedDay = threadLocalColumnNameAliasMap.get(dayColumn);
-                        if (aliasedDay.isEmpty()) {
-                            aliasedDay = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
-                        }
-                        int days = resultSet.getInt(new ArrayList<>(aliasedDay).get(aliasedDay.size() - 1));
-                        this.properties.put(columnName, Period.of(years, months, days));
-                        break;
-                    default:
-                        this.properties.put(columnName, o);
-                }
+            case INTEGER:
+                this.properties.put(columnName, o);
                 break;
-            case Types.REAL:
+            case LONG:
+                this.properties.put(columnName, o);
+                break;
+            case FLOAT:
                 this.properties.put(columnName, ((Number) o).floatValue());
                 break;
-            case Types.DOUBLE:
+            case DOUBLE:
                 this.properties.put(columnName, ((Number) o).doubleValue());
                 break;
-            case Types.DATE:
+            case STRING:
+                this.properties.put(columnName, o);
+                break;
+            case LOCALDATE:
                 this.properties.put(columnName, ((Date) o).toLocalDate());
                 break;
-            case Types.TIMESTAMP:
-                switch (propertyType) {
-                    case LOCALDATETIME:
-                        this.properties.put(columnName, ((Timestamp) o).toLocalDateTime());
-                        break;
-                    case ZONEDDATETIME:
-                        String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
-                        Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
-                        if (zonedId.isEmpty()) {
-                            zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-                        }
-                        String zoneId = resultSet.getString(new ArrayList<>(zonedId).get(zonedId.size() - 1));
-                        ZoneId zoneId1 = ZoneId.of(zoneId);
-                        ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
-                        this.properties.put(columnName, zonedDateTimeAGT);
-                        break;
-                    default:
-                        throw new IllegalStateException("Database timestamp column must be either for a LocalDateTime or ZonedDateTime, found " + propertyType.name());
-                }
+            case LOCALDATETIME:
+                this.properties.put(columnName, ((Timestamp) o).toLocalDateTime());
                 break;
-            case Types.TIME:
+            case ZONEDDATETIME:
+                String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
+                if (zonedId.isEmpty()) {
+                    zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                }
+                String zoneId = resultSet.getString(new ArrayList<>(zonedId).get(zonedId.size() - 1));
+                ZoneId zoneId1 = ZoneId.of(zoneId);
+                ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
+                this.properties.put(columnName, zonedDateTimeAGT);
+                break;
+            case LOCALTIME:
                 this.properties.put(columnName, ((Time) o).toLocalTime());
                 break;
-            case Types.ARRAY:
-                java.sql.Array array = (java.sql.Array) o;
-                switch (propertyType) {
-                    case LOCALDATETIME_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case LOCALDATE_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case LOCALTIME_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case ZONEDDATETIME_ARRAY:
-                        String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
-                        Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
-                        if (zonedId.isEmpty()) {
-                            zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-                        }
-                        java.sql.Array zoneIdArray = resultSet.getArray(new ArrayList<>(zonedId).get(zonedId.size() - 1));
-                        String[] objectZoneIdArray = (String[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.STRING_ARRAY, zoneIdArray);
-                        LocalDateTime[] localDateTimes =  (LocalDateTime[])this.sqlgGraph.getSqlDialect().convertArray(PropertyType.LOCALDATETIME_ARRAY, array);
-                        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[localDateTimes.length];
-                        int count = 0;
-                        for (LocalDateTime localDateTime : localDateTimes) {
-                            ZoneId zoneId1 = ZoneId.of(objectZoneIdArray[count]);
-                            ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId1);
-                            zonedDateTimes[count++] = zonedDateTime;
-                        }
-                        this.properties.put(columnName, zonedDateTimes);
-                        break;
-                    case DURATION_ARRAY:
-                        String nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
-                        Collection<String> aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
-                        if (aliasedNanos.isEmpty()) {
-                            aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
-                        }
-                        long[] seconds = (long[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.long_ARRAY, array);
-                        java.sql.Array nanosArray = resultSet.getArray(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
-                        int[] nanoArray = (int[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.int_ARRAY, nanosArray);
-                        Duration[] durations = new Duration[seconds.length];
-                        count = 0;
-                        for (Long second : seconds) {
-                            durations[count] = Duration.ofSeconds(second, nanoArray[count++]);
-                        }
-                        this.properties.put(columnName, durations);
-                        break;
-                    case PERIOD_ARRAY:
-                        String monthsColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
-                        Collection<String> aliasedMonths = threadLocalColumnNameAliasMap.get(monthsColumn);
-                        if (aliasedMonths.isEmpty()) {
-                            aliasedMonths = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
-                        }
-                        String daysColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
-                        Collection<String> aliasedDays = threadLocalColumnNameAliasMap.get(daysColumn);
-                        if (aliasedDays.isEmpty()) {
-                            aliasedDays = Arrays.asList(columnName + propertyType.getPostFixes()[2]);
-                        }
-                        Integer[] years = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, array);
-                        java.sql.Array monthsArray = resultSet.getArray(new ArrayList<>(aliasedMonths).get(aliasedMonths.size() - 1));
-                        Integer[] months = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, monthsArray);
-                        java.sql.Array daysArray = resultSet.getArray(new ArrayList<>(aliasedDays).get(aliasedDays.size() - 1));
-                        Integer[] days = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, daysArray);
-                        Period[] periods = new Period[years.length];
-                        count = 0;
-                        for (Integer year : years) {
-                            periods[count] = Period.of(year, months[count], days[count++]);
-                        }
-                        this.properties.put(columnName, periods);
-                        break;
-                    case BOOLEAN_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case boolean_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case SHORT_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case short_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case INTEGER_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case int_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case LONG_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case long_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case FLOAT_ARRAY:
-                        Float[] floatArray = (Float[]) array.getArray();
-                        this.properties.put(columnName, floatArray);
-                        break;
-                    case float_ARRAY:
-                        floatArray = (Float[]) array.getArray();
-                        this.properties.put(columnName, SqlgUtil.convertFloatArrayToPrimitiveFloat(floatArray));
-                        break;
-                    case DOUBLE_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case double_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case STRING_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    case JSON_ARRAY:
-                        this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
-                        break;
-                    default:
-                        throw new IllegalStateException("Unhandled array type" + propertyType.name());
+            case PERIOD:
+                int years = (Integer) o;
+                String monthColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                Collection<String> aliasedMonth = threadLocalColumnNameAliasMap.get(monthColumn);
+                if (aliasedMonth.isEmpty()) {
+                    aliasedMonth = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
                 }
-                break;
-            case Types.BINARY:
-                switch (propertyType) {
-                    case BYTE_ARRAY:
-                        this.properties.put(columnName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) o));
-                        break;
-                    case byte_ARRAY:
-                        this.properties.put(columnName, o);
-                        break;
-                    default:
-                        throw new IllegalStateException("binary data not supported for " + propertyType.name());
+                int months = resultSet.getInt(new ArrayList<>(aliasedMonth).get(aliasedMonth.size() - 1));
+                String dayColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
+                Collection<String> aliasedDay = threadLocalColumnNameAliasMap.get(dayColumn);
+                if (aliasedDay.isEmpty()) {
+                    aliasedDay = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
                 }
+                int days = resultSet.getInt(new ArrayList<>(aliasedDay).get(aliasedDay.size() - 1));
+                this.properties.put(columnName, Period.of(years, months, days));
                 break;
-            case Types.VARBINARY:
-                switch (propertyType) {
-                    case BYTE_ARRAY:
-                        this.properties.put(columnName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) o));
-                        break;
-                    case byte_ARRAY:
-                        this.properties.put(columnName, o);
-                        break;
-                    default:
-                        throw new IllegalStateException("binary data not supported for " + propertyType.name());
+            case DURATION:
+                long seconds = (Long) o;
+                //load the months and days as its needed to construct the Period
+                String nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                Collection<String> aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
+                if (aliasedNanos.isEmpty()) {
+                    aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
                 }
+                int nanos = resultSet.getInt(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
+                this.properties.put(columnName, Duration.ofSeconds(seconds, nanos));
                 break;
-            case Types.OTHER:
+            case JSON:
                 sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
                 break;
-            default:
+            case POINT:
+                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
+                break;
+            case POLYGON:
+                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
+                break;
+            case GEOGRAPHY_POINT:
+                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
+                break;
+            case GEOGRAPHY_POLYGON:
+                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
+                break;
+            case boolean_ARRAY:
+                java.sql.Array array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case BOOLEAN_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case byte_ARRAY:
                 this.properties.put(columnName, o);
+                break;
+            case BYTE_ARRAY:
+                this.properties.put(columnName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) o));
+                break;
+            case short_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case SHORT_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case int_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case INTEGER_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case long_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case LONG_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case float_ARRAY:
+                array = (java.sql.Array) o;
+                Float[]floatArray = (Float[]) array.getArray();
+                this.properties.put(columnName, SqlgUtil.convertFloatArrayToPrimitiveFloat(floatArray));
+                break;
+            case FLOAT_ARRAY:
+                array = (java.sql.Array) o;
+                floatArray = (Float[]) array.getArray();
+                this.properties.put(columnName, floatArray);
+                break;
+            case double_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case DOUBLE_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case STRING_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case LOCALDATETIME_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case LOCALDATE_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case LOCALTIME_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            case ZONEDDATETIME_ARRAY:
+                array = (java.sql.Array) o;
+                zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
+                if (zonedId.isEmpty()) {
+                    zonedId = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                }
+                java.sql.Array zoneIdArray = resultSet.getArray(new ArrayList<>(zonedId).get(zonedId.size() - 1));
+                String[] objectZoneIdArray = (String[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.STRING_ARRAY, zoneIdArray);
+                LocalDateTime[] localDateTimes = (LocalDateTime[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.LOCALDATETIME_ARRAY, array);
+                ZonedDateTime[] zonedDateTimes = new ZonedDateTime[localDateTimes.length];
+                int count = 0;
+                for (LocalDateTime localDateTime : localDateTimes) {
+                    zoneId1 = ZoneId.of(objectZoneIdArray[count]);
+                    ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId1);
+                    zonedDateTimes[count++] = zonedDateTime;
+                }
+                this.properties.put(columnName, zonedDateTimes);
+                break;
+            case DURATION_ARRAY:
+                array = (java.sql.Array) o;
+                nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
+                if (aliasedNanos.isEmpty()) {
+                    aliasedNanos = Arrays.asList(columnName + propertyType.getPostFixes()[0]);
+                }
+                long[] secondsArray = (long[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.long_ARRAY, array);
+                java.sql.Array nanosArray = resultSet.getArray(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
+                int[] nanoArray = (int[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.int_ARRAY, nanosArray);
+                Duration[] durations = new Duration[secondsArray.length];
+                count = 0;
+                for (Long second : secondsArray) {
+                    durations[count] = Duration.ofSeconds(second, nanoArray[count++]);
+                }
+                this.properties.put(columnName, durations);
+                break;
+            case PERIOD_ARRAY:
+                array = (java.sql.Array) o;
+                String monthsColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[0];
+                Collection<String> aliasedMonths = threadLocalColumnNameAliasMap.get(monthsColumn);
+                if (aliasedMonths.isEmpty()) {
+                    aliasedMonths = Arrays.asList(columnName + propertyType.getPostFixes()[1]);
+                }
+                String daysColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + columnName + propertyType.getPostFixes()[1];
+                Collection<String> aliasedDays = threadLocalColumnNameAliasMap.get(daysColumn);
+                if (aliasedDays.isEmpty()) {
+                    aliasedDays = Arrays.asList(columnName + propertyType.getPostFixes()[2]);
+                }
+                Integer[] yearsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, array);
+                java.sql.Array monthsArray = resultSet.getArray(new ArrayList<>(aliasedMonths).get(aliasedMonths.size() - 1));
+                Integer[] monthsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, monthsArray);
+                java.sql.Array daysArray = resultSet.getArray(new ArrayList<>(aliasedDays).get(aliasedDays.size() - 1));
+                Integer[] daysIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, daysArray);
+                Period[] periods = new Period[yearsIntegers.length];
+                count = 0;
+                for (Integer year : yearsIntegers) {
+                    periods[count] = Period.of(year, monthsIntegers[count], daysIntegers[count++]);
+                }
+                this.properties.put(columnName, periods);
+                break;
+            case JSON_ARRAY:
+                array = (java.sql.Array) o;
+                this.properties.put(columnName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                break;
+            default:
+                throw SqlgExceptions.invalidPropertyType(propertyType);
         }
     }
 
