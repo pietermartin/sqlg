@@ -725,39 +725,6 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testBatchUpdatePersistentVerticesPerformance1() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        this.sqlgGraph.tx().normalBatchModeOn();
-        int count = 1;
-        for (int i = 0; i < 100000; i++) {
-            this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-            if (count++ % 10000 == 0) {
-                this.sqlgGraph.tx().commit();
-            }
-
-        }
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.tx().normalBatchModeOn();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
-
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().toList();
-        count = 1;
-        for (Vertex v : vertices) {
-            v.property("name", "b");
-            if (count++ % 10000 == 0) {
-                this.sqlgGraph.tx().commit();
-            }
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-    }
-
-    @Test
     public void testInsertUpdateQuotedStrings() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
