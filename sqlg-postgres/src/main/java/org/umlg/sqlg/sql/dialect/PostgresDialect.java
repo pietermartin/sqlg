@@ -843,7 +843,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
-        StringBuffer sql = new StringBuffer();
+        StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         //Temp tables only
         sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
@@ -2069,7 +2069,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<? extends Pair<String, String>> uids) {
         try {
-            StringBuffer sql = new StringBuffer();
+            StringBuilder sql = new StringBuilder();
             sql.append("COPY ");
             sql.append(maybeWrapInQoutes(schemaTable.getTable()));
             sql.append(" (");
