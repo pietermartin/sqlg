@@ -86,7 +86,6 @@ public class TransactionCache {
             //copy the RecordId so that the WeakHashMap value does not reference the key
             RecordId vertexRecordId = (RecordId) sqlgVertex.id();
             RecordId recordId = RecordId.from(SchemaTable.of(vertexRecordId.getSchemaTable().getSchema(), vertexRecordId.getSchemaTable().getTable()), vertexRecordId.getId());
-//            this.vertexCache.put((RecordId)sqlgVertex.id(), sqlgVertex);
             this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {
@@ -105,7 +104,6 @@ public class TransactionCache {
         } else {
             RecordId vertexRecordId = (RecordId) sqlgVertex.id();
             RecordId recordId = RecordId.from(SchemaTable.of(vertexRecordId.getSchemaTable().getSchema(), vertexRecordId.getSchemaTable().getTable()), vertexRecordId.getId());
-//            this.vertexCache.put((RecordId) sqlgVertex.id(), sqlgVertex);
             this.vertexCache.put(recordId, sqlgVertex);
         }
     }

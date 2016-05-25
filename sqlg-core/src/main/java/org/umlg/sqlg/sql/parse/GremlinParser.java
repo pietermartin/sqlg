@@ -79,7 +79,6 @@ public class GremlinParser<S extends Element, E extends Element> {
             rootSchemaTableTree.setOptionalLeftJoin(replacedSteps.get(0).isLeftJoin());
             rootSchemaTableTree.setEmit(replacedSteps.get(0).isEmit());
             rootSchemaTableTree.setUntilFirst(replacedSteps.get(0).isUntilFirst());
-//            rootSchemaTableTree.set(replacedSteps.get(0).isEmit());
             rootSchemaTableTree.initializeAliasColumnNameMaps();
             //TODO what about the emit, untilFirst flag????
             rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);

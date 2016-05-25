@@ -1056,7 +1056,6 @@ public class SqlgGraph implements Graph {
     //indexing
     public void createUniqueConstraint(String label, String propertyKey) {
         this.tx().readWrite();
-//        this.getSchemaManager().createUniqueConstraint(label, propertyKey);
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
@@ -1309,27 +1308,6 @@ public class SqlgGraph implements Graph {
                 }
             }
 
-            //For prosperity, MariaDb needs this
-//                } else if (!sqlDialect.supportSchemas()) {
-//                    ResultSet result = metadata.getCatalogs();
-//                    while (result.next()) {
-//                        StringBuilder sql = new StringBuilder("DROP DATABASE ");
-//                        String database = result.getString(1);
-//                        if (!sqlDialect.getDefaultSchemas().contains(database)) {
-//                            sql.append(sqlDialect.maybeWrapInQoutes(database));
-//                            if (sqlDialect.needsSemicolon()) {
-//                                sql.append(";");
-//                            }
-//                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                                preparedStatement.executeUpdate();
-//                            }
-//                        }
-//                    }
-//                } else {
-//                    conn.setAutoCommit(false);
-//                    JDBC.dropSchema(metadata, "APP");
-//                    conn.commit();
-//                }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

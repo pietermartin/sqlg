@@ -98,17 +98,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         return StringFactory.edgeString(this);
     }
 
-//    protected void insertEdge(Object... keyValues) throws SQLException {
-//        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
-//        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-//            internalBatchAddEdge(keyValueMap);
-//        } else {
-//            internalAddEdge(keyValueMap);
-//        }
-//        //Cache the properties
-//        this.properties.putAll(keyValueMap);
-//    }
-
     protected void insertEdge(boolean complete, Object... keyValues) throws SQLException {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
@@ -258,7 +247,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 if (split.hasNext()) {
                     name += "." + split.next() + "." + split.next();
                 }
-//                name = name.replace(SchemaTableTree.ALIAS_SEPARATOR, ".");
 
                 if (!name.equals("ID") &&
                         !Objects.isNull(o) &&

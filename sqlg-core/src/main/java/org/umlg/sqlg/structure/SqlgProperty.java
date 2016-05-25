@@ -98,6 +98,5 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     @Override
     public int hashCode() {
         return ElementHelper.hashCode(this);
-//        return this.key.hashCode() + this.value.hashCode() + this.element.hashCode();
     }
 }

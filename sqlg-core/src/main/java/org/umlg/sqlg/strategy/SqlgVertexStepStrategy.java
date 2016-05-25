@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, EdgeOtherVertexStep.class);
-//    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
     public SqlgVertexStepStrategy() {
@@ -95,7 +94,6 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step currentStep = iterator.next();
-//            if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) || isTraversalComparatorWithSelectOneStep((OrderGlobalStep) currentStep))) {
             if (currentStep instanceof OrderGlobalStep && (isElementValueComparator((OrderGlobalStep) currentStep) )) {
                 iterator.remove();
                 TraversalHelper.replaceStep(currentStep, new SqlgOrderGlobalStep<>((OrderGlobalStep) currentStep), traversal);
