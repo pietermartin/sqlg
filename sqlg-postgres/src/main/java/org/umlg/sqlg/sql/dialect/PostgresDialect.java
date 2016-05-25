@@ -1963,10 +1963,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 }
                 break;
             case BYTE_ARRAY:
-                int hexValue1 = 0x31;
-                int value = Integer.parseInt("31", 16);
-                String ss = Hex.encodeHexString(new byte[]{3, 4});
-                int i = 0x31;
                 java.sql.Array array = (java.sql.Array) o;
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets
