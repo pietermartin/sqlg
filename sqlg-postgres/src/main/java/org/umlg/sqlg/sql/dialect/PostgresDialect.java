@@ -51,13 +51,28 @@ import static org.umlg.sqlg.structure.PropertyType.JSON_ARRAY;
 @SuppressWarnings("unused")
 public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
+    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+
+    public static final String FLOAT = "float";
     private static final String BATCH_NULL = "";
     private static final String COPY_COMMAND_DELIMITER = "\t";
     //this strange character is apparently an illegal json char so its good as a quote
     private static final String COPY_COMMAND_QUOTE = "e'\\x01'";
     private static final int PARAMETER_LIMIT = 32767;
     private static final String COPY_DUMMY = "_copy_dummy";
-    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    public static final String BIGINT = "BIGINT";
+    public static final String COPY = "COPY ";
+    public static final String FROM_STDIN_CSV_DELIMITER = " FROM stdin CSV DELIMITER '";
+    public static final String QUOTE = "QUOTE ";
+    public static final String SELECT_CURRVAL = "SELECT CURRVAL('\"";
+    public static final String ID_SEQ = "_ID_seq\"');";
+    public static final String BRACE_DOT_BRACE = "\".\"";
+    public static final String INTEGER = "'::INTEGER";
+    public static final String UNKNOWN_PROPERTY_TYPE = "Unknown propertyType ";
+    public static final String WHERE = " WHERE ";
+    public static final String EXCEEDS_THAT = " exceeds that";
+    public static final String PREFIX_MUST_BE = "prefix must be ";
+    public static final String DELETE_FROM = "DELETE FROM ";
 
     @SuppressWarnings("unused")
     public PostgresDialect(Configuration configurator) {
@@ -91,7 +106,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public String getForeignKeyTypeDefinition() {
-        return "BIGINT";
+        return BIGINT;
     }
 
     @Override
@@ -139,13 +154,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case long_ARRAY:
                 return "bigint";
             case FLOAT_ARRAY:
-                return "float";
+                return  FLOAT;
             case float_ARRAY:
-                return "float";
+                return FLOAT;
             case DOUBLE_ARRAY:
-                return "float";
+                return FLOAT;
             case double_ARRAY:
-                return "float";
+                return FLOAT;
             case STRING_ARRAY:
                 return "varchar";
             case LOCALDATETIME_ARRAY:
@@ -201,7 +216,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 long numberInserted;
                 try (InputStream is = mapVertexToInputStream(propertyTypeMap, vertices)) {
                     StringBuilder sql = new StringBuilder();
-                    sql.append("COPY ");
+                    sql.append(COPY);
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
                     sql.append(".");
                     sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
@@ -226,17 +241,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     sql.append(")");
 
-                    sql.append(" FROM stdin CSV DELIMITER '");
+                    sql.append(FROM_STDIN_CSV_DELIMITER);
                     sql.append(COPY_COMMAND_DELIMITER);
                     sql.append("' ");
-                    sql.append("QUOTE ");
+                    sql.append(QUOTE);
                     sql.append(COPY_COMMAND_QUOTE);
                     sql.append(";");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
                     numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+                    try (PreparedStatement preparedStatement = con.prepareStatement(SELECT_CURRVAL + schemaTable.getSchema() + BRACE_DOT_BRACE + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + ID_SEQ)) {
                         ResultSet resultSet = preparedStatement.executeQuery();
                         resultSet.next();
                         endHigh = resultSet.getLong(1);
@@ -273,7 +288,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 long numberInserted;
                 try (InputStream is = mapEdgeToInputStream(propertyTypeMap, triples)) {
                     StringBuilder sql = new StringBuilder();
-                    sql.append("COPY ");
+                    sql.append(COPY);
                     sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
                     sql.append(".");
                     sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
@@ -294,17 +309,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     sql.append(") ");
 
-                    sql.append(" FROM stdin CSV DELIMITER '");
+                    sql.append(FROM_STDIN_CSV_DELIMITER);
                     sql.append(COPY_COMMAND_DELIMITER);
                     sql.append("' ");
-                    sql.append("QUOTE ");
+                    sql.append(QUOTE);
                     sql.append(COPY_COMMAND_QUOTE);
                     sql.append(";");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
                     numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.EDGE_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+                    try (PreparedStatement preparedStatement = con.prepareStatement(SELECT_CURRVAL + schemaTable.getSchema() + BRACE_DOT_BRACE + SchemaManager.EDGE_PREFIX + schemaTable.getTable() + ID_SEQ)) {
                         ResultSet resultSet = preparedStatement.executeQuery();
                         resultSet.next();
                         endHigh = resultSet.getLong(1);
@@ -491,19 +506,19 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             sql.append("'::BIGINT");
                             sql.append(",'");
                             sql.append(duration.getNano());
-                            sql.append("'::INTEGER");
+                            sql.append(INTEGER);
                             break;
                         case PERIOD:
                             Period period = (Period) value;
                             sql.append("'");
                             sql.append(period.getYears());
-                            sql.append("'::INTEGER");
+                            sql.append(INTEGER);
                             sql.append(",'");
                             sql.append(period.getMonths());
-                            sql.append("'::INTEGER");
+                            sql.append(INTEGER);
                             sql.append(",'");
                             sql.append(period.getDays());
-                            sql.append("'::INTEGER");
+                            sql.append(INTEGER);
                             break;
                         case JSON:
                             sql.append("'");
@@ -687,7 +702,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             sql.append("}'");
                             break;
                         default:
-                            throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                            throw new IllegalStateException(UNKNOWN_PROPERTY_TYPE + propertyType.name());
                     }
                     if (countProperties++ < keys.size()) {
                         sql.append(", ");
@@ -735,7 +750,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, SqlgVertex vertex, Map<String, Object> keyValueMap) {
         Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get((isTemp == false ? vertex.getSchema() + "." : "") + SchemaManager.VERTEX_PREFIX + vertex.getTable());
         StringBuilder sql = new StringBuilder();
-        sql.append("COPY ");
+        sql.append(COPY);
         if (!isTemp) {
             sql.append(maybeWrapInQoutes(vertex.getSchema()));
             sql.append(".");
@@ -761,10 +776,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         }
         sql.append(")");
-        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(FROM_STDIN_CSV_DELIMITER);
         sql.append(COPY_COMMAND_DELIMITER);
         sql.append("' ");
-        sql.append("QUOTE ");
+        sql.append(QUOTE);
         sql.append(COPY_COMMAND_QUOTE);
         sql.append(";");
         if (logger.isDebugEnabled()) {
@@ -777,7 +792,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(sqlgEdge.getSchema() + "." + SchemaManager.EDGE_PREFIX + sqlgEdge.getTable());
         StringBuilder sql = new StringBuilder();
-        sql.append("COPY ");
+        sql.append(COPY);
         sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
         sql.append(".");
         sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + sqlgEdge.getTable()));
@@ -795,10 +810,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
         sql.append(") ");
 
-        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(FROM_STDIN_CSV_DELIMITER);
         sql.append(COPY_COMMAND_DELIMITER);
         sql.append("' ");
-        sql.append("QUOTE ");
+        sql.append(QUOTE);
         sql.append(COPY_COMMAND_QUOTE);
         sql.append(";");
         if (logger.isDebugEnabled()) {
@@ -844,7 +859,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
         StringBuffer sql = new StringBuffer();
-        sql.append("COPY ");
+        sql.append(COPY);
         //Temp tables only
         sql.append(maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
         sql.append(" (");
@@ -867,10 +882,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             }
         }
         sql.append(")");
-        sql.append(" FROM stdin CSV DELIMITER '");
+        sql.append(FROM_STDIN_CSV_DELIMITER);
         sql.append(COPY_COMMAND_DELIMITER);
         sql.append("' ");
-        sql.append("QUOTE ");
+        sql.append(QUOTE);
         sql.append(COPY_COMMAND_QUOTE);
         sql.append(";");
         if (logger.isDebugEnabled()) {
@@ -1131,11 +1146,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 //                        deleteEdges(sqlgGraph, schemaTable, outLabels, true);
 //                        deleteEdges(sqlgGraph, schemaTable, inLabels, false);
 
-                        StringBuilder sql = new StringBuilder("DELETE FROM ");
+                        StringBuilder sql = new StringBuilder(DELETE_FROM);
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                         sql.append(".");
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.VERTEX_PREFIX) + schemaTable.getTable()));
-                        sql.append(" WHERE ");
+                        sql.append(WHERE);
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
                         sql.append(" in (");
                         int count = 1;
@@ -1291,11 +1306,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         for (SchemaTable inLabel : labels) {
 
             StringBuilder sql = new StringBuilder();
-            sql.append("DELETE FROM ");
+            sql.append(DELETE_FROM);
             sql.append(maybeWrapInQoutes(inLabel.getSchema()));
             sql.append(".");
             sql.append(maybeWrapInQoutes(inLabel.getTable()));
-            sql.append(" WHERE ");
+            sql.append(WHERE);
             sql.append(maybeWrapInQoutes(schemaTable.toString() + (inDirection ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END)));
             sql.append(" IN (");
             int count = 1;
@@ -1352,11 +1367,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     previous = subListTo;
 
                     for (SchemaTable schemaTable : removeEdgeCache.keySet()) {
-                        StringBuilder sql = new StringBuilder("DELETE FROM ");
+                        StringBuilder sql = new StringBuilder(DELETE_FROM);
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                         sql.append(".");
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
-                        sql.append(" WHERE ");
+                        sql.append(WHERE);
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
                         sql.append(" in (");
                         int count = 1;
@@ -1499,7 +1514,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case INTEGER:
                 return new String[]{"INTEGER"};
             case LONG:
-                return new String[]{"BIGINT"};
+                return new String[]{BIGINT};
             case FLOAT:
                 return new String[]{"REAL"};
             case DOUBLE:
@@ -1515,7 +1530,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case PERIOD:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION:
-                return new String[]{"BIGINT", "INTEGER"};
+                return new String[]{BIGINT, "INTEGER"};
             case STRING:
                 return new String[]{"TEXT"};
             case JSON:
@@ -1573,7 +1588,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case JSON_ARRAY:
                 return new String[]{"JSONB[]"};
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw new IllegalStateException(UNKNOWN_PROPERTY_TYPE + propertyType.name());
         }
     }
 
@@ -1680,7 +1695,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case STRING_ARRAY:
                 return Types.ARRAY;
             default:
-                throw new IllegalStateException("Unknown propertyType " + propertyType.name());
+                throw new IllegalStateException(UNKNOWN_PROPERTY_TYPE + propertyType.name());
         }
     }
 
@@ -1848,13 +1863,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     public void validateSchemaName(String schema) {
         if (schema.length() > getMinimumSchemaNameLength()) {
-            throw SqlgExceptions.invalidSchemaName("Postgresql schema names can only be 63 characters. " + schema + " exceeds that");
+            throw SqlgExceptions.invalidSchemaName("Postgresql schema names can only be 63 characters. " + schema + EXCEEDS_THAT);
         }
     }
 
     public void validateTableName(String table) {
         if (table.length() > getMinimumTableNameLength()) {
-            throw SqlgExceptions.invalidTableName("Postgresql table names can only be 63 characters. " + table + " exceeds that");
+            throw SqlgExceptions.invalidTableName("Postgresql table names can only be 63 characters. " + table + EXCEEDS_THAT);
         }
     }
 
@@ -1862,7 +1877,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void validateColumnName(String column) {
         super.validateColumnName(column);
         if (column.length() > getMinimumColumnNameLength()) {
-            throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + " exceeds that");
+            throw SqlgExceptions.invalidColumnName("Postgresql column names can only be 63 characters. " + column + EXCEEDS_THAT);
         }
     }
 
@@ -2070,7 +2085,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<? extends Pair<String, String>> uids) {
         try {
             StringBuffer sql = new StringBuffer();
-            sql.append("COPY ");
+            sql.append(COPY);
             sql.append(maybeWrapInQoutes(schemaTable.getTable()));
             sql.append(" (");
             int count = 1;
@@ -2156,7 +2171,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
-        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), PREFIX_MUST_BE + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
         StringBuilder sql = new StringBuilder();
         sql.append("LOCK TABLE ");
         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
@@ -2200,11 +2215,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public long nextSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
-        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), PREFIX_MUST_BE + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT NEXTVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        sql.append("SELECT NEXTVAL('\"" + schemaTable.getSchema() + BRACE_DOT_BRACE + prefix + schemaTable.getTable() + ID_SEQ);
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -2221,11 +2236,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public long currSequenceVal(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix) {
-        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), PREFIX_MUST_BE + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
         long result;
         Connection conn = sqlgGraph.tx().getConnection();
         StringBuilder sql = new StringBuilder();
-        sql.append("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + prefix + schemaTable.getTable() + "_ID_seq\"');");
+        sql.append(SELECT_CURRVAL + schemaTable.getSchema() + BRACE_DOT_BRACE + prefix + schemaTable.getTable() + ID_SEQ);
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -2242,13 +2257,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public String sequenceName(SqlgGraph sqlgGraph, SchemaTable outSchemaTable, String prefix) {
-        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "prefix must be " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), PREFIX_MUST_BE + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
 //        select pg_get_serial_sequence('public."V_Person"', 'ID')
         String result;
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT pg_get_serial_sequence('\"");
         sql.append(outSchemaTable.getSchema());
-        sql.append("\".\"");
+        sql.append(BRACE_DOT_BRACE);
         sql.append(prefix).append(outSchemaTable.getTable()).append("\"', 'ID')");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
