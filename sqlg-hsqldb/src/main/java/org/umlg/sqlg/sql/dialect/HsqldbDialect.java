@@ -23,6 +23,17 @@ import java.util.*;
  */
 public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
+    public static final String BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB = "Batch processing is not supported by hsqldb.";
+    public static final String BOOLEAN = "BOOLEAN";
+    public static final String SMALLINT = "SMALLINT";
+    public static final String INTEGER = "INTEGER";
+    public static final String BIGINT = "BIGINT";
+    public static final String DOUBLE = "DOUBLE";
+    public static final String HSQLDB_DOES_NOT_SUPPORT_GIS_TYPES = "HSQLDB does not support gis types!";
+    public static final String INTEGER_ARRAY_DEFAULT_ARRAY = "INTEGER ARRAY DEFAULT ARRAY[]";
+    public static final String BIGINT_ARRAY_DEFAULT_ARRAY = "BIGINT ARRAY DEFAULT ARRAY[]";
+    public static final String HSQLDB_NOT_SUPPORT_GIS_TYPES_SHOULD_NOT_HAVE_HAPPENED = "Hsqldb does not support gis types, this should not have happened!";
+
     public HsqldbDialect(Configuration configurator) {
         super(configurator);
     }
@@ -52,67 +63,67 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public String getBatchNull() {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
     public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
+        throw new UnsupportedOperationException(BATCH_PROCESSING_IS_NOT_SUPPORTED_BY_HSQLDB);
     }
 
     @Override
@@ -254,19 +265,19 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public String[] propertyTypeToSqlDefinition(PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                return new String[]{"BOOLEAN"};
+                return new String[]{BOOLEAN};
             case BYTE:
                 return new String[]{"TINYINT"};
             case SHORT:
-                return new String[]{"SMALLINT"};
+                return new String[]{SMALLINT};
             case INTEGER:
-                return new String[]{"INTEGER"};
+                return new String[]{INTEGER};
             case LONG:
-                return new String[]{"BIGINT"};
+                return new String[]{BIGINT};
             case FLOAT:
                 return new String[]{"REAL"};
             case DOUBLE:
-                return new String[]{"DOUBLE"};
+                return new String[]{DOUBLE};
             case LOCALDATE:
                 return new String[]{"DATE"};
             case LOCALDATETIME:
@@ -276,21 +287,21 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case LOCALTIME:
                 return new String[]{"TIME WITH TIME ZONE"};
             case PERIOD:
-                return new String[]{"INTEGER", "INTEGER", "INTEGER"};
+                return new String[]{INTEGER, INTEGER, INTEGER};
             case DURATION:
-                return new String[]{"BIGINT", "INTEGER"};
+                return new String[]{BIGINT, INTEGER};
             case STRING:
                 return new String[]{"LONGVARCHAR"};
             case JSON:
                 throw new IllegalStateException("HSQLDB does not support json types, use good ol string instead!");
             case POINT:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException(HSQLDB_DOES_NOT_SUPPORT_GIS_TYPES);
             case POLYGON:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException(HSQLDB_DOES_NOT_SUPPORT_GIS_TYPES);
             case GEOGRAPHY_POINT:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException(HSQLDB_DOES_NOT_SUPPORT_GIS_TYPES);
             case GEOGRAPHY_POLYGON:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException(HSQLDB_DOES_NOT_SUPPORT_GIS_TYPES);
             case BYTE_ARRAY:
                 return new String[]{"LONGVARBINARY"};
             case byte_ARRAY:
@@ -304,13 +315,13 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case short_ARRAY:
                 return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
             case int_ARRAY:
-                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
+                return new String[]{INTEGER_ARRAY_DEFAULT_ARRAY};
             case INTEGER_ARRAY:
-                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
+                return new String[]{INTEGER_ARRAY_DEFAULT_ARRAY};
             case LONG_ARRAY:
-                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
+                return new String[]{BIGINT_ARRAY_DEFAULT_ARRAY};
             case long_ARRAY:
-                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
+                return new String[]{BIGINT_ARRAY_DEFAULT_ARRAY};
             case float_ARRAY:
                 return new String[]{"REAL ARRAY DEFAULT ARRAY[]"};
             case DOUBLE_ARRAY:
@@ -328,9 +339,9 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case ZONEDDATETIME_ARRAY:
                 return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]", "LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
             case DURATION_ARRAY:
-                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
+                return new String[]{BIGINT_ARRAY_DEFAULT_ARRAY, INTEGER_ARRAY_DEFAULT_ARRAY};
             case PERIOD_ARRAY:
-                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
+                return new String[]{INTEGER_ARRAY_DEFAULT_ARRAY, INTEGER_ARRAY_DEFAULT_ARRAY, INTEGER_ARRAY_DEFAULT_ARRAY};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -436,7 +447,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public String getForeignKeyTypeDefinition() {
-        return "BIGINT";
+        return BIGINT;
     }
 
     @Override
@@ -458,25 +469,25 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     public String getArrayDriverType(PropertyType propertyType) {
         switch (propertyType) {
             case boolean_ARRAY:
-                return "BOOLEAN";
+                return BOOLEAN;
             case BOOLEAN_ARRAY:
-                return "BOOLEAN";
+                return BOOLEAN;
             case SHORT_ARRAY:
-                return "SMALLINT";
+                return SMALLINT;
             case short_ARRAY:
-                return "SMALLINT";
+                return SMALLINT;
             case INTEGER_ARRAY:
-                return "INTEGER";
+                return INTEGER;
             case int_ARRAY:
-                return "INTEGER";
+                return INTEGER;
             case LONG_ARRAY:
-                return "BIGINT";
+                return BIGINT;
             case long_ARRAY:
-                return "BIGINT";
+                return BIGINT;
             case DOUBLE_ARRAY:
-                return "DOUBLE";
+                return DOUBLE;
             case double_ARRAY:
-                return "DOUBLE";
+                return DOUBLE;
             case STRING_ARRAY:
                 return "VARCHAR";
             case LOCALDATETIME_ARRAY:
@@ -534,17 +545,17 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
+        throw new IllegalStateException(HSQLDB_NOT_SUPPORT_GIS_TYPES_SHOULD_NOT_HAVE_HAPPENED);
     }
 
     @Override
     public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
+        throw new IllegalStateException(HSQLDB_NOT_SUPPORT_GIS_TYPES_SHOULD_NOT_HAVE_HAPPENED);
     }
 
     @Override
     public void setGeographyPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
-        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
+        throw new IllegalStateException(HSQLDB_NOT_SUPPORT_GIS_TYPES_SHOULD_NOT_HAVE_HAPPENED);
     }
 
     @Override
