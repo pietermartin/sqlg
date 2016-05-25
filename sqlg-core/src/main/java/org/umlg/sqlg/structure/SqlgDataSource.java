@@ -18,6 +18,7 @@ import java.util.*;
  */
 public class SqlgDataSource {
 
+    public static final String JDBC_URL = "jdbc.url";
     private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private Map<String, ComboPooledDataSource> cpdss = new HashMap<>();
 
@@ -30,10 +31,10 @@ public class SqlgDataSource {
 
     public static SqlgDataSource setupDataSource(String driver, final Configuration configuration) throws PropertyVetoException {
         SqlgDataSource ds = new SqlgDataSource();
-        Preconditions.checkState(configuration.containsKey("jdbc.url"));
+        Preconditions.checkState(configuration.containsKey(JDBC_URL));
         Preconditions.checkState(configuration.containsKey("jdbc.username"));
         Preconditions.checkState(configuration.containsKey("jdbc.password"));
-        String connectURI = configuration.getString("jdbc.url");
+        String connectURI = configuration.getString(JDBC_URL);
         String username = configuration.getString("jdbc.username");
         String password = configuration.getString("jdbc.password");
 
@@ -41,7 +42,7 @@ public class SqlgDataSource {
             return ds;
         }
         //this odd logic is for travis, it needs log feedback to not kill the build
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
+        if (configuration.getString(JDBC_URL).contains("postgresql")) {
             logger.info(String.format("Setting up datasource to %s for user %s", connectURI, username));
         } else {
             logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
