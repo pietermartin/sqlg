@@ -636,7 +636,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Long getPrimaryKeyStartValue() {
-        return 0l;
+        return 0L;
     }
 
     @Override

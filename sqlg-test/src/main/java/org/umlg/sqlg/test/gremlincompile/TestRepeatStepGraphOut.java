@@ -99,13 +99,13 @@ public class TestRepeatStepGraphOut extends BaseTest {
         assertTrue(t.get(0).containsKey("c1"));
         assertTrue(t.get(0).containsKey("c1"));
 
-        assertEquals(1l, t.get(0).get("a1"));
-        assertEquals(2l, t.get(0).get("b1"));
-        assertEquals(2l, t.get(0).get("b2"));
-        assertEquals(2l, t.get(0).get("b3"));
-        assertEquals(2l, t.get(0).get("c1"));
-        assertEquals(2l, t.get(0).get("c2"));
-        assertEquals(2l, t.get(0).get("c3"));
+        assertEquals(1L, t.get(0).get("a1"));
+        assertEquals(2L, t.get(0).get("b1"));
+        assertEquals(2L, t.get(0).get("b2"));
+        assertEquals(2L, t.get(0).get("b3"));
+        assertEquals(2L, t.get(0).get("c1"));
+        assertEquals(2L, t.get(0).get("c2"));
+        assertEquals(2L, t.get(0).get("c3"));
     }
 
     @Test
@@ -136,13 +136,13 @@ public class TestRepeatStepGraphOut extends BaseTest {
         assertTrue(t.get(0).containsKey("c1"));
         assertTrue(t.get(0).containsKey("c1"));
 
-        assertEquals(1l, t.get(0).get("a1"));
-        assertEquals(2l, t.get(0).get("b1"));
-        assertEquals(2l, t.get(0).get("b2"));
-        assertEquals(2l, t.get(0).get("b3"));
-        assertEquals(2l, t.get(0).get("c1"));
-        assertEquals(2l, t.get(0).get("c2"));
-        assertEquals(2l, t.get(0).get("c3"));
+        assertEquals(1L, t.get(0).get("a1"));
+        assertEquals(2L, t.get(0).get("b1"));
+        assertEquals(2L, t.get(0).get("b2"));
+        assertEquals(2L, t.get(0).get("b3"));
+        assertEquals(2L, t.get(0).get("c1"));
+        assertEquals(2L, t.get(0).get("c2"));
+        assertEquals(2L, t.get(0).get("c3"));
     }
 
     @Test
@@ -788,7 +788,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
             int counter = 0;
             while (traversal.hasNext()) {
                 counter++;
-                MapHelper.incr(pathLengths, traversal.next().size(), 1l);
+                MapHelper.incr(pathLengths, traversal.next().size(), 1L);
             }
             assertEquals(2, pathLengths.size());
             assertEquals(8, counter);

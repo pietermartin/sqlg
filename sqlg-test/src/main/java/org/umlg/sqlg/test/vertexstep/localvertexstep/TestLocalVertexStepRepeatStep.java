@@ -701,7 +701,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
             int counter = 0;
             while (traversal.hasNext()) {
                 counter++;
-                MapHelper.incr(pathLengths, traversal.next().size(), 1l);
+                MapHelper.incr(pathLengths, traversal.next().size(), 1L);
             }
             assertEquals(2, pathLengths.size());
             assertEquals(8, counter);

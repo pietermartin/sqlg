@@ -49,14 +49,14 @@ public class TestSetProperty extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", (short)1,
                 "age3", 1,
-                "age4", 1l,
+                "age4", 1L,
                 "age5", 1f,
                 "age6", 1d
         );
         this.sqlgGraph.tx().commit();
         Assert.assertEquals((short)1, v.property("age2").value());
         Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1l, v.property("age4").value());
+        Assert.assertEquals(1L, v.property("age4").value());
         Assert.assertEquals(1f, v.property("age5").value());
         Assert.assertEquals(1d, v.property("age6").value());
     }
@@ -66,13 +66,13 @@ public class TestSetProperty extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", (short)1,
                 "age3", 1,
-                "age4", 1l,
+                "age4", 1L,
                 "age6", 1d
         );
         this.sqlgGraph.tx().commit();
         Assert.assertEquals((short)1, v.property("age2").value());
         Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1l, v.property("age4").value());
+        Assert.assertEquals(1L, v.property("age4").value());
         Assert.assertEquals(1d, v.property("age6").value());
     }
 
@@ -82,14 +82,14 @@ public class TestSetProperty extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
-                "age4", new Long(1l),
+                "age4", new Long(1L),
                 "age5", new Float(1f),
                 "age6", new Double(1d)
         );
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(new Short((short)1), v.property("age2").value());
         Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1l), v.property("age4").value());
+        Assert.assertEquals(new Long(1L), v.property("age4").value());
         Assert.assertEquals(new Float(1f), v.property("age5").value());
         Assert.assertEquals(new Double(1d), v.property("age6").value());
     }
@@ -99,13 +99,13 @@ public class TestSetProperty extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
-                "age4", new Long(1l),
+                "age4", new Long(1L),
                 "age6", new Double(1d)
         );
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(new Short((short)1), v.property("age2").value());
         Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1l), v.property("age4").value());
+        Assert.assertEquals(new Long(1L), v.property("age4").value());
         Assert.assertEquals(new Double(1d), v.property("age6").value());
     }
 

@@ -422,7 +422,7 @@ public interface SqlDialect {
     List<String> sqlgTopologyCreationScripts();
 
     default Long getPrimaryKeyStartValue() {
-        return 1l;
+        return 1L;
     }
 
     Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data);

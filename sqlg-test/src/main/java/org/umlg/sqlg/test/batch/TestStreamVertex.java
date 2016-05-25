@@ -160,8 +160,8 @@ public class TestStreamVertex extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         this.sqlgGraph.streamVertex("Persons", keyValue);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Persons").count().next(), 0l);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Persons").count().next(), 0L);
         Assert.assertEquals("a", this.sqlgGraph.traversal().V().hasLabel("Person").next().<String>value("name"));
         Assert.assertEquals("b", this.sqlgGraph.traversal().V().hasLabel("Person").next().<String>value("surname"));
         Assert.assertEquals("a", this.sqlgGraph.traversal().V().hasLabel("Persons").next().<String>value("name"));
@@ -210,7 +210,7 @@ public class TestStreamVertex extends BaseTest {
         keyValue.put("surname", "b");
         this.sqlgGraph.streamVertex("R_HG.Person", keyValue);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0l);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0L);
     }
 
     @Test
@@ -235,7 +235,7 @@ public class TestStreamVertex extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        Assert.assertEquals(1000000l, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
+        Assert.assertEquals(1000000L, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
@@ -267,7 +267,7 @@ public class TestStreamVertex extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         uids.stream().forEach(u->this.sqlgGraph.streamVertex(T.label, "Person", "name", u));
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0l);
+        Assert.assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
     }
 
     @Test

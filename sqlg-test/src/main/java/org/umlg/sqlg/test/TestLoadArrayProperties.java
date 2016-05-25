@@ -44,7 +44,7 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
         Assert.assertTrue(Arrays.equals(new short[]{(short) 1}, (short[])v.property("aShort").value()));
         Assert.assertTrue(Arrays.equals(new int[]{1}, (int[])v.property("aInteger").value()));
-        Assert.assertTrue(Arrays.equals(new long[]{1l}, (long[])v.property("aLong").value()));
+        Assert.assertTrue(Arrays.equals(new long[]{1L}, (long[])v.property("aLong").value()));
         Assert.assertTrue(Arrays.equals(new float[]{1f}, (float[])v.property("aFloat").value()));
         Assert.assertTrue(Arrays.equals(new double[]{1d}, (double[])v.property("aDouble").value()));
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
@@ -57,7 +57,7 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
         Assert.assertTrue(Arrays.equals(new short[]{(short) 1}, (short[])v.property("aShort").value()));
         Assert.assertTrue(Arrays.equals(new int[]{1}, (int[])v.property("aInteger").value()));
-        Assert.assertTrue(Arrays.equals(new long[]{1l}, (long[])v.property("aLong").value()));
+        Assert.assertTrue(Arrays.equals(new long[]{1L}, (long[])v.property("aLong").value()));
         Assert.assertTrue(Arrays.equals(new float[]{1f}, (float[])v.property("aFloat").value()));
         Assert.assertTrue(Arrays.equals(new double[]{1d}, (double[])v.property("aDouble").value()));
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
@@ -89,7 +89,7 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
         Assert.assertTrue(Arrays.equals(new short[]{(short) 1}, (short[])v.property("aShort").value()));
         Assert.assertTrue(Arrays.equals(new int[]{1}, (int[])v.property("aInteger").value()));
-        Assert.assertTrue(Arrays.equals(new long[]{1l}, (long[])v.property("aLong").value()));
+        Assert.assertTrue(Arrays.equals(new long[]{1L}, (long[])v.property("aLong").value()));
         Assert.assertTrue(Arrays.equals(new double[]{1d}, (double[])v.property("aDouble").value()));
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
 
@@ -101,7 +101,7 @@ public class TestLoadArrayProperties extends BaseTest {
         Assert.assertTrue(Arrays.equals(new boolean[]{true}, (boolean[])v.property("aBoolean").value()));
         Assert.assertTrue(Arrays.equals(new short[]{(short) 1}, (short[])v.property("aShort").value()));
         Assert.assertTrue(Arrays.equals(new int[]{1}, (int[])v.property("aInteger").value()));
-        Assert.assertTrue(Arrays.equals(new long[]{1l}, (long[])v.property("aLong").value()));
+        Assert.assertTrue(Arrays.equals(new long[]{1L}, (long[])v.property("aLong").value()));
         Assert.assertTrue(Arrays.equals(new double[]{1d}, (double[])v.property("aDouble").value()));
         Assert.assertTrue(Arrays.equals(new String[]{"aaaaaaaaaaaaa"}, (String[])v.property("aString").value()));
     }

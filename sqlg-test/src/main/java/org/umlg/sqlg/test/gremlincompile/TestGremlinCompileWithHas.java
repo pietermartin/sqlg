@@ -83,18 +83,18 @@ public class TestGremlinCompileWithHas extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         long start = this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();
-        RecordId recordIda1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0l);
+        RecordId recordIda1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0L);
         RecordId recordIda2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1l);
-        RecordId recordIda3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2l);
-        RecordId recordIda4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3l);
-        RecordId recordIdb1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0l);
-        RecordId recordIdb2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1l);
-        RecordId recordIdb3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2l);
-        RecordId recordIdb4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3l);
-        RecordId recordIdc1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0l);
-        RecordId recordIdc2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1l);
-        RecordId recordIdc3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2l);
-        RecordId recordIdc4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3l);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2L);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3L);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0L);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1L);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2L);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3L);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0L);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1L);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1).hasLabel("A").toList();
         Assert.assertEquals(1, vertices.size());
@@ -163,18 +163,18 @@ public class TestGremlinCompileWithHas extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         long start = this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();
-        RecordId recordIda1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0l);
-        RecordId recordIda2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1l);
-        RecordId recordIda3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2l);
-        RecordId recordIda4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3l);
-        RecordId recordIdb1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0l);
-        RecordId recordIdb2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1l);
-        RecordId recordIdb3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2l);
-        RecordId recordIdb4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3l);
-        RecordId recordIdc1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0l);
-        RecordId recordIdc2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1l);
-        RecordId recordIdc3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2l);
-        RecordId recordIdc4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3l);
+        RecordId recordIda1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0L);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1L);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2L);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3L);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0L);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1L);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2L);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3L);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0L);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1L);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).in().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
         Assert.assertEquals(3, vertices.size());
@@ -222,18 +222,18 @@ public class TestGremlinCompileWithHas extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         long start = this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();
-        RecordId recordIda1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0l);
-        RecordId recordIda2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1l);
-        RecordId recordIda3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2l);
-        RecordId recordIda4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3l);
-        RecordId recordIdb1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0l);
-        RecordId recordIdb2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1l);
-        RecordId recordIdb3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2l);
-        RecordId recordIdb4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3l);
-        RecordId recordIdc1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0l);
-        RecordId recordIdc2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1l);
-        RecordId recordIdc3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2l);
-        RecordId recordIdc4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3l);
+        RecordId recordIda1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0L);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1L);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2L);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3L);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0L);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1L);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2L);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3L);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0L);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1L);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).out().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
         Assert.assertEquals(3, vertices.size());
@@ -273,18 +273,18 @@ public class TestGremlinCompileWithHas extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         long start = this.sqlgGraph.getSqlDialect().getPrimaryKeyStartValue();
-        RecordId recordIda1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0l);
-        RecordId recordIda2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1l);
-        RecordId recordIda3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2l);
-        RecordId recordIda4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3l);
-        RecordId recordIdb1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0l);
-        RecordId recordIdb2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1l);
-        RecordId recordIdb3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2l);
-        RecordId recordIdb4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3l);
-        RecordId recordIdc1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0l);
-        RecordId recordIdc2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1l);
-        RecordId recordIdc3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2l);
-        RecordId recordIdc4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3l);
+        RecordId recordIda1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 0L);
+        RecordId recordIda2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 1L);
+        RecordId recordIda3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 2L);
+        RecordId recordIda4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"), start + 3L);
+        RecordId recordIdb1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 0L);
+        RecordId recordIdb2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 1L);
+        RecordId recordIdb3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 2L);
+        RecordId recordIdb4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "B"), start + 3L);
+        RecordId recordIdc1 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 0L);
+        RecordId recordIdc2 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 1L);
+        RecordId recordIdc3 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
+        RecordId recordIdc4 = RecordId.from(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V(recordIda1).hasLabel("A").toList();
         Assert.assertEquals(1, vertices.size());
@@ -446,8 +446,8 @@ public class TestGremlinCompileWithHas extends BaseTest {
         final Map<T, Long> expectedResultsCount = new HashMap<>();
         final Map<T, Long> resultsCount = new HashMap<>();
         Assert.assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
-        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
-        results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
+        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1L));
+        results.forEach(t -> MapHelper.incr(resultsCount, t, 1L));
         expectedResultsCount.forEach((k, v) -> Assert.assertEquals("Checking result group counts", v, resultsCount.get(k)));
         Assert.assertFalse(traversal.hasNext());
     }
@@ -553,7 +553,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
                         __.in("created")
                                 .count()
                                 .is(
-                                        P.gte(2l)
+                                        P.gte(2L)
                                 )
                 )
                 .values("name");

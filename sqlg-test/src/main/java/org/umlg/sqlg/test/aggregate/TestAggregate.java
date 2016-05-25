@@ -50,16 +50,16 @@ public class TestAggregate extends BaseTest {
             final String first = path.get(0).toString();
             final String second = path.get(1).toString();
             Assert.assertThat(first, CoreMatchers.not(second));
-            MapHelper.incr(firstStepCounts, first, 1l);
-            MapHelper.incr(secondStepCounts, second, 1l);
+            MapHelper.incr(firstStepCounts, first, 1L);
+            MapHelper.incr(secondStepCounts, second, 1L);
         }
         Assert.assertEquals(6, count);
         Assert.assertEquals(3, firstStepCounts.size());
         Assert.assertEquals(4, secondStepCounts.size());
-        Assert.assertTrue(firstStepCounts.values().contains(3l));
-        Assert.assertTrue(firstStepCounts.values().contains(2l));
-        Assert.assertTrue(firstStepCounts.values().contains(1l));
-        Assert.assertTrue(secondStepCounts.values().contains(3l));
-        Assert.assertTrue(secondStepCounts.values().contains(1l));
+        Assert.assertTrue(firstStepCounts.values().contains(3L));
+        Assert.assertTrue(firstStepCounts.values().contains(2L));
+        Assert.assertTrue(firstStepCounts.values().contains(1L));
+        Assert.assertTrue(secondStepCounts.values().contains(3L));
+        Assert.assertTrue(secondStepCounts.values().contains(1L));
     }
 }
