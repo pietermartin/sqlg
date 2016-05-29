@@ -889,6 +889,9 @@ public class SchemaManager {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.executeUpdate();
