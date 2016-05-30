@@ -886,31 +886,8 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
-        //foreign key definition start
-        if (this.sqlgGraph.isImplementForeignKeys()) {
-        	sql.append(", ");
-			sql.append("ADD FOREIGN KEY (");
-			sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
-			sql.append(") REFERENCES ");
-			sql.append(this.sqlDialect.maybeWrapInQoutes(otherVertex.getSchema()));
-			sql.append(".");
-			sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
-			sql.append(" (");
-			sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
-			sql.append(")");
-        }
-        //foreign key definition end
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
-        }
-        if (this.sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
-            sql.append("\nCREATE INDEX ON ");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
-            sql.append(".");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(table));
-            sql.append(" (");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
-            sql.append(");");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
@@ -920,6 +897,57 @@ public class SchemaManager {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+        sql.setLength(0);
+        //foreign key definition start
+        if (this.sqlgGraph.isImplementForeignKeys()) {
+        	sql.append(" ALTER TABLE ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+			sql.append(" ADD CONSTRAINT ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(table + "_" + foreignKey.getSchema() + "." + foreignKey.getTable() + "_fkey"));
+            sql.append(" FOREIGN KEY (");
+			sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+			sql.append(") REFERENCES ");
+			sql.append(this.sqlDialect.maybeWrapInQoutes(otherVertex.getSchema()));
+			sql.append(".");
+			sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
+			sql.append(" (");
+			sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+			sql.append(")");
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        sql.setLength(0);
+        if (this.sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
+            sql.append("\nCREATE INDEX ON ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+            sql.append(" (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+            sql.append(")");
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
