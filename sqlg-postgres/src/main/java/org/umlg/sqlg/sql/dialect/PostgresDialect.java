@@ -1035,23 +1035,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     }
                     sb.append("}");
                     return sb.toString();
-//                case JSON_ARRAY:
-//                    throw new IllegalStateException("arrays of json just does not wanna behave");
-//                    JsonNode[] jsons = (JsonNode[]) value;
-//                    sb = new StringBuilder();
-//                    sb.append("{");
-//                    length = java.lang.reflect.Array.getLength(value);
-//                    for (int i = 0; i < length; i++) {
-//                        JsonNode json = jsons[i];
-////                        sb.append(escapeSpecialCharacters("{" + COPY_COMMAND_QUOTE + "\"" + COPY_COMMAND_QUOTE + "username" + COPY_COMMAND_QUOTE + "\"" +
-////                                COPY_COMMAND_QUOTE + ":" + COPY_COMMAND_QUOTE + "\"" + COPY_COMMAND_QUOTE + "asd" + COPY_COMMAND_QUOTE + "\"}"));
-//                        sb.append(escapeSpecialCharacters("e'\\x01'{e'\\x01'" + getColumnEscapeKey() + "username" + getColumnEscapeKey() + ":1e'\\x01'}e'\\x01'"));
-//                        if (i < length - 1) {
-//                            sb.append(",");
-//                        }
-//                    }
-//                    sb.append("}");
-//                    return sb.toString();
                 default:
                     if (value.getClass().isArray()) {
                         if (value.getClass().getName().equals("[B")) {
@@ -1096,9 +1079,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                 Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
 
-                //This is causing dead locks under load
-//                dropForeignKeys(sqlgGraph, schemaTable);
-
                 List<SqlgVertex> vertices = schemaVertices.getValue();
                 int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
                 int previous = 0;
@@ -1121,15 +1101,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
                         deleteEdges(sqlgGraph, schemaTable, subVertices, inLabels, true);
                         deleteEdges(sqlgGraph, schemaTable, subVertices, outLabels, false);
-
-//                        Pair<Set<Long>, Set<SchemaTable>> outLabels = Pair.of(new HashSet<>(), new HashSet<>());
-//                        Pair<Set<Long>, Set<SchemaTable>> inLabels = Pair.of(new HashSet<>(), new HashSet<>());
-                        //get all the in and out labels for each vertex
-                        //then for all in and out edges
-                        //then remove the edges
-//                        getInAndOutEdgesToRemove(sqlgGraph, subVertices, outLabels, inLabels);
-//                        deleteEdges(sqlgGraph, schemaTable, outLabels, true);
-//                        deleteEdges(sqlgGraph, schemaTable, inLabels, false);
 
                         StringBuilder sql = new StringBuilder("DELETE FROM ");
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
@@ -1163,44 +1134,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             throw new RuntimeException(e);
                         }
 
-//                        sql = new StringBuilder("DELETE FROM ");
-//                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
-//                        sql.append(".");
-//                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-//                        sql.append(" WHERE ");
-//                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//                        sql.append(" in (");
-//
-//                        count = 1;
-//                        for (SqlgVertex vertex : subVertices) {
-//                            sql.append("?");
-//                            if (count++ < subVertices.size()) {
-//                                sql.append(",");
-//                            }
-//                        }
-//                        sql.append(")");
-//                        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-//                            sql.append(";");
-//                        }
-//                        if (logger.isDebugEnabled()) {
-//                            logger.debug(sql.toString());
-//                        }
-//                        conn = sqlgGraph.tx().getConnection();
-//                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                            count = 1;
-//                            for (SqlgVertex vertex : subVertices) {
-//                                preparedStatement.setLong(count++, (Long) vertex.id());
-//                            }
-//                            preparedStatement.executeUpdate();
-//                        } catch (SQLException e) {
-//                            throw new RuntimeException(e);
-//                        }
                     }
-
                 }
-
-//                createForeignKeys(sqlgGraph, schemaTable);
-
             }
         }
     }
@@ -1397,7 +1332,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
 
     private InputStream mapVertexToInputStream(Map<String, PropertyType> propertyTypeMap, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertexCache) throws SQLException {
-        //String str = "2,peter\n3,john";
         StringBuilder sb = new StringBuilder();
         int count = 1;
         for (SqlgVertex sqlgVertex : vertexCache.getRight().keySet()) {
@@ -1969,7 +1903,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 arrayAsString = arrayAsString.substring(1);
                 arrayAsString = arrayAsString.substring(0, arrayAsString.length() - 1);
                 String[] byteAsString = arrayAsString.split(",");
-//                PGbytea.toBytes();
                 Byte[] result = new Byte[byteAsString.length];
                 int count = 0;
                 for (String s : byteAsString) {
@@ -1981,56 +1914,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             default:
                 throw new IllegalStateException("sqlgDialect.handleOther does not handle " + propertyType.name());
         }
-//        if (o instanceof PGgeometry) {
-//            properties.put(columnName, ((PGgeometry) o).getGeometry());
-//        } else if ((o instanceof PGobject) && ((PGobject) o).getType().equals("geography")) {
-//            try {
-//                Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
-//                if (geometry instanceof Point) {
-//                    properties.put(columnName, new GeographyPoint((Point) geometry));
-//                } else if (geometry instanceof Polygon) {
-//                    properties.put(columnName, new GeographyPolygon((Polygon) geometry));
-//                } else {
-//                    throw new IllegalStateException("Gis type " + geometry.getClass().getName() + " is not supported.");
-//                }
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        } else {
-//            //Assume json for now
-//            if (o instanceof java.sql.Array) {
-//                java.sql.Array array = (java.sql.Array) o;
-//                String arrayAsString = array.toString();
-//                //remove the wrapping curly brackets
-//                arrayAsString = arrayAsString.substring(1);
-//                arrayAsString = arrayAsString.substring(0, arrayAsString.length() - 1);
-//                arrayAsString = StringEscapeUtils.unescapeJava(arrayAsString);
-//                //remove the wrapping qoutes
-//                arrayAsString = arrayAsString.substring(1);
-//                arrayAsString = arrayAsString.substring(0, arrayAsString.length() - 1);
-//                String[] jsons = arrayAsString.split("\",\"");
-//                JsonNode[] jsonNodes = new JsonNode[jsons.length];
-//                ObjectMapper objectMapper = new ObjectMapper();
-//                int count = 0;
-//                for (String json : jsons) {
-//                    try {
-//                        JsonNode jsonNode = objectMapper.readTree(json);
-//                        jsonNodes[count++] = jsonNode;
-//                    } catch (IOException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//                properties.put(columnName, jsonNodes);
-//            } else {
-//                ObjectMapper objectMapper = new ObjectMapper();
-//                try {
-//                    JsonNode jsonNode = objectMapper.readTree(((PGobject) o).getValue());
-//                    properties.put(columnName, jsonNode);
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
     }
 
     @Override
