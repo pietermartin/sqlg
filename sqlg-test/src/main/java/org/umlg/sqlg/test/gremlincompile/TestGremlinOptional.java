@@ -1,7 +1,9 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -18,8 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.in;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -431,6 +432,37 @@ public class TestGremlinOptional extends BaseTest {
             assertTrue(paths.remove(path.get()));
         }
         assertTrue(paths.isEmpty());
+    }
+
+    //this query is used in UMLG
+    @Test
+    public void testOptionalWithOrderBy() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        a1.addEdge("ab", b1, "order", 3);
+        a1.addEdge("ab", b2, "order", 2);
+        a1.addEdge("ab", b3, "order", 1);
+        b1.addEdge("bc", c1, "order", 3);
+        b1.addEdge("bc", c2, "order", 2);
+        b1.addEdge("bc", c3, "order", 1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(a1.id())
+                .optional(
+                        outE("ab").as("eb").otherV().as("vb")
+                                .optional(
+                                        outE("bc").as("ec").otherV().as("vc")
+                                )
+                )
+                .order().by(select("eb").by("order"), Order.incr).by(select("ec").by("order"), Order.incr);
+        traversal.count().next();
+//        while (traversal.hasNext()) {
+//            System.out.println(traversal.next());
+//        }
     }
 
 }
