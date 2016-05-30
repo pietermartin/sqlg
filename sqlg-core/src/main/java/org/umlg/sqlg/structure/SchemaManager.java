@@ -620,7 +620,7 @@ public class SchemaManager {
                     TopologyManager.addLabelToEdge(this.sqlgGraph, schema, prefixedTable, in, foreignKey);
                 }
 
-                addEdgeForeignKey(schema, prefixedTable, foreignKey);
+                addEdgeForeignKey(schema, prefixedTable, foreignKey, vertexSchemaTable);
                 uncommittedForeignKeys.add(vertexSchemaTable.getSchema() + "." + foreignKey.getTable());
                 this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, uncommittedForeignKeys);
 
@@ -876,7 +876,7 @@ public class SchemaManager {
         }
     }
 
-    private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey) {
+    private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER TABLE ");
         sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
@@ -886,8 +886,31 @@ public class SchemaManager {
         sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
         sql.append(" ");
         sql.append(this.sqlDialect.getForeignKeyTypeDefinition());
+        //foreign key definition start
+        if (this.sqlgGraph.isImplementForeignKeys()) {
+        	sql.append(", ");
+			sql.append("ADD FOREIGN KEY (");
+			sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+			sql.append(") REFERENCES ");
+			sql.append(this.sqlDialect.maybeWrapInQoutes(otherVertex.getSchema()));
+			sql.append(".");
+			sql.append(this.sqlDialect.maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
+			sql.append(" (");
+			sql.append(this.sqlDialect.maybeWrapInQoutes("ID"));
+			sql.append(")");
+        }
+        //foreign key definition end
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
+        }
+        if (this.sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
+            sql.append("\nCREATE INDEX ON ");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+            sql.append(".");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+            sql.append(" (");
+            sql.append(this.sqlDialect.maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+            sql.append(");");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
