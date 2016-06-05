@@ -63,6 +63,11 @@ public class SqlgUtil {
                     String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
                     String mapKey = unAliased != null ? unAliased : columnLabel;
                     columnNameCountMap.put(mapKey, columnCount);
+                    if (lastElementIdCountMap.containsKey(mapKey)) {
+
+                        System.out.println("halo");
+
+                    }
                     if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
                         lastElementIdCountMap.put(mapKey, columnCount);
                     }
@@ -72,8 +77,14 @@ public class SqlgUtil {
                 //Translate the columns back from alias to meaningful column headings
                 for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
                     String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-                    String unaliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-                    columnNameCountMap.put(unaliased != null ? unaliased : columnLabel, columnCount);
+                    String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+                    String mapKey = unAliased != null ? unAliased : columnLabel;
+                    if (columnNameCountMap.containsKey(mapKey)) {
+
+                        System.out.println("halo");
+
+                    }
+                    columnNameCountMap.put(mapKey, columnCount);
                 }
             }
             int subQueryDepth = 0;
