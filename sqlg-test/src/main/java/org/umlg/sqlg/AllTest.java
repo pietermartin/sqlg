@@ -131,7 +131,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestNormalBatchPrimitive.class,
         TestNormalBatchUpdatePrimitiveArrays.class,
         TestJsonUpdate.class,
-        TestNormalBatchUpdateDateTime.class
+        TestNormalBatchUpdateDateTime.class,
+        TestOptionalWithOrder.class
 })
 public class AllTest {
 }

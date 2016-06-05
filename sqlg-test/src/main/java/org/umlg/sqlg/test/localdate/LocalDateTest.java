@@ -29,7 +29,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertEquals(now, properties.get(0).value());
-            sqlgGraph1.close();
         }
     }
 
@@ -46,7 +45,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             LocalDateTime[] localDateTimesFromDb = properties.get(0).value();
             Assert.assertArrayEquals(localDateTimes, localDateTimesFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -65,7 +63,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             LocalDateTime[] localDateTimesFromDb = properties.get(0).value();
             Assert.assertArrayEquals(localDateTimes, localDateTimesFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -81,7 +78,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertEquals(now, properties.get(0).value());
-            sqlgGraph1.close();
         }
     }
 
@@ -97,7 +93,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertArrayEquals(localDates, properties.get(0).value());
-            sqlgGraph1.close();
         }
     }
 
@@ -115,7 +110,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertArrayEquals(localDates, properties.get(0).value());
-            sqlgGraph1.close();
         }
     }
 
@@ -132,7 +126,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             LocalTime value = properties.get(0).<LocalTime>value();
             Assert.assertEquals(now.toSecondOfDay(), value.toSecondOfDay());
-            sqlgGraph1.close();
         }
     }
 
@@ -153,7 +146,6 @@ public class LocalDateTest extends BaseTest {
                 localTimes1.add(localTime.minusNanos(localTime.getNano()));
             }
             Assert.assertArrayEquals(localTimes1.toArray(), value);
-            sqlgGraph1.close();
         }
     }
 
@@ -192,7 +184,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             ZonedDateTime value = properties.get(0).<ZonedDateTime>value();
             Assert.assertEquals(zonedDateTimeAGT, value);
-            sqlgGraph1.close();
         }
     }
 
@@ -213,7 +204,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             ZonedDateTime[] value = properties.get(0).<ZonedDateTime[]>value();
             Assert.assertArrayEquals(zonedDateTimes, value);
-            sqlgGraph1.close();
         }
     }
 
@@ -237,7 +227,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             ZonedDateTime[] localDateTimesFromDb = properties.get(0).value();
             Assert.assertArrayEquals(zonedDateTimes, localDateTimesFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -253,7 +242,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertEquals(duration, properties.get(0).value());
-            sqlgGraph1.close();
         }
     }
 
@@ -270,7 +258,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             Duration[] durationsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(durations, durationsFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -289,7 +276,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             Duration[] durationsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(durations, durationsFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -305,7 +291,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(1, properties.size());
             Assert.assertTrue(properties.get(0).isPresent());
             Assert.assertEquals(period, properties.get(0).value());
-            sqlgGraph1.close();
         }
     }
 
@@ -322,7 +307,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             Period[] periodsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(periods, periodsFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -341,7 +325,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             Period[] periodsFromDb = properties.get(0).value();
             Assert.assertArrayEquals(periods, periodsFromDb);
-            sqlgGraph1.close();
         }
     }
 
@@ -390,7 +373,6 @@ public class LocalDateTest extends BaseTest {
             Assert.assertTrue(properties.get(0).isPresent());
             ZonedDateTime[] value = properties.get(0).<ZonedDateTime[]>value();
             Assert.assertArrayEquals(zonedDateTimes, value);
-            sqlgGraph1.close();
         }
     }
 
@@ -599,17 +581,16 @@ public class LocalDateTest extends BaseTest {
         );
         this.sqlgGraph.tx().commit();
 
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("Person").hasNext());
-        Vertex v = sqlgGraph1.traversal().V().hasLabel("Person").next();
-        Assert.assertEquals(localDateTime, v.value("dateTime"));
-        Assert.assertEquals(localDate, v.value("date"));
-        Assert.assertEquals(localTime.toSecondOfDay(), v.<LocalTime>value("time").toSecondOfDay());
-        Assert.assertEquals(zonedDateTime, v.value("zonedDateTime"));
-        Assert.assertEquals(period, v.value("period"));
-        Assert.assertEquals(duration, v.value("duration"));
-
-        sqlgGraph1.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("Person").hasNext());
+            Vertex v = sqlgGraph1.traversal().V().hasLabel("Person").next();
+            Assert.assertEquals(localDateTime, v.value("dateTime"));
+            Assert.assertEquals(localDate, v.value("date"));
+            Assert.assertEquals(localTime.toSecondOfDay(), v.<LocalTime>value("time").toSecondOfDay());
+            Assert.assertEquals(zonedDateTime, v.value("zonedDateTime"));
+            Assert.assertEquals(period, v.value("period"));
+            Assert.assertEquals(duration, v.value("duration"));
+        }
     }
 
     public static void main(String[] args) {

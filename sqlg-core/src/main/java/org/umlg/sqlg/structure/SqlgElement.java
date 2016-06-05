@@ -55,9 +55,9 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-        }
+//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        }
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -69,9 +69,9 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-        }
+//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        }
     }
 
     @Override
@@ -84,6 +84,16 @@ public abstract class SqlgElement implements Element {
         public void clearProperties() {
             SqlgElement.this.properties.clear();
         }
+
+//        @Override
+//        public boolean equals(Object object) {
+//            return SqlgElement.this.equals(object);
+//        }
+//
+//        @Override
+//        public int hashCode() {
+//            return SqlgElement.this.hashCode();
+//        }
     }
 
     public void setInternalPrimaryKey(RecordId recordId) {
@@ -162,9 +172,9 @@ public abstract class SqlgElement implements Element {
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.getSqlDialect().validateProperty(key, value);
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-        }
+//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        }
         //Validate the property
         PropertyType.from(value);
         //Check if column exist

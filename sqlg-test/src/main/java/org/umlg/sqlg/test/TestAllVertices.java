@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -53,15 +53,14 @@ public class TestAllVertices extends BaseTest {
         final Object oid = v1.id();
         g.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         g.close();
-
-        g = SqlgGraph.open(configuration);
-        try {
-            g.vertices(oid).next();
-            fail("Vertex should not be found as close behavior was set to rollback");
-        } catch (Exception ex) {
-            validateException(Graph.Exceptions.elementNotFound(Vertex.class, oid), ex);
+        try (SqlgGraph graph = SqlgGraph.open(configuration)) {
+            try {
+                graph.vertices(oid).next();
+                fail("Vertex should not be found as close behavior was set to rollback");
+            } catch (Exception ex) {
+                validateException(Graph.Exceptions.elementNotFound(Vertex.class, oid), ex);
+            }
         }
-        g.close();
     }
 
     public static void validateException(final Throwable expected, final Throwable actual) {

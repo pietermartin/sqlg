@@ -246,10 +246,11 @@ public class TestBatch extends BaseTest {
         v1.addEdge("bts_btsalm", v3);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        v1 = this.sqlgGraph.v(v1.id());
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V(v1.id()).out("bts_btsalm").count().next().intValue());
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V(v1.id()).out("bts_btsalmtos").count().next().intValue());
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            v1 = sqlgGraph.v(v1.id());
+            Assert.assertEquals(1, sqlgGraph.traversal().V(v1.id()).out("bts_btsalm").count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph.traversal().V(v1.id()).out("bts_btsalmtos").count().next().intValue());
+        }
     }
 
     /**

@@ -1,10 +1,10 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
-import org.umlg.sqlg.sql.parse.AliasMapHolder;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.SqlgSqlExecutor;
@@ -27,7 +27,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private RecordId recordId;
     private Iterator<SchemaTableTree> rootSchemaTableTreeIterator = EmptyIterator.instance();
     private SchemaTableTree currentRootSchemaTableTree;
-    private AliasMapHolder aliasMapHolder;
 
     private Iterator<LinkedList<SchemaTableTree>> distinctQueriesIterator = EmptyIterator.instance();
     private LinkedList<SchemaTableTree> currentDistinctQueryStack;
@@ -38,11 +37,19 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private Iterator<LinkedList<SchemaTableTree>> emitLeftJoinResultsIterator = EmptyIterator.instance();
     private LinkedList<SchemaTableTree> emitCurrentLeftJoinResult;
 
+    private List<LinkedList<SchemaTableTree>> subQueryStacks;
+    private List<Integer> lastElementIdColumnCount = new ArrayList<>();
+
     private Triple<ResultSet, ResultSetMetaData, PreparedStatement> queryResult;
 
     private List<Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>>> elements = Collections.emptyList();
     private Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>> element;
 
+    private boolean first = true;
+    private Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
+    private Multimap<String, Integer> lastElementIdCountMap = ArrayListMultimap.create();
+//    private Map<String, Integer> columnNameCountMap1 = new HashMap<>()[;
+//    private Map<String, Integer> columnNameCountMap2 = ArrayListMultimap.create();
     private QUERY queryState = QUERY.REGULAR;
 
     private enum QUERY {
@@ -51,7 +58,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         EMIT
     }
 
-    public SqlgCompiledResultIterator(SqlgGraph sqlgGraph, Set<SchemaTableTree> rootSchemaTableTrees, RecordId recordId) {
+    SqlgCompiledResultIterator(SqlgGraph sqlgGraph, Set<SchemaTableTree> rootSchemaTableTrees, RecordId recordId) {
         this(sqlgGraph, rootSchemaTableTrees);
         this.recordId = recordId;
     }
@@ -64,110 +71,120 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     @Override
     public boolean hasNext() {
-        while (true) {
-            switch (this.queryState) {
-                case REGULAR:
-                    if (!this.elements.isEmpty()) {
-                        this.element = this.elements.remove(0);
-                        return true;
-                    } else {
-                        if (this.queryResult != null) {
-                            iterateRegularQueries();
-                        }
-                        if (this.elements.isEmpty()) {
-                            closePreparedStatement();
-                            //try the next distinctQueryStack
-                            if (this.distinctQueriesIterator.hasNext()) {
-                                this.currentDistinctQueryStack = this.distinctQueriesIterator.next();
-                                this.currentRootSchemaTableTree.resetThreadVars();
-                                executeRegularQuery();
-                            } else {
-                                //try the next rootSchemaTableTree
-                                if (this.rootSchemaTableTreeIterator.hasNext()) {
-                                    this.currentRootSchemaTableTree = this.rootSchemaTableTreeIterator.next();
-                                    this.aliasMapHolder = this.currentRootSchemaTableTree.getAliasMapHolder();
-                                    this.distinctQueriesIterator = this.currentRootSchemaTableTree.constructDistinctQueries().iterator();
+        try {
+            while (true) {
+                switch (this.queryState) {
+                    case REGULAR:
+                        if (!this.elements.isEmpty()) {
+                            this.element = this.elements.remove(0);
+                            return true;
+                        } else {
+                            if (this.queryResult != null) {
+                                iterateRegularQueries(first, columnNameCountMap, lastElementIdCountMap);
+                                first = false;
+                            }
+                            if (this.elements.isEmpty()) {
+                                closePreparedStatement();
+                                //try the next distinctQueryStack
+                                if (this.distinctQueriesIterator.hasNext()) {
+                                    this.currentDistinctQueryStack = this.distinctQueriesIterator.next();
+                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.currentDistinctQueryStack);
+                                    this.currentRootSchemaTableTree.resetThreadVars();
+                                    executeRegularQuery();
+                                    first = true;
                                 } else {
-                                    if (this.currentRootSchemaTableTree != null) {
-                                        this.currentRootSchemaTableTree.resetThreadVars();
+                                    //try the next rootSchemaTableTree
+                                    if (this.rootSchemaTableTreeIterator.hasNext()) {
+                                        this.currentRootSchemaTableTree = this.rootSchemaTableTreeIterator.next();
+                                        this.distinctQueriesIterator = this.currentRootSchemaTableTree.constructDistinctQueries().iterator();
+                                    } else {
+                                        if (this.currentRootSchemaTableTree != null) {
+                                            this.currentRootSchemaTableTree.resetThreadVars();
+                                        }
+                                        this.queryState = QUERY.OPTIONAL;
+                                        this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
+                                        break;
                                     }
-                                    this.queryState = QUERY.OPTIONAL;
-                                    this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
-                                    break;
                                 }
                             }
                         }
-                    }
-                    break;
-                case OPTIONAL:
-                    if (!this.elements.isEmpty()) {
-                        this.element = this.elements.remove(0);
-                        return true;
-                    } else {
-                        if (this.queryResult != null) {
-                            iterateOptionalQueries();
-                        }
-                        if (this.elements.isEmpty()) {
-                            closePreparedStatement();
-                            //try the next distinctQueryStack
-                            if (this.optionalLeftJoinResultsIterator.hasNext()) {
-                                this.optionalCurrentLeftJoinResult = this.optionalLeftJoinResultsIterator.next();
-                                this.currentRootSchemaTableTree.resetThreadVars();
-                                executeOptionalQuery();
-                            } else {
-                                //try the next rootSchemaTableTree
-                                if (this.rootSchemaTableTreeIterator.hasNext()) {
-                                    this.currentRootSchemaTableTree = this.rootSchemaTableTreeIterator.next();
-                                    this.aliasMapHolder = this.currentRootSchemaTableTree.getAliasMapHolder();
-                                    List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
-                                    SchemaTableTree.constructDistinctOptionalQueries(this.currentRootSchemaTableTree, leftJoinResult);
-                                    this.optionalLeftJoinResultsIterator = leftJoinResult.iterator();
+                        break;
+                    case OPTIONAL:
+                        if (!this.elements.isEmpty()) {
+                            this.element = this.elements.remove(0);
+                            return true;
+                        } else {
+                            if (this.queryResult != null) {
+                                iterateOptionalQueries(first, columnNameCountMap, lastElementIdCountMap);
+                                first = false;
+                            }
+                            if (this.elements.isEmpty()) {
+                                closePreparedStatement();
+                                //try the next distinctQueryStack
+                                if (this.optionalLeftJoinResultsIterator.hasNext()) {
+                                    this.optionalCurrentLeftJoinResult = this.optionalLeftJoinResultsIterator.next();
+                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.optionalCurrentLeftJoinResult.getLeft());
+                                    this.currentRootSchemaTableTree.resetThreadVars();
+                                    executeOptionalQuery();
+                                    first = true;
                                 } else {
-                                    if (this.currentRootSchemaTableTree != null) {
-                                        this.currentRootSchemaTableTree.resetThreadVars();
+                                    //try the next rootSchemaTableTree
+                                    if (this.rootSchemaTableTreeIterator.hasNext()) {
+                                        this.currentRootSchemaTableTree = this.rootSchemaTableTreeIterator.next();
+                                        List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
+                                        SchemaTableTree.constructDistinctOptionalQueries(this.currentRootSchemaTableTree, leftJoinResult);
+                                        this.optionalLeftJoinResultsIterator = leftJoinResult.iterator();
+                                    } else {
+                                        if (this.currentRootSchemaTableTree != null) {
+                                            this.currentRootSchemaTableTree.resetThreadVars();
+                                        }
+                                        this.queryState = QUERY.EMIT;
+                                        this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
+                                        break;
                                     }
-                                    this.queryState = QUERY.EMIT;
-                                    this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
-                                    break;
                                 }
                             }
                         }
-                    }
-                    break;
-                case EMIT:
-                    if (!this.elements.isEmpty()) {
-                        this.element = this.elements.remove(0);
-                        return true;
-                    } else {
-                        if (this.queryResult != null) {
-                            iterateEmitQueries();
-                        }
-                        if (this.elements.isEmpty()) {
-                            closePreparedStatement();
-                            //try the next distinctQueryStack
-                            if (this.emitLeftJoinResultsIterator.hasNext()) {
-                                this.emitCurrentLeftJoinResult = this.emitLeftJoinResultsIterator.next();
-                                this.currentRootSchemaTableTree.resetThreadVars();
-                                executeEmitQuery();
-                            } else {
-                                //try the next rootSchemaTableTree
-                                if (this.rootSchemaTableTreeIterator.hasNext()) {
-                                    this.currentRootSchemaTableTree = this.rootSchemaTableTreeIterator.next();
-                                    this.aliasMapHolder = this.currentRootSchemaTableTree.getAliasMapHolder();
-                                    List<LinkedList<SchemaTableTree>> leftJoinResult = new ArrayList<>();
-                                    SchemaTableTree.constructDistinctEmitBeforeQueries(this.currentRootSchemaTableTree, leftJoinResult);
-                                    this.emitLeftJoinResultsIterator = leftJoinResult.iterator();
+                        break;
+                    case EMIT:
+                        if (!this.elements.isEmpty()) {
+                            this.element = this.elements.remove(0);
+                            return true;
+                        } else {
+                            if (this.queryResult != null) {
+                                iterateEmitQueries(first, columnNameCountMap, lastElementIdCountMap);
+                                first = false;
+                            }
+                            if (this.elements.isEmpty()) {
+                                closePreparedStatement();
+                                //try the next distinctQueryStack
+                                if (this.emitLeftJoinResultsIterator.hasNext()) {
+                                    this.emitCurrentLeftJoinResult = this.emitLeftJoinResultsIterator.next();
+                                    this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.emitCurrentLeftJoinResult);
+                                    this.currentRootSchemaTableTree.resetThreadVars();
+                                    executeEmitQuery();
+                                    first = true;
                                 } else {
-                                    if (this.currentRootSchemaTableTree != null) {
-                                        this.currentRootSchemaTableTree.resetThreadVars();
+                                    //try the next rootSchemaTableTree
+                                    if (this.rootSchemaTableTreeIterator.hasNext()) {
+                                        this.currentRootSchemaTableTree = this.rootSchemaTableTreeIterator.next();
+                                        List<LinkedList<SchemaTableTree>> leftJoinResult = new ArrayList<>();
+                                        SchemaTableTree.constructDistinctEmitBeforeQueries(this.currentRootSchemaTableTree, leftJoinResult);
+                                        this.emitLeftJoinResultsIterator = leftJoinResult.iterator();
+                                    } else {
+                                        if (this.currentRootSchemaTableTree != null) {
+                                            this.currentRootSchemaTableTree.resetThreadVars();
+                                        }
+                                        return false;
                                     }
-                                    return false;
                                 }
                             }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -199,35 +216,43 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         this.queryResult = SqlgSqlExecutor.executeEmitQuery(sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.emitCurrentLeftJoinResult);
     }
 
-    private void iterateRegularQueries() {
+    private void iterateRegularQueries(boolean first, Multimap<String, Integer> columnNameCountMap, Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
         this.elements = SqlgUtil.loadResultSetIntoResultIterator(
                 this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
-                this.currentDistinctQueryStack,
-                this.aliasMapHolder);
-
+                this.subQueryStacks,
+                first,
+                columnNameCountMap,
+                lastElementIdCountMap,
+                this.lastElementIdColumnCount);
     }
 
-    private void iterateOptionalQueries() {
+    private void iterateOptionalQueries(boolean first, Multimap<String, Integer> columnNameCountMap1, Multimap<String, Integer> columnNameCountMap2) throws SQLException {
         this.elements = SqlgUtil.loadResultSetIntoResultIterator(
                 sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
-                this.optionalCurrentLeftJoinResult.getLeft(),
-                this.aliasMapHolder);
+                this.subQueryStacks,
+                first,
+                columnNameCountMap1,
+                columnNameCountMap2,
+                this.lastElementIdColumnCount);
     }
 
-    private void iterateEmitQueries() {
+    private void iterateEmitQueries(boolean first, Multimap<String, Integer> columnNameCountMap1, Multimap<String, Integer> columnNameCountMap2) throws SQLException {
         this.elements = SqlgUtil.loadResultSetIntoResultIterator(
                 sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
-                this.emitCurrentLeftJoinResult,
-                this.aliasMapHolder);
+                this.subQueryStacks,
+                first,
+                columnNameCountMap1,
+                columnNameCountMap2,
+                this.lastElementIdColumnCount);
     }
 
 }

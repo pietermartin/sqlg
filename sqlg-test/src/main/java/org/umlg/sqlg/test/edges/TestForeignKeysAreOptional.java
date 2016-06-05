@@ -26,16 +26,16 @@ public class TestForeignKeysAreOptional extends BaseTest {
         conf.setProperty("jdbc.username", "postgres");
         conf.setProperty("jdbc.password", "postgres");
         conf.setProperty("implement.foreign.keys", "true");
-        SqlgGraph g = SqlgGraph.open(conf);
-        Vertex v1 = g.addVertex(T.label, "Person");
-        Vertex v2 = g.addVertex(T.label, "Person");
-        v1.addEdge("Edge1", v2);
-        g.tx().commit();
-        Connection conn = g.tx().getConnection();
-        DatabaseMetaData dm = conn.getMetaData();
-        ResultSet rs = dm.getImportedKeys("sqlggraphdb", "public", "E_Edge1");
-        Assert.assertTrue(rs.next());
-        g.close();
+        try (SqlgGraph g = SqlgGraph.open(conf)) {
+            Vertex v1 = g.addVertex(T.label, "Person");
+            Vertex v2 = g.addVertex(T.label, "Person");
+            v1.addEdge("Edge1", v2);
+            g.tx().commit();
+            Connection conn = g.tx().getConnection();
+            DatabaseMetaData dm = conn.getMetaData();
+            ResultSet rs = dm.getImportedKeys("sqlggraphdb", "public", "E_Edge1");
+            Assert.assertTrue(rs.next());
+        }
     }
 
     @Test
@@ -46,17 +46,17 @@ public class TestForeignKeysAreOptional extends BaseTest {
         conf.setProperty("jdbc.username", "SA");
         conf.setProperty("jdbc.password", "");
         conf.setProperty("implement.foreign.keys", "true");
-        SqlgGraph g = SqlgGraph.open(conf);
-        Vertex v1 = g.addVertex(T.label, "Person");
-        Vertex v2 = g.addVertex(T.label, "Person");
-        v1.addEdge("Edge1", v2);
-        g.tx().commit();
-        Connection conn = g.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement("select * from information_schema.constraint_table_usage where CONSTRAINT_NAME like '%FK%'")) {
-            ResultSet rs = preparedStatement.executeQuery();
-            Assert.assertTrue(rs.next());
+        try (SqlgGraph g = SqlgGraph.open(conf)) {
+            Vertex v1 = g.addVertex(T.label, "Person");
+            Vertex v2 = g.addVertex(T.label, "Person");
+            v1.addEdge("Edge1", v2);
+            g.tx().commit();
+            Connection conn = g.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement("select * from information_schema.constraint_table_usage where CONSTRAINT_NAME like '%FK%'")) {
+                ResultSet rs = preparedStatement.executeQuery();
+                Assert.assertTrue(rs.next());
+            }
         }
-        g.close();
     }
 
     @Test
@@ -67,16 +67,16 @@ public class TestForeignKeysAreOptional extends BaseTest {
         conf.setProperty("jdbc.username", "postgres");
         conf.setProperty("jdbc.password", "postgres");
         conf.setProperty("implement.foreign.keys", "false");
-        SqlgGraph g = SqlgGraph.open(conf);
-        Vertex v1 = g.addVertex(T.label, "Person");
-        Vertex v2 = g.addVertex(T.label, "Person");
-        v1.addEdge("Edge1", v2);
-        g.tx().commit();
-        Connection conn = g.tx().getConnection();
-        DatabaseMetaData dm = conn.getMetaData();
-        ResultSet rs = dm.getImportedKeys("sqlgraphdb", "public", "E_Edge1");
-        Assert.assertFalse(rs.next());
-        g.close();
+        try (SqlgGraph g = SqlgGraph.open(conf)) {
+            Vertex v1 = g.addVertex(T.label, "Person");
+            Vertex v2 = g.addVertex(T.label, "Person");
+            v1.addEdge("Edge1", v2);
+            g.tx().commit();
+            Connection conn = g.tx().getConnection();
+            DatabaseMetaData dm = conn.getMetaData();
+            ResultSet rs = dm.getImportedKeys("sqlgraphdb", "public", "E_Edge1");
+            Assert.assertFalse(rs.next());
+        }
     }
 
     @Test
@@ -87,18 +87,18 @@ public class TestForeignKeysAreOptional extends BaseTest {
         conf.setProperty("jdbc.username", "SA");
         conf.setProperty("jdbc.password", "");
         conf.setProperty("implement.foreign.keys", "false");
-        SqlgGraph g = SqlgGraph.open(conf);
-        Vertex v1 = g.addVertex(T.label, "Person");
-        Vertex v2 = g.addVertex(T.label, "Person");
-        v1.addEdge("Edge1", v2);
-        g.tx().commit();
-        Connection conn = g.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(
-                "select * from information_schema.constraint_table_usage " +
-                "where TABLE_NAME = 'E_Edge1' and CONSTRAINT_NAME like '%FK%'")) {
-            ResultSet rs = preparedStatement.executeQuery();
-            Assert.assertFalse(rs.next());
+        try (SqlgGraph g = SqlgGraph.open(conf)) {
+            Vertex v1 = g.addVertex(T.label, "Person");
+            Vertex v2 = g.addVertex(T.label, "Person");
+            v1.addEdge("Edge1", v2);
+            g.tx().commit();
+            Connection conn = g.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "select * from information_schema.constraint_table_usage " +
+                            "where TABLE_NAME = 'E_Edge1' and CONSTRAINT_NAME like '%FK%'")) {
+                ResultSet rs = preparedStatement.executeQuery();
+                Assert.assertFalse(rs.next());
+            }
         }
-        g.close();
     }
 }

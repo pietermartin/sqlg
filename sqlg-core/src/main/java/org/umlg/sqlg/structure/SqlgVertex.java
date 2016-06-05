@@ -983,6 +983,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         for (String columnName : toRemove.keySet()) {
             Collection<Integer> columnCountsToRemove = toRemove.get(columnName);
             Collection<Integer> columnCounts = columnMap.get(columnName);
+            //noinspection Convert2streamapi
             for (Integer columnCountToRemove : columnCountsToRemove) {
                 columnCounts.remove(columnCountToRemove);
             }

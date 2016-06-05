@@ -173,48 +173,51 @@ public class TestLoadSchema extends BaseTest {
                 "cInteger", 3, "cLong", 3L, "cDouble", 3D, "cString", "ccccccccccccc");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        v1 = this.sqlgGraph.v(v1.id());
-        Assert.assertNotNull(v1);
-        Assert.assertEquals(true, v1.property("aBoolean").value());
-        Assert.assertEquals((short) 1, v1.property("aShort").value());
-        Assert.assertEquals(1, v1.property("aInteger").value());
-        Assert.assertEquals(1L, v1.property("aLong").value());
-        Assert.assertEquals(1D, v1.property("aDouble").value());
-        Assert.assertEquals("aaaaaaaaaaaaa", v1.property("aString").value());
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            v1 = sqlgGraph.v(v1.id());
+            Assert.assertNotNull(v1);
+            Assert.assertEquals(true, v1.property("aBoolean").value());
+            Assert.assertEquals((short) 1, v1.property("aShort").value());
+            Assert.assertEquals(1, v1.property("aInteger").value());
+            Assert.assertEquals(1L, v1.property("aLong").value());
+            Assert.assertEquals(1D, v1.property("aDouble").value());
+            Assert.assertEquals("aaaaaaaaaaaaa", v1.property("aString").value());
 
-        v2 = this.sqlgGraph.v(v2.id());
-        Assert.assertEquals(true, v2.property("bBoolean").value());
-        Assert.assertEquals((short) 2, v2.property("bShort").value());
-        Assert.assertEquals(2, v2.property("bInteger").value());
-        Assert.assertEquals(2L, v2.property("bLong").value());
-        Assert.assertEquals(2D, v2.property("bDouble").value());
-        Assert.assertEquals("bbbbbbbbbbbbb", v2.property("bString").value());
+            v2 = sqlgGraph.v(v2.id());
+            Assert.assertEquals(true, v2.property("bBoolean").value());
+            Assert.assertEquals((short) 2, v2.property("bShort").value());
+            Assert.assertEquals(2, v2.property("bInteger").value());
+            Assert.assertEquals(2L, v2.property("bLong").value());
+            Assert.assertEquals(2D, v2.property("bDouble").value());
+            Assert.assertEquals("bbbbbbbbbbbbb", v2.property("bString").value());
 
-        Iterator<Edge> edgeIter = vertexTraversal(v1).outE("edgeTest");
-        Assert.assertTrue(edgeIter.hasNext());
-        Edge e = edgeIter.next();
-        Assert.assertEquals(true, e.property("cBoolean").value());
-        Assert.assertEquals((short) 3, e.property("cShort").value());
-        Assert.assertEquals(3, e.property("cInteger").value());
-        Assert.assertEquals(3L, e.property("cLong").value());
-        Assert.assertEquals(3D, e.property("cDouble").value());
-        Assert.assertEquals("ccccccccccccc", e.property("cString").value());
+            Iterator<Edge> edgeIter = vertexTraversal(v1).outE("edgeTest");
+            Assert.assertTrue(edgeIter.hasNext());
+            Edge e = edgeIter.next();
+            Assert.assertEquals(true, e.property("cBoolean").value());
+            Assert.assertEquals((short) 3, e.property("cShort").value());
+            Assert.assertEquals(3, e.property("cInteger").value());
+            Assert.assertEquals(3L, e.property("cLong").value());
+            Assert.assertEquals(3D, e.property("cDouble").value());
+            Assert.assertEquals("ccccccccccccc", e.property("cString").value());
 
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "dBoolean", true, "dShort", (short) 4,
-                "dInteger", 4, "dLong", 4L, "bDouble", 4D, "dString", "ddddddddddddd");
-        v1.addEdge("edgeTest", v3, "eBoolean", true, "eShort", (short) 3,
-                "eInteger", 3, "eLong", 3L, "eDouble", 3D, "eString", "eeeeeeeeeeeee");
-        this.sqlgGraph.tx().commit();
+            Vertex v3 = sqlgGraph.addVertex(T.label, "Person", "dBoolean", true, "dShort", (short) 4,
+                    "dInteger", 4, "dLong", 4L, "bDouble", 4D, "dString", "ddddddddddddd");
+            v1.addEdge("edgeTest", v3, "eBoolean", true, "eShort", (short) 3,
+                    "eInteger", 3, "eLong", 3L, "eDouble", 3D, "eString", "eeeeeeeeeeeee");
+            sqlgGraph.tx().commit();
 
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Edge edgeTest = this.sqlgGraph.traversal().V(v3).inE("edgeTest").next();
-        Assert.assertEquals(true, edgeTest.value("eBoolean"));
-        Assert.assertEquals((short)3, edgeTest.<Short>value("eShort").shortValue());
-        Assert.assertEquals(3, edgeTest.<Integer>value("eInteger").intValue());
-        Assert.assertEquals(3L, edgeTest.<Long>value("eLong").longValue());
-        Assert.assertEquals(3D, edgeTest.<Double>value("eDouble").doubleValue(), 0);
-        Assert.assertEquals("eeeeeeeeeeeee", edgeTest.<String>value("eString"));
+            try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+                Edge edgeTest = sqlgGraph1.traversal().V(v3).inE("edgeTest").next();
+                Assert.assertEquals(true, edgeTest.value("eBoolean"));
+                Assert.assertEquals((short)3, edgeTest.<Short>value("eShort").shortValue());
+                Assert.assertEquals(3, edgeTest.<Integer>value("eInteger").intValue());
+                Assert.assertEquals(3L, edgeTest.<Long>value("eLong").longValue());
+                Assert.assertEquals(3D, edgeTest.<Double>value("eDouble").doubleValue(), 0);
+                Assert.assertEquals("eeeeeeeeeeeee", edgeTest.<String>value("eString"));
+            }
+        }
+
     }
 
     @Test
@@ -229,11 +232,11 @@ public class TestLoadSchema extends BaseTest {
 
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
-        Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
-        Assert.assertEquals(2, this.sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
+            Assert.assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
+            Assert.assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
+        }
     }
 
     @Test
@@ -246,11 +249,11 @@ public class TestLoadSchema extends BaseTest {
 
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-
-        Assert.assertEquals(2, vertexTraversal(this.sqlgGraph.v(realBsc.id())).out("workspaceElement").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(planBsc.id())).in("workspaceElement").count().next().intValue());
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(2, vertexTraversal(sqlgGraph.v(realBsc.id())).out("workspaceElement").count().next().intValue());
+            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
+            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(planBsc.id())).in("workspaceElement").count().next().intValue());
+        }
     }
 
     @Test
@@ -264,10 +267,11 @@ public class TestLoadSchema extends BaseTest {
 
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).out("workspaceElement").count().next().intValue());
+            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(planBscWE.id())).out("workspaceElement").count().next().intValue());
+        }
 
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(realBscWE.id())).out("workspaceElement").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph.v(planBscWE.id())).out("workspaceElement").count().next().intValue());
     }
 
     @Test
@@ -292,11 +296,12 @@ public class TestLoadSchema extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Person", "name2", "john");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        v2 = this.sqlgGraph.v(v2.id());
-        //This fails if the columns are not loaded per schema and table
-        v2.property("name1", "joe");
-        this.sqlgGraph.tx().commit();
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            v2 = sqlgGraph.v(v2.id());
+            //This fails if the columns are not loaded per schema and table
+            v2.property("name1", "joe");
+            sqlgGraph.tx().commit();
+        }
     }
 
     @Test
@@ -309,12 +314,11 @@ public class TestLoadSchema extends BaseTest {
         report1.addEdge("label", policyReport);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-
-        Assert.assertTrue(this.sqlgGraph.traversal().V().hasLabel("Report").hasNext());
-        report1 = this.sqlgGraph.traversal().V().hasLabel("Report").next();
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V(report1).out("label").count().next(), 0);
-
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            Assert.assertTrue(sqlgGraph.traversal().V().hasLabel("Report").hasNext());
+            report1 = sqlgGraph.traversal().V().hasLabel("Report").next();
+            Assert.assertEquals(2, sqlgGraph.traversal().V(report1).out("label").count().next(), 0);
+        }
     }
 
     @Test
@@ -327,12 +331,11 @@ public class TestLoadSchema extends BaseTest {
         policyReport.addEdge("label", report1);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-
-        Assert.assertTrue(this.sqlgGraph.traversal().V().hasLabel("Report").hasNext());
-        report1 = this.sqlgGraph.traversal().V().hasLabel("Report").next();
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V(report1).in("label").count().next(), 0);
-
+        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+            Assert.assertTrue(sqlgGraph.traversal().V().hasLabel("Report").hasNext());
+            report1 = sqlgGraph.traversal().V().hasLabel("Report").next();
+            Assert.assertEquals(2, sqlgGraph.traversal().V(report1).in("label").count().next(), 0);
+        }
     }
 
     @Test

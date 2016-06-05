@@ -97,69 +97,69 @@ public class TestLazyLoadSchema extends BaseTest {
     @Test
     public void testLazyLoadTableViaEdgeCreation() throws Exception {
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        Thread.sleep(1000);
-        //add a vertex in the old, the new should only see it after a commit
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
-        this.sqlgGraph.tx().commit();
-        Vertex v11 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
-        Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
-        sqlgGraph1.tx().commit();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Thread.sleep(1000);
+            //add a vertex in the old, the new should only see it after a commit
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+            this.sqlgGraph.tx().commit();
+            Vertex v11 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
+            Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
+            sqlgGraph1.tx().commit();
 
-        v1.addEdge("friend", v2);
-        this.sqlgGraph.tx().commit();
+            v1.addEdge("friend", v2);
+            this.sqlgGraph.tx().commit();
 
-        v11.addEdge("friend", v12);
-        sqlgGraph1.tx().commit();
+            v11.addEdge("friend", v12);
+            sqlgGraph1.tx().commit();
 
-        Assert.assertEquals(1, vertexTraversal(v11).out("friend").count().next().intValue());
-        sqlgGraph1.tx().rollback();
-        sqlgGraph1.close();
+            Assert.assertEquals(1, vertexTraversal(v11).out("friend").count().next().intValue());
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
     public void testLazyLoadTableViaEdgesHas() throws Exception {
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
-        Thread.sleep(1000);
-        //add a vertex in the old, the new should only see it after a commit
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
-        v1.addEdge("friend", v2);
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            Thread.sleep(1000);
+            //add a vertex in the old, the new should only see it after a commit
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+            v1.addEdge("friend", v2);
+            this.sqlgGraph.tx().commit();
+            Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
 
-        Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
-        Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
-        sqlgGraph1.tx().rollback();
-        sqlgGraph1.close();
+            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
+            Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
     public void testLoadSchemaRemembersUncommittedSchemas() throws Exception {
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
-        Thread.sleep(1000);
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
-        v1.addEdge("friend", v2);
-        this.sqlgGraph.tx().commit();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            Thread.sleep(1000);
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+            Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
+            v1.addEdge("friend", v2);
+            this.sqlgGraph.tx().commit();
 
-        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");
-        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
-        Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
-        this.sqlgGraph.tx().commit();
+            Vertex v3 = this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");
+            Vertex v4 = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
+            Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
+            this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
-        Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
+            Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
 
-        sqlgGraph1.tx().rollback();
-        sqlgGraph1.close();
+            sqlgGraph1.tx().rollback();
+        }
     }
 
 }

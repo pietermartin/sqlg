@@ -180,15 +180,11 @@ public abstract class BaseTest {
 
 
     protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
-        return this.sqlgGraph.traversal().V(v);
-    }
-
-    protected GraphTraversal<Vertex, Vertex> vertexTraversal2(Vertex v) {
-        return this.sqlgGraph.traversal().V(v);
+        return v.graph().traversal().V(v);
     }
 
     protected GraphTraversal<Edge, Edge> edgeTraversal(Edge e) {
-        return this.sqlgGraph.traversal().E(e.id());
+        return e.graph().traversal().E(e.id());
     }
 
     protected void assertDb(String table, int numberOfRows) {

@@ -274,11 +274,6 @@ public class SchemaTableTree {
         this.optionalLeftJoin = optionalLeftJoin;
     }
 
-    public AliasMapHolder getAliasMapHolder() {
-        Preconditions.checkState(getParent() == null, "The aliasMapHolder is only on the root SchemaTableTree");
-        return aliasMapHolder;
-    }
-
     public void resetThreadVars() {
         this.aliasMapHolder.clear();
         this.rootAliasCounter = 1;
@@ -648,8 +643,14 @@ public class SchemaTableTree {
             previous = schemaTableTree;
         }
 
+        SchemaTableTree previousLeftJoinSchemaTableTree = null;
         for (SchemaTableTree schemaTableTree : leftJoinOn) {
-            singlePathSql += constructJoinBetweenSchemaTables(sqlgGraph, previous, schemaTableTree, true);
+            if (previousLeftJoinSchemaTableTree == null || !previousLeftJoinSchemaTableTree.getSchemaTable().equals(schemaTableTree.getSchemaTable())) {
+                singlePathSql += constructJoinBetweenSchemaTables(sqlgGraph, previous, schemaTableTree, true);
+            } else {
+                singlePathSql += appendToJoinBetweenSchemaTables(sqlgGraph, previous, schemaTableTree, true);
+            }
+            previousLeftJoinSchemaTableTree = schemaTableTree;
         }
 
         //Check if there is a hasContainer with a P.within more than x.
@@ -1633,6 +1634,83 @@ public class SchemaTableTree {
             joinSql += ".";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
             joinSql += " ON ";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getSchema());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getTable());
+            joinSql += ".";
+            if (labelToTraversTree.isEdgeVertexStep()) {
+                joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema() + "." +
+                        rawLabelToTravers + (labelToTraversTree.getDirection() == Direction.OUT ? SchemaManager.OUT_VERTEX_COLUMN_END : SchemaManager.IN_VERTEX_COLUMN_END));
+            } else {
+                joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema() + "." +
+                        rawLabelToTravers + (labelToTraversTree.getDirection() == Direction.OUT ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
+            }
+            joinSql += " = ";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+        }
+        return joinSql;
+    }
+
+    private static String appendToJoinBetweenSchemaTables(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree labelToTraversTree, boolean leftJoin) {
+        SchemaTable fromSchemaTable = fromSchemaTableTree.getSchemaTable();
+        SchemaTable labelToTravers = labelToTraversTree.getSchemaTable();
+
+        //Assert that this is always from vertex to edge table or edge to vertex table
+        Preconditions.checkState(
+                (fromSchemaTable.isVertexTable() && !labelToTravers.isVertexTable()) ||
+                        (!fromSchemaTable.isVertexTable() && labelToTravers.isVertexTable())
+        );
+
+        String rawLabel;
+        if (fromSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            rawLabel = fromSchemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            rawLabel = fromSchemaTable.getTable();
+        }
+        String rawLabelToTravers;
+        if (labelToTravers.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            rawLabelToTravers = labelToTravers.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+        } else {
+            rawLabelToTravers = labelToTravers.getTable();
+        }
+        String joinSql = " OR ";
+//        if (leftJoin) {
+//            joinSql = " LEFT JOIN\n\t";
+//        } else {
+//            joinSql = " INNER JOIN\n\t";
+//        }
+        if (fromSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
+//            joinSql += ".";
+//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
+//            joinSql += " ON ";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getSchema());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getTable());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
+            joinSql += " = ";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
+            joinSql += ".";
+            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                    fromSchemaTable.getSchema() + "." + rawLabel +
+                            (labelToTraversTree.getDirection() == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END)
+            );
+        } else {
+            //From edge to vertex table the foreign key is opposite to the direction.
+            //This is because this is second part of the traversal via the edge.
+            //This code did not take specific traversals from the edge into account.
+
+//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
+//            joinSql += ".";
+//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
+//            joinSql += " ON ";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getSchema());
             joinSql += ".";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getTable());

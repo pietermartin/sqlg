@@ -4,9 +4,7 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
@@ -463,6 +461,27 @@ public class TestGremlinOptional extends BaseTest {
 //        while (traversal.hasNext()) {
 //            System.out.println(traversal.next());
 //        }
+    }
+
+    @Test
+    public void testOptionalToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Edge e1 = a1.addEdge("aa", a2);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Path> traversal = this.sqlgGraph.traversal().V(a1.id()).optional(toE(Direction.BOTH, "aa").otherV()).path();
+        List<Path> paths = traversal.toList();
+        assertEquals(1, paths.size());
+
+        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+                p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(e1) && p.get(2).equals(a2)
+        );
+        for (Predicate<Path> pathPredicate : pathsToAssert) {
+            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+            assertTrue(path.isPresent());
+            assertTrue(paths.remove(path.get()));
+        }
+        assertTrue(paths.isEmpty());
     }
 
 }
