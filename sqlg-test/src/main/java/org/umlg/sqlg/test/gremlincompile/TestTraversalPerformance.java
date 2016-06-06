@@ -33,7 +33,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println(stopWatch.toString());
     }
 
-    @Test
+//    @Test
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

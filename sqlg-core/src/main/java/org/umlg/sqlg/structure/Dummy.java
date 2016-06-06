@@ -1,10 +1,10 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.Multimap;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
 
 /**
  * Created by pieter on 2015/11/07.
@@ -24,12 +24,12 @@ public class Dummy extends SqlgElement {
     }
 
     @Override
-    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
+    public void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException {
 
     }
 
     @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
+    public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
 
     }
 

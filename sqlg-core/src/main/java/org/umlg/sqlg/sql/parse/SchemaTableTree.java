@@ -281,6 +281,9 @@ public class SchemaTableTree {
 
 
     public boolean containsLabelledColumn(String columnName) {
+        if (getLabels().contains(columnName)) {
+            System.out.println("halo");
+        }
         if (columnName.startsWith(this.reducedLabels() + ALIAS_SEPARATOR)) {
             String column = columnName.substring(this.reducedLabels().length() + ALIAS_SEPARATOR.length());
             Iterator<String> split = Splitter.on(ALIAS_SEPARATOR).split(column).iterator();

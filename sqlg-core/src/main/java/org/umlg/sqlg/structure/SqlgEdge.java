@@ -1,8 +1,7 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.ArrayListMultimap;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -225,20 +224,17 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
-    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
-        SchemaTable inVertexColumnName;
-        SchemaTable outVertexColumnName;
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
-            if (properName == null) {
-                properName = columnName;
-            }
+    public void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException {
+        for (Map.Entry<String, Integer> columnCountEntry : columnNameCountMap.entrySet()) {
+            String properName = columnCountEntry.getKey();
+            Integer columnCount = columnCountEntry.getValue();
+            SchemaTable inVertexColumnName;
+            SchemaTable outVertexColumnName;
+
             String[] splittedColumn = properName.split(SchemaTableTree.ALIAS_SEPARATOR);
             if (!properName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) && (splittedColumn.length < 4 || (splittedColumn[3].endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || splittedColumn[3].endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)))) {
 
-                Object o = resultSet.getObject(columnName);
+                Object o = resultSet.getObject(columnCount);
                 String name = schemaTableTree.propertyNameFromAlias(properName);
 
                 //Optimized!!, using String.replace is slow
@@ -259,23 +255,24 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 if (!Objects.isNull(o)) {
                     if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                         inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        Long inId = resultSet.getLong(columnName);
+                        Long inId = resultSet.getLong(columnCount);
                         this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
                     } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                         outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        Long outId = resultSet.getLong(columnName);
+                        Long outId = resultSet.getLong(columnCount);
                         this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
                     }
                 }
             }
         }
+
         if (this.inVertex == null || this.outVertex == null) {
             throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
         }
     }
 
     @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
+    public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
         SchemaTable inVertexColumnName;
         SchemaTable outVertexColumnName;
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();

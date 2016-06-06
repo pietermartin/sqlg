@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
+import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
@@ -46,43 +47,32 @@ public class SqlgUtil {
             SchemaTableTree rootSchemaTableTree,
             List<LinkedList<SchemaTableTree>> subQueryStacks,
             boolean first,
-            Multimap<String, Integer> columnNameCountMap,
-            Multimap<String, Integer> lastElementIdCountMap,
-            List<Integer> lastElementIdColumnCount
+            Map<String, Integer> columnNameCountMap,
+            Map<String, Integer> labeledColumnNameCountMap,
+            Multimap<String, Integer> lastElementIdCountMap
     ) throws SQLException {
 
         List<Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>>> result = new ArrayList<>();
         if (resultSet.next()) {
-            columnNameCountMap.clear();
             if (first) {
                 lastElementIdCountMap.clear();
+                columnNameCountMap.clear();
+                labeledColumnNameCountMap.clear();
                 //First load all labeled entries from the resultSet
                 //Translate the columns back from alias to meaningful column headings
                 for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
                     String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
                     String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
                     String mapKey = unAliased != null ? unAliased : columnLabel;
-                    columnNameCountMap.put(mapKey, columnCount);
-                    if (lastElementIdCountMap.containsKey(mapKey)) {
 
-                        System.out.println("halo");
+//                    if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) || mapKey.startsWith(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || mapKey.startsWith(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
+                    if (!mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) &&
+                            (mapKey.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || mapKey.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX))) {
 
+                        labeledColumnNameCountMap.put(mapKey, columnCount);
                     }
                     if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
                         lastElementIdCountMap.put(mapKey, columnCount);
-                    }
-                }
-            } else {
-                //First load all labeled entries from the resultSet
-                //Translate the columns back from alias to meaningful column headings
-                for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-                    String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-                    String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-                    String mapKey = unAliased != null ? unAliased : columnLabel;
-                    if (columnNameCountMap.containsKey(mapKey)) {
-
-                        System.out.println("halo");
-
                     }
                     columnNameCountMap.put(mapKey, columnCount);
                 }
@@ -91,7 +81,7 @@ public class SqlgUtil {
             Multimap<String, Emit<SqlgElement>> previousLabeledElements = null;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
                 Multimap<String, Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
-                        sqlgGraph, resultSet, subQueryStack, columnNameCountMap
+                        sqlgGraph, resultSet, subQueryStack, labeledColumnNameCountMap, lastElementIdCountMap
                 );
                 if (previousLabeledElements == null) {
                     previousLabeledElements = labeledElements;
@@ -102,7 +92,7 @@ public class SqlgUtil {
                 if (subQueryDepth == subQueryStacks.size() - 1) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
                     Optional<SqlgElement> e = SqlgUtil.loadElement(
-                            sqlgGraph, lastElementIdColumnCount, lastElementIdCountMap, resultSet, lastSchemaTableTree
+                            sqlgGraph, lastElementIdCountMap, columnNameCountMap, resultSet, lastSchemaTableTree
                     );
                     if (e.isPresent()) {
                         result.add(Pair.of(e.get(), previousLabeledElements));
@@ -134,14 +124,16 @@ public class SqlgUtil {
     private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph, final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
-            Multimap<String, Integer> columnNameCountMap) throws SQLException {
+            Map<String, Integer> columnNameCountMap,
+            Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
 
         Multimap<String, Emit<E>> result = ArrayListMultimap.create();
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
-                Collection<Integer> propertyColumnsCounts = columnNameCountMap.get(idProperty);
-                Integer columnCount = propertyColumnsCounts.iterator().next();
+                Integer propertyColumnsCounts = lastElementIdCountMap.get(idProperty).iterator().next();
+//                Integer columnCount = propertyColumnsCounts.iterator().next();
+                Integer columnCount = propertyColumnsCounts;
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
                     //Need to be removed so as not to load it again
@@ -171,8 +163,8 @@ public class SqlgUtil {
 
     private static <E> Optional<E> loadElement(
             SqlgGraph sqlgGraph,
-            List<Integer> lastElementIdColumnCount,
             Multimap<String, Integer> columnMap,
+            Map<String, Integer> columnNameCountMap,
             ResultSet resultSet,
             SchemaTableTree leafSchemaTableTree) throws SQLException {
 
@@ -192,7 +184,7 @@ public class SqlgUtil {
                 String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
                 sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
             }
-            sqlgElement.loadResultSet(resultSet, leafSchemaTableTree);
+            sqlgElement.loadResultSet(resultSet, columnNameCountMap, leafSchemaTableTree);
             return Optional.of((E) sqlgElement);
         } else {
             return Optional.empty();

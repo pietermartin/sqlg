@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.rollback.TestRollback;
+import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,11 @@ import org.umlg.sqlg.test.rollback.TestRollback;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTraversalPerformance.class
+        TestTraversalPerformance.class
+//        TestGremlinCompileWithHas.class
 //        TestGremlinCompileWithAs.class
-        TestRollback.class
+//        TestMultipleLabels.class
+//        TestLoadSchema.class
 })
 public class AnyTest {
 }

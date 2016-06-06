@@ -3,7 +3,6 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,18 +26,6 @@ public class AliasMapHolder {
 
     Map<String, String> getAliasColumnNameMap() {
         return aliasColumnNameMap;
-    }
-
-    public AliasMapHolder copy() {
-        AliasMapHolder copy = new AliasMapHolder();
-        for (String key : this.columnNameAliasMap.keySet()) {
-            Collection<String> values = this.columnNameAliasMap.get(key);
-            for (String value : values) {
-                copy.columnNameAliasMap.put(key, value);
-            }
-        }
-        copy.aliasColumnNameMap.putAll(this.aliasColumnNameMap);
-        return copy;
     }
 
     void clear() {

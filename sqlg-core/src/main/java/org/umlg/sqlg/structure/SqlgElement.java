@@ -664,9 +664,9 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    public abstract void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException;
+    public abstract void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException;
 
-    public abstract void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException;
+    public abstract void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException;
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 

@@ -220,135 +220,135 @@ public class TestLoadSchema extends BaseTest {
 
     }
 
-    @Test
-    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemas() throws Exception {
-        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
-        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
-        realBsc.addEdge("workspaceElement", realBscWE);
-
-        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
-        Vertex planBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
-        planBsc.addEdge("workspaceElement", planBscWE);
-
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
-            Assert.assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
-            Assert.assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
-        }
-    }
-
-    @Test
-    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdges() throws Exception {
-        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
-        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
-        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
-        realBsc.addEdge("workspaceElement", realBscWE);
-        realBsc.addEdge("workspaceElement", planBsc);
-
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Assert.assertEquals(2, vertexTraversal(sqlgGraph.v(realBsc.id())).out("workspaceElement").count().next().intValue());
-            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
-            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(planBsc.id())).in("workspaceElement").count().next().intValue());
-        }
-    }
-
-    @Test
-    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdgesOtherWayAround() throws Exception {
-        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
-        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
-        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
-        Vertex planBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
-        realBscWE.addEdge("workspaceElement", realBsc);
-        planBscWE.addEdge("workspaceElement", planBsc);
-
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).out("workspaceElement").count().next().intValue());
-            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(planBscWE.id())).out("workspaceElement").count().next().intValue());
-        }
-
-    }
-
-    @Test
-    public void testSameEdgeToDifferentVertexLabels() throws Exception {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C.C", "name", "c1");
-        Object a1Id = a1.id();
-        Object b1Id = b1.id();
-        a1.addEdge("ab", b1, "weight", 5);
-        a1.addEdge("ab", c1, "weight", 6);
-        b1.addEdge("ba", a1, "wtf", "wtf1");
-        b1.addEdge("ba", c1, "wtf", "wtf1");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V(a1Id).out().count().next().intValue());
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V(b1Id).out().count().next().intValue());
-    }
-
-    @Test
-    public void testLoadSchemaSameTableDifferentSchema() throws Exception {
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name1", "john");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Person", "name2", "john");
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            v2 = sqlgGraph.v(v2.id());
-            //This fails if the columns are not loaded per schema and table
-            v2.property("name1", "joe");
-            sqlgGraph.tx().commit();
-        }
-    }
-
-    @Test
-    public void testMultipleInEdges() throws Exception {
-
-        Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
-        Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
-        Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
-        report1.addEdge("label", favouriteReport);
-        report1.addEdge("label", policyReport);
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Assert.assertTrue(sqlgGraph.traversal().V().hasLabel("Report").hasNext());
-            report1 = sqlgGraph.traversal().V().hasLabel("Report").next();
-            Assert.assertEquals(2, sqlgGraph.traversal().V(report1).out("label").count().next(), 0);
-        }
-    }
-
-    @Test
-    public void testMultipleOutEdges() throws Exception {
-
-        Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
-        Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
-        Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
-        favouriteReport.addEdge("label", report1);
-        policyReport.addEdge("label", report1);
-        this.sqlgGraph.tx().commit();
-        this.sqlgGraph.close();
-        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Assert.assertTrue(sqlgGraph.traversal().V().hasLabel("Report").hasNext());
-            report1 = sqlgGraph.traversal().V().hasLabel("Report").next();
-            Assert.assertEquals(2, sqlgGraph.traversal().V(report1).in("label").count().next(), 0);
-        }
-    }
-
-    @Test
-    public void testMoreMultipleInEdges() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
-        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D");
-        a1.addEdge("hi", b1);
-        a1.addEdge("hi", c1);
-        a1.addEdge("hi", d1);
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3, this.sqlgGraph.traversal().V(a1).out().count().next(), 0);
-    }
+//    @Test
+//    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemas() throws Exception {
+//        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
+//        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+//        realBsc.addEdge("workspaceElement", realBscWE);
+//
+//        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
+//        Vertex planBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+//        planBsc.addEdge("workspaceElement", planBscWE);
+//
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+//            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
+//            Assert.assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
+//            Assert.assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
+//        }
+//    }
+//
+//    @Test
+//    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdges() throws Exception {
+//        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
+//        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+//        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
+//        realBsc.addEdge("workspaceElement", realBscWE);
+//        realBsc.addEdge("workspaceElement", planBsc);
+//
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+//            Assert.assertEquals(2, vertexTraversal(sqlgGraph.v(realBsc.id())).out("workspaceElement").count().next().intValue());
+//            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
+//            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(planBsc.id())).in("workspaceElement").count().next().intValue());
+//        }
+//    }
+//
+//    @Test
+//    public void testLoadSchemaWithSimilarForeignKeysAcrossSchemasMultipleEdgesOtherWayAround() throws Exception {
+//        Vertex realBsc = this.sqlgGraph.addVertex(T.label, "real.bsc");
+//        Vertex realBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+//        Vertex planBsc = this.sqlgGraph.addVertex(T.label, "plan.bsc");
+//        Vertex planBscWE = this.sqlgGraph.addVertex(T.label, "workspaceElement");
+//        realBscWE.addEdge("workspaceElement", realBsc);
+//        planBscWE.addEdge("workspaceElement", planBsc);
+//
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+//            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).out("workspaceElement").count().next().intValue());
+//            Assert.assertEquals(1, vertexTraversal(sqlgGraph.v(planBscWE.id())).out("workspaceElement").count().next().intValue());
+//        }
+//
+//    }
+//
+//    @Test
+//    public void testSameEdgeToDifferentVertexLabels() throws Exception {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B", "name", "b1");
+//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C.C", "name", "c1");
+//        Object a1Id = a1.id();
+//        Object b1Id = b1.id();
+//        a1.addEdge("ab", b1, "weight", 5);
+//        a1.addEdge("ab", c1, "weight", 6);
+//        b1.addEdge("ba", a1, "wtf", "wtf1");
+//        b1.addEdge("ba", c1, "wtf", "wtf1");
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(2, this.sqlgGraph.traversal().V(a1Id).out().count().next().intValue());
+//        Assert.assertEquals(2, this.sqlgGraph.traversal().V(b1Id).out().count().next().intValue());
+//    }
+//
+//    @Test
+//    public void testLoadSchemaSameTableDifferentSchema() throws Exception {
+//        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name1", "john");
+//        Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Person", "name2", "john");
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+//            v2 = sqlgGraph.v(v2.id());
+//            //This fails if the columns are not loaded per schema and table
+//            v2.property("name1", "joe");
+//            sqlgGraph.tx().commit();
+//        }
+//    }
+//
+//    @Test
+//    public void testMultipleInEdges() throws Exception {
+//
+//        Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
+//        Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
+//        Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
+//        report1.addEdge("label", favouriteReport);
+//        report1.addEdge("label", policyReport);
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+//            Assert.assertTrue(sqlgGraph.traversal().V().hasLabel("Report").hasNext());
+//            report1 = sqlgGraph.traversal().V().hasLabel("Report").next();
+//            Assert.assertEquals(2, sqlgGraph.traversal().V(report1).out("label").count().next(), 0);
+//        }
+//    }
+//
+//    @Test
+//    public void testMultipleOutEdges() throws Exception {
+//
+//        Vertex report1 = this.sqlgGraph.addVertex(T.label, "Report", "name", "report1");
+//        Vertex favouriteReport = this.sqlgGraph.addVertex(T.label, "FavouriteReport", "name", "favourite");
+//        Vertex policyReport = this.sqlgGraph.addVertex(T.label, "PolicyReport", "name", "policy");
+//        favouriteReport.addEdge("label", report1);
+//        policyReport.addEdge("label", report1);
+//        this.sqlgGraph.tx().commit();
+//        this.sqlgGraph.close();
+//        try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
+//            Assert.assertTrue(sqlgGraph.traversal().V().hasLabel("Report").hasNext());
+//            report1 = sqlgGraph.traversal().V().hasLabel("Report").next();
+//            Assert.assertEquals(2, sqlgGraph.traversal().V(report1).in("label").count().next(), 0);
+//        }
+//    }
+//
+//    @Test
+//    public void testMoreMultipleInEdges() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+//        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+//        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D");
+//        a1.addEdge("hi", b1);
+//        a1.addEdge("hi", c1);
+//        a1.addEdge("hi", d1);
+//        this.sqlgGraph.tx().commit();
+//        Assert.assertEquals(3, this.sqlgGraph.traversal().V(a1).out().count().next(), 0);
+//    }
 
 }

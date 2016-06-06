@@ -3,7 +3,6 @@ package org.umlg.sqlg.structure;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -18,6 +17,8 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
+
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_TABLE;
 
 /**
  * Date: 2014/07/12
@@ -918,20 +919,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        } else {
-//            logger.warn("debugging cm!!!!!, load not called");
         }
     }
 
     @Override
-    public void loadResultSet(ResultSet resultSet, SchemaTableTree schemaTableTree) throws SQLException {
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
-            if (properName == null) {
-                properName = columnName;
-            }
+    public void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException {
+        for (Map.Entry<String, Integer> columnCountEntry : columnNameCountMap.entrySet()) {
+            String properName = columnCountEntry.getKey();
+            Integer columnCount = columnCountEntry.getValue();
             if (!properName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) && !properName.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
                 String name = schemaTableTree.propertyNameFromAlias(properName);
 
@@ -949,10 +944,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     continue;
                 }
 
-                Object o = resultSet.getObject(columnName);
+                Object o = resultSet.getObject(columnCount);
                 if (!name.equals("ID")
                         && !name.equals(SchemaManager.VERTEX_SCHEMA)
-                        && !name.equals(SchemaManager.VERTEX_TABLE)
+                        && !name.equals(VERTEX_TABLE)
                         && !Objects.isNull(o)) {
 
                     loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
@@ -962,30 +957,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Multimap<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
-        Multimap<String, Integer> toRemove = ArrayListMultimap.create();
+    public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
         for (String columnName : columnMap.keySet()) {
-            Collection<Integer> columnCounts = columnMap.get(columnName);
-            Integer columnCount = columnCounts.iterator().next();
+            Integer columnCount = columnMap.get(columnName);
             if (schemaTableTree.containsLabelledColumn(columnName)) {
                 Object o = resultSet.getObject(columnCount);
                 String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-                if (!name.endsWith("ID")
-                        && !name.equals(SchemaManager.VERTEX_SCHEMA)
-                        && !name.equals(SchemaManager.VERTEX_TABLE)
-                        && !Objects.isNull(o)) {
-
-                    toRemove.put(columnName, columnCount);
+                if (!Objects.isNull(o)) {
                     loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
                 }
-            }
-        }
-        for (String columnName : toRemove.keySet()) {
-            Collection<Integer> columnCountsToRemove = toRemove.get(columnName);
-            Collection<Integer> columnCounts = columnMap.get(columnName);
-            //noinspection Convert2streamapi
-            for (Integer columnCountToRemove : columnCountsToRemove) {
-                columnCounts.remove(columnCountToRemove);
             }
         }
     }
@@ -999,7 +979,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             Object o = resultSet.getObject(columnName);
             if (!columnName.equals("ID")
                     && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
-                    && !columnName.equals(SchemaManager.VERTEX_TABLE)
+                    && !columnName.equals(VERTEX_TABLE)
                     && !this.sqlgGraph.getSqlDialect().columnsToIgnore().contains(columnName)
                     && !Objects.isNull(o)) {
 
