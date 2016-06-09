@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
@@ -12,6 +13,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
@@ -31,6 +34,44 @@ public class TestStreamVertex extends BaseTest {
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testAccessPropertyFromEdgeWhileStreaming() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a2");
+        Edge e1 = v1.addEdge("friend", v2);
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
+        for (int i = 0; i < 100; i++) {
+            properties.put("name", "aa" + i);
+            this.sqlgGraph.streamVertex("Person", properties);
+            properties.clear();
+        }
+        RecordId recordId = (RecordId) e1.id();
+        Assert.assertEquals("a1", SqlgEdge.of(this.sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable()).value("name"));
+        this.sqlgGraph.tx().commit();
+    }
+
+     @Test(expected = IllegalStateException.class)
+    public void testAccessPropertyFromVertexWhileStreaming() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a2");
+        v1.addEdge("friend", v2);
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        LinkedHashMap<String, Object> properties = new LinkedHashMap<>();
+        for (int i = 0; i < 100; i++) {
+            properties.put("name", "aa" + i);
+            this.sqlgGraph.streamVertex("Person", properties);
+            properties.clear();
+        }
+        RecordId recordId = (RecordId) v1.id();
+        Assert.assertEquals("a1", SqlgVertex.of(this.sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable()).value("name"));
+        this.sqlgGraph.tx().commit();
     }
 
     @Test(expected = IllegalStateException.class)

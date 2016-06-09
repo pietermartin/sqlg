@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -107,6 +108,20 @@ public class TestSchema extends BaseTest {
 
         edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
         Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+    }
+
+    @Test
+    public void testSchemaPropertyEndingIn_ID() {
+        this.sqlgGraph.addVertex(T.label, "A", "TRX Group ID", 1234);
+        this.sqlgGraph.addVertex(T.label, "A", "TRX Group ID", 1234);
+        this.sqlgGraph.addVertex(T.label, "A", "TRX Group ID", 1234);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices =  this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
+        Assert.assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
+        Assert.assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
     }
 
 }
