@@ -45,6 +45,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlgGraph, id, schema, table);
     }
 
+    public static SqlgEdge of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
+        return new SqlgEdge(sqlgGraph, id, schema, table);
+    }
+
     @Override
     public <V> Property<V> property(String key, V value) {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id());
@@ -197,6 +201,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
     protected void load() {
         //recordId can be null when in batchMode
         if (recordId != null && this.properties.isEmpty()) {
+
+            if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+                throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+            }
+
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");

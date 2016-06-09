@@ -894,6 +894,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 (this.properties.isEmpty() && this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() &&
                         !this.sqlgGraph.tx().getBatchManager().vertexIsCached(this))) {
 
+            if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+                throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+            }
+
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
