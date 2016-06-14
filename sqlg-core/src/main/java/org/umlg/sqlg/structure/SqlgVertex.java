@@ -960,6 +960,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
+    //TODO
+    //only have relevant columns in the map. No need for the if schemaTableTree.containsLabelledColumn() statement
+    //need the PropertyType per column
+    //need the propertyNameFromLabeledAlias per column
     @Override
     public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
         for (String columnName : columnMap.keySet()) {

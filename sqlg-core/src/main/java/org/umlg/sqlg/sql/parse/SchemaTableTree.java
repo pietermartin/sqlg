@@ -281,9 +281,6 @@ public class SchemaTableTree {
 
 
     public boolean containsLabelledColumn(String columnName) {
-        if (getLabels().contains(columnName)) {
-            System.out.println("halo");
-        }
         if (columnName.startsWith(this.reducedLabels() + ALIAS_SEPARATOR)) {
             String column = columnName.substring(this.reducedLabels().length() + ALIAS_SEPARATOR.length());
             Iterator<String> split = Splitter.on(ALIAS_SEPARATOR).split(column).iterator();
@@ -1518,12 +1515,6 @@ public class SchemaTableTree {
         return strings.get(strings.size() - 1);
     }
 
-    public String mappedAliasIdFor(int subQueryDepth, AliasMapHolder copyAliasMapHolder) {
-        String result = getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
-        List<String> aliases = (List<String>) copyAliasMapHolder.getColumnNameAliasMap().get(result);
-        return aliases.remove(0);
-    }
-
     public String propertyNameFromAlias(String alias) {
         //this code is optimized for speed, used to use String.replace but its slow
         int lastIndexOfAlisSeparator = alias.lastIndexOf(ALIAS_SEPARATOR);
@@ -1538,7 +1529,6 @@ public class SchemaTableTree {
         String reducedLabels = reducedLabels();
         return reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
     }
-
 
     private String rootAliasAndIncrement() {
         return "alias" + rootSchemaTableTree().rootAliasCounter++;

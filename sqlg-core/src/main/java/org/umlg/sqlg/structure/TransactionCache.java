@@ -15,7 +15,7 @@ public class TransactionCache {
     private Connection connection;
     private Map<ElementPropertyRollback, Object> elementPropertyRollbackFunctions = new WeakHashMap<>();
     private BatchManager batchManager;
-    private Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
+//    private Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
     //true if a schema modification statement has been executed.
     //it is important to know this as schema modification creates exclusive locks.
     //In particular it locks querying the schema itself.
@@ -48,7 +48,7 @@ public class TransactionCache {
     void clear() {
         this.elementPropertyRollbackFunctions.clear();
         this.batchManager.clear();
-        this.vertexCache.clear();
+//        this.vertexCache.clear();
         try {
             this.connection.close();
         } catch (SQLException e) {
@@ -65,11 +65,12 @@ public class TransactionCache {
      * @return
      */
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
-        SqlgVertex sqlgVertex = this.vertexCache.get(recordId);
+//        SqlgVertex sqlgVertex = this.vertexCache.get(recordId);
+        SqlgVertex sqlgVertex = null;
         if (sqlgVertex == null) {
             SchemaTable schemaTable = recordId.getSchemaTable();
             sqlgVertex = new SqlgVertex(sqlgGraph, recordId.getId(), schemaTable.getSchema(), schemaTable.getTable());
-            this.vertexCache.put(recordId, sqlgVertex);
+//            this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {
             return sqlgVertex;
@@ -78,12 +79,13 @@ public class TransactionCache {
 
     SqlgVertex putVertexIfAbsent(SqlgVertex sqlgVertex) {
         RecordId vertexRecordId = (RecordId)sqlgVertex.id();
-        SqlgVertex sqlgVertexFromCache = this.vertexCache.get(vertexRecordId);
+//        SqlgVertex sqlgVertexFromCache = this.vertexCache.get(vertexRecordId);
+        SqlgVertex sqlgVertexFromCache = null;
         if (sqlgVertexFromCache == null) {
             //copy the RecordId so that the WeakHashMap value does not reference the key
             SchemaTable schemaTable = vertexRecordId.getSchemaTable();
             RecordId recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getId());
-            this.vertexCache.put(recordId, sqlgVertex);
+//            this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {
             return sqlgVertexFromCache;
@@ -92,13 +94,13 @@ public class TransactionCache {
 
     void add(SqlgVertex sqlgVertex) {
         RecordId vertexRecordId = (RecordId) sqlgVertex.id();
-        if (this.vertexCache.containsKey(vertexRecordId)) {
-            throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
-        } else {
+//        if (this.vertexCache.containsKey(vertexRecordId)) {
+//            throw new IllegalStateException("The vertex cache should never already contain a new vertex!");
+//        } else {
             SchemaTable schemaTable = vertexRecordId.getSchemaTable();
             RecordId recordId = RecordId.from(SchemaTable.of(schemaTable.getSchema(), schemaTable.getTable()), vertexRecordId.getId());
-            this.vertexCache.put(recordId, sqlgVertex);
-        }
+//            this.vertexCache.put(recordId, sqlgVertex);
+//        }
     }
 
 }

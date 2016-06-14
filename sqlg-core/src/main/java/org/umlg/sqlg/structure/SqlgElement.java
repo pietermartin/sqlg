@@ -55,9 +55,9 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-        }
+//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        }
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -69,9 +69,9 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
-        }
+//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
+//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        }
     }
 
     @Override

@@ -55,31 +55,18 @@ public class SqlgUtil {
         List<Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>>> result = new ArrayList<>();
         if (resultSet.next()) {
             if (first) {
-                lastElementIdCountMap.clear();
-                columnNameCountMap.clear();
-                labeledColumnNameCountMap.clear();
-                //First load all labeled entries from the resultSet
-                //Translate the columns back from alias to meaningful column headings
-                for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
-                    String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-                    String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
-                    String mapKey = unAliased != null ? unAliased : columnLabel;
-
-//                    if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) || mapKey.startsWith(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || mapKey.startsWith(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                    if (!mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) &&
-                            (mapKey.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || mapKey.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX))) {
-
-                        labeledColumnNameCountMap.put(mapKey, columnCount);
-                    }
-                    if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
-                        lastElementIdCountMap.put(mapKey, columnCount);
-                    }
-                    columnNameCountMap.put(mapKey, columnCount);
-                }
+                populateMetaDataMaps(resultSetMetaData, rootSchemaTableTree, columnNameCountMap, labeledColumnNameCountMap, lastElementIdCountMap);
             }
             int subQueryDepth = 0;
             Multimap<String, Emit<SqlgElement>> previousLabeledElements = null;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
+
+                //TODO
+                //create a list containing a dto with everything needed to load the labeled elements.
+                //the list follows the subQueryStack
+                //required:
+                //    filter out subQueryStack schemaTableTrees with no labels,
+                //    idProperty
                 Multimap<String, Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
                         sqlgGraph, resultSet, subQueryStack, labeledColumnNameCountMap, lastElementIdCountMap
                 );
@@ -110,6 +97,29 @@ public class SqlgUtil {
         return result;
     }
 
+    private static void populateMetaDataMaps(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> columnNameCountMap, Map<String, Integer> labeledColumnNameCountMap, Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
+        lastElementIdCountMap.clear();
+        columnNameCountMap.clear();
+        labeledColumnNameCountMap.clear();
+        //First load all labeled entries from the resultSet
+        //Translate the columns back from alias to meaningful column headings
+        for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
+            String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
+            String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+            String mapKey = unAliased != null ? unAliased : columnLabel;
+
+            if (!mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) &&
+                    (mapKey.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || mapKey.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX))) {
+
+                labeledColumnNameCountMap.put(mapKey, columnCount);
+            }
+            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
+                lastElementIdCountMap.put(mapKey, columnCount);
+            }
+            columnNameCountMap.put(mapKey, columnCount);
+        }
+    }
+
     /**
      * Loads all labeled or emitted elements.
      * For emitted elements the edge id to the element is also returned as that is needed in the traverser to calculate whether the element should be emitted or not.
@@ -122,7 +132,8 @@ public class SqlgUtil {
      * @throws SQLException
      */
     private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
-            SqlgGraph sqlgGraph, final ResultSet resultSet,
+            SqlgGraph sqlgGraph,
+            final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
             Map<String, Integer> columnNameCountMap,
             Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
@@ -131,30 +142,29 @@ public class SqlgUtil {
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
-                Integer propertyColumnsCounts = lastElementIdCountMap.get(idProperty).iterator().next();
-//                Integer columnCount = propertyColumnsCounts.iterator().next();
-                Integer columnCount = propertyColumnsCounts;
+                Integer columnCount = lastElementIdCountMap.get(idProperty).iterator().next();
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
                     //Need to be removed so as not to load it again
 //                    propertyColumnsCounts.remove(columnCount);
                     SqlgElement sqlgElement;
-                    String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
                     if (schemaTableTree.getSchemaTable().isVertexTable()) {
+                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
                         sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     } else {
+                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.EDGE_PREFIX.length());
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     sqlgElement.loadLabeledResultSet(resultSet, columnNameCountMap, schemaTableTree);
-                    schemaTableTree.getLabels().forEach(
-                            label -> result.put(
-                                    label,
-                                    new Emit<>(
-                                            (E) sqlgElement,
-                                            schemaTableTree.isOptionalLeftJoin()
-                                    )
-                            )
-                    );
+                    for (String label : schemaTableTree.getLabels()) {
+                        result.put(
+                                label,
+                                new Emit<>(
+                                        (E) sqlgElement,
+                                        schemaTableTree.isOptionalLeftJoin()
+                                )
+                        );
+                    }
                 }
             }
         }

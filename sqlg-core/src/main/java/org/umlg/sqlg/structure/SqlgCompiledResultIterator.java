@@ -45,8 +45,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>> element;
 
     private boolean first = true;
-//    private Multimap<String, Integer> columnNameCountMap = ArrayListMultimap.create();
-//    private Multimap<String, Integer> lastElementIdCountMap = ArrayListMultimap.create();
     private Map<String, Integer> columnNameCountMap = new HashMap<>();
     private Map<String, Integer> labeledColumnNameCountMap = new HashMap<>();
     private Multimap<String, Integer> lastElementIdCountMap = ArrayListMultimap.create();
@@ -80,8 +78,8 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                             return true;
                         } else {
                             if (this.queryResult != null) {
-                                iterateRegularQueries(first, columnNameCountMap, labeledColumnNameCountMap, lastElementIdCountMap);
-                                first = false;
+                                iterateRegularQueries();
+                                this.first = false;
                             }
                             if (this.elements.isEmpty()) {
                                 closePreparedStatement();
@@ -91,7 +89,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.currentDistinctQueryStack);
                                     this.currentRootSchemaTableTree.resetThreadVars();
                                     executeRegularQuery();
-                                    first = true;
+                                    this.first = true;
                                 } else {
                                     //try the next rootSchemaTableTree
                                     if (this.rootSchemaTableTreeIterator.hasNext()) {
@@ -115,8 +113,8 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                             return true;
                         } else {
                             if (this.queryResult != null) {
-                                iterateOptionalQueries(first, columnNameCountMap, labeledColumnNameCountMap, lastElementIdCountMap);
-                                first = false;
+                                iterateOptionalQueries();
+                                this.first = false;
                             }
                             if (this.elements.isEmpty()) {
                                 closePreparedStatement();
@@ -126,7 +124,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.optionalCurrentLeftJoinResult.getLeft());
                                     this.currentRootSchemaTableTree.resetThreadVars();
                                     executeOptionalQuery();
-                                    first = true;
+                                    this.first = true;
                                 } else {
                                     //try the next rootSchemaTableTree
                                     if (this.rootSchemaTableTreeIterator.hasNext()) {
@@ -152,8 +150,8 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                             return true;
                         } else {
                             if (this.queryResult != null) {
-                                iterateEmitQueries(first, columnNameCountMap, labeledColumnNameCountMap, lastElementIdCountMap);
-                                first = false;
+                                iterateEmitQueries();
+                                this.first = false;
                             }
                             if (this.elements.isEmpty()) {
                                 closePreparedStatement();
@@ -163,7 +161,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.emitCurrentLeftJoinResult);
                                     this.currentRootSchemaTableTree.resetThreadVars();
                                     executeEmitQuery();
-                                    first = true;
+                                    this.first = true;
                                 } else {
                                     //try the next rootSchemaTableTree
                                     if (this.rootSchemaTableTreeIterator.hasNext()) {
@@ -205,54 +203,54 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     }
 
     private void executeRegularQuery() {
-        this.queryResult = SqlgSqlExecutor.executeRegularQuery(sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.currentDistinctQueryStack);
+        this.queryResult = SqlgSqlExecutor.executeRegularQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.currentDistinctQueryStack);
     }
 
     private void executeOptionalQuery() {
-        this.queryResult = SqlgSqlExecutor.executeOptionalQuery(sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.optionalCurrentLeftJoinResult);
+        this.queryResult = SqlgSqlExecutor.executeOptionalQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.optionalCurrentLeftJoinResult);
     }
 
     private void executeEmitQuery() {
-        this.queryResult = SqlgSqlExecutor.executeEmitQuery(sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.emitCurrentLeftJoinResult);
+        this.queryResult = SqlgSqlExecutor.executeEmitQuery(this.sqlgGraph, this.currentRootSchemaTableTree, this.recordId, this.emitCurrentLeftJoinResult);
     }
 
-    private void iterateRegularQueries(boolean first, Map<String, Integer> columnNameCountMap, Map<String, Integer> labeledColumnNameCountMap, Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
+    private void iterateRegularQueries() throws SQLException {
         this.elements = SqlgUtil.loadResultSetIntoResultIterator(
                 this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
-                first,
-                columnNameCountMap,
-                labeledColumnNameCountMap,
-                lastElementIdCountMap);
+                this.first,
+                this.columnNameCountMap,
+                this.labeledColumnNameCountMap,
+                this.lastElementIdCountMap);
     }
 
-    private void iterateOptionalQueries(boolean first, Map<String, Integer> columnNameCountMap, Map<String, Integer> labeledColumnNameCountMap, Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
+    private void iterateOptionalQueries() throws SQLException {
         this.elements = SqlgUtil.loadResultSetIntoResultIterator(
-                sqlgGraph,
+                this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
-                first,
-                columnNameCountMap,
-                labeledColumnNameCountMap,
-                lastElementIdCountMap);
+                this.first,
+                this.columnNameCountMap,
+                this.labeledColumnNameCountMap,
+                this.lastElementIdCountMap);
     }
 
-    private void iterateEmitQueries(boolean first, Map<String, Integer> columnNameCountMap, Map<String, Integer> labeledColumnNameCountMap, Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
+    private void iterateEmitQueries() throws SQLException {
         this.elements = SqlgUtil.loadResultSetIntoResultIterator(
-                sqlgGraph,
+                this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
-                first,
-                columnNameCountMap,
-                labeledColumnNameCountMap,
-                lastElementIdCountMap);
+                this.first,
+                this.columnNameCountMap,
+                this.labeledColumnNameCountMap,
+                this.lastElementIdCountMap);
     }
 
 }
