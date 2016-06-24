@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -2134,11 +2133,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
         sql.append(" _in join ");
-        sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+        sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in::text = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + "::text join ");
         sql.append(this.maybeWrapInQoutes(out.getSchema()));
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
-        sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
+        sql.append(" _out on ab.out::text = _out." + this.maybeWrapInQoutes(idFields.getRight()) + "::text");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
