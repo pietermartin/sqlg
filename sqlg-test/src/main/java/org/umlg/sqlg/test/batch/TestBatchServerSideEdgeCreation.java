@@ -3,9 +3,9 @@ package org.umlg.sqlg.test.batch;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestBatchServerSideEdgeCreation extends BaseTest {
 
@@ -41,9 +44,9 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.bulkAddEdges("A", "B", "AB", Pair.of("index", "index"), uids);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
+        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A").count().next(), 0);
+        assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("B").count().next(), 0);
+        assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("A").out().count().next(), 0);
     }
 
     @Test
@@ -63,9 +66,9 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.bulkAddEdges("A.A", "B.B", "AB", Pair.of("index", "index"), uids);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A.A").count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("B.B").count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("A.A").out().count().next(), 0);
+        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A.A").count().next(), 0);
+        assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("B.B").count().next(), 0);
+        assertEquals(100, this.sqlgGraph.traversal().V().hasLabel("A.A").out().count().next(), 0);
     }
 
     @Test
@@ -105,15 +108,15 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         System.out.println(stopWatch.toString());
 
         GraphTraversal<Vertex, Vertex> has = this.sqlgGraph.traversal().V().hasLabel("Person").has("id", uuid1Cache);
-        Assert.assertTrue(has.hasNext());
+        assertTrue(has.hasNext());
         Vertex person50 = has.next();
 
         GraphTraversal<Vertex, Vertex> has1 = this.sqlgGraph.traversal().V().hasLabel("Person").has("id", uuid2Cache);
-        Assert.assertTrue(has1.hasNext());
+        assertTrue(has1.hasNext());
         Vertex person250 = has1.next();
-        Assert.assertTrue(this.sqlgGraph.traversal().V(person50.id()).out().hasNext());
+        assertTrue(this.sqlgGraph.traversal().V(person50.id()).out().hasNext());
         Vertex person250Please = this.sqlgGraph.traversal().V(person50.id()).out().next();
-        Assert.assertEquals(person250, person250Please);
+        assertEquals(person250, person250Please);
     }
 
     @Test
@@ -153,6 +156,29 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.bulkAddEdges("Person", "Person", "friend", Pair.of("id", "id"), uids);
         this.sqlgGraph.tx().commit();
 
+    }
+
+    @Test
+    public void testBulkAddEdgesStringAndIntegerIds() {
+        Vertex realWorkspaceElement1 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "a");
+        Vertex realWorkspaceElement2 = this.sqlgGraph.addVertex(T.label, "RealWorkspaceElement", "cmUid", "b");
+        Vertex virtualGroup = this.sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "asd");
+        this.sqlgGraph.tx().commit();
+        Edge e =realWorkspaceElement1.addEdge("realWorkspaceElement_virtualGroup", virtualGroup);
+        this.sqlgGraph.tx().commit();
+        e.remove();
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        List<Pair<String, String>> ids = new ArrayList<>();
+        ids.add(Pair.of("a", "1"));
+        ids.add(Pair.of("b", "1"));
+        this.sqlgGraph.bulkAddEdges("RealWorkspaceElement", "VirtualGroup", "realWorkspaceElement_virtualGroup", Pair.of("cmUid", "ID"), ids);
+        this.sqlgGraph.tx().commit();
+
+        assertTrue(this.sqlgGraph.traversal().V(realWorkspaceElement1.id()).out("realWorkspaceElement_virtualGroup").hasNext());
+        assertTrue(this.sqlgGraph.traversal().V(realWorkspaceElement2.id()).out("realWorkspaceElement_virtualGroup").hasNext());
+        assertTrue(this.sqlgGraph.traversal().V(virtualGroup.id()).in("realWorkspaceElement_virtualGroup").hasNext());
     }
 
 }
