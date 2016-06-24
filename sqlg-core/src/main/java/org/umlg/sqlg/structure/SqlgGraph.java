@@ -1055,7 +1055,8 @@ public class SqlgGraph implements Graph {
 
     //indexing
     public void createUniqueConstraint(String label, String propertyKey) {
-        this.tx().readWrite();
+        throw new IllegalStateException("Not yet implemented!");
+//        this.tx().readWrite();
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
