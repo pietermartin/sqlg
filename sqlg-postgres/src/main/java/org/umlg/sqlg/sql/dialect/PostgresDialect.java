@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -42,7 +41,7 @@ import java.sql.Date;
 import java.time.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.PropertyType.JSON_ARRAY;
+import static org.umlg.sqlg.structure.PropertyType.*;
 
 /**
  * Date: 2014/07/16
@@ -335,6 +334,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     public <T extends SqlgElement> void flushElementPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<T, Map<String, Object>>>> schemaVertexPropertyCache) {
 
         Connection conn = sqlgGraph.tx().getConnection();
+        Map<String, Map<String, PropertyType>> allTables = sqlgGraph.getSchemaManager().getAllTables();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
             Pair<SortedSet<String>, Map<T, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
@@ -348,8 +348,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sql.append(maybeWrapInQoutes((forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()));
             sql.append(" a \nSET\n\t(");
             int count = 1;
+            //this map is for optimizations reason to not look up the property via all tables within the loop
+            Map<String, PropertyType> keyPropertyTypeMap = new HashMap<>();
             for (String key : keys) {
-                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                PropertyType propertyType = allTables.get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                keyPropertyTypeMap.put(key, propertyType);
                 appendKeyForBatchUpdate(propertyType, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
@@ -359,7 +362,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             count = 1;
             for (String key : keys) {
                 sql.append("v.");
-                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                PropertyType propertyType = keyPropertyTypeMap.get(key);
                 appendKeyForBatchUpdate(propertyType, sql, key, true);
                 switch (propertyType) {
                     case boolean_ARRAY:
@@ -429,7 +432,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                             value = "null";
                         }
                     }
-                    PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                    PropertyType propertyType = keyPropertyTypeMap.get(key);
                     switch (propertyType) {
                         case BOOLEAN:
                             sql.append(value);
@@ -702,7 +705,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             sql.append("\n) AS v(id, ");
             count = 1;
             for (String key : keys) {
-                PropertyType propertyType = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + (forVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable()).get(key);
+                PropertyType propertyType = keyPropertyTypeMap.get(key);
                 appendKeyForBatchUpdate(propertyType, sql, key, false);
                 if (count++ < keys.size()) {
                     sql.append(", ");
@@ -1612,13 +1615,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 //means all the gis data types which are also OTHER are not supported
                 return PropertyType.JSON;
             case Types.BINARY:
-                return PropertyType.byte_ARRAY;
+                return byte_ARRAY;
             case Types.ARRAY:
                 switch (typeName) {
                     case "_bool":
-                        return PropertyType.boolean_ARRAY;
+                        return boolean_ARRAY;
                     case "_int2":
-                        return PropertyType.short_ARRAY;
+                        return short_ARRAY;
                     case "_int4":
                         return PropertyType.int_ARRAY;
                     case "_int8":
@@ -2134,11 +2137,11 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
         sql.append(" _in join ");
-        sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+        sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in::text = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + "::text join ");
         sql.append(this.maybeWrapInQoutes(out.getSchema()));
         sql.append(".");
         sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
-        sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
+        sql.append(" _out on ab.out::text = _out." + this.maybeWrapInQoutes(idFields.getRight()) + "::text");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }

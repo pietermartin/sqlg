@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -252,6 +253,26 @@ public class TestStreamVertex extends BaseTest {
         this.sqlgGraph.streamVertex("R_HG.Person", keyValue);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0L);
+    }
+
+    @Test
+    public void testUsingConnectionDuringResultSetIter() {
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 1; i < 1000001; i++) {
+            LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
+            for (int j = 0; j < 2; j++) {
+                keyValue.put("name" + j, "a" + i);
+            }
+            this.sqlgGraph.streamVertex("Person", keyValue);
+            if (i % 250000 == 0) {
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().streamingBatchModeOn();
+                System.out.println(i);
+            }
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().has(T.label, "Person");
+
     }
 
     @Test
