@@ -17,7 +17,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestTraversalPerformance extends BaseTest {
 
-    @Test
+//    @Test
     public void test() {
         for (int i = 0; i < 10000; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "A");
@@ -33,7 +33,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println(stopWatch.toString());
     }
 
-//    @Test
+    @Test
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -59,9 +59,9 @@ public class TestTraversalPerformance extends BaseTest {
         List<Path> paths = vertexTraversal(a).as("a").out().as("b").out().as("c").path().toList();
         int count = 0;
         for (Path path : paths) {
-            String s = path.<Vertex>get(0).value("name") + ": " + path.<Vertex>get(1).value("name") + ": " + path.<Vertex>get(2).value("name");
+//            String s = path.<Vertex>get(0).value("name") + ": " + path.<Vertex>get(1).value("name") + ": " + path.<Vertex>get(2).value("name");
             if (count % 100_000 == 0) {
-                System.out.println(s);
+                System.out.println("this is not it");
             }
             count++;
         }
@@ -69,4 +69,5 @@ public class TestTraversalPerformance extends BaseTest {
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
+
 }
