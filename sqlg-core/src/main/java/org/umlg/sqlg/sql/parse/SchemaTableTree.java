@@ -21,6 +21,8 @@ import org.umlg.sqlg.util.SqlgUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.security.SecureRandom;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -76,6 +78,7 @@ public class SchemaTableTree {
     private Map<String, Map<String, PropertyType>> filteredAllTables;
 
     private int replacedStepDepth;
+    private Map<String,String> columnNamePropertyName;
 
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
@@ -90,6 +93,10 @@ public class SchemaTableTree {
             return new HashMap<>();
         }
     };
+
+
+    //data needed for the loadFromLabeled
+//    void loadProperty(ResultSet resultSet, String columnName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap) throws SQLException {
 
 
     enum STEP_TYPE {
@@ -223,6 +230,26 @@ public class SchemaTableTree {
 
     public Map<String, String> getThreadLocalAliasColumnNameMap() {
         return this.getRoot().aliasMapHolder.getAliasColumnNameMap();
+    }
+
+    public Map<String, String> getColumnNamePropertyName() {
+        if (this.columnNamePropertyName == null) {
+            this.columnNamePropertyName = new HashMap<>();
+            for (Map.Entry<String, String> entry : getRoot().aliasMapHolder.getAliasColumnNameMap().entrySet()) {
+                String alias = entry.getKey();
+                String columnName = entry.getValue();
+                //only load the labelled columns
+                if (!columnName.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) &&
+                        (columnName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || columnName.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX))) {
+
+                    if (containsLabelledColumn(columnName)) {
+                        String propertyName = propertyNameFromLabeledAlias(columnName);
+                        this.columnNamePropertyName.put(alias, propertyName);
+                    }
+                }
+            }
+        }
+        return this.columnNamePropertyName;
     }
 
     public boolean hasParent() {
@@ -2011,6 +2038,31 @@ public class SchemaTableTree {
 
     int getTmpTableAliasCounter() {
         return tmpTableAliasCounter;
+    }
+
+    public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement) throws SQLException {
+        for (Map.Entry<String, String> entry : getColumnNamePropertyName().entrySet()) {
+            String columnName = entry.getKey();
+            String propertyName = entry.getValue();
+            Object o = resultSet.getObject(columnName);
+            if (!Objects.isNull(o)) {
+                if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                    ((SqlgEdge)sqlgElement).loadInVertex(resultSet, propertyName, columnName);
+                } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                    ((SqlgEdge)sqlgElement).loadOutVertex(resultSet, propertyName, columnName);
+                } else {
+                    sqlgElement.loadProperty(resultSet, propertyName, o, getThreadLocalColumnNameAliasMap());
+                }
+
+            }
+        }
+    }
+
+    public void clearColumnNamePropertNameMap() {
+        if (this.columnNamePropertyName != null) {
+            this.columnNamePropertyName.clear();
+            this.columnNamePropertyName = null;
+        }
     }
 
 }

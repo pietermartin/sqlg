@@ -41,6 +41,5 @@ public class TestGithub extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals("a1", a1.property("name").value());
         assertEquals("a1", a1.property("nameAgain").value());
-
     }
 }

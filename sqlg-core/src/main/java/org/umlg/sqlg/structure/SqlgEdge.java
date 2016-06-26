@@ -319,6 +319,18 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
+    public void loadInVertex(ResultSet resultSet, String label, String columnName) throws SQLException {
+        SchemaTable inVertexColumnName = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        Long inId = resultSet.getLong(columnName);
+        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+    }
+
+    public void loadOutVertex(ResultSet resultSet, String label, String columnName) throws SQLException {
+        SchemaTable outVertexColumnName = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        Long outId = resultSet.getLong(columnName);
+        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+    }
+
     @Override
     public void loadResultSet(ResultSet resultSet) throws SQLException {
         SchemaTable inVertexColumnName = null;

@@ -966,6 +966,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     //need the propertyNameFromLabeledAlias per column
     @Override
     public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
+
+//        schemaTableTree.loadProperty(resultSet, this);
+
         for (String columnName : columnMap.keySet()) {
             Integer columnCount = columnMap.get(columnName);
             if (schemaTableTree.containsLabelledColumn(columnName)) {
