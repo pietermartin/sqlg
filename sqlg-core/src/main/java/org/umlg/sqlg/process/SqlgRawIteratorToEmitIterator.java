@@ -85,30 +85,34 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
     }
 
     private List<Emit<E>> flattenRawIterator() {
-        List<Emit<E>> flattenedEmit = new ArrayList<>();
         if (this.iterator.hasNext()) {
+            List<Emit<E>> flattenedEmit = new ArrayList<>();
             this.currentPath = ImmutablePath.make();
             Pair<E, Multimap<String, Emit<E>>> raw = this.iterator.next();
             E element = raw.getLeft();
             Multimap<String, Emit<E>> labeledElements = raw.getRight();
             if (!labeledElements.isEmpty()) {
-                List<String> sortedKeys = new ArrayList<>(labeledElements.keySet());
-                Collections.sort(sortedKeys);
+                //TODO half optimize, put back in
+//                List<String> sortedKeys = new ArrayList<>(labeledElements.keySet());
+//                Collections.sort(sortedKeys);
+
                 //This is to prevent duplicates in the path. Each labeled object will be present in the sql result set.
                 //If the same object has multiple labels it will be present many times in the sql result set.
                 //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.
-                Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
+//                Map<String, Set<Object>> allLabeledElementMap = new HashMap<>();
+//                Map<String, List<Object>> allLabeledElementMap = new HashMap<>();
                 int countEmits = 0;
-                for (String label : sortedKeys) {
+//                for (String label : sortedKeys) {
+                for (String label : labeledElements.keySet()) {
                     countEmits++;
                     String realLabel;
-                    String pathLabel;
+//                    String pathLabel;
                     if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
                         realLabel = label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
-                        pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
+//                        pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length());
                     } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
                         realLabel = label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
-                        pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
+//                        pathLabel = label.substring(0, label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length());
                     } else {
                         throw new IllegalStateException("label must contain " + BaseSqlgStrategy.PATH_LABEL_SUFFIX + " or " + BaseSqlgStrategy.EMIT_LABEL_SUFFIX);
                     }
@@ -116,36 +120,40 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     Collection<Emit<E>> emits = labeledElements.get(label);
                     for (Emit<E> emit : emits) {
                         E e = emit.getElement();
-                        Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);
-                        if (allLabeledElementsAsSet == null) {
-                            allLabeledElementsAsSet = new HashSet<>();
-                            allLabeledElementMap.put(pathLabel, allLabeledElementsAsSet);
-                        }
-                        if (!allLabeledElementsAsSet.contains(e)) {
+//                        Set<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);
+//                        List<Object> allLabeledElementsAsSet = allLabeledElementMap.get(pathLabel);
+//                        if (allLabeledElementsAsSet == null) {
+////                            allLabeledElementsAsSet = new HashSet<>();
+//                            allLabeledElementsAsSet = new ArrayList<>();
+//                            allLabeledElementMap.put(pathLabel, allLabeledElementsAsSet);
+//                        }
+//                        if (!allLabeledElementsAsSet.contains(e)) {
                             this.currentPath = this.currentPath.extend(e, Collections.singleton(realLabel));
-                            allLabeledElementsAsSet.add(e);
-                            if (countEmits == sortedKeys.size()) {
+//                            allLabeledElementsAsSet.add(e);
+                            if (countEmits == labeledElements.keySet().size()) {
                                 emit.setPath(this.currentPath.clone());
                                 emit.setUseCurrentEmitTree(true);
                                 flattenedEmit.add(emit);
                             }
-                        } else {
-                            //this adds the label to the path
-                            this.currentPath = this.currentPath.extend(Collections.singleton(realLabel));
-                            if (countEmits == sortedKeys.size()) {
-                                emit.setPath(this.currentPath.clone());
-                                emit.setUseCurrentEmitTree(true);
-                                flattenedEmit.add(emit);
-                            }
-                        }
+//                        } else {
+//                            //this adds the label to the path
+//                            this.currentPath = this.currentPath.extend(Collections.singleton(realLabel));
+//                            if (countEmits == sortedKeys.size()) {
+//                                emit.setPath(this.currentPath.clone());
+//                                emit.setUseCurrentEmitTree(true);
+//                                flattenedEmit.add(emit);
+//                            }
+//                        }
                     }
                 }
             } else {
                 Emit<E> emit = new Emit<>(element, false);
                 flattenedEmit.add(emit);
             }
+            return flattenedEmit;
+        } else {
+            return Collections.emptyList();
         }
-        return flattenedEmit;
     }
 
     @Override

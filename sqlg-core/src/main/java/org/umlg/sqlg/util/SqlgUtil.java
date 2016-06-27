@@ -62,12 +62,6 @@ public class SqlgUtil {
             Multimap<String, Emit<SqlgElement>> previousLabeledElements = null;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
 
-                //TODO
-                //create a list containing a dto with everything needed to load the labeled elements.
-                //the list follows the subQueryStack
-                //required:
-                //    filter out subQueryStack schemaTableTrees with no labels,
-                //    idProperty
                 Multimap<String, Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
                         sqlgGraph, resultSet, subQueryStack, lastElementIdCountMap
                 );
@@ -171,7 +165,8 @@ public class SqlgUtil {
             SchemaTableTree leafSchemaTableTree) throws SQLException {
 
         SchemaTable schemaTable = leafSchemaTableTree.getSchemaTable();
-        String idProperty = schemaTable.getSchema() + SchemaTableTree.ALIAS_SEPARATOR + schemaTable.getTable() + SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID;
+//        String idProperty = schemaTable.getSchema() + SchemaTableTree.ALIAS_SEPARATOR + schemaTable.getTable() + SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID;
+        String idProperty = leafSchemaTableTree.idProperty();
         Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
         Integer columnCount = propertyColumnsCounts.iterator().next();
         Long id = resultSet.getLong(columnCount);

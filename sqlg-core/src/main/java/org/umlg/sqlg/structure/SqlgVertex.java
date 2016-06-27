@@ -53,7 +53,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
     public static SqlgVertex of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         if (!sqlgGraph.tx().isInBatchMode()) {
-            return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, RecordId.from(SchemaTable.of(schema, table), id));
+            return sqlgGraph.tx().putVertexIfAbsent(sqlgGraph, schema, table, id);
         } else {
             return new SqlgVertex(sqlgGraph, id, schema, table);
         }

@@ -426,7 +426,7 @@ public abstract class SqlgElement implements Element {
         return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
-    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap) throws SQLException {
+    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap, PropertyType propertyType) throws SQLException {
         if (propertyName.endsWith(SchemaManager.ZONEID) ||
                 propertyName.endsWith(SchemaManager.MONTHS) ||
                 propertyName.endsWith(SchemaManager.DAYS) ||
@@ -434,7 +434,6 @@ public abstract class SqlgElement implements Element {
                 ) {
             return;
         }
-        PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(propertyName);
         switch (propertyType) {
 
             case BOOLEAN:
@@ -662,6 +661,19 @@ public abstract class SqlgElement implements Element {
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
         }
+
+    }
+
+    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap) throws SQLException {
+        if (propertyName.endsWith(SchemaManager.ZONEID) ||
+                propertyName.endsWith(SchemaManager.MONTHS) ||
+                propertyName.endsWith(SchemaManager.DAYS) ||
+                propertyName.endsWith(SchemaManager.DURATION_NANOS)
+                ) {
+            return;
+        }
+        PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(propertyName);
+        loadProperty(resultSet, propertyName, o, threadLocalColumnNameAliasMap, propertyType);
     }
 
     public abstract void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException;

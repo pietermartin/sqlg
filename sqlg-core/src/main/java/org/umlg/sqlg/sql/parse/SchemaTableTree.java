@@ -78,7 +78,11 @@ public class SchemaTableTree {
     private Map<String, Map<String, PropertyType>> filteredAllTables;
 
     private int replacedStepDepth;
-    private Map<String,String> columnNamePropertyName;
+
+    //Cached for query load performance
+    private Map<String, Pair<String, PropertyType>> columnNamePropertyName;
+    private String idProperty;
+    private String labeledAliasId;
 
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
@@ -232,7 +236,7 @@ public class SchemaTableTree {
         return this.getRoot().aliasMapHolder.getAliasColumnNameMap();
     }
 
-    public Map<String, String> getColumnNamePropertyName() {
+    public Map<String, Pair<String, PropertyType>> getColumnNamePropertyName() {
         if (this.columnNamePropertyName == null) {
             this.columnNamePropertyName = new HashMap<>();
             for (Map.Entry<String, String> entry : getRoot().aliasMapHolder.getAliasColumnNameMap().entrySet()) {
@@ -244,7 +248,8 @@ public class SchemaTableTree {
 
                     if (containsLabelledColumn(columnName)) {
                         String propertyName = propertyNameFromLabeledAlias(columnName);
-                        this.columnNamePropertyName.put(alias, propertyName);
+                        PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTable()).get(propertyName);
+                        this.columnNamePropertyName.put(alias, Pair.of(propertyName, propertyType));
                     }
                 }
             }
@@ -1553,8 +1558,11 @@ public class SchemaTableTree {
     }
 
     public String labeledAliasId() {
-        String reducedLabels = reducedLabels();
-        return reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
+        if (this.labeledAliasId == null) {
+            String reducedLabels = reducedLabels();
+            this.labeledAliasId = reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
+        }
+        return this.labeledAliasId;
     }
 
     private String rootAliasAndIncrement() {
@@ -2041,9 +2049,10 @@ public class SchemaTableTree {
     }
 
     public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement) throws SQLException {
-        for (Map.Entry<String, String> entry : getColumnNamePropertyName().entrySet()) {
+        for (Map.Entry<String, Pair<String, PropertyType>> entry : getColumnNamePropertyName().entrySet()) {
             String columnName = entry.getKey();
-            String propertyName = entry.getValue();
+            String propertyName = entry.getValue().getKey();
+            PropertyType propertyType = entry.getValue().getValue();
             Object o = resultSet.getObject(columnName);
             if (!Objects.isNull(o)) {
                 if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
@@ -2051,7 +2060,7 @@ public class SchemaTableTree {
                 } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                     ((SqlgEdge)sqlgElement).loadOutVertex(resultSet, propertyName, columnName);
                 } else {
-                    sqlgElement.loadProperty(resultSet, propertyName, o, getThreadLocalColumnNameAliasMap());
+                    sqlgElement.loadProperty(resultSet, propertyName, o, getThreadLocalColumnNameAliasMap(), propertyType);
                 }
 
             }
@@ -2063,6 +2072,13 @@ public class SchemaTableTree {
             this.columnNamePropertyName.clear();
             this.columnNamePropertyName = null;
         }
+    }
+
+    public String idProperty() {
+        if (this.idProperty == null) {
+            this.idProperty = schemaTable.getSchema() + SchemaTableTree.ALIAS_SEPARATOR + schemaTable.getTable() + SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID;
+        }
+        return this.idProperty;
     }
 
 }

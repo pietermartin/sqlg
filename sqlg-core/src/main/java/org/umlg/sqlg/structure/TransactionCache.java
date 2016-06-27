@@ -61,15 +61,13 @@ public class TransactionCache {
      * It is important that the value of the WeakHashMap does not reference the key.
      *
      * @param sqlgGraph
-     * @param recordId
      * @return
      */
-    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, RecordId recordId) {
+    SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {
 //        SqlgVertex sqlgVertex = this.vertexCache.get(recordId);
         SqlgVertex sqlgVertex = null;
         if (sqlgVertex == null) {
-            SchemaTable schemaTable = recordId.getSchemaTable();
-            sqlgVertex = new SqlgVertex(sqlgGraph, recordId.getId(), schemaTable.getSchema(), schemaTable.getTable());
+            sqlgVertex = new SqlgVertex(sqlgGraph, id, schema, table);
 //            this.vertexCache.put(recordId, sqlgVertex);
             return sqlgVertex;
         } else {

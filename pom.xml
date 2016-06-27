@@ -82,7 +82,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.17</version>
                 <configuration>
-                    <argLine>-Xmx2048m</argLine>
+                    <!--<argLine>-Xmx2048m</argLine>-->
+                    <argLine>-Xmx8048m</argLine>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <includes>
                         <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
