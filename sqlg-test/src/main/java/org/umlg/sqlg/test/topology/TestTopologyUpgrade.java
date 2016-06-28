@@ -123,7 +123,7 @@ public class TestTopologyUpgrade extends BaseTest {
         }
     }
 //
-//    @Test
+    @Test
     public void testUpgradeMultipleInOutEdges2() throws Exception {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "R_EG.B", "name", "b1");
@@ -301,6 +301,7 @@ public class TestTopologyUpgrade extends BaseTest {
             Assert.assertEquals(2, propertyVertices.size());
         }
     }
+
 
     private Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
         return g.V().both().both().count();

@@ -13,10 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.postgis.Geometry;
-import org.postgis.PGgeometry;
-import org.postgis.Point;
-import org.postgis.Polygon;
+import org.postgis.*;
 import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
@@ -57,6 +54,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     private static final int PARAMETER_LIMIT = 32767;
     private static final String COPY_DUMMY = "_copy_dummy";
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    private PropertyType postGisType;
 
     @SuppressWarnings("unused")
     public PostgresDialect(Configuration configurator) {
@@ -70,7 +68,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Set<String> getDefaultSchemas() {
-        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "public", "information_schema"));
+        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "public", "information_schema", "tiger", "tiger_data", "topology"));
     }
 
     @Override
@@ -1525,6 +1523,8 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return new String[]{"JSONB"};
             case POINT:
                 return new String[]{"geometry(POINT)"};
+            case LINESTRING:
+                return new String[]{"geometry(LINESTRING)"};
             case POLYGON:
                 return new String[]{"geometry(POLYGON)"};
             case GEOGRAPHY_POINT:
@@ -1588,7 +1588,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
      * @return
      */
     @Override
-    public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
+    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName) {
         switch (sqlType) {
             case Types.BIT:
                 return PropertyType.BOOLEAN;
@@ -1613,7 +1613,17 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case Types.OTHER:
                 //this is a f up as only JSON can be used for other.
                 //means all the gis data types which are also OTHER are not supported
-                return PropertyType.JSON;
+                switch (typeName) {
+                    case "JSON":
+                        return PropertyType.JSON;
+                    case "geometry":
+                        return getPostGisGeometryType(sqlgGraph, schema, table, column);
+                    case "geography":
+                        return getPostGisGeographyType(sqlgGraph, schema, table, column);
+                    default:
+                        throw new RuntimeException("Other type not supported " + typeName);
+
+                }
             case Types.BINARY:
                 return byte_ARRAY;
             case Types.ARRAY:
@@ -1741,6 +1751,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             return;
         }
         if (value instanceof Point) {
+            return;
+        }
+        if (value instanceof LineString) {
             return;
         }
         if (value instanceof Polygon) {
@@ -1915,6 +1928,16 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
+    public void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString) {
+        Preconditions.checkArgument(lineString instanceof LineString, "lineString must be an instance of " + LineString.class.getName());
+        try {
+            preparedStatement.setObject(parameterStartIndex, new PGgeometry((LineString) lineString));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     public void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object polygon) {
         Preconditions.checkArgument(polygon instanceof Polygon, "polygon must be an instance of " + Polygon.class.getName());
         try {
@@ -1940,6 +1963,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             case POINT:
                 properties.put(columnName, ((PGgeometry) o).getGeometry());
                 break;
+            case LINESTRING:
+                properties.put(columnName, ((PGgeometry) o).getGeometry());
+                break;
             case GEOGRAPHY_POINT:
                 try {
                     Geometry geometry = PGgeometry.geomFromString(((PGobject) o).getValue());
@@ -1955,6 +1981,9 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
+                break;
+            case POLYGON:
+                properties.put(columnName, ((PGgeometry) o).getGeometry());
                 break;
             case JSON:
                 ObjectMapper objectMapper = new ObjectMapper();
@@ -2412,6 +2441,49 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return jsonNodes;
             default:
                 throw new IllegalStateException("Unhandled property type " + propertyType.name());
+        }
+    }
+
+    private PropertyType getPostGisGeometryType(SqlgGraph sqlgGraph, String schema, String table, String column) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        try (PreparedStatement statement = connection.prepareStatement("SELECT type FROM geometry_columns WHERE f_table_schema = ? and f_table_name = ? and f_geometry_column = ?")) {
+            statement.setString(1, schema);
+            statement.setString(2, table);
+            statement.setString(3, column);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                String type = resultSet.getString(1);
+                return PropertyType.valueOf(type);
+            } else {
+                throw new IllegalStateException("PostGis property type for column " + column + " not found");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private PropertyType getPostGisGeographyType(SqlgGraph sqlgGraph, String schema, String table, String column) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        try (PreparedStatement statement = connection.prepareStatement("SELECT type FROM geography_columns WHERE f_table_schema = ? and f_table_name = ? and f_geography_column = ?")) {
+            statement.setString(1, schema);
+            statement.setString(2, table);
+            statement.setString(3, column);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                String type = resultSet.getString(1);
+                switch (type) {
+                    case "Point":
+                        return PropertyType.GEOGRAPHY_POINT;
+                    case "Polygon":
+                        return PropertyType.GEOGRAPHY_POLYGON;
+                    default:
+                        throw new IllegalStateException("Unhandled geography type " + type);
+                }
+            } else {
+                throw new IllegalStateException("PostGis property type for column " + column + " not found");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 }

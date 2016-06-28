@@ -24,7 +24,7 @@ public interface SqlDialect {
 
     Set<String> getDefaultSchemas();
 
-    PropertyType sqlTypeToPropertyType(int sqlType, String typeName);
+    PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName);
 
     String getJdbcDriver();
 
@@ -373,6 +373,8 @@ public interface SqlDialect {
     void handleOther(Map<String, Object> properties, String columnName, Object o, PropertyType propertyType);
 
     void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
+
+    void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString);
 
     void setPolygon(PreparedStatement preparedStatement, int parameterStartIndex, Object point);
 

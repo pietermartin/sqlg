@@ -1095,7 +1095,7 @@ public class SchemaManager {
                     if (!column.equals(SchemaManager.ID)) {
                         int columnType = columnsRs.getInt(5);
                         String typeName = columnsRs.getString("TYPE_NAME");
-                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(this.sqlgGraph, schema, table, column, columnType, typeName);
                         columns.put(column, propertyType);
                     }
 
@@ -1196,7 +1196,7 @@ public class SchemaManager {
                     if (!column.equals(SchemaManager.ID) && !column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) && !column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                         int columnType = columnsRs.getInt(5);
                         String typeName = columnsRs.getString("TYPE_NAME");
-                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(columnType, typeName);
+                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(this.sqlgGraph, schema, table, column, columnType, typeName);
                         columns.put(column, propertyType);
                     }
                 }
@@ -1293,8 +1293,8 @@ public class SchemaManager {
         labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE));
         this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL), labels);
         labels = Pair.of(new HashSet<>(), new HashSet<>());
-        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE));
-        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE));
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE));
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE));
         this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY), labels);
 
     }

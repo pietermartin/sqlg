@@ -343,6 +343,10 @@ public class SqlgUtil {
                     sqlgGraph.getSqlDialect().setPoint(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
                     break;
+                case LINESTRING:
+                    sqlgGraph.getSqlDialect().setLineString(preparedStatement, parameterStartIndex, pair.getRight());
+                    parameterStartIndex++;
+                    break;
                 case POLYGON:
                     sqlgGraph.getSqlDialect().setPolygon(preparedStatement, parameterStartIndex, pair.getRight());
                     parameterStartIndex++;
