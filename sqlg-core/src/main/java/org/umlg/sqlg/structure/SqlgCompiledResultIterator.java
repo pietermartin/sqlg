@@ -41,8 +41,8 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     private Triple<ResultSet, ResultSetMetaData, PreparedStatement> queryResult;
 
-    private List<Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>>> elements = Collections.emptyList();
-    private Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>> element;
+    private List<Pair<SqlgElement, Map<String, Emit<SqlgElement>>>> elements = Collections.emptyList();
+    private Pair<SqlgElement, Map<String, Emit<SqlgElement>>> element;
 
     private boolean first = true;
     private Map<String, Integer> labeledColumnNameCountMap = new HashMap<>();
@@ -198,6 +198,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     @Override
     public E next() {
+        //noinspection unchecked
         return (E) this.element;
     }
 

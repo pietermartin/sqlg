@@ -253,7 +253,7 @@ public abstract class SqlgElement implements Element {
      * @return The result of the query.
      * //
      */
-    public <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
+    public <S, E extends SqlgElement> Iterator<Pair<E, Map<String, Emit<E>>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -268,7 +268,7 @@ public abstract class SqlgElement implements Element {
      * @param replacedSteps
      * @return The results of the query
      */
-    private <S, E extends SqlgElement> Iterator<Pair<E, Multimap<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
+    private <S, E extends SqlgElement> Iterator<Pair<E, Map<String, Emit<E>>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();

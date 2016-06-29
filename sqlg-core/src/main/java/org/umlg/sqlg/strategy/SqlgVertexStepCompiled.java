@@ -1,7 +1,6 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -67,7 +66,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         return new HashSet<>();
     }
 
-    private Iterator<Pair<E, Multimap<String, Emit<E>>>> flatMapCustom(Traverser.Admin<E> traverser) {
+    private Iterator<Pair<E, Map<String, Emit<E>>>> flatMapCustom(Traverser.Admin<E> traverser) {
         //for the OrderGlobalStep we'll need to remove the step here
         E s = traverser.get();
         SqlgGraph sqlgGraph = (SqlgGraph) s.graph();

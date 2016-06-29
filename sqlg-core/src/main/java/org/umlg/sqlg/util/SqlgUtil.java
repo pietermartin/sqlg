@@ -1,7 +1,6 @@
 package org.umlg.sqlg.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -39,7 +38,7 @@ public class SqlgUtil {
     private SqlgUtil() {
     }
 
-    public static List<Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>>> loadResultSetIntoResultIterator(
+    public static List<Pair<SqlgElement, Map<String, Emit<SqlgElement>>>> loadResultSetIntoResultIterator(
             SqlgGraph sqlgGraph,
             ResultSetMetaData resultSetMetaData,
             ResultSet resultSet,
@@ -50,7 +49,7 @@ public class SqlgUtil {
             Multimap<String, Integer> lastElementIdCountMap
     ) throws SQLException {
 
-        List<Pair<SqlgElement, Multimap<String, Emit<SqlgElement>>>> result = new ArrayList<>();
+        List<Pair<SqlgElement, Map<String, Emit<SqlgElement>>>> result = new ArrayList<>();
         if (resultSet.next()) {
             if (first) {
                 for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
@@ -59,10 +58,10 @@ public class SqlgUtil {
                 populateMetaDataMaps(resultSetMetaData, rootSchemaTableTree, labeledColumnNameCountMap, lastElementIdCountMap);
             }
             int subQueryDepth = 0;
-            Multimap<String, Emit<SqlgElement>> previousLabeledElements = null;
+            Map<String, Emit<SqlgElement>> previousLabeledElements = null;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
 
-                Multimap<String, Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
+                Map<String, Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
                         sqlgGraph, resultSet, subQueryStack, lastElementIdCountMap
                 );
                 if (previousLabeledElements == null) {
@@ -112,27 +111,24 @@ public class SqlgUtil {
      * For emitted elements the edge id to the element is also returned as that is needed in the traverser to calculate whether the element should be emitted or not.
      *
      * @param sqlgGraph
-     * @param columnNameCountMap
      * @param resultSet
      * @param subQueryStack
      * @return
      * @throws SQLException
      */
-    private static <E extends SqlgElement> Multimap<String, Emit<E>> loadLabeledElements(
+    private static <E extends SqlgElement> Map<String, Emit<E>> loadLabeledElements(
             SqlgGraph sqlgGraph,
             final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
             Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
 
-        Multimap<String, Emit<E>> result = ArrayListMultimap.create();
+        Map<String, Emit<E>> result = new TreeMap<>();
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
                 Integer columnCount = lastElementIdCountMap.get(idProperty).iterator().next();
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
-                    //Need to be removed so as not to load it again
-//                    propertyColumnsCounts.remove(columnCount);
                     SqlgElement sqlgElement;
                     if (schemaTableTree.getSchemaTable().isVertexTable()) {
                         String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
@@ -142,7 +138,6 @@ public class SqlgUtil {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     schemaTableTree.loadProperty(resultSet, sqlgElement);
-//                    sqlgElement.loadLabeledResultSet(resultSet, columnNameCountMap, schemaTableTree);
                     for (String label : schemaTableTree.getLabels()) {
                         result.put(
                                 label,

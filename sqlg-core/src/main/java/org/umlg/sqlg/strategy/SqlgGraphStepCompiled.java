@@ -1,7 +1,6 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -111,7 +110,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         return this.getSelfAndChildRequirements(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);
     }
 
-    private Iterator<Pair<E, Multimap<String, Emit<E>>>> elements() {
+    private Iterator<Pair<E, Map<String, Emit<E>>>> elements() {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -121,7 +120,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
-        SqlgCompiledResultIterator<Pair<E, Multimap<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
+        SqlgCompiledResultIterator<Pair<E, Map<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
         stopWatch.stop();
         if (logger.isDebugEnabled()) {
             logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
