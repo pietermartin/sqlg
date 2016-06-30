@@ -46,7 +46,7 @@ public class SqlgUtil {
             List<LinkedList<SchemaTableTree>> subQueryStacks,
             boolean first,
             Map<String, Integer> labeledColumnNameCountMap,
-            Multimap<String, Integer> lastElementIdCountMap
+            Map<String, Integer> lastElementIdCountMap
     ) throws SQLException {
 
         List<Pair<SqlgElement, Map<String, Emit<SqlgElement>>>> result = new ArrayList<>();
@@ -91,7 +91,7 @@ public class SqlgUtil {
         return result;
     }
 
-    private static void populateMetaDataMaps(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> labeledColumnNameCountMap, Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
+    private static void populateMetaDataMaps(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> labeledColumnNameCountMap, Map<String, Integer> lastElementIdCountMap) throws SQLException {
         lastElementIdCountMap.clear();
         labeledColumnNameCountMap.clear();
         //First load all labeled entries from the resultSet
@@ -120,13 +120,13 @@ public class SqlgUtil {
             SqlgGraph sqlgGraph,
             final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
-            Multimap<String, Integer> lastElementIdCountMap) throws SQLException {
+            Map<String, Integer> lastElementIdCountMap) throws SQLException {
 
         Map<String, Emit<E>> result = new TreeMap<>();
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
-                Integer columnCount = lastElementIdCountMap.get(idProperty).iterator().next();
+                Integer columnCount = lastElementIdCountMap.get(idProperty);
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
                     SqlgElement sqlgElement;
@@ -155,15 +155,17 @@ public class SqlgUtil {
 
     private static <E> Optional<E> loadElement(
             SqlgGraph sqlgGraph,
-            Multimap<String, Integer> columnMap,
+            Map<String, Integer> columnMap,
             ResultSet resultSet,
             SchemaTableTree leafSchemaTableTree) throws SQLException {
 
         SchemaTable schemaTable = leafSchemaTableTree.getSchemaTable();
 //        String idProperty = schemaTable.getSchema() + SchemaTableTree.ALIAS_SEPARATOR + schemaTable.getTable() + SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID;
         String idProperty = leafSchemaTableTree.idProperty();
-        Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
-        Integer columnCount = propertyColumnsCounts.iterator().next();
+//        Collection<Integer> propertyColumnsCounts = columnMap.get(idProperty);
+        Integer propertyColumnsCounts = columnMap.get(idProperty);
+//        Integer columnCount = propertyColumnsCounts.iterator().next();
+        Integer columnCount = propertyColumnsCounts;
         Long id = resultSet.getLong(columnCount);
         if (!resultSet.wasNull()) {
             //Need to be removed so as not to load it again

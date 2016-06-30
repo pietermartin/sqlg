@@ -87,7 +87,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
             if (!labeledElements.isEmpty()) {
                 Path currentPath = ImmutablePath.make();
                 //These keys are sorted because SqlgUtil.loadLabeledElements uses a java.util.TreeMap
-                List<String> sortedKeys = new ArrayList<>(labeledElements.keySet());
+//                List<String> sortedKeys = new ArrayList<>(labeledElements.keySet());
+                Set<String> sortedKeys = labeledElements.keySet();
                 //This is to prevent duplicates in the path. Each labeled object will be present in the sql result set.
                 //If the same object has multiple labels it will be present many times in the sql result set.
                 //The  allLabeledElementsAsSet undoes this duplication by ensuring that there is only one path for the object with multiple labels.

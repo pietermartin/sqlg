@@ -1,7 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
@@ -46,7 +44,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     private boolean first = true;
     private Map<String, Integer> labeledColumnNameCountMap = new HashMap<>();
-    private Multimap<String, Integer> lastElementIdCountMap = ArrayListMultimap.create();
+    private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
     private QUERY queryState = QUERY.REGULAR;
 
     private enum QUERY {
