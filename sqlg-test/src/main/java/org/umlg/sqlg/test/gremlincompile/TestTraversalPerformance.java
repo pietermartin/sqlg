@@ -38,14 +38,14 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        for (int i = 0; i < 500_000; i++) {
+        for (int i = 0; i < 5_00_000; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "name_" + i);
             a.addEdge("outB", b);
             for (int j = 0; j < 1; j++) {
                 Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "name_" + i + " " + j);
                 b.addEdge("outC", c);
             }
-            if (i % 100_000 == 0) {
+            if (i % 1_000_000 == 0) {
                 this.sqlgGraph.tx().commit();
                 this.sqlgGraph.tx().normalBatchModeOn();
                 System.out.println("inserted " + i);
@@ -61,7 +61,7 @@ public class TestTraversalPerformance extends BaseTest {
         int count = 0;
         while (traversal.hasNext()) {
             Path path = traversal.next();
-            if (count % 100_000 == 0) {
+            if (count % 1_00_000 == 0) {
                 System.out.println("this is not it");
             }
             count++;
