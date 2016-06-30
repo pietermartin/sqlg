@@ -514,7 +514,7 @@ public abstract class SqlgElement implements Element {
                 sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
                 break;
             case LINESTRING:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, columnName, o, propertyType);
+                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
                 break;
             case POLYGON:
                 sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
