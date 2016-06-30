@@ -386,7 +386,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public PropertyType sqlTypeToPropertyType(int sqlType, String typeName) {
+    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName) {
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -534,6 +534,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void setPoint(PreparedStatement preparedStatement, int parameterStartIndex, Object point) {
+        throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
+    }
+
+    @Override
+    public void setLineString(PreparedStatement preparedStatement, int parameterStartIndex, Object lineString) {
         throw new IllegalStateException("Hsqldb does not support gis types, this should not have happened!");
     }
 

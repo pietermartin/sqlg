@@ -4,16 +4,20 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.postgis.LineString;
 import org.postgis.LinearRing;
-import org.postgis.PGgeometry;
 import org.postgis.Point;
 import org.postgis.Polygon;
 import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
 
 /**
  * Created by pieter on 2015/09/13.
@@ -31,6 +35,16 @@ public class TestGis extends BaseTest {
         Assert.assertEquals(pretoriaPoint, this.sqlgGraph.traversal().V(pretoria.id()).next().value("point"));
         Gis gis = this.sqlgGraph.gis();
         System.out.println(gis.distanceBetween(johannesburgPoint, pretoriaPoint));
+    }
+
+    @Test
+    public void testLine() {
+        Point johannesburgPoint = new Point(26.2044, 28.0456);
+        Point pretoriaPoint = new Point(25.7461, 28.1881);
+        LineString lineString = new LineString(new Point[] {johannesburgPoint, pretoriaPoint});
+        Vertex pretoria = this.sqlgGraph.addVertex(T.label, "Gis", "lineString", lineString);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(lineString, this.sqlgGraph.traversal().V(pretoria.id()).next().value("lineString"));
     }
 
     @Test
@@ -66,5 +80,55 @@ public class TestGis extends BaseTest {
         this.sqlgGraph.tx().commit();
         GeographyPolygon geographyPolygon = this.sqlgGraph.traversal().V(johannesburg.id()).next().value("polygon");
         Assert.assertEquals(polygon1, geographyPolygon);
+    }
+
+    @Test
+    public void testUpgradePostGisTypes() throws Exception {
+        Point johannesburgPoint = new Point(26.2044, 28.0456);
+        Vertex johannesburg = this.sqlgGraph.addVertex(T.label, "Gis", "point", johannesburgPoint);
+
+        Point pretoriaPoint = new Point(25.7461, 28.1881);
+        LineString lineString = new LineString(new Point[] {johannesburgPoint, pretoriaPoint});
+        Vertex pretoria = this.sqlgGraph.addVertex(T.label, "Gis", "lineString", lineString);
+
+        GeographyPoint geographyPointJohannesburg = new GeographyPoint(26.2044, 28.0456);
+        Vertex johannesburgGeographyPoint = this.sqlgGraph.addVertex(T.label, "Gis", "geographyPoint", geographyPointJohannesburg);
+
+        LinearRing linearRing = new LinearRing("0 0, 1 1, 1 2, 1 1, 0 0");
+        Polygon polygon1 = new Polygon(new LinearRing[]{linearRing});
+        Vertex johannesburgPolygon = this.sqlgGraph.addVertex(T.label, "Gis", "polygon", polygon1);
+
+        linearRing = new LinearRing("0 0, 1 1, 1 2, 1 1, 0 0");
+        GeographyPolygon geographyPolygon = new GeographyPolygon(new LinearRing[]{linearRing});
+        Vertex johannesburgGeographyPolygon = this.sqlgGraph.addVertex(T.label, "Gis", "geographyPolygon", geographyPolygon);
+
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", sqlgGraph1.getSqlDialect().getPublicSchema()).toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", sqlgGraph1.getSqlDialect().getPublicSchema())
+                    .out("schema_vertex")
+                    .has("name", "Gis")
+                    .out("vertex_property")
+                    .has("name", "point")
+                    .toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals("POINT", propertyVertices.get(0).value("type"));
+
+            Assert.assertEquals(johannesburgPoint, sqlgGraph1.traversal().V(johannesburg.id()).next().value("point"));
+            Assert.assertEquals(lineString, sqlgGraph1.traversal().V(pretoria.id()).next().value("lineString"));
+            Assert.assertEquals(geographyPointJohannesburg, sqlgGraph1.traversal().V(johannesburgGeographyPoint.id()).next().value("geographyPoint"));
+            Assert.assertEquals(polygon1, sqlgGraph1.traversal().V(johannesburgPolygon.id()).next().value("polygon"));
+            Assert.assertEquals(geographyPolygon, sqlgGraph1.traversal().V(johannesburgGeographyPolygon.id()).next().value("geographyPolygon"));
+
+
+        }
     }
 }
