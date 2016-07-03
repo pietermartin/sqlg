@@ -45,7 +45,6 @@ public class SqlgUtil {
             SchemaTableTree rootSchemaTableTree,
             List<LinkedList<SchemaTableTree>> subQueryStacks,
             boolean first,
-            Map<String, Integer> labeledColumnNameCountMap,
             Map<String, Integer> lastElementIdCountMap
     ) throws SQLException {
 
@@ -53,9 +52,11 @@ public class SqlgUtil {
         if (resultSet.next()) {
             if (first) {
                 for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
-                    subQueryStack.getFirst().clearColumnNamePropertNameMap();
+                    for (SchemaTableTree schemaTableTree : subQueryStack) {
+                        schemaTableTree.clearColumnNamePropertNameMap();
+                    }
                 }
-                populateMetaDataMaps(resultSetMetaData, rootSchemaTableTree, labeledColumnNameCountMap, lastElementIdCountMap);
+                populateIdCountMap(resultSetMetaData, rootSchemaTableTree, lastElementIdCountMap);
             }
             int subQueryDepth = 0;
             Map<String, Emit<SqlgElement>> previousLabeledElements = null;
@@ -91,9 +92,8 @@ public class SqlgUtil {
         return result;
     }
 
-    private static void populateMetaDataMaps(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> labeledColumnNameCountMap, Map<String, Integer> lastElementIdCountMap) throws SQLException {
+    private static void populateIdCountMap(ResultSetMetaData resultSetMetaData, SchemaTableTree rootSchemaTableTree, Map<String, Integer> lastElementIdCountMap) throws SQLException {
         lastElementIdCountMap.clear();
-        labeledColumnNameCountMap.clear();
         //First load all labeled entries from the resultSet
         //Translate the columns back from alias to meaningful column headings
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
