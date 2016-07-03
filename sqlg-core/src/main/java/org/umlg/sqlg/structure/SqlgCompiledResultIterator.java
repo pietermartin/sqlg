@@ -43,7 +43,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private Pair<SqlgElement, Map<String, Emit<SqlgElement>>> element;
 
     private boolean first = true;
-    private Map<String, Integer> labeledColumnNameCountMap = new HashMap<>();
     private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
     private QUERY queryState = QUERY.REGULAR;
 
@@ -220,7 +219,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
                 this.first,
-                this.labeledColumnNameCountMap,
                 this.lastElementIdCountMap);
     }
 
@@ -232,7 +230,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
                 this.first,
-                this.labeledColumnNameCountMap,
                 this.lastElementIdCountMap);
     }
 
@@ -244,7 +241,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
                 this.first,
-                this.labeledColumnNameCountMap,
                 this.lastElementIdCountMap);
     }
 
