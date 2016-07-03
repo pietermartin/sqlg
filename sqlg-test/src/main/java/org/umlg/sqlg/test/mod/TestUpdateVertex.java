@@ -2,9 +2,10 @@ package org.umlg.sqlg.test.mod;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/08/28
@@ -15,17 +16,17 @@ public class TestUpdateVertex extends BaseTest {
     @Test
     public void testUpdateVertex() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        Assert.assertEquals("john", v.value("name"));
+        assertEquals("john", v.value("name"));
         v.property("name", "joe");
-        Assert.assertEquals("joe", v.value("name"));
+        assertEquals("joe", v.value("name"));
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals("joe", v.value("name"));
+        assertEquals("joe", v.value("name"));
     }
 
     @Test
     public void testPropertyIsPresent() {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        Assert.assertTrue(v.property("name").isPresent());
+        assertTrue(v.property("name").isPresent());
     }
 
     @Test
@@ -35,7 +36,7 @@ public class TestUpdateVertex extends BaseTest {
 
         vertex = this.sqlgGraph.v(vertex.id());
         vertex.property("property1", "aa");
-        Assert.assertEquals("b", vertex.value("property2"));
+        assertEquals("b", vertex.value("property2"));
 
     }
 
@@ -47,7 +48,20 @@ public class TestUpdateVertex extends BaseTest {
         v.property("test.A", "test1");
         this.sqlgGraph.tx().commit();
         v = this.sqlgGraph.traversal().V(v).next();
-        Assert.assertEquals("test1", v.property("test.A").value());
+        assertEquals("test1", v.property("test.A").value());
+    }
+
+    @Test
+    public void testUpdateStringArray() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "ManagedObject", "source", new String[]{"MML"});
+        this.sqlgGraph.tx().commit();
+        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        assertArrayEquals(new String[]{"MML"}, v1.value("source"));
+
+        v1.property("source", new String[]{"XML"});
+        this.sqlgGraph.tx().commit();
+        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        assertArrayEquals(new String[]{"XML"}, v1.value("source"));
     }
 
 }
