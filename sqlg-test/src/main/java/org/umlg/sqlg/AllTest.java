@@ -24,6 +24,7 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 import org.umlg.sqlg.test.travers.TestTraversals;
+import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalEdgeOtherVertexStep;
@@ -134,7 +135,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestJsonUpdate.class,
         TestNormalBatchUpdateDateTime.class,
         TestOptionalWithOrder.class,
-        TestMultipleLabels.class
+        TestMultipleLabels.class,
+        TestColumnNamePropertyNameMapScope.class
 })
 public class AllTest {
 }
