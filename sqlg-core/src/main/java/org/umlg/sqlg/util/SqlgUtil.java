@@ -139,13 +139,7 @@ public class SqlgUtil {
                     }
                     schemaTableTree.loadProperty(resultSet, sqlgElement);
                     for (String label : schemaTableTree.getLabels()) {
-                        result.put(
-                                label,
-                                new Emit<>(
-                                        (E) sqlgElement,
-                                        schemaTableTree.isOptionalLeftJoin()
-                                )
-                        );
+                        result.put(label, new Emit<>((E) sqlgElement));
                     }
                 }
             }

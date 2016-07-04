@@ -8,26 +8,11 @@ import org.umlg.sqlg.structure.SqlgElement;
  */
 public class Emit<E extends SqlgElement> {
 
-    boolean useCurrentEmitTree;
-    boolean useOptionalTree;
     private Path path;
     private E element;
 
-    public Emit(E element, boolean useOptionalTree) {
+    public Emit(E element) {
         this.element = element;
-        this.useOptionalTree = useOptionalTree;
-    }
-
-    public boolean isUseCurrentEmitTree() {
-        return useCurrentEmitTree;
-    }
-
-    public void setUseCurrentEmitTree(boolean useCurrentEmitTree) {
-        this.useCurrentEmitTree = useCurrentEmitTree;
-    }
-
-    public boolean isUseOptionalTree() {
-        return useOptionalTree;
     }
 
     public Path getPath() {
@@ -49,7 +34,7 @@ public class Emit<E extends SqlgElement> {
             result += this.path.toString();
             result += ", ";
         }
-        result += element.toString() + ", useCurrentEmitTree=" + this.useCurrentEmitTree;
+        result += element.toString();
         return result;
     }
 }

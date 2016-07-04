@@ -57,18 +57,8 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                 while (iter.hasNext()) {
                     Emit<E> emit = iter.next();
                     iter.remove();
-
-                    if (emit.isUseOptionalTree() || emit.isUseCurrentEmitTree()) {
-
-                        this.toEmit.add(emit);
-                        result = true;
-
-                    } else {
-
-                        this.toEmit.add(emit);
-                        result = true;
-
-                    }
+                    this.toEmit.add(emit);
+                    result = true;
                 }
             } else {
                 //no more raw results so exit the loop. result will be false;
@@ -123,12 +113,11 @@ public class SqlgRawIteratorToEmitIterator<E extends SqlgElement> implements Ite
                     }
                     if (countEmits == sortedKeys.size()) {
                         emit.setPath(currentPath.clone());
-                        emit.setUseCurrentEmitTree(true);
                         flattenedEmit.add(emit);
                     }
                 }
             } else {
-                Emit<E> emit = new Emit<>(element, false);
+                Emit<E> emit = new Emit<>(element);
                 flattenedEmit.add(emit);
             }
             return flattenedEmit;
