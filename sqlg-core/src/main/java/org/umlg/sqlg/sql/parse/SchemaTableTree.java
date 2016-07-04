@@ -332,7 +332,7 @@ public class SchemaTableTree {
         Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
         //If the same element occurs multiple times in the stack then the sql needs to be different.
         //This is because the same element can not be joined on more than once in sql
-        //The way to overcome this is  to break up the path in select sections with no duplicates and then join them together.
+        //The way to overcome this is to break up the path in select sections with no duplicates and then join them together.
         if (duplicatesInStack(distinctQueryStack)) {
             List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
             return constructDuplicatePathSql(this.sqlgGraph, subQueryStacks);
