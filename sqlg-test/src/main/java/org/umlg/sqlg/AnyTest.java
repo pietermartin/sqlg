@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.mod.TestUpdateVertex;
+import org.umlg.sqlg.test.labels.TestMultipleLabels;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.mod.TestUpdateVertex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestUpdateVertex.class
+        TestMultipleLabels.class
 })
 public class AnyTest {
 }
