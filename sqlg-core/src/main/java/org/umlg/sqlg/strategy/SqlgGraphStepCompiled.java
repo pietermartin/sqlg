@@ -38,7 +38,6 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     protected transient Supplier<Iterator<Emit<E>>> iteratorSupplier;
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
     private Traverser.Admin<E> head = null;
-    private Traverser.Admin<E> originalTraverser = null;
 
 
     public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final boolean isStart, final Object... ids) {
@@ -60,13 +59,8 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                     //create a traverser for the first element
                     E e = (E) emit.getPath().objects().get(0);
                     if (this.isStart) {
+                        //TODO optimize this somehow, it is slow generating traverser
                         traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1L);
-//                        if (this.originalTraverser == null) {
-//                            this.originalTraverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1L);
-//                            traverser = (Traverser.Admin<E>) this.originalTraverser.clone();
-//                        } else {
-//                            traverser = (Traverser.Admin<E>) this.originalTraverser.clone();
-//                        }
                     } else {
                         traverser = this.head.split(e, this);
                     }
