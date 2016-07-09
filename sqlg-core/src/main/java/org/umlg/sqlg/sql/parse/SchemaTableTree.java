@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.structure.T.label;
+
 /**
  * Date: 2015/01/08
  * Time: 7:06 AM
@@ -56,6 +58,7 @@ public class SchemaTableTree {
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators = new ArrayList<>();
     //labels are immutable
     private Set<String> labels;
+    private Set<String> realLabels;
     private String reducedLabels;
     //untilFirst is for the repeatStep optimization
     private boolean untilFirst;
@@ -83,6 +86,9 @@ public class SchemaTableTree {
     private Map<String, Pair<String, PropertyType>> columnNamePropertyName;
     private String idProperty;
     private String labeledAliasId;
+
+    private boolean localStep = false;
+    private boolean fakeEmit = false;
 
     //This contains the columnName as key and the generated alias as value
     //Needs to be a multimap as the same column can appear multiple times in different selects in one query
@@ -433,10 +439,12 @@ public class SchemaTableTree {
     public static void constructDistinctEmitBeforeQueries(SchemaTableTree current, List<LinkedList<SchemaTableTree>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //if its at the full depth it has already been loaded.
-        if (current.isEmit() && (current.getStepDepth() < current.getReplacedStepDepth())) {
-            Set<SchemaTableTree> children = new HashSet<>();
-            children.add(current);
+        //local step together with emit will create a fake emit. The fake emit will indicate that the incoming traverser must be emitted.
+        if (!current.isLocalStep() && current.isEmit() && (current.getStepDepth() < current.getReplacedStepDepth())) {
             result.add(stack);
+        }
+        if (current.isLocalStep() && current.isEmit()) {
+            current.setFakeEmit(true);
         }
         for (SchemaTableTree child : current.children) {
             if (child.isVertexStep() && child.getSchemaTable().isVertexTable()) {
@@ -1817,7 +1825,7 @@ public class SchemaTableTree {
     private void removeObsoleteHasContainers(SchemaTableTree schemaTableTree) {
         Set<HasContainer> toRemove = new HashSet<>();
         schemaTableTree.hasContainers.forEach(hasContainer -> {
-            if (hasContainer.getKey().equals(T.label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
+            if (hasContainer.getKey().equals(label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
                 SchemaTable hasContainerLabelSchemaTable;
                 if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
                     hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
@@ -1835,7 +1843,7 @@ public class SchemaTableTree {
     private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
-                if (hasContainer.getKey().equals(T.label.getAccessor())) {
+                if (hasContainer.getKey().equals(label.getAccessor())) {
                     //Check if we are on a vertex or edge
                     SchemaTable hasContainerLabelSchemaTable;
                     if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
@@ -2019,9 +2027,24 @@ public class SchemaTableTree {
         }
     }
 
-
     public Set<String> getLabels() {
         return this.labels;
+    }
+
+    public Set<String> getRealLabels() {
+        if (this.realLabels == null) {
+            this.realLabels = new HashSet<>();
+            for (String label : this.labels) {
+                if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
+                    this.realLabels.add(label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length()));
+                } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
+                    this.realLabels.add(label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length()));
+                } else {
+                    throw new IllegalStateException("label must contain " + BaseSqlgStrategy.PATH_LABEL_SUFFIX + " or " + BaseSqlgStrategy.EMIT_LABEL_SUFFIX);
+                }
+            }
+        }
+        return this.realLabels;
     }
 
     private boolean isEdgeVertexStep() {
@@ -2081,4 +2104,19 @@ public class SchemaTableTree {
         return this.idProperty;
     }
 
+    public boolean isLocalStep() {
+        return localStep;
+    }
+
+    public void setLocalStep(boolean localStep) {
+        this.localStep = localStep;
+    }
+
+    public boolean isFakeEmit() {
+        return fakeEmit;
+    }
+
+    public void setFakeEmit(boolean fakeEmit) {
+        this.fakeEmit = fakeEmit;
+    }
 }

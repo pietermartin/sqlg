@@ -105,7 +105,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V(a1).local(__.repeat(out()).times(1).emit()).path().toList();
+        List<Path> paths = this.sqlgGraph.traversal().V(a1).local(repeat(out()).times(1).emit()).path().toList();
         assertEquals(1, paths.size());
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)
@@ -505,7 +505,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         c1.addEdge("cd", d3);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.repeat(__.out("ab", "bc", "cd")).emit().times(3)).path().toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(repeat(__.out("ab", "bc", "cd")).emit().times(3)).path().toList();
         for (Path path : paths) {
             System.out.println(path.toString());
         }
@@ -573,7 +573,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         c1.addEdge("cd", d3);
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").local(__.repeat(__.out("ab", "bc", "cd")).emit().times(3)).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").local(repeat(__.out("ab", "bc", "cd")).emit().times(3)).toList();
         for (Vertex vertex : vertices) {
             System.out.println(vertex.value("name").toString());
         }
@@ -652,7 +652,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
         assertModernGraph(graph, true, false);
 
-        Traversal t = graph.traversal().V().local(__.repeat(__.out()).times(2));
+        Traversal t = graph.traversal().V().local(repeat(__.out()).times(2));
         traversals.add(t);
         traversals.forEach(traversal -> {
             printTraversalForm(traversal);
@@ -672,7 +672,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         Graph graph = this.sqlgGraph;
         graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
         assertModernGraph(graph, true, false);
-        final Traversal<Vertex, Path> traversal = graph.traversal().V().local(__.repeat(__.out()).times(2).path().by().by("name").by("lang"));
+        final Traversal<Vertex, Path> traversal = graph.traversal().V().local(repeat(__.out()).times(2).path().by().by("name").by("lang"));
         printTraversalForm(traversal);
         int counter = 0;
         while (traversal.hasNext()) {
@@ -693,7 +693,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
         final List<Traversal<Vertex, Path>> traversals = new ArrayList<>();
-        Traversal t = g.V().local(__.repeat(out()).emit().times(2)).path();
+        Traversal t = g.V().local(repeat(out()).emit().times(2)).path();
         traversals.add(t);
         traversals.forEach(traversal -> {
             printTraversalForm(traversal);
@@ -852,7 +852,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         marko.addEdge("created", lop);
         josh.addEdge("created", lop);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V().local(__.repeat(out()).times(2).emit().path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().local(repeat(out()).times(2).emit().path()).toList();
         assertEquals(4, paths.size());
 
         assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(marko) && p.get(1).equals(lop)));
@@ -865,7 +865,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(marko) && p.get(1).equals(josh) && p.get(2).equals(lop)).findAny().get());
         assertTrue(paths.isEmpty());
 
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().local(__.repeat(out()).times(2).emit()).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().local(repeat(out()).times(2).emit()).toList();
         assertEquals(4, vertices.size());
         assertTrue(vertices.remove(josh));
         assertTrue(vertices.remove(lop));
@@ -884,14 +884,14 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         a2.addEdge("knows", a3);
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().local(__.repeat(out("knows")).times(2).emit()).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().local(repeat(out("knows")).times(2).emit()).toList();
         assertEquals(3, vertices.size());
         assertTrue(vertices.remove(a2));
         assertTrue(vertices.remove(a3));
         assertTrue(vertices.remove(a3));
         assertEquals(0, vertices.size());
 
-        List<Path> paths = this.sqlgGraph.traversal().V().local(__.repeat(out("knows")).emit().times(2).path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().local(repeat(out("knows")).emit().times(2).path()).toList();
         assertEquals(3, paths.size());
         for (Path path : paths) {
             System.out.println(path);
@@ -1050,7 +1050,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         a1.addEdge("ab", b1);
         b1.addEdge("ba", a2);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V().local(__.repeat(out("ab", "ba")).emit().times(1).path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().local(repeat(out("ab", "ba")).emit().times(1).path()).toList();
         assertEquals(2, paths.size());
         assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)));
         paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)).findAny().get());
@@ -1067,7 +1067,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         a1.addEdge("ab", b1);
         b1.addEdge("ba", a2);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V().local(__.repeat(out("ab", "ba")).emit().times(2).path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().local(repeat(out("ab", "ba")).emit().times(2).path()).toList();
         assertEquals(3, paths.size());
         assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)));
         paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1)).findAny().get());
@@ -1103,7 +1103,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         a1.addEdge("aa", a2);
         a2.addEdge("ba", b1);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.repeat(out()).emit().times(2)).path().toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(repeat(out()).emit().times(2)).path().toList();
         for (Path path : paths) {
             System.out.println(path);
         }
@@ -1128,7 +1128,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         c1.addEdge("cd", d1);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.repeat(out()).emit().times(3).path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(repeat(out()).emit().times(3).path()).toList();
         for (Path path : paths) {
             System.out.println(path);
         }
@@ -1141,7 +1141,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)).findAny().get());
         assertTrue(paths.isEmpty());
 
-        paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.repeat(out()).emit().times(4).path()).toList();
+        paths = this.sqlgGraph.traversal().V().hasLabel("A").local(repeat(out()).emit().times(4).path()).toList();
         for (Path path : paths) {
             System.out.println(path);
         }
@@ -1181,7 +1181,7 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
         List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.<Vertex>times(3).repeat(out()).path()).toList();
         assertEquals(1, paths.size());
         assertTrue(paths.stream().anyMatch(p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals(d1)));
-        paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.repeat(out()).times(4).path()).toList();
+        paths = this.sqlgGraph.traversal().V().hasLabel("A").local(repeat(out()).times(4).path()).toList();
         assertEquals(0, paths.size());
     }
 

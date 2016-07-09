@@ -42,17 +42,24 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
                 Traverser.Admin<E> traverser = this.head;
                 Emit<E> emit = this.iterator.next();
-                E element = emit.getElement();
-                if (emit.getPath() != null) {
-                    for (int i = 0; i < emit.getPath().size(); i++) {
-                        E e = (E)emit.getPath().objects().get(i);
-                        traverser = traverser.split(e, EmptyStep.instance());
-                        traverser.addLabels(emit.getPath().labels().get(i));
-                    }
+                //fake is true for local step repeat emit queries.
+                //fake indicates that the incoming traverser element needs to be emitted.
+                //It is fake as no query was executed to get the element seeing as its already on the traverser.
+                if (emit.isFake()) {
+                    return traverser;
                 } else {
-                    traverser.set(element);
+                    //if the step is a local step and it has no label then it is for the incoming object and only and already on the traverser.
+                    if (emit.isIncomingOnlyLocalOptionalStep()) {
+                        return traverser;
+                    } else {
+                        for (int i = 0; i < emit.getPath().size(); i++) {
+                            E e = (E) emit.getPath().objects().get(i);
+                            traverser = traverser.split(e, EmptyStep.instance());
+                            traverser.addLabels(emit.getPath().labels().get(i));
+                        }
+                    }
+                    return traverser;
                 }
-                return traverser;
 
             } else {
                 this.head = this.starts.next();
@@ -66,7 +73,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         return new HashSet<>();
     }
 
-    private Iterator<Pair<E, Map<String, Emit<E>>>> flatMapCustom(Traverser.Admin<E> traverser) {
+    private Iterator<List<Emit<E>>> flatMapCustom(Traverser.Admin<E> traverser) {
         //for the OrderGlobalStep we'll need to remove the step here
         E s = traverser.get();
         SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
@@ -125,7 +132,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
     }
 
-    public void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    private void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         this.parsedForStrategySql.clear();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isVertexStep() || this.replacedSteps.get(0).isEdgeVertexStep() || this.replacedSteps.get(0).isGraphStep()

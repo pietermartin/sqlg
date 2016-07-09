@@ -61,6 +61,7 @@ public class GremlinParser<S extends Element, E extends Element> {
     }
 
     /**
+     * This is only called for local vertex steps.
      * Constructs the label paths from the given schemaTable to the leaf vertex labels for the gremlin query.
      * For each path Sqlg will executeRegularQuery a sql query. The union of the queries is the result the gremlin query.
      * The vertex labels can be calculated from the steps.
@@ -91,6 +92,7 @@ public class GremlinParser<S extends Element, E extends Element> {
             }
             rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size() - 1);
             rootSchemaTableTree.removeNodesInvalidatedByHas();
+            rootSchemaTableTree.setLocalStep(true);
             return rootSchemaTableTree;
         }
     }

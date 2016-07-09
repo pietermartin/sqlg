@@ -104,7 +104,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         return this.getSelfAndChildRequirements(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);
     }
 
-    private Iterator<Pair<E, Map<String, Emit<E>>>> elements() {
+    private Iterator<List<Emit<E>>> elements() {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -114,7 +114,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
-        SqlgCompiledResultIterator<Pair<E, Map<String, Emit<E>>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
+        SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
         stopWatch.stop();
         if (logger.isDebugEnabled()) {
             logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());

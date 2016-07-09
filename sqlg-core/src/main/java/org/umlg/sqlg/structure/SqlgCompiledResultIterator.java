@@ -39,8 +39,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     private Triple<ResultSet, ResultSetMetaData, PreparedStatement> queryResult;
 
-    private List<Pair<SqlgElement, Map<String, Emit<SqlgElement>>>> elements = Collections.emptyList();
-    private Pair<SqlgElement, Map<String, Emit<SqlgElement>>> element;
+    private List<List<Emit<SqlgElement>>> elements = new ArrayList<>();
 
     private boolean first = true;
     private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
@@ -70,7 +69,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 switch (this.queryState) {
                     case REGULAR:
                         if (!this.elements.isEmpty()) {
-                            this.element = this.elements.remove(0);
                             return true;
                         } else {
                             if (this.queryResult != null) {
@@ -105,7 +103,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                         break;
                     case OPTIONAL:
                         if (!this.elements.isEmpty()) {
-                            this.element = this.elements.remove(0);
                             return true;
                         } else {
                             if (this.queryResult != null) {
@@ -142,7 +139,6 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                         break;
                     case EMIT:
                         if (!this.elements.isEmpty()) {
-                            this.element = this.elements.remove(0);
                             return true;
                         } else {
                             if (this.queryResult != null) {
@@ -165,6 +161,12 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         List<LinkedList<SchemaTableTree>> leftJoinResult = new ArrayList<>();
                                         SchemaTableTree.constructDistinctEmitBeforeQueries(this.currentRootSchemaTableTree, leftJoinResult);
                                         this.emitLeftJoinResultsIterator = leftJoinResult.iterator();
+                                        if (currentRootSchemaTableTree.isFakeEmit()) {
+                                            List<Emit<SqlgElement>> fake = new ArrayList<>();
+                                            fake.add(new Emit<>());
+                                            this.elements.add(fake);
+                                            this.currentRootSchemaTableTree.setFakeEmit(false);
+                                        }
                                     } else {
                                         if (this.currentRootSchemaTableTree != null) {
                                             this.currentRootSchemaTableTree.resetThreadVars();
@@ -196,7 +198,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     @Override
     public E next() {
         //noinspection unchecked
-        return (E) this.element;
+        return (E) this.elements.remove(0);
     }
 
     private void executeRegularQuery() {
@@ -212,36 +214,48 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     }
 
     private void iterateRegularQueries() throws SQLException {
-        this.elements = SqlgUtil.loadResultSetIntoResultIterator(
+        List<Emit<SqlgElement>> result = SqlgUtil.loadResultSetIntoResultIterator(
                 this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
                 this.first,
-                this.lastElementIdCountMap);
+                this.lastElementIdCountMap
+        );
+        if (!result.isEmpty()) {
+            this.elements.add(result);
+        }
     }
 
     private void iterateOptionalQueries() throws SQLException {
-        this.elements = SqlgUtil.loadResultSetIntoResultIterator(
+        List<Emit<SqlgElement>> result = SqlgUtil.loadResultSetIntoResultIterator(
                 this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
                 this.first,
-                this.lastElementIdCountMap);
+                this.lastElementIdCountMap
+        );
+        if (!result.isEmpty()) {
+            this.elements.add(result);
+        }
     }
 
     private void iterateEmitQueries() throws SQLException {
-        this.elements = SqlgUtil.loadResultSetIntoResultIterator(
+        List<Emit<SqlgElement>> result = SqlgUtil.loadResultSetIntoResultIterator(
                 this.sqlgGraph,
                 this.queryResult.getMiddle(),
                 this.queryResult.getLeft(),
                 this.currentRootSchemaTableTree,
                 this.subQueryStacks,
                 this.first,
-                this.lastElementIdCountMap);
+                this.lastElementIdCountMap
+        );
+        if (!result.isEmpty()) {
+            this.elements.add(result);
+        }
     }
 
 }

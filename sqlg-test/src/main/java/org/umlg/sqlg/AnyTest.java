@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.labels.TestMultipleLabels;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+//        TestTraversalPerformance.class
         TestMultipleLabels.class
 })
 public class AnyTest {

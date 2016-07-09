@@ -8,37 +8,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-
 /**
  * Date: 2015/02/01
  * Time: 11:48 AM
  */
 public class TestTraversalPerformance extends BaseTest {
 
-//    @Test
-    public void test() {
-        for (int i = 0; i < 1_000000; i++) {
-            Vertex a = this.sqlgGraph.addVertex(T.label, "A");
-            Vertex b = this.sqlgGraph.addVertex(T.label, "B");
-            a.addEdge("ab", b);
-        }
-        this.sqlgGraph.tx().commit();
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").out().toList();
-        assertEquals(10000, vertices.size());
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-    }
-
     @Test
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        for (int i = 0; i < 5_00_000; i++) {
+        for (int i = 1; i < 5_00_001; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "name_" + i);
             a.addEdge("outB", b);
             for (int j = 0; j < 1; j++) {
@@ -57,17 +37,20 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("querying");
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        GraphTraversal<Vertex, Path> traversal = vertexTraversal(a).as("a").out().as("b").out().as("c").path();
-        int count = 0;
-        while (traversal.hasNext()) {
-            Path path = traversal.next();
-            if (count % 1_00_000 == 0) {
-                System.out.println("this is not it");
+        for (int i = 0; i < 100; i++) {
+            GraphTraversal<Vertex, Path> traversal = vertexTraversal(a).as("a").out().as("b").out().as("c").path();
+            while (traversal.hasNext()) {
+                Path path = traversal.next();
             }
-            count++;
+            stopWatch.stop();
+            System.out.println(stopWatch.toString());
+            stopWatch.reset();
+            stopWatch.start();
+
         }
-//        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
+//        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
     }
+
 }

@@ -53,7 +53,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }
-                threadLocalTx.set(TransactionCache.of(connection, new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
+                this.threadLocalTx.set(TransactionCache.of(false, connection, new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -67,15 +67,15 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         }
         try {
             if (this.threadLocalTx.get().getBatchManager().isInBatchMode()) {
-                this.threadLocalTx.get().getBatchManager().flush();
+                getBatchManager().flush();
             }
-            Connection connection = threadLocalTx.get().getConnection();
+            Connection connection = this.threadLocalTx.get().getConnection();
             connection.commit();
             connection.setAutoCommit(true);
             if (this.afterCommitFunction != null) {
                 this.afterCommitFunction.doAfterCommit();
             }
-            threadLocalPreparedStatementTx.get().close();
+            this.threadLocalPreparedStatementTx.get().close();
             connection.close();
         } catch (Exception e) {
             this.rollback();
@@ -115,14 +115,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             for (ElementPropertyRollback elementPropertyRollback : threadLocalTx.get().getElementPropertyRollback().keySet()) {
                 elementPropertyRollback.clearProperties();
             }
-            threadLocalPreparedStatementTx.get().close();
+            this.threadLocalPreparedStatementTx.get().close();
             connection.close();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         } finally {
             if (isOpen()) {
-                threadLocalTx.get().clear();
-                threadLocalTx.remove();
+                this.threadLocalTx.get().clear();
+                this.threadLocalTx.remove();
             }
         }
     }
@@ -139,7 +139,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     public void streamingBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
+            this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING);
         } else {
             throw new IllegalStateException(BATCH_MODE_NOT_SUPPORTED);
         }
@@ -149,7 +149,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         switch (batchModeType) {
             case NONE:
                 readWrite();
-                threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NONE);
+                this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NONE);
                 break;
             case NORMAL:
                 this.normalBatchModeOn();
@@ -184,20 +184,20 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public boolean isInStreamingBatchMode() {
-        return isOpen() && threadLocalTx.get().getBatchManager().isInStreamingMode();
+        return isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingMode();
     }
 
     public boolean isInStreamingWithLockBatchMode() {
-        return isOpen() && threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
+        return isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
     }
 
     BatchManager.BatchModeType getBatchModeType() {
         assert isOpen() : "SqlgTransaction.getBatchModeType() must be called within a transaction.";
-        return threadLocalTx.get().getBatchManager().getBatchModeType();
+        return this.threadLocalTx.get().getBatchManager().getBatchModeType();
     }
 
     public BatchManager getBatchManager() {
-        return threadLocalTx.get().getBatchManager();
+        return this.threadLocalTx.get().getBatchManager();
     }
 
     public Connection getConnection() {

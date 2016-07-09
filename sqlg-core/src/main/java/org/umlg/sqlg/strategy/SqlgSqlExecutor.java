@@ -64,6 +64,7 @@ public class SqlgSqlExecutor {
                 preparedStatement.setLong(parameterCount++, recordId.getId());
             }
             SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, conn, preparedStatement, parameterCount);
+//            preparedStatement.setFetchSize(100_000);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
             return Triple.of(resultSet, resultSetMetaData, preparedStatement);
