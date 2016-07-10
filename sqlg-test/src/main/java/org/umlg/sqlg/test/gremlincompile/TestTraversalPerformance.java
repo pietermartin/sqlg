@@ -19,7 +19,7 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        for (int i = 1; i < 5_00_001; i++) {
+        for (int i = 1; i < 500_001; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "name_" + i);
             a.addEdge("outB", b);
             for (int j = 0; j < 1; j++) {

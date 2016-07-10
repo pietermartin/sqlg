@@ -39,8 +39,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     private Triple<ResultSet, ResultSetMetaData, PreparedStatement> queryResult;
 
-    private List<List<Emit<SqlgElement>>> elements = new ArrayList<>();
-//    private List<Emit<SqlgElement>> elements = );
+    private List<Emit<SqlgElement>> elements = null;
 
     private boolean first = true;
     private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
@@ -69,14 +68,14 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
             while (true) {
                 switch (this.queryState) {
                     case REGULAR:
-                        if (!this.elements.isEmpty()) {
+                        if (this.elements != null) {
                             return true;
                         } else {
                             if (this.queryResult != null) {
                                 iterateRegularQueries();
                                 this.first = false;
                             }
-                            if (this.elements.isEmpty()) {
+                            if (this.elements == null) {
                                 closePreparedStatement();
                                 //try the next distinctQueryStack
                                 if (this.distinctQueriesIterator.hasNext()) {
@@ -103,14 +102,14 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                         }
                         break;
                     case OPTIONAL:
-                        if (!this.elements.isEmpty()) {
+                        if (this.elements != null) {
                             return true;
                         } else {
                             if (this.queryResult != null) {
                                 iterateOptionalQueries();
                                 this.first = false;
                             }
-                            if (this.elements.isEmpty()) {
+                            if (this.elements == null) {
                                 closePreparedStatement();
                                 //try the next distinctQueryStack
                                 if (this.optionalLeftJoinResultsIterator.hasNext()) {
@@ -139,14 +138,14 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                         }
                         break;
                     case EMIT:
-                        if (!this.elements.isEmpty()) {
+                        if (this.elements != null) {
                             return true;
                         } else {
                             if (this.queryResult != null) {
                                 iterateEmitQueries();
                                 this.first = false;
                             }
-                            if (this.elements.isEmpty()) {
+                            if (this.elements == null) {
                                 closePreparedStatement();
                                 //try the next distinctQueryStack
                                 if (this.emitLeftJoinResultsIterator.hasNext()) {
@@ -165,7 +164,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         if (currentRootSchemaTableTree.isFakeEmit()) {
                                             List<Emit<SqlgElement>> fake = new ArrayList<>();
                                             fake.add(new Emit<>());
-                                            this.elements.add(fake);
+                                            this.elements = fake;
                                             this.currentRootSchemaTableTree.setFakeEmit(false);
                                         }
                                     } else {
@@ -185,21 +184,12 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         }
     }
 
-    private void closePreparedStatement() {
-        if (this.queryResult != null) {
-            try {
-                this.queryResult.getRight().close();
-                this.queryResult = null;
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
     @Override
     public E next() {
         //noinspection unchecked
-        return (E) this.elements.remove(0);
+        List<Emit<SqlgElement>> result = this.elements;
+        this.elements = null;
+        return (E) result;
     }
 
     private void executeRegularQuery() {
@@ -225,7 +215,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 this.lastElementIdCountMap
         );
         if (!result.isEmpty()) {
-            this.elements.add(result);
+            this.elements = result;
         }
     }
 
@@ -240,7 +230,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 this.lastElementIdCountMap
         );
         if (!result.isEmpty()) {
-            this.elements.add(result);
+            this.elements = result;
         }
     }
 
@@ -255,7 +245,18 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                 this.lastElementIdCountMap
         );
         if (!result.isEmpty()) {
-            this.elements.add(result);
+            this.elements = result;
+        }
+    }
+
+    private void closePreparedStatement() {
+        if (this.queryResult != null) {
+            try {
+                this.queryResult.getRight().close();
+                this.queryResult = null;
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

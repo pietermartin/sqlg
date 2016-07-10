@@ -7,7 +7,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
@@ -27,7 +28,7 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
+class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
 
@@ -35,12 +36,11 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     private SqlgGraph sqlgGraph;
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
-    protected transient Supplier<Iterator<Emit<E>>> iteratorSupplier;
+    private transient Supplier<Iterator<Emit<E>>> iteratorSupplier;
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
-    private Traverser.Admin<E> head = null;
 
 
-    public SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<S> returnClass, final boolean isStart, final Object... ids) {
+    SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
         this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this::elements);
@@ -52,41 +52,25 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
             if (this.iterator.hasNext()) {
                 Traverser.Admin<E> traverser = null;
                 Emit<E> emit = this.iterator.next();
-                E element = emit.getElement();
-                if (emit.getPath() != null) {
-                    boolean first = true;
-                    Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
-                    for (Object o : emit.getPath().objects()) {
-                        E e = (E) o;
-                        Set<String> labels = labelIter.next();
-                        if (first && this.isStart) {
-                            first = false;
-                            traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1L);
-                        } else if (first) {
-                            traverser = this.head.split(e, this);
-                        } else {
-                            traverser = traverser.split(e, EmptyStep.instance());
-                        }
+                boolean first = true;
+                Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
+                for (Object o : emit.getPath().objects()) {
+                    E e = (E) o;
+                    Set<String> labels = labelIter.next();
+                    if (first) {
+                        first = false;
+                        traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
                         traverser.addLabels(labels);
-                    }
-                } else {
-                    if (this.isStart) {
-                        traverser = this.getTraversal().getTraverserGenerator().generate(element, this, 1L);
                     } else {
-                        traverser = this.head.split(element, this);
+                        traverser = ((B_LP_O_P_S_SE_SL_Traverser) traverser).split(e, labels);
                     }
                 }
                 return traverser;
             } else {
-                if (this.isStart) {
-                    if (this.done)
-                        throw FastNoSuchElementException.instance();
-                    else {
-                        this.done = true;
-                        this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
-                    }
-                } else {
-                    this.head = this.starts.next();
+                if (this.done)
+                    throw FastNoSuchElementException.instance();
+                else {
+                    this.done = true;
                     this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
                 }
             }

@@ -50,11 +50,9 @@ public class ReplacedStep<S, E> {
     /**
      * Used for SqlgVertexStepStrategy. It is a fake ReplacedStep to simulate the incoming vertex from which the traversal continues.
      * @param schemaManager
-     * @param <S>
-     * @param <E>
      * @return
      */
-    public static <S, E> ReplacedStep from(SchemaManager schemaManager) {
+    public static ReplacedStep from(SchemaManager schemaManager) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = null;
         replacedStep.labels = new HashSet<>();
