@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -62,7 +63,9 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                         traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
                         traverser.addLabels(labels);
                     } else {
-                        traverser = ((B_LP_O_P_S_SE_SL_Traverser) traverser).split(e, labels);
+//                        traverser = ((B_LP_O_P_S_SE_SL_Traverser) traverser).split(e, labels);
+                        traverser = ((B_LP_O_P_S_SE_SL_Traverser) traverser).split(e, EmptyStep.instance());
+                        traverser.addLabels(labels);
                     }
                 }
                 return traverser;
