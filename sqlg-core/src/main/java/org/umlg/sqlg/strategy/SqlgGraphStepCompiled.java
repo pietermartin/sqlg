@@ -50,37 +50,31 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
             if (this.iterator.hasNext()) {
-                Traverser.Admin<E> traverser;
+                Traverser.Admin<E> traverser = null;
                 Emit<E> emit = this.iterator.next();
                 E element = emit.getElement();
-
                 if (emit.getPath() != null) {
-
-                    //create a traverser for the first element
-                    E e = (E) emit.getPath().objects().get(0);
-                    if (this.isStart) {
-                        //TODO optimize this somehow, it is slow generating traverser
-                        traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1L);
-                    } else {
-                        traverser = this.head.split(e, this);
+                    boolean first = true;
+                    Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
+                    for (Object o : emit.getPath().objects()) {
+                        E e = (E) o;
+                        Set<String> labels = labelIter.next();
+                        if (first && this.isStart) {
+                            first = false;
+                            traverser = this.getTraversal().getTraverserGenerator().generate(e, this, 1L);
+                        } else if (first) {
+                            traverser = this.head.split(e, this);
+                        } else {
+                            traverser = traverser.split(e, EmptyStep.instance());
+                        }
+                        traverser.addLabels(labels);
                     }
-                    traverser.addLabels(emit.getPath().labels().get(0));
-
-                    //create traversers for the rest of the elements, i.e. skipping the first
-                    for (int i = 1; i < emit.getPath().size(); i++) {
-                        e = (E) emit.getPath().objects().get(i);
-                        traverser = traverser.split(e, EmptyStep.instance());
-                        traverser.addLabels(emit.getPath().labels().get(i));
-                    }
-
                 } else {
-
                     if (this.isStart) {
                         traverser = this.getTraversal().getTraverserGenerator().generate(element, this, 1L);
                     } else {
                         traverser = this.head.split(element, this);
                     }
-
                 }
                 return traverser;
             } else {

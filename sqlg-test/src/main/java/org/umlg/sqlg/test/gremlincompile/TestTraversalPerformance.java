@@ -18,7 +18,7 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        for (int i = 1; i < 5_00_001; i++) {
+        for (int i = 1; i < 5_0_001; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "name_" + i);
             a.addEdge("outB", b);
             for (int j = 0; j < 1; j++) {
@@ -37,7 +37,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("querying");
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 200; i++) {
             GraphTraversal<Vertex, Path> traversal = vertexTraversal(a).as("a").out().as("b").out().as("c").path();
             while (traversal.hasNext()) {
                 Path path = traversal.next();

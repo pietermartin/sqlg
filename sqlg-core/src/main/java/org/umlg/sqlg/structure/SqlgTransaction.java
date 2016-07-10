@@ -23,6 +23,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
     private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
+    private boolean cacheVertices = false;
 
     private final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
         protected TransactionCache initialValue() {
@@ -37,9 +38,10 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     };
 
 
-    SqlgTransaction(Graph sqlgGraph) {
+    SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
         super(sqlgGraph);
         this.sqlgGraph = (SqlgGraph) sqlgGraph;
+        this.cacheVertices = cacheVertices;
     }
 
     @Override
@@ -53,7 +55,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }
-                this.threadLocalTx.set(TransactionCache.of(false, connection, new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
+                this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, this.sqlgGraph.getSqlDialect())));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

@@ -226,17 +226,17 @@ public class SqlgGraph implements Graph {
             throw new RuntimeException(e);
         }
         try {
-            this.jdbcUrl = configuration.getString(JDBC_URL);
+            this.jdbcUrl = this.configuration.getString(JDBC_URL);
             this.sqlgDataSource = SqlgDataSource.setupDataSource(
                     sqlDialect.getJdbcDriver(),
-                    configuration);
-
-            logger.info("Connection url = " + configuration.getString(JDBC_URL) + ", maxPoolSize =  " + configuration.getInt("maxPoolSize", 100));
+                    this.configuration
+            );
+            logger.info(String.format("Connection url = %s , maxPoolSize = %d ", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
             this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        this.sqlgTransaction = new SqlgTransaction(this);
+        this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
         this.tx().readWrite();
         this.schemaManager = new SchemaManager(this, sqlDialect, configuration);
         this.gremlinParser = new GremlinParser(this);

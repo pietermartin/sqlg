@@ -1,10 +1,17 @@
 package org.umlg.sqlg.test.github;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.beans.PropertyVetoException;
+import java.io.IOException;
+import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
 
@@ -13,6 +20,20 @@ import static org.junit.Assert.assertEquals;
  * Time: 5:02 PM
  */
 public class TestGithub extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+        try {
+            configuration = new PropertiesConfiguration(sqlProperties);
+            configuration.setProperty("cache.vertices", true);
+            if (!configuration.containsKey("jdbc.url")) {
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+            }
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 //    @Test
     public void edgeUpdate() {
