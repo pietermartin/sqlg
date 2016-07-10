@@ -14,6 +14,7 @@ public class Emit<E extends SqlgElement> {
     private E element;
     private Set<String> labels;
     private boolean repeat;
+    private boolean repeated;
     private boolean fake;
     //This is set to true for local optional step where the query has no labels, i.e. for a single SchemaTableTree only.
     //In this case the element will already be on the traverser i.e. the incoming element.
@@ -50,6 +51,14 @@ public class Emit<E extends SqlgElement> {
 
     public void setRepeat(boolean repeat) {
         this.repeat = repeat;
+    }
+
+    public boolean isRepeated() {
+        return repeated;
+    }
+
+    public void setRepeated(boolean repeated) {
+        this.repeated = repeated;
     }
 
     public boolean isFake() {

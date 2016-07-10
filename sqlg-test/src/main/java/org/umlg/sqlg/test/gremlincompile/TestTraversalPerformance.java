@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
@@ -18,7 +19,7 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeed() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        for (int i = 1; i < 5_0_001; i++) {
+        for (int i = 1; i < 5_00_001; i++) {
             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "name_" + i);
             a.addEdge("outB", b);
             for (int j = 0; j < 1; j++) {
@@ -37,8 +38,9 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("querying");
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
+        GraphTraversalSource traversalSource = this.sqlgGraph.traversal();
         for (int i = 0; i < 200; i++) {
-            GraphTraversal<Vertex, Path> traversal = vertexTraversal(a).as("a").out().as("b").out().as("c").path();
+            GraphTraversal<Vertex, Path> traversal = traversalSource.V(a).as("a").out().as("b").out().as("c").path();
             while (traversal.hasNext()) {
                 Path path = traversal.next();
             }

@@ -40,6 +40,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     private Triple<ResultSet, ResultSetMetaData, PreparedStatement> queryResult;
 
     private List<List<Emit<SqlgElement>>> elements = new ArrayList<>();
+//    private List<Emit<SqlgElement>> elements = );
 
     private boolean first = true;
     private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
