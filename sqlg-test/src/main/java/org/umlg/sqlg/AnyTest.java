@@ -11,9 +11,6 @@ import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestTraversalPerformance.class
-//        TestBatch.class
-//        TestVertexCache.class
-//        TestSchema.class
 })
 public class AnyTest {
 }
