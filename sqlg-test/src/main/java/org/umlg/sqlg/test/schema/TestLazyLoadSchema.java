@@ -40,57 +40,57 @@ public class TestLazyLoadSchema extends BaseTest {
     @Test
     public void testLazyLoadTableViaVertexHas() throws Exception {
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
-        Thread.sleep(1000);
-        //add a vertex in the old, the new should only see it after a commit
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
-        sqlgGraph1.tx().rollback();
-        sqlgGraph1.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            Thread.sleep(1000);
+            //add a vertex in the old, the new should only see it after a commit
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+            this.sqlgGraph.tx().commit();
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
     public void testLazyLoadTableViaVertexHasWithKey() throws Exception {
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
-        Thread.sleep(1000);
-        //add a vertex in the old, the new should only see it after a commit
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
-        sqlgGraph1.tx().rollback();
-        sqlgGraph1.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            Thread.sleep(1000);
+            //add a vertex in the old, the new should only see it after a commit
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+            this.sqlgGraph.tx().commit();
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
     public void testLazyLoadTableViaVertexHasWithKeyMissingColumn() throws Exception {
         //Create a new sqlgGraph
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
-        //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
-        Thread.sleep(1000);
-        //add a vertex in the old, the new should only see it after a commit
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
-        Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
-        Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").<Vertex>has("name", "a").next();
-        Assert.assertFalse(v11.property("surname").isPresent());
-        //the next alter will lock if this transaction is still active
-        sqlgGraph1.tx().rollback();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            Thread.sleep(1000);
+            //add a vertex in the old, the new should only see it after a commit
+            Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+            this.sqlgGraph.tx().commit();
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
+            Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").<Vertex>has("name", "a").next();
+            Assert.assertFalse(v11.property("surname").isPresent());
+            //the next alter will lock if this transaction is still active
+            sqlgGraph1.tx().rollback();
 
-        //add column in one
-        v1.property("surname", "bbb");
-        this.sqlgGraph.tx().commit();
+            //add column in one
+            v1.property("surname", "bbb");
+            this.sqlgGraph.tx().commit();
 
-        Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
-        Assert.assertEquals("ccc", v12.value("surname"));
-        sqlgGraph1.tx().rollback();
-        sqlgGraph1.close();
+            Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
+            Assert.assertEquals("ccc", v12.value("surname"));
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     //Fails via maven for Hsqldb

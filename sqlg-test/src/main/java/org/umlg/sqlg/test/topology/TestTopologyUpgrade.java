@@ -41,9 +41,9 @@ public class TestTopologyUpgrade extends BaseTest {
 
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
@@ -110,9 +110,9 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
@@ -122,7 +122,7 @@ public class TestTopologyUpgrade extends BaseTest {
             Assert.assertEquals(2, sqlgGraph1.traversal().V(b1Id).out().count().next().intValue());
         }
     }
-//
+
     @Test
     public void testUpgradeMultipleInOutEdges2() throws Exception {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
@@ -137,9 +137,9 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
@@ -165,9 +165,9 @@ public class TestTopologyUpgrade extends BaseTest {
 
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
@@ -194,9 +194,9 @@ public class TestTopologyUpgrade extends BaseTest {
 
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
@@ -243,9 +243,9 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
@@ -282,9 +282,9 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         //Delete the topology
         Connection conn = this.sqlgGraph.tx().getConnection();
-        Statement statement = conn.createStatement();
-        statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
-        statement.close();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema") + " CASCADE");
+        }
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
