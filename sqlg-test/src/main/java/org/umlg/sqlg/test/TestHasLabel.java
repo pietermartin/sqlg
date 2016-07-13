@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -8,6 +9,8 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.hasLabel;
 
 /**
  * Date: 2014/07/29
@@ -76,7 +79,13 @@ public class TestHasLabel extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().outE().otherV().count().next().intValue());
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().inE().otherV().count().next().intValue());
+    }
 
+    @Test
+    public void testEdgeNotHasLabel() {
+        loadModern();
+        List<Edge> edges = gt.V().outE().not(hasLabel("created").inV()).toList();
+        Assert.assertEquals(2, edges.size());
     }
 
 }
