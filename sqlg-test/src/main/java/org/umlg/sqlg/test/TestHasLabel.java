@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Date: 2014/07/29
@@ -53,6 +54,29 @@ public class TestHasLabel extends BaseTest {
         Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList("knows"))).count().next(), 0);
         Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList("created"))).count().next(), 0);
         Assert.assertEquals(4, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList("knows", "created"))).count().next(), 0);
+    }
+
+    @Test
+    public void g_V_outE_hasLabel_inV() {
+        loadModern();
+        List<Vertex> vertices = gt.V().outE().hasLabel("created").inV().toList();
+        Assert.assertEquals(4, vertices.size());
+        vertices = gt.V().outE().hasLabel("knows").inV().toList();
+        Assert.assertEquals(2, vertices.size());
+    }
+
+    @Test
+    public void testEdgeHasLabel() {
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "schema1.person");
+        Vertex person2 = this.sqlgGraph.addVertex(T.label, "schema1.person");
+        Vertex address1 = this.sqlgGraph.addVertex(T.label, "schema2.address");
+        Vertex address2 = this.sqlgGraph.addVertex(T.label, "schema2.address");
+        person1.addEdge("address", address1);
+        person2.addEdge("address", address2);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().outE().otherV().count().next().intValue());
+        Assert.assertEquals(2, this.sqlgGraph.traversal().V().inE().otherV().count().next().intValue());
+
     }
 
 }
