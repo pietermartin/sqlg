@@ -18,17 +18,17 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.SqlgDataSource;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -85,100 +85,6 @@ public abstract class BaseTest {
         this.sqlgGraph.close();
     }
 
-    //    @Before
-    public void beforeOld() throws IOException {
-        SqlgDataSource sqlgDataSource = null;
-        SqlDialect sqlDialect;
-        try {
-            Class<?> sqlDialectClass = findSqlgDialect();
-            Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
-            sqlDialect = (SqlDialect) constructor.newInstance(configuration);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            sqlgDataSource = SqlgDataSource.setupDataSource(
-                    sqlDialect.getJdbcDriver(),
-                    configuration);
-            Connection conn;
-            try {
-                conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection();
-                DatabaseMetaData metadata = conn.getMetaData();
-                if (sqlDialect.supportsCascade()) {
-                    String catalog = null;
-                    String schemaPattern = null;
-                    String tableNamePattern = "%";
-                    String[] types = {"TABLE"};
-                    ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                    while (result.next()) {
-                        String schema = result.getString(2);
-                        String table = result.getString(3);
-                        if (sqlDialect.getGisSchemas().contains(schema) || sqlDialect.getSpacialRefTable().contains(table)) {
-                            continue;
-                        }
-                        StringBuilder sql = new StringBuilder("DROP TABLE ");
-                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                        sql.append(".");
-                        sql.append(sqlDialect.maybeWrapInQoutes(table));
-                        sql.append(" CASCADE");
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
-                        }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
-                    }
-                    catalog = null;
-                    schemaPattern = null;
-                    result = metadata.getSchemas(catalog, schemaPattern);
-                    while (result.next()) {
-                        String schema = result.getString(1);
-                        if (!sqlDialect.getDefaultSchemas().contains(schema) && !sqlDialect.getGisSchemas().contains(schema)) {
-                            StringBuilder sql = new StringBuilder("DROP SCHEMA ");
-                            sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                            sql.append(" CASCADE");
-                            if (sqlDialect.needsSemicolon()) {
-                                sql.append(";");
-                            }
-                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                                preparedStatement.executeUpdate();
-                            }
-                        }
-                    }
-                } else if (!sqlDialect.supportSchemas()) {
-                    ResultSet result = metadata.getCatalogs();
-                    while (result.next()) {
-                        StringBuilder sql = new StringBuilder("DROP DATABASE ");
-                        String database = result.getString(1);
-                        if (!sqlDialect.getDefaultSchemas().contains(database)) {
-                            sql.append(sqlDialect.maybeWrapInQoutes(database));
-                            if (sqlDialect.needsSemicolon()) {
-                                sql.append(";");
-                            }
-                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                                preparedStatement.executeUpdate();
-                            }
-                        }
-                    }
-                } else {
-                    conn.setAutoCommit(false);
-                    JDBC.dropSchema(metadata, "APP");
-                    conn.commit();
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (PropertyVetoException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (sqlgDataSource != null)
-                sqlgDataSource.close(configuration.getString("jdbc.url"));
-        }
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        this.gt = this.sqlgGraph.traversal();
-    }
-
-
     protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
         return v.graph().traversal().V(v);
     }
@@ -230,23 +136,7 @@ public abstract class BaseTest {
 
     }
 
-    private Class<?> findSqlgDialect() {
-        try {
-            return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            return Class.forName("org.umlg.sqlg.sql.dialect.MariaDbDialect");
-        } catch (ClassNotFoundException e) {
-        }
-        try {
-            return Class.forName("org.umlg.sqlg.sql.dialect.HsqldbDialect");
-        } catch (ClassNotFoundException e) {
-        }
-        throw new IllegalStateException("No sqlg dialect found!");
-    }
-
-    public void printTraversalForm(final Traversal traversal) {
+    protected void printTraversalForm(final Traversal traversal) {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
         if (!muted) System.out.println("   pre-strategy:" + traversal);
