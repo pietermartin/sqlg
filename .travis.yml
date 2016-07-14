@@ -18,4 +18,5 @@ before_script:
   - psql -c 'create database temp;' -U postgres
   - psql -c 'create database temp1;' -U postgres
   - psql -c 'create database temp2;' -U postgres
+  - psql -c 'create database target;' -U postgres
 
