@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestHasLabel;
+import org.umlg.sqlg.test.schema.TestLazyLoadSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.TestHasLabel;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestHasLabel.class
+        TestLazyLoadSchema.class
 })
 public class AnyTest {
 }
