@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.AbstractGraphProvider;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 
@@ -18,6 +20,8 @@ import java.util.Set;
  */
 public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
+    private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+
     private static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
         add(SqlgEdge.class);
         add(SqlgElement.class);
@@ -30,6 +34,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
+        logger.info("clearing datasource " + configuration.getString("jdbc.url"));
         SqlgDataSource sqlgDataSource = null;
         if (null != g) {
             if (g.features().graph().supportsTransactions() && g.tx().isOpen()) {
