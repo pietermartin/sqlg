@@ -45,17 +45,18 @@ import java.util.stream.Stream;
 
 //These are to debug travis
 
+//fails
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest",
         method = "shouldReadWriteModernWrappedInJsonObject",
         reason = "travis hangs.")
 
 //graphml
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest",
-        method = "shouldReadWriteModernToFileWithHelpers",
-        specific = "graphml",
-        reason = "travis hangs.")
+//@Graph.OptOut(
+//        test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest",
+//        method = "shouldReadWriteModernToFileWithHelpers",
+//        specific = "graphml",
+//        reason = "travis hangs.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest",
         method = "shouldReadWriteClassic",
