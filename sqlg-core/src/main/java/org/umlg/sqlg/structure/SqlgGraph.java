@@ -44,6 +44,12 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 
 //These are to debug travis
+
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest",
+        method = "shouldReadWriteModernWrappedInJsonObject",
+        reason = "travis hangs.")
+
 //graphml
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest",
@@ -73,11 +79,6 @@ import java.util.stream.Stream;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest",
         method = "shouldMigrateClassicGraph",
-        specific = "graphml",
-        reason = "travis hangs.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest",
-        method = "shouldReadWriteModernWrappedInJsonObject",
         specific = "graphml",
         reason = "travis hangs.")
 
@@ -112,11 +113,6 @@ import java.util.stream.Stream;
         method = "shouldMigrateClassicGraph",
         specific = "graphson",
         reason = "travis hangs.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest",
-        method = "shouldReadWriteModernWrappedInJsonObject",
-        specific = "graphson",
-        reason = "travis hangs.")
 
 //gryo
 @Graph.OptOut(
@@ -147,11 +143,6 @@ import java.util.stream.Stream;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.io.IoGraphTest",
         method = "shouldMigrateClassicGraph",
-        specific = "gryo",
-        reason = "travis hangs.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest",
-        method = "shouldReadWriteModernWrappedInJsonObject",
         specific = "gryo",
         reason = "travis hangs.")
 //These are to debug travis
