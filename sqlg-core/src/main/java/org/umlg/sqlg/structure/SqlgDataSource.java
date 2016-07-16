@@ -19,7 +19,7 @@ import java.util.*;
 public class SqlgDataSource {
 
     public static final String JDBC_URL = "jdbc.url";
-    private static Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(SqlgDataSource.class.getName());
     private Map<String, ComboPooledDataSource> cpdss = new HashMap<>();
 
     private SqlgDataSource() {
@@ -43,7 +43,7 @@ public class SqlgDataSource {
         }
         //this odd logic is for travis, it needs log feedback to not kill the build
         if (configuration.getString(JDBC_URL).contains("postgresql")) {
-            logger.info(String.format("Setting up datasource to %s for user %s", connectURI, username));
+            logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
         } else {
             logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
         }
