@@ -1,12 +1,16 @@
 package org.umlg.sqlg.test.rollback;
 
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import static org.junit.Assert.*;
+import static org.apache.tinkerpop.gremlin.AbstractGremlinTest.assertVertexEdgeCounts;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/09/24
@@ -15,13 +19,50 @@ import static org.junit.Assert.*;
 public class TestRollback extends BaseTest {
 
     @Test
-    public void shouldRollbackByDefault() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-        a1.addEdge("ab", b1);
-//        this.sqlgGraph.tx().rollback();
+    public void shouldRollbackElementAutoTransactionByDefault() {
+        assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
+        Vertex v1 = this.sqlgGraph.addVertex();
+        @SuppressWarnings("UnusedAssignment")
+        Edge e1 = v1.addEdge("l", v1);
+        this.sqlgGraph.tx().commit();
+        assertVertexEdgeCounts(this.sqlgGraph, 1, 1);
+        v1.remove();
+        this.sqlgGraph.tx().commit();
+        assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
+
+        v1 = this.sqlgGraph.addVertex();
+        e1 = v1.addEdge("l", v1);
+        assertVertexEdgeCounts(this.sqlgGraph, 1, 1);
+        assertEquals(v1.id(), this.sqlgGraph.vertices(v1.id()).next().id());
+        assertEquals(e1.id(), this.sqlgGraph.edges(e1.id()).next().id());
         this.sqlgGraph.traversal().tx().rollback();
+        assertVertexEdgeCounts(this.sqlgGraph, 0, 0);
+    }
+
+    /**
+     * This test is for HSQLDB in particular.
+     * HSQLDB auto commits transactions that execute schema creation commands.
+     * This invalidates the rollback logic that the test is trying to tests.
+     * So first create, commit delete and then test rollback.
+     */
+    @Test
+    public void shouldRollbackByDefault() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        a1.remove();
+        b1.remove();
+        this.sqlgGraph.tx().commit();
         assertFalse(this.sqlgGraph.edges().hasNext());
+        assertFalse(this.sqlgGraph.vertices().hasNext());
+
+        a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().rollback();
+        assertFalse(this.sqlgGraph.edges().hasNext());
+        assertFalse(this.sqlgGraph.vertices().hasNext());
     }
 
     @Test
