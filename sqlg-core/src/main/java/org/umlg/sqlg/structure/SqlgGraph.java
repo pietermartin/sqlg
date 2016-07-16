@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 //These are to debug travis
 
 @Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest",
+        test = "org.apache.tinkerpop.gremlin.structure.io.IoTest$GraphSONTest",
         method = "shouldReadWriteModernWrappedInJsonObject",
         reason = "travis hangs.")
 
