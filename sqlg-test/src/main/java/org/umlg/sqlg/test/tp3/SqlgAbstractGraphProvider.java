@@ -34,7 +34,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
     @Override
     public void clear(final Graph g, final Configuration configuration) throws Exception {
-        logger.info("clearing datasource " + configuration.getString("jdbc.url"));
+        logger.debug("clearing datasource " + configuration.getString("jdbc.url"));
         SqlgDataSource sqlgDataSource = null;
         if (null != g) {
             if (g.features().graph().supportsTransactions() && g.tx().isOpen()) {
