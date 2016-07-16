@@ -30,13 +30,14 @@ public class TestLoadSchema extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDateTime.now());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
-        Assert.assertTrue(vv.property("createOn").isPresent());
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
-                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
-        Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
-        this.sqlgGraph.tx().rollback();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
+            Assert.assertTrue(vv.property("createOn").isPresent());
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+                    sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
+            Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
@@ -44,13 +45,14 @@ public class TestLoadSchema extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalDate.now());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
-        Assert.assertTrue(vv.property("createOn").isPresent());
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
-                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
-        Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
-        this.sqlgGraph.tx().rollback();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
+            Assert.assertTrue(vv.property("createOn").isPresent());
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+                    sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
+            Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
@@ -58,13 +60,14 @@ public class TestLoadSchema extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "createOn", LocalTime.now());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
-        Assert.assertTrue(vv.property("createOn").isPresent());
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
-                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
-        Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
-        this.sqlgGraph.tx().rollback();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
+            Assert.assertTrue(vv.property("createOn").isPresent());
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+                    sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
+            Assert.assertTrue(propertyTypeMap.containsKey("createOn"));
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
@@ -76,13 +79,14 @@ public class TestLoadSchema extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "doc", json);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex vv = this.sqlgGraph.traversal().V(v1.id()).next();
-        Assert.assertTrue(vv.property("doc").isPresent());
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
-                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
-        Assert.assertTrue(propertyTypeMap.containsKey("doc"));
-        this.sqlgGraph.tx().rollback();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex vv = sqlgGraph1.traversal().V(v1.id()).next();
+            Assert.assertTrue(vv.property("doc").isPresent());
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+                    sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
+            Assert.assertTrue(propertyTypeMap.containsKey("doc"));
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
@@ -90,13 +94,14 @@ public class TestLoadSchema extends BaseTest {
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex vv = this.sqlgGraph.traversal().V(v.id()).next();
-        Assert.assertFalse(vv.property("ID").isPresent());
-        Map<String, PropertyType> propertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(SchemaTable.of(
-                this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person").toString());
-        Assert.assertFalse(propertyTypeMap.containsKey("ID"));
-        this.sqlgGraph.tx().rollback();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
+            Assert.assertFalse(vv.property("ID").isPresent());
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+                    sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
+            Assert.assertFalse(propertyTypeMap.containsKey("ID"));
+            sqlgGraph1.tx().rollback();
+        }
     }
 
     @Test
@@ -104,13 +109,14 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Vertex v = this.sqlgGraph.traversal().V().next();
-        v.property("surname", "b");
-        this.sqlgGraph.tx().rollback();
-        v = this.sqlgGraph.traversal().V().next();
-        v.property("surname", "b");
-        this.sqlgGraph.tx().commit();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Vertex v = sqlgGraph1.traversal().V().next();
+            v.property("surname", "b");
+            sqlgGraph1.tx().rollback();
+            v = sqlgGraph1.traversal().V().next();
+            v.property("surname", "b");
+            sqlgGraph1.tx().commit();
+        }
     }
 
     @Test
@@ -118,11 +124,12 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "byteArray", new byte[]{1,2,3,4});
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Iterator<Vertex> iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
-        Assert.assertTrue(iter.hasNext());
-        Vertex v = iter.next();
-        Assert.assertArrayEquals(new byte[]{1,2,3,4}, v.<byte[]>property("byteArray").value());
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Iterator<Vertex> iter = sqlgGraph1.traversal().V().has(T.label, "Person");
+            Assert.assertTrue(iter.hasNext());
+            Vertex v = iter.next();
+            Assert.assertArrayEquals(new byte[]{1,2,3,4}, v.<byte[]>property("byteArray").value());
+        }
     }
 
     @Test
@@ -131,15 +138,16 @@ public class TestLoadSchema extends BaseTest {
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        Iterator<Vertex> iter = this.sqlgGraph.traversal().V().has(T.label, "Person");
-        Assert.assertTrue(iter.hasNext());
-        Vertex v = iter.next();
-        Assert.assertEquals(true, v.property("aBoolean").value());
-        Assert.assertEquals((short) 1, v.property("aShort").value());
-        Assert.assertEquals(1, v.property("aInteger").value());
-        Assert.assertEquals(1D, v.property("aDouble").value());
-        Assert.assertEquals("aaaaaaaaaaaaa", v.property("aString").value());
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Iterator<Vertex> iter = sqlgGraph1.traversal().V().has(T.label, "Person");
+            Assert.assertTrue(iter.hasNext());
+            Vertex v = iter.next();
+            Assert.assertEquals(true, v.property("aBoolean").value());
+            Assert.assertEquals((short) 1, v.property("aShort").value());
+            Assert.assertEquals(1, v.property("aInteger").value());
+            Assert.assertEquals(1D, v.property("aDouble").value());
+            Assert.assertEquals("aaaaaaaaaaaaa", v.property("aString").value());
+        }
     }
 
     @Test
@@ -150,17 +158,17 @@ public class TestLoadSchema extends BaseTest {
                 "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        this.sqlgGraph = SqlgGraph.open(configuration);
-        this.sqlgGraph.addVertex(T.label, "Test1.Product", "aBoolean", true, "aShort", (short) 1,
-                "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlgGraph.addVertex(T.label, "Test2.Product", "aBoolean", true, "aShort", (short) 1,
-                "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
-        this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test1.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test2.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test1.Product").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Test2.Product").count().next(), 0);
-
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            sqlgGraph1.addVertex(T.label, "Test1.Product", "aBoolean", true, "aShort", (short) 1,
+                    "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
+            sqlgGraph1.addVertex(T.label, "Test2.Product", "aBoolean", true, "aShort", (short) 1,
+                    "aInteger", 1, "aLong", 1L, "aDouble", 1D, "aString", "aaaaaaaaaaaaa");
+            sqlgGraph1.tx().commit();
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Test1.Person").count().next(), 0);
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Test2.Person").count().next(), 0);
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Test1.Product").count().next(), 0);
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Test2.Product").count().next(), 0);
+        }
     }
 
     @Test

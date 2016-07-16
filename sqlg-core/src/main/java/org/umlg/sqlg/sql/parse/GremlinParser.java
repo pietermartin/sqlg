@@ -48,12 +48,11 @@ public class GremlinParser<S extends Element, E extends Element> {
                 //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
                 schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
-            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
-            //TODO think about how to remove the root node itself
             boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
             if (remove) {
                 toRemove.add(rootSchemaTableTree);
             }
+            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
         }
         rootSchemaTableTrees.removeAll(toRemove);
         return rootSchemaTableTrees;

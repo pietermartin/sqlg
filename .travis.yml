@@ -1,21 +1,22 @@
-#sudo: false
+#sudo: true
 language: java
 jdk:
   - oraclejdk8
 #env:
-#    - MAVEN_OPTS="-Xmx2048m"
+#    - MAVEN_OPTS="-Xmx4096m"
 script: "./run-tests.sh"
 addons:
   postgresql: "9.4"
 before_script:
-  - psql -c 'create database sqlgraphdb;' -U postgres
-  - psql -c 'create database g1;' -U postgres
-  - psql -c 'create database g2;' -U postgres
-  - psql -c 'create database prototype;' -U postgres
-  - psql -c 'create database readGraph;' -U postgres
-  - psql -c 'create database standard;' -U postgres
-  - psql -c 'create database subgraph;' -U postgres
-  - psql -c 'create database temp;' -U postgres
-  - psql -c 'create database temp1;' -U postgres
-  - psql -c 'create database temp2;' -U postgres
+  - psql -c 'create database "sqlgraphdb";' -U postgres
+  - psql -c 'create database "g1";' -U postgres
+  - psql -c 'create database "g2";' -U postgres
+  - psql -c 'create database "prototype";' -U postgres
+  - psql -c 'create database "readGraph";' -U postgres
+  - psql -c 'create database "standard";' -U postgres
+  - psql -c 'create database "subgraph";' -U postgres
+  - psql -c 'create database "temp";' -U postgres
+  - psql -c 'create database "temp1";' -U postgres
+  - psql -c 'create database "temp2";' -U postgres
+  - psql -c 'create database "target";' -U postgres
 

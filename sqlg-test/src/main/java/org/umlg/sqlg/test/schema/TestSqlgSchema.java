@@ -19,78 +19,82 @@ import java.util.List;
 public class TestSqlgSchema  extends BaseTest {
 
     @Test
-    public void testSqlgSchemaExist() {
+    public void testSqlgSchemaExist() throws Exception {
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John");
         Vertex dog = this.sqlgGraph.addVertex(T.label, "Dog", "name", "Snowy");
         person.addEdge("pet", dog, "createdOn", LocalDateTime.now());
 
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(2, this.sqlgGraph.traversal().V().count().next(), 0);
+        this.sqlgGraph.close();
 
-        SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration);
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
 
-        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
-                TopologyStrategy.build().selectFrom(
-                        SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES
-                ).create()
-        );
-        //Assert the schema
-        List<Vertex> schemas = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
-                .toList();
-        Assert.assertEquals(1, schemas.size());
-        Assert.assertEquals(sqlgGraph1.getSqlDialect().getPublicSchema(), schemas.get(0).value("name"));
+            GraphTraversalSource traversalSource = sqlgGraph1.traversal().withStrategies(
+                    TopologyStrategy.build().selectFrom(
+                            SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES
+                    ).create()
+            );
+            //Assert the schema
+            List<Vertex> schemas = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                    .toList();
+            Assert.assertEquals(1, schemas.size());
+            Assert.assertEquals(sqlgGraph1.getSqlDialect().getPublicSchema(), schemas.get(0).value("name"));
 
-        //Assert the vertex labels
-        List<Vertex> vertexLabels = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL)
-                .toList();
-        Assert.assertEquals(2, vertexLabels.size());
-        Assert.assertEquals(1, vertexLabels.stream().filter(v->v.value("name").equals("Person")).count());
-        Assert.assertEquals(1, vertexLabels.stream().filter(v->v.value("name").equals("Dog")).count());
+            //Assert the vertex labels
+            List<Vertex> vertexLabels = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL)
+                    .toList();
+            Assert.assertEquals(2, vertexLabels.size());
+            Assert.assertEquals(1, vertexLabels.stream().filter(v->v.value("name").equals("Person")).count());
+            Assert.assertEquals(1, vertexLabels.stream().filter(v->v.value("name").equals("Dog")).count());
 
-        //Assert the edge labels
-        List<Vertex> edgeLabels = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
-                .toList();
-        Assert.assertEquals(1, edgeLabels.size());
-        Assert.assertEquals(1, edgeLabels.stream().filter(v->v.value("name").equals("pet")).count());
+            //Assert the edge labels
+            List<Vertex> edgeLabels = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
+                    .toList();
+            Assert.assertEquals(1, edgeLabels.size());
+            Assert.assertEquals(1, edgeLabels.stream().filter(v->v.value("name").equals("pet")).count());
 
-        //Assert the Person's properties
-        List<Vertex> vertexLabelPersons = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL)
-                .has("name", "Person")
-                .toList();
-        Assert.assertEquals(1, vertexLabelPersons.size());
-        Vertex vertexLabelPerson = vertexLabelPersons.get(0);
-        List<Vertex> personProperties = traversalSource.V(vertexLabelPerson).out(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
-        Assert.assertEquals(1, personProperties.size());
-        Assert.assertEquals("name", personProperties.get(0).value("name"));
-        Assert.assertEquals("STRING", personProperties.get(0).value("type"));
+            //Assert the Person's properties
+            List<Vertex> vertexLabelPersons = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL)
+                    .has("name", "Person")
+                    .toList();
+            Assert.assertEquals(1, vertexLabelPersons.size());
+            Vertex vertexLabelPerson = vertexLabelPersons.get(0);
+            List<Vertex> personProperties = traversalSource.V(vertexLabelPerson).out(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
+            Assert.assertEquals(1, personProperties.size());
+            Assert.assertEquals("name", personProperties.get(0).value("name"));
+            Assert.assertEquals("STRING", personProperties.get(0).value("type"));
 
-        //Assert the Dog's properties
-        List<Vertex> vertexLabelDogs = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL)
-                .has("name", "Dog")
-                .toList();
-        Assert.assertEquals(1, vertexLabelDogs.size());
-        Vertex vertexLabelDog = vertexLabelDogs.get(0);
-        List<Vertex> dogProperties = traversalSource.V(vertexLabelDog).out(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
-        Assert.assertEquals(1, dogProperties.size());
-        Assert.assertEquals("name", dogProperties.get(0).value("name"));
-        Assert.assertEquals("STRING", personProperties.get(0).value("type"));
+            //Assert the Dog's properties
+            List<Vertex> vertexLabelDogs = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL)
+                    .has("name", "Dog")
+                    .toList();
+            Assert.assertEquals(1, vertexLabelDogs.size());
+            Vertex vertexLabelDog = vertexLabelDogs.get(0);
+            List<Vertex> dogProperties = traversalSource.V(vertexLabelDog).out(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
+            Assert.assertEquals(1, dogProperties.size());
+            Assert.assertEquals("name", dogProperties.get(0).value("name"));
+            Assert.assertEquals("STRING", personProperties.get(0).value("type"));
 
-        //Assert the pet edge's properties
-        List<Vertex> edgeLabelPets = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
-                .has("name", "pet")
-                .toList();
-        Assert.assertEquals(1, edgeLabelPets.size());
-        Vertex edgeLabelPet = edgeLabelPets.get(0);
-        List<Vertex> petProperties = traversalSource.V(edgeLabelPet).out(SchemaManager.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).toList();
-        Assert.assertEquals(1, petProperties.size());
-        Assert.assertEquals("createdOn", petProperties.get(0).value("name"));
-        Assert.assertEquals("LOCALDATETIME", petProperties.get(0).value("type"));
+            //Assert the pet edge's properties
+            List<Vertex> edgeLabelPets = traversalSource.V()
+                    .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_EDGE_LABEL)
+                    .has("name", "pet")
+                    .toList();
+            Assert.assertEquals(1, edgeLabelPets.size());
+            Vertex edgeLabelPet = edgeLabelPets.get(0);
+            List<Vertex> petProperties = traversalSource.V(edgeLabelPet).out(SchemaManager.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).toList();
+            Assert.assertEquals(1, petProperties.size());
+            Assert.assertEquals("createdOn", petProperties.get(0).value("name"));
+            Assert.assertEquals("LOCALDATETIME", petProperties.get(0).value("type"));
+
+        }
+
     }
 
 }

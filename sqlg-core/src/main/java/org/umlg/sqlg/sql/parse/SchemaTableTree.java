@@ -1822,7 +1822,7 @@ public class SchemaTableTree {
         }
     }
 
-    private void removeObsoleteHasContainers(SchemaTableTree schemaTableTree) {
+    private void removeObsoleteHasContainers(final SchemaTableTree schemaTableTree) {
         Set<HasContainer> toRemove = new HashSet<>();
         schemaTableTree.hasContainers.forEach(hasContainer -> {
             if (hasContainer.getKey().equals(label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
