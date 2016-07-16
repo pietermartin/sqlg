@@ -1,9 +1,9 @@
-sudo: true
+#sudo: true
 language: java
 jdk:
   - oraclejdk8
-env:
-    - MAVEN_OPTS="-Xmx4096m"
+#env:
+#    - MAVEN_OPTS="-Xmx4096m"
 script: "./run-tests.sh"
 addons:
   postgresql: "9.4"
