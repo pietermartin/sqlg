@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.both;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -31,6 +32,27 @@ public class TinkerpopTest extends BaseTest {
     private static final String partition = "gremlin.partitionGraphStrategy.partition";
 
     @Test
+    public void testTail() throws IOException {
+        Graph graph = this.sqlgGraph;
+        final GraphReader reader = GryoReader.build()
+                .mapper(graph.io(GryoIo.build()).mapper().create())
+                .create();
+        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
+            reader.readGraph(stream, graph);
+        }
+        assertModernGraph(graph, true, false);
+        GraphTraversalSource g = graph.traversal();
+        int tail = 0;
+        for (int i = 1; i < 72; i++) {
+            tail = i;
+            List<Vertex> vertices = g.V().repeat(both()).times(3).tail(tail).toList();
+            if (tail != vertices.size()) {
+                System.out.println("expected " + tail + " found " + vertices.size());
+            }
+        }
+    }
+
+//    @Test
     public void g_V_chooseXlabel_eq_person__unionX__out_lang__out_nameX__in_labelX() throws IOException {
         Graph graph = this.sqlgGraph;
         final GraphReader reader = GryoReader.build()

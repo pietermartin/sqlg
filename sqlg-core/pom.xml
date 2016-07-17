@@ -8,7 +8,7 @@
         <version>1.2.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>sqlg-core</artifactId>
-	<name>sqlg-core</name>
+	<name>sqlg :: core</name>
 
 	<dependencies>
         <dependency>
