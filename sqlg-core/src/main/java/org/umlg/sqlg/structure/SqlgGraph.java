@@ -226,11 +226,16 @@ public class SqlgGraph implements Graph {
             throw new RuntimeException(e);
         }
         try {
-            this.jdbcUrl = this.configuration.getString(JDBC_URL);
-            this.sqlgDataSource = SqlgDataSource.setupDataSource(
-                    sqlDialect.getJdbcDriver(),
-                    this.configuration
-            );
+            this.jdbcUrl = configuration.getString(JDBC_URL);
+            if (jdbcUrl.startsWith(SqlgDataSource.JNDI_PREFIX)) {
+                this.sqlgDataSource = SqlgDataSource
+                        .setupDataSourceFromJndi(jdbcUrl.substring(SqlgDataSource.JNDI_PREFIX.length()), this.configuration);
+            } else {
+                this.sqlgDataSource = SqlgDataSource.setupDataSource(
+                        sqlDialect.getJdbcDriver(),
+                        this.configuration);
+            }
+
             logger.info(String.format("Connection url = %s , maxPoolSize = %d ", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
             this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection());
         } catch (Exception e) {
