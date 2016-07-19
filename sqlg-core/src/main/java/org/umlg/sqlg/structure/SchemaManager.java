@@ -1430,7 +1430,7 @@ public class SchemaManager {
      */
     public void clear() {
         try {
-            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlDialect.getJdbcDriver()).getConnection();
+            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
             DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {

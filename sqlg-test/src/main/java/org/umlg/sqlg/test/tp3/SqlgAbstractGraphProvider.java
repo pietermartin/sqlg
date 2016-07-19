@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 
@@ -42,9 +43,10 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
             }
             g.close();
         }
-        SqlDialect sqlDialect = getSqlgDialect(configuration);
+        SqlgPlugin plugin = getSqlgPlugin();
+        SqlDialect sqlDialect = plugin.instantiateDialect(configuration);
         try {
-            sqlgDataSource = SqlgDataSource.setupDataSource(sqlDialect.getJdbcDriver(), configuration);
+            sqlgDataSource = SqlgDataSource.setupDataSource(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
             try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
                 DatabaseMetaData metadata = conn.getMetaData();
                 if (sqlDialect.supportsCascade()) {
@@ -105,5 +107,5 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
         return "jippo.jippo" + SchemaManager.LABEL_SEPARATOR + id.toString();
     }
 
-    public abstract SqlDialect getSqlgDialect(Configuration configuration);
+    public abstract SqlgPlugin getSqlgPlugin();
 }

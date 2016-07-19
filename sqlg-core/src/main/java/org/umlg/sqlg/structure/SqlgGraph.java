@@ -18,6 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
@@ -25,7 +26,6 @@ import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.lang.reflect.Constructor;
 import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
@@ -229,24 +229,28 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgGraph(final Configuration configuration) {
+        this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
+        this.configuration = configuration;
+
         try {
-            Class<?> sqlDialectClass = findSqlgDialect();
-            logger.debug(String.format("Initializing Sqlg with %s dialect", sqlDialectClass.getSimpleName()));
-            Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
-            this.sqlDialect = (SqlDialect) constructor.newInstance(configuration);
-            this.implementForeignKeys = configuration.getBoolean("implement.foreign.keys", true);
-            this.configuration = configuration;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            this.jdbcUrl = configuration.getString(JDBC_URL);
+            this.jdbcUrl = this.configuration.getString(JDBC_URL);
+
             if (jdbcUrl.startsWith(SqlgDataSource.JNDI_PREFIX)) {
                 this.sqlgDataSource = SqlgDataSource
-                        .setupDataSourceFromJndi(jdbcUrl.substring(SqlgDataSource.JNDI_PREFIX.length()), this.configuration);
+                        .setupDataSourceFromJndi(jdbcUrl.substring(SqlgDataSource.JNDI_PREFIX.length()),
+                                this.configuration);
+                SqlgPlugin p = findSqlgPlugin(this.sqlgDataSource.get(jdbcUrl).getConnection().getMetaData());
+                if (p == null) {
+                    throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
+                }
+                this.sqlDialect = p.instantiateDialect(configuration);
             } else {
-                this.sqlgDataSource = SqlgDataSource.setupDataSource(
-                        sqlDialect.getJdbcDriver(),
+                SqlgPlugin p = findSqlgPlugin(jdbcUrl);
+                if (p == null) {
+                    throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
+                }
+
+                this.sqlgDataSource = SqlgDataSource.setupDataSource(p.getDriverFor(jdbcUrl),
                         this.configuration);
             }
 
@@ -1165,20 +1169,24 @@ public class SqlgGraph implements Graph {
         return implementForeignKeys;
     }
 
-    private Class<?> findSqlgDialect() {
-        try {
-            return Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
-        } catch (ClassNotFoundException e) {
+    private SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class)) {
+            if (p.canWorkWith(metadata)) {
+                return p;
+            }
         }
-        try {
-            return Class.forName("org.umlg.sqlg.sql.dialect.MariaDbDialect");
-        } catch (ClassNotFoundException e) {
+
+        return null;
+    }
+
+    private SqlgPlugin findSqlgPlugin(String connectionUri) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class)) {
+            if (p.getDriverFor(connectionUri) != null) {
+                return p;
+            }
         }
-        try {
-            return Class.forName("org.umlg.sqlg.sql.dialect.HsqldbDialect");
-        } catch (ClassNotFoundException e) {
-        }
-        throw new IllegalStateException("No sqlg dialect found!");
+
+        return null;
     }
 
     private <T extends Element> Iterable<T> elements(boolean returnVertices, final List<RecordId> elementIds) {

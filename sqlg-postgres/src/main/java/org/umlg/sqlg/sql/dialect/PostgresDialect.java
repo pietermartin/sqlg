@@ -82,11 +82,6 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public String getJdbcDriver() {
-        return "org.postgresql.xa.PGXADataSource";
-    }
-
-    @Override
     public String getForeignKeyTypeDefinition() {
         return "BIGINT";
     }

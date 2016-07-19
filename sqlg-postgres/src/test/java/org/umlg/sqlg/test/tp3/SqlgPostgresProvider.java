@@ -1,11 +1,10 @@
 package org.umlg.sqlg.test.tp3;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.PostgresPlugin;
+import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,14 +26,8 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
     }
 
     @Override
-    public SqlDialect getSqlgDialect(Configuration configuration) {
-        try {
-            Class<?> sqlDialectClass = Class.forName("org.umlg.sqlg.sql.dialect.PostgresDialect");
-            Constructor<?> constructor = sqlDialectClass.getConstructor(Configuration.class);
-            return (SqlDialect) constructor.newInstance(configuration);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public SqlgPlugin getSqlgPlugin() {
+        return new PostgresPlugin();
     }
 
 }
