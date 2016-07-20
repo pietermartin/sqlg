@@ -43,6 +43,14 @@ import java.util.stream.Stream;
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
+        method = "*",
+        reason = "Fails for HSQLDB. HSQLDB has its own interrupt logic that does not play well with TinkerPop's interrupt.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldRollbackElementAutoTransactionByDefault",
+        reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
 
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
