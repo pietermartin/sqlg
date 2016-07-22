@@ -250,6 +250,7 @@ public class SqlgGraph implements Graph {
                     throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
                 }
 
+                this.sqlDialect = p.instantiateDialect(configuration);
                 this.sqlgDataSource = SqlgDataSource.setupDataSource(p.getDriverFor(jdbcUrl),
                         this.configuration);
             }
