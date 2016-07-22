@@ -136,7 +136,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestNormalBatchUpdateDateTime.class,
         TestOptionalWithOrder.class,
         TestMultipleLabels.class,
-        TestColumnNamePropertyNameMapScope.class
+        TestColumnNamePropertyNameMapScope.class,
+        TestJNDIInitialization.class
 })
 public class AllTest {
 }

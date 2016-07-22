@@ -26,8 +26,6 @@ public interface SqlDialect {
 
     PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName);
 
-    String getJdbcDriver();
-
     void validateProperty(Object key, Object value);
 
     default boolean needsSemicolon() {
