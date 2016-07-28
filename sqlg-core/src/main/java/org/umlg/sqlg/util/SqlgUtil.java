@@ -199,17 +199,17 @@ public class SqlgUtil {
         }
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValueMap);
         //This is for selects
-        setKeyValueAsParameter(sqlgGraph, false, parameterIndex, conn, preparedStatement, typeAndValues);
+        setKeyValuesAsParameter(sqlgGraph, false, parameterIndex, conn, preparedStatement, typeAndValues);
     }
 
     //This is called for inserts
     public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
-        i = setKeyValueAsParameter(sqlgGraph, true, i, conn, preparedStatement, typeAndValues);
+        i = setKeyValuesAsParameter(sqlgGraph, true, i, conn, preparedStatement, typeAndValues);
         return i;
     }
 
-    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
+    public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
             switch (pair.left) {
                 case BOOLEAN:

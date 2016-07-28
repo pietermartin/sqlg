@@ -33,6 +33,23 @@ public class LocalDateTest extends BaseTest {
     }
 
     @Test
+    public void testLocalDateTimeUpdate() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        Vertex v = this.sqlgGraph.addVertex(T.label, "A", "dateTime", now);
+        this.sqlgGraph.tx().commit();
+        v.property("dateTime", now.plusHours(1));
+        this.sqlgGraph.tx().commit();
+
+        //Create a new sqlgGraph
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<? extends Property> properties = sqlgGraph1.traversal().V().hasLabel("A").properties("dateTime").toList();
+            Assert.assertEquals(1, properties.size());
+            Assert.assertTrue(properties.get(0).isPresent());
+            Assert.assertEquals(now.plusHours(1), properties.get(0).value());
+        }
+    }
+
+    @Test
     public void testLocalDateTimeArray() throws Exception {
         LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()};
         this.sqlgGraph.addVertex(T.label, "A", "localDateTimes", localDateTimes);
@@ -198,6 +215,7 @@ public class LocalDateTest extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         //Create a new sqlgGraph
+        //noinspection Duplicates
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime[]>properties("zonedDateTimes").toList();
             Assert.assertEquals(1, properties.size());
@@ -344,15 +362,15 @@ public class LocalDateTest extends BaseTest {
         Vertex a5 = this.sqlgGraph.addVertex(T.label, "A", "time", now2);
         this.sqlgGraph.tx().commit();
 
-        LocalDate ld = this.sqlgGraph.traversal().V(a1.id()).next().<LocalDate>value("born");
+        LocalDate ld = this.sqlgGraph.traversal().V(a1.id()).next().value("born");
         Assert.assertEquals(now, ld);
-        LocalDateTime ldt = this.sqlgGraph.traversal().V(a2.id()).next().<LocalDateTime>value("bornAgain");
+        LocalDateTime ldt = this.sqlgGraph.traversal().V(a2.id()).next().value("bornAgain");
         Assert.assertEquals(now1, ldt);
-        ZonedDateTime zonedDateTime = this.sqlgGraph.traversal().V(a3.id()).next().<ZonedDateTime>value("andBornAgain");
+        ZonedDateTime zonedDateTime = this.sqlgGraph.traversal().V(a3.id()).next().value("andBornAgain");
         Assert.assertEquals(zonedDateTimeAGTHarare, zonedDateTime);
-        zonedDateTime = this.sqlgGraph.traversal().V(a4.id()).next().<ZonedDateTime>value("andReBornAgain");
+        zonedDateTime = this.sqlgGraph.traversal().V(a4.id()).next().value("andReBornAgain");
         Assert.assertEquals(zonedDateTimeAGT, zonedDateTime);
-        LocalTime localTime = this.sqlgGraph.traversal().V(a5.id()).next().<LocalTime>value("time");
+        LocalTime localTime = this.sqlgGraph.traversal().V(a5.id()).next().value("time");
         Assert.assertEquals(now2.toSecondOfDay(), localTime.toSecondOfDay());
     }
 
@@ -367,6 +385,7 @@ public class LocalDateTest extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         //Create a new sqlgGraph
+        //noinspection Duplicates
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             List<? extends Property<ZonedDateTime[]>> properties = sqlgGraph1.traversal().V().hasLabel("A").<ZonedDateTime[]>properties("zonedDateTimes").toList();
             Assert.assertEquals(1, properties.size());
@@ -591,17 +610,5 @@ public class LocalDateTest extends BaseTest {
             Assert.assertEquals(period, v.value("period"));
             Assert.assertEquals(duration, v.value("duration"));
         }
-    }
-
-    public static void main(String[] args) {
-        ZoneId zoneIdParis = ZoneId.of("Europe/Paris");
-        ZonedDateTime parisDateTime = ZonedDateTime.of(1999, 1, 1, 1, 1, 1, 1, zoneIdParis);
-        System.out.println("paris time " + parisDateTime);
-
-        ZoneId zoneIdTokoy = ZoneId.of("Asia/Tokyo");
-        ZonedDateTime tokoyDateTime = ZonedDateTime.of(1999, 1, 1, 1, 1, 1, 1, zoneIdTokoy);
-        System.out.println("harare time " + tokoyDateTime);
-
-        System.out.println(parisDateTime.isAfter(tokoyDateTime));
     }
 }

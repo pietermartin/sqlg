@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
@@ -11,8 +10,6 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -922,61 +919,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
-            }
-        }
-    }
-
-    @Override
-    public void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException {
-        for (Map.Entry<String, Integer> columnCountEntry : columnNameCountMap.entrySet()) {
-            String properName = columnCountEntry.getKey();
-            Integer columnCount = columnCountEntry.getValue();
-            if (!properName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) && !properName.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                String name = schemaTableTree.propertyNameFromAlias(properName);
-
-                //Optimized!!, using String.replace is slow
-                Iterator<String> split = Splitter.on(SchemaTableTree.ALIAS_SEPARATOR).split(name).iterator();
-                name = split.next();
-                if (split.hasNext()) {
-                    name += "." + split.next() + "." + split.next();
-                }
-
-                //Collect emit edge names, they must not be loaded
-                SchemaTableTree root = schemaTableTree.getRoot();
-                List<String> edgeIds = root.collectEmitEdgeIds();
-                if (edgeIds.contains(name)) {
-                    continue;
-                }
-
-                Object o = resultSet.getObject(columnCount);
-                if (!name.equals("ID")
-                        && !name.equals(SchemaManager.VERTEX_SCHEMA)
-                        && !name.equals(VERTEX_TABLE)
-                        && !Objects.isNull(o)) {
-
-                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
-                }
-            }
-        }
-    }
-
-    //TODO
-    //only have relevant columns in the map. No need for the if schemaTableTree.containsLabelledColumn() statement
-    //need the PropertyType per column
-    //need the propertyNameFromLabeledAlias per column
-    @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
-
-//        schemaTableTree.loadProperty(resultSet, this);
-
-        for (String columnName : columnMap.keySet()) {
-            Integer columnCount = columnMap.get(columnName);
-            if (schemaTableTree.containsLabelledColumn(columnName)) {
-                Object o = resultSet.getObject(columnCount);
-                String name = schemaTableTree.propertyNameFromLabeledAlias(columnName);
-                if (!Objects.isNull(o)) {
-                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
-                }
             }
         }
     }

@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -21,9 +20,6 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-
-import static org.umlg.sqlg.structure.PropertyType.boolean_ARRAY;
-import static org.umlg.sqlg.structure.PropertyType.int_ARRAY;
 
 /**
  * Date: 2014/07/12
@@ -307,78 +303,7 @@ public abstract class SqlgElement implements Element {
     }
 
     private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
-        for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
-            switch (pair.left) {
-                case BOOLEAN:
-                    preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
-                    break;
-                case BYTE:
-                    preparedStatement.setByte(parameterStartIndex++, (Byte) pair.right);
-                    break;
-                case SHORT:
-                    preparedStatement.setShort(parameterStartIndex++, (Short) pair.right);
-                    break;
-                case INTEGER:
-                    preparedStatement.setInt(parameterStartIndex++, (Integer) pair.right);
-                    break;
-                case LONG:
-                    preparedStatement.setLong(parameterStartIndex++, (Long) pair.right);
-                    break;
-                case FLOAT:
-                    preparedStatement.setFloat(parameterStartIndex++, (Float) pair.right);
-                    break;
-                case DOUBLE:
-                    preparedStatement.setDouble(parameterStartIndex++, (Double) pair.right);
-                    break;
-                case STRING:
-                    preparedStatement.setString(parameterStartIndex++, (String) pair.right);
-                    break;
-
-                //TODO the array properties are hardcoded according to postgres's jdbc driver
-                case boolean_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(boolean_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, booleanArray);
-                    break;
-                case byte_ARRAY:
-                    preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
-                    break;
-                case short_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.short_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, shortArray);
-                    break;
-                case int_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(int_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, intArray);
-                    break;
-                case long_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.long_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, longArray);
-                    break;
-                case float_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.float_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, floatArray);
-                    break;
-                case double_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.double_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, doubleArray);
-                    break;
-                case STRING_ARRAY:
-                    java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, stringArray);
-                    break;
-                case JSON:
-                    sqlgGraph.getSqlDialect().setJson(preparedStatement, parameterStartIndex++, (JsonNode) pair.getRight());
-                    break;
-                case JSON_ARRAY:
-                    JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
-                    java.sql.Array objectNodeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
-                    preparedStatement.setArray(parameterStartIndex++, objectNodeArray);
-                    break;
-                default:
-                    throw new IllegalStateException("Unhandled type " + pair.left.name());
-            }
-        }
-        return parameterStartIndex;
+        return SqlgUtil.setKeyValuesAsParameter(sqlgGraph, true, parameterStartIndex++, conn, preparedStatement, typeAndValues);
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
@@ -677,10 +602,6 @@ public abstract class SqlgElement implements Element {
         PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(propertyName);
         loadProperty(resultSet, propertyName, o, threadLocalColumnNameAliasMap, propertyType);
     }
-
-    public abstract void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException;
-
-    public abstract void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException;
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 

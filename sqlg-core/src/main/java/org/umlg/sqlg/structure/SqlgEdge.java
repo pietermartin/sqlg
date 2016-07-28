@@ -1,13 +1,10 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -229,93 +226,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    @Override
-    public void loadResultSet(ResultSet resultSet, Map<String, Integer> columnNameCountMap, SchemaTableTree schemaTableTree) throws SQLException {
-        for (Map.Entry<String, Integer> columnCountEntry : columnNameCountMap.entrySet()) {
-            String properName = columnCountEntry.getKey();
-            Integer columnCount = columnCountEntry.getValue();
-            SchemaTable inVertexColumnName;
-            SchemaTable outVertexColumnName;
-
-            String[] splittedColumn = properName.split(SchemaTableTree.ALIAS_SEPARATOR);
-            if (!properName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) && (splittedColumn.length < 4 || (splittedColumn[3].endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || splittedColumn[3].endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)))) {
-
-                Object o = resultSet.getObject(columnCount);
-                String name = schemaTableTree.propertyNameFromAlias(properName);
-
-                //Optimized!!, using String.replace is slow
-                Iterator<String> split = Splitter.on(SchemaTableTree.ALIAS_SEPARATOR).split(name).iterator();
-                name = split.next();
-                if (split.hasNext()) {
-                    name += "." + split.next() + "." + split.next();
-                }
-
-                if (!name.equals("ID") &&
-                        !Objects.isNull(o) &&
-                        !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
-                        !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-
-                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
-
-                }
-                if (!Objects.isNull(o)) {
-                    if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                        inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        Long inId = resultSet.getLong(columnCount);
-                        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
-                    } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                        outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        Long outId = resultSet.getLong(columnCount);
-                        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
-                    }
-                }
-            }
-        }
-
-        if (this.inVertex == null || this.outVertex == null) {
-            throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
-        }
-    }
-
-    @Override
-    public void loadLabeledResultSet(ResultSet resultSet, Map<String, Integer> columnMap, SchemaTableTree schemaTableTree) throws SQLException {
-        SchemaTable inVertexColumnName;
-        SchemaTable outVertexColumnName;
-        ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-        for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
-            String columnName = resultSetMetaData.getColumnLabel(i);
-            String properName = schemaTableTree.getThreadLocalAliasColumnNameMap().get(columnName);
-            if (properName == null) {
-                properName = columnName;
-            }
-            Object o = resultSet.getObject(columnName);
-            if (schemaTableTree.containsLabelledColumn(properName)) {
-                String name = schemaTableTree.propertyNameFromLabeledAlias(properName);
-
-                if (!name.equals("ID") &&
-                        !Objects.isNull(o) &&
-                        !name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
-                        !name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-
-                    loadProperty(resultSet, name, o, schemaTableTree.getThreadLocalColumnNameAliasMap());
-                } else if (!Objects.isNull(o)) {
-                    if (name.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                        inVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        Long inId = resultSet.getLong(columnName);
-                        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
-                    } else if (name.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                        outVertexColumnName = SchemaTable.from(this.sqlgGraph, name, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        Long outId = resultSet.getLong(columnName);
-                        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
-                    }
-                }
-            }
-        }
-        if (this.inVertex == null || this.outVertex == null) {
-            throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
         }
     }
 
