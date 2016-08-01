@@ -1,3 +1,8 @@
+##1.2.1
+
+* Added support for getting the data source from JNDI.
+* Optimize `SqlgGraph.bulkAddEdges(...) to use the correct types for the in and out properties. This has a marginal performance increase.
+
 ##1.2.0
 
 * Optimize lazy iteration. Remove unnecessary list creation for managing state.

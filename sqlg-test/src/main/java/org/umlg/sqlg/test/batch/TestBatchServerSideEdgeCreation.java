@@ -9,13 +9,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -170,15 +168,44 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         this.sqlgGraph.tx().streamingBatchModeOn();
-        List<Pair<String, String>> ids = new ArrayList<>();
-        ids.add(Pair.of("a", "1"));
-        ids.add(Pair.of("b", "1"));
+        List<Pair<String, Integer>> ids = new ArrayList<>();
+        ids.add(Pair.of("a", 1));
+        ids.add(Pair.of("b", 1));
         this.sqlgGraph.bulkAddEdges("RealWorkspaceElement", "VirtualGroup", "realWorkspaceElement_virtualGroup", Pair.of("cmUid", "ID"), ids);
         this.sqlgGraph.tx().commit();
 
         assertTrue(this.sqlgGraph.traversal().V(realWorkspaceElement1.id()).out("realWorkspaceElement_virtualGroup").hasNext());
         assertTrue(this.sqlgGraph.traversal().V(realWorkspaceElement2.id()).out("realWorkspaceElement_virtualGroup").hasNext());
         assertTrue(this.sqlgGraph.traversal().V(virtualGroup.id()).in("realWorkspaceElement_virtualGroup").hasNext());
+    }
+
+    @Test
+    public void testOnIds() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        Vertex virtualGroup = sqlgGraph.addVertex(T.label, "VirtualGroup", "name", "halo");
+        sqlgGraph.tx().commit();
+        List<Pair<Long, Long>> ids = new ArrayList<>();
+        sqlgGraph.tx().streamingWithLockBatchModeOn();
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("cm_uid", UUID.randomUUID().toString());
+        for (int i = 0; i < 1_000; i++) {
+            Vertex v = sqlgGraph.addVertex("RealWorkspaceElement", properties);
+            RecordId recordId = (RecordId) v.id();
+            Pair<Long, Long> idPair = Pair.of(recordId.getId(), ((RecordId) virtualGroup.id()).getId());
+            ids.add(idPair);
+        }
+        sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println("Time to insert: " + stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        sqlgGraph.bulkAddEdges("RealWorkspaceElement", "VirtualGroup", "realWorkspaceElement_virtualGroup", Pair.of("ID", "ID"), ids);
+        sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println("Time to insert: " + stopWatch.toString());
+        assertEquals(1_000, this.sqlgGraph.traversal().V(virtualGroup).in("realWorkspaceElement_virtualGroup").count().next().intValue());
     }
 
 }

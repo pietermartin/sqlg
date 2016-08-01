@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatStep;
+import org.umlg.sqlg.test.batch.TestBatchServerSideEdgeCreation;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLocalVertexStepRepeatStep.class
+        TestBatchServerSideEdgeCreation.class
 })
 public class AnyTest {
 }

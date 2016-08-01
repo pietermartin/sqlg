@@ -2089,8 +2089,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         }
     }
 
-    @Override
-    public void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<? extends Pair<String, String>> uids) {
+    private <L, R> void copyInBulkTempEdges(SqlgGraph sqlgGraph, SchemaTable schemaTable, List<Pair<L, R>> uids, PropertyType inPropertyType, PropertyType outPropertyType) {
         try {
             StringBuilder sql = new StringBuilder();
             sql.append("COPY ");
@@ -2112,10 +2111,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 logger.debug(sql.toString());
             }
             OutputStream out = streamSql(sqlgGraph, sql.toString());
-            for (Pair<String, String> uid : uids) {
-                out.write(uid.getLeft().getBytes());
+            for (Pair<L, R> uid : uids) {
+                out.write(valueToStreamBytes(inPropertyType, uid.getLeft()));
                 out.write(COPY_COMMAND_DELIMITER.getBytes());
-                out.write(uid.getRight().getBytes());
+                out.write(valueToStreamBytes(outPropertyType, uid.getRight()));
                 out.write("\n".getBytes());
             }
             out.close();
@@ -2125,55 +2124,71 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
+    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
         if (!sqlgGraph.tx().isInStreamingBatchMode() && !sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
-        //create temp table and copy the uids into it
-        Map<String, PropertyType> columns = new HashMap<>();
-        columns.put("out", PropertyType.STRING);
-        columns.put("in", PropertyType.STRING);
-        SecureRandom random = new SecureRandom();
-        byte bytes[] = new byte[6];
-        random.nextBytes(bytes);
-        String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
-        tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
-        sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
-        this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids);
-        //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
-        sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
+        if (!uids.isEmpty()) {
+            //create temp table and copy the uids into it
+            Map<String, PropertyType> columns = new HashMap<>();
+            Map<String, PropertyType> inProperties = sqlgGraph.getSchemaManager().getTableFor(in.withPrefix(SchemaManager.VERTEX_PREFIX));
+            Map<String, PropertyType> outProperties = sqlgGraph.getSchemaManager().getTableFor(out.withPrefix(SchemaManager.VERTEX_PREFIX));
+            PropertyType inPropertyType;
+            if (idFields.getLeft().equals(SchemaManager.ID)) {
+                inPropertyType = PropertyType.INTEGER;
+            } else {
+                inPropertyType = inProperties.get(idFields.getLeft());
+            }
+            PropertyType outPropertyType;
+            if (idFields.getRight().equals(SchemaManager.ID)) {
+                outPropertyType = PropertyType.INTEGER;
+            } else {
+                outPropertyType = inProperties.get(idFields.getLeft());
+            }
+            columns.put("out", outPropertyType);
+            columns.put("in", inPropertyType);
+            SecureRandom random = new SecureRandom();
+            byte bytes[] = new byte[6];
+            random.nextBytes(bytes);
+            String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+            tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
+            sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+            this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids, inPropertyType, outPropertyType);
+            //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
+            sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
 
-        StringBuilder sql = new StringBuilder("INSERT INTO \n");
-        sql.append(this.maybeWrapInQoutes(in.getSchema()));
-        sql.append(".");
-        sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
-        sql.append(" (");
-        sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-        sql.append(",");
-        sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-        sql.append(") \n");
-        sql.append("select _in.\"ID\" as \"");
-        sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
-        sql.append("\", _out.\"ID\" as \"");
-        sql.append(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
-        sql.append("\" FROM ");
-        sql.append(this.maybeWrapInQoutes(in.getSchema()));
-        sql.append(".");
-        sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
-        sql.append(" _in join ");
-        sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in::text = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + "::text join ");
-        sql.append(this.maybeWrapInQoutes(out.getSchema()));
-        sql.append(".");
-        sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
-        sql.append(" _out on ab.out::text = _out." + this.maybeWrapInQoutes(idFields.getRight()) + "::text");
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
+            StringBuilder sql = new StringBuilder("INSERT INTO \n");
+            sql.append(this.maybeWrapInQoutes(in.getSchema()));
+            sql.append(".");
+            sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
+            sql.append(" (");
+            sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+            sql.append(",");
+            sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+            sql.append(") \n");
+            sql.append("select _in.\"ID\" as \"");
+            sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            sql.append("\", _out.\"ID\" as \"");
+            sql.append(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
+            sql.append("\" FROM ");
+            sql.append(this.maybeWrapInQoutes(in.getSchema()));
+            sql.append(".");
+            sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
+            sql.append(" _in join ");
+            sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+            sql.append(this.maybeWrapInQoutes(out.getSchema()));
+            sql.append(".");
+            sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
+            sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
+            }
+            Connection conn = sqlgGraph.tx().getConnection();
+            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                preparedStatement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

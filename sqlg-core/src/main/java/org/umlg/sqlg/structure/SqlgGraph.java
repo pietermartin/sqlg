@@ -30,6 +30,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+
 /**
  * Date: 2014/07/12
  * Time: 5:38 AM
@@ -403,13 +405,15 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
-    public void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, List<? extends Pair<String, String>> uids) {
+    public <L, R> void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
         if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
-        SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
-        SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
-        this.sqlDialect.bulkAddEdges(this, inSchemaTable, outSchemaTable, edgeLabel, idFields, uids);
+        if (!uids.isEmpty()) {
+            SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
+            SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
+            this.sqlDialect.bulkAddEdges(this, inSchemaTable, outSchemaTable, edgeLabel, idFields, uids);
+        }
     }
 
     private void validateVertexKeysValues(Object[] keyValues) {
@@ -1196,7 +1200,7 @@ public class SqlgGraph implements Graph {
             Map<SchemaTable, List<Long>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
             for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
                 SchemaTable schemaTable = schemaTableListEntry.getKey();
-                String tableName = (returnVertices ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
+                String tableName = (returnVertices ? VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
                 if (this.getSchemaManager().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
                     List<Long> schemaTableIds = schemaTableListEntry.getValue();
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
@@ -1204,7 +1208,7 @@ public class SqlgGraph implements Graph {
                     sql.append(schemaTable.getSchema());
                     sql.append("\".\"");
                     if (returnVertices) {
-                        sql.append(SchemaManager.VERTEX_PREFIX);
+                        sql.append(VERTEX_PREFIX);
                     } else {
                         sql.append(SchemaManager.EDGE_PREFIX);
                     }
@@ -1272,7 +1276,7 @@ public class SqlgGraph implements Graph {
                             long id = resultSet.getLong("ID");
                             SqlgElement sqlgElement;
                             if (returnVertices) {
-                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length()));
+                                sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(VERTEX_PREFIX.length()));
                             } else {
                                 sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
                             }

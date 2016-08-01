@@ -117,6 +117,12 @@ public class SchemaTable implements DataSerializable, Serializable {
             return SchemaTable.of(this.getSchema(), this.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
     }
 
+    public SchemaTable withPrefix(String prefix) {
+        Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "Prefix must be either " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX + " for " + prefix);
+        Preconditions.checkState(!this.table.startsWith(SchemaManager.VERTEX_PREFIX) && !this.table.startsWith(SchemaManager.EDGE_PREFIX), "SchemaTable is already prefixed.");
+        return SchemaTable.of(this.getSchema(), prefix + this.getTable());
+    }
+
     public String getEmitEdgeId() {
         String emitEdgeId = this.getSchema();
         emitEdgeId += "." + this.getTable();
