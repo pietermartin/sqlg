@@ -112,4 +112,22 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         return Stream.of(SqlgGraphStepStrategy.class).collect(Collectors.toSet());
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SqlgVertexStepStrategy that = (SqlgVertexStepStrategy) o;
+
+        return logger != null ? logger.equals(that.logger) : that.logger == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (logger != null ? logger.hashCode() : 0);
+        return result;
+    }
 }

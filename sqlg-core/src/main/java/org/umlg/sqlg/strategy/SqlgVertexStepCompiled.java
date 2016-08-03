@@ -153,4 +153,29 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
         return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SqlgVertexStepCompiled<?, ?> that = (SqlgVertexStepCompiled<?, ?>) o;
+
+        if (head != null ? !head.equals(that.head) : that.head != null) return false;
+        if (iterator != null ? !iterator.equals(that.iterator) : that.iterator != null) return false;
+        if (replacedSteps != null ? !replacedSteps.equals(that.replacedSteps) : that.replacedSteps != null)
+            return false;
+        return parsedForStrategySql != null ? parsedForStrategySql.equals(that.parsedForStrategySql) : that.parsedForStrategySql == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (head != null ? head.hashCode() : 0);
+        result = 31 * result + (iterator != null ? iterator.hashCode() : 0);
+        result = 31 * result + (replacedSteps != null ? replacedSteps.hashCode() : 0);
+        result = 31 * result + (parsedForStrategySql != null ? parsedForStrategySql.hashCode() : 0);
+        return result;
+    }
 }

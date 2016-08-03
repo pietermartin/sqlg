@@ -61,6 +61,23 @@ public class SqlgOrderGlobalStep<S, C extends Comparable> extends CollectingBarr
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SqlgOrderGlobalStep<?, ?> that = (SqlgOrderGlobalStep<?, ?>) o;
+
+        if (ignore != that.ignore) return false;
+        if (chainedComparator != null ? !chainedComparator.equals(that.chainedComparator) : that.chainedComparator != null)
+            return false;
+        if (orderGlobalStep != null ? !orderGlobalStep.equals(that.orderGlobalStep) : that.orderGlobalStep != null)
+            return false;
+        return comparators != null ? comparators.equals(that.comparators) : that.comparators == null;
+
+    }
+
+    @Override
     public int hashCode() {
         int result = super.hashCode();
         for (int i = 0; i < this.comparators.size(); i++) {
@@ -109,4 +126,5 @@ public class SqlgOrderGlobalStep<S, C extends Comparable> extends CollectingBarr
             return comparators.stream().map(comparator -> new ComparatorTraverser<>(comparator)).collect(Collectors.toList());
         }
     }
+
 }

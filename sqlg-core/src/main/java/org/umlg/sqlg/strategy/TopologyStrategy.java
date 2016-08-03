@@ -73,4 +73,25 @@ public class TopologyStrategy extends AbstractTraversalStrategy<TraversalStrateg
         }
 
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        TopologyStrategy that = (TopologyStrategy) o;
+
+        if (selectFrom != null ? !selectFrom.equals(that.selectFrom) : that.selectFrom != null) return false;
+        return selectWithout != null ? selectWithout.equals(that.selectWithout) : that.selectWithout == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (selectFrom != null ? selectFrom.hashCode() : 0);
+        result = 31 * result + (selectWithout != null ? selectWithout.hashCode() : 0);
+        return result;
+    }
 }

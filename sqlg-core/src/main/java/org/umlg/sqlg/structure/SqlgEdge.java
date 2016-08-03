@@ -291,4 +291,27 @@ public class SqlgEdge extends SqlgElement implements Edge {
     SchemaTable getSchemaTablePrefixed() {
         return SchemaTable.of(this.getSchema(), SchemaManager.EDGE_PREFIX + this.getTable());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        SqlgEdge sqlgEdge = (SqlgEdge) o;
+
+        if (logger != null ? !logger.equals(sqlgEdge.logger) : sqlgEdge.logger != null) return false;
+        if (inVertex != null ? !inVertex.equals(sqlgEdge.inVertex) : sqlgEdge.inVertex != null) return false;
+        return outVertex != null ? outVertex.equals(sqlgEdge.outVertex) : sqlgEdge.outVertex == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (logger != null ? logger.hashCode() : 0);
+        result = 31 * result + (inVertex != null ? inVertex.hashCode() : 0);
+        result = 31 * result + (outVertex != null ? outVertex.hashCode() : 0);
+        return result;
+    }
 }
