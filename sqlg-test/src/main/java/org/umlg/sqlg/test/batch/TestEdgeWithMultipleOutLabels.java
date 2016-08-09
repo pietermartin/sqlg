@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
  * Date: 2016/08/09
  * Time: 9:10 AM
  */
-public class TestDuplicateIssue57 extends BaseTest {
+public class TestEdgeWithMultipleOutLabels extends BaseTest {
 
     @Before
     public void beforeTest() {
@@ -38,6 +38,20 @@ public class TestDuplicateIssue57 extends BaseTest {
         assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("A2").count().next().intValue());
         assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("A1").out("address").count().next().intValue());
         assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("A2").out("address").count().next().intValue());
+
+        sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 5; i++) {
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A1");
+            Vertex a2  = this.sqlgGraph.addVertex(T.label, "A2");
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+            a1.addEdge("address", b);
+            a2.addEdge("address", b);
+        }
+        this.sqlgGraph.tx().commit();
+        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A1").count().next().intValue());
+        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A2").count().next().intValue());
+        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A1").out("address").count().next().intValue());
+        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A2").out("address").count().next().intValue());
     }
 
     @Test

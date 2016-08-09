@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestEdgeWithMultipleOutLabels;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,7 @@ import org.umlg.sqlg.test.batch.TestBatch;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestDuplicateIssue57.class,
-        TestBatch.class
+        TestEdgeWithMultipleOutLabels.class
 })
 public class AnyTest {
 }
