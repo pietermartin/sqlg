@@ -249,26 +249,27 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     }
 
     @Override
-    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
+//    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
+    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
             Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
             Object[] arg = new Object[]{};
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
 
-            for (SchemaTable schemaTable : edgeCache.keySet()) {
-                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(schemaTable);
+            for (MetaEdge metaEdge: edgeCache.keySet()) {
+                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
 
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.EDGE_PREFIX + schemaTable.getTable());
-
+                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables()
+                        .get(metaEdge.getSchemaTable().getSchema() + "." + SchemaManager.EDGE_PREFIX + metaEdge.getSchemaTable().getTable());
                 long endHigh;
                 long numberInserted;
                 try (InputStream is = mapEdgeToInputStream(propertyTypeMap, triples)) {
                     StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
-                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
+                    sql.append(maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()));
                     sql.append(".");
-                    sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + schemaTable.getTable()));
+                    sql.append(maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
                     sql.append(" (");
                     for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
                         int count = 1;
@@ -296,7 +297,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                         logger.debug(sql.toString());
                     }
                     numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.EDGE_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+                    try (PreparedStatement preparedStatement = con.prepareStatement(
+                            "SELECT CURRVAL('\"" + metaEdge.getSchemaTable().getSchema() + "\".\"" +
+                                    SchemaManager.EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq\"');")) {
+
                         ResultSet resultSet = preparedStatement.executeQuery();
                         resultSet.next();
                         endHigh = resultSet.getLong(1);
@@ -305,7 +309,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                     //set the id on the vertex
                     long id = endHigh - numberInserted + 1;
                     for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
-                        sqlgEdge.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                        sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
                     }
                 }
             }
