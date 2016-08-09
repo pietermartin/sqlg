@@ -32,7 +32,6 @@
     </scm>
     <properties>
         <sqlg.version>1.2.1-SNAPSHOT</sqlg.version>
-
         <tinkerpop.version>3.2.2-SNAPSHOT</tinkerpop.version>
     </properties>
     <developers>
