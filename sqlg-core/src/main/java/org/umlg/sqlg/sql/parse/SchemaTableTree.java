@@ -104,11 +104,6 @@ public class SchemaTableTree {
         }
     };
 
-
-    //data needed for the loadFromLabeled
-//    void loadProperty(ResultSet resultSet, String columnName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap) throws SQLException {
-
-
     enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -234,7 +229,7 @@ public class SchemaTableTree {
         this.aliasMapHolder = new AliasMapHolder();
     }
 
-    public Multimap<String, String> getThreadLocalColumnNameAliasMap() {
+    private Multimap<String, String> getThreadLocalColumnNameAliasMap() {
         return this.getRoot().aliasMapHolder.getColumnNameAliasMap();
     }
 
@@ -242,7 +237,7 @@ public class SchemaTableTree {
         return this.getRoot().aliasMapHolder.getAliasColumnNameMap();
     }
 
-    public Map<String, Pair<String, PropertyType>> getColumnNamePropertyName() {
+    private Map<String, Pair<String, PropertyType>> getColumnNamePropertyName() {
         if (this.columnNamePropertyName == null) {
             this.columnNamePropertyName = new HashMap<>();
             for (Map.Entry<String, String> entry : getRoot().aliasMapHolder.getAliasColumnNameMap().entrySet()) {
@@ -263,11 +258,11 @@ public class SchemaTableTree {
         return this.columnNamePropertyName;
     }
 
-    public boolean hasParent() {
+    private boolean hasParent() {
         return this.parent != null;
     }
 
-    public SchemaTableTree getRoot() {
+    private SchemaTableTree getRoot() {
         return walkUp(this);
     }
 
@@ -276,23 +271,6 @@ public class SchemaTableTree {
             return schemaTableTree.walkUp(schemaTableTree.getParent());
         } else {
             return schemaTableTree;
-        }
-    }
-
-    public List<String> collectEmitEdgeIds() {
-        List<String> result = new ArrayList<>();
-        collectEmitEdges(result);
-        return result;
-    }
-
-    private void collectEmitEdges(List<String> edgeIds) {
-        if (this.hasParent() && this.schemaTable.isVertexTable() && this.isEmit()) {
-            SchemaTable parentSchemaTable = this.parent.getSchemaTable();
-            String edgeId = parentSchemaTable.getEmitEdgeId();
-            edgeIds.add(edgeId);
-        }
-        for (SchemaTableTree child : children) {
-            child.collectEmitEdges(edgeIds);
         }
     }
 
@@ -317,8 +295,7 @@ public class SchemaTableTree {
         this.rootAliasCounter = 1;
     }
 
-
-    public boolean containsLabelledColumn(String columnName) {
+    private boolean containsLabelledColumn(String columnName) {
         if (columnName.startsWith(this.reducedLabels() + ALIAS_SEPARATOR)) {
             String column = columnName.substring(this.reducedLabels().length() + ALIAS_SEPARATOR.length());
             Iterator<String> split = Splitter.on(ALIAS_SEPARATOR).split(column).iterator();
@@ -964,9 +941,7 @@ public class SchemaTableTree {
     }
 
     private SchemaTableTree findSelectSchemaTable(String select) {
-        return this.walkUp((t) -> {
-            return t.stream().filter(a -> a.endsWith(BaseSqlgStrategy.PATH_LABEL_SUFFIX + select)).findAny().isPresent();
-        });
+        return this.walkUp((t) -> t.stream().filter(a -> a.endsWith(BaseSqlgStrategy.PATH_LABEL_SUFFIX + select)).findAny().isPresent());
     }
 
     private SchemaTableTree walkUp(Predicate<Set<String>> predicate) {
@@ -1555,16 +1530,6 @@ public class SchemaTableTree {
         return strings.get(strings.size() - 1);
     }
 
-    public String propertyNameFromAlias(String alias) {
-        //this code is optimized for speed, used to use String.replace but its slow
-        int lastIndexOfAlisSeparator = alias.lastIndexOf(ALIAS_SEPARATOR);
-        if (lastIndexOfAlisSeparator != -1) {
-            return alias.substring(lastIndexOfAlisSeparator + ALIAS_SEPARATOR.length());
-        } else {
-            return alias;
-        }
-    }
-
     public String labeledAliasId() {
         if (this.labeledAliasId == null) {
             String reducedLabels = reducedLabels();
@@ -1585,8 +1550,7 @@ public class SchemaTableTree {
         }
     }
 
-
-    public String propertyNameFromLabeledAlias(String alias) {
+    private String propertyNameFromLabeledAlias(String alias) {
         //this code is optimized for speed, used to use String.replace but its slow
         String reducedLabels = reducedLabels();
         int lengthToWack = reducedLabels.length() + ALIAS_SEPARATOR.length() + getSchemaTable().getSchema().length() + ALIAS_SEPARATOR.length() + getSchemaTable().getTable().length() + ALIAS_SEPARATOR.length();
@@ -1714,16 +1678,7 @@ public class SchemaTableTree {
             rawLabelToTravers = labelToTravers.getTable();
         }
         String joinSql = " OR ";
-//        if (leftJoin) {
-//            joinSql = " LEFT JOIN\n\t";
-//        } else {
-//            joinSql = " INNER JOIN\n\t";
-//        }
         if (fromSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
-//            joinSql += ".";
-//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
-//            joinSql += " ON ";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getSchema());
             joinSql += ".";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getTable());
@@ -1742,11 +1697,6 @@ public class SchemaTableTree {
             //From edge to vertex table the foreign key is opposite to the direction.
             //This is because this is second part of the traversal via the edge.
             //This code did not take specific traversals from the edge into account.
-
-//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getSchema());
-//            joinSql += ".";
-//            joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(labelToTravers.getTable());
-//            joinSql += " ON ";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getSchema());
             joinSql += ".";
             joinSql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTable.getTable());
@@ -1912,7 +1862,7 @@ public class SchemaTableTree {
         }
     }
 
-    public SchemaTableTree getParent() {
+    private SchemaTableTree getParent() {
         return parent;
     }
 
@@ -2063,7 +2013,7 @@ public class SchemaTableTree {
         return untilFirst;
     }
 
-    public void setUntilFirst(boolean untilFirst) {
+    void setUntilFirst(boolean untilFirst) {
         this.untilFirst = untilFirst;
     }
 
@@ -2108,7 +2058,7 @@ public class SchemaTableTree {
         return localStep;
     }
 
-    public void setLocalStep(boolean localStep) {
+    void setLocalStep(boolean localStep) {
         this.localStep = localStep;
     }
 
