@@ -9,13 +9,19 @@ import org.apache.tinkerpop.shaded.jackson.databind.module.SimpleModule;
  * Date: 2015/05/07
  * Time: 8:05 PM
  */
-public class SqlgIoRegistry extends AbstractIoRegistry {
+class SqlgIoRegistry extends AbstractIoRegistry {
 
-    public SqlgIoRegistry() {
+    private static final SqlgIoRegistry INSTANCE = new SqlgIoRegistry();
+
+    private SqlgIoRegistry() {
         final SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(RecordId.class, new RecordId.RecordIdJacksonSerializer());
         simpleModule.addSerializer(SchemaTable.class, new SchemaTable.SchemaTableJacksonSerializer());
         register(GraphSONIo.class, null, simpleModule);
         register(GryoIo.class, RecordId.class, null);
+    }
+
+    public static SqlgIoRegistry getInstance() {
+        return INSTANCE;
     }
 }
