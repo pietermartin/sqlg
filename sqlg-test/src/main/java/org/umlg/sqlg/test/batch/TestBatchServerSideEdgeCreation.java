@@ -208,4 +208,21 @@ public class TestBatchServerSideEdgeCreation extends BaseTest {
         assertEquals(1_000, this.sqlgGraph.traversal().V(virtualGroup).in("realWorkspaceElement_virtualGroup").count().next().intValue());
     }
 
+    @Test
+    public void testBulkAddEdgesINinStringOut() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "lala", "a1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "B", "cmuid", "a2");
+        this.sqlgGraph.tx().commit();
+        List<Pair<Long, String>> ids = new ArrayList<>();
+        Pair<Long, String> idCmUidPair = Pair.of(((RecordId)v1.id()).getId(), "a2");
+        ids.add(idCmUidPair);
+
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        this.sqlgGraph.bulkAddEdges("A", "B", "ab", Pair.of("ID", "cmuid"), ids);
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(1, this.sqlgGraph.traversal().V(v1).out("ab").count().next().intValue());
+        assertEquals(v2, this.sqlgGraph.traversal().V(v1).out("ab").next());
+    }
+
 }
