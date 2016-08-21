@@ -257,7 +257,7 @@ public class SqlgGraph implements Graph {
                         this.configuration);
             }
 
-            logger.info(String.format("Connection url = %s , maxPoolSize = %d ", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
+            logger.info(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
             this.sqlDialect.prepareDB(this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -536,6 +536,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public void close() throws Exception {
+        logger.info(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
         this.schemaManager.close();
@@ -544,7 +545,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public <I extends Io> I io(final Io.Builder<I> builder) {
-        return (I) builder.graph(this).registry(new SqlgIoRegistry()).create();
+        return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(SqlgIoRegistry.getInstance())).create();
     }
 
     @Override
