@@ -39,7 +39,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         final Step<?, ?> startStep = traversal.getStartStep();
 
         //Only optimize graph step.
-        if (!(startStep instanceof GraphStep)) {
+        if (!(startStep instanceof GraphStep) || !(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
         this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
