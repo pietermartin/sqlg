@@ -14,7 +14,7 @@ import java.util.Iterator;
  */
 public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProperty<V> {
 
-    public SqlgVertexProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
+    SqlgVertexProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
         super(sqlgGraph, element, key, value);
     }
 
@@ -38,6 +38,7 @@ public class SqlgVertexProperty<V> extends SqlgProperty<V> implements VertexProp
         throw VertexProperty.Exceptions.metaPropertiesNotSupported();
     }
 
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);
