@@ -2147,7 +2147,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             if (idFields.getRight().equals(SchemaManager.ID)) {
                 outPropertyType = PropertyType.INTEGER;
             } else {
-                outPropertyType = inProperties.get(idFields.getLeft());
+                outPropertyType = outProperties.get(idFields.getRight());
             }
             columns.put("out", outPropertyType);
             columns.put("in", inPropertyType);
