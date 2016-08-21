@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestEdgeWithMultipleOutLabels;
+import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.batch.TestEdgeWithMultipleOutLabels;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestEdgeWithMultipleOutLabels.class
+        TestTraversalPerformance.class
 })
 public class AnyTest {
 }
