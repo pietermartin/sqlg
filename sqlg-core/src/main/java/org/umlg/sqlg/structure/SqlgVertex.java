@@ -152,24 +152,27 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetAllProperties(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetAllProperties(propertyKeys);
+        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetAllProperties(propertyKeys);
         return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetProperties(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetProperties(propertyKeys);
+        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetProperties(propertyKeys);
         return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetHiddens(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.internalGetHiddens(propertyKeys);
+        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetHiddens(propertyKeys);
         return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <V> VertexProperty<V> property(final String key) {
         this.sqlgGraph.tx().readWrite();
@@ -183,16 +186,17 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     this.properties = sqlgVertex.properties;
                 }
             }
-            return (VertexProperty) super.property(key);
+            return (VertexProperty<V>) super.property(key);
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <V> VertexProperty<V> property(final String key, final V value) {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
         ElementHelper.validateProperty(key, value);
         this.sqlgGraph.tx().readWrite();
-        return (VertexProperty) super.property(key, value);
+        return (VertexProperty<V>) super.property(key, value);
     }
 
     @Override

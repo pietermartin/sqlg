@@ -2369,26 +2369,28 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return result;
     }
 
-    @Override
-    public Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
+    private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
             switch (propertyType) {
                 case STRING_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.STRING_ARRAY), data);
                 case long_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.long_ARRAY), data);
+                case LONG_ARRAY:
                 case int_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.int_ARRAY), data);
+                case INTEGER_ARRAY:
+                case short_ARRAY:
+                case SHORT_ARRAY:
+                case float_ARRAY:
+                case FLOAT_ARRAY:
+                case double_ARRAY:
+                case DOUBLE_ARRAY:
+                case boolean_ARRAY:
+                case BOOLEAN_ARRAY:
                 case LOCALDATETIME_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.LOCALDATETIME_ARRAY), data);
                 case LOCALDATE_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.LOCALDATE_ARRAY), data);
                 case LOCALTIME_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.LOCALTIME_ARRAY), data);
                 case ZONEDDATETIME_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(PropertyType.ZONEDDATETIME_ARRAY), data);
                 case JSON_ARRAY:
-                    return conn.createArrayOf(getArrayDriverType(JSON_ARRAY), data);
+                    return conn.createArrayOf(getArrayDriverType(propertyType), data);
                 default:
                     throw new IllegalStateException("Unhandled array type " + propertyType.name());
             }
@@ -2420,6 +2422,10 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
                 return array.getArray();
             case double_ARRAY:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
+            case FLOAT_ARRAY:
+                return array.getArray();
+            case float_ARRAY:
+                return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
             case STRING_ARRAY:
                 return array.getArray();
             case LOCALDATETIME_ARRAY:
@@ -2456,6 +2462,12 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             default:
                 throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }
+    }
+
+    @Override
+    public void setArray(PreparedStatement statement, int index, PropertyType type,
+            Object[] values) throws SQLException {
+        statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
 
     private PropertyType getPostGisGeometryType(SqlgGraph sqlgGraph, String schema, String table, String column) {

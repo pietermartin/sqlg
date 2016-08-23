@@ -373,7 +373,8 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(propertyName, ((Integer) o).byteValue());
                 break;
             case SHORT:
-                this.properties.put(propertyName, ((Integer) o).shortValue());
+                short val = o instanceof Short ? (Short) o : ((Integer) o).shortValue();
+                this.properties.put(propertyName, val);
                 break;
             case INTEGER:
                 this.properties.put(propertyName, o);
@@ -495,13 +496,11 @@ public abstract class SqlgElement implements Element {
                 break;
             case float_ARRAY:
                 array = (java.sql.Array) o;
-                Float[]floatArray = (Float[]) array.getArray();
-                this.properties.put(propertyName, SqlgUtil.convertFloatArrayToPrimitiveFloat(floatArray));
+                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
                 break;
             case FLOAT_ARRAY:
                 array = (java.sql.Array) o;
-                floatArray = (Float[]) array.getArray();
-                this.properties.put(propertyName, floatArray);
+                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
                 break;
             case double_ARRAY:
                 array = (java.sql.Array) o;

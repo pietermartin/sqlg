@@ -634,8 +634,7 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         return 0L;
     }
 
-    @Override
-    public Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
+    private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         org.hsqldb.types.Type type;
         switch (propertyType) {
             case STRING_ARRAY:
@@ -644,8 +643,38 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             case long_ARRAY:
                 type = Type.SQL_BIGINT;
                 break;
+            case LONG_ARRAY:
+                type = Type.SQL_BIGINT;
+                break;
             case int_ARRAY:
                 type = Type.SQL_INTEGER;
+                break;
+            case INTEGER_ARRAY:
+                type = Type.SQL_INTEGER;
+                break;
+            case SHORT_ARRAY:
+                type = Type.SQL_SMALLINT;
+                break;
+            case short_ARRAY:
+                type = Type.SQL_SMALLINT;
+                break;
+            case FLOAT_ARRAY:
+                type = Type.SQL_DOUBLE;
+                break;
+            case float_ARRAY:
+                type = Type.SQL_DOUBLE;
+                break;
+            case DOUBLE_ARRAY:
+                type = Type.SQL_DOUBLE;
+                break;
+            case double_ARRAY:
+                type = Type.SQL_DOUBLE;
+                break;
+            case BOOLEAN_ARRAY:
+                type = Type.SQL_BIT;
+                break;
+            case boolean_ARRAY:
+                type = Type.SQL_BIT;
                 break;
             case LOCALDATETIME_ARRAY:
                 type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
@@ -688,6 +717,10 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
                 return SqlgUtil.convertObjectOfDoublesArrayToDoubleArray((Object[]) array.getArray());
             case double_ARRAY:
                 return SqlgUtil.convertObjectOfDoublesArrayToDoublePrimitiveArray((Object[]) array.getArray());
+            case FLOAT_ARRAY:
+                return SqlgUtil.convertObjectOfFloatsArrayToFloatArray((Object[]) array.getArray());
+            case float_ARRAY:
+                return SqlgUtil.convertObjectOfFloatsArrayToFloatPrimitiveArray((Object[]) array.getArray());
             case STRING_ARRAY:
                 return SqlgUtil.convertObjectOfStringsArrayToStringArray((Object[]) array.getArray());
             case LOCALDATETIME_ARRAY:
@@ -702,5 +735,11 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
             default:
                 throw new IllegalStateException("Unhandled property type " + propertyType.name());
         }
+    }
+
+    @Override
+    public void setArray(PreparedStatement statement, int index, PropertyType type,
+            Object[] values) throws SQLException {
+        statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
 }
