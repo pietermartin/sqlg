@@ -93,4 +93,8 @@ public enum PropertyType {
     public String[] getPostFixes() {
         return postFixes;
     }
+
+    public boolean isArray() {
+        return name().endsWith("_ARRAY");
+    }
 }

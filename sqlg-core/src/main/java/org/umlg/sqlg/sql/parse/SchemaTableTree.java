@@ -2026,7 +2026,15 @@ public class SchemaTableTree {
             String columnName = entry.getKey();
             String propertyName = entry.getValue().getKey();
             PropertyType propertyType = entry.getValue().getValue();
-            Object o = resultSet.getObject(columnName);
+            //make sure that if we request an array-backed type, we do it using
+            //the getArray() call. Don't bother for byte arrays, because they are
+            //handled differently by all supported DBs, so getObject() on them
+            //works.
+            Object o = (propertyType != null && propertyType.isArray()
+                    && propertyType != PropertyType.byte_ARRAY
+                    && propertyType != PropertyType.BYTE_ARRAY)
+                    ? resultSet.getArray(columnName)
+                    : resultSet.getObject(columnName);
             if (!Objects.isNull(o)) {
                 if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                     ((SqlgEdge)sqlgElement).loadInVertex(resultSet, propertyName, columnName);
