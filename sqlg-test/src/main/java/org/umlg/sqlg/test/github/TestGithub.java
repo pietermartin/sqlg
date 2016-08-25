@@ -1,19 +1,16 @@
 package org.umlg.sqlg.test.github;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.beans.PropertyVetoException;
-import java.io.IOException;
-import java.net.URL;
+import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/04/26
@@ -21,19 +18,19 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestGithub extends BaseTest {
 
-    @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
-        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
-        try {
-            configuration = new PropertiesConfiguration(sqlProperties);
-            configuration.setProperty("cache.vertices", true);
-            if (!configuration.containsKey("jdbc.url")) {
-                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
-            }
-        } catch (ConfigurationException e) {
-            throw new RuntimeException(e);
-        }
-    }
+//    @BeforeClass
+//    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+//        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+//        try {
+//            configuration = new PropertiesConfiguration(sqlProperties);
+//            configuration.setProperty("cache.vertices", true);
+//            if (!configuration.containsKey("jdbc.url")) {
+//                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+//            }
+//        } catch (ConfigurationException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
 //    @Test
     public void edgeUpdate() {
@@ -53,14 +50,74 @@ public class TestGithub extends BaseTest {
 //        assertEquals("anotherValue", a2b.property("anotherKey").value());
     }
 
+//    @Test
+//    public void testStaleEdge() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex a1Again = this.sqlgGraph.traversal().V().hasLabel("A").next();
+//        this.sqlgGraph.tx().commit();
+//        a1Again.property("nameAgain", "a1");
+//        this.sqlgGraph.tx().commit();
+//        assertEquals("a1", a1.property("name").value());
+//        assertEquals("a1", a1.property("nameAgain").value());
+//    }
+
     @Test
-    public void testStaleEdge() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a1Again = this.sqlgGraph.traversal().V().hasLabel("A").next();
-        this.sqlgGraph.tx().commit();
-        a1Again.property("nameAgain", "a1");
-        this.sqlgGraph.tx().commit();
-        assertEquals("a1", a1.property("name").value());
-        assertEquals("a1", a1.property("nameAgain").value());
+    public void testEdge() {
+        Vertex a = sqlgGraph.addVertex(T.label, "A");
+        Vertex b = sqlgGraph.addVertex(T.label, "B");
+        Vertex c = sqlgGraph.addVertex(T.label, "C");
+        Edge e1 = a.addEdge("e", b);
+        Edge e2 = b.addEdge("e", c);
+        sqlgGraph.tx().commit();
+        Iterator<Edge> results = gt
+                .V().hasLabel("A")
+                .out("e")
+                .inE("e");
+        assertTrue(results.hasNext());
+        assertEquals(e1, results.next());
+    }
+
+    @Test
+    public void issue62() {
+        Vertex a = sqlgGraph.addVertex(T.label, "a", "p", "a");
+        Vertex b = sqlgGraph.addVertex(T.label, "b", "p", "b");
+        Vertex c = sqlgGraph.addVertex(T.label, "c", "p", "c");
+        a.addEdge("e", b, "p", "x");
+        b.addEdge("e", c, "p", "y");
+        sqlgGraph.tx().commit();
+
+        //throws exception during query generation
+        Iterator<Vertex> results = gt
+                .V().has("p", "a")
+                .out("e").has("p", "b")
+                .outE("e")
+                .or(__.has("p", "x"), __.has("p", "y"))
+                .inV().has("p", "c");
+        assertEquals(c, results.next());
+    }
+
+
+    @Test
+    public void issue63() {
+        Vertex tnt = sqlgGraph.addVertex(T.label, "tenant", "__type", "tenant");
+        Vertex env = sqlgGraph.addVertex(T.label, "environment", "__type", "environment");
+        Vertex res = sqlgGraph.addVertex(T.label, "resource", "__type", "resource");
+        Vertex de = sqlgGraph.addVertex(T.label, "dataEntity", "__type", "dataEntity");
+        Vertex dRoot = sqlgGraph.addVertex(T.label, "structuredData", "__type", "structuredData");
+        Vertex dPrims = sqlgGraph.addVertex(T.label, "structuredData", "__type", "structuredData", "__structuredDataKey", "primitives");
+        Vertex d0 = sqlgGraph.addVertex(T.label, "structuredData", "__type", "structuredData", "__structuredDataIndex", 0);
+
+        tnt.addEdge("contains", env);
+        env.addEdge("contains", res);
+        res.addEdge("contains", de);
+        de.addEdge("hasData", dRoot);
+        dRoot.addEdge("contains", dPrims);
+        dPrims.addEdge("contains", d0);
+
+        Iterator<Vertex> results = gt.V(res).out("contains").has("__type", "dataEntity")
+                .where(__.out("hasData").out("contains").has("__type", "structuredData")
+                        .has("__structuredDataKey", "primitives").out("contains").has("__type", "structuredData"));
+
+        assertEquals(de, results.next());
     }
 }
