@@ -144,18 +144,24 @@ public abstract class SqlgElement implements Element {
         if (this.removed) {
             throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
         } else {
-            Property property = internalGetProperties().get(key);
-            if (property == null) {
-                //try hiddens
-                property = internalGetHiddens().get(key);
-                if (property == null) {
-                    return emptyProperty();
-                } else {
-                    return property;
-                }
+            Object value = this.properties.get(key);
+            if (value != null) {
+                return instantiateProperty(key, (V)value);
             } else {
-                return property;
+                return emptyProperty();
             }
+//            Property property = internalGetProperties().get(key);
+//            if (property == null) {
+//                //try hiddens
+//                property = internalGetHiddens().get(key);
+//                if (property == null) {
+//                    return emptyProperty();
+//                } else {
+//                    return property;
+//                }
+//            } else {
+//                return property;
+//            }
         }
     }
 
