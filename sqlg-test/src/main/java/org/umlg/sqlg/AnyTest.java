@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
+import org.umlg.sqlg.test.vertexstep.localvertexstep.TestSchemaTableTreeAndHasContainer;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTraversalPerformance.class
+        TestSchemaTableTreeAndHasContainer.class
 })
 public class AnyTest {
 }

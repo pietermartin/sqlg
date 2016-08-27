@@ -27,10 +27,7 @@ import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalEdgeOtherVertexStep;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalEdgeVertexStep;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepOptional;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatStep;
+import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
 
 /**
  * Date: 2014/07/16
@@ -137,7 +134,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepRepeatSt
         TestOptionalWithOrder.class,
         TestMultipleLabels.class,
         TestColumnNamePropertyNameMapScope.class,
-        TestJNDIInitialization.class
+        TestJNDIInitialization.class,
+        TestSchemaTableTreeAndHasContainer.class
 })
 public class AllTest {
 }

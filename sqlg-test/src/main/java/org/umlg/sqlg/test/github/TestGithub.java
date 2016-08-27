@@ -32,7 +32,7 @@ public class TestGithub extends BaseTest {
 //        }
 //    }
 
-//    @Test
+    //    @Test
     public void edgeUpdate() {
         Vertex a = this.sqlgGraph.addVertex("A");
         Vertex b = this.sqlgGraph.addVertex("B");
@@ -98,7 +98,7 @@ public class TestGithub extends BaseTest {
 
 
     @Test
-    public void issue63() {
+    public void testWhereQuery() {
         Vertex tnt = sqlgGraph.addVertex(T.label, "tenant", "__type", "tenant");
         Vertex env = sqlgGraph.addVertex(T.label, "environment", "__type", "environment");
         Vertex res = sqlgGraph.addVertex(T.label, "resource", "__type", "resource");
@@ -120,4 +120,5 @@ public class TestGithub extends BaseTest {
 
         assertEquals(de, results.next());
     }
+
 }
