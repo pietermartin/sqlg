@@ -1729,7 +1729,7 @@ public class SchemaTableTree {
      * <p/>
      * This is done via a breath first traversal.
      */
-    void removeAllButDeepestLeafNodes(int depth) {
+    void removeAllButDeepestAndAddCacheLeafNodes(int depth) {
         Queue<SchemaTableTree> queue = new LinkedList<>();
         queue.add(this);
         while (!queue.isEmpty()) {
@@ -1778,7 +1778,7 @@ public class SchemaTableTree {
 
     private void removeObsoleteHasContainers(final SchemaTableTree schemaTableTree) {
         Set<HasContainer> toRemove = new HashSet<>();
-        schemaTableTree.hasContainers.forEach(hasContainer -> {
+        for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (hasContainer.getKey().equals(label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
                 SchemaTable hasContainerLabelSchemaTable;
                 if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
@@ -1790,7 +1790,7 @@ public class SchemaTableTree {
                     toRemove.add(hasContainer);
                 }
             }
-        });
+        }
         schemaTableTree.hasContainers.removeAll(toRemove);
     }
 
