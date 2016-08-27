@@ -193,10 +193,10 @@ public class ReplacedStep<S, E> {
             }
         }
 
-        for (SchemaTable outLabelsToTravers : outLabelsToTraversers) {
+        for (SchemaTable outLabelToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
                 SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        outLabelsToTravers,
+                        outLabelToTravers,
                         Direction.OUT,
                         elementClass,
                         this,
@@ -204,7 +204,7 @@ public class ReplacedStep<S, E> {
                 result.add(schemaTableTreeChild);
             } else {
                 Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getAllEdgeForeignKeys();
-                Set<String> foreignKeys = edgeForeignKeys.get(outLabelsToTravers.toString());
+                Set<String> foreignKeys = edgeForeignKeys.get(outLabelToTravers.toString());
                 boolean filter;
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
@@ -219,7 +219,7 @@ public class ReplacedStep<S, E> {
                             if (first) {
                                 first = false;
                                 schemaTableTreeChild = schemaTableTree.addChild(
-                                        outLabelsToTravers,
+                                        outLabelToTravers,
                                         Direction.OUT,
                                         elementClass,
                                         this,
