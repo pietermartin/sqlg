@@ -32,6 +32,7 @@ public class GremlinParser<S extends Element, E extends Element> {
     /**
      * This is for the GraphStep
      * The first replacedStep has the starting SchemaTable.
+     *
      * @param replacedSteps
      * @return
      */
@@ -52,7 +53,7 @@ public class GremlinParser<S extends Element, E extends Element> {
             if (remove) {
                 toRemove.add(rootSchemaTableTree);
             }
-            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size());
+            rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedSteps.size());
         }
         rootSchemaTableTrees.removeAll(toRemove);
         return rootSchemaTableTrees;
@@ -70,30 +71,27 @@ public class GremlinParser<S extends Element, E extends Element> {
      * @return a List of paths. Each path is itself a list of SchemaTables.
      */
     public SchemaTableTree parse(SchemaTable schemaTable, List<ReplacedStep<S, E>> replacedSteps) {
-        if (replacedSteps.get(0).isGraphStep()) {
-            throw new IllegalStateException("is this really still firing!!!");
-        } else {
-            Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
-            //replacedSteps contains a fake label representing the incoming vertex for the SqlgVertexStepStrategy.
-            SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size() - 1);
-            rootSchemaTableTree.setOptionalLeftJoin(replacedSteps.get(0).isLeftJoin());
-            rootSchemaTableTree.setEmit(replacedSteps.get(0).isEmit());
-            rootSchemaTableTree.setUntilFirst(replacedSteps.get(0).isUntilFirst());
-            rootSchemaTableTree.initializeAliasColumnNameMaps();
-            //TODO what about the emit, untilFirst flag????
-            rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
-            schemaTableTrees.add(rootSchemaTableTree);
-            for (ReplacedStep<S, E> replacedStep : replacedSteps) {
-                if (!replacedStep.isFake()) {
-                    //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
-                    schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
-                }
+        Preconditions.checkArgument(!replacedSteps.get(0).isGraphStep(), "Expected VertexStep, found GraphStep");
+
+        Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
+        //replacedSteps contains a fake label representing the incoming vertex for the SqlgVertexStepStrategy.
+        SchemaTableTree rootSchemaTableTree = new SchemaTableTree(this.sqlgGraph, schemaTable, 0, replacedSteps.size() - 1);
+        rootSchemaTableTree.setOptionalLeftJoin(replacedSteps.get(0).isLeftJoin());
+        rootSchemaTableTree.setEmit(replacedSteps.get(0).isEmit());
+        rootSchemaTableTree.setUntilFirst(replacedSteps.get(0).isUntilFirst());
+        rootSchemaTableTree.initializeAliasColumnNameMaps();
+        rootSchemaTableTree.setStepType(schemaTable.isVertexTable() ? SchemaTableTree.STEP_TYPE.VERTEX_STEP : SchemaTableTree.STEP_TYPE.EDGE_VERTEX_STEP);
+        schemaTableTrees.add(rootSchemaTableTree);
+        for (ReplacedStep<S, E> replacedStep : replacedSteps) {
+            if (!replacedStep.isFake()) {
+                //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
+                schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
             }
-            rootSchemaTableTree.removeAllButDeepestLeafNodes(replacedSteps.size() - 1);
-            rootSchemaTableTree.removeNodesInvalidatedByHas();
-            rootSchemaTableTree.setLocalStep(true);
-            return rootSchemaTableTree;
         }
+        rootSchemaTableTree.removeNodesInvalidatedByHas();
+        rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedSteps.size() - 1);
+        rootSchemaTableTree.setLocalStep(true);
+        return rootSchemaTableTree;
     }
 
 }
