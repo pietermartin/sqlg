@@ -36,6 +36,10 @@ public interface SqlDialect {
         return true;
     }
 
+    default boolean needsSchemaDropCascade() {
+        return supportsCascade();
+    }
+
     String getColumnEscapeKey();
 
     String getPrimaryKeyType();
@@ -109,7 +113,8 @@ public interface SqlDialect {
                     obj.put(columnName, (Boolean) o);
                     break;
                 case Types.SMALLINT:
-                    obj.put(columnName, ((Integer) o).shortValue());
+                    Short v = o instanceof Short ? (Short) o : ((Integer) o).shortValue();
+                    obj.put(columnName, v);
                     break;
                 case Types.INTEGER:
                     obj.put(columnName, (Integer) o);
@@ -424,7 +429,7 @@ public interface SqlDialect {
         return 1L;
     }
 
-    Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data);
-
     Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException;
+
+    void setArray(PreparedStatement statement, int index, PropertyType type, Object[] values) throws SQLException;
 }

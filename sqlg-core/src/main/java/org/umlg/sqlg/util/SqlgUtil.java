@@ -297,12 +297,10 @@ public class SqlgUtil {
                     parameterStartIndex++;
                     break;
                 case BOOLEAN_ARRAY:
-                    java.sql.Array booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.BOOLEAN_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, booleanArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.BOOLEAN_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case boolean_ARRAY:
-                    booleanArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.boolean_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, booleanArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.boolean_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case BYTE_ARRAY:
                     byte[] byteArray = SqlgUtil.convertObjectArrayToBytePrimitiveArray((Object[]) pair.getRight());
@@ -312,95 +310,73 @@ public class SqlgUtil {
                     preparedStatement.setBytes(parameterStartIndex++, (byte[]) pair.right);
                     break;
                 case SHORT_ARRAY:
-                    java.sql.Array shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.SHORT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, shortArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.SHORT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case short_ARRAY:
-                    shortArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.short_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, shortArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.short_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case INTEGER_ARRAY:
-                    java.sql.Array intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.INTEGER_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, intArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.INTEGER_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case int_ARRAY:
-                    intArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.int_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, intArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case LONG_ARRAY:
-                    java.sql.Array longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.LONG_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, longArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LONG_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case long_ARRAY:
-                    longArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.long_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, longArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case FLOAT_ARRAY:
-                    java.sql.Array floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.FLOAT_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, floatArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.FLOAT_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case float_ARRAY:
-                    floatArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.float_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, floatArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.float_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case DOUBLE_ARRAY:
-                    java.sql.Array doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.DOUBLE_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, doubleArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.DOUBLE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case double_ARRAY:
-                    doubleArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.double_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, doubleArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.double_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case STRING_ARRAY:
-                    java.sql.Array stringArray = conn.createArrayOf(sqlgGraph.getSqlDialect().getArrayDriverType(PropertyType.STRING_ARRAY), SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, stringArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case LOCALDATETIME_ARRAY:
-                    java.sql.Array localDateTimeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, localDateTimeArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case LOCALDATE_ARRAY:
-                    java.sql.Array localDateArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, localDateArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALDATE_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case LOCALTIME_ARRAY:
-                    java.sql.Array localTimeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, localTimeArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.LOCALTIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     break;
                 case ZONEDDATETIME_ARRAY:
-                    java.sql.Array zonedDateTimeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
-                    preparedStatement.setArray(parameterStartIndex++, zonedDateTimeArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.ZONEDDATETIME_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, pair.right));
                     if (mod) {
                         List<String> zones = (Arrays.asList((ZonedDateTime[]) pair.right)).stream().map(z -> z.getZone().getId()).collect(Collectors.toList());
-                        java.sql.Array zonedArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
-                        preparedStatement.setArray(parameterStartIndex++, zonedArray);
+                        sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.STRING_ARRAY, SqlgUtil.transformArrayToInsertValue(PropertyType.STRING_ARRAY, zones.toArray()));
                     }
                     break;
                 case DURATION_ARRAY:
                     Duration[] durations = (Duration[]) pair.getRight();
                     List<Long> seconds = Arrays.stream(durations).map(d -> d.getSeconds()).collect(Collectors.toList());
                     List<Integer> nanos = Arrays.stream(durations).map(d -> d.getNano()).collect(Collectors.toList());
-                    java.sql.Array secondsArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
-                    preparedStatement.setArray(parameterStartIndex++, secondsArray);
-                    java.sql.Array nanoArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
-                    preparedStatement.setArray(parameterStartIndex++, nanoArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
                     break;
                 case PERIOD_ARRAY:
                     Period[] periods = (Period[]) pair.getRight();
                     List<Integer> years = Arrays.stream(periods).map(d -> d.getYears()).collect(Collectors.toList());
                     List<Integer> months = Arrays.stream(periods).map(d -> d.getMonths()).collect(Collectors.toList());
                     List<Integer> days = Arrays.stream(periods).map(d -> d.getDays()).collect(Collectors.toList());
-                    java.sql.Array yearsArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
-                    preparedStatement.setArray(parameterStartIndex++, yearsArray);
-                    java.sql.Array monthsArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
-                    preparedStatement.setArray(parameterStartIndex++, monthsArray);
-                    java.sql.Array daysArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
-                    preparedStatement.setArray(parameterStartIndex++, daysArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
                     break;
                 case JSON_ARRAY:
                     JsonNode[] objectNodes = (JsonNode[]) pair.getRight();
-                    java.sql.Array objectNodeArray = sqlgGraph.getSqlDialect().createArrayOf(conn, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
-                    preparedStatement.setArray(parameterStartIndex++, objectNodeArray);
+                    sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.JSON_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, objectNodes));
                     break;
                 default:
                     throw new IllegalStateException("Unhandled type " + pair.left.name());
@@ -665,7 +641,9 @@ public class SqlgUtil {
                     if (!sqlDialect.getDefaultSchemas().contains(schema)) {
                         StringBuilder sql = new StringBuilder("DROP SCHEMA ");
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                        sql.append(" CASCADE");
+                        if (sqlDialect.needsSchemaDropCascade()) {
+                            sql.append(" CASCADE");
+                        }
                         if (sqlDialect.needsSemicolon()) {
                             sql.append(";");
                         }
@@ -747,10 +725,26 @@ public class SqlgUtil {
         return target;
     }
 
+    public static Short[] convertObjectOfShortsArrayToShortArray(Object[] shortArray) {
+        Short[] target = new Short[shortArray.length];
+        for (int i = 0; i < shortArray.length; i++) {
+            Array.set(target, i, shortArray[i]);
+        }
+        return target;
+    }
+
     public static short[] convertObjectOfIntegersArrayToShortPrimitiveArray(Object[] shortArray) {
         short[] target = new short[shortArray.length];
         for (int i = 0; i < shortArray.length; i++) {
             Array.set(target, i, ((Integer) shortArray[i]).shortValue());
+        }
+        return target;
+    }
+
+    public static short[] convertObjectOfShortsArrayToShortPrimitiveArray(Object[] shortArray) {
+        short[] target = new short[shortArray.length];
+        for (int i = 0; i < shortArray.length; i++) {
+            Array.set(target, i, shortArray[i]);
         }
         return target;
     }
@@ -787,6 +781,14 @@ public class SqlgUtil {
         return target;
     }
 
+    public static float[] convertObjectOfFloatsArrayToFloatPrimitiveArray(Object[] floatArray) {
+        float[] target = new float[floatArray.length];
+        for (int i = 0; i < floatArray.length; i++) {
+            Array.set(target, i, floatArray[i]);
+        }
+        return target;
+    }
+
     public static Long[] convertObjectOfLongsArrayToLongArray(Object[] longArray) {
         Long[] target = new Long[longArray.length];
         for (int i = 0; i < longArray.length; i++) {
@@ -797,6 +799,14 @@ public class SqlgUtil {
 
     public static Double[] convertObjectOfDoublesArrayToDoubleArray(Object[] doubleArray) {
         Double[] target = new Double[doubleArray.length];
+        for (int i = 0; i < doubleArray.length; i++) {
+            Array.set(target, i, doubleArray[i]);
+        }
+        return target;
+    }
+
+    public static Float[] convertObjectOfFloatsArrayToFloatArray(Object[] doubleArray) {
+        Float[] target = new Float[doubleArray.length];
         for (int i = 0; i < doubleArray.length; i++) {
             Array.set(target, i, doubleArray[i]);
         }
@@ -835,6 +845,16 @@ public class SqlgUtil {
                 throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
             }
             Array.set(target, i, ((Timestamp) value[i]).toLocalDateTime());
+        }
+        return target;
+    }
+
+    public static <T> T copyObjectArrayOfTimestampToLocalDate(Object[] value, T target) {
+        for (int i = 0; i < value.length; i++) {
+            if (value[i] == null) {
+                throw new IllegalArgumentException(PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL);
+            }
+            Array.set(target, i, ((Timestamp) value[i]).toLocalDateTime().toLocalDate());
         }
         return target;
     }
