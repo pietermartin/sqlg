@@ -628,33 +628,6 @@ public class SqlgUtil {
         }
     }
 
-    public static void calculateLeftJoins(List<LinkedList<SchemaTableTree>> distinctQueries) {
-        Set<List<SchemaTable>> lastSchemaTableTrees = new HashSet<>();
-        for (LinkedList<SchemaTableTree> distinctQuery : distinctQueries) {
-
-            List<SchemaTable> list = new ArrayList<>();
-            for (SchemaTableTree schemaTableTree : distinctQuery) {
-
-                if (!list.isEmpty()) {
-                    list = new ArrayList<>(list);
-                }
-                list.add(schemaTableTree.getSchemaTable());
-
-                if (!lastSchemaTableTrees.contains(list)) {
-
-                    lastSchemaTableTrees.add(list);
-
-                } else {
-                    if (schemaTableTree.isOptionalLeftJoin()) {
-                        schemaTableTree.setOptionalLeftJoin(false);
-                    }
-                }
-
-            }
-        }
-
-    }
-
     public static void dropDb(SqlgGraph sqlgGraph) {
         try {
             SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
