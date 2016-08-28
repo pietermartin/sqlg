@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestSchemaTableTreeAndHasContainer;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestSchemaTableTreeAndHasCo
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchemaTableTreeAndHasContainer.class
+        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }
