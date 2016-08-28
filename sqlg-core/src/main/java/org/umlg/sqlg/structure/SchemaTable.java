@@ -4,8 +4,10 @@ import com.google.common.base.Preconditions;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
+import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
+import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
@@ -13,6 +15,8 @@ import org.umlg.sqlg.sql.parse.SchemaTableTree;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -123,41 +127,45 @@ public class SchemaTable implements DataSerializable, Serializable {
         return SchemaTable.of(this.getSchema(), prefix + this.getTable());
     }
 
-    static class SchemaTableJacksonSerializer extends StdSerializer<SchemaTable> {
-        @SuppressWarnings("WeakerAccess")
-        public SchemaTableJacksonSerializer() {
+    @SuppressWarnings("DuplicateThrows")
+    static class SchemaTableIdJacksonSerializerV2d0 extends StdSerializer<SchemaTable> {
+        SchemaTableIdJacksonSerializerV2d0() {
             super(SchemaTable.class);
         }
 
         @Override
         public void serialize(final SchemaTable schemaTable, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
-                throws IOException {
-            ser(schemaTable, jsonGenerator, false);
+                throws IOException, JsonGenerationException {
+            // when types are not embedded, stringify or resort to JSON primitive representations of the
+            // type so that non-jvm languages can better interoperate with the TinkerPop stack.
+            jsonGenerator.writeString(schemaTable.toString());
         }
 
         @Override
         public void serializeWithType(final SchemaTable schemaTable, final JsonGenerator jsonGenerator,
-                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException {
-            ser(schemaTable, jsonGenerator, true);
+                                      final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
+            // when the type is included add "class" as a key and then try to utilize as much of the
+            // default serialization provided by jackson data-bind as possible.  for example, write
+            // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
+            // to write it out with the type.  in this way, data-bind should be able to deserialize
+            // it back when types are embedded.
+            typeSerializer.writeTypePrefixForScalar(schemaTable, jsonGenerator);
+            final Map<String, Object> m = new HashMap<>();
+            m.put("schema", schemaTable.getSchema());
+            m.put("table", schemaTable.getTable());
+            jsonGenerator.writeObject(m);
+            typeSerializer.writeTypeSuffixForScalar(schemaTable, jsonGenerator);
+        }
+    }
+
+    static class SchemaTableIdJacksonDeserializerV2d0 extends AbstractObjectDeserializer<SchemaTable> {
+        SchemaTableIdJacksonDeserializerV2d0() {
+            super(SchemaTable.class);
         }
 
-        private void ser(final SchemaTable schemaTable, final JsonGenerator jsonGenerator, final boolean includeType) throws IOException {
-            if (includeType) {
-                // when the type is included add "class" as a key and then try to utilize as much of the
-                // default serialization provided by jackson data-bind as possible.  for example, write
-                // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
-                // to write it out with the type.  in this way, data-bind should be able to deserialize
-                // it back when types are embedded.
-                jsonGenerator.writeStartObject();
-                jsonGenerator.writeStringField(GraphSONTokens.CLASS, SchemaTable.class.getName());
-                jsonGenerator.writeStringField("schema", schemaTable.getSchema());
-                jsonGenerator.writeObjectField("table", schemaTable.getTable());
-                jsonGenerator.writeEndObject();
-            } else {
-                // when types are not embedded, stringify or resort to JSON primitive representations of the
-                // type so that non-jvm languages can better interoperate with the TinkerPop stack.
-                jsonGenerator.writeString(schemaTable.toString());
-            }
+        @Override
+        public SchemaTable createObject(final Map data) {
+            return SchemaTable.of((String)data.get("schema"), (String) data.get("table"));
         }
     }
 }

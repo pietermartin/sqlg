@@ -1,6 +1,6 @@
 package org.umlg.sqlg.structure;
 
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
+import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
 import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
@@ -25,7 +25,7 @@ import java.util.Map;
  */
 public class RecordId implements KryoSerializable {
 
-    public final static String RECORD_ID_DELIMITER = ":::";
+    private final static String RECORD_ID_DELIMITER = ":::";
     private SchemaTable schemaTable;
     private Long id;
 
@@ -86,7 +86,7 @@ public class RecordId implements KryoSerializable {
         return id;
     }
 
-    public static Map<SchemaTable, List<Long>> normalizeIds(List<RecordId> vertexId) {
+    static Map<SchemaTable, List<Long>> normalizeIds(List<RecordId> vertexId) {
         Map<SchemaTable, List<Long>> result = new HashMap<>();
         for (RecordId recordId : vertexId) {
             List<Long> ids = result.get(recordId.getSchemaTable());
@@ -101,11 +101,9 @@ public class RecordId implements KryoSerializable {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder();
-        result.append(this.schemaTable.toString());
-        result.append(RECORD_ID_DELIMITER);
-        result.append(this.id.toString());
-        return result.toString();
+        return this.schemaTable.toString() +
+                RECORD_ID_DELIMITER +
+                this.id.toString();
     }
 
     @Override
@@ -137,44 +135,49 @@ public class RecordId implements KryoSerializable {
 
     @Override
     public void read(Kryo kryo, Input input) {
-        this.schemaTable = schemaTable.of(input.readString(), input.readString());
+        this.schemaTable = SchemaTable.of(input.readString(), input.readString());
         this.id = input.readLong();
     }
 
-    static class RecordIdJacksonSerializer extends StdSerializer<RecordId> {
-        public RecordIdJacksonSerializer() {
+    @SuppressWarnings("DuplicateThrows")
+    static class RecordIdJacksonSerializerV2d0 extends StdSerializer<RecordId> {
+        RecordIdJacksonSerializerV2d0() {
             super(RecordId.class);
         }
 
         @Override
-        public void serialize(final RecordId customId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
+        public void serialize(final RecordId recordId, final JsonGenerator jsonGenerator, final SerializerProvider serializerProvider)
                 throws IOException, JsonGenerationException {
-            ser(customId, jsonGenerator, false);
+            // when types are not embedded, stringify or resort to JSON primitive representations of the
+            // type so that non-jvm languages can better interoperate with the TinkerPop stack.
+            jsonGenerator.writeString(recordId.toString());
         }
 
         @Override
         public void serializeWithType(final RecordId recordId, final JsonGenerator jsonGenerator,
                                       final SerializerProvider serializerProvider, final TypeSerializer typeSerializer) throws IOException, JsonProcessingException {
-            ser(recordId, jsonGenerator, true);
+            // when the type is included add "class" as a key and then try to utilize as much of the
+            // default serialization provided by jackson data-bind as possible.  for example, write
+            // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
+            // to write it out with the type.  in this way, data-bind should be able to deserialize
+            // it back when types are embedded.
+            typeSerializer.writeTypePrefixForScalar(recordId, jsonGenerator);
+            final Map<String, Object> m = new HashMap<>();
+            m.put("schemaTable", recordId.getSchemaTable());
+            m.put("id", recordId.getId());
+            jsonGenerator.writeObject(m);
+            typeSerializer.writeTypeSuffixForScalar(recordId, jsonGenerator);
+        }
+    }
+
+    static class RecordIdJacksonDeserializerV2d0 extends AbstractObjectDeserializer<RecordId> {
+        RecordIdJacksonDeserializerV2d0() {
+            super(RecordId.class);
         }
 
-        private void ser(final RecordId recordId, final JsonGenerator jsonGenerator, final boolean includeType) throws IOException {
-            if (includeType) {
-                // when the type is included add "class" as a key and then try to utilize as much of the
-                // default serialization provided by jackson data-bind as possible.  for example, write
-                // the uuid as an object so that when jackson serializes it, it uses the uuid serializer
-                // to write it out with the type.  in this way, data-bind should be able to deserialize
-                // it back when types are embedded.
-                jsonGenerator.writeStartObject();
-                jsonGenerator.writeStringField(GraphSONTokens.CLASS, RecordId.class.getName());
-                jsonGenerator.writeObjectField("schemaTable", recordId.getSchemaTable());
-                jsonGenerator.writeObjectField("id", recordId.getId());
-                jsonGenerator.writeEndObject();
-            } else {
-                // when types are not embedded, stringify or resort to JSON primitive representations of the
-                // type so that non-jvm languages can better interoperate with the TinkerPop stack.
-                jsonGenerator.writeString(recordId.toString());
-            }
+        @Override
+        public RecordId createObject(final Map data) {
+            return RecordId.from((SchemaTable) data.get("schemaTable"), (Long) data.get("id"));
         }
     }
 
