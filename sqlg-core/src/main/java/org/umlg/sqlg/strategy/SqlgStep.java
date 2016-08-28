@@ -6,7 +6,7 @@ import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.List;
 
-public interface SqlgStep<S extends SqlgElement, E extends SqlgElement> extends Step {
+interface SqlgStep<S extends SqlgElement, E extends SqlgElement> extends Step {
 
     List<ReplacedStep<S, E>> getReplacedSteps();
 
@@ -15,15 +15,4 @@ public interface SqlgStep<S extends SqlgElement, E extends SqlgElement> extends 
     void parseForStrategy();
 
     boolean isForMultipleQueries();
-
-    default boolean rootEmitTreeContains(List<EmitTree<E>> rootEmitTrees, Emit emit) {
-        for (EmitTree<E> rootEmitTree : rootEmitTrees) {
-            if (rootEmitTree.getEmit().getPath().get(0).equals(emit.getPath().get(0)) &&
-                    rootEmitTree.getEmit().getElement().equals(emit.getElement())) {
-
-                return true;
-            }
-        }
-        return false;
-    }
 }

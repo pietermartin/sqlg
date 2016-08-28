@@ -2,7 +2,6 @@ package org.umlg.sqlg.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -11,31 +10,28 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.CollectingBarrie
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.apache.tinkerpop.gremlin.util.function.ChainedComparator;
 import org.javatuples.Pair;
 
-import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * Created by pieter on 2015/09/05.
  */
-public class SqlgOrderGlobalStep<S, C extends Comparable> extends CollectingBarrierStep<S> implements ComparatorHolder<S, C>, TraversalParent {
+class SqlgOrderGlobalStep<S, C extends Comparable> extends CollectingBarrierStep<S> implements ComparatorHolder<S, C>, TraversalParent {
 
-    private ChainedComparator<S, C> chainedComparator = null;
     private OrderGlobalStep<S, C> orderGlobalStep;
     private List<Pair<Traversal.Admin<S, C>, Comparator<C>>> comparators = new ArrayList<>();
     //ignore indicates whether the order by clause has been executed by the rdbms.
     //if so then there is no need to do so in java, else do so.
     private boolean ignore = false;
 
-    public SqlgOrderGlobalStep(OrderGlobalStep orderGlobalStep) {
+    SqlgOrderGlobalStep(OrderGlobalStep<S, C> orderGlobalStep) {
         super(orderGlobalStep.getTraversal());
         this.orderGlobalStep = orderGlobalStep;
     }
 
-    public void setIgnore(boolean ignore) {
+    void setIgnore(boolean ignore) {
         this.ignore = ignore;
     }
 
@@ -86,27 +82,7 @@ public class SqlgOrderGlobalStep<S, C extends Comparable> extends CollectingBarr
         for (final Pair<Traversal.Admin<S, C>, Comparator<C>> comparator : this.comparators) {
             clone.comparators.add(new Pair<>(comparator.getValue0().clone(), comparator.getValue1()));
         }
-        clone.chainedComparator = null;
         return clone;
     }
 
-    /////
-
-    private static class ComparatorTraverser<S> implements Comparator<Traverser<S>>, Serializable {
-
-        private final Comparator<S> comparator;
-
-        public ComparatorTraverser(final Comparator<S> comparator) {
-            this.comparator = comparator;
-        }
-
-        @Override
-        public int compare(final Traverser<S> traverserA, final Traverser<S> traverserB) {
-            return this.comparator.compare(traverserA.get(), traverserB.get());
-        }
-
-        public static <S> List<ComparatorTraverser<S>> convertComparator(final List<Comparator<S>> comparators) {
-            return comparators.stream().map(comparator -> new ComparatorTraverser<>(comparator)).collect(Collectors.toList());
-        }
-    }
 }
