@@ -34,7 +34,7 @@ public class SqlgUtil {
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
     private final static int BULK_WITHIN_COUNT = 1;
-    public static final String PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL = "Property array value elements may not be null.";
+    private static final String PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL = "Property array value elements may not be null.";
 
     private SqlgUtil() {
     }
@@ -360,16 +360,16 @@ public class SqlgUtil {
                     break;
                 case DURATION_ARRAY:
                     Duration[] durations = (Duration[]) pair.getRight();
-                    List<Long> seconds = Arrays.stream(durations).map(d -> d.getSeconds()).collect(Collectors.toList());
-                    List<Integer> nanos = Arrays.stream(durations).map(d -> d.getNano()).collect(Collectors.toList());
+                    List<Long> seconds = Arrays.stream(durations).map(Duration::getSeconds).collect(Collectors.toList());
+                    List<Integer> nanos = Arrays.stream(durations).map(Duration::getNano).collect(Collectors.toList());
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.long_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, seconds.toArray()));
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, nanos.toArray()));
                     break;
                 case PERIOD_ARRAY:
                     Period[] periods = (Period[]) pair.getRight();
-                    List<Integer> years = Arrays.stream(periods).map(d -> d.getYears()).collect(Collectors.toList());
-                    List<Integer> months = Arrays.stream(periods).map(d -> d.getMonths()).collect(Collectors.toList());
-                    List<Integer> days = Arrays.stream(periods).map(d -> d.getDays()).collect(Collectors.toList());
+                    List<Integer> years = Arrays.stream(periods).map(Period::getYears).collect(Collectors.toList());
+                    List<Integer> months = Arrays.stream(periods).map(Period::getMonths).collect(Collectors.toList());
+                    List<Integer> days = Arrays.stream(periods).map(Period::getDays).collect(Collectors.toList());
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, years.toArray()));
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, months.toArray()));
                     sqlgGraph.getSqlDialect().setArray(preparedStatement, parameterStartIndex++, PropertyType.int_ARRAY, SqlgUtil.transformArrayToInsertValue(pair.left, days.toArray()));
