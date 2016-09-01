@@ -33,6 +33,8 @@
     <properties>
         <sqlg.version>1.2.1-SNAPSHOT</sqlg.version>
         <tinkerpop.version>3.2.2-SNAPSHOT</tinkerpop.version>
+        <slf4j.version>1.7.21</slf4j.version>
+        <junit.version>4.12</junit.version>
     </properties>
     <developers>
         <developer>
@@ -155,13 +157,14 @@
     <modules>
         <module>sqlg-core</module>
         <module>sqlg-test</module>
-        <module>sqlg-hsqldb</module>
         <module>sqlg-postgres</module>
+        <module>sqlg-hsqldb</module>
+        <module>sqlg-h2</module>
         <!--<module>sqlg-mariadb</module>-->
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
-        <module>sqlg-h2</module>
+        <module>sqlg-benchmark-h2</module>
     </modules>
     <dependencyManagement>
         <dependencies>

@@ -25,7 +25,8 @@ import java.util.Map;
  */
 public class RecordId implements KryoSerializable {
 
-    private final static String RECORD_ID_DELIMITER = ":::";
+    @SuppressWarnings("WeakerAccess")
+    public final static String RECORD_ID_DELIMITER = ":::";
     private SchemaTable schemaTable;
     private Long id;
 

@@ -33,6 +33,7 @@ package org.sqlg.benchmark;
 
 import org.openjdk.jmh.annotations.*;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -69,7 +70,7 @@ public class SimpleInsertBenchmark extends BaseBenchmark {
     @Setup(Level.Iteration)
     public void setup() throws Exception {
         this.sqlgGraph = getSqlgGraph();
-        this.sqlgGraph.drop();
+        SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
     }

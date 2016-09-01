@@ -5,14 +5,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.junit.Assert;
 import org.openjdk.jmh.annotations.*;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by pieter on 2015/11/24.
@@ -61,14 +63,14 @@ public class ServerSideBulkEdgeCreation extends BaseBenchmark {
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
-        Assert.assertEquals(numberOfElement, this.gt.V().hasLabel("A").has("uid", P.within(leftUids)).toList().size());
+        assertEquals(numberOfElement, this.gt.V().hasLabel("A").has("uid", P.within(leftUids)).toList().size());
         return numberOfElement;
     }
 
     @Setup(Level.Iteration)
     public void setup() throws Exception {
         this.sqlgGraph = getSqlgGraph();
-        this.sqlgGraph.drop();
+        SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
         this.gt = this.sqlgGraph.traversal();

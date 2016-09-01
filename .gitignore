@@ -11,3 +11,4 @@ release.properties
 *.iml
 src/test/db/
 /sqlg-hsqldb/src/test/db/
+/sqlg-benchmark-hsqldb/src/test/db/

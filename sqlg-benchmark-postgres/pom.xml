@@ -19,6 +19,17 @@
         <dependency>
             <groupId>org.umlg</groupId>
             <artifactId>sqlg-postgres</artifactId>
+			<exclusions>
+				<!-- interferes with log4j logging -->
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>ch.qos.logback</groupId>
+					<artifactId>logback-classic</artifactId>
+				</exclusion>
+			</exclusions>
         </dependency>
 		<dependency>
 			<groupId>org.umlg</groupId>

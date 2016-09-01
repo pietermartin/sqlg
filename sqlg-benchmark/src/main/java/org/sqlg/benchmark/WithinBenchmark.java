@@ -35,13 +35,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.openjdk.jmh.annotations.*;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
 
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
@@ -60,7 +62,7 @@ public class WithinBenchmark extends BaseBenchmark {
     public long withinWithIn() {
         this.sqlgGraph.configuration().setProperty("bulk.within.count", this.count);
         List<Vertex> vertices = this.gt.V().hasLabel("Person").has("uid", P.within(this.smallUidSet)).toList();
-        Assert.assertEquals(this.count, vertices.size());
+        assertEquals(this.count, vertices.size());
         return 1000000;
     }
 
@@ -68,7 +70,7 @@ public class WithinBenchmark extends BaseBenchmark {
     public long withinWithJoin() {
         this.sqlgGraph.configuration().setProperty("bulk.within.count", this.count - 1);
         List<Vertex> vertices = this.gt.V().hasLabel("Person").has("uid", P.within(this.smallUidSet)).toList();
-        Assert.assertEquals(this.count, vertices.size());
+        assertEquals(this.count, vertices.size());
         return 1000000;
     }
 
@@ -77,7 +79,7 @@ public class WithinBenchmark extends BaseBenchmark {
         this.uids.clear();
         this.smallUidSet.clear();
         this.sqlgGraph = getSqlgGraph();
-        this.sqlgGraph.drop();
+        SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
         this.gt = this.sqlgGraph.traversal();

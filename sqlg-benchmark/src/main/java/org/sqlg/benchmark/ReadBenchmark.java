@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.openjdk.jmh.annotations.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,7 +53,7 @@ public class ReadBenchmark extends BaseBenchmark {
     public void setup() throws Exception {
         System.out.println("setup");
         this.sqlgGraph = getSqlgGraph();
-        this.sqlgGraph.drop();
+        SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph = getSqlgGraph();
         this.gt = this.sqlgGraph.traversal();

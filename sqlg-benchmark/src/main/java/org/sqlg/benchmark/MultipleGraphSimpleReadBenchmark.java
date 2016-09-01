@@ -3,6 +3,7 @@ package org.sqlg.benchmark;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.openjdk.jmh.annotations.*;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +52,7 @@ public class MultipleGraphSimpleReadBenchmark extends BaseBenchmark {
     public void setup() throws Exception {
         System.out.println("setup");
         this.sqlgGraph1 = getSqlgGraph(true);
-        this.sqlgGraph1.drop();
+        SqlgUtil.dropDb(this.sqlgGraph1);
         this.sqlgGraph1.tx().commit();
         this.sqlgGraph1 = getSqlgGraph(true);
         this.gt1 = this.sqlgGraph1.traversal();
