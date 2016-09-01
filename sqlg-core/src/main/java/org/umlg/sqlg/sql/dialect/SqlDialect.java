@@ -53,10 +53,7 @@ public interface SqlDialect {
     String getForeignKeyTypeDefinition();
 
     default String maybeWrapInQoutes(String field) {
-        StringBuilder sb = new StringBuilder(getColumnEscapeKey());
-        sb.append(field);
-        sb.append(getColumnEscapeKey());
-        return sb.toString();
+        return getColumnEscapeKey() + field + getColumnEscapeKey();
     }
 
     default boolean supportsFloatValues() {
