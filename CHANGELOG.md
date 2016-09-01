@@ -1,5 +1,7 @@
-##1.2.1
+##1.3.0
 
+* Upgrade to TinkerPop 3.2.2
+* Added H2 support.
 * Added support for getting the data source from JNDI.
 * Optimize `SqlgGraph.bulkAddEdges(...) to use the correct types for the in and out properties. This has a marginal performance increase.
 
