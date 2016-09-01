@@ -58,8 +58,8 @@ public class TestHas extends BaseTest {
 
     @Test
     public void testHas() {
-        Vertex v1 = this.sqlgGraph.addVertex("name", "marko");
-        Vertex v2 = this.sqlgGraph.addVertex("name", "peter");
+        this.sqlgGraph.addVertex("name", "marko");
+        this.sqlgGraph.addVertex("name", "peter");
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has("name", "marko").count().next(), 0);
     }
