@@ -164,7 +164,6 @@
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
-        <module>sqlg-benchmark-h2</module>
     </modules>
     <dependencyManagement>
         <dependencies>
