@@ -9,7 +9,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.*;
@@ -121,6 +120,7 @@ public abstract class BaseTest {
         } catch (Exception e) {
             fail(e.getMessage());
         } finally {
+            //noinspection EmptyCatchBlock
             try {
                 if (stmt != null)
                     stmt.close();
@@ -145,10 +145,9 @@ public abstract class BaseTest {
     }
 
     protected void loadModern(SqlgGraph sqlgGraph) {
-        Graph g = sqlgGraph;
-        final GraphReader initreader = GryoReader.build().create();
+        final GraphReader gryoReader = GryoReader.build().create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/tinkerpop-modern.kryo")) {
-            initreader.readGraph(stream, g);
+            gryoReader.readGraph(stream, sqlgGraph);
         } catch (IOException e) {
             Assert.fail(e.getMessage());
         }
@@ -156,18 +155,6 @@ public abstract class BaseTest {
 
     protected void loadModern() {
         loadModern(this.sqlgGraph);
-    }
-
-    protected void loadGratefulDead() {
-        try {
-            final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/org/apache/tinkerpop/gremlin/structure/io/gryo/grateful-dead.kryo");
-            final GraphReader gryoReader = GryoReader.build()
-                    .mapper(this.sqlgGraph.io(GryoIo.build()).mapper().create())
-                    .create();
-            gryoReader.readGraph(stream, this.sqlgGraph);
-        } catch (IOException e) {
-            Assert.fail(e.getMessage());
-        }
     }
 
     /**
@@ -191,14 +178,10 @@ public abstract class BaseTest {
         return convertToVertex(g, vertexName).id();
     }
 
-    public Vertex convertToVertex(final Graph graph, final String vertexName) {
+    protected Vertex convertToVertex(final Graph graph, final String vertexName) {
         // all test graphs have "name" as a unique id which makes it easy to hardcode this...works for now
         return graph.traversal().V().has("name", vertexName).next();
     }
-
-//    public Object convertToEdgeId(final String outVertexName, String edgeLabel, final String inVertexName) {
-//        return convertToEdgeId(graph, outVertexName, edgeLabel, inVertexName);
-//    }
 
     public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
         return graph.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).<Edge>select("e").next().id();
@@ -212,7 +195,7 @@ public abstract class BaseTest {
         assertEquals(new Long(6), g1.traversal().V().count().next());
         assertEquals(new Long(6), g1.traversal().E().count().next());
 
-        final Vertex v1 = (Vertex) g1.traversal().V().has("name", "marko").next();
+        final Vertex v1 = g1.traversal().V().has("name", "marko").next();
         assertEquals(29, v1.<Integer>value("age").intValue());
         assertEquals(2, v1.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v1.label());
@@ -250,7 +233,7 @@ public abstract class BaseTest {
             }
         });
 
-        final Vertex v2 = (Vertex) g1.traversal().V().has("name", "vadas").next();
+        final Vertex v2 = g1.traversal().V().has("name", "vadas").next();
         assertEquals(27, v2.<Integer>value("age").intValue());
         assertEquals(2, v2.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v2.label());
@@ -272,7 +255,7 @@ public abstract class BaseTest {
             }
         });
 
-        final Vertex v3 = (Vertex) g1.traversal().V().has("name", "lop").next();
+        final Vertex v3 = g1.traversal().V().has("name", "lop").next();
         assertEquals("java", v3.<String>value("lang"));
         assertEquals(2, v2.keys().size());
         assertEquals(assertSpecificLabel ? "software" : Vertex.DEFAULT_LABEL, v3.label());
@@ -310,7 +293,7 @@ public abstract class BaseTest {
             }
         });
 
-        final Vertex v4 = (Vertex) g1.traversal().V().has("name", "josh").next();
+        final Vertex v4 = g1.traversal().V().has("name", "josh").next();
         assertEquals(32, v4.<Integer>value("age").intValue());
         assertEquals(2, v4.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v4.label());
@@ -348,7 +331,7 @@ public abstract class BaseTest {
             }
         });
 
-        final Vertex v5 = (Vertex) g1.traversal().V().has("name", "ripple").next();
+        final Vertex v5 = g1.traversal().V().has("name", "ripple").next();
         assertEquals("java", v5.<String>value("lang"));
         assertEquals(2, v5.keys().size());
         assertEquals(assertSpecificLabel ? "software" : Vertex.DEFAULT_LABEL, v5.label());
@@ -370,7 +353,7 @@ public abstract class BaseTest {
             }
         });
 
-        final Vertex v6 = (Vertex) g1.traversal().V().has("name", "peter").next();
+        final Vertex v6 = g1.traversal().V().has("name", "peter").next();
         assertEquals(35, v6.<Integer>value("age").intValue());
         assertEquals(2, v6.keys().size());
         assertEquals(assertSpecificLabel ? "person" : Vertex.DEFAULT_LABEL, v6.label());
