@@ -1211,7 +1211,6 @@ public class SchemaManager {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     /**
@@ -1219,7 +1218,6 @@ public class SchemaManager {
      * This is needed because with the {@link TopologyStrategy} it is possible to query the topology itself.
      */
     private void loadTopology() {
-
         this.localSchemas.put(SQLG_SCHEMA, SQLG_SCHEMA_SCHEMA);
 
         Set<String> schemas = new HashSet<>();
@@ -1380,10 +1378,8 @@ public class SchemaManager {
                         labels.getLeft().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
                     }
                 }
-
             }
         }
-
     }
 
     private void addPublicSchema() {

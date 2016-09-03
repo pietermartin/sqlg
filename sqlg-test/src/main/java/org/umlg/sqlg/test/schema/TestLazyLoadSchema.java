@@ -34,7 +34,7 @@ public class TestLazyLoadSchema extends BaseTest {
 
     @Before
     public void beforeTest() {
-        Assume.assumeFalse(this.sqlgGraph.getSqlDialect().getConfiguration().getString("jdbc.url").contains("hsqldb"));
+        Assume.assumeFalse(this.sqlgGraph.configuration().getString("jdbc.url").contains("hsqldb"));
     }
 
     @Test

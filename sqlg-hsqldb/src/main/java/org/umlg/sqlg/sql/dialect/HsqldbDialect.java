@@ -1,18 +1,14 @@
 package org.umlg.sqlg.sql.dialect;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.hsqldb.jdbc.JDBCArrayBasic;
 import org.hsqldb.types.Type;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.sql.*;
 import java.time.*;
 import java.util.*;
@@ -21,10 +17,15 @@ import java.util.*;
  * Date: 2014/07/16
  * Time: 3:09 PM
  */
-public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
+public class HsqldbDialect extends BaseSqlDialect {
 
-    public HsqldbDialect(Configuration configurator) {
-        super(configurator);
+    public HsqldbDialect() {
+        super();
+    }
+
+    @Override
+    public String dialectName() {
+        return "HsqldbDialect";
     }
 
     @Override
@@ -48,72 +49,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
         sb.append(indexName);
         sb.append("'");
         return sb.toString();
-    }
-
-    @Override
-    public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-//    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public String getBatchNull() {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
-    }
-
-    @Override
-    public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
-        throw new UnsupportedOperationException("Batch processing is not supported by hsqldb.");
     }
 
     @Override
@@ -556,21 +491,6 @@ public class HsqldbDialect extends BaseSqlDialect implements SqlDialect {
     @Override
     public <T> T getGis(SqlgGraph sqlgGraph) {
         throw new IllegalStateException("Hsqldb does not support other types, this should not have happened!");
-    }
-
-    @Override
-    public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
-        throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
-    }
-
-    @Override
-    public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        throw new UnsupportedOperationException("Hsqldb does not support streamingSql!");
-    }
-
-    @Override
-    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
-        throw new UnsupportedOperationException("Hsqldb does not support bulk mode!");
     }
 
     @Override

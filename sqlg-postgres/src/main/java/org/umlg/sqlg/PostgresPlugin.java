@@ -1,6 +1,5 @@
 package org.umlg.sqlg;
 
-import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.PostgresDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
@@ -24,7 +23,7 @@ public class PostgresPlugin implements SqlgPlugin {
     }
 
     @Override
-    public SqlDialect instantiateDialect(Configuration configuration) {
-        return new PostgresDialect(configuration);
+    public SqlDialect instantiateDialect() {
+        return new PostgresDialect();
     }
 }

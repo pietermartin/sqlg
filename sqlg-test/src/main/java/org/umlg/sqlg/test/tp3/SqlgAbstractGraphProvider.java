@@ -44,7 +44,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
             g.close();
         }
         SqlgPlugin plugin = getSqlgPlugin();
-        SqlDialect sqlDialect = plugin.instantiateDialect(configuration);
+        SqlDialect sqlDialect = plugin.instantiateDialect();
         try {
             sqlgDataSource = SqlgDataSource.setupDataSource(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
             try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {

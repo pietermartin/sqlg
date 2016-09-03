@@ -1,6 +1,5 @@
 package org.umlg.sqlg;
 
-import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.DatabaseMetaData;
@@ -26,7 +25,7 @@ public class H2Plugin implements SqlgPlugin {
     }
 
     @Override
-    public SqlDialect instantiateDialect(Configuration configuration) {
-        return new H2Dialect(configuration);
+    public SqlDialect instantiateDialect() {
+        return new H2Dialect();
     }
 }

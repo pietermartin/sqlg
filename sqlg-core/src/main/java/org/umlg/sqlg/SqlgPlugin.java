@@ -1,6 +1,5 @@
 package org.umlg.sqlg;
 
-import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.DatabaseMetaData;
@@ -36,8 +35,7 @@ public interface SqlgPlugin {
      * Instantiates the dialect based on the provided configuration. This only gets called if
      * {@link #getDriverFor(String)} returns non-null class name or {@link #canWorkWith(DatabaseMetaData)} returns true.
      *
-     * @param configuration sqlg configuration
      * @return the dialect to use, never null
      */
-    SqlDialect instantiateDialect(Configuration configuration);
+    SqlDialect instantiateDialect();
 }

@@ -4,23 +4,20 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.sql.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public interface SqlDialect {
 
-    void setConfiguration(Configuration configuration);
-
-    Configuration getConfiguration();
+    String dialectName();
 
     Set<String> getDefaultSchemas();
 
@@ -258,13 +255,11 @@ public interface SqlDialect {
     }
 
     default void prepareDB(Connection conn) {
-
     }
 
     default String getPublicSchema() {
         return "public";
     }
-
 
     default String indexName(SchemaTable schemaTable, String prefix, String column) {
         StringBuilder sb = new StringBuilder();
@@ -285,11 +280,6 @@ public interface SqlDialect {
         return true;
     }
 
-    Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache);
-
-//    void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache);
-    void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache);
-
     default boolean supportsBatchMode() {
         return false;
     }
@@ -298,35 +288,12 @@ public interface SqlDialect {
         return false;
     }
 
-    String getBatchNull();
-
-    void flushVertexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache);
-
-    void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache);
-
     default String hasContainerKeyToColumn(String key) {
-
         if (key.equals(T.id.getAccessor()))
             return "ID";
         else
             return key;
     }
-
-    void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache);
-
-    void flushRemovedEdges(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgEdge>> removeEdgeCache);
-
-    String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap);
-
-    String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
-
-    String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap);
-
-    String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap);
-
-    void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap);
-
-    void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException;
 
     default boolean needForeignKeyIndex() {
         return false;
@@ -385,17 +352,7 @@ public interface SqlDialect {
         return false;
     }
 
-    default void registerGisDataTypes(Connection connection) {
-        //do nothing
-    }
-
     <T> T getGis(SqlgGraph sqlgGraph);
-
-    OutputStream streamSql(SqlgGraph sqlgGraph, String sql);
-
-    InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql);
-
-    <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids);
 
     void lockTable(SqlgGraph sqlgGraph, SchemaTable schemaTable, String prefix);
 

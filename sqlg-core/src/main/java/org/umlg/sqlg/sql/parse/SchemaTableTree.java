@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.strategy.BaseSqlgStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
@@ -755,8 +756,8 @@ public class SchemaTableTree {
             } else {
                 withInOutMap.put(WITHOUT, "unused");
             }
-            String copySql = sqlgGraph.getSqlDialect().temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
-            OutputStream out = sqlgGraph.getSqlDialect().streamSql(this.sqlgGraph, copySql);
+            String copySql = ((SqlBulkDialect)sqlgGraph.getSqlDialect()).temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap);
+            OutputStream out = ((SqlBulkDialect)sqlgGraph.getSqlDialect()).streamSql(this.sqlgGraph, copySql);
 
             for (Object withInOutValue : withInOuts) {
                 if (withInOutValue instanceof RecordId) {
@@ -768,7 +769,7 @@ public class SchemaTableTree {
                 } else {
                     withInOutMap.put(WITHOUT, withInOutValue);
                 }
-                sqlgGraph.getSqlDialect().writeStreamingVertex(out, withInOutMap);
+                ((SqlBulkDialect)sqlgGraph.getSqlDialect()).writeStreamingVertex(out, withInOutMap);
             }
             try {
                 out.close();

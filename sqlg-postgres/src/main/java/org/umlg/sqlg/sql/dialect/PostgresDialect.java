@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -19,7 +18,6 @@ import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
-import org.postgresql.jdbc4.Jdbc4Connection;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -45,7 +43,7 @@ import static org.umlg.sqlg.structure.PropertyType.*;
  * Time: 1:42 PM
  */
 @SuppressWarnings("unused")
-public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
+public class PostgresDialect extends BaseSqlDialect {
 
     private static final String BATCH_NULL = "";
     private static final String COPY_COMMAND_DELIMITER = "\t";
@@ -57,8 +55,13 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
     private PropertyType postGisType;
 
     @SuppressWarnings("unused")
-    public PostgresDialect(Configuration configurator) {
-        super(configurator);
+    public PostgresDialect() {
+        super();
+    }
+
+    @Override
+    public String dialectName() {
+        return "Postgresql";
     }
 
     @Override
@@ -73,7 +76,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public Set<String> getSpacialRefTable() {
-        return ImmutableSet.copyOf(Arrays.asList("spatial_ref_sys"));
+        return ImmutableSet.copyOf(Collections.singletonList("spatial_ref_sys"));
     }
 
     @Override
@@ -103,7 +106,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     public void assertTableName(String tableName) {
         if (!StringUtils.isEmpty(tableName) && tableName.length() > 63) {
-            throw new IllegalStateException(String.format("Postgres table names must be 63 characters or less! Given table name is %s", new String[]{tableName}));
+            throw new IllegalStateException(String.format("Postgres table names must be 63 characters or less! Given table name is %s", tableName));
         }
     }
 
@@ -257,7 +260,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
             Object[] arg = new Object[]{};
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
 
-            for (MetaEdge metaEdge: edgeCache.keySet()) {
+            for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
 
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables()
@@ -2317,14 +2320,15 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
         return true;
     }
 
-    @Override
-    public void registerGisDataTypes(Connection connection) {
-        try {
-            ((Jdbc4Connection) ((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    //This is not being called but leaving it here for prosperity.
+//    @Override
+//    public void registerGisDataTypes(Connection connection) {
+//        try {
+//            ((Jdbc4Connection) ((com.mchange.v2.c3p0.impl.NewProxyConnection) connection).unwrap(Jdbc4Connection.class)).addDataType("geometry", "org.postgis.PGgeometry");
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     @Override
     public <T> T getGis(SqlgGraph sqlgGraph) {
@@ -2466,7 +2470,7 @@ public class PostgresDialect extends BaseSqlDialect implements SqlDialect {
 
     @Override
     public void setArray(PreparedStatement statement, int index, PropertyType type,
-            Object[] values) throws SQLException {
+                         Object[] values) throws SQLException {
         statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
 

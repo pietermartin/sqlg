@@ -3,7 +3,7 @@ package org.umlg.sqlg.structure;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
+import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,7 +16,7 @@ import java.util.*;
 public class BatchManager {
 
     private SqlgGraph sqlgGraph;
-    private SqlDialect sqlDialect;
+    private SqlBulkDialect sqlDialect;
 
     //map per label/keys, contains a map of vertices with a triple representing outLabels, inLabels and vertex properties
     private Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache = new HashMap<>();
@@ -52,7 +52,7 @@ public class BatchManager {
 
     private BatchModeType batchModeType = BatchModeType.NONE;
 
-    BatchManager(SqlgGraph sqlgGraph, SqlDialect sqlDialect) {
+    BatchManager(SqlgGraph sqlgGraph, SqlBulkDialect sqlDialect) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlDialect;
     }
@@ -73,7 +73,7 @@ public class BatchManager {
         return this.batchModeType != BatchModeType.NONE;
     }
 
-    public BatchModeType getBatchModeType() {
+    BatchModeType getBatchModeType() {
         return batchModeType;
     }
 

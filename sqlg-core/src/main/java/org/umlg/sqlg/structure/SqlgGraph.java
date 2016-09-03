@@ -19,6 +19,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.SqlgPlugin;
+import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
@@ -245,14 +246,14 @@ public class SqlgGraph implements Graph {
                 if (p == null) {
                     throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
                 }
-                this.sqlDialect = p.instantiateDialect(configuration);
+                this.sqlDialect = p.instantiateDialect();
             } else {
                 SqlgPlugin p = findSqlgPlugin(jdbcUrl);
                 if (p == null) {
                     throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
                 }
 
-                this.sqlDialect = p.instantiateDialect(configuration);
+                this.sqlDialect = p.instantiateDialect();
                 this.sqlgDataSource = SqlgDataSource.setupDataSource(p.getDriverFor(jdbcUrl),
                         this.configuration);
             }
@@ -406,13 +407,17 @@ public class SqlgGraph implements Graph {
     }
 
     public <L, R> void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
+        if (!(this.sqlDialect instanceof SqlBulkDialect)) {
+            throw new UnsupportedOperationException(String.format("Bulk mode is not supported for %s", this.sqlDialect.dialectName()));
+        }
+        SqlBulkDialect sqlBulkDialect = (SqlBulkDialect)this.sqlDialect;
         if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         if (!uids.isEmpty()) {
             SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
             SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
-            this.sqlDialect.bulkAddEdges(this, inSchemaTable, outSchemaTable, edgeLabel, idFields, uids);
+            sqlBulkDialect.bulkAddEdges(this, inSchemaTable, outSchemaTable, edgeLabel, idFields, uids);
         }
     }
 

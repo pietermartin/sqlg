@@ -1,6 +1,5 @@
 package org.umlg.sqlg;
 
-import org.apache.commons.configuration.Configuration;
 import org.umlg.sqlg.sql.dialect.HsqldbDialect;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
@@ -24,7 +23,7 @@ public class HsqldbPlugin implements SqlgPlugin {
     }
 
     @Override
-    public SqlDialect instantiateDialect(Configuration configuration) {
-        return new HsqldbDialect(configuration);
+    public SqlDialect instantiateDialect() {
+        return new HsqldbDialect();
     }
 }
