@@ -12,7 +12,8 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Date: 2014/07/12
@@ -20,7 +21,9 @@ import java.util.*;
  */
 public class SqlgDataSource {
 
+    @SuppressWarnings("WeakerAccess")
     public static final String JDBC_URL = "jdbc.url";
+    @SuppressWarnings("WeakerAccess")
     public static final String JNDI_PREFIX = "jndi:";
     private static Logger logger = LoggerFactory.getLogger(SqlgDataSource.class.getName());
     private final Map<String, DataSource> dss = new HashMap<>();
@@ -46,26 +49,26 @@ public class SqlgDataSource {
         }
         //this odd logic is for travis, it needs log feedback to not kill the build
         if (configuration.getString(JDBC_URL).contains("postgresql")) {
-            logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
+            logger.debug(String.format("Setting up dataSource to %s for user %s", connectURI, username));
         } else {
-            logger.debug(String.format("Setting up datasource to %s for user %s", connectURI, username));
+            logger.debug(String.format("Setting up dataSource to %s for user %s", connectURI, username));
         }
-        ComboPooledDataSource cpds = new ComboPooledDataSource();
-        cpds.setDriverClass(driver);
-        cpds.setJdbcUrl(connectURI);
-        cpds.setMaxPoolSize(configuration.getInt("maxPoolSize", 100));
-        cpds.setMaxIdleTime(configuration.getInt("maxIdleTime", 500));
+        ComboPooledDataSource comboPooledDataSource = new ComboPooledDataSource();
+        comboPooledDataSource.setDriverClass(driver);
+        comboPooledDataSource.setJdbcUrl(connectURI);
+        comboPooledDataSource.setMaxPoolSize(configuration.getInt("maxPoolSize", 100));
+        comboPooledDataSource.setMaxIdleTime(configuration.getInt("maxIdleTime", 500));
         if (!StringUtils.isEmpty(username)) {
-            cpds.setUser(username);
+            comboPooledDataSource.setUser(username);
         }
         if (!StringUtils.isEmpty(username)) {
-            cpds.setPassword(password);
+            comboPooledDataSource.setPassword(password);
         }
-        ds.dss.put(connectURI, cpds);
+        ds.dss.put(connectURI, comboPooledDataSource);
         return ds;
     }
 
-    public static SqlgDataSource setupDataSourceFromJndi(String jndiName, Configuration configuration)
+    static SqlgDataSource setupDataSourceFromJndi(String jndiName, Configuration configuration)
             throws NamingException {
         SqlgDataSource gds = new SqlgDataSource();
         InitialContext ctx = new InitialContext();
@@ -98,7 +101,7 @@ public class SqlgDataSource {
 
     public String getPoolStatsAsJson() {
         try {
-            StringBuffer json = new StringBuffer();
+            StringBuilder json = new StringBuilder();
             json.append("[");
             int count = 1;
             for (Map.Entry<String, DataSource> entry : this.dss.entrySet()) {
@@ -136,68 +139,70 @@ public class SqlgDataSource {
         }
     }
 
-    final static Set<String> TO_STRING_IGNORE_PROPS = new HashSet<>(Arrays.asList(new String[]{
-            "connection",
-            "lastAcquisitionFailureDefaultUser",
-            "lastCheckinFailureDefaultUser",
-            "lastCheckoutFailureDefaultUser",
-            "lastConnectionTestFailureDefaultUser",
-            "lastIdleTestFailureDefaultUser",
-            "logWriter",
-            "loginTimeout",
-            "numBusyConnections",
-            "numBusyConnectionsAllUsers",
-            "numBusyConnectionsDefaultUser",
-            "numConnections",
-            "numConnectionsAllUsers",
-            "numConnectionsDefaultUser",
-            "numFailedCheckinsDefaultUser",
-            "numFailedCheckoutsDefaultUser",
-            "numFailedIdleTestsDefaultUser",
-            "numIdleConnections",
-            "numIdleConnectionsAllUsers",
-            "numThreadsAwaitingCheckoutDefaultUser",
-            "numIdleConnectionsDefaultUser",
-            "numUnclosedOrphanedConnections",
-            "numUnclosedOrphanedConnectionsAllUsers",
-            "numUnclosedOrphanedConnectionsDefaultUser",
-            "numUserPools",
-            "effectivePropertyCycleDefaultUser",
-            "parentLogger",
-            "startTimeMillisDefaultUser",
-            "statementCacheNumCheckedOutDefaultUser",
-            "statementCacheNumCheckedOutStatementsAllUsers",
-            "statementCacheNumConnectionsWithCachedStatementsAllUsers",
-            "statementCacheNumConnectionsWithCachedStatementsDefaultUser",
-            "statementCacheNumStatementsAllUsers",
-            "statementCacheNumStatementsDefaultUser",
-            "statementDestroyerNumConnectionsInUseAllUsers",
-            "statementDestroyerNumConnectionsWithDeferredDestroyStatementsAllUsers",
-            "statementDestroyerNumDeferredDestroyStatementsAllUsers",
-            "statementDestroyerNumConnectionsInUseDefaultUser",
-            "statementDestroyerNumConnectionsWithDeferredDestroyStatementsDefaultUser",
-            "statementDestroyerNumDeferredDestroyStatementsDefaultUser",
-            "statementDestroyerNumThreads",
-            "statementDestroyerNumActiveThreads",
-            "statementDestroyerNumIdleThreads",
-            "statementDestroyerNumTasksPending",
-            "threadPoolSize",
-            "threadPoolNumActiveThreads",
-            "threadPoolNumIdleThreads",
-            "threadPoolNumTasksPending",
-            "threadPoolStackTraces",
-            "threadPoolStatus",
-            "overrideDefaultUser",
-            "overrideDefaultPassword",
-            "password",
-            "reference",
-            "upTimeMillisDefaultUser",
-            "user",
-            "userOverridesAsString",
-            "allUsers",
-            "connectionPoolDataSource",
-            "propertyChangeListeners",
-            "vetoableChangeListeners"
-    }));
+    /*
+     final static Set<String> TO_STRING_IGNORE_PROPS = new HashSet<>(Arrays.asList(new String[]{
+     "connection",
+     "lastAcquisitionFailureDefaultUser",
+     "lastCheckinFailureDefaultUser",
+     "lastCheckoutFailureDefaultUser",
+     "lastConnectionTestFailureDefaultUser",
+     "lastIdleTestFailureDefaultUser",
+     "logWriter",
+     "loginTimeout",
+     "numBusyConnections",
+     "numBusyConnectionsAllUsers",
+     "numBusyConnectionsDefaultUser",
+     "numConnections",
+     "numConnectionsAllUsers",
+     "numConnectionsDefaultUser",
+     "numFailedCheckinsDefaultUser",
+     "numFailedCheckoutsDefaultUser",
+     "numFailedIdleTestsDefaultUser",
+     "numIdleConnections",
+     "numIdleConnectionsAllUsers",
+     "numThreadsAwaitingCheckoutDefaultUser",
+     "numIdleConnectionsDefaultUser",
+     "numUnclosedOrphanedConnections",
+     "numUnclosedOrphanedConnectionsAllUsers",
+     "numUnclosedOrphanedConnectionsDefaultUser",
+     "numUserPools",
+     "effectivePropertyCycleDefaultUser",
+     "parentLogger",
+     "startTimeMillisDefaultUser",
+     "statementCacheNumCheckedOutDefaultUser",
+     "statementCacheNumCheckedOutStatementsAllUsers",
+     "statementCacheNumConnectionsWithCachedStatementsAllUsers",
+     "statementCacheNumConnectionsWithCachedStatementsDefaultUser",
+     "statementCacheNumStatementsAllUsers",
+     "statementCacheNumStatementsDefaultUser",
+     "statementDestroyerNumConnectionsInUseAllUsers",
+     "statementDestroyerNumConnectionsWithDeferredDestroyStatementsAllUsers",
+     "statementDestroyerNumDeferredDestroyStatementsAllUsers",
+     "statementDestroyerNumConnectionsInUseDefaultUser",
+     "statementDestroyerNumConnectionsWithDeferredDestroyStatementsDefaultUser",
+     "statementDestroyerNumDeferredDestroyStatementsDefaultUser",
+     "statementDestroyerNumThreads",
+     "statementDestroyerNumActiveThreads",
+     "statementDestroyerNumIdleThreads",
+     "statementDestroyerNumTasksPending",
+     "threadPoolSize",
+     "threadPoolNumActiveThreads",
+     "threadPoolNumIdleThreads",
+     "threadPoolNumTasksPending",
+     "threadPoolStackTraces",
+     "threadPoolStatus",
+     "overrideDefaultUser",
+     "overrideDefaultPassword",
+     "password",
+     "reference",
+     "upTimeMillisDefaultUser",
+     "user",
+     "userOverridesAsString",
+     "allUsers",
+     "connectionPoolDataSource",
+     "propertyChangeListeners",
+     "vetoableChangeListeners"
+     }));
+     */
 
 }
