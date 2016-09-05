@@ -1096,45 +1096,36 @@ public class SqlgGraph implements Graph {
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
-        int i = 0;
-        String key = "";
-        Object value;
-        for (Object keyValue : dummykeyValues) {
-            if (i++ % 2 == 0) {
-                key = (String) keyValue;
-            } else {
-                value = keyValue;
-                if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty(key, value);
-                    this.sqlDialect.validateProperty(key, value);
-                }
-
-            }
-        }
+        validateProperties(dummykeyValues);
         this.tx().readWrite();
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.getSchemaManager().createVertexIndex(schemaTablePair, dummykeyValues);
     }
 
     public void createEdgeLabeledIndex(String label, Object... dummykeyValues) {
-        int i = 0;
-        String key = "";
-        Object value;
-        for (Object keyValue : dummykeyValues) {
-            if (i++ % 2 == 0) {
-                key = (String) keyValue;
-            } else {
-                value = keyValue;
-                if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty(key, value);
-                    this.sqlDialect.validateProperty(key, value);
-                }
-
-            }
-        }
+        validateProperties(dummykeyValues);
         this.tx().readWrite();
         SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
         this.getSchemaManager().createEdgeIndex(schemaTablePair, dummykeyValues);
+    }
+
+    private void validateProperties(Object... keyValues) {
+        int i = 0;
+        Object key = "";
+        Object value;
+        for (Object keyValue : keyValues) {
+            if (i++ % 2 == 0) {
+                key = keyValue;
+            } else {
+                value = keyValue;
+                if (!key.equals(T.label)) {
+                    if (key instanceof String) {
+                        ElementHelper.validateProperty((String) key, value);
+                    }
+                    this.sqlDialect.validateProperty(key, value);
+                }
+            }
+        }
     }
 
     public long countVertices() {
