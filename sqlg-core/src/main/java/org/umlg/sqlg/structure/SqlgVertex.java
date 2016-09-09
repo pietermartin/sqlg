@@ -481,6 +481,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     private void internalAddVertex(Map<String, Object> keyValueMap) {
+        Map<String, Pair<PropertyType, Object>> uniqueConstraintChecks = new HashMap<>();
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
@@ -492,6 +493,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sql.append(" ( ");
             for (String column : keyValueMap.keySet()) {
                 PropertyType propertyType = columnPropertyTypeMap.get(column);
+
+                addUniqueConstraintSql(uniqueConstraintChecks, column, propertyType, keyValueMap.get(column));
+
                 String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
                 int count = 1;
                 for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
@@ -538,6 +542,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
+
+        insertUniqueConstraints(uniqueConstraintChecks);
+
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {

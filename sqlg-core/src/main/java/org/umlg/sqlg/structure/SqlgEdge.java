@@ -1,6 +1,7 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.collect.ArrayListMultimap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -114,6 +115,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
+        Map<String, Pair<PropertyType, Object>> uniqueConstraintChecks = new HashMap<>();
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
@@ -123,6 +125,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
         Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
         for (String column : keyValueMap.keySet()) {
             PropertyType propertyType = columnPropertyTypeMap.get(column);
+
+            addUniqueConstraintSql(uniqueConstraintChecks, column, propertyType, keyValueMap.get(column));
+
             String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
             int count = 1;
             for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
@@ -176,6 +181,9 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
+
+        insertUniqueConstraints(uniqueConstraintChecks);
+
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {

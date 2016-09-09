@@ -2,7 +2,6 @@ package org.umlg.sqlg.test.index;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -142,4 +141,101 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
+    @Test
+    public void testVertexSingleLabelUniqueConstraint() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
+        this.sqlgGraph.createVertexUniqueConstraint("name", "Person");
+        this.sqlgGraph.tx().commit();
+
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "Joe");
+        this.sqlgGraph.tx().commit();
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "Joe");
+            Assert.fail("Should not have been possible to add 2 people with the same name.");
+        } catch (Exception e) {
+            //good
+            this.sqlgGraph.tx().rollback();
+        }
+    }
+
+    @Test
+    public void testVertexMultiLabelUniqueConstraint() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("Chocolate", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Candy", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Icecream", "name", "a");
+        this.sqlgGraph.createVertexUniqueConstraint("name", "Chocolate", "Candy");
+
+        this.sqlgGraph.addVertex(T.label, "Chocolate", "name", "Yummy");
+        this.sqlgGraph.tx().commit();
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "Candy", "name", "Yummy");
+            Assert.fail("A chocolate and a candy should not have the same name.");
+        } catch (Exception e) {
+            //good
+            this.sqlgGraph.tx().rollback();
+        }
+
+        this.sqlgGraph.addVertex(T.label, "Icecream", "name", "Yummy");
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
+    public void testVertexMultipleConstraintsOnSingleProperty() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("Chocolate", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Candy", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Icecream", "name", "a");
+        this.sqlgGraph.createVertexUniqueConstraint("name", "Chocolate");
+        this.sqlgGraph.createVertexUniqueConstraint("name", "Candy");
+
+        this.sqlgGraph.addVertex(T.label, "Chocolate", "name", "Yummy");
+        this.sqlgGraph.addVertex(T.label, "Candy", "name", "Yummy");
+        this.sqlgGraph.addVertex(T.label, "Icecream", "name", "Yummy");
+        this.sqlgGraph.addVertex(T.label, "Icecream", "name", "Yummy");
+        this.sqlgGraph.tx().commit();
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "Chocolate", "name", "Yummy");
+            Assert.fail("Two chocolates should not have the same name.");
+        } catch (Exception e) {
+            //good
+            this.sqlgGraph.tx().rollback();
+        }
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "Candy", "name", "Yummy");
+            Assert.fail("Two candies should not have the same name.");
+        } catch (Exception e) {
+            //good
+            this.sqlgGraph.tx().rollback();
+        }
+    }
+
+    @Test
+    public void testVertexConstraintOnAnyLabel() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("Car", "name", "a");
+        this.sqlgGraph.createVertexUniqueConstraint("name");
+        this.sqlgGraph.createVertexLabeledIndex("Chocolate", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Candy", "name", "a");
+
+        this.sqlgGraph.addVertex(T.label, "Chocolate", "name", "Yummy");
+        this.sqlgGraph.tx().commit();
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "Candy", "name", "Yummy");
+            Assert.fail("Should not be able to call a candy a pre-existing name.");
+        } catch (Exception e) {
+            //good
+            this.sqlgGraph.tx().rollback();
+        }
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "Car", "name", "Yummy");
+            Assert.fail("Should not be able to call a car a pre-existing name.");
+        } catch (Exception e) {
+            //good
+            this.sqlgGraph.tx().rollback();
+        }
+    }
 }

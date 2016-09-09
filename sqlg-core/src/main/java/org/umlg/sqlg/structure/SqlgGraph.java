@@ -1090,9 +1090,73 @@ public class SqlgGraph implements Graph {
     }
 
     //indexing
-    public void createUniqueConstraint(String label, String propertyKey) {
-        throw new IllegalStateException("Not yet implemented!");
+
+    /**
+     * This creates a uniqueness constraint with given name for certain property on certain vertex labels.
+     * Such properties then must have a unique value across all vertices of the given labels.
+     *
+     * @param propertyKey the name of the property
+     * @param labels the vertex labels of the vertices of which the property should have the unique value. This array
+     *               must have at least 1 member.
+     */
+    public void createVertexUniqueConstraint(String propertyKey, String... labels) {
+        labels = Objects.requireNonNull(labels, "labels == null");
+        propertyKey = Objects.requireNonNull(propertyKey, "propertyKey == null");
+
+        PropertyType propertyType = determinePropertyType(propertyKey, true, labels);
+
+        this.tx().readWrite();
+        schemaManager.ensureUniqueConstraintTableExists(sqlDialect.getPublicSchema(), true, propertyKey, propertyType,
+                labels);
+    }
+
+    /**
+     * Analogous to {@link #createVertexUniqueConstraint(String, String...)} only for edges.
+     */
+    public void createEdgeUniqueConstraint(String propertyKey, String... labels) {
+        //TODO does this even make sense for edges?
+        throw new UnsupportedOperationException();
+//
+//        labels = Objects.requireNonNull(labels, "labels == null");
+//        propertyKey = Objects.requireNonNull(propertyKey, "propertyKey == null");
+//        if (labels.length == 0) {
+//            throw new IllegalArgumentException("At least 1 label has to be provided.");
+//        }
+//
+//        PropertyType propertyType = determinePropertyType(propertyKey, false, labels);
+//
 //        this.tx().readWrite();
+//        schemaManager.ensureUniqueConstraintTableExists(sqlDialect.getPublicSchema(), false, propertyKey, propertyType,
+//                labels);
+    }
+
+    private PropertyType determinePropertyType(String property, boolean onVertices, String... labels) {
+        //need to find the property type of the property... for that we just check that the property has the same type
+        //on all the labels. If there are no labels (i.e. this is a globally unique property, we need to look up all
+        //the properties and their types in the topology
+
+        Set<String> labelSet;
+
+        String schema = sqlDialect.getPublicSchema();
+
+        if (labels.length == 0) {
+            labelSet = TopologyManager.getLabelsDefiningProperty(this, onVertices, schema, property);
+        } else {
+            labelSet = new HashSet<>(Arrays.asList(labels));
+        }
+
+        PropertyType propertyType = null;
+        for (String label : labelSet) {
+            PropertyType propTypeInLabel = TopologyManager.getPropertyType(this, onVertices, schema, label, property);
+
+            if (propertyType == null) {
+                propertyType = propTypeInLabel;
+            } else if (propertyType != propTypeInLabel) {
+                throw new IllegalArgumentException("The property does not have a consistent type in all the labels it is defined for.");
+            }
+        }
+
+        return propertyType;
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {

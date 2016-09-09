@@ -1,5 +1,7 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Maps;
 import com.hazelcast.config.*;
 import com.hazelcast.core.*;
 import com.hazelcast.map.listener.*;
@@ -9,6 +11,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -25,6 +28,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Date: 2014/07/12
@@ -80,8 +86,34 @@ public class SchemaManager {
      */
     public static final String SQLG_SCHEMA_EDGE_PROPERTIES_EDGE = "edge_property";
 
+    /**
+     * Unique constraint table.
+     */
+    public static final String SQLG_SCHEMA_UNIQUE_CONSTRAINT = "unique_constraint";
+
+    /**
+     * Edge table for unique constraints in a schema.
+     */
+    public static final String SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE = "schema_unique_constraint";
+
+    /**
+     * Edge table for assigning properties to unique constraints.
+     */
+    public static final String SQLG_SCHEMA_PROPERTY_UNIQUE_CONSTRAINT_EDGE = "property_unique_constraint";
+
+    /**
+     * Edge table for assigning vertex properties to unique constraints.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE = "vertex_unique_constraint";
+
+    /**
+     * Edge table for assigning edge properties to unique constraints.
+     */
+    public static final String SQLG_SCHEMA_EDGE_UNIQUE_CONSTRAINT_EDGE = "edge_unique_contraint";
+
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
+    public static final String UNIQUE_CONSTRAINT_PREFIX = "UC_";
     public static final String VERTICES = "VERTICES";
     public static final String ID = "ID";
     public static final String VERTEX_SCHEMA = "VERTEX_SCHEMA";
@@ -100,11 +132,13 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_UNIQUE_CONSTRAINT,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE
     );
 
     private Map<String, String> schemas;
@@ -128,6 +162,13 @@ public class SchemaManager {
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTableLabels = new HashMap<>();
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedTableLabels = new HashMap<>();
 
+    //keys are property names, values are the names of the tables that are used to check the uniqueness of the property
+    //values keyed by the label of the vertices or edges (the of the inner map is VERTEX/EDGE_PREFIX + label)
+    //special value - null - for the label means that the property is unique on any label
+    private Map<String, Map<String, String>> propertyUniqueConstraints;
+    private Map<String, Map<String, String>> localPropertyUniqueConstraints = new HashMap<>();
+    private Map<String, Map<String, String>> uncommittedPropertyUniqueConstraints = new HashMap<>();
+
     //temporary tables
     private Map<String, Map<String, PropertyType>> localTemporaryTables = new ConcurrentHashMap<>();
 
@@ -142,6 +183,7 @@ public class SchemaManager {
     private static final String TABLES_HAZELCAST_MAP = "_tables";
     private static final String EDGE_FOREIGN_KEYS_HAZELCAST_MAP = "_edgeForeignKeys";
     private static final String TABLE_LABELS_HAZELCAST_MAP = "_tableLabels";
+    private static final String PROPERTY_UNIQUE_CONSTRAINT_HAZELCAST_MAP = "propertyUniqueConstraints";
 
     private static final int LOCK_TIMEOUT = 10;
 
@@ -157,11 +199,13 @@ public class SchemaManager {
             this.tables = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLES_HAZELCAST_MAP);
             this.edgeForeignKeys = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + EDGE_FOREIGN_KEYS_HAZELCAST_MAP);
             this.tableLabels = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLE_LABELS_HAZELCAST_MAP);
+            this.propertyUniqueConstraints = this.hazelcastInstance.getMap(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + PROPERTY_UNIQUE_CONSTRAINT_HAZELCAST_MAP);
             ((IMap) this.schemas).addEntryListener(new SchemasMapEntryListener(), true);
             ((IMap) this.labelSchemas).addEntryListener(new LabelSchemasMapEntryListener(), true);
             ((IMap) this.tables).addEntryListener(new TablesMapEntryListener(), true);
             ((IMap) this.edgeForeignKeys).addEntryListener(new EdgeForeignKeysMapEntryListener(), true);
             ((IMap) this.tableLabels).addEntryListener(new TableLabelMapEntryListener(), true);
+            ((IMap) this.propertyUniqueConstraints).addEntryListener(new PropertyUniqueConstraintsMapEntryListener(), true);
             this.schemaLock = this.hazelcastInstance.getLock("schemaLock");
         } else {
             this.schemaLock = new ReentrantLock();
@@ -215,11 +259,27 @@ public class SchemaManager {
                     }
                     this.localTableLabels.put(schemaTableEntry.getKey(), tableLabels);
                 }
+                for(Map.Entry<String, Map<String, String>> entry : this.uncommittedPropertyUniqueConstraints.entrySet()) {
+                    Map<String, String> locals = this.localPropertyUniqueConstraints.get(entry.getKey());
+                    if (locals == null) {
+                        if (distributed) {
+                            this.propertyUniqueConstraints.put(entry.getKey(), entry.getValue());
+                        }
+                        this.localPropertyUniqueConstraints.put(entry.getKey(), entry.getValue());
+                    } else {
+                        locals.putAll(entry.getValue());
+                        if (distributed) {
+                            this.propertyUniqueConstraints.put(entry.getKey(), locals);
+                        }
+                        this.localPropertyUniqueConstraints.put(entry.getKey(), locals);
+                    }
+                }
                 this.uncommittedSchemas.clear();
                 this.uncommittedTables.clear();
                 this.uncommittedLabelSchemas.clear();
                 this.uncommittedEdgeForeignKeys.clear();
                 this.uncommittedTableLabels.clear();
+                this.uncommittedPropertyUniqueConstraints.clear();
                 this.schemaLock.unlock();
             }
         });
@@ -232,6 +292,7 @@ public class SchemaManager {
                     this.uncommittedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                     this.uncommittedTableLabels.clear();
+                    this.uncommittedPropertyUniqueConstraints.clear();
                 } else {
                     for (String table : this.uncommittedSchemas) {
                         if (distributed) {
@@ -278,11 +339,27 @@ public class SchemaManager {
                         }
                         this.localTableLabels.put(schemaTableEntry.getKey(), tableLabels);
                     }
+                    for(Map.Entry<String, Map<String, String>> entry : this.uncommittedPropertyUniqueConstraints.entrySet()) {
+                        Map<String, String> locals = this.localPropertyUniqueConstraints.get(entry.getKey());
+                        if (locals == null) {
+                            if (distributed) {
+                                this.propertyUniqueConstraints.put(entry.getKey(), entry.getValue());
+                            }
+                            this.localPropertyUniqueConstraints.put(entry.getKey(), entry.getValue());
+                        } else {
+                            locals.putAll(entry.getValue());
+                            if (distributed) {
+                                this.propertyUniqueConstraints.put(entry.getKey(), locals);
+                            }
+                            this.localPropertyUniqueConstraints.put(entry.getKey(), locals);
+                        }
+                    }
                     this.uncommittedSchemas.clear();
                     this.uncommittedTables.clear();
                     this.uncommittedLabelSchemas.clear();
                     this.uncommittedEdgeForeignKeys.clear();
                     this.uncommittedTableLabels.clear();
+                    this.uncommittedPropertyUniqueConstraints.clear();
                 }
                 this.schemaLock.unlock();
             }
@@ -330,6 +407,12 @@ public class SchemaManager {
         tableLabelMapConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + TABLE_LABELS_HAZELCAST_MAP);
         tableLabelMapConfig.setNearCacheConfig(nearCacheConfig);
         config.addMapConfig(tableLabelMapConfig);
+
+        MapConfig propertyUniqueConstraintsConfig = new MapConfig();
+        propertyUniqueConstraintsConfig.setName(this.sqlgGraph.getConfiguration().getString(JDBC_URL) + PROPERTY_UNIQUE_CONSTRAINT_HAZELCAST_MAP);
+        propertyUniqueConstraintsConfig.setNearCacheConfig(nearCacheConfig);
+        config.addMapConfig(propertyUniqueConstraintsConfig);
+
         return config;
 
     }
@@ -347,24 +430,8 @@ public class SchemaManager {
             //Make sure the current thread/transaction owns the lock
             lock(schema, table);
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-
-                if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
-                    if (!this.uncommittedSchemas.contains(schema)) {
-                        this.uncommittedSchemas.add(schema);
-                        createSchema(schema);
-                        if (!SQLG_SCHEMA.equals(schema)) {
-                            TopologyManager.addSchema(this.sqlgGraph, schema);
-                        }
-                    }
-                }
-                Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                if (schemas == null) {
-                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Collections.singletonList(schema)));
-                } else {
-                    schemas.add(schema);
-                    this.uncommittedLabelSchemas.put(prefixedTable, schemas);
-                }
-                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+                ensureSchema(schema);
+                registerUncommittedTable(schema, prefixedTable, columns);
 
                 if (!SQLG_SCHEMA.equals(schema)) {
                     TopologyManager.addVertexLabel(this.sqlgGraph, schema, prefixedTable, columns);
@@ -374,6 +441,18 @@ public class SchemaManager {
         }
         //ensure columns exist
         ensureColumnsExist(schema, prefixedTable, columns);
+    }
+
+    private void registerUncommittedTable(String schema, String prefixedTable,
+            ConcurrentHashMap<String, PropertyType> columns) {
+        Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
+        if (schemas == null) {
+            this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Collections.singletonList(schema)));
+        } else {
+            schemas.add(schema);
+            this.uncommittedLabelSchemas.put(prefixedTable, schemas);
+        }
+        this.uncommittedTables.put(schema + "." + prefixedTable, columns);
     }
 
     void ensureVertexTemporaryTableExist(final String schema, final String table, final Object... keyValues) {
@@ -428,12 +507,7 @@ public class SchemaManager {
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             lock(schema, table);
-            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
-                if (!this.uncommittedSchemas.contains(schema)) {
-                    this.uncommittedSchemas.add(schema);
-                    createSchema(schema);
-                }
-            }
+            ensureSchema(schema);
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
                 Set<String> foreignKeys = new HashSet<>();
                 foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
@@ -481,6 +555,69 @@ public class SchemaManager {
         ensureEdgeForeignKeysExist(schema, prefixedTable, false, foreignKeyOut);
     }
 
+    void ensureUniqueConstraintTableExists(final String schema, boolean onVertices, final String property, PropertyType propertyType,
+            String... labels) {
+        String prefixedTable = getUniqueConstraintTableName(onVertices, schema, property, labels);
+        if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
+            //Make sure the current thread/transaction owns the lock
+            lock(schema, prefixedTable);
+            ensureSchema(schema);
+
+            if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
+
+                ConcurrentHashMap<String, PropertyType> columns = new ConcurrentHashMap<>();
+                columns.put(property, propertyType);
+
+                registerUncommittedTable(schema, prefixedTable, columns);
+
+                if (!SQLG_SCHEMA.equals(schema)) {
+                    TopologyManager.addUniqueConstraint(this.sqlgGraph, onVertices, schema, property, labels);
+                }
+                createUniqueConstraintTable(schema, prefixedTable, property, propertyType);
+            }
+
+            String propertyKey = getUniqueConstraintKeyName(schema, property);
+            Map<String, String> labelTables = this.uncommittedPropertyUniqueConstraints.get(propertyKey);
+            if (labelTables == null) {
+                labelTables = new HashMap<>();
+                this.uncommittedPropertyUniqueConstraints.put(propertyKey, labelTables);
+            }
+            if (labels.length == 0) {
+                labelTables.put(getUniqueConstraintLabelKey(onVertices, null), prefixedTable);
+            } else {
+                for (String label : labels) {
+                    labelTables.put(getUniqueConstraintLabelKey(onVertices, label), prefixedTable);
+                }
+            }
+        }
+    }
+
+    Set<String> getUniqueConstraintTables(boolean onVertices, String schema, String property, String label) {
+        List<String> labelSet = new ArrayList<>(2);
+        labelSet.add(getUniqueConstraintLabelKey(onVertices, null));
+        labelSet.add(getUniqueConstraintLabelKey(onVertices, label));
+
+        Function<Map<String, Map<String, String>>, Stream<String>> extractTables = map ->
+                map.getOrDefault(getUniqueConstraintKeyName(schema, property), Collections.emptyMap()).entrySet().stream()
+                .filter(e -> labelSet.contains(e.getKey())).map(Map.Entry::getValue);
+
+        return Stream.concat(extractTables.apply(localPropertyUniqueConstraints),
+                extractTables.apply(uncommittedPropertyUniqueConstraints))
+                .collect(Collectors.toSet());
+    }
+
+    private void ensureSchema(String schema) {
+        if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
+            if (!this.uncommittedSchemas.contains(schema)) {
+                this.uncommittedSchemas.add(schema);
+                createSchema(schema);
+                if (!SQLG_SCHEMA.equals(schema)) {
+                    TopologyManager.addSchema(this.sqlgGraph, schema);
+                }
+            }
+        }
+    }
+
     /**
      * This is only called from createEdgeIndex
      *
@@ -496,21 +633,9 @@ public class SchemaManager {
         if (!this.localTables.containsKey(schema + "." + prefixedTable)) {
             //Make sure the current thread/transaction owns the lock
             lock(schema, table);
-            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
-                if (!this.uncommittedSchemas.contains(schema)) {
-                    this.uncommittedSchemas.add(schema);
-                    createSchema(schema);
-                }
-            }
+            ensureSchema(schema);
             if (!this.localTables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-                Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-                if (schemas == null) {
-                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Collections.singletonList(schema)));
-                } else {
-                    schemas.add(schema);
-                    this.uncommittedLabelSchemas.put(prefixedTable, schemas);
-                }
-                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
+                registerUncommittedTable(schema, prefixedTable, columns);
 
                 //TODO need to create the topology here
                 createEdgeTable(schema, prefixedTable, columns);
@@ -665,15 +790,7 @@ public class SchemaManager {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        executeCreateStatement(sql.toString());
     }
 
     private void buildColumns(Map<String, PropertyType> columns, StringBuilder sql) {
@@ -772,15 +889,7 @@ public class SchemaManager {
             sql.append(");");
         }
 
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        executeCreateStatement(sql.toString());
     }
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
@@ -800,16 +909,8 @@ public class SchemaManager {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = this.sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
 
+        executeCreateStatement(sql.toString());
     }
 
     //This is called from creating edge indexes
@@ -831,12 +932,45 @@ public class SchemaManager {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+
+        executeCreateStatement(sql.toString());
+    }
+
+    private void createUniqueConstraintTable(String schema, String table, String property, PropertyType column) {
+        StringBuilder sql = new StringBuilder(this.sqlDialect.createTableStatement());
+        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+        sql.append("(");
+        buildColumns(Maps.toMap(Collections.singleton(property), p -> column), sql);
+        sql.append(")");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        executeCreateStatement(sql.toString());
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().readWrite();
+
+        sql = new StringBuilder("ALTER TABLE ");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(this.sqlDialect.maybeWrapInQoutes(table));
+        sql.append(" ADD CONSTRAINT ").append(this.sqlDialect.maybeWrapInQoutes("uc_" + table + property));
+        sql.append(" UNIQUE (").append(this.sqlDialect.maybeWrapInQoutes(property)).append(")");
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        executeCreateStatement(sql.toString());
+    }
+
+    private void executeCreateStatement(String sql) {
         if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+            logger.debug(sql);
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
+            stmt.execute(sql);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -1046,6 +1180,7 @@ public class SchemaManager {
             this.labelSchemas.putAll(this.localLabelSchemas);
             this.tables.putAll(this.localTables);
             this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
+            this.propertyUniqueConstraints.putAll(this.localPropertyUniqueConstraints);
         }
 
     }
@@ -1207,6 +1342,7 @@ public class SchemaManager {
                 this.labelSchemas.putAll(this.localLabelSchemas);
                 this.tables.putAll(this.localTables);
                 this.edgeForeignKeys.putAll(this.localEdgeForeignKeys);
+                this.propertyUniqueConstraints.putAll(this.localPropertyUniqueConstraints);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -1301,7 +1437,7 @@ public class SchemaManager {
      * Load the schema from the topology.
      */
     private void loadUserSchema() {
-        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
+        GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schema : schemas) {
             String schemaName = schema.value("name");
@@ -1326,6 +1462,21 @@ public class SchemaManager {
                 }
                 this.localTables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
 
+                List<Map<String, String>> labelBoundUniqueConstraints = traversalSource.V(vertexLabel)
+                        .outE(SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE).as("e").properties("property").as("prop").select("e")
+                        .inV().properties("name").as("table").<String>select("prop", "table").toList();
+
+                for (Map<String, String> uc: labelBoundUniqueConstraints) {
+                    String key = getUniqueConstraintKeyName(schemaName, uc.get("prop"));
+                    String table = uc.get("table");
+                    Map<String, String> existingConstraints = this.localPropertyUniqueConstraints.get(key);
+                    if (existingConstraints == null) {
+                        existingConstraints = new HashMap<>();
+                        this.localPropertyUniqueConstraints.put(key, existingConstraints);
+                    }
+                    existingConstraints.put(getUniqueConstraintLabelKey(true, tableName), table);
+                }
+
                 List<Vertex> outEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_OUT_EDGES_EDGE).toList();
                 for (Vertex outEdge : outEdges) {
                     String edgeName = outEdge.value("name");
@@ -1340,6 +1491,21 @@ public class SchemaManager {
                         uncommittedColumns.put(propertyName, PropertyType.valueOf(property.value("type")));
                     }
                     this.localTables.put(schemaName + "." + EDGE_PREFIX + edgeName, uncommittedColumns);
+
+                    labelBoundUniqueConstraints = traversalSource.V(vertexLabel)
+                            .outE(SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE).as("e").properties("property").as("prop").select("e")
+                            .inV().properties("name").as("table").<String>select("prop", "table").toList();
+
+                    for (Map<String, String> uc: labelBoundUniqueConstraints) {
+                        String key = getUniqueConstraintKeyName(schemaName, uc.get("prop"));
+                        String table = uc.get("table");
+                        Map<String, String> existingConstraints = this.localPropertyUniqueConstraints.get(key);
+                        if (existingConstraints == null) {
+                            existingConstraints = new HashMap<>();
+                            this.localPropertyUniqueConstraints.put(key, existingConstraints);
+                        }
+                        existingConstraints.put(getUniqueConstraintLabelKey(false, tableName), table);
+                    }
 
                     List<Vertex> inVertices = traversalSource.V(outEdge).in(SQLG_SCHEMA_IN_EDGES_EDGE).toList();
                     for (Vertex inVertex : inVertices) {
@@ -1377,6 +1543,27 @@ public class SchemaManager {
                         }
                         labels.getLeft().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
                     }
+
+                    //handle globally unique properties
+                    //load all the unique constraint tables that handle a property without a label
+                    GraphTraversal<?, Vertex> ucs = traversalSource.V(schema)
+                            .out(SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE)
+                            .has("property");
+                    if (ucs.hasNext()) {
+                        Vertex uc = ucs.next();
+
+                        String key = getUniqueConstraintKeyName(schemaName, uc.<String>property("property").value());
+                        boolean onVertices = uc.<Boolean>property("onVertices").value();
+                        String table = uc.<String>property("name").value();
+
+                        Map<String, String> existingConstraints = this.localPropertyUniqueConstraints.get(key);
+                        if (existingConstraints == null) {
+                            existingConstraints = new HashMap<>();
+                            this.localPropertyUniqueConstraints.put(key, existingConstraints);
+                        }
+                        existingConstraints.put(getUniqueConstraintLabelKey(onVertices, null), table);
+                    }
+
                 }
             }
         }
@@ -1578,6 +1765,20 @@ public class SchemaManager {
         }
     }
 
+    static private String getUniqueConstraintKeyName(String schema, String property) {
+        return schema + "." + property;
+    }
+
+    static String getUniqueConstraintTableName(boolean onVertices, String schema, String property, String... labels) {
+        String tableName = (onVertices ? VERTEX_PREFIX : EDGE_PREFIX) + property +
+                (labels.length == 0 ? "" : Joiner.on("_").join(labels));
+        return UNIQUE_CONSTRAINT_PREFIX + tableName;
+    }
+
+    static String getUniqueConstraintLabelKey(boolean onVertices, String label) {
+        return (onVertices ? VERTEX_PREFIX : EDGE_PREFIX) + (label == null ? "" : label);
+    }
+
     public class SchemasMapEntryListener implements EntryAddedListener<String, String>,
             EntryRemovedListener<String, String>,
             EntryUpdatedListener<String, String>,
@@ -1768,4 +1969,42 @@ public class SchemaManager {
         }
     }
 
+    public class PropertyUniqueConstraintsMapEntryListener implements
+            EntryAddedListener<String, Map<String, String>>,
+            EntryRemovedListener<String, Map<String, String>>,
+            EntryUpdatedListener<String, Map<String, String>>,
+            EntryEvictedListener<String, Map<String, String>>,
+            MapEvictedListener,
+            MapClearedListener {
+
+        @Override
+        public void entryAdded(EntryEvent<String, Map<String, String>> entryEvent) {
+            SchemaManager.this.localPropertyUniqueConstraints.put(entryEvent.getKey(), entryEvent.getValue());
+        }
+
+        @Override
+        public void entryEvicted(EntryEvent<String, Map<String, String>> entryEvent) {
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
+        }
+
+        @Override
+        public void entryRemoved(EntryEvent<String, Map<String, String>> entryEvent) {
+            SchemaManager.this.localPropertyUniqueConstraints.remove(entryEvent.getKey());
+        }
+
+        @Override
+        public void entryUpdated(EntryEvent<String, Map<String, String>> entryEvent) {
+            SchemaManager.this.localPropertyUniqueConstraints.put(entryEvent.getKey(), entryEvent.getValue());
+        }
+
+        @Override
+        public void mapCleared(MapEvent mapEvent) {
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
+        }
+
+        @Override
+        public void mapEvicted(MapEvent mapEvent) {
+            throw new IllegalStateException(SHOULD_NOT_HAPPEN);
+        }
+    }
 }
