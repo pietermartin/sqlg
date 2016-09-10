@@ -26,7 +26,7 @@ public class TestForDocs extends BaseTest {
 //        System.out.println("Time to insert: " + stopWatch.toString());
 //        stopWatch.reset();
 //        stopWatch.start();
-//        Assert.assertEquals(Long.valueOf(10000), this.sqlgGraph.traversal().V().has(T.label, "Person").count().next());
+//        Assert.assertEquals(Long.valueOf(10000), this.sqlgGraph.traversal().V().existVertexLabel(T.label, "Person").count().next());
 //        stopWatch.stop();
 //        System.out.println("Time to read: " + stopWatch.toString());
 //    }
@@ -47,7 +47,7 @@ public class TestForDocs extends BaseTest {
 //        System.out.println("Time to insert: " + stopWatch.toString());
 //        stopWatch.reset();
 //        stopWatch.start();
-//        List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").toList();
+//        List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>existVertexLabel(T.label, "Person").toList();
 //        Map<Vertex, List<Vertex>> friendMap = new HashMap<>();
 //        persons.forEach(
 //                p -> friendMap.put(p, p.in("friend").toList())
@@ -77,8 +77,8 @@ public class TestForDocs extends BaseTest {
 //        stopWatch.reset();
 //        stopWatch.start();
 //
-//        Assert.assertEquals(1000000, this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").count().next().intValue());
-//        Assert.assertEquals(1000000, this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Dog").count().next().intValue());
+//        Assert.assertEquals(1000000, this.sqlgGraph.traversal().V().<Vertex>existVertexLabel(T.label, "Person").count().next().intValue());
+//        Assert.assertEquals(1000000, this.sqlgGraph.traversal().V().<Vertex>existVertexLabel(T.label, "Dog").count().next().intValue());
 //
 //        stopWatch.stop();
 //        System.out.println("Time to read all vertices: " + stopWatch.toString());

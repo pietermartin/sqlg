@@ -33,7 +33,7 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
         car2.addEdge("model", toyota);
         this.sqlgGraph.tx().commit();
 
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = this.sqlgGraph.getSchemaManager().getLocalTableLabels();
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = this.sqlgGraph.getSchemaManager().getTableLabels();
         Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
         Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
         Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
@@ -65,7 +65,7 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
         Vertex toyota = this.sqlgGraph.addVertex(T.label, "Model", "name", "toyota");
         car2.addEdge("model", toyota);
         this.sqlgGraph.tx().rollback();
-        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTables = this.sqlgGraph.getSchemaManager().getLocalTableLabels();
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTables = this.sqlgGraph.getSchemaManager().getTableLabels();
         Assert.assertTrue(localTables.containsKey(SchemaTable.of(SchemaManager.SQLG_SCHEMA, "V_vertex")));
         Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
         Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
@@ -89,7 +89,7 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
 
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = this.sqlgGraph.getSchemaManager().getLocalTableLabels();
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = this.sqlgGraph.getSchemaManager().getTableLabels();
             Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
             Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
             Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));

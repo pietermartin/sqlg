@@ -443,7 +443,7 @@ public class ReplacedStep<S, E> {
         //This list is to reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();
 
-        //If the graph step has ids then add in HasContainers for every distinct RecordId's SchemaTable
+        //If the graph step existVertexLabel ids then add in HasContainers for every distinct RecordId's SchemaTable
         Multimap<SchemaTable, RecordId> groupedIds = LinkedHashMultimap.create();
         if (graphStep.getIds().length > 0) {
             groupIdsBySchemaTable(graphStep, groupedIds);

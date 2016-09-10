@@ -56,7 +56,7 @@ public class DocumentationUsecases extends BaseTest {
 //            this.sqlgGraph.addVertex(T.label, "Person", "name", "john" + i);
 //        }
 //        this.sqlgGraph.tx().commit();
-//        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", "john50").count().next(), 0);
+//        assertEquals(1, this.sqlgGraph.traversal().V().existVertexLabel(T.label, "Person").existVertexLabel("name", "john50").count().next(), 0);
 //
 //        //Check if the index is being used
 //        Connection conn = this.sqlgGraph.tx().getConnection();
@@ -79,7 +79,7 @@ public class DocumentationUsecases extends BaseTest {
 //        this.sqlgGraph.tx().commit();
 //        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "dummy");
 //        this.sqlgGraph.tx().commit();
-//        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name", "john50").count().next(), 0);
+//        assertEquals(1, this.sqlgGraph.traversal().V().existVertexLabel(T.label, "Person").existVertexLabel("name", "john50").count().next(), 0);
 //
 //        //Check if the index is being used
 //        Connection conn = this.sqlgGraph.tx().getConnection();

@@ -23,7 +23,7 @@ public class TopologyManager {
 
     private TopologyManager() {}
 
-    static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
+    public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             return sqlgGraph.addVertex(
@@ -36,7 +36,7 @@ public class TopologyManager {
         }
     }
 
-    static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
+    public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();

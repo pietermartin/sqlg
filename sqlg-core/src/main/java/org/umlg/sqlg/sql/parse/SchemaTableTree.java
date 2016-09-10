@@ -40,7 +40,7 @@ public class SchemaTableTree {
     private static final String CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT = "constructSql may only be called on the root object";
     private static final String WITHIN = "within";
     private static final String WITHOUT = "without";
-    //stepDepth indicates the depth of the replaced steps. i.e. v1.out().out().out() has stepDepth 0,1,2,3
+    //stepDepth indicates the depth of the replaced steps. i.e. v1.out().out().out() existVertexLabel stepDepth 0,1,2,3
     private int stepDepth;
     private SchemaTable schemaTable;
     private SchemaTableTree parent;
@@ -412,7 +412,7 @@ public class SchemaTableTree {
 
     public static void constructDistinctEmitBeforeQueries(SchemaTableTree current, List<LinkedList<SchemaTableTree>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
-        //if its at the full depth it has already been loaded.
+        //if its at the full depth it existVertexLabel already been loaded.
         //local step together with emit will create a fake emit. The fake emit will indicate that the incoming traverser must be emitted.
         if (!current.isLocalStep() && current.isEmit() && (current.getStepDepth() < current.getReplacedStepDepth())) {
             result.add(stack);
@@ -437,7 +437,7 @@ public class SchemaTableTree {
 
     /**
      * Construct a sql statement for one original path to a leaf node.
-     * As the path contains the same label more than once it has been split into a List of Stacks.
+     * As the path contains the same label more than once it existVertexLabel been split into a List of Stacks.
      */
     private static String constructDuplicatePathSql(SqlgGraph sqlgGraph, List<LinkedList<SchemaTableTree>> subQueryLinkedLists, Set<SchemaTableTree> leftJoinOn) {
         String singlePathSql = "\nFROM (";
@@ -691,7 +691,7 @@ public class SchemaTableTree {
         }
 
 
-        //check if the 'where' has already been printed
+        //check if the 'where' existVertexLabel already been printed
         boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
         MutableBoolean mutableWhere = new MutableBoolean(printedWhere);
         MutableBoolean mutableOrderBy = new MutableBoolean(false);
@@ -976,7 +976,7 @@ public class SchemaTableTree {
     }
 
     /**
-     * Checks if the stack has the same element more than once.
+     * Checks if the stack existVertexLabel the same element more than once.
      *
      * @param distinctQueryStack
      * @return true is there are duplicates else false
@@ -1167,7 +1167,7 @@ public class SchemaTableTree {
             if (lastSchemaTableTree.getSchemaTable().isEdgeTable()) {
                 sql += ", ";
                 //This is to prevent selecting the same column twice.
-                //if first = last then the foreign key has already been printed, however the other direction still needs to be printed
+                //if first = last then the foreign key existVertexLabel already been printed, however the other direction still needs to be printed
                 sql = printEdgeInOutVertexIdFromClauseFor(sqlgGraph, firstSchemaTableTree, lastSchemaTableTree, sql);
             }
 
@@ -1751,7 +1751,7 @@ public class SchemaTableTree {
         if (parent != null) {
             parent.children.remove(node);
             this.leafNodes.remove(node);
-            //check if the parent has any other children. if not it too can be deleted. Follow this pattern recursively up.
+            //check if the parent existVertexLabel any other children. if not it too can be deleted. Follow this pattern recursively up.
             if (parent.children.isEmpty()) {
                 removeNode(parent);
             }

@@ -14,6 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgis.*;
 import org.postgresql.PGConnection;
+import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
@@ -35,8 +36,14 @@ import java.sql.*;
 import java.sql.Date;
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA;
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_SCHEMA;
 
 /**
  * Date: 2014/07/16
@@ -53,6 +60,8 @@ public class PostgresDialect extends BaseSqlDialect {
     private static final String COPY_DUMMY = "_copy_dummy";
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private PropertyType postGisType;
+
+    private ScheduledFuture<?> future;
 
     @SuppressWarnings("unused")
     public PostgresDialect() {
@@ -1092,7 +1101,7 @@ public class PostgresDialect extends BaseSqlDialect {
         if (!removeVertexCache.isEmpty()) {
 
 
-            //split the list of vertices, postgres has a 2 byte limit in the in clause
+            //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
             for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
 
                 SchemaTable schemaTable = schemaVertices.getKey();
@@ -1336,7 +1345,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
         if (!removeEdgeCache.isEmpty()) {
 
-            //split the list of edges, postgres has a 2 byte limit in the in clause
+            //split the list of edges, postgres existVertexLabel a 2 byte limit in the in clause
             for (Map.Entry<SchemaTable, List<SqlgEdge>> schemaEdges : removeEdgeCache.entrySet()) {
 
                 List<SqlgEdge> edges = schemaEdges.getValue();
@@ -2514,6 +2523,83 @@ public class PostgresDialect extends BaseSqlDialect {
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void lock(SqlgGraph sqlgGraph) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("LOCK TABLE \"");
+        sql.append(SQLG_SCHEMA);
+        sql.append("\".\"");
+        sql.append(SchemaManager.VERTEX_PREFIX);
+        sql.append(SQLG_SCHEMA_SCHEMA);
+        sql.append("\" IN ACCESS EXCLUSIVE MODE");
+        if (this.needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void registerListener(SqlgGraph sqlgGraph) {
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Postgresql notification listener"));
+        try {
+            this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph), 500, MILLISECONDS);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void unregisterListener() {
+        this.future.cancel(true);
+    }
+
+    private class Listener implements Runnable {
+
+        private SqlgGraph sqlgGraph;
+
+        Listener(SqlgGraph sqlgGraph) throws SQLException {
+            this.sqlgGraph = sqlgGraph;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Connection connection = sqlgGraph.tx().getConnection();
+                PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
+                Statement stmt = connection.createStatement();
+                stmt.execute("LISTEN mymessage");
+                stmt.close();
+                connection.commit();
+                // issue a dummy query to contact the backend
+                // and receive any pending notifications.
+                while (true) {
+                    stmt = connection.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT 1");
+                    rs.close();
+                    stmt.close();
+                    //Does not work while in a transaction.
+                    connection.rollback();
+                    PGNotification notifications[] = pgConnection.getNotifications();
+                    if (notifications != null) {
+                        for (int i = 0; i < notifications.length; i++)
+                            System.out.println("Got notification: " + notifications[i].getName());
+                    }
+                    Thread.sleep(100);
+                }
+            } catch (SQLException | InterruptedException e){
+                throw new RuntimeException(e);
+            }
         }
     }
 }

@@ -6,9 +6,20 @@ package org.umlg.sqlg.structure;
  */
 public class SqlgExceptions {
 
+    private static final String BATCH_MODE_NOT_SUPPORTED = "Batch processing is not supported by %s";
+    private static final String MULTIPLE_JVM_NOT_SUPPORTED = "Multiple jvm(s) is not supported by %s";
+
     private SqlgExceptions() {}
 
-    public static InvalidIdException invalidId(String invalidId) {
+    public static UnsupportedOperationException multipleJvmNotSupported(String dialect) {
+        return new UnsupportedOperationException(String.format(MULTIPLE_JVM_NOT_SUPPORTED, dialect));
+    }
+
+    public static UnsupportedOperationException batchModeNotSupported(String dialect) {
+        return new UnsupportedOperationException(String.format(BATCH_MODE_NOT_SUPPORTED, dialect));
+    }
+
+    static InvalidIdException invalidId(String invalidId) {
         return new InvalidIdException("Sqlg ids must be a String with the format 'label:::id' The id must be a long. The given id " + invalidId + " is invalid.");
     }
 
@@ -34,7 +45,7 @@ public class SqlgExceptions {
 
     public static class InvalidIdException extends RuntimeException {
 
-        public InvalidIdException(String message) {
+        InvalidIdException(String message) {
             super(message);
         }
 
@@ -42,7 +53,7 @@ public class SqlgExceptions {
 
     public static class InvalidSchemaException extends RuntimeException {
 
-        public InvalidSchemaException(String message) {
+        InvalidSchemaException(String message) {
             super(message);
         }
 
@@ -50,7 +61,7 @@ public class SqlgExceptions {
 
     public static class InvalidTableException extends RuntimeException {
 
-        public InvalidTableException(String message) {
+        InvalidTableException(String message) {
             super(message);
         }
 
@@ -58,7 +69,7 @@ public class SqlgExceptions {
 
     public static class InvalidColumnException extends RuntimeException {
 
-        public InvalidColumnException(String message) {
+        InvalidColumnException(String message) {
             super(message);
         }
 
@@ -66,9 +77,10 @@ public class SqlgExceptions {
 
     public static class InvalidPropertyTypeException extends RuntimeException {
 
-        public InvalidPropertyTypeException(String message) {
+        InvalidPropertyTypeException(String message) {
             super(message);
         }
 
     }
+
 }

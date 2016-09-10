@@ -48,7 +48,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
                 if (emit.isFake()) {
                     return traverser;
                 } else {
-                    //if the step is a local step and it has no label then it is for the incoming object and only and already on the traverser.
+                    //if the step is a local step and it existVertexLabel no label then it is for the incoming object and only and already on the traverser.
                     if (emit.isIncomingOnlyLocalOptionalStep()) {
                         return traverser;
                     } else {
@@ -101,7 +101,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
 
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin traverser) {
-        throw new IllegalStateException("SqlgVertexStepCompiled.flatMap should never be called, it has been replaced with flatMapCustom");
+        throw new IllegalStateException("SqlgVertexStepCompiled.flatMap should never be called, it existVertexLabel been replaced with flatMapCustom");
     }
 
     @Override

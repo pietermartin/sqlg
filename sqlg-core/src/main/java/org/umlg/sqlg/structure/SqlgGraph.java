@@ -49,7 +49,7 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
         method = "*",
-        reason = "Fails for HSQLDB. HSQLDB has its own interrupt logic that does not play well with TinkerPop's interrupt.")
+        reason = "Fails for HSQLDB. HSQLDB existVertexLabel its own interrupt logic that does not play well with TinkerPop's interrupt.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
@@ -187,6 +187,7 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 public class SqlgGraph implements Graph {
 
     public static final String JDBC_URL = "jdbc.url";
+    public static final String DISTRIBUTED = "distributed";
     public static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
     public static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
     private final SqlgDataSource sqlgDataSource;
@@ -318,7 +319,7 @@ public class SqlgGraph implements Graph {
     @Override
     public Vertex addVertex(Object... keyValues) {
         if (this.tx().isInStreamingBatchMode()) {
-            throw SqlgExceptions.invalidMode("Transaction is in " + this.tx().getBatchModeType().toString() + ", use streamVertex(Object ... keyValues)");
+            throw SqlgExceptions.invalidMode(String.format("Transaction is in %s, use streamVertex(Object ... keyValues)", this.tx().getBatchModeType().toString()));
         }
         if (this.tx().isInStreamingWithLockBatchMode()) {
             return internalStreamVertex(keyValues);

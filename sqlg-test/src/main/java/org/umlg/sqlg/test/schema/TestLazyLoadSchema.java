@@ -44,7 +44,7 @@ public class TestLazyLoadSchema extends BaseTest {
             //add a vertex in the old, the new should only see it after a commit
             this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
             Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
@@ -59,7 +59,7 @@ public class TestLazyLoadSchema extends BaseTest {
             //add a vertex in the old, the new should only see it after a commit
             this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
@@ -75,7 +75,7 @@ public class TestLazyLoadSchema extends BaseTest {
             //add a vertex in the old, the new should only see it after a commit
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
@@ -130,7 +130,7 @@ public class TestLazyLoadSchema extends BaseTest {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
             v1.addEdge("friend", v2);
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
@@ -150,7 +150,7 @@ public class TestLazyLoadSchema extends BaseTest {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
             v1.addEdge("friend", v2);
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast has not yet distributed the map
+            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             Vertex v3 = this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");

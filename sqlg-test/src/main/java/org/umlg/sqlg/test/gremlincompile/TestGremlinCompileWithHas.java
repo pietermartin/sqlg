@@ -938,11 +938,11 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
         assertModernGraph(g, true, false);
         final Object marko = convertToVertexId("marko");
-//        final Traversal<Vertex, Vertex> traversal =  g.traversal().V(marko).outE("knows").has("weight", 1.0d).as("here").inV().has("name", "josh").select("here");
+//        final Traversal<Vertex, Vertex> traversal =  g.traversal().V(marko).outE("knows").existVertexLabel("weight", 1.0d).as("here").inV().existVertexLabel("name", "josh").select("here");
 
         final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").has("weight", 1.0d).as("here").inV().has("name", "josh").select("here");
-//        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").as("here").has("weight", 1.0d).inV().has("name", "josh").<Edge>select("here");
-//        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").as("here").has("weight", 1.0d).as("fake").inV().has("name", "josh").<Edge>select("here");
+//        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").as("here").existVertexLabel("weight", 1.0d).inV().existVertexLabel("name", "josh").<Edge>select("here");
+//        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").as("here").existVertexLabel("weight", 1.0d).as("fake").inV().existVertexLabel("name", "josh").<Edge>select("here");
 
         printTraversalForm(traversal);
         Assert.assertTrue(traversal.hasNext());

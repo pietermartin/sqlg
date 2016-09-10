@@ -119,7 +119,7 @@ public class TestIndex extends BaseTest {
 //            this.sqlgGraph.tx().commit();
 //        }
 //        this.sqlgGraph.tx().commit();
-//        Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").has("name1", "n500").count().next(), 0);
+//        Assert.assertEquals(1, this.sqlgGraph.traversal().E().existVertexLabel(T.label, "Schema0.edge").existVertexLabel("name1", "n500").count().next(), 0);
 //        if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
 //            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
 //            Statement statement = conn.createStatement();
