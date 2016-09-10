@@ -135,7 +135,9 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestMultipleLabels.class,
         TestColumnNamePropertyNameMapScope.class,
         TestJNDIInitialization.class,
-        TestSchemaTableTreeAndHasContainer.class
+        TestSchemaTableTreeAndHasContainer.class,
+        //TODO fails, issue #65
+//        TestEdgeFromDifferentSchema.class
 })
 public class AllTest {
 }
