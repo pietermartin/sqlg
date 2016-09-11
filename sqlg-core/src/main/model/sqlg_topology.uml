@@ -7,6 +7,9 @@
     <packagedElement xmi:type="uml:Package" xmi:id="_mnUI0MzgEeW174sSW5_77g" name="umlg">
       <packagedElement xmi:type="uml:Package" xmi:id="_qQcysMzgEeW174sSW5_77g" name="sqlg">
         <packagedElement xmi:type="uml:Package" xmi:id="_uo1vQMzgEeW174sSW5_77g" name="topology">
+          <ownedComment xmi:type="uml:Comment" xmi:id="_WRncoHeNEeaH4dJUP3R7fA" annotatedElement="_3NWG8MzgEeW174sSW5_77g">
+            <body>EdgeLabel(s) are created in the Schema of the first out VertexLabel that created the edge</body>
+          </ownedComment>
           <packagedElement xmi:type="uml:Class" xmi:id="_xeNZ4MzgEeW174sSW5_77g" name="Schema">
             <ownedAttribute xmi:type="uml:Property" xmi:id="_n6rGwMzjEeW174sSW5_77g" name="vertexLabel" type="_zuWQgMzgEeW174sSW5_77g" association="_n6oqgMzjEeW174sSW5_77g">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_tsRR8MzjEeW174sSW5_77g"/>
@@ -14,12 +17,24 @@
             </ownedAttribute>
           </packagedElement>
           <packagedElement xmi:type="uml:Class" xmi:id="_zuWQgMzgEeW174sSW5_77g" name="VertexLabel">
-            <ownedAttribute xmi:type="uml:Property" xmi:id="_z9WOc8zjEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_z9WOcMzjEeW174sSW5_77g"/>
-            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g"/>
-            <ownedAttribute xmi:type="uml:Property" xmi:id="_LlMCcszkEeW174sSW5_77g" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="_LlLbYMzkEeW174sSW5_77g"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_z9WOc8zjEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_z9WOcMzjEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_un-OYHeLEeaH4dJUP3R7fA"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uoFjIHeLEeaH4dJUP3R7fA" value="*"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="outEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_OTAAQHeNEeaH4dJUP3R7fA"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_OTCcgHeNEeaH4dJUP3R7fA" value="*"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_LlMCcszkEeW174sSW5_77g" name="inEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="_LlLbYMzkEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_PQfjQHeNEeaH4dJUP3R7fA"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_PQh_gHeNEeaH4dJUP3R7fA" value="*"/>
+            </ownedAttribute>
           </packagedElement>
           <packagedElement xmi:type="uml:Class" xmi:id="_3NWG8MzgEeW174sSW5_77g" name="EdgeLabel">
-            <ownedAttribute xmi:type="uml:Property" xmi:id="_HHGGgszkEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_HHFfcMzkEeW174sSW5_77g"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_HHGGgszkEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_HHFfcMzkEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_3ZzQYHeLEeaH4dJUP3R7fA"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_3Z2TsHeLEeaH4dJUP3R7fA" value="*"/>
+            </ownedAttribute>
           </packagedElement>
           <packagedElement xmi:type="uml:Class" xmi:id="_4-gikMzgEeW174sSW5_77g" name="Property"/>
           <packagedElement xmi:type="uml:Association" xmi:id="_n6oqgMzjEeW174sSW5_77g" name="schema_vertex" memberEnd="_n6rGwMzjEeW174sSW5_77g _n6rt0MzjEeW174sSW5_77g" navigableOwnedEnd="_n6rt0MzjEeW174sSW5_77g">
@@ -38,7 +53,10 @@
             <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="__q0iMMzjEeW174sSW5_77g" source="org.eclipse.papyrus">
               <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="__q0iMczjEeW174sSW5_77g" key="nature" value="UML_Nature"/>
             </eAnnotations>
-            <ownedEnd xmi:type="uml:Property" xmi:id="__q0iM8zjEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g"/>
+            <ownedEnd xmi:type="uml:Property" xmi:id="__q0iM8zjEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_QqQLgHeNEeaH4dJUP3R7fA" value="1"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_QqTO0HeNEeaH4dJUP3R7fA" value="*"/>
+            </ownedEnd>
           </packagedElement>
           <packagedElement xmi:type="uml:Association" xmi:id="_HHFfcMzkEeW174sSW5_77g" name="edge_property" memberEnd="_HHGGgszkEeW174sSW5_77g _HHGGg8zkEeW174sSW5_77g" navigableOwnedEnd="_HHGGg8zkEeW174sSW5_77g">
             <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_HHGGgMzkEeW174sSW5_77g" source="org.eclipse.papyrus">
@@ -50,7 +68,10 @@
             <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_LlMCcMzkEeW174sSW5_77g" source="org.eclipse.papyrus">
               <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_LlMCcczkEeW174sSW5_77g" key="nature" value="UML_Nature"/>
             </eAnnotations>
-            <ownedEnd xmi:type="uml:Property" xmi:id="_LlMCc8zkEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="_LlLbYMzkEeW174sSW5_77g"/>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_LlMCc8zkEeW174sSW5_77g" name="vertexlabel" type="_zuWQgMzgEeW174sSW5_77g" association="_LlLbYMzkEeW174sSW5_77g">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Rhi_4HeNEeaH4dJUP3R7fA" value="1"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Rhk1EHeNEeaH4dJUP3R7fA" value="*"/>
+            </ownedEnd>
           </packagedElement>
         </packagedElement>
       </packagedElement>
