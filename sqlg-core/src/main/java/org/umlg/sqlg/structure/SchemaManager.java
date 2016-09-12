@@ -942,7 +942,7 @@ public class SchemaManager {
         sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(table));
         sql.append("(");
-        buildColumns(Maps.toMap(Collections.singleton(property), p -> column), sql);
+        buildColumns(Maps.toMap(Collections.singleton("value"), p -> column), sql);
         sql.append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -957,7 +957,7 @@ public class SchemaManager {
         sql.append(".");
         sql.append(this.sqlDialect.maybeWrapInQoutes(table));
         sql.append(" ADD CONSTRAINT ").append(this.sqlDialect.maybeWrapInQoutes("uc_" + table + property));
-        sql.append(" UNIQUE (").append(this.sqlDialect.maybeWrapInQoutes(property)).append(")");
+        sql.append(" UNIQUE (").append(this.sqlDialect.maybeWrapInQoutes("value")).append(")");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }

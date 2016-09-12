@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.index;
 
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
@@ -237,5 +238,44 @@ public class TestIndex extends BaseTest {
             //good
             this.sqlgGraph.tx().rollback();
         }
+    }
+
+    @Test
+    public void testUpdateUniqueProperty() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
+        this.sqlgGraph.createVertexUniqueConstraint("name", "Person");
+        this.sqlgGraph.tx().commit();
+
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
+        v1.property("name", "Joseph");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "Joe");
+        this.sqlgGraph.tx().commit();
+        v2 = this.sqlgGraph.v(v2.id());
+
+        try {
+            v2.property("name", "Joseph");
+            Assert.fail("Should not be able to call a person a pre-existing name.");
+        } catch (Exception e) {
+            //good
+        }
+    }
+
+    @Test
+    public void testDeleteUniqueProperty() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
+        this.sqlgGraph.createVertexUniqueConstraint("name", "Person");
+        this.sqlgGraph.tx().commit();
+
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
+        try {
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
+            Assert.fail("Should not be able to call a person a pre-existing name.");
+        } catch (Exception e) {
+            //good
+        }
+
+        this.sqlgGraph.v(v.id()).remove();
+
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
     }
 }

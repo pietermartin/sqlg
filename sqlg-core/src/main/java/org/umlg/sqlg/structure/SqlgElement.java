@@ -22,6 +22,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import static org.umlg.sqlg.util.SqlgUtil.setValueAsParameter;
+
 /**
  * Date: 2014/07/12
  * Time: 5:40 AM
@@ -130,7 +132,7 @@ public abstract class SqlgElement implements Element {
                 }
 
                 try (PreparedStatement st = sqlgGraph.tx().getConnection().prepareStatement(sql.toString())) {
-                    SqlgUtil.setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
+                    setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
                             PropertyType.from(value), value);
                     st.executeUpdate();
                 } catch (SQLException ex) {
@@ -239,7 +241,7 @@ public abstract class SqlgElement implements Element {
             Object value = e.getValue().getRight();
             PropertyType type = e.getValue().getLeft();
             try (PreparedStatement st = this.sqlgGraph.tx().getConnection().prepareStatement(ucSql)) {
-                SqlgUtil.setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
+                setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
                         type, value);
                 st.executeUpdate();
             } catch (SQLException ex) {
@@ -270,26 +272,87 @@ public abstract class SqlgElement implements Element {
         }
 
         if (!elementInInsertedCache) {
+            Object oldValue = property(key).orElse(null);
+            if (Objects.equals(oldValue, value)) {
+                return;
+            }
+
             Set<String> ucTables = sqlgGraph.getSchemaManager().getUniqueConstraintTables(true, schema, key, label());
+            String valueColumn = this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("value");
+            PropertyType pt = PropertyType.from(value);
+
+            //check that we're actually updating a value and that the new value is not present already in the unique
+            //constraints...
+            for (String uct : ucTables) {
+                StringBuilder sql = new StringBuilder("SELECT ").append(valueColumn).append(" FROM ");
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
+                sql.append(".");
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(uct));
+                sql.append(" WHERE ").append(valueColumn).append(" = ? OR ").append(valueColumn).append(" = ?");
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
+
+                try (PreparedStatement st = sqlgGraph.tx().getConnection().prepareStatement(sql.toString())) {
+                    int idx = SqlgUtil.setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
+                            pt, oldValue);
+                    SqlgUtil.setValueAsParameter(sqlgGraph, true, idx, sqlgGraph.tx().getConnection(), st,
+                            pt, value);
+
+                    try (ResultSet rs = st.executeQuery()) {
+                        Object firstValue = null, secondValue = null;
+                        if (rs.next()) {
+                            firstValue = rs.getObject(1);
+                        }
+                        if (rs.next()) {
+                            secondValue = rs.getObject(1);
+                        }
+
+                        if (firstValue != null && secondValue != null) {
+                            //both the old value and new value are already in the uc table. This means that this element
+                            //"held" the old value and is trying to update to a value that is held by another element
+                            //already. Bail out...
+                            throw new IllegalArgumentException("Unique value '" + value + "' for property '" + key
+                                    + "' already exists in the database.");
+                        } else {
+                            Object dbValue = firstValue != null ? firstValue : secondValue;
+                            if (Objects.equals(value, dbValue)) {
+                                //we're trying to update to a value that is already held by another element
+                                throw new IllegalArgumentException("Unique value '" + value + "' for property '" + key
+                                        + "' already exists in the database.");
+                            }
+                        }
+                    }
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             for (String uct : ucTables) {
                 StringBuilder sql = new StringBuilder("UPDATE ");
                 sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
                 sql.append(".");
                 sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(uct));
-                sql.append(" SET value = ?");
+                sql.append(" SET ").append(valueColumn).append(" = ?");
                 sql.append(" WHERE ");
-                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("value"));
+                sql.append(valueColumn);
                 sql.append(" = ?");
                 if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
 
                 try (PreparedStatement st = sqlgGraph.tx().getConnection().prepareStatement(sql.toString())) {
-                    int i = SqlgUtil.setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
-                            PropertyType.from(value), value);
-                    SqlgUtil.setValueAsParameter(sqlgGraph, true, i, sqlgGraph.tx().getConnection(), st,
-                            PropertyType.from(value), value);
-                    st.executeUpdate();
+                    int i = setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
+                            pt, value);
+                    setValueAsParameter(sqlgGraph, true, i, sqlgGraph.tx().getConnection(), st,
+                            pt, value);
+                    int affected = st.executeUpdate();
+                    if (affected == 0) {
+                        //hmm, so we need to insert instead
+                        Map<String, Pair<PropertyType, Object>> ucs = new HashMap<>();
+                        addUniqueConstraintSql(ucs, key, pt, value);
+                        insertUniqueConstraints(ucs);
+                    }
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
