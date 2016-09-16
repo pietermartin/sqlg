@@ -1,8 +1,8 @@
 package org.umlg.sqlg.test.multithread;
 
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,7 +14,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
 import java.util.function.Consumer;
 
 import static org.junit.Assert.assertEquals;
@@ -112,7 +111,9 @@ public class TestMultiThread extends BaseTest {
         executorService.awaitTermination(6000, TimeUnit.SECONDS);
         Assert.assertEquals(100, tables.size());
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
+            if (true)
+                throw new RuntimeException("TODO");
+//            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             Assert.assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
         }
     }
@@ -141,7 +142,9 @@ public class TestMultiThread extends BaseTest {
         executorService.awaitTermination(60, TimeUnit.SECONDS);
         Assert.assertEquals(100, tables.size());
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
+            if (true)
+                throw new RuntimeException("TODO");
+//            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             Assert.assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
             Assert.assertEquals(10, vertexTraversal(v1).out("test" + String.valueOf(i)).count().next().intValue());
         }

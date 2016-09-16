@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.umlg.sqlg.structure.SchemaManager.NAME;
+import static org.umlg.sqlg.structure.SchemaManager.SCHEMA_VERTEX_DISPLAY;
+
 /**
  * Created by pieter on 2015/12/08.
  */
@@ -46,13 +49,14 @@ public class TopologyManager {
                     .toList();
             Preconditions.checkState(!schemas.isEmpty(), SCHEMA + schema + DOES_NOT_EXIST_IN_SQLG_S_TOPOLOGY_BUG);
             Preconditions.checkState(schemas.size() == 1, MULTIPLE + schema + FOUND_IN_SQLG_S_TOPOLOGY_BUG);
-            Preconditions.checkState(tableName.startsWith(SchemaManager.VERTEX_PREFIX));
+            Preconditions.checkState(!tableName.startsWith(SchemaManager.VERTEX_PREFIX));
             Vertex schemaVertex = schemas.get(0);
 
             Vertex vertex = sqlgGraph.addVertex(
                     T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL,
-                    "name", tableName.substring(SchemaManager.VERTEX_PREFIX.length()),
-                    "schemaVertex", schema + tableName, //this is here for readability when in pgadmin
+//                    NAME, tableName.substring(SchemaManager.VERTEX_PREFIX.length()),
+                    NAME, tableName,
+                    SCHEMA_VERTEX_DISPLAY, schema + "." + SchemaManager.VERTEX_PREFIX + tableName, //this is here for display when in pgadmin
                     CREATED_ON, LocalDateTime.now()
             );
             schemaVertex.addEdge(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
@@ -73,7 +77,7 @@ public class TopologyManager {
         }
     }
 
-    static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
+    public static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();

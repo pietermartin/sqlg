@@ -38,10 +38,15 @@ public class TestTopology2 extends BaseTest {
     @Test
     public void testVertexCreation() {
         Vertex person = this.sqlgGraph.addVertex(T.label, "Person");
+        Vertex car = this.sqlgGraph.addVertex(T.label, "Car");
+        person.addEdge("drives", car);
         this.sqlgGraph.tx().commit();
 
         assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person").count().next().intValue());
         assertEquals(person, this.sqlgGraph.traversal().V().hasLabel("Person").next());
+        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Car").count().next().intValue());
+        assertEquals(car, this.sqlgGraph.traversal().V().hasLabel("Car").next());
+        assertEquals(car, this.sqlgGraph.traversal().V(person).out().next());
     }
 
 

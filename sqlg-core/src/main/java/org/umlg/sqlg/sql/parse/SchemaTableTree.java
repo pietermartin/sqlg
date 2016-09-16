@@ -413,7 +413,7 @@ public class SchemaTableTree {
     public static void constructDistinctEmitBeforeQueries(SchemaTableTree current, List<LinkedList<SchemaTableTree>> result) {
         LinkedList<SchemaTableTree> stack = current.constructQueryStackFromLeaf();
         //if its at the full depth it existVertexLabel already been loaded.
-        //local step together with emit will create a fake emit. The fake emit will indicate that the incoming traverser must be emitted.
+        //local step together with emit will createVertexLabel a fake emit. The fake emit will indicate that the incoming traverser must be emitted.
         if (!current.isLocalStep() && current.isEmit() && (current.getStepDepth() < current.getReplacedStepDepth())) {
             result.add(stack);
         }

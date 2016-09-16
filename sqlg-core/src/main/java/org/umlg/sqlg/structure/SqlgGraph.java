@@ -1097,45 +1097,45 @@ public class SqlgGraph implements Graph {
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
-        int i = 0;
-        String key = "";
-        Object value;
-        for (Object keyValue : dummykeyValues) {
-            if (i++ % 2 == 0) {
-                key = (String) keyValue;
-            } else {
-                value = keyValue;
-                if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty(key, value);
-                    this.sqlDialect.validateProperty(key, value);
-                }
-
-            }
-        }
-        this.tx().readWrite();
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
-        this.getSchemaManager().createVertexIndex(schemaTablePair, dummykeyValues);
+//        int i = 0;
+//        String key = "";
+//        Object value;
+//        for (Object keyValue : dummykeyValues) {
+//            if (i++ % 2 == 0) {
+//                key = (String) keyValue;
+//            } else {
+//                value = keyValue;
+//                if (!key.equals(T.label)) {
+//                    ElementHelper.validateProperty(key, value);
+//                    this.sqlDialect.validateProperty(key, value);
+//                }
+//
+//            }
+//        }
+//        this.tx().readWrite();
+//        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+//        this.getSchemaManager().createVertexIndex(schemaTablePair, dummykeyValues);
     }
 
     public void createEdgeLabeledIndex(String label, Object... dummykeyValues) {
-        int i = 0;
-        String key = "";
-        Object value;
-        for (Object keyValue : dummykeyValues) {
-            if (i++ % 2 == 0) {
-                key = (String) keyValue;
-            } else {
-                value = keyValue;
-                if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty(key, value);
-                    this.sqlDialect.validateProperty(key, value);
-                }
-
-            }
-        }
-        this.tx().readWrite();
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
-        this.getSchemaManager().createEdgeIndex(schemaTablePair, dummykeyValues);
+//        int i = 0;
+//        String key = "";
+//        Object value;
+//        for (Object keyValue : dummykeyValues) {
+//            if (i++ % 2 == 0) {
+//                key = (String) keyValue;
+//            } else {
+//                value = keyValue;
+//                if (!key.equals(T.label)) {
+//                    ElementHelper.validateProperty(key, value);
+//                    this.sqlDialect.validateProperty(key, value);
+//                }
+//
+//            }
+//        }
+//        this.tx().readWrite();
+//        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+//        this.getSchemaManager().createEdgeIndex(schemaTablePair, dummykeyValues);
     }
 
     public long countVertices() {
@@ -1179,7 +1179,7 @@ public class SqlgGraph implements Graph {
         return count;
     }
 
-    boolean isImplementForeignKeys() {
+    public boolean isImplementForeignKeys() {
         return implementForeignKeys;
     }
 

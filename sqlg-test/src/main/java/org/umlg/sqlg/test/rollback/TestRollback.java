@@ -43,7 +43,7 @@ public class TestRollback extends BaseTest {
      * This test is for HSQLDB in particular.
      * HSQLDB auto commits transactions that execute schema creation commands.
      * This invalidates the rollback logic that the test is trying to tests.
-     * So first create, commit delete and then test rollback.
+     * So first createVertexLabel, commit delete and then test rollback.
      */
     @Test
     public void shouldRollbackByDefault() {

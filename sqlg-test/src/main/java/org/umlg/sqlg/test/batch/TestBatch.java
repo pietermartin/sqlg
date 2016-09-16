@@ -867,7 +867,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().normalBatchModeOn();
         //32767
         int j = 1;
-        //create 280 foreign keys
+        //createVertexLabel 280 foreign keys
         for (int i = 0; i < 2810; i++) {
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "public.WorkspaceElement", "name", "workspaceElement" + i);
             if (j == 281) {

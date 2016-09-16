@@ -57,7 +57,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     /**
-     * This is the primary constructor to create a vertex that already exist
+     * This is the primary constructor to createVertexLabel a vertex that already exist
      *
      * @param sqlgGraph
      * @param id
@@ -135,7 +135,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         SchemaTable schemaTablePair = SchemaTable.of(this.schema, label);
         this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
-                schemaTablePair.getSchema(),
+//                schemaTablePair.getSchema(),
                 schemaTablePair.getTable(),
                 SchemaTable.of(
                         ((SqlgVertex) inVertex).schema,

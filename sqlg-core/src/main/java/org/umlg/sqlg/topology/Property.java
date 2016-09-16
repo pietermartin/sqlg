@@ -16,6 +16,14 @@ public class Property {
         this.propertyType = propertyType;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public PropertyType getPropertyType() {
+        return propertyType;
+    }
+
     public void afterCommit() {
 
     }

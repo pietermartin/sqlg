@@ -212,7 +212,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     sql.append(" (");
                     if (vertices.getLeft().isEmpty()) {
                         //copy command needs at least one field.
-                        //check if the dummy field exist, if not create it
+                        //check if the dummy field exist, if not createVertexLabel it
                         sqlgGraph.getSchemaManager().ensureColumnExist(
                                 schemaTable.getSchema(),
                                 SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
@@ -756,7 +756,7 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append(" (");
         if (keyValueMap.isEmpty()) {
             //copy command needs at least one field.
-            //check if the dummy field exist, if not create it
+            //check if the dummy field exist, if not createVertexLabel it
             sqlgGraph.getSchemaManager().ensureColumnExist(
                     vertex.getSchema(),
                     SchemaManager.VERTEX_PREFIX + vertex.getTable(),
@@ -862,7 +862,7 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append(" (");
         if (keyValueMap.isEmpty()) {
             //copy command needs at least one field.
-            //check if the dummy field exist, if not create it
+            //check if the dummy field exist, if not createVertexLabel it
             sqlgGraph.getSchemaManager().ensureColumnExist(
                     schemaTable.getSchema(),
                     SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
@@ -2145,7 +2145,7 @@ public class PostgresDialect extends BaseSqlDialect {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         if (!uids.isEmpty()) {
-            //create temp table and copy the uids into it
+            //createVertexLabel temp table and copy the uids into it
             Map<String, PropertyType> columns = new HashMap<>();
             Map<String, PropertyType> inProperties = sqlgGraph.getSchemaManager().getTableFor(in.withPrefix(SchemaManager.VERTEX_PREFIX));
             Map<String, PropertyType> outProperties = sqlgGraph.getSchemaManager().getTableFor(out.withPrefix(SchemaManager.VERTEX_PREFIX));
@@ -2171,7 +2171,8 @@ public class PostgresDialect extends BaseSqlDialect {
             sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
             this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids, inPropertyType, outPropertyType);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
-            sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
+//            sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
+            sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeLabel, out, in);
 
             StringBuilder sql = new StringBuilder("INSERT INTO \n");
             sql.append(this.maybeWrapInQoutes(in.getSchema()));
