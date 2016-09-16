@@ -32,6 +32,15 @@ public class SqlgExceptions {
         return new InvalidPropertyTypeException("Property of type " + propertyType.name() + " is not supported");
     }
 
+    public static UniqueConstraintViolationException uniqueConstraintViolation(String key, Object value) {
+        return new UniqueConstraintViolationException("Unique value '" + value.toString() + "' for property '" + key
+                + "' already exists in the database.");
+    }
+
+    public static UniqueConstraintViolationException uniqueConstraintViolation(Throwable cause) {
+        return new UniqueConstraintViolationException(cause);
+    }
+
     public static class InvalidIdException extends RuntimeException {
 
         public InvalidIdException(String message) {
@@ -70,5 +79,16 @@ public class SqlgExceptions {
             super(message);
         }
 
+    }
+
+    public static class UniqueConstraintViolationException extends RuntimeException {
+
+        public UniqueConstraintViolationException(String message) {
+            super(message);
+        }
+
+        public UniqueConstraintViolationException(Throwable cause) {
+            super(cause);
+        }
     }
 }
