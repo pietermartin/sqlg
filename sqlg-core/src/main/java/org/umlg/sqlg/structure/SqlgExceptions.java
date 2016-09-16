@@ -37,6 +37,10 @@ public class SqlgExceptions {
                 + "' already exists in the database.");
     }
 
+    public static UniqueConstraintViolationException uniqueConstraintViolation(Throwable cause) {
+        return new UniqueConstraintViolationException(cause);
+    }
+
     public static class InvalidIdException extends RuntimeException {
 
         public InvalidIdException(String message) {
@@ -83,5 +87,8 @@ public class SqlgExceptions {
             super(message);
         }
 
+        public UniqueConstraintViolationException(Throwable cause) {
+            super(cause);
+        }
     }
 }

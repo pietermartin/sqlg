@@ -245,9 +245,9 @@ public abstract class SqlgElement implements Element {
                         type, value);
                 st.executeUpdate();
             } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+                // Might actually not be a constraint violation, although it most probably is
+                throw SqlgExceptions.uniqueConstraintViolation(ex);
             }
-
         }
     }
 
