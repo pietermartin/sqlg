@@ -312,14 +312,12 @@ public abstract class SqlgElement implements Element {
                             //both the old value and new value are already in the uc table. This means that this element
                             //"held" the old value and is trying to update to a value that is held by another element
                             //already. Bail out...
-                            throw new IllegalArgumentException("Unique value '" + value + "' for property '" + key
-                                    + "' already exists in the database.");
+                            throw SqlgExceptions.uniqueConstraintViolation(key, value);
                         } else {
                             Object dbValue = firstValue != null ? firstValue : secondValue;
                             if (Objects.equals(value, dbValue)) {
                                 //we're trying to update to a value that is already held by another element
-                                throw new IllegalArgumentException("Unique value '" + value + "' for property '" + key
-                                        + "' already exists in the database.");
+                                throw SqlgExceptions.uniqueConstraintViolation(key, value);
                             }
                         }
                     }
