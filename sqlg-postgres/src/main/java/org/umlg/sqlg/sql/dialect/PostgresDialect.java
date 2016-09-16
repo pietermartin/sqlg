@@ -2355,6 +2355,7 @@ public class PostgresDialect extends BaseSqlDialect {
         result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"schemaVertex\" TEXT);");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_property\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"type\" TEXT);");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_unique_constraint\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"onVertices\" BOOLEAN);");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.vertex__I\");");
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.schema__O\");");
@@ -2370,6 +2371,12 @@ public class PostgresDialect extends BaseSqlDialect {
         result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_schema_unique_constraint\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.unique_constraint__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.unique_constraint__I\") REFERENCES \"sqlg_schema\".\"V_unique_constraint\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
+        result.add("CREATE INDEX ON \"sqlg_schema\".\"E_schema_unique_constraint\" (\"sqlg_schema.unique_constraint__I\");");
+        result.add("CREATE INDEX ON \"sqlg_schema\".\"E_schema_unique_constraint\" (\"sqlg_schema.schema__O\");");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_unique_constraint\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.unique_constraint__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.unique_constraint__I\") REFERENCES \"sqlg_schema\".\"V_unique_constraint\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE INDEX ON \"sqlg_schema\".\"E_vertex_unique_constraint\" (\"sqlg_schema.unique_constraint__I\");");
+        result.add("CREATE INDEX ON \"sqlg_schema\".\"E_vertex_unique_constraint\" (\"sqlg_schema.vertex__O\");");
         return result;
     }
 

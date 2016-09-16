@@ -1362,6 +1362,7 @@ public class SchemaManager {
         this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL, schemas);
         this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL, schemas);
         this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY, schemas);
+        this.localLabelSchemas.put(VERTEX_PREFIX + SQLG_SCHEMA_UNIQUE_CONSTRAINT, schemas);
 
         this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, schemas);
         this.localLabelSchemas.put(EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE, schemas);
@@ -1387,12 +1388,19 @@ public class SchemaManager {
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put("type", PropertyType.STRING);
         this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY, columns);
+        columns = new HashedMap<>();
+        columns.put("name", PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        columns.put("onVertices", PropertyType.BOOLEAN);
+        this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_UNIQUE_CONSTRAINT, columns);
 
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, Collections.emptyMap());
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE, Collections.emptyMap());
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE, Collections.emptyMap());
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, Collections.emptyMap());
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, Collections.emptyMap());
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE, Collections.emptyMap());
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE, Collections.emptyMap());
 
         Set<String> foreignKeys = new HashSet<>();
         foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA + OUT_VERTEX_COLUMN_END);
@@ -1411,15 +1419,25 @@ public class SchemaManager {
         foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL + OUT_VERTEX_COLUMN_END);
         foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_PROPERTY + IN_VERTEX_COLUMN_END);
         this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, foreignKeys);
+        foreignKeys = new HashSet<>();
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA + OUT_VERTEX_COLUMN_END);
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_UNIQUE_CONSTRAINT + IN_VERTEX_COLUMN_END);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE, foreignKeys);
+        foreignKeys = new HashSet<>();
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL + OUT_VERTEX_COLUMN_END);
+        foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_UNIQUE_CONSTRAINT + IN_VERTEX_COLUMN_END);
+        this.localEdgeForeignKeys.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE, foreignKeys);
 
         Pair<Set<SchemaTable>, Set<SchemaTable>> labels = Pair.of(new HashSet<>(), new HashSet<>());
         labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE));
         this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA), labels);
         labels = Pair.of(new HashSet<>(), new HashSet<>());
         labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE));
         labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE));
         labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE));
         labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE));
+        labels.getRight().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE));
         this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL), labels);
         labels = Pair.of(new HashSet<>(), new HashSet<>());
         labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE));
@@ -1430,6 +1448,10 @@ public class SchemaManager {
         labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE));
         labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE));
         this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY), labels);
+        labels = Pair.of(new HashSet<>(), new HashSet<>());
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE));
+        labels.getLeft().add(SchemaTable.of(SQLG_SCHEMA, EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE));
+        this.localTableLabels.put(SchemaTable.of(SQLG_SCHEMA, VERTEX_PREFIX + SQLG_SCHEMA_UNIQUE_CONSTRAINT), labels);
 
     }
 
