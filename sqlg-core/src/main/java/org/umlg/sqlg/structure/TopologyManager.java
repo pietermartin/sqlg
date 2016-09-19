@@ -326,7 +326,7 @@ public class TopologyManager {
                             ? SchemaManager.SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE
                             : SchemaManager.SQLG_SCHEMA_EDGE_UNIQUE_CONSTRAINT_EDGE;
 
-                    for (Vertex l : labelQuery.get().toList()) {
+                    for (Vertex l : labelVertices) {
                         l.addEdge(edgeName, constraint, "property", property);
                     }
                 } else {
