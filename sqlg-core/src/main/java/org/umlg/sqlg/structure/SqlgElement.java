@@ -131,6 +131,9 @@ public abstract class SqlgElement implements Element {
                     sql.append(";");
                 }
 
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
                 try (PreparedStatement st = sqlgGraph.tx().getConnection().prepareStatement(sql.toString())) {
                     setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
                             PropertyType.from(value), value);
@@ -240,6 +243,9 @@ public abstract class SqlgElement implements Element {
             String ucSql = e.getKey();
             Object value = e.getValue().getRight();
             PropertyType type = e.getValue().getLeft();
+            if (logger.isDebugEnabled()) {
+                logger.debug(ucSql);
+            }
             try (PreparedStatement st = this.sqlgGraph.tx().getConnection().prepareStatement(ucSql)) {
                 setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
                         type, value);
@@ -293,6 +299,9 @@ public abstract class SqlgElement implements Element {
                     sql.append(";");
                 }
 
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
                 try (PreparedStatement st = sqlgGraph.tx().getConnection().prepareStatement(sql.toString())) {
                     int idx = SqlgUtil.setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
                             pt, oldValue);
@@ -339,6 +348,9 @@ public abstract class SqlgElement implements Element {
                     sql.append(";");
                 }
 
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
                 try (PreparedStatement st = sqlgGraph.tx().getConnection().prepareStatement(sql.toString())) {
                     int i = setValueAsParameter(sqlgGraph, true, 1, sqlgGraph.tx().getConnection(), st,
                             pt, value);

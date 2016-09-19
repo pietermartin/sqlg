@@ -178,11 +178,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
+        insertUniqueConstraints(uniqueConstraintChecks);
+
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-
-        insertUniqueConstraints(uniqueConstraintChecks);
 
         i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
