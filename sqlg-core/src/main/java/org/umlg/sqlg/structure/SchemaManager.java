@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -109,7 +110,7 @@ public class SchemaManager {
     /**
      * Edge table for assigning edge properties to unique constraints.
      */
-    public static final String SQLG_SCHEMA_EDGE_UNIQUE_CONSTRAINT_EDGE = "edge_unique_contraint";
+    public static final String SQLG_SCHEMA_EDGE_UNIQUE_CONSTRAINT_EDGE = "edge_unique_constraint";
 
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -138,7 +139,8 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE
     );
 
     private Map<String, String> schemas;
@@ -1392,6 +1394,7 @@ public class SchemaManager {
         columns.put("name", PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         columns.put("onVertices", PropertyType.BOOLEAN);
+        columns.put("property", PropertyType.STRING);
         this.localTables.put(SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_UNIQUE_CONSTRAINT, columns);
 
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, Collections.emptyMap());
@@ -1400,7 +1403,9 @@ public class SchemaManager {
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, Collections.emptyMap());
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, Collections.emptyMap());
         this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_UNIQUE_CONSTRAINT_EDGE, Collections.emptyMap());
-        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE, Collections.emptyMap());
+        columns = new HashedMap<>();
+        columns.put("property", PropertyType.STRING);
+        this.localTables.put(SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE, columns);
 
         Set<String> foreignKeys = new HashSet<>();
         foreignKeys.add(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA + OUT_VERTEX_COLUMN_END);
@@ -1461,6 +1466,7 @@ public class SchemaManager {
     private void loadUserSchema() {
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+        Map<String, PropertyType> uniqueConstraintValueType = new HashMap<>();
         for (Vertex schema : schemas) {
             String schemaName = schema.value("name");
             this.localSchemas.put(schemaName, schemaName);
@@ -1484,13 +1490,15 @@ public class SchemaManager {
                 }
                 this.localTables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
 
-                List<Map<String, String>> labelBoundUniqueConstraints = traversalSource.V(vertexLabel)
+                List<Map<String, Property<String>>> labelBoundUniqueConstraints = traversalSource.V(vertexLabel)
                         .outE(SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE).as("e").properties("property").as("prop").select("e")
-                        .inV().properties("name").as("table").<String>select("prop", "table").toList();
+                        .inV().properties("name").as("table").<Property<String>>select("prop", "table").toList();
 
-                for (Map<String, String> uc: labelBoundUniqueConstraints) {
-                    String key = getUniqueConstraintKeyName(schemaName, uc.get("prop"));
-                    String table = uc.get("table");
+                for (Map<String, Property<String>> uc: labelBoundUniqueConstraints) {
+                    String key = getUniqueConstraintKeyName(schemaName, uc.get("prop").value());
+                    String table = uc.get("table").value();
+                    PropertyType propType = uncommittedColumns.get(uc.get("prop").value());
+                    uniqueConstraintValueType.put(table, propType);
                     Map<String, String> existingConstraints = this.localPropertyUniqueConstraints.get(key);
                     if (existingConstraints == null) {
                         existingConstraints = new HashMap<>();
@@ -1514,13 +1522,15 @@ public class SchemaManager {
                     }
                     this.localTables.put(schemaName + "." + EDGE_PREFIX + edgeName, uncommittedColumns);
 
-                    labelBoundUniqueConstraints = traversalSource.V(vertexLabel)
-                            .outE(SQLG_SCHEMA_VERTEX_UNIQUE_CONSTRAINT_EDGE).as("e").properties("property").as("prop").select("e")
-                            .inV().properties("name").as("table").<String>select("prop", "table").toList();
+                    labelBoundUniqueConstraints = traversalSource.V(outEdge)
+                            .outE(SQLG_SCHEMA_EDGE_UNIQUE_CONSTRAINT_EDGE).as("e").properties("property").as("prop").select("e")
+                            .inV().properties("name").as("table").<Property<String>>select("prop", "table").toList();
 
-                    for (Map<String, String> uc: labelBoundUniqueConstraints) {
-                        String key = getUniqueConstraintKeyName(schemaName, uc.get("prop"));
-                        String table = uc.get("table");
+                    for (Map<String, Property<String>> uc: labelBoundUniqueConstraints) {
+                        String key = getUniqueConstraintKeyName(schemaName, uc.get("prop").value());
+                        String table = uc.get("table").value();
+                        PropertyType propType = uncommittedColumns.get(uc.get("prop").value());
+                        uniqueConstraintValueType.put(table, propType);
                         Map<String, String> existingConstraints = this.localPropertyUniqueConstraints.get(key);
                         if (existingConstraints == null) {
                             existingConstraints = new HashMap<>();
@@ -1588,6 +1598,15 @@ public class SchemaManager {
 
                 }
             }
+
+            //register the unique constraint tables with the localTables
+            localPropertyUniqueConstraints.values().stream()
+                    .flatMap(m -> m.values().stream())
+                    .forEach(t -> {
+                        Map<String, PropertyType> ucColumnTypes = new HashMap<>(1);
+                        ucColumnTypes.put("value", uniqueConstraintValueType.get(t));
+                        localTables.put(schemaName + "." + t, ucColumnTypes);
+                    });
         }
     }
 
