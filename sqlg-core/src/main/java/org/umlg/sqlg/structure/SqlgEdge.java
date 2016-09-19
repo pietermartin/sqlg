@@ -122,7 +122,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
         sql.append(" (");
         int i = 1;
-        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTables().get(getSchemaTablePrefixed().toString());
+        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getTableFor(SchemaTable.of(this.schema, SchemaManager.EDGE_PREFIX + this.table));
         for (String column : keyValueMap.keySet()) {
             PropertyType propertyType = columnPropertyTypeMap.get(column);
 
