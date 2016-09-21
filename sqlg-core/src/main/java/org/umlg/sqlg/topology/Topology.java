@@ -34,21 +34,13 @@ public class Topology {
     //meta schema
     private Map<String, Schema> metaSchemas = new HashMap<>();
 
-    //Map the edges.
-    //An edge can be across many schemas.
-    //As such it will be created in the first outVertex that creates the edge.
-    private Map<String, EdgeLabel> edges = new HashMap<>();
-    private Map<String, EdgeLabel> uncommittedEdges = new HashMap<>();
-
-    private Map<String, EdgeLabel> metaEdges = new HashMap<>();
-
     //Map the topology's topology. This is the
 
     private static final int LOCK_TIMEOUT = 10;
 
     public Topology(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
-        this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED);
+        this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         this.schemaLock = new ReentrantLock();
         Schema sqlgSchema = Schema.createSchema(sqlgGraph, this, SQLG_SCHEMA);
         this.metaSchemas.put(SQLG_SCHEMA, sqlgSchema);
@@ -58,7 +50,10 @@ public class Topology {
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_SCHEMA, columns);
         VertexLabel edgeVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_EDGE_LABEL, columns);
+
+        columns.put(TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_PROPERTY, columns);
+        columns.remove(TYPE);
 
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
         VertexLabel vertexVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_VERTEX_LABEL, columns);
@@ -66,19 +61,19 @@ public class Topology {
         columns.remove(SCHEMA_VERTEX_DISPLAY);
 
         EdgeLabel schemaVertexEdgeLabel = schemaVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
-        this.metaEdges.put(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, schemaVertexEdgeLabel);
+        sqlgSchema.addEdgeLabel(schemaVertexEdgeLabel);
 
         EdgeLabel schemaVertexInEdgeLabel = vertexVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
-        this.metaEdges.put(SQLG_SCHEMA_IN_EDGES_EDGE, schemaVertexInEdgeLabel);
+        sqlgSchema.addEdgeLabel(schemaVertexInEdgeLabel);
 
         EdgeLabel schemaVertexOutEdgeLabel = vertexVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
-        this.metaEdges.put(SQLG_SCHEMA_OUT_EDGES_EDGE, schemaVertexOutEdgeLabel);
+        sqlgSchema.addEdgeLabel(schemaVertexOutEdgeLabel);
 
         EdgeLabel schemaVertexPropertyEdgeLabel = vertexVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
-        this.metaEdges.put(SQLG_SCHEMA_OUT_EDGES_EDGE, schemaVertexPropertyEdgeLabel);
+        sqlgSchema.addEdgeLabel(schemaVertexPropertyEdgeLabel);
 
         EdgeLabel schemaEdgePropertyEdgeLabel = edgeVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
-        this.metaEdges.put(SQLG_SCHEMA_OUT_EDGES_EDGE, schemaEdgePropertyEdgeLabel);
+        sqlgSchema.addEdgeLabel(schemaEdgePropertyEdgeLabel);
 
         //add the public schema
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
@@ -108,102 +103,156 @@ public class Topology {
     }
 
     public boolean existSchema(String schema) {
-        return this.schemas.containsKey(schema) || this.uncommittedSchemas.containsKey(schema);
+        return getSchema(schema).isPresent();
     }
 
-    /**
-     * A vertex always belongs to a schema. Unlike an edge which can join vertices from different schemas.
-     * This is a transactional check. Returns true if the label already exists or has been created in this thread
-     * for the current transaction.
-     *
-     * @param schemaName The schema the vertex belongs to.
-     * @param label      The vertex's label prefixed with
-     * @return true if the label exists.
-     */
-    public boolean existVertexLabel(String schemaName, String label) {
-        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("vertex label may not start with %s", VERTEX_PREFIX));
-        if (schemaName.equals(SQLG_SCHEMA)) {
-            return true;
-        } else if (existSchema(schemaName)) {
-            //first check already existing schemas
-            Schema schema = this.schemas.get(schemaName);
-            if (schema != null) {
-                return schema.existVertexLabel(label);
-            } else {
-                //check uncommitted schemas created in this transaction
-                schema = this.uncommittedSchemas.get(schemaName);
-                return schema.existVertexLabel(label);
-            }
-        } else {
-            return false;
+    public Optional<Schema> getSchema(String schema) {
+        Schema result = this.schemas.get(schema);
+        if (result == null) {
+            result = this.uncommittedSchemas.get(schema);
         }
+        return Optional.ofNullable(result);
+    }
+
+    public Optional<VertexLabel> getVertexLabel(String schemaName, String label) {
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("vertex label may not start with %s", VERTEX_PREFIX));
+        Optional<Schema> schemaOptional = this.getSchema(schemaName);
+        if (schemaOptional.isPresent()) {
+            return schemaOptional.get().getVertexLabel(label);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public boolean existVertexLabel(String schemaName, String label) {
+        return getVertexLabel(schemaName, label).isPresent();
     }
 
     public void createVertexLabel(String schemaName, String label, ConcurrentHashMap<String, PropertyType> columns) {
         if (!schemaName.equals(SQLG_SCHEMA)) {
-            Schema schema = this.schemas.get(schemaName);
-            if (schema == null) {
-                schema = this.uncommittedSchemas.get(schemaName);
-                if (schema == null) {
-                    //createVertexLabel the schema
-                    schema = createSchema(this.sqlgGraph, this, schemaName);
-                    this.uncommittedSchemas.put(schemaName, schema);
-                }
+            Optional<Schema> schemaOptional = this.getSchema(schemaName);
+            Schema schema;
+            if (!schemaOptional.isPresent()) {
+                schema = createSchema(this.sqlgGraph, this, schemaName);
+                this.uncommittedSchemas.put(schemaName, schema);
+            } else {
+                schema = schemaOptional.get();
             }
-            //createVertexLabel the table
             schema.createVertexLabel(this.sqlgGraph, label, columns);
         }
+    }
+
+    public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
+        Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edge label name may not start with %s", EDGE_PREFIX);
+        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+            Optional<EdgeLabel> edgeLabel = schemaEntry.getValue().getEdgeLabel(edgeLabelName);
+            if (edgeLabel.isPresent()) {
+                return edgeLabel;
+            }
+        }
+        if (this.isHeldByCurrentThread()) {
+            for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                Optional<EdgeLabel> edgeLabel = schemaEntry.getValue().getEdgeLabel(edgeLabelName);
+                if (edgeLabel.isPresent()) {
+                    return edgeLabel;
+                }
+            }
+        }
+        for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+            Optional<EdgeLabel> edgeLabel = schemaEntry.getValue().getEdgeLabel(edgeLabelName);
+            if (edgeLabel.isPresent()) {
+                return edgeLabel;
+            }
+        }
+        return Optional.empty();
     }
 
     /**
      * Checks if the edge already exists.
      *
-     * @param edgeLabel The edge label to check for existence.
+     * @param edgeLabelName The edge label to check for existence.
      * @return Returns true if the label exists.
      */
-    public boolean existEdgeLabel(String edgeLabel) {
-        Preconditions.checkArgument(!edgeLabel.startsWith(EDGE_PREFIX), String.format("edge label name may not start with %s", EDGE_PREFIX));
-        return this.edges.containsKey(edgeLabel) || this.uncommittedEdges.containsKey(edgeLabel) || this.metaEdges.containsKey(edgeLabel);
+    public boolean existEdgeLabel(String edgeLabelName) {
+        return getEdgeLabel(edgeLabelName).isPresent();
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     public void createEdgeLabel(String edgeLabelName, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(this.isHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
 
-        Schema schema;
-        if (foreignKeyOut.getSchema().equals(SQLG_SCHEMA)) {
-            schema = this.metaSchemas.get(foreignKeyOut.getSchema());
-            if (schema == null) {
-                throw new IllegalStateException(String.format("BUG: %s can not be null.", foreignKeyOut.getSchema()));
+        Optional<Schema> outVertexSchema = findVertexSchema(foreignKeyOut.getSchema());
+        Preconditions.checkState(outVertexSchema.isPresent(), "schema not found for \"%s\"", foreignKeyOut.getSchema());
+        Optional<Schema> inVertexSchema = findVertexSchema(foreignKeyIn.getSchema());
+        Preconditions.checkState(inVertexSchema.isPresent(), "schema not found for \"%s\"", foreignKeyIn.getSchema());
+
+        //The out and in vertex labels must already exist.
+        Optional<VertexLabel> outVertexLabel = outVertexSchema.get().getVertexLabel(foreignKeyOut.getTable());
+        Preconditions.checkState(outVertexLabel.isPresent(), "BUG: Out vertex label for edge creation can not be null. out vertex label = \"%s\"", foreignKeyOut.getTable());
+
+        Optional<VertexLabel> inVertexLabel = inVertexSchema.get().getVertexLabel(foreignKeyIn.getTable());
+        Preconditions.checkState(inVertexLabel.isPresent(), "BUG: In vertex label for edge creation can not be null. in vertex label = \"%s\"", foreignKeyIn.getTable());
+
+        //Edge may not already exist.
+        Preconditions.checkArgument(!existEdgeLabel(edgeLabelName), "Edge \"%s\" already exists!", edgeLabelName);
+
+        if (!outVertexSchema.get().isSqlgSchema()) {
+            TopologyManager.addEdgeLabel(this.sqlgGraph, outVertexSchema.get().getName(), EDGE_PREFIX + edgeLabelName, foreignKeyIn, foreignKeyOut, columns);
+        }
+
+        EdgeLabel edgeLabel = outVertexLabel.get().addEdgeLabel(sqlgGraph, edgeLabelName, inVertexLabel.get(), columns);
+        outVertexSchema.get().addEdgeLabel(edgeLabel);
+
+    }
+
+    private Optional<Schema> findVertexSchema(String schemaName) {
+
+        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+            if (schemaEntry.getValue().getName().equals(schemaName)) {
+                return Optional.of(schemaEntry.getValue());
             }
-        } else {
-            schema = this.schemas.get(foreignKeyOut.getSchema());
-            if (schema == null) {
-                schema = this.uncommittedSchemas.get(foreignKeyOut.getSchema());
-                if (schema == null) {
-                    throw new IllegalStateException(String.format("BUG: Schema can not be null. Schema = %s", foreignKeyOut.getSchema()));
+        }
+
+        if (this.isHeldByCurrentThread()) {
+            for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                if (schemaEntry.getValue().getName().equals(schemaName)) {
+                    return Optional.of(schemaEntry.getValue());
                 }
             }
         }
+        return Optional.empty();
 
-        //The out and in vertex labels must already exist.
-        VertexLabel outVertexLabel = schema.getVertexLabel(foreignKeyOut.getTable());
-        if (outVertexLabel == null) {
-            throw new IllegalStateException(String.format("BUG: Out vertex label for edge creation can not be null. out vertex label = %s", foreignKeyOut.getTable()));
+    }
+
+    public void ensureVertexColumnsExist(String schemaName, String label, Map<String, PropertyType> columns) {
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
+        if (!schemaName.equals(SQLG_SCHEMA)) {
+            Schema schema = this.schemas.get(schemaName);
+            if (schema == null) {
+                schema = this.uncommittedSchemas.get(schemaName);
+            }
+            if (schema == null) {
+                throw new IllegalStateException(String.format("BUG: schema %s can not be null", schemaName));
+            }
+            //createVertexLabel the table
+            schema.ensureVertexColumnsExist(this.sqlgGraph, label, columns);
         }
-        VertexLabel inVertexLabel = schema.getVertexLabel(foreignKeyIn.getTable());
-        if (inVertexLabel == null) {
-            throw new IllegalStateException(String.format("BUG: In vertex label for edge creation can not be null. in vertex label = %s", foreignKeyIn.getTable()));
+    }
+
+    public void ensureEdgeColumnsExist(String schemaName, String label, Map<String, PropertyType> columns) {
+        Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
+        if (!schemaName.equals(SQLG_SCHEMA)) {
+            Schema schema = this.schemas.get(schemaName);
+            if (schema == null) {
+                schema = this.uncommittedSchemas.get(schemaName);
+            }
+            if (schema == null) {
+                throw new IllegalStateException(String.format("BUG: schema %s can not be null", schemaName));
+            }
+            //createVertexLabel the table
+            schema.ensureEdgeColumnsExist(this.sqlgGraph, label, columns);
         }
-        //Edge may not already exist.
-        Preconditions.checkArgument(!existEdgeLabel(edgeLabelName), String.format("Edge %s already exists!", edgeLabelName));
-
-        if (!SQLG_SCHEMA.equals(schema.getName())) {
-            TopologyManager.addEdgeLabel(this.sqlgGraph, schema.getName(), EDGE_PREFIX + edgeLabelName, foreignKeyIn, foreignKeyOut, columns);
-        }
-
-        EdgeLabel edgeLabel = inVertexLabel.addEdgeLabel(sqlgGraph, edgeLabelName, outVertexLabel, columns);
-
     }
 
     public void afterCommit() {
@@ -212,8 +261,8 @@ public class Topology {
             this.schemas.put(entry.getKey(), entry.getValue());
             it.remove();
         }
-        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-            schemaEntry.getValue().afterCommit();
+        for (Schema schema : this.schemas.values()) {
+            schema.afterCommit();
         }
     }
 
@@ -223,8 +272,8 @@ public class Topology {
             entry.getValue().afterRollback();
             it.remove();
         }
-        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-            schemaEntry.getValue().afterRollback();
+        for (Schema schema : this.schemas.values()) {
+            schema.afterRollback();
         }
     }
 
@@ -407,20 +456,14 @@ public class Topology {
     }
 
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
-
         Map<String, Set<String>> result = new HashMap<>();
-        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-
-            result.putAll(schemaEntry.getValue().getAllEdgeForeignKeys());
-
+        for (Schema schema : this.schemas.values()) {
+            result.putAll(schema.getAllEdgeForeignKeys());
         }
-
-        for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-
-            result.putAll(schemaEntry.getValue().getAllEdgeForeignKeys());
-
+        for (Schema schema : this.metaSchemas.values()) {
+            result.putAll(schema.getAllEdgeForeignKeys());
         }
-
         return result;
     }
+
 }

@@ -13,7 +13,9 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.topology.EdgeLabel;
 import org.umlg.sqlg.topology.Topology;
+import org.umlg.sqlg.topology.VertexLabel;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -38,6 +40,7 @@ public class SchemaManager {
     public static final String GIVEN_TABLE_MUST_NOT_BE_NULL = "Given table must not be null";
     public static final String CREATED_ON = "createdOn";
     public static final String NAME = "name";
+    public static final String TYPE = "type";
     public static final String SCHEMA_VERTEX_DISPLAY = "schemaVertex";
     public static final String SHOULD_NOT_HAPPEN = "Should not happen!";
     private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
@@ -110,7 +113,7 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE
     );
 
-//    private Map<String, String> schemas = new HashMap<>();
+    //    private Map<String, String> schemas = new HashMap<>();
 //    private Set<String> uncommittedSchemas = new HashSet<>();
 //
 //    private Map<String, Set<String>> labelSchemas = new HashMap<>();
@@ -268,20 +271,19 @@ public class SchemaManager {
     void ensureVertexTableExist(final String schema, final String label, final Object... keyValues) {
         Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
         Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
+
         final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
-
         if (!this.topology.existVertexLabel(schema, label)) {
-
             this.topology.lock();
-
             //double check strategy in-case the table was created between the check and the lock.
             if (!this.topology.existVertexLabel(schema, label)) {
-
                 this.topology.createVertexLabel(schema, label, columns);
-
             }
 
         }
+        //ensure columns exist
+        ensureVertexColumnsExist(schema, label, columns);
 
 //        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
 //            //Make sure the current thread/transaction owns the lock
@@ -313,32 +315,44 @@ public class SchemaManager {
 //            }
 //        }
 //        //ensure columns exist
-//        ensureColumnsExist(schema, prefixedTable, columns);
+//        ensureVertexColumnsExist(schema, prefixedTable, columns);
     }
 
     /**
-     * @param edgeLabel The table for this edge
+     * @param edgeLabelName     The table for this edge
      * @param foreignKeyIn  The tables table pair of foreign key to the in vertex
      * @param foreignKeyOut The tables table pair of foreign key to the out vertex
      * @param keyValues
      */
-    public void ensureEdgeTableExist(final String edgeLabel, final SchemaTable foreignKeyIn, final SchemaTable foreignKeyOut, Object... keyValues) {
+    //TODO change in and out around to reflect the visual picture of v(out)-->---(in)
+    public void ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyIn, final SchemaTable foreignKeyOut, Object... keyValues) {
         Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Objects.requireNonNull(foreignKeyIn.getSchema(), "Given inTable must not be null");
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
 
-        if (!this.topology.existEdgeLabel(edgeLabel)) {
-
+        if (!this.topology.existEdgeLabel(edgeLabelName)) {
             this.topology.lock();
-
-            if (!this.topology.existEdgeLabel(edgeLabel)) {
-
-                this.topology.createEdgeLabel(edgeLabel, foreignKeyIn, foreignKeyOut, columns);
-
+            if (!this.topology.existEdgeLabel(edgeLabelName)) {
+                this.topology.createEdgeLabel(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
             }
-
         }
+        Optional<EdgeLabel> edgeLabelOptional = this.topology.getEdgeLabel(edgeLabelName);
+        Preconditions.checkState(edgeLabelOptional.isPresent(), "BUG: EdgeLabel %s must be present!", edgeLabelName);
+        //noinspection OptionalGetWithoutIsPresent
+        EdgeLabel edgeLabel = edgeLabelOptional.get();
+        if (!edgeLabel.getSchema().isSqlgSchema()) {
+            edgeLabel.ensureColumnsExist(this.sqlgGraph, columns);
+            Optional<VertexLabel> outVertexLabelOptional = this.topology.getVertexLabel(foreignKeyOut.getSchema(), foreignKeyOut.getTable());
+            Optional<VertexLabel> inVertexLabelOptional = this.topology.getVertexLabel(foreignKeyIn.getSchema(), foreignKeyIn.getTable());
+            Preconditions.checkState(outVertexLabelOptional.isPresent());
+            Preconditions.checkState(inVertexLabelOptional.isPresent());
+            edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, true, inVertexLabelOptional.get(), foreignKeyIn);
+            edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, false, outVertexLabelOptional.get(), foreignKeyOut);
+        }
+
+//        ensureEdgeForeignKeysExist(schema, prefixedTable, true, foreignKeyIn);
+//        ensureEdgeForeignKeysExist(schema, prefixedTable, false, foreignKeyOut);
 
 
 //        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
@@ -392,7 +406,7 @@ public class SchemaManager {
 //            }
 //        }
 //        //ensure columns exist
-//        ensureColumnsExist(schema, prefixedTable, columns);
+//        ensureVertexColumnsExist(schema, prefixedTable, columns);
 //        ensureEdgeForeignKeysExist(schema, prefixedTable, true, foreignKeyIn);
 //        ensureEdgeForeignKeysExist(schema, prefixedTable, false, foreignKeyOut);
     }
@@ -410,7 +424,6 @@ public class SchemaManager {
 
     boolean schemaExist(String schema) {
         return this.topology.existSchema(schema);
-//        return this.schemas.containsKey(schema);
     }
 
     public void createSchema(String schema) {
@@ -467,7 +480,7 @@ public class SchemaManager {
 //            }
 //        }
 //        //ensure columns exist
-//        ensureColumnsExist(schema, prefixedTable, columns);
+//        ensureVertexColumnsExist(schema, prefixedTable, columns);
 //    }
 
     private void lock(String schema, String table) {
@@ -482,7 +495,7 @@ public class SchemaManager {
         }
     }
 
-//    private Map<String, PropertyType> internalGetColumn(String schema, String table) {
+    //    private Map<String, PropertyType> internalGetColumn(String schema, String table) {
 //        final Map<String, PropertyType> cachedColumns = this.tables.get(schema + "." + table);
 //        Map<String, PropertyType> uncommitedColumns;
 //        if (cachedColumns == null) {
@@ -499,47 +512,27 @@ public class SchemaManager {
 //        return uncommitedColumns;
 //    }
 //
-    private void ensureColumnsExist(String schema, String prefixedTable, Map<String, PropertyType> columns) {
-        boolean isVertex = prefixedTable.startsWith(VERTEX_PREFIX);
-        boolean isEdge = prefixedTable.startsWith(EDGE_PREFIX);
-        if (!isVertex && !isEdge) {
-            throw new IllegalStateException("prefixedTable must start with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
-        }
-        if (true)
-            throw new IllegalStateException("Not yet implemented");
-//        Map<String, PropertyType> uncommittedColumns = internalGetColumn(schema, prefixedTable);
-//        Objects.requireNonNull(uncommittedColumns, "Table must already be present in the cache!");
-//        for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
-//            String columnName = column.getKey();
-//            PropertyType columnType = column.getValue();
-//            if (!uncommittedColumns.containsKey(columnName)) {
-//                uncommittedColumns = internalGetColumn(schema, prefixedTable);
-//            }
-//            if (!uncommittedColumns.containsKey(columnName)) {
-//                //Make sure the current thread/transaction owns the lock
-//                lock(schema, prefixedTable);
-//                if (!uncommittedColumns.containsKey(columnName)) {
-//                    if (!SQLG_SCHEMA.equals(schema)) {
-//
-//                        if (isVertex) {
-//                            TopologyManager.addVertexColumn(this.sqlgGraph, schema, prefixedTable, column);
-//                        } else {
-//                            TopologyManager.addEdgeColumn(this.sqlgGraph, schema, prefixedTable, column);
-//                        }
-//
-//                    }
-//                    addColumn(schema, prefixedTable, ImmutablePair.of(columnName, columnType));
-//                    uncommittedColumns.put(columnName, columnType);
-//                    this.uncommittedTables.put(schema + "." + prefixedTable, uncommittedColumns);
-//                }
-//            }
-//        }
-    }
-//
-    public void ensureColumnExist(String schema, String prefixedTable, ImmutablePair<String, PropertyType> keyValue) {
+
+    public void ensureVertexColumnExist(String schema, String label, ImmutablePair<String, PropertyType> keyValue) {
         Map<String, PropertyType> columns = new HashedMap<>();
         columns.put(keyValue.getLeft(), keyValue.getRight());
-        ensureColumnsExist(schema, prefixedTable, columns);
+        ensureVertexColumnsExist(schema, label, columns);
+    }
+
+    public void ensureEdgeColumnExist(String schema, String label, ImmutablePair<String, PropertyType> keyValue) {
+        Map<String, PropertyType> columns = new HashedMap<>();
+        columns.put(keyValue.getLeft(), keyValue.getRight());
+        ensureEdgeColumnsExist(schema, label, columns);
+    }
+
+    private void ensureVertexColumnsExist(String schema, String label, Map<String, PropertyType> columns) {
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
+        this.topology.ensureVertexColumnsExist(schema, label, columns);
+    }
+
+    private void ensureEdgeColumnsExist(String schema, String label, Map<String, PropertyType> columns) {
+        Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
+        this.topology.ensureEdgeColumnsExist(schema, label, columns);
     }
 
 //    private void ensureEdgeForeignKeysExist(String schema, String prefixedTable, boolean in, SchemaTable vertexSchemaTable) {
@@ -793,39 +786,6 @@ public class SchemaManager {
 //        }
 //    }
 
-    private void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
-        int count = 1;
-        String[] propertyTypeToSqlDefinition = this.sqlDialect.propertyTypeToSqlDefinition(keyValue.getRight());
-        for (String sqlDefinition : propertyTypeToSqlDefinition) {
-            StringBuilder sql = new StringBuilder("ALTER TABLE ");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
-            sql.append(".");
-            sql.append(this.sqlDialect.maybeWrapInQoutes(table));
-            sql.append(" ADD ");
-            if (count > 1) {
-                sql.append(sqlDialect.maybeWrapInQoutes(keyValue.getLeft() + keyValue.getRight().getPostFixes()[count - 2]));
-            } else {
-                //The first column existVertexLabel no postfix
-                sql.append(sqlDialect.maybeWrapInQoutes(keyValue.getLeft()));
-            }
-            count++;
-            sql.append(" ");
-            sql.append(sqlDefinition);
-
-            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-                sql.append(";");
-            }
-            if (logger.isDebugEnabled()) {
-                logger.debug(sql.toString());
-            }
-            Connection conn = this.sqlgGraph.tx().getConnection();
-            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                preparedStatement.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
 //    private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
 //        StringBuilder sql = new StringBuilder();

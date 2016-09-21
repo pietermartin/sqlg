@@ -15,6 +15,10 @@
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_tsRR8MzjEeW174sSW5_77g"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_tsTHIMzjEeW174sSW5_77g" value="*"/>
             </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_9Ok2sH0CEeaNY4PVGL7QlA" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" aggregation="composite" association="_9OewEH0CEeaNY4PVGL7QlA">
+              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_PiR3kH0DEeaNY4PVGL7QlA"/>
+              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_PiZMUH0DEeaNY4PVGL7QlA" value="*"/>
+            </ownedAttribute>
           </packagedElement>
           <packagedElement xmi:type="uml:Class" xmi:id="_zuWQgMzgEeW174sSW5_77g" name="VertexLabel">
             <ownedAttribute xmi:type="uml:Property" xmi:id="_z9WOc8zjEeW174sSW5_77g" name="property" type="_4-gikMzgEeW174sSW5_77g" aggregation="composite" association="_z9WOcMzjEeW174sSW5_77g">
@@ -72,6 +76,12 @@
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Rhi_4HeNEeaH4dJUP3R7fA" value="1"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Rhk1EHeNEeaH4dJUP3R7fA" value="*"/>
             </ownedEnd>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_9OewEH0CEeaNY4PVGL7QlA" name="schema_edge" memberEnd="_9Ok2sH0CEeaNY4PVGL7QlA _9Ok2sX0CEeaNY4PVGL7QlA" navigableOwnedEnd="_9Ok2sX0CEeaNY4PVGL7QlA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_9OjokH0CEeaNY4PVGL7QlA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_9OkPoH0CEeaNY4PVGL7QlA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_9Ok2sX0CEeaNY4PVGL7QlA" name="schema" type="_xeNZ4MzgEeW174sSW5_77g" association="_9OewEH0CEeaNY4PVGL7QlA"/>
           </packagedElement>
         </packagedElement>
       </packagedElement>

@@ -173,14 +173,19 @@ public abstract class SqlgElement implements Element {
         //Validate the property
         PropertyType.from(value);
         //Check if column exist
-        if (true)
-            throw new RuntimeException("TODO");
-//        this.sqlgGraph.getSchemaManager().ensureColumnExist(
-//                this.schema,
-//                this instanceof Vertex ? SchemaManager.VERTEX_PREFIX + this.table : SchemaManager.EDGE_PREFIX + this.table,
-//                ImmutablePair.of(key, PropertyType.from(value)));
-//        load();
-//        updateRow(key, value);
+        if (this instanceof Vertex) {
+            this.sqlgGraph.getSchemaManager().ensureVertexColumnExist(
+                    this.schema,
+                    this.table,
+                    ImmutablePair.of(key, PropertyType.from(value)));
+        } else {
+            this.sqlgGraph.getSchemaManager().ensureEdgeColumnExist(
+                    this.schema,
+                    this.table,
+                    ImmutablePair.of(key, PropertyType.from(value)));
+        }
+        load();
+        updateRow(key, value);
         return instantiateProperty(key, value);
     }
 

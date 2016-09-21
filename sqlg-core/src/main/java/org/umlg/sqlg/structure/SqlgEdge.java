@@ -42,10 +42,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlgGraph, id, schema, table);
     }
 
-    public static SqlgEdge of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
-        return new SqlgEdge(sqlgGraph, id, schema, table);
-    }
-
     @Override
     public <V> Property<V> property(String key, V value) {
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id());

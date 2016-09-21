@@ -213,9 +213,9 @@ public class PostgresDialect extends BaseSqlDialect {
                     if (vertices.getLeft().isEmpty()) {
                         //copy command needs at least one field.
                         //check if the dummy field exist, if not createVertexLabel it
-                        sqlgGraph.getSchemaManager().ensureColumnExist(
+                        sqlgGraph.getSchemaManager().ensureVertexColumnExist(
                                 schemaTable.getSchema(),
-                                SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
+                                schemaTable.getTable(),
                                 ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
                         sql.append(maybeWrapInQoutes(COPY_DUMMY));
                     } else {
@@ -260,8 +260,8 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
+    //TODO this does not call ensureVertexColumnExist
     @Override
-//    public void flushEdgeCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         try {
@@ -757,9 +757,9 @@ public class PostgresDialect extends BaseSqlDialect {
         if (keyValueMap.isEmpty()) {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
-            sqlgGraph.getSchemaManager().ensureColumnExist(
+            sqlgGraph.getSchemaManager().ensureVertexColumnExist(
                     vertex.getSchema(),
-                    SchemaManager.VERTEX_PREFIX + vertex.getTable(),
+                    vertex.getTable(),
                     ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
             sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {
@@ -863,9 +863,9 @@ public class PostgresDialect extends BaseSqlDialect {
         if (keyValueMap.isEmpty()) {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
-            sqlgGraph.getSchemaManager().ensureColumnExist(
+            sqlgGraph.getSchemaManager().ensureVertexColumnExist(
                     schemaTable.getSchema(),
-                    SchemaManager.VERTEX_PREFIX + schemaTable.getTable(),
+                    schemaTable.getTable(),
                     ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
             sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {

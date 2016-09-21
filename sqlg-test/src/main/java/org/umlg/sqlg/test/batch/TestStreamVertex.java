@@ -15,7 +15,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.umlg.sqlg.structure.RecordId;
-import org.umlg.sqlg.structure.SqlgEdge;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
@@ -52,7 +51,8 @@ public class TestStreamVertex extends BaseTest {
             properties.clear();
         }
         RecordId recordId = (RecordId) e1.id();
-        Assert.assertEquals("a1", SqlgEdge.of(this.sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable()).value("name"));
+//        Assert.assertEquals("a1", SqlgEdge.of(this.sqlgGraph, recordId.getId(), recordId.getSchemaTable().getSchema(), recordId.getSchemaTable().getTable()).value("name"));
+        Assert.assertEquals("a1", this.sqlgGraph.traversal().E(recordId).next().value("name"));
         this.sqlgGraph.tx().commit();
     }
 
