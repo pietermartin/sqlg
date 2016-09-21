@@ -8,7 +8,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -649,11 +648,11 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
     @Test
     public void g_V_repeatXoutX_timesX2X() throws IOException {
         final List<Traversal<Vertex, Vertex>> traversals = new ArrayList<>();
+        loadModern();
         Graph graph = this.sqlgGraph;
-        graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
         assertModernGraph(graph, true, false);
 
-        Traversal t = graph.traversal().V().local(repeat(__.out()).times(2));
+        Traversal<Vertex, Vertex> t = graph.traversal().V().local(repeat(__.out()).times(2));
         traversals.add(t);
         traversals.forEach(traversal -> {
             printTraversalForm(traversal);
@@ -670,8 +669,8 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
 
     @Test
     public void g_V_repeatXoutX_timesX2X_path_byXitX_byXnameX_byXlangX() throws IOException {
+        loadModern();
         Graph graph = this.sqlgGraph;
-        graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
         assertModernGraph(graph, true, false);
         final Traversal<Vertex, Path> traversal = graph.traversal().V().local(repeat(__.out()).times(2).path().by().by("name").by("lang"));
         printTraversalForm(traversal);
@@ -689,8 +688,8 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
 
     @Test
     public void g_V_repeatXoutX_timesX2X_emit_path() throws IOException {
+        loadModern();
         Graph graph = this.sqlgGraph;
-        graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = graph.traversal();
         final List<Traversal<Vertex, Path>> traversals = new ArrayList<>();
@@ -814,8 +813,8 @@ public class TestLocalVertexStepRepeatStep extends BaseTest {
 
     @Test
     public void g_V_emit_timesX2X_repeatXoutX_path() throws IOException {
+        loadModern();
         Graph graph = this.sqlgGraph;
-        graph.io(GryoIo.build()).readGraph("../sqlg-test/src/main/resources/tinkerpop-modern.kryo");
         GraphTraversalSource g = graph.traversal();
         final List<Traversal<Vertex, Path>> traversals = Arrays.asList(
                 g.V().local(__.<Vertex>emit().times(2).repeat(out()).path()),

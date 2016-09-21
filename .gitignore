@@ -10,5 +10,5 @@ release.properties
 /.idea
 *.iml
 src/test/db/
-/sqlg-hsqldb/src/test/db/
+/sqlg-hsqldb-parent/sqlg-hsqldb/src/test/db/
 /sqlg-benchmark-hsqldb/src/test/db/
