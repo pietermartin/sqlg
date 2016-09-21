@@ -16,8 +16,8 @@
             <artifactId>gremlin-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-groovy</artifactId>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mchange</groupId>
