@@ -157,9 +157,9 @@
     <modules>
         <module>sqlg-core</module>
         <module>sqlg-test</module>
-        <module>sqlg-postgres</module>
-        <module>sqlg-hsqldb</module>
-        <module>sqlg-h2</module>
+        <module>sqlg-postgres-parent</module>
+        <module>sqlg-hsqldb-parent</module>
+        <module>sqlg-h2-parent</module>
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
@@ -199,6 +199,11 @@
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-postgres-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>net.postgis</groupId>
                 <artifactId>postgis-jdbc</artifactId>
                 <version>2.1.7.2</version>
@@ -212,6 +217,11 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-hsqldb</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-hsqldb-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
@@ -233,6 +243,16 @@
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-h2</artifactId>
                 <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-h2-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.3.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
