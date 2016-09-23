@@ -4,6 +4,7 @@
 * Added H2 support.
 * Added support for getting the data source from JNDI.
 * Optimize `SqlgGraph.bulkAddEdges(...) to use the correct types for the in and out properties. This has a marginal performance increase.
+* Refactored pom to separate out `gremlin-groovy` to be an optional dependency.
 
 ##1.2.0
 
