@@ -18,7 +18,6 @@ import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
-import org.umlg.sqlg.test.multithread.TestMultiThread;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
@@ -68,7 +67,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
-        TestMultiThread.class,
+//        TestMultiThread.class,
         TestNewVertex.class,
         TestEdgeCache.class,
         TestVertexCache.class,

@@ -44,51 +44,51 @@ public class TestVertexNavToEdges extends BaseTest {
         assertEquals("marko", name);
     }
 
-//    @Test
-//    public void testOutE() {
-//        Vertex v1 = sqlgGraph.addVertex();
-//        Vertex v2 = sqlgGraph.addVertex();
-//        Vertex v3 = sqlgGraph.addVertex();
-//        Vertex v4 = sqlgGraph.addVertex();
-//        Edge e1 = v1.addEdge("label1", v2);
-//        Edge e2 = v1.addEdge("label1", v3);
-//        Edge e3 = v1.addEdge("label1", v4);
-//        sqlgGraph.tx().commit();
-//        assertEquals(3L, vertexTraversal(v1).outE("label1").count().next(), 0);
-//    }
-//
-//    @Test
-//    public void testOutEAllLabels() {
-//        Vertex v1 = sqlgGraph.addVertex();
-//        Vertex v2 = sqlgGraph.addVertex();
-//        Vertex v3 = sqlgGraph.addVertex();
-//        Vertex v4 = sqlgGraph.addVertex();
-//        Edge e1 = v1.addEdge("label1", v2);
-//        Edge e2 = v1.addEdge("label2", v3);
-//        Edge e3 = v1.addEdge("label3", v4);
-//        sqlgGraph.tx().commit();
-//        assertEquals(3L, vertexTraversal(v1).outE().count().next(), 0);
-//    }
-//
-//    @Test
-//    public void testInOut() {
-//        Vertex v1 = sqlgGraph.addVertex();
-//        Vertex v2 = sqlgGraph.addVertex();
-//        Vertex v3 = sqlgGraph.addVertex();
-//        Vertex v4 = sqlgGraph.addVertex();
-//        Vertex v5 = sqlgGraph.addVertex();
-//        Edge e1 = v1.addEdge("label1", v2);
-//        Edge e2 = v2.addEdge("label2", v3);
-//        Edge e3 = v3.addEdge("label3", v4);
-//        sqlgGraph.tx().commit();
-//
-//        assertEquals(1, vertexTraversal(v2).inE().count().next(), 1);
-//        assertEquals(e1, vertexTraversal(v2).inE().next());
-//        assertEquals(1L, edgeTraversal(e1).inV().count().next(), 0);
-//        assertEquals(v2, edgeTraversal(e1).inV().next());
-//        assertEquals(0L, edgeTraversal(e1).outV().inE().count().next(), 0);
-//        assertEquals(1L, edgeTraversal(e2).inV().count().next(), 0);
-//        assertEquals(v3, edgeTraversal(e2).inV().next());
-//    }
+    @Test
+    public void testOutE() {
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
+        Vertex v3 = sqlgGraph.addVertex();
+        Vertex v4 = sqlgGraph.addVertex();
+        Edge e1 = v1.addEdge("label1", v2);
+        Edge e2 = v1.addEdge("label1", v3);
+        Edge e3 = v1.addEdge("label1", v4);
+        sqlgGraph.tx().commit();
+        assertEquals(3L, vertexTraversal(v1).outE("label1").count().next(), 0);
+    }
+
+    @Test
+    public void testOutEAllLabels() {
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
+        Vertex v3 = sqlgGraph.addVertex();
+        Vertex v4 = sqlgGraph.addVertex();
+        Edge e1 = v1.addEdge("label1", v2);
+        Edge e2 = v1.addEdge("label2", v3);
+        Edge e3 = v1.addEdge("label3", v4);
+        sqlgGraph.tx().commit();
+        assertEquals(3L, vertexTraversal(v1).outE().count().next(), 0);
+    }
+
+    @Test
+    public void testInOut() {
+        Vertex v1 = sqlgGraph.addVertex();
+        Vertex v2 = sqlgGraph.addVertex();
+        Vertex v3 = sqlgGraph.addVertex();
+        Vertex v4 = sqlgGraph.addVertex();
+        Vertex v5 = sqlgGraph.addVertex();
+        Edge e1 = v1.addEdge("label1", v2);
+        Edge e2 = v2.addEdge("label2", v3);
+        Edge e3 = v3.addEdge("label3", v4);
+        sqlgGraph.tx().commit();
+
+        assertEquals(1, vertexTraversal(v2).inE().count().next(), 1);
+        assertEquals(e1, vertexTraversal(v2).inE().next());
+        assertEquals(1L, edgeTraversal(e1).inV().count().next(), 0);
+        assertEquals(v2, edgeTraversal(e1).inV().next());
+        assertEquals(0L, edgeTraversal(e1).outV().inE().count().next(), 0);
+        assertEquals(1L, edgeTraversal(e2).inV().count().next(), 0);
+        assertEquals(v3, edgeTraversal(e2).inV().next());
+    }
 
 }

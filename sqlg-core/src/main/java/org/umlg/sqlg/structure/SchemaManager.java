@@ -323,9 +323,9 @@ public class SchemaManager {
      * @param foreignKeyIn  The tables table pair of foreign key to the in vertex
      * @param foreignKeyOut The tables table pair of foreign key to the out vertex
      * @param keyValues
+     * @return The edge's {@link SchemaTable}
      */
-    //TODO change in and out around to reflect the visual picture of v(out)-->---(in)
-    public void ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyIn, final SchemaTable foreignKeyOut, Object... keyValues) {
+    public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Object... keyValues) {
         Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Objects.requireNonNull(foreignKeyIn.getSchema(), "Given inTable must not be null");
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
@@ -339,17 +339,21 @@ public class SchemaManager {
         }
         Optional<EdgeLabel> edgeLabelOptional = this.topology.getEdgeLabel(edgeLabelName);
         Preconditions.checkState(edgeLabelOptional.isPresent(), "BUG: EdgeLabel %s must be present!", edgeLabelName);
+
         //noinspection OptionalGetWithoutIsPresent
         EdgeLabel edgeLabel = edgeLabelOptional.get();
         if (!edgeLabel.getSchema().isSqlgSchema()) {
             edgeLabel.ensureColumnsExist(this.sqlgGraph, columns);
             Optional<VertexLabel> outVertexLabelOptional = this.topology.getVertexLabel(foreignKeyOut.getSchema(), foreignKeyOut.getTable());
             Optional<VertexLabel> inVertexLabelOptional = this.topology.getVertexLabel(foreignKeyIn.getSchema(), foreignKeyIn.getTable());
-            Preconditions.checkState(outVertexLabelOptional.isPresent());
-            Preconditions.checkState(inVertexLabelOptional.isPresent());
+            Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out vertex label not found for %s.%s", foreignKeyOut.getSchema(), foreignKeyOut.getTable());
+            Preconditions.checkState(inVertexLabelOptional.isPresent(), "In vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
+            //noinspection OptionalGetWithoutIsPresent
             edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, true, inVertexLabelOptional.get(), foreignKeyIn);
+            //noinspection OptionalGetWithoutIsPresent
             edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, false, outVertexLabelOptional.get(), foreignKeyOut);
         }
+        return SchemaTable.of(edgeLabel.getSchema().getName(), edgeLabel.getLabel());
 
 //        ensureEdgeForeignKeysExist(schema, prefixedTable, true, foreignKeyIn);
 //        ensureEdgeForeignKeysExist(schema, prefixedTable, false, foreignKeyOut);

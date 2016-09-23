@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestVertexNavToEdges;
+import org.umlg.sqlg.test.schema.TestSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,8 @@ import org.umlg.sqlg.test.TestVertexNavToEdges;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestSchema.class,
-        TestVertexNavToEdges.class
+        TestSchema.class,
+//        TestVertexNavToEdges.class
 })
 public class AnyTest {
 }

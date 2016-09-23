@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -21,23 +22,54 @@ public class SqlgEdge extends SqlgElement implements Edge {
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
 
-    public SqlgEdge(SqlgGraph sqlgGraph, boolean complete, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+    /**
+     * Called from @link {@link SqlgVertex} to create a brand new edge.
+     * @param sqlgGraph The graph.
+     * @param streaming If in batch mode this indicates if its streaming or not.
+     * @param schema The schema the edge is in.
+     * @param table The edge's label which translates to a table name.
+     * @param inVertex The edge's in vertex.
+     * @param outVertex The edge's out vertex.
+     * @param keyValues The properties of the edge.
+     */
+    public SqlgEdge(SqlgGraph sqlgGraph, boolean streaming, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
         super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         try {
-            insertEdge(complete, keyValues);
+            insertEdge(streaming, keyValues);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Called from {@link SqlgVertex#edges(Direction, String...)}
+     * The edge already exist and must supply its table id. Not a {@link RecordId}.
+     * @param sqlgGraph The graph.
+     * @param id The edge's id. This the edge's table's id. Not a {@link RecordId}.
+     * @param schema The schema the edge is in.
+     * @param table The table the edge is in. This translates to its label.
+     * @param inVertex The in vertex.
+     * @param outVertex The out vertex.
+     * @param keyValues The properties of the edge. #TODO this is not used at present. It is loaded again from the db
+     *                  when the property is accessed.
+     */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
         super(sqlgGraph, id, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
     }
 
+    /**
+     * Called from {@link SqlgGraph#elements(boolean, List)} and {@link SqlgUtil#loadLabeledElements(SqlgGraph, ResultSet, LinkedList, Map)}
+     * and {@link SqlgUtil#loadElement(SqlgGraph, Map, ResultSet, SchemaTableTree)}
+     * This is the primary constructor for loading edges from the db via gremlin.
+     * @param sqlgGraph The graph.
+     * @param id The edge's id. This the edge's table's id. Not a {@link RecordId}.
+     * @param schema The schema the edge is in.
+     * @param table The table the edge is in. This translates to its label.
+     */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
     }
@@ -94,10 +126,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         return StringFactory.edgeString(this);
     }
 
-    protected void insertEdge(boolean complete, Object... keyValues) throws SQLException {
+    protected void insertEdge(boolean streaming, Object... keyValues) throws SQLException {
         Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddEdge(complete, keyValueMap);
+            internalBatchAddEdge(streaming, keyValueMap);
         } else {
             internalAddEdge(keyValueMap);
         }
@@ -105,8 +137,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         this.properties.putAll(keyValueMap);
     }
 
-    private void internalBatchAddEdge(boolean complete, Map<String, Object> keyValueMap) {
-        this.sqlgGraph.tx().getBatchManager().addEdge(complete, this, this.outVertex, this.inVertex, keyValueMap);
+    private void internalBatchAddEdge(boolean streaming, Map<String, Object> keyValueMap) {
+        this.sqlgGraph.tx().getBatchManager().addEdge(streaming, this, this.outVertex, this.inVertex, keyValueMap);
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {

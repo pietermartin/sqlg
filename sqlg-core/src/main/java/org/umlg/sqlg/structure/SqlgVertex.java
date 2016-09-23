@@ -133,19 +133,19 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 this.sqlgGraph.getSqlDialect().validateProperty(key, value);
             }
         }
-        SchemaTable schemaTablePair = SchemaTable.of(this.schema, label);
-        this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
-                schemaTablePair.getTable(),
-                SchemaTable.of(
-                        ((SqlgVertex) inVertex).schema,
-                        ((SqlgVertex) inVertex).table
-                ),
+        SchemaTable edgeSchemaTable = this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
+                label,
                 SchemaTable.of(
                         this.schema,
                         this.table
                 ),
+                SchemaTable.of(
+                        ((SqlgVertex) inVertex).schema,
+                        ((SqlgVertex) inVertex).table
+                ),
                 keyValues);
-        return new SqlgEdge(this.sqlgGraph, complete, schemaTablePair.getSchema(), schemaTablePair.getTable(), (SqlgVertex) inVertex, this, keyValues);
+
+        return new SqlgEdge(this.sqlgGraph, complete, edgeSchemaTable.getSchema(), label, (SqlgVertex) inVertex, this, keyValues);
     }
 
     @Override
