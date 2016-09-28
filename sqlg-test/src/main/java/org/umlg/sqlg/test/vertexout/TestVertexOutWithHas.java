@@ -93,6 +93,21 @@ public class TestVertexOutWithHas extends BaseTest {
         Assert.assertEquals(1,vertexTraversal(marko).out("drives").has(T.label, "Car").has("name", "bmw").count().next(), 0);
         Assert.assertEquals(0, vertexTraversal(marko).out("drives").has(T.label, "Person").has("name", "vw").count().next(), 0);
     }
+    
+    /**
+     * we reference labels that have schemas
+     */
+    @Test
+    public void testVertexHasLabelInSchema() {
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "TestSchema.Person", "name", "marko");
+        Vertex bmw = this.sqlgGraph.addVertex(T.label, "TestSchema.Car", "name", "bmw");
+        Vertex vw = this.sqlgGraph.addVertex(T.label, "TestSchema.Car", "name", "vw");
+        marko.addEdge("drives", bmw);
+        marko.addEdge("drives", vw);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1,vertexTraversal(marko).out("drives").has(T.label, "TestSchema.Car").has("name", "bmw").count().next(), 0);
+        Assert.assertEquals(0, vertexTraversal(marko).out("drives").has(T.label, "TestSchema.Person").has("name", "vw").count().next(), 0);
+    }
 
     @Test
     public void testHasWithPercentageInIt() {
