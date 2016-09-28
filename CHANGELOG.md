@@ -1,3 +1,7 @@
+##1.3.1
+
+* 1.3.0 uploaded strange byte code, this fixes that.
+
 ##1.3.0
 
 * Upgrade to TinkerPop 3.2.2
