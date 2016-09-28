@@ -1777,15 +1777,22 @@ public class SchemaTableTree {
         }
     }
 
+    /**
+     * remove "has" containers that are not valid anymore
+     * @param schemaTableTree the current table tree
+     */
     private void removeObsoleteHasContainers(final SchemaTableTree schemaTableTree) {
         Set<HasContainer> toRemove = new HashSet<>();
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (hasContainer.getKey().equals(label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
                 SchemaTable hasContainerLabelSchemaTable;
+                // we may have been given a type in a schema
+                SchemaTable predicateSchemaTable=SchemaTable.from(sqlgGraph, hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                //Check if we are on a vertex or edge
                 if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                    hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX +predicateSchemaTable.getTable() );
                 } else {
-                    hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                	hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.EDGE_PREFIX +predicateSchemaTable.getTable() );
                 }
                 if (hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
                     toRemove.add(hasContainer);
@@ -1795,16 +1802,23 @@ public class SchemaTableTree {
         schemaTableTree.hasContainers.removeAll(toRemove);
     }
 
+    /**
+     * verify the "has" containers we have are valid with the schema table tree given
+     * @param schemaTableTree
+     * @return true if any has container does NOT match, false if everything is fine
+     */
     private boolean invalidateByHas(SchemaTableTree schemaTableTree) {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
-                    //Check if we are on a vertex or edge
                     SchemaTable hasContainerLabelSchemaTable;
+                    // we may have been given a type in a schema
+                    SchemaTable predicateSchemaTable=SchemaTable.from(sqlgGraph, hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    //Check if we are on a vertex or edge
                     if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                        hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.VERTEX_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    	 hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX +predicateSchemaTable.getTable() );
                     } else {
-                        hasContainerLabelSchemaTable = SchemaTable.from(this.sqlgGraph, SchemaManager.EDGE_PREFIX + hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    	hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.EDGE_PREFIX +predicateSchemaTable.getTable() );
                     }
                     if (hasContainer.getBiPredicate().equals(Compare.eq) && !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
                         return true;
