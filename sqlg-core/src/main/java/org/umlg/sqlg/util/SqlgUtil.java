@@ -594,13 +594,13 @@ public class SqlgUtil {
 
     public static void removeTopologyStrategyHasContainer(List<HasContainer> hasContainers) {
         //remove the TopologyStrategy hasContainer
-        Optional<HasContainer> fromHascontainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
-        Optional<HasContainer> withoutHascontainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
-        if (fromHascontainer.isPresent()) {
-            hasContainers.remove(fromHascontainer.get());
+        Optional<HasContainer> fromHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
+        Optional<HasContainer> withoutHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
+        if (fromHasContainer.isPresent()) {
+            hasContainers.remove(fromHasContainer.get());
         }
-        if (withoutHascontainer.isPresent()) {
-            hasContainers.remove(withoutHascontainer.get());
+        if (withoutHasContainer.isPresent()) {
+            hasContainers.remove(withoutHasContainer.get());
         }
     }
 

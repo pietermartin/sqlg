@@ -1,15 +1,21 @@
 package org.umlg.sqlg.topology;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE;
 
 /**
  * Date: 2016/09/14
@@ -117,4 +123,15 @@ public abstract class AbstractElement {
         }
     }
 
+    public void loadProperties(GraphTraversalSource traversalSource, Vertex vertexLabelVertex) {
+
+        List<Vertex> properties = traversalSource.V(vertexLabelVertex).out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
+        for (Vertex property : properties) {
+            String propertyName = property.value("name");
+            get
+            this.properties.put(propertyName,
+        }
+        this.tables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
+
+    }
 }

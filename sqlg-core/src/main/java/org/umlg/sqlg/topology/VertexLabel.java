@@ -40,7 +40,7 @@ public class VertexLabel extends AbstractElement {
         return vertexLabel;
     }
 
-    private VertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
+    VertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
         super(schema, label, columns);
     }
 
@@ -130,39 +130,32 @@ public class VertexLabel extends AbstractElement {
     }
 
     public void afterCommit() {
-
         for (Iterator<Map.Entry<String, EdgeLabel>> it = this.uncommittedInEdgeLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, EdgeLabel> entry = it.next();
             this.inEdgeLabels.put(entry.getKey(), entry.getValue());
             it.remove();
         }
-
         for (Iterator<Map.Entry<String, EdgeLabel>> it = this.uncommittedInEdgeLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, EdgeLabel> entry = it.next();
             this.outEdgeLabels.put(entry.getKey(), entry.getValue());
             it.remove();
         }
-
         for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Property> entry = it.next();
             this.properties.put(entry.getKey(), entry.getValue());
             entry.getValue().afterCommit();
             it.remove();
         }
-
     }
 
     public void afterRollback() {
-
         this.uncommittedOutEdgeLabels.clear();
         this.uncommittedInEdgeLabels.clear();
-
         for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Property> entry = it.next();
             entry.getValue().afterRollback();
             it.remove();
         }
-
     }
 
     @Override

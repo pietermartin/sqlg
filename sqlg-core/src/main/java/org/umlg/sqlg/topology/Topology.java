@@ -3,11 +3,11 @@ package org.umlg.sqlg.topology;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyManager;
+import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.structure.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -310,36 +310,40 @@ public class Topology {
 
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
-
+    public Map<String, Map<String, PropertyType>> getAllTables() {
         Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-
-            result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
-
+            result.putAll(schemaEntry.getValue().getAllTables());
         }
-
         //TODO
 //        result.putAll(this.temporaryTables);
-
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
-
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-
-                result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
-
+                result.putAll(schemaEntry.getValue().getAllTables());
             }
-
         }
-
         for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-
-            result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
-
+            result.putAll(schemaEntry.getValue().getAllTables());
         }
-
         return Collections.unmodifiableMap(result);
+    }
 
+    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
+        Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
+        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+            result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
+        }
+        //TODO
+//        result.putAll(this.temporaryTables);
+        if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
+            for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
+            }
+        }
+        for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+            result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
@@ -399,57 +403,36 @@ public class Topology {
 
     }
 
-    public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
-//        Pair<Set<SchemaTable>, Set<SchemaTable>> result = this.tableLabels.get(schemaTable);
-//        if (result == null) {
-//            if (!this.uncommittedTableLabels.isEmpty() && this.isLockedByCurrentThread()) {
-//                Pair<Set<SchemaTable>, Set<SchemaTable>> pair = this.uncommittedTableLabels.get(schemaTable);
-//                if (pair != null) {
-//                    return Pair.of(Collections.unmodifiableSet(pair.getLeft()), Collections.unmodifiableSet(pair.getRight()));
-//                }
-//            }
-//            return Pair.of(Collections.EMPTY_SET, Collections.EMPTY_SET);
-//        } else {
-//            Set<SchemaTable> left = new HashSet<>(result.getLeft());
-//            Set<SchemaTable> right = new HashSet<>(result.getRight());
-//            if (!this.uncommittedTableLabels.isEmpty() && this.isLockedByCurrentThread()) {
-//                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedLabels = this.uncommittedTableLabels.get(schemaTable);
-//                if (uncommittedLabels != null) {
-//                    left.addAll(uncommittedLabels.getLeft());
-//                    right.addAll(uncommittedLabels.getRight());
-//                }
-//            }
-//            return Pair.of(
-//                    Collections.unmodifiableSet(left),
-//                    Collections.unmodifiableSet(right));
-//        }
-
+    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-
-            if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-
-                Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
-                if (result.isPresent()) {
-                    return result.get();
-                }
-
-            }
-
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+            map.putAll(result);
         }
-
         for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+            map.putAll(result);
+        }
+        return map;
+    }
 
+    public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
+        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
             if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-
                 Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
                 if (result.isPresent()) {
                     return result.get();
                 }
-
             }
-
         }
-
+        for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+            if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+                if (result.isPresent()) {
+                    return result.get();
+                }
+            }
+        }
         return Pair.of(
                 Collections.emptySet(),
                 Collections.emptySet());
@@ -466,4 +449,17 @@ public class Topology {
         return result;
     }
 
+    public void loadUserSchema() {
+        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
+        List<Vertex> schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+        for (Vertex schemaVertex : schemaVertices) {
+            String schemaName = schemaVertex.value("name");
+            Optional<Schema> schema = getSchema(schemaName);
+            Preconditions.checkState(schema.isPresent(), "BUG: schema not present for %s", schemaName);
+            //noinspection OptionalGetWithoutIsPresent
+            this.schemas.put(schemaName, schema.get());
+            //noinspection OptionalGetWithoutIsPresent
+            schema.get().loadVertexAndEdgeLabels(traversalSource, schemaVertex);
+        }
+    }
 }

@@ -1208,85 +1208,7 @@ public class SchemaManager {
      * Load the schema from the topology.
      */
     private void loadUserSchema() {
-//        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
-//        List<Vertex> schemas = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
-//        for (Vertex schema : schemas) {
-//            String schemaName = schema.value("name");
-//            this.schemas.put(schemaName, schemaName);
-//
-//            List<Vertex> vertexLabels = traversalSource.V(schema).out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).toList();
-//            for (Vertex vertexLabel : vertexLabels) {
-//                String tableName = vertexLabel.value("name");
-//
-//                Set<String> schemaNames = this.labelSchemas.get(VERTEX_PREFIX + tableName);
-//                if (schemaNames == null) {
-//                    schemaNames = new HashSet<>();
-//                    this.labelSchemas.put(VERTEX_PREFIX + tableName, schemaNames);
-//                }
-//                schemaNames.add(schemaName);
-//
-//                Map<String, PropertyType> uncommittedColumns = new ConcurrentHashMap<>();
-//                List<Vertex> properties = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
-//                for (Vertex property : properties) {
-//                    String propertyName = property.value("name");
-//                    uncommittedColumns.put(propertyName, PropertyType.valueOf(property.value("type")));
-//                }
-//                this.tables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
-//
-//                List<Vertex> outEdges = traversalSource.V(vertexLabel).out(SQLG_SCHEMA_OUT_EDGES_EDGE).toList();
-//                for (Vertex outEdge : outEdges) {
-//                    String edgeName = outEdge.value("name");
-//
-//                    if (!this.labelSchemas.containsKey(EDGE_PREFIX + edgeName)) {
-//                        this.labelSchemas.put(EDGE_PREFIX + edgeName, schemaNames);
-//                    }
-//                    uncommittedColumns = new ConcurrentHashMap<>();
-//                    properties = traversalSource.V(outEdge).out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).toList();
-//                    for (Vertex property : properties) {
-//                        String propertyName = property.value("name");
-//                        uncommittedColumns.put(propertyName, PropertyType.valueOf(property.value("type")));
-//                    }
-//                    this.tables.put(schemaName + "." + EDGE_PREFIX + edgeName, uncommittedColumns);
-//
-//                    List<Vertex> inVertices = traversalSource.V(outEdge).in(SQLG_SCHEMA_IN_EDGES_EDGE).toList();
-//                    for (Vertex inVertex : inVertices) {
-//
-//                        String inTableName = inVertex.value("name");
-//                        //Get the inVertex's schema
-//                        List<Vertex> inVertexSchemas = traversalSource.V(inVertex).in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).toList();
-//                        if (inVertexSchemas.size() != 1) {
-//                            throw new IllegalStateException("Vertex must be in one and one only schema, found " + inVertexSchemas.size());
-//                        }
-//                        Vertex inVertexSchema = inVertexSchemas.get(0);
-//                        String inVertexSchemaName = inVertexSchema.value("name");
-//
-//                        Set<String> foreignKeys = this.edgeForeignKeys.get(schemaName + "." + EDGE_PREFIX + edgeName);
-//                        if (foreignKeys == null) {
-//                            foreignKeys = new HashSet<>();
-//                            this.edgeForeignKeys.put(schemaName + "." + EDGE_PREFIX + edgeName, foreignKeys);
-//                        }
-//                        foreignKeys.add(schemaName + "." + tableName + SchemaManager.OUT_VERTEX_COLUMN_END);
-//                        foreignKeys.add(inVertexSchemaName + "." + inTableName + SchemaManager.IN_VERTEX_COLUMN_END);
-//
-//                        SchemaTable outSchemaTable = SchemaTable.of(schemaName, VERTEX_PREFIX + tableName);
-//                        Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.tableLabels.get(outSchemaTable);
-//                        if (labels == null) {
-//                            labels = Pair.of(new HashSet<>(), new HashSet<>());
-//                            this.tableLabels.put(outSchemaTable, labels);
-//                        }
-//                        labels.getRight().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
-//
-//                        SchemaTable inSchemaTable = SchemaTable.of(inVertexSchemaName, VERTEX_PREFIX + inTableName);
-//                        labels = this.tableLabels.get(inSchemaTable);
-//                        if (labels == null) {
-//                            labels = Pair.of(new HashSet<>(), new HashSet<>());
-//                            this.tableLabels.put(inSchemaTable, labels);
-//                        }
-//                        labels.getLeft().add(SchemaTable.of(schemaName, EDGE_PREFIX + edgeName));
-//                    }
-//                }
-//            }
-//        }
+        this.topology.loadUserSchema();
     }
 
     private void addPublicSchema() {
@@ -1362,22 +1284,11 @@ public class SchemaManager {
     }
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
-//        Map<String, Set<String>> allForeignKeys = new ConcurrentHashMap<>();
-//        allForeignKeys.putAll(this.edgeForeignKeys);
-//        if (!this.uncommittedEdgeForeignKeys.isEmpty() && this.isLockedByCurrentThread()) {
-//            allForeignKeys.putAll(this.uncommittedEdgeForeignKeys);
-//        }
-//        return allForeignKeys.get(schemaTable);
-        if (true)
-            throw new IllegalStateException("Not yet implemented");
-        return Collections.emptySet();
+        return getAllEdgeForeignKeys().get(schemaTable);
     }
 
     public Map<String, Set<String>> getEdgeForeignKeys() {
-        if (true)
-            throw new IllegalStateException("Not yet implemented");
-//        return Collections.unmodifiableMap(this.edgeForeignKeys);
-        return Collections.emptyMap();
+        return getAllEdgeForeignKeys();
     }
 
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
@@ -1385,10 +1296,7 @@ public class SchemaManager {
     }
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
-//        return Collections.unmodifiableMap(tableLabels);
-        if (true)
-            throw new IllegalStateException("Not yet implemented");
-        return Collections.emptyMap();
+        return this.topology.getTableLabels();
     }
 
     /**
@@ -1400,37 +1308,11 @@ public class SchemaManager {
      * @return
      */
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
-//        Pair<Set<SchemaTable>, Set<SchemaTable>> result = this.tableLabels.get(schemaTable);
-//        if (result == null) {
-//            if (!this.uncommittedTableLabels.isEmpty() && this.isLockedByCurrentThread()) {
-//                Pair<Set<SchemaTable>, Set<SchemaTable>> pair = this.uncommittedTableLabels.get(schemaTable);
-//                if (pair != null) {
-//                    return Pair.of(Collections.unmodifiableSet(pair.getLeft()), Collections.unmodifiableSet(pair.getRight()));
-//                }
-//            }
-//            return Pair.of(Collections.EMPTY_SET, Collections.EMPTY_SET);
-//        } else {
-//            Set<SchemaTable> left = new HashSet<>(result.getLeft());
-//            Set<SchemaTable> right = new HashSet<>(result.getRight());
-//            if (!this.uncommittedTableLabels.isEmpty() && this.isLockedByCurrentThread()) {
-//                Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedLabels = this.uncommittedTableLabels.get(schemaTable);
-//                if (uncommittedLabels != null) {
-//                    left.addAll(uncommittedLabels.getLeft());
-//                    right.addAll(uncommittedLabels.getRight());
-//                }
-//            }
-//            return Pair.of(
-//                    Collections.unmodifiableSet(left),
-//                    Collections.unmodifiableSet(right));
-//        }
         return this.topology.getTableLabels(schemaTable);
     }
 
     Map<String, Map<String, PropertyType>> getTables() {
-//        return Collections.unmodifiableMap(tables);
-        if (true)
-            throw new IllegalStateException("Not yet implemented");
-        return Collections.emptyMap();
+        return this.topology.getAllTables();
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
@@ -1438,36 +1320,16 @@ public class SchemaManager {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
-
         return this.topology.getAllTablesWithout(filter);
-
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
-
         return this.topology.getAllTablesFrom(selectFrom);
-
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-
         Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "BUG: SchemaTable.table must start with edge or vertex prefix.");
-
         return this.topology.getTableFor(schemaTable);
-
-//        Map<String, PropertyType> result = this.tables.get(schemaTable.toString());
-//        if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
-//            Map<String, PropertyType> tmp = this.uncommittedTables.get(schemaTable.toString());
-//            if (tmp != null) {
-//                result = tmp;
-//            }
-//        }
-//        if (result == null) {
-//            return Collections.emptyMap();
-//        } else {
-//            return Collections.unmodifiableMap(result);
-//        }
-//        return Collections.emptyMap();
     }
 
     private boolean isLockedByCurrentThread() {
