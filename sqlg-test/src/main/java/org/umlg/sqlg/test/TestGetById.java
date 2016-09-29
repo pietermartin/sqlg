@@ -1,10 +1,14 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Date: 2014/07/13
@@ -35,5 +39,31 @@ public class TestGetById extends BaseTest {
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(friendEdge, this.sqlgGraph.e(friendEdge.id()));
         Assert.assertEquals(familyEdge, this.sqlgGraph.e(familyEdge.id()));
+    }
+
+    @Test
+    public void testByCollectionOfIds() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+        int count = 1_000;
+        List<Object> recordIds = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            Vertex v = this.sqlgGraph.addVertex(T.label, "Person");
+            recordIds.add(v.id());
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println("insert: " + stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        Assert.assertEquals(count, this.sqlgGraph.traversal().V(recordIds).count().next().intValue());
+        stopWatch.stop();
+        System.out.println("read 1: " + stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+        Assert.assertEquals(count, this.sqlgGraph.traversal().V().hasId(recordIds).count().next().intValue());
+        stopWatch.stop();
+        System.out.println("read 2: " + stopWatch.toString());
     }
 }
