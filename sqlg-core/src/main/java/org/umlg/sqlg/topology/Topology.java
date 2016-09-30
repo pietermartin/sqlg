@@ -6,7 +6,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
 
 import java.util.*;
@@ -15,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
-import static org.umlg.sqlg.topology.Schema.createSchema;
 
 /**
  * Date: 2016/09/04
@@ -42,18 +40,18 @@ public class Topology {
         this.sqlgGraph = sqlgGraph;
         this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         this.schemaLock = new ReentrantLock();
-        Schema sqlgSchema = Schema.createSchema(sqlgGraph, this, SQLG_SCHEMA);
+        Schema sqlgSchema = Schema.createSqlgSchema(this);
         this.metaSchemas.put(SQLG_SCHEMA, sqlgSchema);
 
         Map<String, PropertyType> columns = new HashedMap<>();
-        columns.put(NAME, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_SCHEMA, columns);
         VertexLabel edgeVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_EDGE_LABEL, columns);
 
-        columns.put(TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_PROPERTY, columns);
-        columns.remove(TYPE);
+        columns.remove(SQLG_SCHEMA_PROPERTY_TYPE);
 
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
         VertexLabel vertexVertexLabel = sqlgSchema.createVertexLabel(sqlgGraph, SQLG_SCHEMA_VERTEX_LABEL, columns);
@@ -76,7 +74,7 @@ public class Topology {
         sqlgSchema.addEdgeLabel(schemaEdgePropertyEdgeLabel);
 
         //add the public schema
-        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createSchema(sqlgGraph, this, sqlgGraph.getSqlDialect().getPublicSchema()));
+        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
     }
 
     /**
@@ -110,6 +108,9 @@ public class Topology {
         Schema result = this.schemas.get(schema);
         if (result == null) {
             result = this.uncommittedSchemas.get(schema);
+            if (result == null) {
+                result = this.metaSchemas.get(schema);
+            }
         }
         return Optional.ofNullable(result);
     }
@@ -129,17 +130,16 @@ public class Topology {
     }
 
     public void createVertexLabel(String schemaName, String label, ConcurrentHashMap<String, PropertyType> columns) {
-        if (!schemaName.equals(SQLG_SCHEMA)) {
-            Optional<Schema> schemaOptional = this.getSchema(schemaName);
-            Schema schema;
-            if (!schemaOptional.isPresent()) {
-                schema = createSchema(this.sqlgGraph, this, schemaName);
-                this.uncommittedSchemas.put(schemaName, schema);
-            } else {
-                schema = schemaOptional.get();
-            }
-            schema.createVertexLabel(this.sqlgGraph, label, columns);
+        Preconditions.checkArgument(!schemaName.equals(SQLG_SCHEMA), "createVertexLabel may not be called for %s as its pre-created.", SQLG_SCHEMA);
+        Optional<Schema> schemaOptional = this.getSchema(schemaName);
+        Schema schema;
+        if (!schemaOptional.isPresent()) {
+            schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
+            this.uncommittedSchemas.put(schemaName, schema);
+        } else {
+            schema = schemaOptional.get();
         }
+        schema.createVertexLabel(this.sqlgGraph, label, columns);
     }
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
@@ -207,13 +207,11 @@ public class Topology {
     }
 
     private Optional<Schema> findVertexSchema(String schemaName) {
-
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
             if (schemaEntry.getValue().getName().equals(schemaName)) {
                 return Optional.of(schemaEntry.getValue());
             }
         }
-
         if (this.isHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 if (schemaEntry.getValue().getName().equals(schemaName)) {
@@ -222,7 +220,6 @@ public class Topology {
             }
         }
         return Optional.empty();
-
     }
 
     public void ensureVertexColumnsExist(String schemaName, String label, Map<String, PropertyType> columns) {
@@ -278,36 +275,22 @@ public class Topology {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
-
         Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-
             result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
-
         }
-
         //TODO
 //        result.putAll(this.temporaryTables);
-
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
-
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-
                 result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
-
             }
-
         }
-
         //And the meta schema tables
         for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-
             result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
-
         }
-
         return Collections.unmodifiableMap(result);
-
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
@@ -347,60 +330,27 @@ public class Topology {
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-
         Map<String, PropertyType> result = new HashMap<>();
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-
             if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-
                 result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
-
             }
-
         }
-
         //TODO
 //        result.putAll(this.temporaryTables);
-
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
-
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-
                 if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-
                     result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
                 }
-
             }
-
         }
-
         for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-
             if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-
                 result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
-
             }
-
-
         }
-
         return Collections.unmodifiableMap(result);
-
-//        Map<String, PropertyType> result = this.tables.get(schemaTable.toString());
-//        if (!this.uncommittedTables.isEmpty() && this.isLockedByCurrentThread()) {
-//            Map<String, PropertyType> tmp = this.uncommittedTables.get(schemaTable.toString());
-//            if (tmp != null) {
-//                result = tmp;
-//            }
-//        }
-//        if (result == null) {
-//            return Collections.emptyMap();
-//        } else {
-//            return Collections.unmodifiableMap(result);
-//        }
-
     }
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
@@ -450,16 +400,24 @@ public class Topology {
     }
 
     public void loadUserSchema() {
-        GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
+        GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         List<Vertex> schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
-            Optional<Schema> schema = getSchema(schemaName);
-            Preconditions.checkState(schema.isPresent(), "BUG: schema not present for %s", schemaName);
-            //noinspection OptionalGetWithoutIsPresent
-            this.schemas.put(schemaName, schema.get());
-            //noinspection OptionalGetWithoutIsPresent
-            schema.get().loadVertexAndEdgeLabels(traversalSource, schemaVertex);
+            Optional<Schema> schemaOptional = getSchema(schemaName);
+            if (schemaName.equals(SQLG_SCHEMA)) {
+                Preconditions.checkState(schemaOptional.isPresent(), "\"public\" schema must always be present.");
+            }
+            Schema schema;
+            if (!schemaOptional.isPresent()) {
+                schema = Schema.loadUserSchema(this, schemaName);
+                this.schemas.put(schemaName, schema);
+            } else {
+                schema = schemaOptional.get();
+
+            }
+            schema.loadVertexAndEdgeLabels(traversalSource, schemaVertex);
         }
     }
+
 }

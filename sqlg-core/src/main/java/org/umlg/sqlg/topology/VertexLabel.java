@@ -44,6 +44,10 @@ public class VertexLabel extends AbstractElement {
         super(schema, label, columns);
     }
 
+    VertexLabel(Schema schema, String label) {
+        super(schema, label);
+    }
+
     public void addToInEdgeLabels(EdgeLabel edgeLabel) {
         this.uncommittedInEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
     }
@@ -179,4 +183,14 @@ public class VertexLabel extends AbstractElement {
         return result;
     }
 
+    void addEdgeLabel(boolean out, String edgeLabelName) {
+        EdgeLabel edgeLabel = new EdgeLabel(this.schema, edgeLabelName);
+        if (out) {
+            this.outEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
+            edgeLabel.addToOutVertexLabel(this);
+        } else {
+            this.inEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
+            edgeLabel.addToInVertexLabel(this);
+        }
+    }
 }

@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.umlg.sqlg.structure.SchemaManager.NAME;
 import static org.umlg.sqlg.structure.SchemaManager.SCHEMA_VERTEX_DISPLAY;
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_VERTEX_LABEL_NAME;
 
 /**
  * Created by pieter on 2015/12/08.
@@ -55,7 +55,7 @@ public class TopologyManager {
             Vertex vertex = sqlgGraph.addVertex(
                     T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL,
 //                    NAME, tableName.substring(SchemaManager.VERTEX_PREFIX.length()),
-                    NAME, tableName,
+                    SQLG_SCHEMA_VERTEX_LABEL_NAME, tableName,
                     SCHEMA_VERTEX_DISPLAY, schema + "." + SchemaManager.VERTEX_PREFIX + tableName, //this is here for display when in pgadmin
                     CREATED_ON, LocalDateTime.now()
             );

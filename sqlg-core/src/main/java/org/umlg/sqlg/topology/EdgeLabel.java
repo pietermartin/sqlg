@@ -11,10 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
 
@@ -33,20 +30,25 @@ public class EdgeLabel extends AbstractElement {
     private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
 
     public static EdgeLabel createEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
-
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(outVertexLabel.getSchema(), edgeLabelName, outVertexLabel, inVertexLabel, properties);
         if (!inVertexLabel.getSchema().getName().equals(SQLG_SCHEMA)) {
             edgeLabel.createEdgeTable(sqlgGraph, outVertexLabel, inVertexLabel, properties);
         }
         return edgeLabel;
-
     }
 
     private EdgeLabel(Schema schema, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         super(schema, edgeLabelName, properties);
         this.uncommittedOutVertexLabels.add(outVertexLabel);
         this.uncommittedInVertexLabels.add(inVertexLabel);
+    }
+
+    /**
+     * Called when loading the topology on startup.
+     */
+    EdgeLabel(Schema schema, String edgeLabelName) {
+        super(schema, edgeLabelName, Collections.emptyMap());
     }
 
     public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
@@ -327,5 +329,13 @@ public class EdgeLabel extends AbstractElement {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    public void addToOutVertexLabel(VertexLabel vertexLabel) {
+        this.outVertexLabels.add(vertexLabel);
+    }
+
+    public void addToInVertexLabel(VertexLabel vertexLabel) {
+        this.inVertexLabels.add(vertexLabel);
     }
 }

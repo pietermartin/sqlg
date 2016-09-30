@@ -1,21 +1,19 @@
 package org.umlg.sqlg.topology;
 
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE;
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_PROPERTY_NAME;
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_PROPERTY_TYPE;
 
 /**
  * Date: 2016/09/14
@@ -34,8 +32,17 @@ public abstract class AbstractElement {
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
             Property property = new Property(propertyEntry.getKey(), propertyEntry.getValue());
-            this.uncommittedProperties.put(propertyEntry.getKey(), property);
+            if (schema.isSqlgSchema()) {
+                this.properties.put(propertyEntry.getKey(), property);
+            } else {
+                this.uncommittedProperties.put(propertyEntry.getKey(), property);
+            }
         }
+    }
+
+    AbstractElement(Schema schema, String label) {
+        this.schema = schema;
+        this.label = label;
     }
 
     public String getLabel() {
@@ -123,15 +130,8 @@ public abstract class AbstractElement {
         }
     }
 
-    public void loadProperties(GraphTraversalSource traversalSource, Vertex vertexLabelVertex) {
-
-        List<Vertex> properties = traversalSource.V(vertexLabelVertex).out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).toList();
-        for (Vertex property : properties) {
-            String propertyName = property.value("name");
-            get
-            this.properties.put(propertyName,
-        }
-        this.tables.put(schemaName + "." + SchemaManager.VERTEX_PREFIX + tableName, uncommittedColumns);
-
+    void addProperty(Vertex propertyVertex) {
+        Property property = new Property(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.from(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
+        this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 }

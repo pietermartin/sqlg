@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.hasLabel;
@@ -54,8 +55,8 @@ public class TestHasLabel extends BaseTest {
         a.addEdge("created", d);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(4, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList("knows"))).count().next(), 0);
-        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList("created"))).count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Collections.singletonList("knows"))).count().next(), 0);
+        Assert.assertEquals(2, this.sqlgGraph.traversal().E().has(T.label, P.within(Collections.singletonList("created"))).count().next(), 0);
         Assert.assertEquals(4, this.sqlgGraph.traversal().E().has(T.label, P.within(Arrays.asList("knows", "created"))).count().next(), 0);
     }
 
