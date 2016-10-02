@@ -8,16 +8,16 @@
       <packagedElement xmi:type="uml:Package" xmi:id="_qQcysMzgEeW174sSW5_77g" name="sqlg">
         <packagedElement xmi:type="uml:Package" xmi:id="_uo1vQMzgEeW174sSW5_77g" name="topology">
           <ownedComment xmi:type="uml:Comment" xmi:id="_WRncoHeNEeaH4dJUP3R7fA" annotatedElement="_3NWG8MzgEeW174sSW5_77g">
-            <body>EdgeLabel(s) are created in the Schema of the first out VertexLabel that created the edge</body>
+            <body>Edge tables are created in the schema of the out vertex.
+If the same edge label is used for out vertices in different schemas then the edge label will exist in multiple schemas.
+i.e. A.A --ab-->B and AA.A--ab-->B
+Then there will be an 'ab' table in the 'A' and 'AA'	 schema.
+There will be 2 entries in 'EdgeLabel'</body>
           </ownedComment>
           <packagedElement xmi:type="uml:Class" xmi:id="_xeNZ4MzgEeW174sSW5_77g" name="Schema">
             <ownedAttribute xmi:type="uml:Property" xmi:id="_n6rGwMzjEeW174sSW5_77g" name="vertexLabel" type="_zuWQgMzgEeW174sSW5_77g" aggregation="composite" association="_n6oqgMzjEeW174sSW5_77g">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_tsRR8MzjEeW174sSW5_77g"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_tsTHIMzjEeW174sSW5_77g" value="*"/>
-            </ownedAttribute>
-            <ownedAttribute xmi:type="uml:Property" xmi:id="_9Ok2sH0CEeaNY4PVGL7QlA" name="edgelabel" type="_3NWG8MzgEeW174sSW5_77g" aggregation="composite" association="_9OewEH0CEeaNY4PVGL7QlA">
-              <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_PiR3kH0DEeaNY4PVGL7QlA"/>
-              <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_PiZMUH0DEeaNY4PVGL7QlA" value="*"/>
             </ownedAttribute>
           </packagedElement>
           <packagedElement xmi:type="uml:Class" xmi:id="_zuWQgMzgEeW174sSW5_77g" name="VertexLabel">
@@ -25,7 +25,7 @@
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_un-OYHeLEeaH4dJUP3R7fA"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uoFjIHeLEeaH4dJUP3R7fA" value="*"/>
             </ownedAttribute>
-            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="outEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="__qz7IMzjEeW174sSW5_77g">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="outEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" aggregation="composite" association="__qz7IMzjEeW174sSW5_77g">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_OTAAQHeNEeaH4dJUP3R7fA"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_OTCcgHeNEeaH4dJUP3R7fA" value="*"/>
             </ownedAttribute>
@@ -76,12 +76,6 @@
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_Rhi_4HeNEeaH4dJUP3R7fA" value="1"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Rhk1EHeNEeaH4dJUP3R7fA" value="*"/>
             </ownedEnd>
-          </packagedElement>
-          <packagedElement xmi:type="uml:Association" xmi:id="_9OewEH0CEeaNY4PVGL7QlA" name="schema_edge" memberEnd="_9Ok2sH0CEeaNY4PVGL7QlA _9Ok2sX0CEeaNY4PVGL7QlA" navigableOwnedEnd="_9Ok2sX0CEeaNY4PVGL7QlA">
-            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_9OjokH0CEeaNY4PVGL7QlA" source="org.eclipse.papyrus">
-              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_9OkPoH0CEeaNY4PVGL7QlA" key="nature" value="UML_Nature"/>
-            </eAnnotations>
-            <ownedEnd xmi:type="uml:Property" xmi:id="_9Ok2sX0CEeaNY4PVGL7QlA" name="schema" type="_xeNZ4MzgEeW174sSW5_77g" association="_9OewEH0CEeaNY4PVGL7QlA"/>
           </packagedElement>
         </packagedElement>
       </packagedElement>
