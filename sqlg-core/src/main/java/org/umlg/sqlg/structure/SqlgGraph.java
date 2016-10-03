@@ -520,11 +520,19 @@ public class SqlgGraph implements Graph {
         }
     }
 
+    /**
+     * Use {@link SqlgGraph#traversal()}
+     */
+    @Deprecated
     public Vertex v(final Object id) {
         Iterator<Vertex> t = this.vertices(id);
         return t.hasNext() ? t.next() : null;
     }
 
+    /**
+     * Use {@link SqlgGraph#traversal()}
+     */
+    @Deprecated
     public Edge e(final Object id) {
         Iterator<Edge> t = this.edges(id);
         return t.hasNext() ? t.next() : null;

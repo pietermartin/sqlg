@@ -52,6 +52,10 @@ public class SchemaManager {
      */
     public static final String SQLG_SCHEMA_SCHEMA = "schema";
     /**
+     * Schema's name.
+     */
+    public static final String SQLG_SCHEMA_SCHEMA_NAME = "name";
+    /**
      * Table storing the graphs vertex labels.
      */
     public static final String SQLG_SCHEMA_VERTEX_LABEL = "vertex";
@@ -169,112 +173,14 @@ public class SchemaManager {
         this.sqlgGraph.tx().afterCommit(() -> {
             this.topology.afterCommit();
             this.temporaryTables.clear();
-//            if (this.isLockedByCurrentThread()) {
-//                for (String schema : this.uncommittedSchemas) {
-//                    if (distributed) {
-//                    }
-//                    this.schemas.put(schema, schema);
-//                }
-//                for (Map.Entry<String, Map<String, PropertyType>> uncommittedTablesEntry : this.uncommittedTables.entrySet()) {
-//                    if (distributed) {
-//                    }
-//                    this.tables.put(uncommittedTablesEntry.getKey(), uncommittedTablesEntry.getValue());
-//                }
-//                for (Map.Entry<String, Set<String>> uncommittedLabelSchemasEntry : this.uncommittedLabelSchemas.entrySet()) {
-//                    Set<String> schemas = this.labelSchemas.get(uncommittedLabelSchemasEntry.getKey());
-//                    if (schemas == null) {
-//                        if (distributed) {
-//                        }
-//                        this.labelSchemas.put(uncommittedLabelSchemasEntry.getKey(), uncommittedLabelSchemasEntry.getValue());
-//                    } else {
-//                        schemas.addAll(this.uncommittedLabelSchemas.get(uncommittedLabelSchemasEntry.getKey()));
-//                        if (distributed) {
-//                        }
-//                        this.labelSchemas.put(uncommittedLabelSchemasEntry.getKey(), schemas);
-//                    }
-//                }
-//                for (Map.Entry<String, Set<String>> uncommittedEdgeForeignKeysEntry : this.uncommittedEdgeForeignKeys.entrySet()) {
-//                    if (distributed) {
-//                    }
-//                    this.edgeForeignKeys.put(uncommittedEdgeForeignKeysEntry.getKey(), uncommittedEdgeForeignKeysEntry.getValue());
-//                }
-//                for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableEntry : this.uncommittedTableLabels.entrySet()) {
-//                    Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.tableLabels.get(schemaTableEntry.getKey());
-//                    if (tableLabels == null) {
-//                        tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
-//                    }
-//                    tableLabels.getLeft().addAll(schemaTableEntry.getValue().getLeft());
-//                    tableLabels.getRight().addAll(schemaTableEntry.getValue().getRight());
-//                    if (distributed) {
-//                    }
-//                    this.tableLabels.put(schemaTableEntry.getKey(), tableLabels);
-//                }
-//                this.uncommittedSchemas.clear();
-//                this.uncommittedTables.clear();
-//                this.uncommittedLabelSchemas.clear();
-//                this.uncommittedEdgeForeignKeys.clear();
-//                this.uncommittedTableLabels.clear();
-//                this.schemaLock.unlock();
-//            }
         });
         this.sqlgGraph.tx().afterRollback(() -> {
-            this.topology.afterRollback();
+            if (this.sqlDialect.supportsTransactionalSchema()) {
+                this.topology.afterRollback();
+            } else {
+                this.topology.afterCommit();
+            }
             this.temporaryTables.clear();
-//            if (this.isLockedByCurrentThread()) {
-//                if (this.getSqlDialect().supportsTransactionalSchema()) {
-//                    this.uncommittedSchemas.clear();
-//                    this.uncommittedTables.clear();
-//                    this.uncommittedLabelSchemas.clear();
-//                    this.uncommittedEdgeForeignKeys.clear();
-//                    this.uncommittedTableLabels.clear();
-//                } else {
-//                    for (String table : this.uncommittedSchemas) {
-//                        if (distributed) {
-//                        }
-//                        this.schemas.put(table, table);
-//                    }
-//                    for (Map.Entry<String, Map<String, PropertyType>> tableEntry : this.uncommittedTables.entrySet()) {
-//                        if (distributed) {
-//                        }
-//                        this.tables.put(tableEntry.getKey(), tableEntry.getValue());
-//                    }
-//                    for (Map.Entry<String, Set<String>> tableEntry : this.uncommittedLabelSchemas.entrySet()) {
-//                        Set<String> schemas = this.labelSchemas.get(tableEntry.getKey());
-//                        if (schemas == null) {
-//                            if (distributed) {
-//                            }
-//                            this.labelSchemas.put(tableEntry.getKey(), tableEntry.getValue());
-//                        } else {
-//                            schemas.addAll(tableEntry.getValue());
-//                            if (distributed) {
-//                            }
-//                            this.labelSchemas.put(tableEntry.getKey(), schemas);
-//                        }
-//                    }
-//                    for (Map.Entry<String, Set<String>> tableEntry : this.uncommittedEdgeForeignKeys.entrySet()) {
-//                        if (distributed) {
-//                        }
-//                        this.edgeForeignKeys.put(tableEntry.getKey(), tableEntry.getValue());
-//                    }
-//                    for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableEntry : this.uncommittedTableLabels.entrySet()) {
-//                        Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = this.tableLabels.get(schemaTableEntry.getKey());
-//                        if (tableLabels == null) {
-//                            tableLabels = Pair.of(new HashSet<>(), new HashSet<>());
-//                        }
-//                        tableLabels.getLeft().addAll(schemaTableEntry.getValue().getLeft());
-//                        tableLabels.getRight().addAll(schemaTableEntry.getValue().getRight());
-//                        if (distributed) {
-//                        }
-//                        this.tableLabels.put(schemaTableEntry.getKey(), tableLabels);
-//                    }
-//                    this.uncommittedSchemas.clear();
-//                    this.uncommittedTables.clear();
-//                    this.uncommittedLabelSchemas.clear();
-//                    this.uncommittedEdgeForeignKeys.clear();
-//                    this.uncommittedTableLabels.clear();
-//                }
-//                this.schemaLock.unlock();
-//            }
         });
     }
 
@@ -312,88 +218,35 @@ public class SchemaManager {
         Objects.requireNonNull(foreignKeyOut.getTable(), "Given outTable must not be null");
         final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
 
-        if (!this.topology.existEdgeLabel(edgeLabelName)) {
+        EdgeLabel edgeLabel;
+        Optional<EdgeLabel> edgeLabelOptional = this.topology.getEdgeLabel(foreignKeyOut.getSchema(), edgeLabelName);
+        if (!edgeLabelOptional.isPresent()) {
             this.topology.lock();
-            if (!this.topology.existEdgeLabel(edgeLabelName)) {
-                this.topology.createEdgeLabel(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+            edgeLabelOptional = this.topology.getEdgeLabel(foreignKeyOut.getSchema(), edgeLabelName);
+            if (!edgeLabelOptional.isPresent()) {
+                edgeLabel = this.topology.createEdgeLabel(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+            } else {
+                edgeLabel = edgeLabelOptional.get();
             }
+        } else {
+            edgeLabel = edgeLabelOptional.get();
         }
-        Optional<EdgeLabel> edgeLabelOptional = this.topology.getEdgeLabel(edgeLabelName);
-        Preconditions.checkState(edgeLabelOptional.isPresent(), "BUG: EdgeLabel %s must be present!", edgeLabelName);
+        Preconditions.checkState(edgeLabel != null, "BUG: EdgeLabel %s must be present!", edgeLabelName);
 
-        //noinspection OptionalGetWithoutIsPresent
-        EdgeLabel edgeLabel = edgeLabelOptional.get();
         if (!edgeLabel.getSchema().isSqlgSchema()) {
-            edgeLabel.ensureColumnsExist(this.sqlgGraph, columns);
             Optional<VertexLabel> outVertexLabelOptional = this.topology.getVertexLabel(foreignKeyOut.getSchema(), foreignKeyOut.getTable());
             Optional<VertexLabel> inVertexLabelOptional = this.topology.getVertexLabel(foreignKeyIn.getSchema(), foreignKeyIn.getTable());
             Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out vertex label not found for %s.%s", foreignKeyOut.getSchema(), foreignKeyOut.getTable());
             Preconditions.checkState(inVertexLabelOptional.isPresent(), "In vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
-            //noinspection OptionalGetWithoutIsPresent
-            edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, true, inVertexLabelOptional.get(), foreignKeyIn);
+            //
             //noinspection OptionalGetWithoutIsPresent
             edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, false, outVertexLabelOptional.get(), foreignKeyOut);
+            //noinspection OptionalGetWithoutIsPresent
+            edgeLabel.ensureEdgeForeignKeysExist(this.sqlgGraph, true, inVertexLabelOptional.get(), foreignKeyIn);
+            edgeLabel.ensureColumnsExist(this.sqlgGraph, columns);
         }
         return SchemaTable.of(edgeLabel.getSchema().getName(), edgeLabel.getLabel());
 
-//        ensureEdgeForeignKeysExist(schema, prefixedTable, true, foreignKeyIn);
-//        ensureEdgeForeignKeysExist(schema, prefixedTable, false, foreignKeyOut);
-
-
-//        if (!this.tables.containsKey(schema + "." + prefixedTable)) {
-//            //Make sure the current thread/transaction owns the lock
-//            lock(schema, table);
-//            if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.schemas.containsKey(schema)) {
-//                if (!this.uncommittedSchemas.contains(schema)) {
-//                    this.uncommittedSchemas.add(schema);
-//                    createSchema(schema);
-//                }
-//            }
-//            if (!this.tables.containsKey(schema + "." + prefixedTable) && !this.uncommittedTables.containsKey(schema + "." + prefixedTable)) {
-//                Set<String> foreignKeys = new HashSet<>();
-//                foreignKeys.add(foreignKeyIn.getSchema() + "." + foreignKeyIn.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
-//                foreignKeys.add(foreignKeyOut.getSchema() + "." + foreignKeyOut.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
-//                this.uncommittedEdgeForeignKeys.put(schema + "." + prefixedTable, foreignKeys);
-//
-//                Set<String> schemas = this.uncommittedLabelSchemas.get(prefixedTable);
-//                if (schemas == null) {
-//                    this.uncommittedLabelSchemas.put(prefixedTable, new HashSet<>(Arrays.asList(schema)));
-//                } else {
-//                    schemas.add(schema);
-//                    this.uncommittedLabelSchemas.put(prefixedTable, schemas);
-//                }
-//
-//                this.uncommittedTables.put(schema + "." + prefixedTable, columns);
-//
-//                if (!SQLG_SCHEMA.equals(schema)) {
-//                    TopologyManager.addEdgeLabel(this.sqlgGraph, schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
-//                }
-//                createEdgeTable(schema, prefixedTable, foreignKeyIn, foreignKeyOut, columns);
-//
-//                //For each table capture its in and out labels
-//                //This schema information is needed for compiling gremlin
-//                //first do the in labels
-//                SchemaTable foreignKeyInWithPrefix = SchemaTable.of(foreignKeyIn.getSchema(), SchemaManager.VERTEX_PREFIX + foreignKeyIn.getTable());
-//                Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.uncommittedTableLabels.get(foreignKeyInWithPrefix);
-//                if (labels == null) {
-//                    labels = Pair.of(new HashSet<>(), new HashSet<>());
-//                    this.uncommittedTableLabels.put(foreignKeyInWithPrefix, labels);
-//                }
-//                labels.getLeft().add(SchemaTable.of(schema, prefixedTable));
-//                //now the out labels
-//                SchemaTable foreignKeyOutWithPrefix = SchemaTable.of(foreignKeyOut.getSchema(), SchemaManager.VERTEX_PREFIX + foreignKeyOut.getTable());
-//                labels = this.uncommittedTableLabels.get(foreignKeyOutWithPrefix);
-//                if (labels == null) {
-//                    labels = Pair.of(new HashSet<>(), new HashSet<>());
-//                    this.uncommittedTableLabels.put(foreignKeyOutWithPrefix, labels);
-//                }
-//                labels.getRight().add(SchemaTable.of(schema, prefixedTable));
-//            }
-//        }
-//        //ensure columns exist
-//        ensureVertexColumnsExist(schema, prefixedTable, columns);
-//        ensureEdgeForeignKeysExist(schema, prefixedTable, true, foreignKeyIn);
-//        ensureEdgeForeignKeysExist(schema, prefixedTable, false, foreignKeyOut);
     }
 
     void ensureVertexTemporaryTableExist(final String schema, final String table, final Object... keyValues) {
@@ -1110,6 +963,7 @@ public class SchemaManager {
      */
     private void loadUserSchema() {
         this.topology.loadUserSchema();
+        System.out.println(this.topology.toString());
     }
 
     private void addPublicSchema() {
@@ -1201,9 +1055,8 @@ public class SchemaManager {
     }
 
     /**
-     * tableLabels contains committed tables with its labels.
-     * uncommittedTableLabels contains uncommitted tables with its labels.
-     * However that table in uncommittedTableLabels may be committed with a new uncommitted label.
+     * <code>Schema.vertexLabels</code> contains committed tables with its labels.
+     * <code>Schema.uncommittedVertexLabels</code> contains uncommitted tables with its labels.
      *
      * @param schemaTable
      * @return

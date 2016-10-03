@@ -1,5 +1,9 @@
 package org.umlg.sqlg.topology;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,6 +32,8 @@ public class Topology {
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
+
+    static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     //meta schema
     private Map<String, Schema> metaSchemas = new HashMap<>();
@@ -58,20 +64,16 @@ public class Topology {
 
         columns.remove(SCHEMA_VERTEX_DISPLAY);
 
-        EdgeLabel schemaVertexEdgeLabel = schemaVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
-        sqlgSchema.addEdgeLabel(schemaVertexEdgeLabel);
-
-        EdgeLabel schemaVertexInEdgeLabel = vertexVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
-        sqlgSchema.addEdgeLabel(schemaVertexInEdgeLabel);
-
-        EdgeLabel schemaVertexOutEdgeLabel = vertexVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
-        sqlgSchema.addEdgeLabel(schemaVertexOutEdgeLabel);
-
-        EdgeLabel schemaVertexPropertyEdgeLabel = vertexVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
-        sqlgSchema.addEdgeLabel(schemaVertexPropertyEdgeLabel);
-
-        EdgeLabel schemaEdgePropertyEdgeLabel = edgeVertexLabel.addEdgeLabel(sqlgGraph, SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
-        sqlgSchema.addEdgeLabel(schemaEdgePropertyEdgeLabel);
+        @SuppressWarnings("unused")
+        EdgeLabel schemaVertexEdgeLabel = schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel schemaVertexInEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel schemaVertexOutEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel schemaVertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel schemaEdgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
 
         //add the public schema
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
@@ -142,43 +144,35 @@ public class Topology {
         schema.createVertexLabel(this.sqlgGraph, label, columns);
     }
 
-    public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
+    public Optional<EdgeLabel> getEdgeLabel(String schemaName, String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edge label name may not start with %s", EDGE_PREFIX);
-        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-            Optional<EdgeLabel> edgeLabel = schemaEntry.getValue().getEdgeLabel(edgeLabelName);
-            if (edgeLabel.isPresent()) {
-                return edgeLabel;
+        Optional<Schema> schemaOptional = getSchema(schemaName);
+        if (schemaOptional.isPresent()) {
+            Schema schema = schemaOptional.get();
+            Optional<EdgeLabel> edgeLabelOptional = schema.getEdgeLabel(edgeLabelName);
+            if (edgeLabelOptional.isPresent()) {
+                return edgeLabelOptional;
+            } else {
+                return Optional.empty();
             }
+        } else {
+            return Optional.empty();
         }
-        if (this.isHeldByCurrentThread()) {
-            for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                Optional<EdgeLabel> edgeLabel = schemaEntry.getValue().getEdgeLabel(edgeLabelName);
-                if (edgeLabel.isPresent()) {
-                    return edgeLabel;
-                }
-            }
-        }
-        for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-            Optional<EdgeLabel> edgeLabel = schemaEntry.getValue().getEdgeLabel(edgeLabelName);
-            if (edgeLabel.isPresent()) {
-                return edgeLabel;
-            }
-        }
-        return Optional.empty();
     }
 
     /**
      * Checks if the edge already exists.
      *
+     * @param schemaName    The schema the edge has out vertices for.
      * @param edgeLabelName The edge label to check for existence.
      * @return Returns true if the label exists.
      */
-    public boolean existEdgeLabel(String edgeLabelName) {
-        return getEdgeLabel(edgeLabelName).isPresent();
+    private boolean existEdgeLabel(String schemaName, String edgeLabelName) {
+        return getEdgeLabel(schemaName, edgeLabelName).isPresent();
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    public void createEdgeLabel(String edgeLabelName, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
+    public EdgeLabel createEdgeLabel(String edgeLabelName, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(this.isHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
 
@@ -195,15 +189,12 @@ public class Topology {
         Preconditions.checkState(inVertexLabel.isPresent(), "BUG: In vertex label for edge creation can not be null. in vertex label = \"%s\"", foreignKeyIn.getTable());
 
         //Edge may not already exist.
-        Preconditions.checkArgument(!existEdgeLabel(edgeLabelName), "Edge \"%s\" already exists!", edgeLabelName);
+        Preconditions.checkArgument(!existEdgeLabel(outVertexSchema.get().getName(), edgeLabelName), "Edge \"%s\" already exists!", edgeLabelName);
 
         if (!outVertexSchema.get().isSqlgSchema()) {
             TopologyManager.addEdgeLabel(this.sqlgGraph, outVertexSchema.get().getName(), EDGE_PREFIX + edgeLabelName, foreignKeyIn, foreignKeyOut, columns);
         }
-
-        EdgeLabel edgeLabel = outVertexLabel.get().addEdgeLabel(sqlgGraph, edgeLabelName, inVertexLabel.get(), columns);
-        outVertexSchema.get().addEdgeLabel(edgeLabel);
-
+        return outVertexLabel.get().addEdgeLabel(sqlgGraph, edgeLabelName, inVertexLabel.get(), columns);
     }
 
     private Optional<Schema> findVertexSchema(String schemaName) {
@@ -366,26 +357,41 @@ public class Topology {
         return map;
     }
 
+    /**
+     * Returns all the in and out SchemaTables that schemaTable has edges to.
+     *
+     * @param schemaTable The schemaTable for whom we want the in and out SchemaTables
+     * @return a Pair of in and out SchemaTables.
+     */
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
-        for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-            if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
-                if (result.isPresent()) {
-                    return result.get();
+        Set<SchemaTable> inSchemaTables = new HashSet<>();
+        Set<SchemaTable> outSchemaTables = new HashSet<>();
+        if (!schemaTable.getSchema().equals(SQLG_SCHEMA)) {
+            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                    Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+                    if (result.isPresent()) {
+                        inSchemaTables.addAll(result.get().getLeft());
+                        outSchemaTables.addAll(result.get().getRight());
+                        break;
+                    }
                 }
             }
-        }
-        for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-            if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
-                if (result.isPresent()) {
-                    return result.get();
+        } else {
+            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                    Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+                    if (result.isPresent()) {
+                        inSchemaTables.addAll(result.get().getLeft());
+                        outSchemaTables.addAll(result.get().getRight());
+                        break;
+                    }
                 }
             }
         }
         return Pair.of(
-                Collections.emptySet(),
-                Collections.emptySet());
+                inSchemaTables,
+                outSchemaTables);
     }
 
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
@@ -401,6 +407,7 @@ public class Topology {
 
     public void loadUserSchema() {
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
+        //First load all VertexLabels, their out edges and properties
         List<Vertex> schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
@@ -416,8 +423,31 @@ public class Topology {
                 schema = schemaOptional.get();
 
             }
-            schema.loadVertexAndEdgeLabels(traversalSource, schemaVertex);
+            schema.loadVertexOutEdgesAndProperties(traversalSource, schemaVertex);
         }
+        //Now load the in edges
+        schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+        for (Vertex schemaVertex : schemaVertices) {
+            String schemaName = schemaVertex.value("name");
+            Optional<Schema> schemaOptional = getSchema(schemaName);
+            Schema schema = schemaOptional.get();
+            schema.loadInEdgeLabels(traversalSource, schemaVertex);
+        }
+    }
+
+    public JsonNode toJson() {
+        ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+        ArrayNode schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+        for (Schema schema : this.schemas.values()) {
+            schemaArrayNode.add(schema.toJson());
+        }
+        topologyNode.set("schemas", schemaArrayNode);
+        return topologyNode;
+    }
+
+    @Override
+    public String toString() {
+        return toJson().toString();
     }
 
 }

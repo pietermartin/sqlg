@@ -23,25 +23,18 @@ public abstract class AbstractElement {
 
     private Logger logger = LoggerFactory.getLogger(AbstractElement.class.getName());
     protected String label;
-    protected Schema schema;
     protected Map<String, Property> properties = new HashMap<>();
     protected Map<String, Property> uncommittedProperties = new HashMap<>();
 
-    public AbstractElement(Schema schema, String label, Map<String, PropertyType> columns) {
-        this.schema = schema;
+    public AbstractElement(String label, Map<String, PropertyType> columns) {
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
             Property property = new Property(propertyEntry.getKey(), propertyEntry.getValue());
-            if (schema.isSqlgSchema()) {
-                this.properties.put(propertyEntry.getKey(), property);
-            } else {
-                this.uncommittedProperties.put(propertyEntry.getKey(), property);
-            }
+            this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
     }
 
-    AbstractElement(Schema schema, String label) {
-        this.schema = schema;
+    AbstractElement(String label) {
         this.label = label;
     }
 
@@ -49,9 +42,6 @@ public abstract class AbstractElement {
         return this.label;
     }
 
-    public Schema getSchema() {
-        return schema;
-    }
 
 
     public Map<String, PropertyType> getPropertyTypeMap() {
@@ -131,7 +121,7 @@ public abstract class AbstractElement {
     }
 
     void addProperty(Vertex propertyVertex) {
-        Property property = new Property(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.from(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
+        Property property = new Property(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 }

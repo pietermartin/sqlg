@@ -71,7 +71,8 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().has(T.label, "Schema5.Person").count().next(), 0);
         Assert.assertEquals(999, this.sqlgGraph.traversal().E().count().next(), 0);
         Assert.assertEquals(0, this.sqlgGraph.traversal().E().has(T.label, "edge").count().next(), 0);
-        Assert.assertEquals(999, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").count().next(), 0);
+        Assert.assertEquals(100, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").count().next(), 0);
+        Assert.assertEquals(99, this.sqlgGraph.traversal().E().has(T.label, "Schema9.edge").count().next(), 0);
     }
 
     @Test

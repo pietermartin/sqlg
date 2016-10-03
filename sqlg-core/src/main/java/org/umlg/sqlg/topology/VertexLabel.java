@@ -1,5 +1,8 @@
 package org.umlg.sqlg.topology;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -13,7 +16,10 @@ import org.umlg.sqlg.structure.TopologyManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
 
@@ -24,12 +30,13 @@ import static org.umlg.sqlg.structure.SchemaManager.*;
 public class VertexLabel extends AbstractElement {
 
     private Logger logger = LoggerFactory.getLogger(VertexLabel.class.getName());
+    private Schema schema;
     //This just won't stick in my brain.
     //hand (out) ---->---- finger (in)
-    private Map<String, EdgeLabel> inEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> uncommittedInEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
+    private Set<EdgeLabel> inEdgeLabels = new HashSet<>();
+    private Set<EdgeLabel> outEdgeLabels = new HashSet<>();
+    private Set<EdgeLabel> uncommittedInEdgeLabels = new HashSet<>();
+    private Set<EdgeLabel> uncommittedOutEdgeLabels = new HashSet<>();
 
     public static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
@@ -41,29 +48,57 @@ public class VertexLabel extends AbstractElement {
     }
 
     VertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
-        super(schema, label, columns);
+        super(label, columns);
+        this.schema = schema;
     }
 
     VertexLabel(Schema schema, String label) {
-        super(schema, label);
+        super(label);
+        this.schema = schema;
     }
 
-    public void addToInEdgeLabels(EdgeLabel edgeLabel) {
-        this.uncommittedInEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
+    public Schema getSchema() {
+        return this.schema;
     }
 
-    public void addToOutEdgeLabels(EdgeLabel edgeLabel) {
-        this.uncommittedOutEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
+    Set<EdgeLabel> getInEdgeLabels() {
+        Set<EdgeLabel> result = new HashSet<>();
+        result.addAll(this.inEdgeLabels);
+        result.addAll(this.uncommittedInEdgeLabels);
+        return result;
     }
 
-    public EdgeLabel addEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    Set<EdgeLabel> getOutEdgeLabels() {
+        Set<EdgeLabel> result = new HashSet<>();
+        result.addAll(this.outEdgeLabels);
+        result.addAll(this.uncommittedOutEdgeLabels);
+        return result;
+    }
+
+    public void addToUncommittedInEdgeLabels(EdgeLabel edgeLabel) {
+        this.uncommittedInEdgeLabels.add(edgeLabel);
+    }
+
+    public void addToUncommittedOutEdgeLabels(EdgeLabel edgeLabel) {
+        this.uncommittedOutEdgeLabels.add(edgeLabel);
+    }
+
+    EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        Preconditions.checkState(this.schema.isSqlgSchema(), "loadSqlgSchemaEdgeLabel must be called for \"%s\" found \"%s\"", SQLG_SCHEMA, this.schema.getName());
+        EdgeLabel edgeLabel = EdgeLabel.loadSqlgSchemaEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
+        this.outEdgeLabels.add(edgeLabel);
+        inVertexLabel.inEdgeLabels.add(edgeLabel);
+        return edgeLabel;
+    }
+
+    EdgeLabel addEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(sqlgGraph, edgeLabelName, this, inVertexLabel, properties);
         if (this.schema.isSqlgSchema()) {
-            this.outEdgeLabels.put(edgeLabelName, edgeLabel);
-            inVertexLabel.inEdgeLabels.put(edgeLabelName, edgeLabel);
+            this.outEdgeLabels.add(edgeLabel);
+            inVertexLabel.inEdgeLabels.add(edgeLabel);
         } else {
-            this.uncommittedOutEdgeLabels.put(edgeLabelName, edgeLabel);
-            inVertexLabel.uncommittedInEdgeLabels.put(edgeLabelName, edgeLabel);
+            this.uncommittedOutEdgeLabels.add(edgeLabel);
+            inVertexLabel.uncommittedInEdgeLabels.add(edgeLabel);
         }
         return edgeLabel;
     }
@@ -118,30 +153,32 @@ public class VertexLabel extends AbstractElement {
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels() {
         Set<SchemaTable> inSchemaTables = new HashSet<>();
         Set<SchemaTable> outSchemaTables = new HashSet<>();
-        for (EdgeLabel inEdgeLabel: inEdgeLabels.values()) {
+        for (EdgeLabel inEdgeLabel : inEdgeLabels) {
             inSchemaTables.add(SchemaTable.of(inEdgeLabel.getSchema().getName(), EDGE_PREFIX + inEdgeLabel.getLabel()));
         }
-        for (EdgeLabel outEdgeLabel: outEdgeLabels.values()) {
+        for (EdgeLabel outEdgeLabel : outEdgeLabels) {
             outSchemaTables.add(SchemaTable.of(outEdgeLabel.getSchema().getName(), EDGE_PREFIX + outEdgeLabel.getLabel()));
         }
-        for (EdgeLabel inEdgeLabel: uncommittedInEdgeLabels.values()) {
+        for (EdgeLabel inEdgeLabel : uncommittedInEdgeLabels) {
             inSchemaTables.add(SchemaTable.of(inEdgeLabel.getSchema().getName(), EDGE_PREFIX + inEdgeLabel.getLabel()));
         }
-        for (EdgeLabel outEdgeLabel: uncommittedOutEdgeLabels.values()) {
+        for (EdgeLabel outEdgeLabel : uncommittedOutEdgeLabels) {
             outSchemaTables.add(SchemaTable.of(outEdgeLabel.getSchema().getName(), EDGE_PREFIX + outEdgeLabel.getLabel()));
         }
         return Pair.of(inSchemaTables, outSchemaTables);
     }
 
     public void afterCommit() {
-        for (Iterator<Map.Entry<String, EdgeLabel>> it = this.uncommittedInEdgeLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, EdgeLabel> entry = it.next();
-            this.inEdgeLabels.put(entry.getKey(), entry.getValue());
+        for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            this.outEdgeLabels.add(edgeLabel);
+            edgeLabel.afterCommit();
             it.remove();
         }
-        for (Iterator<Map.Entry<String, EdgeLabel>> it = this.uncommittedInEdgeLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, EdgeLabel> entry = it.next();
-            this.outEdgeLabels.put(entry.getKey(), entry.getValue());
+        for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            this.inEdgeLabels.add(edgeLabel);
+            edgeLabel.afterCommit();
             it.remove();
         }
         for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
@@ -164,33 +201,63 @@ public class VertexLabel extends AbstractElement {
 
     @Override
     public String toString() {
-        String result = "label: " + this.schema.getName() + "." + this.getLabel() + "\n\tin labels:";
-        for (EdgeLabel edgeLabel : inEdgeLabels.values()) {
-            result += "\n\t" + edgeLabel.getLabel();
-        }
-        result += "\n\tout labels";
-        for (EdgeLabel edgeLabel : outEdgeLabels.values()) {
-            result += "\n\t" + edgeLabel.getLabel();
-        }
-        result += "\n\tuncommitted in labels";
-        for (EdgeLabel edgeLabel : uncommittedInEdgeLabels.values()) {
-            result += "\n\t" + edgeLabel.getLabel();
-        }
-        result += "\n\tuncommitted out lables";
-        for (EdgeLabel edgeLabel : uncommittedOutEdgeLabels.values()) {
-            result += "\n\t" + edgeLabel.getLabel();
-        }
-        return result;
+        return toJson().toString();
     }
 
-    void addEdgeLabel(boolean out, String edgeLabelName) {
-        EdgeLabel edgeLabel = new EdgeLabel(this.schema, edgeLabelName);
-        if (out) {
-            this.outEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
-            edgeLabel.addToOutVertexLabel(this);
-        } else {
-            this.inEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
-            edgeLabel.addToInVertexLabel(this);
+    void addToOutEdgeLabels(EdgeLabel edgeLabel) {
+        edgeLabel.addToOutVertexLabel(this);
+        this.outEdgeLabels.add(edgeLabel);
+    }
+
+    void addToInEdgeLabels(EdgeLabel edgeLabel) {
+        edgeLabel.addToInVertexLabel(this);
+        this.inEdgeLabels.add(edgeLabel);
+    }
+
+    @Override
+    public int hashCode() {
+        return (this.schema.getName() + this.getLabel()).hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) {
+            return false;
         }
+        if (!(other instanceof VertexLabel)) {
+            return false;
+        }
+        VertexLabel otherVertexLabel = (VertexLabel) other;
+        return this.schema.equals(otherVertexLabel.getSchema()) && otherVertexLabel.getLabel().equals(this.getLabel());
+    }
+
+    public JsonNode toJson() {
+        ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        vertexLabelNode.put("label", getLabel());
+
+        ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (EdgeLabel edgeLabel : this.outEdgeLabels) {
+            outEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        }
+        vertexLabelNode.set("outEdgeLabels", outEdgeLabelsArrayNode);
+
+        ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (EdgeLabel edgeLabel : this.inEdgeLabels) {
+            inEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        }
+        vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
+
+        outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
+            outEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        }
+        vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
+
+        inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
+            inEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        }
+        vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
+        return vertexLabelNode;
     }
 }
