@@ -42,25 +42,18 @@ public abstract class AbstractElement {
         return this.label;
     }
 
-
-
     public Map<String, PropertyType> getPropertyTypeMap() {
-
         Map<String, PropertyType> result = new HashMap<>();
         for (Map.Entry<String, Property> propertyEntry : this.properties.entrySet()) {
-
             result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
         }
-
         for (Map.Entry<String, Property> propertyEntry : this.uncommittedProperties.entrySet()) {
-
             result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
         }
-
         return result;
     }
 
-    protected void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
+    protected static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
         int i = 1;
         //This is to make the columns sorted
         List<String> keys = new ArrayList<>(columns.keySet());

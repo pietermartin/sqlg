@@ -31,14 +31,25 @@ public class VertexLabel extends AbstractElement {
 
     private Logger logger = LoggerFactory.getLogger(VertexLabel.class.getName());
     private Schema schema;
-    //This just won't stick in my brain.
+
     //hand (out) ---->---- finger (in)
     private Set<EdgeLabel> inEdgeLabels = new HashSet<>();
     private Set<EdgeLabel> outEdgeLabels = new HashSet<>();
     private Set<EdgeLabel> uncommittedInEdgeLabels = new HashSet<>();
     private Set<EdgeLabel> uncommittedOutEdgeLabels = new HashSet<>();
 
-    public static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
+    static VertexLabel createSqlgSchemaVertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
+        Preconditions.checkArgument(schema.isSqlgSchema(), "createSqlgSchemaVertexLabel may only be called for \"%s\"", SQLG_SCHEMA);
+        VertexLabel vertexLabel = new VertexLabel(schema, label);
+        //Add the properties directly. As they are pre-created do not add them to uncommittedProperties.
+        for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
+            Property property = new Property(propertyEntry.getKey(), propertyEntry.getValue());
+            vertexLabel.properties.put(propertyEntry.getKey(), property);
+        }
+        return vertexLabel;
+    }
+
+    static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
         if (!schema.getName().equals(SQLG_SCHEMA)) {
             vertexLabel.createVertexLabelOnDb(sqlgGraph, columns);
@@ -47,13 +58,13 @@ public class VertexLabel extends AbstractElement {
         return vertexLabel;
     }
 
-    VertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
-        super(label, columns);
+    VertexLabel(Schema schema, String label) {
+        super(label);
         this.schema = schema;
     }
 
-    VertexLabel(Schema schema, String label) {
-        super(label);
+    private VertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
+        super(label, columns);
         this.schema = schema;
     }
 
@@ -104,9 +115,9 @@ public class VertexLabel extends AbstractElement {
     }
 
     public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
-        Preconditions.checkState(!this.schema.getName().equals(SQLG_SCHEMA), "schema may not be %s", SQLG_SCHEMA);
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
+                Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.schema.getTopology().lock();
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {

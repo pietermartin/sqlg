@@ -42,6 +42,7 @@ public class TopologyManager {
     public static void addVertexLabel(SqlgGraph sqlgGraph, String schema, String tableName, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
+            //get the schema vertex
             GraphTraversalSource traversalSource = sqlgGraph.topology();
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
@@ -54,14 +55,12 @@ public class TopologyManager {
 
             Vertex vertex = sqlgGraph.addVertex(
                     T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_VERTEX_LABEL,
-//                    NAME, tableName.substring(SchemaManager.VERTEX_PREFIX.length()),
                     SQLG_SCHEMA_VERTEX_LABEL_NAME, tableName,
                     SCHEMA_VERTEX_DISPLAY, schema + "." + SchemaManager.VERTEX_PREFIX + tableName, //this is here for display when in pgadmin
                     CREATED_ON, LocalDateTime.now()
             );
             schemaVertex.addEdge(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertex);
             for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
-
                 Vertex property = sqlgGraph.addVertex(
                         T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_PROPERTY,
                         "name", columnEntry.getKey(),
@@ -69,15 +68,13 @@ public class TopologyManager {
                         CREATED_ON, LocalDateTime.now()
                 );
                 vertex.addEdge(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, property);
-
             }
-
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
 
-    public static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyIn, SchemaTable foreignKeyOut, Map<String, PropertyType> columns) {
+    public static void addEdgeLabel(SqlgGraph sqlgGraph, String schema, String prefixedTable, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             GraphTraversalSource traversalSource = sqlgGraph.topology();
@@ -125,7 +122,6 @@ public class TopologyManager {
             inVertex.addEdge(SchemaManager.SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertex);
 
             for (Map.Entry<String, PropertyType> columnEntry : columns.entrySet()) {
-
                 Vertex property = sqlgGraph.addVertex(
                         T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_PROPERTY,
                         "name", columnEntry.getKey(),
@@ -133,12 +129,10 @@ public class TopologyManager {
                         CREATED_ON, LocalDateTime.now()
                 );
                 edgeVertex.addEdge(SchemaManager.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, property);
-
             }
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
-
     }
 
     public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
@@ -199,7 +193,6 @@ public class TopologyManager {
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
-
     }
 
     public static void addVertexColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map.Entry<String, PropertyType> column) {
@@ -221,7 +214,6 @@ public class TopologyManager {
                 throw new IllegalStateException("Found more than one vertex for " + schema + "." + prefixedTable);
             }
             Vertex vertex = vertices.get(0);
-
 
             Vertex property = sqlgGraph.addVertex(
                     T.label, SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_PROPERTY,

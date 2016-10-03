@@ -79,7 +79,6 @@ public class EdgeLabel extends AbstractElement {
     }
 
     public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
-        Preconditions.checkState(!this.getSchema().getName().equals(SQLG_SCHEMA), "schema may not be %s", SQLG_SCHEMA);
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
