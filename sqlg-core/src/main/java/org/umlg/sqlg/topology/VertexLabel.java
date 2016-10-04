@@ -50,11 +50,10 @@ public class VertexLabel extends AbstractElement {
     }
 
     static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
+        Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
-        if (!schema.getName().equals(SQLG_SCHEMA)) {
-            vertexLabel.createVertexLabelOnDb(sqlgGraph, columns);
-            TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns);
-        }
+        vertexLabel.createVertexLabelOnDb(sqlgGraph, columns);
+        TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns);
         return vertexLabel;
     }
 
@@ -265,6 +264,24 @@ public class VertexLabel extends AbstractElement {
         vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
 
         inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
+            inEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        }
+        vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
+        return vertexLabelNode;
+    }
+
+    public JsonNode toNotifyJson() {
+        ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        vertexLabelNode.put("label", getLabel());
+
+        ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
+            outEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        }
+        vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
+
+        ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
             inEdgeLabelsArrayNode.add(edgeLabel.toJson());
         }

@@ -27,6 +27,7 @@ import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
@@ -2589,7 +2590,7 @@ public class PostgresDialect extends BaseSqlDialect {
                 Connection connection = sqlgGraph.tx().getConnection();
                 PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
                 Statement stmt = connection.createStatement();
-                stmt.execute("LISTEN mymessage");
+                stmt.execute("LISTEN " + Topology.SQLG_NOTIFICATION_CHANNEL);
                 stmt.close();
                 connection.commit();
                 // issue a dummy query to contact the backend
@@ -2603,8 +2604,16 @@ public class PostgresDialect extends BaseSqlDialect {
                     connection.rollback();
                     PGNotification notifications[] = pgConnection.getNotifications();
                     if (notifications != null) {
-                        for (int i = 0; i < notifications.length; i++)
-                            System.out.println("Got notification: " + notifications[i].getName());
+                        for (int i = 0; i < notifications.length; i++) {
+                            Object pid = notifications[i].getPID();
+                            String notify = notifications[i].getParameter();
+                            try {
+                                this.sqlgGraph.getSchemaManager().merge(notify);
+                            } catch (Exception e) {
+                                //swallow
+                                logger.error("pg notify error", e);
+                            }
+                        }
                     }
                     Thread.sleep(100);
                 }

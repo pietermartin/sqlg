@@ -15,6 +15,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -699,6 +700,21 @@ public class Schema {
         }
         schemaNode.set("vertexLabels", vertexLabelArrayNode);
         return schemaNode;
+    }
+
+    public Optional<JsonNode> toNotifyJson() {
+        if (!this.getUncommittedVertexLabels().isEmpty()) {
+            ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+            schemaNode.put("name", this.getName());
+            ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
+                vertexLabelArrayNode.add(vertexLabel.toNotifyJson());
+            }
+            schemaNode.set("vertexLabels", vertexLabelArrayNode);
+            return Optional.of(schemaNode);
+        } else {
+            return Optional.empty();
+        }
     }
 
 }

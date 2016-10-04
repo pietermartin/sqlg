@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.topology.Topology;
 
 import java.sql.*;
@@ -143,9 +142,9 @@ public class SchemaManager {
         }
         this.schemaLock = new ReentrantLock();
 
-        this.sqlgGraph.tx().afterCommit(() -> {
-            this.topology.afterCommit();
-        });
+        this.sqlgGraph.tx().beforeCommit(() -> this.topology.beforeCommit());
+        this.sqlgGraph.tx().afterCommit(() -> this.topology.afterCommit());
+
         this.sqlgGraph.tx().afterRollback(() -> {
             if (this.sqlDialect.supportsTransactionalSchema()) {
                 this.topology.afterRollback();
@@ -412,16 +411,10 @@ public class SchemaManager {
     }
 
     /**
-     * Load Sqlg's actual topology.
-     * This is needed because with the {@link TopologyStrategy} it is possible to query the topology itself.
-     */
-
-    /**
      * Load the schema from the topology.
      */
     private void loadUserSchema() {
         this.topology.loadUserSchema();
-        System.out.println(this.topology.toString());
     }
 
     private void addPublicSchema() {
@@ -461,39 +454,6 @@ public class SchemaManager {
             throw new RuntimeException(e);
         }
 
-    }
-
-    /**
-     * Deletes all tables.
-     */
-    public void clear() {
-        try {
-            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
-            DatabaseMetaData metadata;
-            metadata = conn.getMetaData();
-            if (sqlDialect.supportsCascade()) {
-                String catalog = "sqlgraphdb";
-                String schemaPattern = null;
-                String tableNamePattern = "%";
-                String[] types = {"TABLE"};
-                ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
-                while (result.next()) {
-                    StringBuilder sql = new StringBuilder("DROP TABLE ");
-                    sql.append(sqlDialect.maybeWrapInQoutes(result.getString(3)));
-                    sql.append(" CASCADE");
-                    if (sqlDialect.needsSemicolon()) {
-                        sql.append(";");
-                    }
-                    try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                        preparedStatement.executeUpdate();
-                    }
-                }
-            } else {
-                throw new RuntimeException("Not yet implemented!");
-            }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     Set<String> getEdgeForeignKeys(String schemaTable) {
@@ -544,11 +504,11 @@ public class SchemaManager {
         return this.topology.getTableFor(schemaTable);
     }
 
-    private boolean isLockedByCurrentThread() {
-        return ((ReentrantLock) this.schemaLock).isHeldByCurrentThread();
-    }
-
     public void createTempTable(String tmpTableIdentified, Map<String, PropertyType> columns) {
         this.topology.createTempTable(tmpTableIdentified, columns);
+    }
+
+    public void merge(String notifyJson) {
+        this.topology.merge(notifyJson);
     }
 }

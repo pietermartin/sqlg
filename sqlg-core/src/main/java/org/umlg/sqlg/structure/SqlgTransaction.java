@@ -21,6 +21,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     public static final String BATCH_MODE_NOT_SUPPORTED = "Batch mode not supported!";
     private SqlgGraph sqlgGraph;
+    private BeforeCommit beforeCommitFunction;
     private AfterCommit afterCommitFunction;
     private AfterRollback afterRollbackFunction;
     private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
@@ -73,6 +74,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 getBatchManager().flush();
             }
             Connection connection = this.threadLocalTx.get().getConnection();
+            if (this.beforeCommitFunction != null) {
+                this.beforeCommitFunction.doBeforeCommit();
+            }
             connection.commit();
             connection.setAutoCommit(true);
             if (this.afterCommitFunction != null) {
@@ -225,6 +229,10 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             throw new IllegalStateException("A transaction must be in progress to add a elementPropertyRollback function!");
         }
         threadLocalTx.get().getElementPropertyRollback().put(elementPropertyRollback, null);
+    }
+
+    void beforeCommit(BeforeCommit beforeCommitFunction) {
+        this.beforeCommitFunction = beforeCommitFunction;
     }
 
     void afterCommit(AfterCommit afterCommitFunction) {

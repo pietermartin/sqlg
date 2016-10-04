@@ -35,6 +35,7 @@ public class SqlgPostgresNotify extends BaseTest {
     public void testPostgresNotify() throws InterruptedException {
 
         this.sqlgGraph.addVertex(T.label, "Person");
+        this.sqlgGraph.addVertex(T.label, "Animal.Dog");
         this.sqlgGraph.tx().commit();
 
         Thread.sleep(1_000_000);

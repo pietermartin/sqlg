@@ -12,9 +12,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -42,6 +46,7 @@ public class Topology {
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
     //meta schema
     private Map<String, Schema> metaSchemas = new HashMap<>();
 
@@ -121,6 +126,10 @@ public class Topology {
         return this.schemaLock.isHeldByCurrentThread();
     }
 
+    public boolean isDistributed() {
+        return this.distributed;
+    }
+
     /**
      * Ensures that the schema, vertex table and property columns exist in the db.
      * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
@@ -188,8 +197,8 @@ public class Topology {
      * The vertex's schema and table must already exists.
      *
      * @param schemaName The schema the vertex resides in.
-     * @param label The vertex's label.
-     * @param columns The properties to create if they do not exist.
+     * @param label      The vertex's label.
+     * @param columns    The properties to create if they do not exist.
      */
     public void ensureVertexColumnsExist(String schemaName, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
@@ -214,8 +223,8 @@ public class Topology {
      * The edge's schema and table must already exists.
      *
      * @param schemaName The  schema the edge resides in.
-     * @param label The edge's label.
-     * @param columns The properties to create if they do not exist.
+     * @param label      The edge's label.
+     * @param columns    The properties to create if they do not exist.
      */
     public void ensureEdgeColumnsExist(String schemaName, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
@@ -318,6 +327,17 @@ public class Topology {
         }
     }
 
+    public void beforeCommit() {
+        Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
+        if (jsonNodeOptional.isPresent()) {
+            Connection connection = this.sqlgGraph.tx().getConnection();
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("NOTIFY " + SQLG_NOTIFICATION_CHANNEL + ", '" + jsonNodeOptional.get().toString() + "'");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     public void afterCommit() {
         this.temporaryTables.clear();
@@ -529,9 +549,47 @@ public class Topology {
         return topologyNode;
     }
 
+    public Optional<JsonNode> toNotifyJson() {
+        ArrayNode schemaArrayNode = null;
+        for (Schema schema : this.schemas.values()) {
+            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+            if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
+                schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            }
+            if (jsonNodeOptional.isPresent()) {
+                schemaArrayNode.add(jsonNodeOptional.get());
+            }
+        }
+        for (Schema schema : this.uncommittedSchemas.values()) {
+            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+            if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
+                schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            }
+            if (jsonNodeOptional.isPresent()) {
+                schemaArrayNode.add(jsonNodeOptional.get());
+            }
+        }
+        if (schemaArrayNode != null) {
+            ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+            topologyNode.set("schemas", schemaArrayNode);
+            return Optional.of(topologyNode);
+        } else {
+            return Optional.empty();
+        }
+    }
+
     @Override
     public String toString() {
         return toJson().toString();
     }
 
+    public void merge(String notify) {
+        //TODO think about locking and synchronization
+        try {
+            Map<String, Object> json = OBJECT_MAPPER.readValue(notify, Map.class);
+            System.out.println("Topology.merge " + json);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
