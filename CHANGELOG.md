@@ -1,3 +1,8 @@
+##1.3.3
+
+* Ensure SqlgGraphStepStrategy and SqlgVertexStepStrategy fires before InlineFilterStrategy.
+* Fix a bug where hasId uses the P.neq predicate.
+
 ##1.3.2
 
 * Fix bug [#73](https://github.com/pietermartin/sqlg/issues/73)

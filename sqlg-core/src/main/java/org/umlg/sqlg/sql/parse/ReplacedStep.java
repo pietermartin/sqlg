@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
+import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
@@ -361,8 +363,16 @@ public class ReplacedStep<S, E> {
                     idsToAdd.add(recordId.getId());
                 }
             }
-            schemaTableTree1.getHasContainers().add(new HasContainer(T.id.getAccessor(), P.within(idsToAdd)));
-            toRemove.add(idHasContainer);
+            if (idHasContainer.getBiPredicate() == Compare.neq || idHasContainer.getBiPredicate() == Contains.without) {
+                schemaTableTree1.getHasContainers().add(new HasContainer(T.id.getAccessor(), P.without(idsToAdd)));
+                toRemove.add(idHasContainer);
+            } else if (idHasContainer.getBiPredicate() ==  Compare.eq || idHasContainer.getBiPredicate() == Contains.within) {
+                schemaTableTree1.getHasContainers().add(new HasContainer(T.id.getAccessor(), P.within(idsToAdd)));
+                toRemove.add(idHasContainer);
+            } else {
+                //what now?
+                throw new IllegalStateException("Not handled " + idHasContainer.getBiPredicate().toString());
+            }
         }
         schemaTableTree1.getHasContainers().removeAll(toRemove);
         result.add(schemaTableTree1);
