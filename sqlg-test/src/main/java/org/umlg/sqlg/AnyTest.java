@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.edges.TestEdgeFromDifferentSchema;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileV;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.edges.TestEdgeFromDifferentSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestEdgeFromDifferentSchema.class
+        TestGremlinCompileV.class
 })
 public class AnyTest {
 }

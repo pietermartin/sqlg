@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -43,6 +44,7 @@ public class TestGetById extends BaseTest {
 
     @Test
     public void testByCollectionOfIds() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();

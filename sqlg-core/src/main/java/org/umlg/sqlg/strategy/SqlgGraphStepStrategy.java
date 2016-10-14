@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
@@ -13,10 +14,8 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -117,6 +116,11 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 break;
             }
         }
+    }
+
+    @Override
+    public Set<Class<? extends OptimizationStrategy>> applyPost() {
+        return Stream.of(InlineFilterStrategy.class).collect(Collectors.toSet());
     }
 }
 

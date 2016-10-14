@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -20,6 +21,29 @@ import java.util.List;
  * Time: 6:36 PM
  */
 public class TestHas extends BaseTest {
+
+    @Test
+    public void g_V_in_hasIdXneqX1XX() {
+        loadModern();
+        Object marko = convertToVertex(this.sqlgGraph, "marko").id();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().in().hasId(P.neq(marko)).toList();
+        int count = 0;
+        for (Vertex vertex : vertices) {
+            Assert.assertTrue(vertex.value("name").equals("josh") || vertex.value("name").equals("peter"));
+            count++;
+        }
+        Assert.assertEquals(3, count);
+    }
+
+    @Test
+    public void testHasNotId() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().in().hasId(P.neq(a1.id())).toList();
+        Assert.assertEquals(0, vertices.size());
+    }
 
     @Test
     public void g_V_hasId() throws IOException {
