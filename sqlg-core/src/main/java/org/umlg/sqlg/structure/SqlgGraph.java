@@ -266,7 +266,7 @@ public class SqlgGraph implements Graph {
         }
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
         this.tx().readWrite();
-        this.schemaManager = new SchemaManager(this, sqlDialect, configuration);
+        this.schemaManager = new SchemaManager(this, this.sqlDialect, configuration);
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportSchemas() && !this.schemaManager.schemaExist(this.sqlDialect.getPublicSchema())) {
             //This is for mariadb. Need to make sure a db called public exist
@@ -407,7 +407,7 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
-    public <L, R> void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
+    public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
         if (!(this.sqlDialect instanceof SqlBulkDialect)) {
             throw new UnsupportedOperationException(String.format("Bulk mode is not supported for %s", this.sqlDialect.dialectName()));
         }
@@ -416,9 +416,9 @@ public class SqlgGraph implements Graph {
             throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         if (!uids.isEmpty()) {
-            SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
             SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
-            sqlBulkDialect.bulkAddEdges(this, inSchemaTable, outSchemaTable, edgeLabel, idFields, uids);
+            SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
+            sqlBulkDialect.bulkAddEdges(this, outSchemaTable, inSchemaTable, edgeLabel, idFields, uids);
         }
     }
 

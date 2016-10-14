@@ -397,8 +397,9 @@ public class Topology {
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
             result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
         }
-        //TODO
-//        result.putAll(this.temporaryTables);
+
+        result.putAll(this.temporaryTables);
+
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
@@ -416,8 +417,9 @@ public class Topology {
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
             result.putAll(schemaEntry.getValue().getAllTables());
         }
-        //TODO
-//        result.putAll(this.temporaryTables);
+
+        result.putAll(this.temporaryTables);
+
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 result.putAll(schemaEntry.getValue().getAllTables());
@@ -434,8 +436,9 @@ public class Topology {
         for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
             result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
         }
-        //TODO
-//        result.putAll(this.temporaryTables);
+
+        result.putAll(this.temporaryTables);
+
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
@@ -454,8 +457,11 @@ public class Topology {
                 result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
             }
         }
-        //TODO
-//        result.putAll(this.temporaryTables);
+
+        for (Map<String, PropertyType> stringPropertyTypeMap : this.temporaryTables.values()) {
+            result.putAll(stringPropertyTypeMap);
+        }
+
         if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
@@ -504,6 +510,16 @@ public class Topology {
                     }
                 }
             }
+            for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                    Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+                    if (result.isPresent()) {
+                        inSchemaTables.addAll(result.get().getLeft());
+                        outSchemaTables.addAll(result.get().getRight());
+                        break;
+                    }
+                }
+            }
         } else {
             for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
                 if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
@@ -524,6 +540,9 @@ public class Topology {
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
         for (Schema schema : this.schemas.values()) {
+            result.putAll(schema.getAllEdgeForeignKeys());
+        }
+        for (Schema schema : this.uncommittedSchemas.values()) {
             result.putAll(schema.getAllEdgeForeignKeys());
         }
         for (Schema schema : this.metaSchemas.values()) {

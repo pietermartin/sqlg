@@ -304,7 +304,7 @@ public class SchemaManager {
                     }
 
                 }
-                TopologyManager.addVertexLabel(this.sqlgGraph, schema, table, columns);
+                TopologyManager.addVertexLabel(this.sqlgGraph, schema, table.substring(SchemaManager.VERTEX_PREFIX.length()), columns);
             }
             //load the edges without their properties
             ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types);
@@ -500,6 +500,11 @@ public class SchemaManager {
 
     public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
         return this.topology.getAllTablesFrom(selectFrom);
+    }
+
+    public boolean tableExist(String schema, String table) {
+        SchemaTable schemaTable = SchemaTable.of(schema, table);
+        return !getTableFor(schemaTable).isEmpty();
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {

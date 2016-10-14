@@ -16,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -25,6 +26,15 @@ import static org.junit.Assert.*;
  * Time: 3:27 PM
  */
 public class TestLoadSchema extends BaseTest {
+
+    @Test
+    public void testQueryInTransactionAcrossSchemas() {
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "test1.Person", "name", "john");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
+        v1.addEdge("car", v2, "bought", 1);
+        List<Vertex> cars = this.sqlgGraph.traversal().V(v1.id()).out("car").toList();
+        assertEquals(1, cars.size());
+    }
 
     @Test
     public void testLoadingLocalDateTime() throws Exception {

@@ -2114,7 +2114,7 @@ public class PostgresDialect extends BaseSqlDialect {
             sql.append(maybeWrapInQoutes(schemaTable.getTable()));
             sql.append(" (");
             int count = 1;
-            for (String key : Arrays.asList("in", "out")) {
+            for (String key : Arrays.asList("out", "in")) {
                 if (count > 1 && count <= 2) {
                     sql.append(", ");
                 }
@@ -2142,26 +2142,26 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
+    public <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable out, SchemaTable in, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
         if (!sqlgGraph.tx().isInStreamingBatchMode() && !sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode("Transaction must be in " + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         if (!uids.isEmpty()) {
             //createVertexLabel temp table and copy the uids into it
             Map<String, PropertyType> columns = new HashMap<>();
-            Map<String, PropertyType> inProperties = sqlgGraph.getSchemaManager().getTableFor(in.withPrefix(SchemaManager.VERTEX_PREFIX));
             Map<String, PropertyType> outProperties = sqlgGraph.getSchemaManager().getTableFor(out.withPrefix(SchemaManager.VERTEX_PREFIX));
-            PropertyType inPropertyType;
-            if (idFields.getLeft().equals(SchemaManager.ID)) {
-                inPropertyType = PropertyType.INTEGER;
-            } else {
-                inPropertyType = inProperties.get(idFields.getLeft());
-            }
+            Map<String, PropertyType> inProperties = sqlgGraph.getSchemaManager().getTableFor(in.withPrefix(SchemaManager.VERTEX_PREFIX));
             PropertyType outPropertyType;
-            if (idFields.getRight().equals(SchemaManager.ID)) {
+            if (idFields.getLeft().equals(SchemaManager.ID)) {
                 outPropertyType = PropertyType.INTEGER;
             } else {
-                outPropertyType = outProperties.get(idFields.getRight());
+                outPropertyType = outProperties.get(idFields.getLeft());
+            }
+            PropertyType inPropertyType;
+            if (idFields.getRight().equals(SchemaManager.ID)) {
+                inPropertyType = PropertyType.INTEGER;
+            } else {
+                inPropertyType = inProperties.get(idFields.getRight());
             }
             columns.put("out", outPropertyType);
             columns.put("in", inPropertyType);
@@ -2171,34 +2171,34 @@ public class PostgresDialect extends BaseSqlDialect {
             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
             tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
             sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
-            this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(in.getSchema(), tmpTableIdentified), uids, inPropertyType, outPropertyType);
+            this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyType, inPropertyType);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
 //            sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
             sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeLabel, out, in);
 
             StringBuilder sql = new StringBuilder("INSERT INTO \n");
-            sql.append(this.maybeWrapInQoutes(in.getSchema()));
+            sql.append(this.maybeWrapInQoutes(out.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + edgeLabel));
             sql.append(" (");
-            sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
+            sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
             sql.append(",");
-            sql.append(this.maybeWrapInQoutes(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
+            sql.append(this.maybeWrapInQoutes(in.getSchema() + "." + in.getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
             sql.append(") \n");
-            sql.append("select _in.\"ID\" as \"");
-            sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
-            sql.append("\", _out.\"ID\" as \"");
-            sql.append(out.getSchema() + "." + out.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
+            sql.append("select _out.\"ID\" as \"");
+            sql.append(out.getSchema() + "." + out.getTable() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            sql.append("\", _in.\"ID\" as \"");
+            sql.append(in.getSchema() + "." + in.getTable() + SchemaManager.IN_VERTEX_COLUMN_END);
             sql.append("\" FROM ");
             sql.append(this.maybeWrapInQoutes(in.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + in.getTable()));
             sql.append(" _in join ");
-            sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getLeft()) + " join ");
+            sql.append(this.maybeWrapInQoutes(tmpTableIdentified) + " ab on ab.in = _in." + this.maybeWrapInQoutes(idFields.getRight()) + " join ");
             sql.append(this.maybeWrapInQoutes(out.getSchema()));
             sql.append(".");
             sql.append(this.maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + out.getTable()));
-            sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getRight()));
+            sql.append(" _out on ab.out = _out." + this.maybeWrapInQoutes(idFields.getLeft()));
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
