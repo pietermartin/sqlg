@@ -16,10 +16,7 @@ import org.umlg.sqlg.structure.TopologyManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
 
@@ -32,7 +29,7 @@ public class VertexLabel extends AbstractElement {
     private Logger logger = LoggerFactory.getLogger(VertexLabel.class.getName());
     private Schema schema;
 
-    //hand (out) ---->---- finger (in)
+    //hand (out) ----<label>---- finger (in)
     private Set<EdgeLabel> inEdgeLabels = new HashSet<>();
     private Set<EdgeLabel> outEdgeLabels = new HashSet<>();
     private Set<EdgeLabel> uncommittedInEdgeLabels = new HashSet<>();
@@ -191,6 +188,14 @@ public class VertexLabel extends AbstractElement {
             edgeLabel.afterCommit();
             it.remove();
         }
+        for (Iterator<EdgeLabel> it = this.outEdgeLabels.iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            edgeLabel.afterCommit();
+        }
+        for (Iterator<EdgeLabel> it = this.inEdgeLabels.iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            edgeLabel.afterCommit();
+        }
         for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, Property> entry = it.next();
             this.properties.put(entry.getKey(), entry.getValue());
@@ -271,21 +276,108 @@ public class VertexLabel extends AbstractElement {
         return vertexLabelNode;
     }
 
-    public JsonNode toNotifyJson() {
+    public Optional<JsonNode> toNotifyJson() {
+
         ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         vertexLabelNode.put("label", getLabel());
 
-        ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
-            outEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        Optional<JsonNode> propertyNode = super.toNotifyJson();
+        if (propertyNode.isPresent()) {
+            vertexLabelNode.set("uncommittedProperties", propertyNode.get());
         }
-        vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
+
+        if (this.uncommittedOutEdgeLabels.size() > 0) {
+            ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
+                Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
+                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
+                //noinspection OptionalGetWithoutIsPresent
+                outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+            }
+            vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
+        }
+
+        if (this.uncommittedInEdgeLabels.size() > 0) {
+            ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
+                Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
+                Preconditions.checkState(jsonNodeOptional.isPresent(), "There must be data to notify as the edgeLabel itself is uncommitted");
+                //noinspection OptionalGetWithoutIsPresent
+                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+            }
+            vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
+        }
+
+        //check for uncommittedProperties in existing edges
+        ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        boolean foundOutEdgeLabel = false;
+        for (EdgeLabel edgeLabel : this.outEdgeLabels) {
+            Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
+            if (jsonNodeOptional.isPresent()) {
+                foundOutEdgeLabel = true;
+                outEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+            }
+        }
+        if (foundOutEdgeLabel) {
+            vertexLabelNode.set("outEdgeLabels", outEdgeLabelsArrayNode);
+        }
 
         ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
-            inEdgeLabelsArrayNode.add(edgeLabel.toJson());
+        boolean foundInEdgeLabels = false;
+        for (EdgeLabel edgeLabel : this.inEdgeLabels) {
+            Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
+            if (jsonNodeOptional.isPresent()) {
+                foundInEdgeLabels = true;
+                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+            }
         }
-        vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
-        return vertexLabelNode;
+        if (foundInEdgeLabels) {
+            vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
+        }
+        return Optional.of(vertexLabelNode);
+    }
+
+    public void fromNotifyJson(JsonNode vertexLabelJson) {
+
+        super.fromPropertyNotifyJson(vertexLabelJson);
+
+        for (String s : Arrays.asList("uncommittedOutEdgeLabels", "outEdgeLabels")) {
+            ArrayNode unCommittedOutEdgeLabels = (ArrayNode) vertexLabelJson.get(s);
+            if (unCommittedOutEdgeLabels != null) {
+                for (JsonNode unCommittedOutEdgeLabel : unCommittedOutEdgeLabels) {
+                    String edgeLabelName = unCommittedOutEdgeLabel.get("label").asText();
+                    Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
+                    EdgeLabel edgeLabel;
+                    if (!edgeLabelOptional.isPresent()) {
+                        edgeLabel = new EdgeLabel(edgeLabelName);
+                    } else {
+                        edgeLabel = edgeLabelOptional.get();
+                    }
+                    edgeLabel.addToOutVertexLabel(this);
+                    this.outEdgeLabels.add(edgeLabel);
+                    edgeLabel.fromPropertyNotifyJson(unCommittedOutEdgeLabel);
+                }
+            }
+        }
+
+        for (String s : Arrays.asList("uncommittedInEdgeLabels", "inEdgeLabels")) {
+            ArrayNode unCommittedInEdgeLabels = (ArrayNode) vertexLabelJson.get(s);
+            if (unCommittedInEdgeLabels != null) {
+                for (JsonNode unCommittedInEdgeLabel : unCommittedInEdgeLabels) {
+                    String edgeLabelName = unCommittedInEdgeLabel.get("label").asText();
+                    Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
+                    EdgeLabel edgeLabel;
+                    if (!edgeLabelOptional.isPresent()) {
+                        edgeLabel = new EdgeLabel(edgeLabelName);
+                    } else {
+                        edgeLabel = edgeLabelOptional.get();
+                    }
+                    edgeLabel.addToInVertexLabel(this);
+                    this.inEdgeLabels.add(edgeLabel);
+                    edgeLabel.fromPropertyNotifyJson(unCommittedInEdgeLabel);
+                }
+            }
+        }
+
     }
 }

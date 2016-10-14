@@ -15,7 +15,6 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -64,6 +63,15 @@ public class Schema {
         schema.createSchemaOnDb(sqlgGraph);
         TopologyManager.addSchema(sqlgGraph, name);
         return schema;
+    }
+
+    static Schema instantiateSchema(Topology topology, String schemaName) {
+        return new Schema(topology, schemaName);
+    }
+
+    private Schema(Topology topology, String name) {
+        this.topology = topology;
+        this.name = name;
     }
 
     void ensureVertexTableExist(final SqlgGraph sqlgGraph, final String label, final Object... keyValues) {
@@ -222,10 +230,6 @@ public class Schema {
         return new Schema(topology, schemaName);
     }
 
-    private Schema(Topology topology, String name) {
-        this.topology = topology;
-        this.name = name;
-    }
 
     public String getName() {
         return name;
@@ -412,7 +416,7 @@ public class Schema {
                 uncommittedResult.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
             }
         }
-        //need to merge in the uncommitted table labels in.
+        //need to fromNotifyJson in the uncommitted table labels in.
         for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedResult.entrySet()) {
             SchemaTable schemaTable = schemaTablePairEntry.getKey();
             Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = schemaTablePairEntry.getValue();
@@ -448,7 +452,7 @@ public class Schema {
                 }
             }
         }
-        //need to merge in the uncommitted table labels in.
+        //need to fromNotifyJson in the uncommitted table labels in.
         if (result != null && uncommittedResult != null) {
             result.getLeft().addAll(uncommittedResult.getLeft());
             result.getRight().addAll(uncommittedResult.getRight());
@@ -703,18 +707,64 @@ public class Schema {
     }
 
     public Optional<JsonNode> toNotifyJson() {
+        boolean foundVertexLabels = false;
+        ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+        schemaNode.put("name", this.getName());
         if (!this.getUncommittedVertexLabels().isEmpty()) {
-            ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-            schemaNode.put("name", this.getName());
             ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
-                vertexLabelArrayNode.add(vertexLabel.toNotifyJson());
+                //VertexLabel toNotifyJson always returns something even though its an Optional.
+                //This is because it extends AbstractElement's toNotifyJson that does not always return something.
+                @SuppressWarnings("OptionalGetWithoutIsPresent")
+                JsonNode jsonNode = vertexLabel.toNotifyJson().get();
+                vertexLabelArrayNode.add(jsonNode);
             }
-            schemaNode.set("vertexLabels", vertexLabelArrayNode);
+            schemaNode.set("uncommittedVertexLabels", vertexLabelArrayNode);
+            foundVertexLabels = true;
+        }
+        if (!this.getVertexLabels().isEmpty()) {
+            ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel vertexLabel : this.getVertexLabels().values()) {
+                JsonNode notifyJson = vertexLabel.toNotifyJson().get();
+                if (notifyJson.get("uncommittedProperties") != null ||
+                        notifyJson.get("uncommittedOutEdgeLabels") != null ||
+                        notifyJson.get("uncommittedInEdgeLabels") != null ||
+                        notifyJson.get("outEdgeLabels") != null ||
+                        notifyJson.get("inEdgeLabels") != null) {
+
+                    vertexLabelArrayNode.add(notifyJson);
+                    foundVertexLabels = true;
+                }
+            }
+            if (vertexLabelArrayNode.size() > 0) {
+                schemaNode.set("vertexLabels", vertexLabelArrayNode);
+            }
+        }
+        if (foundVertexLabels) {
             return Optional.of(schemaNode);
         } else {
             return Optional.empty();
         }
     }
 
+    void fromNotifyJson(JsonNode jsonSchema) {
+        for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
+            JsonNode vertexLabels = jsonSchema.get(s);
+            if (vertexLabels != null) {
+                for (JsonNode vertexLabelJson : vertexLabels) {
+                    String vertexLabelName = vertexLabelJson.get("label").asText();
+                    Optional<VertexLabel> vertexLabelOptional = getVertexLabel(vertexLabelName);
+                    VertexLabel vertexLabel;
+                    if (vertexLabelOptional.isPresent()) {
+                        vertexLabel = vertexLabelOptional.get();
+                    } else {
+                        vertexLabel = new VertexLabel(this, vertexLabelName);
+                        this.vertexLabels.put(vertexLabelName, vertexLabel);
+                    }
+                    vertexLabel.fromNotifyJson(vertexLabelJson);
+                }
+            }
+        }
+        System.out.println("test a bit");
+    }
 }

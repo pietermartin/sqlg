@@ -1,7 +1,10 @@
 package org.umlg.sqlg.sql.dialect;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.umlg.sqlg.structure.SqlgExceptions;
 import org.umlg.sqlg.structure.SqlgGraph;
+
+import java.time.LocalDateTime;
 
 /**
  * Date: 2016/09/03
@@ -18,6 +21,10 @@ public interface SqlSchemaChangeDialect extends SqlDialect {
     }
 
     default void unregisterListener() {
+        throw SqlgExceptions.multipleJvmNotSupported(dialectName());
+    }
+
+    default int notifyChange(SqlgGraph sqlgGraph, LocalDateTime timestamp, JsonNode jsonNode) {
         throw SqlgExceptions.multipleJvmNotSupported(dialectName());
     }
 

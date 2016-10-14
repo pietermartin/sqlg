@@ -77,6 +77,14 @@ There will be 2 entries in 'EdgeLabel'</body>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_Rhk1EHeNEeaH4dJUP3R7fA" value="*"/>
             </ownedEnd>
           </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_UcpbYIxPEeaMtuCMxT-y6w" name="Log">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_TqNwgIxdEeaMtuCMxT-y6w" name="timestamp" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_eYxk8IxdEeaMtuCMxT-y6w" name="json" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
+            </ownedAttribute>
+          </packagedElement>
         </packagedElement>
       </packagedElement>
     </packagedElement>

@@ -1,5 +1,7 @@
 package org.umlg.sqlg.topology;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -117,4 +119,35 @@ public abstract class AbstractElement {
         Property property = new Property(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
+
+    public JsonNode toJson() {
+        ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (Property property : this.properties.values()) {
+            propertyArrayNode.add(property.toNotifyJson());
+        }
+        return propertyArrayNode;
+    }
+
+    public Optional<JsonNode> toNotifyJson() {
+        if (this.uncommittedProperties.size() > 0) {
+            ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (Property property : this.uncommittedProperties.values()) {
+                propertyArrayNode.add(property.toNotifyJson());
+            }
+            return Optional.of(propertyArrayNode);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public void fromPropertyNotifyJson(JsonNode vertexLabelJson) {
+        ArrayNode propertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedProperties");
+        if (propertiesNode != null) {
+            for (JsonNode propertyNode : propertiesNode) {
+                Property property = Property.fromNotifyJson(propertyNode);
+                this.properties.put(property.getName(), property);
+            }
+        }
+    }
+
 }

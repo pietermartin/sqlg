@@ -26,7 +26,7 @@ public class EdgeLabel extends AbstractElement {
 
     private Logger logger = LoggerFactory.getLogger(EdgeLabel.class.getName());
     //This just won't stick in my brain.
-    //hand (out) ---->---- finger (in)
+    //hand (out) ----<label>---- finger (in)
     private Set<VertexLabel> outVertexLabels = new HashSet<>();
     private Set<VertexLabel> inVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedOutVertexLabels = new HashSet<>();
@@ -51,6 +51,14 @@ public class EdgeLabel extends AbstractElement {
         return new EdgeLabel(edgeLabelName);
     }
 
+    public static EdgeLabel from(VertexLabel vertexLabel, JsonNode unCommittedOutEdgeLabel) {
+        String edgeLabelName = unCommittedOutEdgeLabel.get("label").asText();
+        EdgeLabel edgeLabel = new EdgeLabel(edgeLabelName);
+        edgeLabel.outVertexLabels.add(vertexLabel);
+        return edgeLabel;
+
+    }
+
     private EdgeLabel(boolean forSqlgSchema, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         super(edgeLabelName, properties);
         if (forSqlgSchema) {
@@ -62,7 +70,7 @@ public class EdgeLabel extends AbstractElement {
         }
     }
 
-    private EdgeLabel(String edgeLabelName) {
+    EdgeLabel(String edgeLabelName) {
         super(edgeLabelName, Collections.emptyMap());
     }
 
@@ -376,6 +384,9 @@ public class EdgeLabel extends AbstractElement {
         ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         edgeLabelNode.put("label", getLabel());
 
+        JsonNode propertyNode = super.toJson();
+        edgeLabelNode.set("properties", propertyNode);
+
         ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (VertexLabel outVertexLabel : this.outVertexLabels) {
             ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -410,4 +421,45 @@ public class EdgeLabel extends AbstractElement {
 
         return edgeLabelNode;
     }
+
+    public Optional<JsonNode> toNotifyJson() {
+        boolean foundSomething = false;
+        ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        edgeLabelNode.put("label", getLabel());
+
+        Optional<JsonNode> propertyNode = super.toNotifyJson();
+        if (propertyNode.isPresent()) {
+            foundSomething = true;
+            edgeLabelNode.set("uncommittedProperties", propertyNode.get());
+        }
+
+        if (this.uncommittedOutVertexLabels.size() > 0) {
+            foundSomething = true;
+            ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
+                ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
+                outVertexLabelArrayNode.add(outVertexLabelObjectNode);
+            }
+            edgeLabelNode.set("unCommittedOutVertexLabels", outVertexLabelArrayNode);
+        }
+
+        if (this.uncommittedInVertexLabels.size() > 0) {
+            foundSomething = true;
+            ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
+                ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
+                inVertexLabelArrayNode.add(inVertexLabelObjectNode);
+            }
+            edgeLabelNode.set("uncommittedInVertexLabels", inVertexLabelArrayNode);
+        }
+
+        if (foundSomething) {
+            return Optional.of(edgeLabelNode);
+        } else {
+            return Optional.empty();
+        }
+    }
+
 }

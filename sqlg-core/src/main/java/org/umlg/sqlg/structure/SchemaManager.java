@@ -18,8 +18,6 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Date: 2014/07/12
@@ -28,12 +26,10 @@ import java.util.concurrent.locks.ReentrantLock;
 public class SchemaManager {
 
     private Topology topology;
-    public static final String JDBC_URL = "jdbc.url";
     public static final String GIVEN_TABLES_MUST_NOT_BE_NULL = "Given tables must not be null";
     public static final String GIVEN_TABLE_MUST_NOT_BE_NULL = "Given table must not be null";
     public static final String CREATED_ON = "createdOn";
     public static final String SCHEMA_VERTEX_DISPLAY = "schemaVertex";
-    public static final String SHOULD_NOT_HAPPEN = "Should not happen!";
     private Logger logger = LoggerFactory.getLogger(SchemaManager.class.getName());
 
     /**
@@ -93,6 +89,14 @@ public class SchemaManager {
      */
     public static final String SQLG_SCHEMA_PROPERTY_NAME = "name";
     /**
+     * Table storing the logs.
+     */
+    public static final String SQLG_SCHEMA_LOG = "log";
+    public static final String SQLG_SCHEMA_LOG_TIMESTAMP = "timestamp";
+    public static final String SQLG_SCHEMA_LOG_LOG = "log";
+    public static final String SQLG_SCHEMA_LOG_PID = "pid";
+
+    /**
      * Property table's type property
      */
     public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
@@ -117,6 +121,7 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_LOG,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
@@ -124,7 +129,6 @@ public class SchemaManager {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE
     );
 
-    private Lock schemaLock;
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
     private SqlSchemaChangeDialect sqlSchemaChangeDialect;
@@ -140,7 +144,6 @@ public class SchemaManager {
             this.sqlSchemaChangeDialect = (SqlSchemaChangeDialect) sqlDialect;
             this.sqlSchemaChangeDialect.registerListener(sqlgGraph);
         }
-        this.schemaLock = new ReentrantLock();
 
         this.sqlgGraph.tx().beforeCommit(() -> this.topology.beforeCommit());
         this.sqlgGraph.tx().afterCommit(() -> this.topology.afterCommit());
@@ -508,7 +511,7 @@ public class SchemaManager {
         this.topology.createTempTable(tmpTableIdentified, columns);
     }
 
-    public void merge(String notifyJson) {
-        this.topology.merge(notifyJson);
+    public void merge(int pid, LocalDateTime timestamp) {
+        this.topology.fromNotifyJson(pid, timestamp);
     }
 }

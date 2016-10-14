@@ -1,5 +1,7 @@
 package org.umlg.sqlg.topology;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.umlg.sqlg.structure.PropertyType;
 
 /**
@@ -30,5 +32,19 @@ public class Property {
 
     public void afterRollback() {
 
+    }
+
+    public JsonNode toNotifyJson() {
+        ObjectNode propertyObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        propertyObjectNode.put("name", this.name);
+        propertyObjectNode.put("propertyType", this.propertyType.name());
+        return propertyObjectNode;
+    }
+
+    public static Property fromNotifyJson(JsonNode jsonNode) {
+        Property property = new Property(
+                jsonNode.get("name").asText(),
+                PropertyType.from(jsonNode.get("propertyType").asText()));
+        return property;
     }
 }

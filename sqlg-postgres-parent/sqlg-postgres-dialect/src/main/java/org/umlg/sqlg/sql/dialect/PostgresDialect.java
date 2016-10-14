@@ -11,6 +11,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.postgis.*;
 import org.postgresql.PGConnection;
@@ -27,7 +28,6 @@ import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
@@ -36,15 +36,15 @@ import java.security.SecureRandom;
 import java.sql.*;
 import java.sql.Date;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA;
 import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_SCHEMA;
+import static org.umlg.sqlg.topology.Topology.SQLG_NOTIFICATION_CHANNEL;
 
 /**
  * Date: 2014/07/16
@@ -59,10 +59,11 @@ public class PostgresDialect extends BaseSqlDialect {
     private static final String COPY_COMMAND_QUOTE = "e'\\x01'";
     private static final int PARAMETER_LIMIT = 32767;
     private static final String COPY_DUMMY = "_copy_dummy";
-    private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
+    private Logger logger = LoggerFactory.getLogger(PostgresDialect.class.getName());
     private PropertyType postGisType;
 
     private ScheduledFuture<?> future;
+    private Semaphore listeningSemaphore;
 
     @SuppressWarnings("unused")
     public PostgresDialect() {
@@ -2391,6 +2392,8 @@ public class PostgresDialect extends BaseSqlDialect {
 
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
         result.add("CREATE INDEX ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_log\"(\"ID\" SERIAL PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" JSONB);");
         return result;
     }
 
@@ -2565,8 +2568,12 @@ public class PostgresDialect extends BaseSqlDialect {
     public void registerListener(SqlgGraph sqlgGraph) {
         ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Postgresql notification listener"));
         try {
-            this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph), 500, MILLISECONDS);
-        } catch (SQLException e) {
+            this.listeningSemaphore = new Semaphore(1);
+            this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph, this.listeningSemaphore), 500, MILLISECONDS);
+            //block here to only return once the listener is listening.
+            this.listeningSemaphore.acquire();
+            this.listeningSemaphore.tryAcquire(5, TimeUnit.MINUTES);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -2576,23 +2583,49 @@ public class PostgresDialect extends BaseSqlDialect {
         this.future.cancel(true);
     }
 
+    @Override
+    public int notifyChange(SqlgGraph sqlgGraph, LocalDateTime timestamp, JsonNode jsonNode) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        try {
+            PGConnection pgConnection = connection.unwrap(PGConnection.class);
+            logger.info(String.format("notifyChange pid = %s", pgConnection.getBackendPID()));
+            sqlgGraph.addVertex(
+                    T.label,
+                    SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_LOG,
+                    "timestamp", timestamp,
+                    "pid", pgConnection.getBackendPID(),
+                    "log", jsonNode
+            );
+            try (Statement statement = connection.createStatement()) {
+                statement.execute("NOTIFY " + SQLG_NOTIFICATION_CHANNEL + ", '" + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'");
+            }
+            return pgConnection.getBackendPID();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private class Listener implements Runnable {
 
         private SqlgGraph sqlgGraph;
+        private Semaphore semaphore;
 
-        Listener(SqlgGraph sqlgGraph) throws SQLException {
+        Listener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
             this.sqlgGraph = sqlgGraph;
+            this.semaphore = semaphore;
         }
 
         @Override
         public void run() {
             try {
+                logger.info(String.format("start change listening on graph %s", this.sqlgGraph.toString()));
                 Connection connection = sqlgGraph.tx().getConnection();
                 PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
                 Statement stmt = connection.createStatement();
-                stmt.execute("LISTEN " + Topology.SQLG_NOTIFICATION_CHANNEL);
+                stmt.execute("LISTEN " + SQLG_NOTIFICATION_CHANNEL);
                 stmt.close();
                 connection.commit();
+                this.semaphore.release();
                 // issue a dummy query to contact the backend
                 // and receive any pending notifications.
                 while (true) {
@@ -2605,10 +2638,12 @@ public class PostgresDialect extends BaseSqlDialect {
                     PGNotification notifications[] = pgConnection.getNotifications();
                     if (notifications != null) {
                         for (int i = 0; i < notifications.length; i++) {
-                            Object pid = notifications[i].getPID();
+                            int pid = notifications[i].getPID();
                             String notify = notifications[i].getParameter();
                             try {
-                                this.sqlgGraph.getSchemaManager().merge(notify);
+                                logger.info(String.format("notification pid %s", String.valueOf(pid)));
+                                LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                                this.sqlgGraph.getSchemaManager().merge(pid, timestamp);
                             } catch (Exception e) {
                                 //swallow
                                 logger.error("pg notify error", e);

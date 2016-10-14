@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -18,10 +20,10 @@ import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +54,13 @@ public class Topology {
 
     //temporary tables
     private Map<String, Map<String, PropertyType>> temporaryTables = new ConcurrentHashMap<>();
+
+    //ownPids are the pids to ignore as it is what the graph sent a notification for.
+    private Set<Integer> ownPids = new HashSet<>();
+
+    //every notification will have a unique timestamp.
+    //This is so because modification happen one at a time via the lock.
+    private SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
 
     private static final int LOCK_TIMEOUT = 10;
 
@@ -96,6 +105,13 @@ public class Topology {
         @SuppressWarnings("unused")
         EdgeLabel schemaEdgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
 
+        columns.clear();
+        columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, PropertyType.LOCALDATETIME);
+        columns.put(SQLG_SCHEMA_LOG_LOG, PropertyType.JSON);
+        columns.put(SQLG_SCHEMA_LOG_PID, PropertyType.INTEGER);
+        @SuppressWarnings("unused")
+        VertexLabel logVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_LOG, columns);
+
         //add the public schema
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
     }
@@ -105,6 +121,7 @@ public class Topology {
      * For distributed graph (multiple jvm) this happens on the db via a lock sql statement.
      */
     void lock() {
+        //only lock if the lock is not already owned by this thread.
         if (!isHeldByCurrentThread()) {
             try {
                 if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
@@ -112,6 +129,19 @@ public class Topology {
                 }
                 if (this.distributed) {
                     ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
+                }
+                if (!this.notificationTimestamps.isEmpty()) {
+                    //load the log to see if the schema has not already been created.
+                    //the last loaded log
+                    LocalDateTime timestamp = this.notificationTimestamps.last();
+                    List<Vertex> logs = this.sqlgGraph.topology().V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                            .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
+                            .toList();
+                    for (Vertex logVertex : logs) {
+                        ObjectNode log = logVertex.value("log");
+                        fromNotifyJson(timestamp, log);
+                    }
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -124,10 +154,6 @@ public class Topology {
      */
     boolean isHeldByCurrentThread() {
         return this.schemaLock.isHeldByCurrentThread();
-    }
-
-    public boolean isDistributed() {
-        return this.distributed;
     }
 
     /**
@@ -329,13 +355,10 @@ public class Topology {
 
     public void beforeCommit() {
         Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
-        if (jsonNodeOptional.isPresent()) {
-            Connection connection = this.sqlgGraph.tx().getConnection();
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("NOTIFY " + SQLG_NOTIFICATION_CHANNEL + ", '" + jsonNodeOptional.get().toString() + "'");
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+        if (jsonNodeOptional.isPresent() && this.distributed) {
+            SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
+            LocalDateTime timestamp = LocalDateTime.now();
+            this.ownPids.add(sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get()));
         }
     }
 
@@ -511,6 +534,22 @@ public class Topology {
 
     public void loadUserSchema() {
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
+        //load the last log
+        //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
+        //loaded as the notification might not have been received yet.
+        List<Vertex> logs = traversalSource.V()
+                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_LOG)
+                .order().by(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_LOG_TIMESTAMP, Order.decr)
+                .limit(1)
+                .toList();
+        Preconditions.checkState(logs.size() <= 1, "must load one or zero logs in loadUserSchema");
+
+        if (!logs.isEmpty()) {
+            Vertex log = logs.get(0);
+            LocalDateTime timestamp = log.value("timestamp");
+            this.notificationTimestamps.add(timestamp);
+        }
+
         //First load all VertexLabels, their out edges and properties
         List<Vertex> schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
@@ -537,6 +576,7 @@ public class Topology {
             Schema schema = schemaOptional.get();
             schema.loadInEdgeLabels(traversalSource, schemaVertex);
         }
+
     }
 
     public JsonNode toJson() {
@@ -547,6 +587,11 @@ public class Topology {
         }
         topologyNode.set("schemas", schemaArrayNode);
         return topologyNode;
+    }
+
+    @Override
+    public String toString() {
+        return toJson().toString();
     }
 
     public Optional<JsonNode> toNotifyJson() {
@@ -578,18 +623,42 @@ public class Topology {
         }
     }
 
-    @Override
-    public String toString() {
-        return toJson().toString();
+    public void fromNotifyJson(int pid, LocalDateTime notifyTimestamp) {
+        logger.info(String.format("fromNotifyJson pids = %s, pid = %d", this.ownPids.toString(), pid));
+        if (!this.ownPids.contains(pid)) {
+            logger.info(String.format("fromNotifyJson for %s", notifyTimestamp.toString()));
+            List<Vertex> logs = this.sqlgGraph.topology().V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                    .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp).toList();
+            Preconditions.checkState(logs.size() == 1, "There must be one and only be one log");
+
+            LocalDateTime timestamp = logs.get(0).value("timestamp");
+            Preconditions.checkState(timestamp.equals(notifyTimestamp), "notify log's timestamp does not match.");
+            int backEndPid = logs.get(0).value("pid");
+            Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
+
+            ObjectNode log = logs.get(0).value("log");
+            fromNotifyJson(timestamp, log);
+        } else {
+            logger.info(String.format("ignoring pid %s", String.valueOf(pid)));
+        }
     }
 
-    public void merge(String notify) {
-        //TODO think about locking and synchronization
-        try {
-            Map<String, Object> json = OBJECT_MAPPER.readValue(notify, Map.class);
-            System.out.println("Topology.merge " + json);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private void fromNotifyJson(LocalDateTime timestamp, ObjectNode log) {
+        ArrayNode schemas = (ArrayNode) log.get("schemas");
+        for (JsonNode jsonSchema : schemas) {
+            String schemaName = jsonSchema.get("name").asText();
+            Optional<Schema> schemaOptional = getSchema(schemaName);
+            Schema schema;
+            if (schemaOptional.isPresent()) {
+                schema = schemaOptional.get();
+            } else {
+                //add to map
+                schema = Schema.instantiateSchema(this, schemaName);
+                this.schemas.put(schemaName, schema);
+            }
+            schema.fromNotifyJson(jsonSchema);
         }
+        this.notificationTimestamps.add(timestamp);
     }
 }
