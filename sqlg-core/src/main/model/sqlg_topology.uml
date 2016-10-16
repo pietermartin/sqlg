@@ -25,7 +25,7 @@ There will be 2 entries in 'EdgeLabel'</body>
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_un-OYHeLEeaH4dJUP3R7fA"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_uoFjIHeLEeaH4dJUP3R7fA" value="*"/>
             </ownedAttribute>
-            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="outEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" aggregation="composite" association="__qz7IMzjEeW174sSW5_77g">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="__q0iMszjEeW174sSW5_77g" name="outEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" aggregation="shared" association="__qz7IMzjEeW174sSW5_77g">
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_OTAAQHeNEeaH4dJUP3R7fA"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_OTCcgHeNEeaH4dJUP3R7fA" value="*"/>
             </ownedAttribute>
@@ -39,8 +39,27 @@ There will be 2 entries in 'EdgeLabel'</body>
               <lowerValue xmi:type="uml:LiteralInteger" xmi:id="_3ZzQYHeLEeaH4dJUP3R7fA"/>
               <upperValue xmi:type="uml:LiteralUnlimitedNatural" xmi:id="_3Z2TsHeLEeaH4dJUP3R7fA" value="*"/>
             </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_rTDS0JLbEeaXH6RvC9nWPA" name="outIsOrdered" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_tjRpAJLbEeaXH6RvC9nWPA" name="outIsUnique" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_muDukJLkEeaXH6RvC9nWPA" name="inIsOrdered" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_ow3T0JLkEeaXH6RvC9nWPA" name="inIsUnique" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_SISH8JLlEeaXH6RvC9nWPA" name="outQualifier" type="_4-gikMzgEeW174sSW5_77g" association="_SIQSwJLlEeaXH6RvC9nWPA"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_-RAf4pMCEeaXH6RvC9nWPA" name="inQualifier" type="_4-gikMzgEeW174sSW5_77g" association="_-Q_40JMCEeaXH6RvC9nWPA"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_Yfsk4ZMEEeaXH6RvC9nWPA" name="outMultiplicity" type="_rV06MJMAEeaXH6RvC9nWPA" association="_Yfr90JMEEeaXH6RvC9nWPA"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_kVwM45MEEeaXH6RvC9nWPA" name="inMultiplicity" type="_rV06MJMAEeaXH6RvC9nWPA" association="_kVwM4JMEEeaXH6RvC9nWPA"/>
           </packagedElement>
-          <packagedElement xmi:type="uml:Class" xmi:id="_4-gikMzgEeW174sSW5_77g" name="Property"/>
+          <packagedElement xmi:type="uml:Class" xmi:id="_4-gikMzgEeW174sSW5_77g" name="Property">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_2txC05MAEeaXH6RvC9nWPA" name="multiplicity" type="_rV06MJMAEeaXH6RvC9nWPA" association="_2txC0JMAEeaXH6RvC9nWPA"/>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_A1MB85MFEeaXH6RvC9nWPA" name="constraint" type="_74kW8JMEEeaXH6RvC9nWPA" association="_A1MB8JMFEeaXH6RvC9nWPA"/>
+          </packagedElement>
           <packagedElement xmi:type="uml:Association" xmi:id="_n6oqgMzjEeW174sSW5_77g" name="schema_vertex" memberEnd="_n6rGwMzjEeW174sSW5_77g _n6rt0MzjEeW174sSW5_77g" navigableOwnedEnd="_n6rt0MzjEeW174sSW5_77g">
             <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_n6qfsMzjEeW174sSW5_77g" source="org.eclipse.papyrus">
               <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_n6qfsczjEeW174sSW5_77g" key="nature" value="UML_Nature"/>
@@ -84,6 +103,54 @@ There will be 2 entries in 'EdgeLabel'</body>
             <ownedAttribute xmi:type="uml:Property" xmi:id="_eYxk8IxdEeaMtuCMxT-y6w" name="json" visibility="public">
               <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#String"/>
             </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_SIQSwJLlEeaXH6RvC9nWPA" name="outEdgeLabel_outQualifier" memberEnd="_SISH8JLlEeaXH6RvC9nWPA _SISH8ZLlEeaXH6RvC9nWPA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_SIRg4JLlEeaXH6RvC9nWPA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_SIRg4ZLlEeaXH6RvC9nWPA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_SISH8ZLlEeaXH6RvC9nWPA" name="outEdgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_SIQSwJLlEeaXH6RvC9nWPA"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Class" xmi:id="_rV06MJMAEeaXH6RvC9nWPA" name="Multiplicity">
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_tNUAQJMAEeaXH6RvC9nWPA" name="lower" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+            </ownedAttribute>
+            <ownedAttribute xmi:type="uml:Property" xmi:id="_vw9owJMAEeaXH6RvC9nWPA" name="upper" visibility="public">
+              <type xmi:type="uml:PrimitiveType" href="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Integer"/>
+            </ownedAttribute>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_2txC0JMAEeaXH6RvC9nWPA" name="property_multiplicity" memberEnd="_2txC05MAEeaXH6RvC9nWPA _2txp4JMAEeaXH6RvC9nWPA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_2txC0ZMAEeaXH6RvC9nWPA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_2txC0pMAEeaXH6RvC9nWPA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_2txp4JMAEeaXH6RvC9nWPA" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_2txC0JMAEeaXH6RvC9nWPA"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_-Q_40JMCEeaXH6RvC9nWPA" name="inEdgeLabel_inQualifier" memberEnd="_-RAf4pMCEeaXH6RvC9nWPA _-RBG8JMCEeaXH6RvC9nWPA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_-RAf4JMCEeaXH6RvC9nWPA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_-RAf4ZMCEeaXH6RvC9nWPA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_-RBG8JMCEeaXH6RvC9nWPA" name="inEdgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_-Q_40JMCEeaXH6RvC9nWPA"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_Yfr90JMEEeaXH6RvC9nWPA" name="outEdgeLabel_outMultiplicity" memberEnd="_Yfsk4ZMEEeaXH6RvC9nWPA _Yfsk4pMEEeaXH6RvC9nWPA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_Yfr90ZMEEeaXH6RvC9nWPA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_Yfsk4JMEEeaXH6RvC9nWPA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_Yfsk4pMEEeaXH6RvC9nWPA" name="outEdgeLabel" type="_3NWG8MzgEeW174sSW5_77g" association="_Yfr90JMEEeaXH6RvC9nWPA"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_kVwM4JMEEeaXH6RvC9nWPA" name="inEdgelabel_inMultiplicity" memberEnd="_kVwM45MEEeaXH6RvC9nWPA _kVwM5JMEEeaXH6RvC9nWPA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_kVwM4ZMEEeaXH6RvC9nWPA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_kVwM4pMEEeaXH6RvC9nWPA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_kVwM5JMEEeaXH6RvC9nWPA" name="inEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="_kVwM4JMEEeaXH6RvC9nWPA"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Enumeration" xmi:id="_74kW8JMEEeaXH6RvC9nWPA" name="Constraint">
+            <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_88kKkJMEEeaXH6RvC9nWPA" name="UNIQUE"/>
+            <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_-KU-MJMEEeaXH6RvC9nWPA" name="NON_UNIQUE"/>
+          </packagedElement>
+          <packagedElement xmi:type="uml:Association" xmi:id="_A1MB8JMFEeaXH6RvC9nWPA" name="property_constraint" memberEnd="_A1MB85MFEeaXH6RvC9nWPA _A1MpAJMFEeaXH6RvC9nWPA">
+            <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_A1MB8ZMFEeaXH6RvC9nWPA" source="org.eclipse.papyrus">
+              <details xmi:type="ecore:EStringToStringMapEntry" xmi:id="_A1MB8pMFEeaXH6RvC9nWPA" key="nature" value="UML_Nature"/>
+            </eAnnotations>
+            <ownedEnd xmi:type="uml:Property" xmi:id="_A1MpAJMFEeaXH6RvC9nWPA" name="property" type="_4-gikMzgEeW174sSW5_77g" association="_A1MB8JMFEeaXH6RvC9nWPA"/>
           </packagedElement>
         </packagedElement>
       </packagedElement>

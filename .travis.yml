@@ -20,3 +20,9 @@ before_script:
   - psql -c 'create database "temp2";' -U postgres
   - psql -c 'create database "target";' -U postgres
 
+notifications:
+  email:
+    recipients:
+      - pieter.martin@riseup.net
+    on_success: always
+    on_failure: always
