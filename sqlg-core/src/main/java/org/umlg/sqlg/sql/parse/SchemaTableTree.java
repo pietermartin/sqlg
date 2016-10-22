@@ -1040,7 +1040,7 @@ public class SchemaTableTree {
             throw new IllegalStateException("Join can not be between 2 edge tables!");
         }
 
-        String sql = "";
+        ColumnList columnList=new ColumnList(sqlgGraph);
         boolean printedId = false;
 
         //join to the previous label/table
@@ -1050,104 +1050,76 @@ public class SchemaTableTree {
             }
             String previousRawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
             if (firstSchemaTableTree.direction == Direction.OUT) {
-                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(
-                                previousSchemaTableTree.getSchemaTable().getSchema() + "." +
-                                        previousRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END
-                        );
-                sql += " AS \"" + firstSchemaTableTree.calculatedAliasVertexForeignKeyColumnEnd(previousSchemaTableTree, firstSchemaTableTree.direction) + "\"";
+            	columnList.add(firstSchemaTable, 
+            				previousSchemaTableTree.getSchemaTable().getSchema() + "." +
+            						previousRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END, 
+                            firstSchemaTableTree.calculatedAliasVertexForeignKeyColumnEnd(previousSchemaTableTree, firstSchemaTableTree.direction));
             } else {
-                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
-                        sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+            	columnList.add(firstSchemaTable, 
                                 previousSchemaTableTree.getSchemaTable().getSchema() + "." +
                                         previousRawLabel + SchemaManager.IN_VERTEX_COLUMN_END
-                        );
-                sql += " AS \"" + firstSchemaTableTree.calculatedAliasVertexForeignKeyColumnEnd(previousSchemaTableTree, firstSchemaTableTree.direction) + "\"";
+                        , firstSchemaTableTree.calculatedAliasVertexForeignKeyColumnEnd(previousSchemaTableTree, firstSchemaTableTree.direction));
             }
         } else if (previousSchemaTableTree != null && firstSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()) + "." +
-                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()) + "." +
-                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
-            sql += " AS \"" + firstSchemaTableTree.calculatedAliasId() + "\"";
+        	columnList.add(firstSchemaTable,SchemaManager.ID, firstSchemaTableTree.calculatedAliasId());
             printedId = firstSchemaTable == lastSchemaTable;
         }
-        Map<String,String> cols=new HashMap<>();
         //join to the next table/label
         if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
             if (!nextSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
                 throw new IllegalStateException("Expected table to start with " + SchemaManager.VERTEX_PREFIX);
             }
             String nextRawLabel = nextSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-            if (!sql.isEmpty()) {
-                sql += ", ";
-            }
             if (nextSchemaTableTree.direction == Direction.OUT) {
                 if (nextSchemaTableTree.isEdgeVertexStep()) {
-                    sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                	columnList.add(lastSchemaTable,
                                     nextSchemaTableTree.getSchemaTable().getSchema() + "." +
                                             nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END
-                            );
-                    sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                            , lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                             nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                            nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                            nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END);
 
-                    sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql,cols);
+                    constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
                 } else {
-                    sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                	columnList.add(lastSchemaTable,
+                            
                                     nextSchemaTableTree.getSchemaTable().getSchema() + "." +
                                             nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END
-                            );
-                    sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                            , lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                             nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                            nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                            nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END );
 
-                    sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql,cols);
-                    sql = constructEmitEdgeIdFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
+                    constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
+                    constructEmitEdgeIdFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
                 }
             } else {
                 if (nextSchemaTableTree.isEdgeVertexStep()) {
-                    sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                	columnList.add(lastSchemaTable,
                                     nextSchemaTableTree.getSchemaTable().getSchema() + "." +
                                             nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END
-                            );
-                    sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                            , lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                             nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                            nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
+                            nextRawLabel + SchemaManager.IN_VERTEX_COLUMN_END );
 
-                    sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql,cols);
+                    constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree,columnList);
                 } else {
-                    sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
-                            sqlgGraph.getSqlDialect().maybeWrapInQoutes(
+                	columnList.add(lastSchemaTable,
                                     nextSchemaTableTree.getSchemaTable().getSchema() + "." +
                                             nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END
-                            );
-                    sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
+                            , lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." +
                             nextSchemaTableTree.getSchemaTable().getSchema() + "." +
-                            nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
+                            nextRawLabel + SchemaManager.OUT_VERTEX_COLUMN_END );
 
-                    sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql,cols);
-                    sql = constructEmitEdgeIdFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
+                    constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
+                    constructEmitEdgeIdFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
                 }
             }
         } else if (nextSchemaTableTree != null && lastSchemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-            if (!sql.isEmpty()) {
-                sql += ", ";
-            }
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getSchema()) + "." +
-                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTable.getTable()) + "." +
-                    sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
-            sql += " AS \"" + lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID + "\"";
+            
+        	columnList.add(lastSchemaTable,
+                    SchemaManager.ID, lastSchemaTable.getSchema() + "." + lastSchemaTable.getTable() + "." + SchemaManager.ID );
 
-            sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql,cols);
+            constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
 
             printedId = firstSchemaTable == lastSchemaTable;
         }
@@ -1156,25 +1128,25 @@ public class SchemaTableTree {
         //This last element's properties need to be returned, including all labeled properties for this path
         if (nextSchemaTableTree == null) {
             if (!printedId) {
-                sql = printIDFromClauseFor(sqlgGraph, lastSchemaTableTree, sql,cols);
+                printIDFromClauseFor(sqlgGraph, lastSchemaTableTree,columnList);
             }
             //Map<String, PropertyType> propertyTypeMap = firstSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
             /*if (!propertyTypeMap.isEmpty()) {
                 sql += ",\n\t";
             }*/
-            sql = printFromClauseFor(sqlgGraph, lastSchemaTableTree, sql,cols);
+            printFromClauseFor(sqlgGraph, lastSchemaTableTree,columnList);
 
             if (lastSchemaTableTree.getSchemaTable().isEdgeTable()) {
                 // sql += ", ";
                 //This is to prevent selecting the same column twice.
                 //if first = last then the foreign key has already been printed, however the other direction still needs to be printed
-                sql = printEdgeInOutVertexIdFromClauseFor(sqlgGraph, firstSchemaTableTree, lastSchemaTableTree, sql, cols);
+                printEdgeInOutVertexIdFromClauseFor(sqlgGraph, firstSchemaTableTree, lastSchemaTableTree,columnList);
             }
 
-            sql = constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql,cols);
-            sql = constructEmitFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, sql);
+            constructAllLabeledFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
+            constructEmitFromClause(sqlgGraph, distinctQueryStack, firstSchemaTableTree, columnList);
         }
-        return sql;
+        return columnList.toString();
     }
 
 
@@ -1192,7 +1164,7 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String constructAllLabeledFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, String sql, Map<String,String> cols) {
+    private static void constructAllLabeledFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, ColumnList cols) {
         //Map<String, PropertyType> propertyTypeMap;//all labeled step's properties also need to be returned
         List<SchemaTableTree> labeled = distinctQueryStack.stream().filter(d -> !d.getLabels().isEmpty()).collect(Collectors.toList());
         /*if (!labeled.isEmpty()) {
@@ -1200,38 +1172,29 @@ public class SchemaTableTree {
         }*/
         //int count = 1;
         for (SchemaTableTree schemaTableTree : labeled) {
-            sql = printLabeledIDFromClauseFor(sqlgGraph, schemaTableTree, sql,cols);
+             printLabeledIDFromClauseFor(sqlgGraph, schemaTableTree, cols);
             //propertyTypeMap = firstSchemaTableTree.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString());
             /*if (!propertyTypeMap.isEmpty()) {
                 sql += ",\n\t";
             }*/
-            sql = printLabeledFromClauseFor(sqlgGraph, schemaTableTree, sql,cols);
+            printLabeledFromClauseFor(sqlgGraph, schemaTableTree, cols);
             if (schemaTableTree.getSchemaTable().isEdgeTable()) {
-                sql += ",\n\t";
-                sql = schemaTableTree.printLabeledEdgeInOutVertexIdFromClauseFor(sql);
+                schemaTableTree.printLabeledEdgeInOutVertexIdFromClauseFor(cols);
             }
             /*if (count++ < labeled.size()) {
                 sql += ",\n\t";
             }*/
         }
-        return sql;
+
     }
 
-    private static String constructEmitEdgeIdFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, String sql) {
+    private static void constructEmitEdgeIdFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, ColumnList cols) {
         List<SchemaTableTree> emitted = distinctQueryStack.stream()
                 .filter(d -> d.getSchemaTable().isEdgeTable() && d.isEmit())
                 .collect(Collectors.toList());
-        if (!emitted.isEmpty()) {
-            sql += ",\n\t";
-        }
-        int count = 1;
         for (SchemaTableTree schemaTableTree : emitted) {
-            sql = printEdgeId(sqlgGraph, schemaTableTree, sql);
-            if (count++ < emitted.size()) {
-                sql += ",\n\t";
-            }
+            printEdgeId(sqlgGraph, schemaTableTree, cols);
         }
-        return sql;
     }
 
 
@@ -1240,79 +1203,43 @@ public class SchemaTableTree {
      * This is required when there are multiple edges to the same vertex.
      * Only by having access to the edge id can on tell if the vertex needs to be emitted.
      */
-    private static String constructEmitFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, String sql) {
+    private static void constructEmitFromClause(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> distinctQueryStack, SchemaTableTree firstSchemaTableTree, ColumnList cols) {
         int count = 1;
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
             if (count > 1) {
                 if (!schemaTableTree.getSchemaTable().isEdgeTable() && schemaTableTree.isEmit()) {
                     //if the VertexStep is for an edge table there is no need to print edge ids as its already printed.
-                    sql += ",\n\t";
-                    sql = printEdgeId(sqlgGraph, schemaTableTree.parent, sql);
+                    printEdgeId(sqlgGraph, schemaTableTree.parent, cols);
                 }
             }
             count++;
         }
-        return sql;
+
     }
 
-    private static String printEdgeId(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, String sql) {
+    private static void printEdgeId(SqlgGraph sqlgGraph, SchemaTableTree schemaTableTree, ColumnList cols) {
         Preconditions.checkArgument(schemaTableTree.getSchemaTable().isEdgeTable());
-        sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getSchema()) + "." +
-                sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.getSchemaTable().getTable()) + "." +
-                sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
-        sql += " AS " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(schemaTableTree.calculatedAliasId());
-        return sql;
+        cols.add(schemaTableTree, SchemaManager.ID, schemaTableTree.calculatedAliasId());
     }
 
-    private static String printIDFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql,Map<String,String> cols) {
-        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-        finalFromSchemaTableName += ".";
-        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
-        String col = finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
-       
-        if (!sql.isEmpty()) {
-            sql += ", ";
-        }
-        sql += col;
-        sql += " AS ";
-        String alias=lastSchemaTableTree.calculatedAliasId();
-        cols.put(col, alias);
-        sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
-        return sql;
+    private static void printIDFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
+        cols.add(lastSchemaTableTree, SchemaManager.ID, lastSchemaTableTree.calculatedAliasId());
     }
 
-    private static String printFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql,Map<String,String> cols) {
+    private static void printFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-        finalFromSchemaTableName += ".";
-        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
         //int propertyCount = 1;
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-            String col=finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey());
-        	 	
-    		sql += ",\n\t";
-    		sql += col;
-    		sql += " AS ";
-    		String alias=lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-    		cols.put(col, alias);
-    		sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
-        
+        	String alias=lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+    		cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+           
     		for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-            	col= finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey() + postFix);
-            	
-                sql += ", ";
-                sql += col;
-                sql += " AS ";
-                alias=lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                cols.put(col, alias);
-                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+    			alias=lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey()+ postFix);
+        		cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey()+ postFix, alias);
             	
             }
-            /*if (propertyCount++ < propertyTypeMap.size()) {
-                sql += ",\n\t";
-            }*/
+           
         }
-        return sql;
     }
 
 
@@ -1331,67 +1258,42 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String printLabeledIDFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql,Map<String,String> cols) {
-        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-        finalFromSchemaTableName += ".";
-        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
-        String col = finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID);
-        String alias=cols.get(col);
+    private static void printLabeledIDFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
+        String alias=cols.getAlias(lastSchemaTableTree,SchemaManager.ID);
         if (alias==null){
         	alias=lastSchemaTableTree.calculateLabeledAliasId();
-        	cols.put(col, alias);
-        	if (!sql.isEmpty()){
-        		sql += ",\n\t";
-        	}
-        	sql += col;
-        	sql += " AS ";
-        	sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+        	cols.add(lastSchemaTableTree,SchemaManager.ID, alias);
         } else {
         	lastSchemaTableTree.setLabeledAliasId(alias);
         }
-        return sql;
+        
     }
 
-    private static String printLabeledFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, String sql, Map<String,String> cols) {
+    private static void printLabeledFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-        finalFromSchemaTableName += ".";
-        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
         //int count = 1;
         for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-        	String col=finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey());
-            String alias=cols.get(col);
+        	String col=propertyTypeMapEntry.getKey();
+            String alias=cols.getAlias(lastSchemaTableTree,col);
         	if (alias==null){
-            	sql += ",\n\t";
-            	sql += col;
-            	sql += " AS ";
             	alias=lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-            	cols.put(col, alias);
-            	sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+            	cols.add(lastSchemaTableTree,col, alias);
             } else {
             	lastSchemaTableTree.setLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
             }
             
             for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                col=finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyTypeMapEntry.getKey() + postFix);
-                alias=cols.get(col);
+                col=propertyTypeMapEntry.getKey() + postFix;
+                alias=cols.getAlias(lastSchemaTableTree,col);
             	if (alias==null){
-	                sql += ",\n\t";
-	                sql += col;
-	                sql += " AS ";
-	                alias=lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-	            	cols.put(col, alias);
-	                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
+	               alias=lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	               cols.add(lastSchemaTableTree,col, alias);
                 } else {
                 	lastSchemaTableTree.setLabeledAliasPropertyName(propertyTypeMapEntry.getKey()+ postFix, alias);
                 }
             }
 
-            /*if (count++ < propertyTypeMap.size()) {
-                sql += ",\n\t";
-            }*/
         }
-        return sql;
     }
 
     private String printEdgeInOutVertexIdOuterFromClauseFor(String prepend, String sql, SchemaTableTree previousSchemaTableTree) {
@@ -1413,32 +1315,18 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String printEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, SchemaTableTree lastSchemaTableTree, String sql, Map<String,String> cols) {
+    private static void printEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
-
-        String finalFromSchemaTableName = sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getSchema());
-        finalFromSchemaTableName += ".";
-        finalFromSchemaTableName += sqlgGraph.getSqlDialect().maybeWrapInQoutes(lastSchemaTableTree.getSchemaTable().getTable());
-
+      
         Set<String> edgeForeignKeys = sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
         for (String edgeForeignKey : edgeForeignKeys) {
             if (firstSchemaTableTree == null || !firstSchemaTableTree.equals(lastSchemaTableTree) ||
                     firstSchemaTableTree.getDirection() != getDirectionForForeignKey(edgeForeignKey)) {
-            	String col=finalFromSchemaTableName + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
-            	if (!sql.isEmpty()){
-            		 sql += ",\n\t";
-            	}
-            	sql += col;
-                sql += " AS ";
-                String alias=lastSchemaTableTree.calculateAliasPropertyName(edgeForeignKey);
-                cols.put(col, alias);
-                sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias);
-               
-            	
+            	String alias=lastSchemaTableTree.calculateAliasPropertyName(edgeForeignKey);
+            	cols.add(lastSchemaTableTree, edgeForeignKey, alias);
             }
         }
-        //sql = sql.substring(0, sql.length() - 3);
-        return sql;
+
     }
 
     private static Direction getDirectionForForeignKey(String edgeForeignKey) {
@@ -1460,24 +1348,22 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private String printLabeledEdgeInOutVertexIdFromClauseFor(String sql) {
+    private void printLabeledEdgeInOutVertexIdFromClauseFor(ColumnList cols) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
-        String finalFromSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
+        /*String finalFromSchemaTableName = this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema());
         finalFromSchemaTableName += ".";
         finalFromSchemaTableName += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable());
-
+*/
         Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
-        int propertyCount = 1;
         for (String edgeForeignKey : edgeForeignKeys) {
-            sql += finalFromSchemaTableName + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(edgeForeignKey);
-            sql += " AS ";
-            sql += sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.calculateLabeledAliasPropertyName(edgeForeignKey));
-            if (propertyCount++ < edgeForeignKeys.size()) {
-                sql += ",\n\t";
-            }
+        	String alias=cols.getAlias(this.getSchemaTable(), edgeForeignKey);
+        	if (alias==null){
+        		cols.add(this.getSchemaTable(), edgeForeignKey, this.calculateLabeledAliasPropertyName(edgeForeignKey));
+        	} else {
+        		this.setLabeledAliasPropertyName(edgeForeignKey, alias);
+        	}
         }
-        return sql;
     }
 
     private Multimap<String, String> copyColumnNameAliasMap() {
