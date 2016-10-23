@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -84,6 +85,20 @@ public abstract class BaseTest {
         this.sqlgGraph.close();
     }
 
+    /**
+     * return a clone of the configuration
+     * @return
+     */
+    protected static Configuration getConfigurationClone(){
+		Configuration conf = new PropertiesConfiguration();
+        Iterator<String> it=configuration.getKeys();
+        while (it.hasNext()){
+        	String s=it.next();
+        	conf.setProperty(s, configuration.getProperty(s));
+        }
+        return conf;
+	}
+    
     protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
         return v.graph().traversal().V(v);
     }
@@ -136,7 +151,7 @@ public abstract class BaseTest {
 
     }
 
-    protected void printTraversalForm(final Traversal traversal) {
+    protected void printTraversalForm(final Traversal<?,?> traversal) {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
         if (!muted) System.out.println("   pre-strategy:" + traversal);

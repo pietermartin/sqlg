@@ -1,7 +1,11 @@
 package org.umlg.sqlg.test.edges;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -10,21 +14,17 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.sql.*;
-
 /**
  * Date: 2015/05/27
  * Time: 9:15 PM
  */
 public class TestForeignKeysAreOptional extends BaseTest {
 
+	
     @Test
     public void testForeignKeysOnPostgres() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres"));
-        Configuration conf = new PropertiesConfiguration();
-        conf.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
-        conf.setProperty("jdbc.username", "postgres");
-        conf.setProperty("jdbc.password", "postgres");
+        Configuration conf=getConfigurationClone();
         conf.setProperty("implement.foreign.keys", "true");
         try (SqlgGraph g = SqlgGraph.open(conf)) {
             Vertex v1 = g.addVertex(T.label, "Person");
@@ -41,10 +41,7 @@ public class TestForeignKeysAreOptional extends BaseTest {
     @Test
     public void testForeignKeysOnHsqldb() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Hsqldb"));
-        Configuration conf = new PropertiesConfiguration();
-        conf.setProperty("jdbc.url", "jdbc:hsqldb:file:src/test/db/sqlgraphdb");
-        conf.setProperty("jdbc.username", "SA");
-        conf.setProperty("jdbc.password", "");
+        Configuration conf=getConfigurationClone();
         conf.setProperty("implement.foreign.keys", "true");
         try (SqlgGraph g = SqlgGraph.open(conf)) {
             Vertex v1 = g.addVertex(T.label, "Person");
@@ -62,10 +59,7 @@ public class TestForeignKeysAreOptional extends BaseTest {
     @Test
     public void testForeignKeysOffPostgres() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres"));
-        Configuration conf = new PropertiesConfiguration();
-        conf.setProperty("jdbc.url", "jdbc:postgresql://localhost:5432/sqlgraphdb");
-        conf.setProperty("jdbc.username", "postgres");
-        conf.setProperty("jdbc.password", "postgres");
+        Configuration conf=getConfigurationClone();
         conf.setProperty("implement.foreign.keys", "false");
         try (SqlgGraph g = SqlgGraph.open(conf)) {
             Vertex v1 = g.addVertex(T.label, "Person");
@@ -82,10 +76,7 @@ public class TestForeignKeysAreOptional extends BaseTest {
     @Test
     public void testForeignKeysOffHsqldb() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Hsqldb"));
-        Configuration conf = new PropertiesConfiguration();
-        conf.setProperty("jdbc.url", "jdbc:hsqldb:file:src/test/db/sqlgraphdb");
-        conf.setProperty("jdbc.username", "SA");
-        conf.setProperty("jdbc.password", "");
+        Configuration conf=getConfigurationClone();
         conf.setProperty("implement.foreign.keys", "false");
         try (SqlgGraph g = SqlgGraph.open(conf)) {
             Vertex v1 = g.addVertex(T.label, "Person");
