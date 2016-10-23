@@ -1285,11 +1285,12 @@ public class SchemaTableTree {
             for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
                 col=propertyTypeMapEntry.getKey() + postFix;
                 alias=cols.getAlias(lastSchemaTableTree,col);
+                // postfix do not use labeled methods
             	if (alias==null){
-	               alias=lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	               alias=lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
 	               cols.add(lastSchemaTableTree,col, alias);
                 } else {
-                	lastSchemaTableTree.setLabeledAliasPropertyName(propertyTypeMapEntry.getKey()+ postFix, alias);
+                	lastSchemaTableTree.setAliasPropertyName(propertyTypeMapEntry.getKey()+ postFix, alias);
                 }
             }
 
@@ -1428,6 +1429,13 @@ public class SchemaTableTree {
         return alias;
     }
 
+    private String setAliasPropertyName(String propertyName,String alias) {
+        String result = getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
+        this.getThreadLocalColumnNameAliasMap().put(result, alias);
+        this.getThreadLocalAliasColumnNameMap().put(alias, result);
+        return alias;
+    }
+    
     private String calculatedAliasVertexForeignKeyColumnEnd(SchemaTableTree previousSchemaTableTree, Direction direction) {
         String previousRawLabel = previousSchemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
         String result = getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + previousSchemaTableTree.getSchemaTable().getSchema() +
