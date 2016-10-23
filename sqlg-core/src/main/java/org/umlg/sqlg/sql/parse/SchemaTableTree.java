@@ -893,7 +893,29 @@ public class SchemaTableTree {
                 }
 
                 //TODO redo this via SqlgOrderGlobalStep
-
+            } else if (comparator.getValue0() instanceof ElementValueTraversal<?> && comparator.getValue1() instanceof Order){
+            	ElementValueTraversal elementValueTraversal = (ElementValueTraversal) comparator.getValue0();
+                String prefix = this.getSchemaTable().getSchema();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += this.getSchemaTable().getTable();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += elementValueTraversal.getPropertyKey();
+                String alias;
+                if (counter == -1) {
+                    //counter is -1 for single queries, i.e. they are not prefixed with ax
+                    alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
+                } else {
+                    //TODO its a multi map because multiple elements may have the same label
+                    alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getThreadLocalColumnNameAliasMap().get(prefix).iterator().next());
+                }
+                result += " " + alias;
+                if (comparator.getValue1() == Order.incr) {
+                    result += " ASC";
+                } else if (comparator.getValue1() == Order.decr) {
+                    result += " DESC";
+                } else {
+                    throw new RuntimeException("Only handle Order.incr and Order.decr, not " + comparator.getValue1().toString());
+                }
             } else {
                 Preconditions.checkState(comparator.getValue0().getSteps().size() == 1, "toOrderByClause expects a TraversalComparator to have exactly one step!");
                 Preconditions.checkState(comparator.getValue0().getSteps().get(0) instanceof SelectOneStep, "toOrderByClause expects a TraversalComparator to have exactly one SelectOneStep!");

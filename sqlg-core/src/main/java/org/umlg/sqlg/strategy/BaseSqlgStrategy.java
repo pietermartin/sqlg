@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
@@ -344,9 +345,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
 
     static boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
-        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
+        return orderGlobalStep.getComparators().stream().allMatch(c -> (c instanceof ElementValueComparator
                 && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
-                ((ElementValueComparator) c).getValueComparator() == Order.decr));
+                ((ElementValueComparator) c).getValueComparator() == Order.decr))
+        		|| (c instanceof Pair<?,?> 
+        				&& ((Pair<?,?>)c).getValue0() instanceof ElementValueTraversal<?>
+        				&& ((Pair<?,?>)c).getValue1() instanceof Order)
+        		);
     }
 
     static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {
