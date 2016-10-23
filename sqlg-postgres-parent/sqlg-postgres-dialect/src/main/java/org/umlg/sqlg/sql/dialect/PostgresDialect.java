@@ -473,7 +473,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             break;
                         case LOCALTIME:
                             sql.append("'");
-                            sql.append(value.toString());
+                            sql.append(toUTC((LocalTime)value).toString());
                             sql.append("'::TIME");
                             break;
                         case ZONEDDATETIME:
@@ -952,6 +952,10 @@ public class PostgresDialect extends BaseSqlDialect {
                     Duration duration = (Duration) value;
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
                     break;
+                case LOCALTIME:
+                	LocalTime lt = (LocalTime) value;
+                	result = toUTC(lt).toString();
+                    break;
                 case ZONEDDATETIME_ARRAY:
                     ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
                     StringBuilder sb = new StringBuilder();
@@ -1032,6 +1036,21 @@ public class PostgresDialect extends BaseSqlDialect {
                     for (int i = 0; i < length; i++) {
                         period = periods[i];
                         sb.append(period.getDays());
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    return sb.toString();
+                case LOCALTIME_ARRAY:
+                    LocalTime[] localTimes = (LocalTime[]) value;
+                    sb = new StringBuilder();
+                    sb.append("{");
+                    length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        LocalTime localTime = localTimes[i];
+                        result = toUTC(localTime).toString();
+                        sb.append(result);
                         if (i < length - 1) {
                             sb.append(",");
                         }
@@ -2515,5 +2534,20 @@ public class PostgresDialect extends BaseSqlDialect {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    /**
+     * local times are in UTC unless specific otherwise, so when we have only a local time, we transform it in UTC for batch operations
+     * https://jdbc.postgresql.org/documentation/head/8-date-time.html
+     * @param lt
+     * @return
+     */
+    @SuppressWarnings("deprecation")
+	private static Time toUTC(LocalTime lt){
+        Time t=Time.valueOf(lt);
+        // I know this are deprecated methods, but it's so much clearer than alternatives
+    	int m=t.getMinutes();
+    	t.setMinutes(m-t.getTimezoneOffset());
+    	return t;
     }
 }
