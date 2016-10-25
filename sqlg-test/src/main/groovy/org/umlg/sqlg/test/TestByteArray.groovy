@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test
+/*package org.umlg.sqlg.test
 
 import org.apache.tinkerpop.gremlin.structure.T
 import org.apache.tinkerpop.gremlin.structure.Vertex
@@ -8,6 +8,7 @@ import org.junit.Test
 /**
  * Created by pieter on 2014/08/03.
  */
+/*
 class TestByteArray extends BaseTest {
 
     @Test
@@ -22,3 +23,4 @@ class TestByteArray extends BaseTest {
     }
 
 }
+*/
