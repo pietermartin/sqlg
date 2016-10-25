@@ -289,6 +289,10 @@ public abstract class SqlgElement implements Element {
     public int hashCode() {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
+        	// if we have an ID, we have a constant hashcode
+        	if (this.id() != null){
+        		return ElementHelper.hashCode(this);
+        	}
             return super.hashCode();
         } else {
             return ElementHelper.hashCode(this);

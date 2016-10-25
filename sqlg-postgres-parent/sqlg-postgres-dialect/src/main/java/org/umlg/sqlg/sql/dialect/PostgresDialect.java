@@ -49,6 +49,8 @@ public class PostgresDialect extends BaseSqlDialect {
     private static final String COPY_COMMAND_DELIMITER = "\t";
     //this strange character is apparently an illegal json char so its good as a quote
     private static final String COPY_COMMAND_QUOTE = "e'\\x01'";
+    private static final char QUOTE = 0x01;
+    private static final char ESCAPE = '\\';
     private static final int PARAMETER_LIMIT = 32767;
     private static final String COPY_DUMMY = "_copy_dummy";
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
@@ -226,7 +228,9 @@ public class PostgresDialect extends BaseSqlDialect {
                     sql.append("' ");
                     sql.append("QUOTE ");
                     sql.append(COPY_COMMAND_QUOTE);
-                    sql.append(";");
+                    sql.append(" ESCAPE '");
+                    sql.append(ESCAPE);
+                    sql.append("';");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
@@ -295,7 +299,9 @@ public class PostgresDialect extends BaseSqlDialect {
                     sql.append("' ");
                     sql.append("QUOTE ");
                     sql.append(COPY_COMMAND_QUOTE);
-                    sql.append(";");
+                    sql.append(" ESCAPE '");
+                    sql.append(ESCAPE);
+                    sql.append("';");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
@@ -769,7 +775,9 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append("' ");
         sql.append("QUOTE ");
         sql.append(COPY_COMMAND_QUOTE);
-        sql.append(";");
+        sql.append(" ESCAPE '");
+        sql.append(ESCAPE);
+        sql.append("';");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -875,7 +883,9 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append("' ");
         sql.append("QUOTE ");
         sql.append(COPY_COMMAND_QUOTE);
-        sql.append(";");
+        sql.append(" ESCAPE '");
+        sql.append(ESCAPE);
+        sql.append("';");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
@@ -1501,13 +1511,32 @@ public class PostgresDialect extends BaseSqlDialect {
         return new ByteArrayInputStream(sb.toString().getBytes());
     }
 
-    //In particular, the following characters must be preceded by a backslash if they appear as part of a column value:
-    //backslash itself, newline, carriage return, and the current delimiter character.
+    /**
+     * this follows the PostgreSQL rules at https://www.postgresql.org/docs/current/static/sql-copy.html#AEN77663
+     * "If the value contains the delimiter character, the QUOTE character, the NULL string, a carriage return, 
+     * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character, 
+     * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded 
+     * by the escape character."
+     * @param s
+     * @return
+     */
     private String escapeSpecialCharacters(String s) {
-        s = s.replace("\\", "\\\\");
-        s = s.replace("\n", "\\\\n");
-        s = s.replace("\r", "\\\\r");
-        s = s.replace("\t", "\\\\t");
+    	StringBuilder sb=new StringBuilder();
+    	boolean needEscape=false;
+    	for (int a=0;a<s.length();a++){
+    		char c=s.charAt(a);
+    		if (c=='\n' || c=='\r' || c==0 || c==COPY_COMMAND_DELIMITER.charAt(0)){
+    			needEscape=true;
+    		}
+    		if (c==ESCAPE || c==QUOTE){
+    			needEscape=true;
+    			sb.append(ESCAPE);
+    		}
+    		sb.append(c);
+    	}
+    	if (needEscape){
+    		return QUOTE+sb.toString()+QUOTE;
+    	}
         return s;
     }
 
