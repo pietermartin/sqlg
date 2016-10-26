@@ -479,7 +479,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             break;
                         case LOCALTIME:
                             sql.append("'");
-                            sql.append(toUTC((LocalTime)value).toString());
+                            sql.append(shiftDST((LocalTime)value).toString());
                             sql.append("'::TIME");
                             break;
                         case ZONEDDATETIME:
@@ -964,7 +964,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     break;
                 case LOCALTIME:
                 	LocalTime lt = (LocalTime) value;
-                	result = toUTC(lt).toString();
+                	result = shiftDST(lt).toString();
                     break;
                 case ZONEDDATETIME_ARRAY:
                     ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
@@ -1059,7 +1059,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     length = java.lang.reflect.Array.getLength(value);
                     for (int i = 0; i < length; i++) {
                         LocalTime localTime = localTimes[i];
-                        result = toUTC(localTime).toString();
+                        result = shiftDST(localTime).toString();
                         sb.append(result);
                         if (i < length - 1) {
                             sb.append(",");
@@ -2566,17 +2566,17 @@ public class PostgresDialect extends BaseSqlDialect {
     }
     
     /**
-     * local times are in UTC unless specific otherwise, so when we have only a local time, we transform it in UTC for batch operations
-     * https://jdbc.postgresql.org/documentation/head/8-date-time.html
-     * @param lt
-     * @return
+     * Postgres gets confused by DST, it sets the timezone badly and then reads the wrong value out, so we convert the value to "winter time"
+     * @param lt the current time
+     * @return the time in "winter time" if there is DST in effect today
      */
     @SuppressWarnings("deprecation")
-	private static Time toUTC(LocalTime lt){
+	private static Time shiftDST(LocalTime lt){
         Time t=Time.valueOf(lt);
+        int offset=Calendar.getInstance().get(Calendar.DST_OFFSET)/1000;
         // I know this are deprecated methods, but it's so much clearer than alternatives
-    	int m=t.getMinutes();
-    	t.setMinutes(m-t.getTimezoneOffset());
+    	int m=t.getSeconds();
+    	t.setSeconds(m+offset);
     	return t;
     }
 }
