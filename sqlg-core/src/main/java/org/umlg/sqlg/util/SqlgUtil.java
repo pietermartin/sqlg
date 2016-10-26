@@ -148,7 +148,16 @@ public class SqlgUtil {
                         sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     schemaTableTree.loadProperty(resultSet, sqlgElement);
-                    result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels()));
+
+                    //The following if statement is for for "repeat(traversal()).emit().as('label')"
+                    //i.e. for emit queries with labels
+                    //Only the last node in the subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
+                    //Elements that come before the last element in the path must not get the labels.
+                    if (schemaTableTree.isEmit() && !subQueryStack.getLast().equals(schemaTableTree)) {
+                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet()));
+                    } else {
+                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels()));
+                    }
                 }
             }
         }

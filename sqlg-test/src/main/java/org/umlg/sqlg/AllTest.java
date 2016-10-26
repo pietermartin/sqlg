@@ -111,6 +111,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestRepeatStepGraphIn.class,
         TestRepeatStepVertexOut.class,
         TestRepeatStepGraphBoth.class,
+        TestRepeatStepWithLabels.class,
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
         TestGremlinMod.class,
