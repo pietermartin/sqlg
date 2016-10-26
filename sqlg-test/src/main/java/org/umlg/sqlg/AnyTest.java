@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.dedup.TestRepeatBoth;
+import org.umlg.sqlg.test.batch.TestNormalBatchDateTime;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.dedup.TestRepeatBoth;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatBoth.class
+        TestNormalBatchDateTime.class
 })
 public class AnyTest {
 }
