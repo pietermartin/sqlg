@@ -103,7 +103,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
-        return "SERIAL PRIMARY KEY";
+        return "BIGSERIAL PRIMARY KEY";
     }
 
     public void assertTableName(String tableName) {

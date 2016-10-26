@@ -3,6 +3,7 @@
 * Ensure SqlgGraphStepStrategy and SqlgVertexStepStrategy fires before InlineFilterStrategy.
 * Fix a bug where hasId uses the P.neq predicate.
 * Fix bug [#92](https://github.com/pietermartin/sqlg/issues/92)
+* Use BIGSERIAL for auto increment columns in Postgresql
 
 ##1.3.2
 
