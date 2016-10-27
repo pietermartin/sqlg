@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ArrayListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
@@ -934,7 +933,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                     && !this.sqlgGraph.getSqlDialect().columnsToIgnore().contains(columnName)
                     && !Objects.isNull(o)) {
 
-                loadProperty(resultSet, columnName, o, ArrayListMultimap.create());
+                loadProperty(resultSet, columnName, o);
             }
         }
     }

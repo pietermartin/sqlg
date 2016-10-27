@@ -18,6 +18,8 @@ import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
+import org.umlg.sqlg.test.multithread.TestMultiThread;
+import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
@@ -54,8 +56,9 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestVertexCreation.class,
         TestVertexEdgeSameName.class,
         TestVertexNavToEdges.class,
-        TestByteArray.class,
-        TestQuery.class,
+        // are these tests gone?
+        //TestByteArray.class,
+        //TestQuery.class,
         TestSchema.class,
         TestIndex.class,
         TestVertexOutWithHas.class,
@@ -67,7 +70,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestRemoveEdge.class,
         TestEdgeSchemaCreation.class,
         TestRollback.class,
-//        TestMultiThread.class,
+        TestMultiThread.class,
         TestNewVertex.class,
         TestEdgeCache.class,
         TestVertexCache.class,
@@ -108,6 +111,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestRepeatStepGraphIn.class,
         TestRepeatStepVertexOut.class,
         TestRepeatStepGraphBoth.class,
+        TestRepeatStepWithLabels.class,
         TestGraphStepWithIds.class,
         TestOtherVertex.class,
         TestGremlinMod.class,
@@ -135,6 +139,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestColumnNamePropertyNameMapScope.class,
         TestJNDIInitialization.class,
         TestSchemaTableTreeAndHasContainer.class,
+        TestEscapedValues.class,
+        TestRepeatStepOnEdges.class
         //TODO fails, issue #65
 //        TestEdgeFromDifferentSchema.class
 })

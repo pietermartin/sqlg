@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.LoopTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.ComparatorHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
@@ -105,12 +106,14 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     boolean emit = false;
                     boolean emitFirst = false;
                     boolean untilFirst = false;
+                    Set<String> labels = new HashSet<>();
                     if (repeatStepsAdded.getValue() > 0) {
                         repeatStepsAdded.decrement();
                         RepeatStep repeatStep = (RepeatStep) step.getTraversal().getParent();
                         emit = repeatStep.getEmitTraversal() != null;
                         emitFirst = repeatStep.emitFirst;
                         untilFirst = repeatStep.untilFirst;
+                        labels.addAll(repeatStep.getLabels());
                     }
 
                     pathCount++;
@@ -148,7 +151,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         }
                         previousReplacedStep.setEmit(true);
                         previousReplacedStep.setUntilFirst(untilFirst);
-                        previousReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        if (labels.isEmpty()) {
+                            previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
+                        } else {
+                            for (String label : labels) {
+                                previousReplacedStep.addLabel(pathCount + BaseSqlgStrategy.EMIT_LABEL_SUFFIX + label);
+                            }
+                        }
                         //Remove the path label if there is one. No need for 2 labels as emit labels go onto the path anyhow.
                         previousReplacedStep.getLabels().remove(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         if (emitFirst) {
@@ -344,9 +353,13 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
 
     static boolean isElementValueComparator(OrderGlobalStep orderGlobalStep) {
-        return orderGlobalStep.getComparators().stream().allMatch(c -> c instanceof ElementValueComparator
+        return orderGlobalStep.getComparators().stream().allMatch(c -> (c instanceof ElementValueComparator
                 && (((ElementValueComparator) c).getValueComparator() == Order.incr ||
-                ((ElementValueComparator) c).getValueComparator() == Order.decr));
+                ((ElementValueComparator) c).getValueComparator() == Order.decr))
+        		|| (c instanceof Pair<?,?> 
+        				&& ((Pair<?,?>)c).getValue0() instanceof ElementValueTraversal<?>
+        				&& ((Pair<?,?>)c).getValue1() instanceof Order)
+        		);
     }
 
     static boolean isTraversalComparatorWithSelectOneStep(OrderGlobalStep orderGlobalStep) {

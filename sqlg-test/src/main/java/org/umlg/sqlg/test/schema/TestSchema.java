@@ -9,6 +9,8 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,7 +72,8 @@ public class TestSchema extends BaseTest {
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
         Assert.assertEquals(100, this.sqlgGraph.traversal().V().has(T.label, "Schema5.Person").count().next(), 0);
         Assert.assertEquals(999, this.sqlgGraph.traversal().E().count().next(), 0);
-        Assert.assertEquals(0, this.sqlgGraph.traversal().E().has(T.label, "edge").count().next(), 0);
+        // all schemas are now taken into account (see https://github.com/pietermartin/sqlg/issues/65)
+        Assert.assertEquals(999, this.sqlgGraph.traversal().E().has(T.label, "edge").count().next(), 0);
         Assert.assertEquals(100, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").count().next(), 0);
         Assert.assertEquals(99, this.sqlgGraph.traversal().E().has(T.label, "Schema9.edge").count().next(), 0);
     }
@@ -122,6 +125,18 @@ public class TestSchema extends BaseTest {
         Assert.assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
         Assert.assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
         Assert.assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
+    }
+    
+    @Test
+    public void testUnprefixedEdgeLabel() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B");
+        a1.addEdge("eee", b1);
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("eee").count().next().intValue());
+        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.eee").count().next().intValue());
+        assertEquals(0, this.sqlgGraph.traversal().E().hasLabel("B.eee").count().next().intValue());
+        assertEquals(0, this.sqlgGraph.traversal().E().hasLabel("public.eee").count().next().intValue());
     }
 
 }

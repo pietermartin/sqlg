@@ -1,14 +1,13 @@
+/*
 package org.umlg.sqlg.test
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.Assume
 import org.junit.Test
-
-import static org.junit.Assert.*
 
 /**
  * Created by pieter on 2014/07/31.
  */
+/*
 class TestQuery extends BaseTest {
 
     @Test
@@ -40,3 +39,4 @@ class TestQuery extends BaseTest {
     }
 
 }
+*/

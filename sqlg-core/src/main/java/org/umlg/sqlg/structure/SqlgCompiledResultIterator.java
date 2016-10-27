@@ -81,7 +81,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                 if (this.distinctQueriesIterator.hasNext()) {
                                     this.currentDistinctQueryStack = this.distinctQueriesIterator.next();
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.currentDistinctQueryStack);
-                                    this.currentRootSchemaTableTree.resetThreadVars();
+                                    this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     executeRegularQuery();
                                     this.first = true;
                                 } else {
@@ -91,7 +91,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         this.distinctQueriesIterator = this.currentRootSchemaTableTree.constructDistinctQueries().iterator();
                                     } else {
                                         if (this.currentRootSchemaTableTree != null) {
-                                            this.currentRootSchemaTableTree.resetThreadVars();
+                                            this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                         }
                                         this.queryState = QUERY.OPTIONAL;
                                         this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
@@ -115,7 +115,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                 if (this.optionalLeftJoinResultsIterator.hasNext()) {
                                     this.optionalCurrentLeftJoinResult = this.optionalLeftJoinResultsIterator.next();
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.optionalCurrentLeftJoinResult.getLeft());
-                                    this.currentRootSchemaTableTree.resetThreadVars();
+                                    this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     executeOptionalQuery();
                                     this.first = true;
                                 } else {
@@ -127,7 +127,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         this.optionalLeftJoinResultsIterator = leftJoinResult.iterator();
                                     } else {
                                         if (this.currentRootSchemaTableTree != null) {
-                                            this.currentRootSchemaTableTree.resetThreadVars();
+                                            this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                         }
                                         this.queryState = QUERY.EMIT;
                                         this.rootSchemaTableTreeIterator = this.rootSchemaTableTrees.iterator();
@@ -151,7 +151,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                 if (this.emitLeftJoinResultsIterator.hasNext()) {
                                     this.emitCurrentLeftJoinResult = this.emitLeftJoinResultsIterator.next();
                                     this.subQueryStacks = SchemaTableTree.splitIntoSubStacks(this.emitCurrentLeftJoinResult);
-                                    this.currentRootSchemaTableTree.resetThreadVars();
+                                    this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                     executeEmitQuery();
                                     this.first = true;
                                 } else {
@@ -169,7 +169,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
                                         }
                                     } else {
                                         if (this.currentRootSchemaTableTree != null) {
-                                            this.currentRootSchemaTableTree.resetThreadVars();
+                                            this.currentRootSchemaTableTree.resetColumnAliasMaps();
                                         }
                                         return false;
                                     }

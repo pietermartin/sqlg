@@ -540,38 +540,52 @@ public class ReplacedStep<S, E> {
 
             for (HasContainer h : hasContainersWithLabel) {
                 //check if the table exist
-                SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, (String) h.getValue());
-                String table = (graphStep.getReturnClass().isAssignableFrom(Vertex.class) ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
-                SchemaTable schemaTableForLabel = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
-
-                if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
-
-                    List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
-                    if (!groupedIds.isEmpty()) {
-                        Collection<RecordId> recordIds = groupedIds.get(schemaTable);
-                        if (!recordIds.isEmpty()) {
-                            List<Long> ids = recordIds.stream().map(id -> id.getId()).collect(Collectors.toList());
-                            HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
-                            hasContainers.add(idHasContainer);
-                            toRemove.add(idHasContainer);
-                        } else {
-                            continue;
-                        }
-                    }
-                    SchemaTableTree schemaTableTree = new SchemaTableTree(
-                            sqlgGraph,
-                            schemaTableForLabel,
-                            0,
-                            hasContainers,
-                            this.comparators,
-                            SchemaTableTree.STEP_TYPE.GRAPH_STEP,
-                            ReplacedStep.this.emit,
-                            ReplacedStep.this.untilFirst,
-                            ReplacedStep.this.leftJoin,
-                            replacedStepDepth,
-                            ReplacedStep.this.labels
-                    );
-                    result.add(schemaTableTree);
+            	String tbl = (String) h.getValue();
+            	boolean isVertex= graphStep.getReturnClass().isAssignableFrom(Vertex.class);
+                SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, tbl);
+                String table = (isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
+                SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
+                // all potential tables
+                Set<SchemaTable> potentialsTables=new HashSet<>();
+                potentialsTables.add(schemaTableWithPrefix);
+                // edges usually don't have schema, so we're matching any table with any schema if we weren't given any
+                if (!isVertex && !tbl.contains(".")){
+                	for (String key:filteredAllTables.keySet()){
+                		if (key.endsWith("."+table)){
+                			potentialsTables.add(SchemaTable.from(sqlgGraph,key,sqlgGraph.getSqlDialect().getPublicSchema()));
+                		}
+                	}
+                }
+                for (SchemaTable schemaTableForLabel:potentialsTables){
+	                if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
+	
+	                    List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
+	                    if (!groupedIds.isEmpty()) {
+	                        Collection<RecordId> recordIds = groupedIds.get(schemaTable);
+	                        if (!recordIds.isEmpty()) {
+	                            List<Long> ids = recordIds.stream().map(id -> id.getId()).collect(Collectors.toList());
+	                            HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
+	                            hasContainers.add(idHasContainer);
+	                            toRemove.add(idHasContainer);
+	                        } else {
+	                            continue;
+	                        }
+	                    }
+	                    SchemaTableTree schemaTableTree = new SchemaTableTree(
+	                            sqlgGraph,
+	                            schemaTableForLabel,
+	                            0,
+	                            hasContainers,
+	                            this.comparators,
+	                            SchemaTableTree.STEP_TYPE.GRAPH_STEP,
+	                            ReplacedStep.this.emit,
+	                            ReplacedStep.this.untilFirst,
+	                            ReplacedStep.this.leftJoin,
+	                            replacedStepDepth,
+	                            ReplacedStep.this.labels
+	                    );
+	                    result.add(schemaTableTree);
+	                }
                 }
 
             }

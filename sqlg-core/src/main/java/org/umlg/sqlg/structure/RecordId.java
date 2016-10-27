@@ -23,7 +23,7 @@ import java.util.Map;
  * Date: 2015/02/21
  * Time: 8:50 PM
  */
-public class RecordId implements KryoSerializable {
+public class RecordId implements KryoSerializable, Comparable {
 
     @SuppressWarnings("WeakerAccess")
     public final static String RECORD_ID_DELIMITER = ":::";
@@ -138,6 +138,19 @@ public class RecordId implements KryoSerializable {
     public void read(Kryo kryo, Input input) {
         this.schemaTable = SchemaTable.of(input.readString(), input.readString());
         this.id = input.readLong();
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        if (!(o instanceof RecordId)) {
+            return -1;
+        }
+        RecordId other = (RecordId)o;
+        int first = this.getSchemaTable().compareTo(other.getSchemaTable());
+        if (first != 0) {
+            return first;
+        }
+        return this.getId().compareTo(other.getId());
     }
 
     @SuppressWarnings("DuplicateThrows")

@@ -1,19 +1,23 @@
 package org.umlg.sqlg.test.vertex;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Test;
-import org.umlg.sqlg.test.BaseTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assume;
+import org.junit.Test;
+import org.umlg.sqlg.structure.BatchManager.BatchModeType;
+import org.umlg.sqlg.test.BaseTest;
 
 /**
  * Date: 2015/11/19
@@ -39,5 +43,36 @@ public class TestOtherVertex extends BaseTest {
             assertTrue(paths.remove(path.get()));
         }
         assertTrue(paths.isEmpty());
+    }
+    
+    /**
+     * test two Java instances of the same vertex are equals and have same hashcode
+     */
+    @Test
+    public void testEqualsHashcode(){
+    	Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    	this.sqlgGraph.tx().commit();
+    	assertNotNull(a1.id());
+    	Vertex a2=this.sqlgGraph.traversal().V(a1.id()).next();
+    	assertNotSame(a1, a2);
+    	assertEquals(a1,a2);
+    	assertEquals(a1.hashCode(),a2.hashCode());
+    }
+    
+    /**
+     * test two Java instances of the same vertex are equals and have same hashcode,in batch mode
+     */
+    @Test
+    public void testEqualsHashcodeBatch(){
+    	Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+		this.sqlgGraph.tx().batchMode(BatchModeType.NORMAL);
+    	Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+    	this.sqlgGraph.tx().commit();
+    	this.sqlgGraph.tx().batchMode(BatchModeType.NORMAL);
+    	assertNotNull(a1.id());
+    	Vertex a2=this.sqlgGraph.traversal().V(a1.id()).next();
+    	assertNotSame(a1, a2);
+    	assertEquals(a1,a2);
+    	assertEquals(a1.hashCode(),a2.hashCode());
     }
 }

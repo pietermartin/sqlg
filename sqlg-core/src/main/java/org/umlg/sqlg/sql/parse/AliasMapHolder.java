@@ -1,8 +1,5 @@
 package org.umlg.sqlg.sql.parse;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -12,15 +9,15 @@ import java.util.Map;
  */
 public class AliasMapHolder {
 
-    private Multimap<String, String> columnNameAliasMap;
+    private Map<String, String> columnNameAliasMap;
     private Map<String, String> aliasColumnNameMap;
 
     AliasMapHolder() {
-        this.columnNameAliasMap = ArrayListMultimap.create();
+        this.columnNameAliasMap = new HashMap<>();
         this.aliasColumnNameMap = new HashMap<>();
     }
 
-    Multimap<String, String> getColumnNameAliasMap() {
+    Map<String, String> getColumnNameAliasMap() {
         return columnNameAliasMap;
     }
 

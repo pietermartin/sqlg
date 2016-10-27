@@ -122,7 +122,7 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                 List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = rootSchemaTableTree.constructSql();
                 this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
             } finally {
-                rootSchemaTableTree.resetThreadVars();
+                rootSchemaTableTree.resetColumnAliasMaps();
             }
         }
     }
