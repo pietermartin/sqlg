@@ -548,7 +548,7 @@ public abstract class SqlgElement implements Element {
                 array = (java.sql.Array) o;
                 nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
                 aliasedNanos = columnNameAliasMap.get(nanosColumn);
-                if (aliasedNanos != null) {
+                if (aliasedNanos == null) {
                     aliasedNanos = propertyName + propertyType.getPostFixes()[0];
                 }
                 long[] secondsArray = (long[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.long_ARRAY, array);
