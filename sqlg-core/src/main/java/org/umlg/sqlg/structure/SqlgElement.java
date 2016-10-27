@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -20,6 +19,8 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
+
+import static org.umlg.sqlg.sql.parse.SchemaTableTree.ALIAS_SEPARATOR;
 
 /**
  * Date: 2014/07/12
@@ -354,7 +355,7 @@ public abstract class SqlgElement implements Element {
         return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
-    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap, PropertyType propertyType) throws SQLException {
+    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Map<String, String> columnNameAliasMap, int stepDepth, PropertyType propertyType) throws SQLException {
         if (propertyName.endsWith(SchemaManager.ZONEID) ||
                 propertyName.endsWith(SchemaManager.MONTHS) ||
                 propertyName.endsWith(SchemaManager.DAYS) ||
@@ -396,12 +397,12 @@ public abstract class SqlgElement implements Element {
                 this.properties.put(propertyName, ((Timestamp) o).toLocalDateTime());
                 break;
             case ZONEDDATETIME:
-                String zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                Collection<String> zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
-                if (zonedId.isEmpty()) {
-                    zonedId = Collections.singletonList(propertyName + propertyType.getPostFixes()[0]);
+                String zoneIdColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                String zonedId = columnNameAliasMap.get(zoneIdColumn);
+                if (zonedId == null) {
+                    zonedId = propertyName + propertyType.getPostFixes()[0];
                 }
-                String zoneId = resultSet.getString(new ArrayList<>(zonedId).get(zonedId.size() - 1));
+                String zoneId = resultSet.getString(zonedId);
                 ZoneId zoneId1 = ZoneId.of(zoneId);
                 ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
                 this.properties.put(propertyName, zonedDateTimeAGT);
@@ -411,29 +412,29 @@ public abstract class SqlgElement implements Element {
                 break;
             case PERIOD:
                 int years = (Integer) o;
-                String monthColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                Collection<String> aliasedMonth = threadLocalColumnNameAliasMap.get(monthColumn);
-                if (aliasedMonth.isEmpty()) {
-                    aliasedMonth = Collections.singletonList(propertyName + propertyType.getPostFixes()[0]);
+                String monthColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                String aliasedMonth = columnNameAliasMap.get(monthColumn);
+                if (aliasedMonth == null) {
+                    aliasedMonth = propertyName + propertyType.getPostFixes()[0];
                 }
-                int months = resultSet.getInt(new ArrayList<>(aliasedMonth).get(aliasedMonth.size() - 1));
-                String dayColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
-                Collection<String> aliasedDay = threadLocalColumnNameAliasMap.get(dayColumn);
-                if (aliasedDay.isEmpty()) {
-                    aliasedDay = Collections.singletonList(propertyName + propertyType.getPostFixes()[1]);
+                int months = resultSet.getInt(aliasedMonth);
+                String dayColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
+                String aliasedDay = columnNameAliasMap.get(dayColumn);
+                if (aliasedDay == null) {
+                    aliasedDay = propertyName + propertyType.getPostFixes()[1];
                 }
-                int days = resultSet.getInt(new ArrayList<>(aliasedDay).get(aliasedDay.size() - 1));
+                int days = resultSet.getInt(aliasedDay);
                 this.properties.put(propertyName, Period.of(years, months, days));
                 break;
             case DURATION:
                 long seconds = (Long) o;
                 //load the months and days as its needed to construct the Period
-                String nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                Collection<String> aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
-                if (aliasedNanos.isEmpty()) {
-                    aliasedNanos = Collections.singletonList(propertyName + propertyType.getPostFixes()[0]);
+                String nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                String aliasedNanos = columnNameAliasMap.get(nanosColumn);
+                if (aliasedNanos == null) {
+                    aliasedNanos = propertyName + propertyType.getPostFixes()[0];
                 }
-                int nanos = resultSet.getInt(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
+                int nanos = resultSet.getInt(aliasedNanos);
                 this.properties.put(propertyName, Duration.ofSeconds(seconds, nanos));
                 break;
             case JSON:
@@ -526,12 +527,12 @@ public abstract class SqlgElement implements Element {
                 break;
             case ZONEDDATETIME_ARRAY:
                 array = (java.sql.Array) o;
-                zoneIdColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                zonedId = threadLocalColumnNameAliasMap.get(zoneIdColumn);
-                if (zonedId.isEmpty()) {
-                    zonedId = Collections.singletonList(propertyName + propertyType.getPostFixes()[0]);
+                zoneIdColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                zonedId = columnNameAliasMap.get(zoneIdColumn);
+                if (zonedId == null) {
+                    zonedId = propertyName + propertyType.getPostFixes()[0];
                 }
-                java.sql.Array zoneIdArray = resultSet.getArray(new ArrayList<>(zonedId).get(zonedId.size() - 1));
+                java.sql.Array zoneIdArray = resultSet.getArray(zonedId);
                 String[] objectZoneIdArray = (String[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.STRING_ARRAY, zoneIdArray);
                 LocalDateTime[] localDateTimes = (LocalDateTime[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.LOCALDATETIME_ARRAY, array);
                 ZonedDateTime[] zonedDateTimes = new ZonedDateTime[localDateTimes.length];
@@ -545,13 +546,13 @@ public abstract class SqlgElement implements Element {
                 break;
             case DURATION_ARRAY:
                 array = (java.sql.Array) o;
-                nanosColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                aliasedNanos = threadLocalColumnNameAliasMap.get(nanosColumn);
-                if (aliasedNanos.isEmpty()) {
-                    aliasedNanos = Collections.singletonList(propertyName + propertyType.getPostFixes()[0]);
+                nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                aliasedNanos = columnNameAliasMap.get(nanosColumn);
+                if (aliasedNanos != null) {
+                    aliasedNanos = propertyName + propertyType.getPostFixes()[0];
                 }
                 long[] secondsArray = (long[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.long_ARRAY, array);
-                java.sql.Array nanosArray = resultSet.getArray(new ArrayList<>(aliasedNanos).get(aliasedNanos.size() - 1));
+                java.sql.Array nanosArray = resultSet.getArray(aliasedNanos);
                 int[] nanoArray = (int[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.int_ARRAY, nanosArray);
                 Duration[] durations = new Duration[secondsArray.length];
                 count = 0;
@@ -562,20 +563,20 @@ public abstract class SqlgElement implements Element {
                 break;
             case PERIOD_ARRAY:
                 array = (java.sql.Array) o;
-                String monthsColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                Collection<String> aliasedMonths = threadLocalColumnNameAliasMap.get(monthsColumn);
-                if (aliasedMonths.isEmpty()) {
-                    aliasedMonths = Collections.singletonList(propertyName + propertyType.getPostFixes()[1]);
+                String monthsColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                String aliasedMonths = columnNameAliasMap.get(monthsColumn);
+                if (aliasedMonths == null) {
+                    aliasedMonths = propertyName + propertyType.getPostFixes()[0];
                 }
-                String daysColumn = getSchemaTablePrefixed().toString().replace(".", SchemaTableTree.ALIAS_SEPARATOR) + SchemaTableTree.ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
-                Collection<String> aliasedDays = threadLocalColumnNameAliasMap.get(daysColumn);
-                if (aliasedDays.isEmpty()) {
-                    aliasedDays = Collections.singletonList(propertyName + propertyType.getPostFixes()[2]);
+                String daysColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
+                String aliasedDays = columnNameAliasMap.get(daysColumn);
+                if (aliasedDays == null) {
+                    aliasedDays = propertyName + propertyType.getPostFixes()[1];
                 }
                 Integer[] yearsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, array);
-                java.sql.Array monthsArray = resultSet.getArray(new ArrayList<>(aliasedMonths).get(aliasedMonths.size() - 1));
+                java.sql.Array monthsArray = resultSet.getArray(aliasedMonths);
                 Integer[] monthsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, monthsArray);
-                java.sql.Array daysArray = resultSet.getArray(new ArrayList<>(aliasedDays).get(aliasedDays.size() - 1));
+                java.sql.Array daysArray = resultSet.getArray(aliasedDays);
                 Integer[] daysIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, daysArray);
                 Period[] periods = new Period[yearsIntegers.length];
                 count = 0;
@@ -594,7 +595,7 @@ public abstract class SqlgElement implements Element {
 
     }
 
-    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Multimap<String, String> threadLocalColumnNameAliasMap) throws SQLException {
+    public void loadProperty(ResultSet resultSet, String propertyName, Object o) throws SQLException {
         if (propertyName.endsWith(SchemaManager.ZONEID) ||
                 propertyName.endsWith(SchemaManager.MONTHS) ||
                 propertyName.endsWith(SchemaManager.DAYS) ||
@@ -603,7 +604,7 @@ public abstract class SqlgElement implements Element {
             return;
         }
         PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(propertyName);
-        loadProperty(resultSet, propertyName, o, threadLocalColumnNameAliasMap, propertyType);
+        loadProperty(resultSet, propertyName, o, Collections.emptyMap(), -1, propertyType);
     }
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;

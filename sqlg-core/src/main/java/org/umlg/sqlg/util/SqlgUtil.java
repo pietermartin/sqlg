@@ -70,14 +70,14 @@ public class SqlgUtil {
                 }
                 populateIdCountMap(resultSetMetaData, rootSchemaTableTree, lastElementIdCountMap);
             }
-            int subQueryDepth = 0;
+            int subQueryDepth = 1;
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
 
                 List<Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
-                        sqlgGraph, resultSet, subQueryStack, lastElementIdCountMap
+                        sqlgGraph, resultSet, subQueryStack, subQueryDepth == subQueryStacks.size(), lastElementIdCountMap
                 );
                 result.addAll(labeledElements);
-                if (subQueryDepth == subQueryStacks.size() - 1) {
+                if (subQueryDepth == subQueryStacks.size()) {
                     SchemaTableTree lastSchemaTableTree = subQueryStack.getLast();
                     if (labeledElements.isEmpty()) {
                         SqlgElement e = SqlgUtil.loadElement(
@@ -109,7 +109,7 @@ public class SqlgUtil {
         //Translate the columns back from alias to meaningful column headings
         for (int columnCount = 1; columnCount <= resultSetMetaData.getColumnCount(); columnCount++) {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
-            String unAliased = rootSchemaTableTree.getThreadLocalAliasColumnNameMap().get(columnLabel);
+            String unAliased = rootSchemaTableTree.getAliasColumnNameMap().get(columnLabel);
             String mapKey = unAliased != null ? unAliased : columnLabel;
             if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
                 lastElementIdCountMap.put(mapKey, columnCount);
@@ -123,6 +123,8 @@ public class SqlgUtil {
      * @param sqlgGraph
      * @param resultSet
      * @param subQueryStack
+     * @param lastQueryStack
+     * @param lastElementIdCountMap
      * @return
      * @throws SQLException
      */
@@ -130,9 +132,11 @@ public class SqlgUtil {
             SqlgGraph sqlgGraph,
             final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
+            boolean lastQueryStack,
             Map<String, Integer> lastElementIdCountMap) throws SQLException {
 
         List<Emit<E>> result = new ArrayList<>();
+        int count = 1;
         for (SchemaTableTree schemaTableTree : subQueryStack) {
             if (!schemaTableTree.getLabels().isEmpty()) {
                 String idProperty = schemaTableTree.labeledAliasId();
@@ -151,15 +155,18 @@ public class SqlgUtil {
 
                     //The following if statement is for for "repeat(traversal()).emit().as('label')"
                     //i.e. for emit queries with labels
-                    //Only the last node in the subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
+                    //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
-                    if (schemaTableTree.isEmit() && !subQueryStack.getLast().equals(schemaTableTree)) {
+                    if (schemaTableTree.isEmit() && !lastQueryStack) {
+                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet()));
+                    } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
                         result.add(new Emit<>((E) sqlgElement, Collections.emptySet()));
                     } else {
                         result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels()));
                     }
                 }
             }
+            count++;
         }
         return result;
     }

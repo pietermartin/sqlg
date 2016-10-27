@@ -139,7 +139,10 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestColumnNamePropertyNameMapScope.class,
         TestJNDIInitialization.class,
         TestSchemaTableTreeAndHasContainer.class,
-        TestEscapedValues.class
-     })
+        TestEscapedValues.class,
+        TestRepeatStepOnEdges.class
+        //TODO fails, issue #65
+//        TestEdgeFromDifferentSchema.class
+})
 public class AllTest {
 }

@@ -24,7 +24,7 @@ import java.util.Objects;
  * Time: 7:20 AM
  */
 
-public class SchemaTable implements DataSerializable, Serializable {
+public class SchemaTable implements DataSerializable, Serializable, Comparable {
     private String schema;
     private String table;
 
@@ -125,6 +125,14 @@ public class SchemaTable implements DataSerializable, Serializable {
         Preconditions.checkArgument(prefix.equals(SchemaManager.VERTEX_PREFIX) || prefix.equals(SchemaManager.EDGE_PREFIX), "Prefix must be either " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX + " for " + prefix);
         Preconditions.checkState(!this.table.startsWith(SchemaManager.VERTEX_PREFIX) && !this.table.startsWith(SchemaManager.EDGE_PREFIX), "SchemaTable is already prefixed.");
         return SchemaTable.of(this.getSchema(), prefix + this.getTable());
+    }
+
+    @Override
+    public int compareTo(Object o) {
+        if (!(o instanceof SchemaTable)) {
+            return -1;
+        }
+        return toString().compareTo(o.toString());
     }
 
     @SuppressWarnings("DuplicateThrows")

@@ -144,7 +144,7 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
             this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
         } finally {
             if (rootSchemaTableTree != null)
-                rootSchemaTableTree.resetThreadVars();
+                rootSchemaTableTree.resetColumnAliasMaps();
         }
     }
 

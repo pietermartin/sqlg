@@ -1,6 +1,5 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.collect.ArrayListMultimap;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -254,7 +253,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                     !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                loadProperty(resultSet, columnName, o, ArrayListMultimap.create());
+                loadProperty(resultSet, columnName, o);
 
             }
             if (!Objects.isNull(o)) {
