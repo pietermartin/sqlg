@@ -31,6 +31,7 @@ public class EdgeLabel extends AbstractElement {
     private Set<VertexLabel> inVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedOutVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
+    private Topology topology;
 
     public static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
@@ -47,13 +48,13 @@ public class EdgeLabel extends AbstractElement {
         return edgeLabel;
     }
 
-    static EdgeLabel loadFromDb(String edgeLabelName) {
-        return new EdgeLabel(edgeLabelName);
+    static EdgeLabel loadFromDb(Topology topology, String edgeLabelName) {
+        return new EdgeLabel(topology, edgeLabelName);
     }
 
     public static EdgeLabel from(VertexLabel vertexLabel, JsonNode unCommittedOutEdgeLabel) {
         String edgeLabelName = unCommittedOutEdgeLabel.get("label").asText();
-        EdgeLabel edgeLabel = new EdgeLabel(edgeLabelName);
+        EdgeLabel edgeLabel = new EdgeLabel(vertexLabel.getSchema().getTopology(), edgeLabelName);
         edgeLabel.outVertexLabels.add(vertexLabel);
         return edgeLabel;
 
@@ -68,21 +69,24 @@ public class EdgeLabel extends AbstractElement {
             this.uncommittedOutVertexLabels.add(outVertexLabel);
             this.uncommittedInVertexLabels.add(inVertexLabel);
         }
+        this.topology = outVertexLabel.getSchema().getTopology();
     }
 
-    EdgeLabel(String edgeLabelName) {
+    EdgeLabel(Topology topology, String edgeLabelName) {
         super(edgeLabelName, Collections.emptyMap());
+        this.topology = topology;
     }
 
-    public Schema getSchema() {
+    @Override
+    protected Schema getSchema() {
         if (!this.outVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
             return vertexLabel.getSchema();
-        } else if (!this.uncommittedOutVertexLabels.isEmpty()) {
+        } else if (this.topology.isLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
             return vertexLabel.getSchema();
         } else {
-            throw new IllegalStateException("BUG: no outVertexLabels present whne getSchema() is called");
+            throw new IllegalStateException("BUG: no outVertexLabels present when getSchema() is called");
         }
     }
 
@@ -210,18 +214,18 @@ public class EdgeLabel extends AbstractElement {
 
     }
 
-    public void afterRollback() {
-
-        this.uncommittedInVertexLabels.clear();
-        this.uncommittedOutVertexLabels.clear();
-
-        for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Property> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
-        }
-
-    }
+//    public void afterRollback() {
+//
+//        this.uncommittedInVertexLabels.clear();
+//        this.uncommittedOutVertexLabels.clear();
+//
+//        for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+//            Map.Entry<String, Property> entry = it.next();
+//            entry.getValue().afterRollback();
+//            it.remove();
+//        }
+//
+//    }
 
     @Override
     public String toString() {
@@ -236,11 +240,13 @@ public class EdgeLabel extends AbstractElement {
         for (VertexLabel vertexLabel : this.outVertexLabels) {
             result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
         }
-        for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
-            result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
-        }
-        for (VertexLabel vertexLabel : this.uncommittedOutVertexLabels) {
-            result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
+                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+            }
+            for (VertexLabel vertexLabel : this.uncommittedOutVertexLabels) {
+                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            }
         }
         return result;
     }
@@ -403,26 +409,30 @@ public class EdgeLabel extends AbstractElement {
         }
         edgeLabelNode.set("inVertexLabels", inVertexLabelArrayNode);
 
-        outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
-            ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
-            outVertexLabelArrayNode.add(outVertexLabelObjectNode);
-        }
-        edgeLabelNode.set("unCommittedOutVertexLabels", outVertexLabelArrayNode);
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
+                ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
+                outVertexLabelArrayNode.add(outVertexLabelObjectNode);
+            }
+            edgeLabelNode.set("unCommittedOutVertexLabels", outVertexLabelArrayNode);
 
-        inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
-            ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
-            inVertexLabelArrayNode.add(inVertexLabelObjectNode);
+            inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
+                ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
+                inVertexLabelArrayNode.add(inVertexLabelObjectNode);
+            }
+            edgeLabelNode.set("uncommittedInVertexLabels", inVertexLabelArrayNode);
         }
-        edgeLabelNode.set("uncommittedInVertexLabels", inVertexLabelArrayNode);
 
         return edgeLabelNode;
     }
 
-    public Optional<JsonNode> toNotifyJson() {
+    @Override
+    protected Optional<JsonNode> toNotifyJson() {
+
         boolean foundSomething = false;
         ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         edgeLabelNode.put("label", getLabel());
@@ -433,7 +443,7 @@ public class EdgeLabel extends AbstractElement {
             edgeLabelNode.set("uncommittedProperties", propertyNode.get());
         }
 
-        if (this.uncommittedOutVertexLabels.size() > 0) {
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
@@ -444,7 +454,7 @@ public class EdgeLabel extends AbstractElement {
             edgeLabelNode.set("unCommittedOutVertexLabels", outVertexLabelArrayNode);
         }
 
-        if (this.uncommittedInVertexLabels.size() > 0) {
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {

@@ -9,11 +9,11 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2014/08/13
@@ -22,10 +22,27 @@ import java.util.Set;
 public class TestSchema extends BaseTest {
 
     @Test
+    public void testEdgesAcrossSchema() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C.C");
+        a1.addEdge("yourEdge", b1);
+        b1.addEdge("yourEdge", c1);
+        this.sqlgGraph.tx().commit();
+        List<Edge> edges = this.sqlgGraph.traversal().E().toList();
+        assertEquals(2, edges.size());
+        for (Edge edge : edges) {
+            assertEquals("yourEdge", edge.label());
+        }
+        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.yourEdge").count().next(), 0);
+        assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("B.yourEdge").count().next(), 0);
+    }
+
+    @Test
     public void testSchema() {
         this.sqlgGraph.addVertex(T.label, "TEST_SCHEMA1.Person", "name", "John");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
+        assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
     }
 
     @Test
@@ -36,23 +53,23 @@ public class TestSchema extends BaseTest {
         john.addEdge("friend", tom);
         john.addEdge("pet", ape);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
-        Assert.assertEquals(1, vertexTraversal(john).out("friend").count().next(), 0);
-        Assert.assertEquals(tom, vertexTraversal(john).out("friend").next());
-        Assert.assertEquals(john, vertexTraversal(tom).in("friend").next());
-        Assert.assertEquals(2, this.sqlgGraph.traversal().E().count().next(), 0);
+        assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
+        assertEquals(1, vertexTraversal(john).out("friend").count().next(), 0);
+        assertEquals(tom, vertexTraversal(john).out("friend").next());
+        assertEquals(john, vertexTraversal(tom).in("friend").next());
+        assertEquals(2, this.sqlgGraph.traversal().E().count().next(), 0);
         this.sqlgGraph.traversal().E().<Edge>has(T.label, "friend").forEachRemaining(
                 a -> {
-                    Assert.assertEquals(john, edgeTraversal(a).outV().next());
-                    Assert.assertEquals(tom, edgeTraversal(a).inV().next());
+                    assertEquals(john, edgeTraversal(a).outV().next());
+                    assertEquals(tom, edgeTraversal(a).inV().next());
                 }
         );
-        Assert.assertEquals(1, vertexTraversal(john).out("friend").has("name", "Tom").count().next(), 0);
-        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA1.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA2.Person").count().next(), 0);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA2.Ape").count().next(), 0);
-        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Ape").count().next(), 0);
+        assertEquals(1, vertexTraversal(john).out("friend").has("name", "Tom").count().next(), 0);
+        assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
+        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA1.Person").count().next(), 0);
+        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA2.Person").count().next(), 0);
+        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA2.Ape").count().next(), 0);
+        assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Ape").count().next(), 0);
     }
 
     @Test
@@ -68,21 +85,21 @@ public class TestSchema extends BaseTest {
             }
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().count().next(), 0);
-        Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().V().has(T.label, "Schema5.Person").count().next(), 0);
-        Assert.assertEquals(999, this.sqlgGraph.traversal().E().count().next(), 0);
+        assertEquals(1000, this.sqlgGraph.traversal().V().count().next(), 0);
+        assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
+        assertEquals(100, this.sqlgGraph.traversal().V().has(T.label, "Schema5.Person").count().next(), 0);
+        assertEquals(999, this.sqlgGraph.traversal().E().count().next(), 0);
         // all schemas are now taken into account (see https://github.com/pietermartin/sqlg/issues/65)
-        Assert.assertEquals(999, this.sqlgGraph.traversal().E().has(T.label, "edge").count().next(), 0);
-        Assert.assertEquals(100, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").count().next(), 0);
-        Assert.assertEquals(99, this.sqlgGraph.traversal().E().has(T.label, "Schema9.edge").count().next(), 0);
+        assertEquals(999, this.sqlgGraph.traversal().E().has(T.label, "edge").count().next(), 0);
+        assertEquals(100, this.sqlgGraph.traversal().E().has(T.label, "Schema0.edge").count().next(), 0);
+        assertEquals(99, this.sqlgGraph.traversal().E().has(T.label, "Schema9.edge").count().next(), 0);
     }
 
     @Test
     public void testLabelsForSchemaBeforeCommit() {
         this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.addVertex(T.label, "Person");
-        Assert.assertEquals(2, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
+        assertEquals(2, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
     }
 
     @Test
@@ -121,12 +138,12 @@ public class TestSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         List<Vertex> vertices =  this.sqlgGraph.traversal().V().hasLabel("A").toList();
-        Assert.assertEquals(3, vertices.size());
+        assertEquals(3, vertices.size());
         Assert.assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
         Assert.assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
         Assert.assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
     }
-    
+
     @Test
     public void testUnprefixedEdgeLabel() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");

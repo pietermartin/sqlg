@@ -64,21 +64,26 @@ public class VertexLabel extends AbstractElement {
         this.schema = schema;
     }
 
-    public Schema getSchema() {
+    @Override
+    protected Schema getSchema() {
         return this.schema;
     }
 
     Set<EdgeLabel> getInEdgeLabels() {
         Set<EdgeLabel> result = new HashSet<>();
         result.addAll(this.inEdgeLabels);
-        result.addAll(this.uncommittedInEdgeLabels);
+        if (this.schema.getTopology().isLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedInEdgeLabels);
+        }
         return result;
     }
 
     Set<EdgeLabel> getOutEdgeLabels() {
         Set<EdgeLabel> result = new HashSet<>();
         result.addAll(this.outEdgeLabels);
-        result.addAll(this.uncommittedOutEdgeLabels);
+        if (this.schema.getTopology().isLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedOutEdgeLabels);
+        }
         return result;
     }
 
@@ -166,11 +171,13 @@ public class VertexLabel extends AbstractElement {
         for (EdgeLabel outEdgeLabel : outEdgeLabels) {
             outSchemaTables.add(SchemaTable.of(outEdgeLabel.getSchema().getName(), EDGE_PREFIX + outEdgeLabel.getLabel()));
         }
-        for (EdgeLabel inEdgeLabel : uncommittedInEdgeLabels) {
-            inSchemaTables.add(SchemaTable.of(inEdgeLabel.getSchema().getName(), EDGE_PREFIX + inEdgeLabel.getLabel()));
-        }
-        for (EdgeLabel outEdgeLabel : uncommittedOutEdgeLabels) {
-            outSchemaTables.add(SchemaTable.of(outEdgeLabel.getSchema().getName(), EDGE_PREFIX + outEdgeLabel.getLabel()));
+        if (this.schema.getTopology().isLockHeldByCurrentThread()) {
+            for (EdgeLabel inEdgeLabel : uncommittedInEdgeLabels) {
+                inSchemaTables.add(SchemaTable.of(inEdgeLabel.getSchema().getName(), EDGE_PREFIX + inEdgeLabel.getLabel()));
+            }
+            for (EdgeLabel outEdgeLabel : uncommittedOutEdgeLabels) {
+                outSchemaTables.add(SchemaTable.of(outEdgeLabel.getSchema().getName(), EDGE_PREFIX + outEdgeLabel.getLabel()));
+            }
         }
         return Pair.of(inSchemaTables, outSchemaTables);
     }
@@ -262,22 +269,23 @@ public class VertexLabel extends AbstractElement {
         }
         vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
 
-        outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
-            outEdgeLabelsArrayNode.add(edgeLabel.toJson());
-        }
-        vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
+        if (this.schema.getTopology().isLockHeldByCurrentThread()) {
+            outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
+                outEdgeLabelsArrayNode.add(edgeLabel.toJson());
+            }
+            vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
 
-        inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
-            inEdgeLabelsArrayNode.add(edgeLabel.toJson());
+            inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels) {
+                inEdgeLabelsArrayNode.add(edgeLabel.toJson());
+            }
+            vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
         }
-        vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
         return vertexLabelNode;
     }
 
-    public Optional<JsonNode> toNotifyJson() {
-
+    protected Optional<JsonNode> toNotifyJson() {
         ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         vertexLabelNode.put("label", getLabel());
 
@@ -286,7 +294,7 @@ public class VertexLabel extends AbstractElement {
             vertexLabelNode.set("uncommittedProperties", propertyNode.get());
         }
 
-        if (this.uncommittedOutEdgeLabels.size() > 0) {
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedOutEdgeLabels.isEmpty()) {
             ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels) {
                 Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
@@ -349,7 +357,7 @@ public class VertexLabel extends AbstractElement {
                     Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
                     EdgeLabel edgeLabel;
                     if (!edgeLabelOptional.isPresent()) {
-                        edgeLabel = new EdgeLabel(edgeLabelName);
+                        edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
                     } else {
                         edgeLabel = edgeLabelOptional.get();
                     }
@@ -368,7 +376,7 @@ public class VertexLabel extends AbstractElement {
                     Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
                     EdgeLabel edgeLabel;
                     if (!edgeLabelOptional.isPresent()) {
-                        edgeLabel = new EdgeLabel(edgeLabelName);
+                        edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
                     } else {
                         edgeLabel = edgeLabelOptional.get();
                     }

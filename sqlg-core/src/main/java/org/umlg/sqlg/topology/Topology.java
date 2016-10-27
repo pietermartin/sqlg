@@ -122,7 +122,7 @@ public class Topology {
      */
     void lock() {
         //only lock if the lock is not already owned by this thread.
-        if (!isHeldByCurrentThread()) {
+        if (!isLockHeldByCurrentThread()) {
             try {
                 if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
                     throw new RuntimeException("timeout lapsed to acquire lock schema creation.");
@@ -152,7 +152,7 @@ public class Topology {
     /**
      * @return true if the current thread owns the lock.
      */
-    boolean isHeldByCurrentThread() {
+    boolean isLockHeldByCurrentThread() {
         return this.schemaLock.isHeldByCurrentThread();
     }
 
@@ -372,7 +372,7 @@ public class Topology {
         for (Schema schema : this.schemas.values()) {
             schema.afterCommit();
         }
-        if (isHeldByCurrentThread()) {
+        if (isLockHeldByCurrentThread()) {
             this.schemaLock.unlock();
         }
     }
@@ -387,7 +387,7 @@ public class Topology {
         for (Schema schema : this.schemas.values()) {
             schema.afterRollback();
         }
-        if (isHeldByCurrentThread()) {
+        if (isLockHeldByCurrentThread()) {
             this.schemaLock.unlock();
         }
     }
@@ -400,7 +400,7 @@ public class Topology {
 
         result.putAll(this.temporaryTables);
 
-        if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
+        if (!this.uncommittedSchemas.isEmpty() && isLockHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
             }
@@ -420,7 +420,7 @@ public class Topology {
 
         result.putAll(this.temporaryTables);
 
-        if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
+        if (!this.uncommittedSchemas.isEmpty() && isLockHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 result.putAll(schemaEntry.getValue().getAllTables());
             }
@@ -439,7 +439,7 @@ public class Topology {
 
         result.putAll(this.temporaryTables);
 
-        if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
+        if (!this.uncommittedSchemas.isEmpty() && isLockHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
             }
@@ -462,7 +462,7 @@ public class Topology {
             result.putAll(stringPropertyTypeMap);
         }
 
-        if (!this.uncommittedSchemas.isEmpty() && isHeldByCurrentThread()) {
+        if (!this.uncommittedSchemas.isEmpty() && isLockHeldByCurrentThread()) {
             for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
                 if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
                     result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
@@ -613,7 +613,7 @@ public class Topology {
         return toJson().toString();
     }
 
-    public Optional<JsonNode> toNotifyJson() {
+    private Optional<JsonNode> toNotifyJson() {
         ArrayNode schemaArrayNode = null;
         for (Schema schema : this.schemas.values()) {
             Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
@@ -624,13 +624,15 @@ public class Topology {
                 schemaArrayNode.add(jsonNodeOptional.get());
             }
         }
-        for (Schema schema : this.uncommittedSchemas.values()) {
-            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
-            if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
-                schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-            }
-            if (jsonNodeOptional.isPresent()) {
-                schemaArrayNode.add(jsonNodeOptional.get());
+        if (this.isLockHeldByCurrentThread()) {
+            for (Schema schema : this.uncommittedSchemas.values()) {
+                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
+                    schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                if (jsonNodeOptional.isPresent()) {
+                    schemaArrayNode.add(jsonNodeOptional.get());
+                }
             }
         }
         if (schemaArrayNode != null) {

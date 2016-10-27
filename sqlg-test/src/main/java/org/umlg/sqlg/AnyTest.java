@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.multithread.TestMultiThread;
+import org.umlg.sqlg.test.schema.TestSchema;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.multithread.TestMultiThread;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestMultiThread.class
+        TestSchema.class
 })
 public class AnyTest {
 }

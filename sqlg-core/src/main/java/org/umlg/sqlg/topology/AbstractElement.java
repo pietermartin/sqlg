@@ -40,6 +40,8 @@ public abstract class AbstractElement {
         this.label = label;
     }
 
+    protected abstract Schema getSchema();
+
     public String getLabel() {
         return this.label;
     }
@@ -49,8 +51,10 @@ public abstract class AbstractElement {
         for (Map.Entry<String, Property> propertyEntry : this.properties.entrySet()) {
             result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
         }
-        for (Map.Entry<String, Property> propertyEntry : this.uncommittedProperties.entrySet()) {
-            result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
+        if (getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Map.Entry<String, Property> propertyEntry : this.uncommittedProperties.entrySet()) {
+                result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
+            }
         }
         return result;
     }
@@ -128,8 +132,8 @@ public abstract class AbstractElement {
         return propertyArrayNode;
     }
 
-    public Optional<JsonNode> toNotifyJson() {
-        if (this.uncommittedProperties.size() > 0) {
+    protected Optional<JsonNode> toNotifyJson() {
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty()) {
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Property property : this.uncommittedProperties.values()) {
                 propertyArrayNode.add(property.toNotifyJson());
