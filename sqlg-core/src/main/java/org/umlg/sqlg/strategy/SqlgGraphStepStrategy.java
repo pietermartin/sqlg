@@ -1,9 +1,12 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
+
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
@@ -96,6 +99,23 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             iterator.remove();
             traversal.removeStep(step);
             replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
+            // check if next step isn't a range
+            if (iterator.hasNext()){
+            	step=iterator.next();
+            	if (step instanceof RangeGlobalStep<?>){
+                	RangeGlobalStep<?> rgs=(RangeGlobalStep<?>)step;
+                	iterator.remove();
+                    traversal.removeStep(step);
+                    replacedStep.setRange(Range.between(rgs.getLowRange(), rgs.getHighRange()));
+            	} else {
+            		iterator.previous();
+            	}
+            }
+        } else if (step instanceof RangeGlobalStep<?>){
+        	RangeGlobalStep<?> rgs=(RangeGlobalStep<?>)step;
+        	iterator.remove();
+            traversal.removeStep(step);
+            replacedStep.setRange(Range.between(rgs.getLowRange(), rgs.getHighRange()));
         } else {
             collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
         }
@@ -111,6 +131,11 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
+            } else if (currentStep instanceof RangeGlobalStep<?>){
+            	RangeGlobalStep<?> rgs=(RangeGlobalStep<?>)currentStep;
+            	iterator.remove();
+                traversal.removeStep(currentStep);
+                replacedStep.setRange(Range.between(rgs.getLowRange(), rgs.getHighRange()));
             } else {
                 iterator.previous();
                 break;
