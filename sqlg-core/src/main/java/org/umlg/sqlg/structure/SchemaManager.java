@@ -1425,8 +1425,7 @@ public class SchemaManager {
      * Deletes all tables.
      */
     public void clear() {
-        try {
-            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+        try (Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection()) {
             DatabaseMetaData metadata;
             metadata = conn.getMetaData();
             if (sqlDialect.supportsCascade()) {
