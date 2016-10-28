@@ -329,7 +329,12 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
                 }
                 iterator.remove();
-                traversal.removeStep(currentStep);
+                //TODO stengthen this if statement.
+                //The step is not present for ChooseSteps as the currentStep is nested inside the ChooserStep which has already been removed.
+                //The same should be true for RepeatStep only currently do not optimize if there is a HasStep in the nested traversal.
+                if (traversal.getSteps().contains(currentStep)) {
+                    traversal.removeStep(currentStep);
+                }
                 replacedStep.addHasContainers(((HasContainerHolder) currentStep).getHasContainers());
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
