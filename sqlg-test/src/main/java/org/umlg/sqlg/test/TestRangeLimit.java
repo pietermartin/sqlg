@@ -1,10 +1,12 @@
 package org.umlg.sqlg.test;
 
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -15,6 +17,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+
 
 /**
  * Test range and limit, they should be implemented as the SQL level
@@ -300,5 +303,74 @@ public class TestRangeLimit extends BaseTest {
         assertTrue(names.toString(),names.contains("b10"));
         assertTrue(names.toString(),names.contains("b11"));
         
+	}
+	
+	@Test
+	public void testRangeOut(){
+		for (int i = 0; i < 100; i++) {
+            Vertex a1  = this.sqlgGraph.addVertex(T.label, "A", "age", i);
+            Vertex b1  = this.sqlgGraph.addVertex(T.label, "B", "age", i);
+            Vertex c1  = this.sqlgGraph.addVertex(T.label, "C", "age", i);
+            a1.addEdge("ab", b1);
+            b1.addEdge("bc", c1);
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex,Vertex> g=this.sqlgGraph.traversal().V().hasLabel("A").out().out().order().by("age").range(10, 20);
+        ensureRangeGlobal(g);
+        List<Vertex> vertexList = g.toList();
+        ensureNoRangeGlobal(g);
+        assertEquals(10,vertexList.size());
+    	for (Vertex v:vertexList){
+    		assertEquals("C",v.label());
+    		int i=(Integer)v.property("age").value();
+    		assertTrue(i>=10 && i<20);
+    	}
+	}
+	
+	
+	
+	@Test
+	public void testRangeRepeatOut(){
+		for (int i = 0; i < 100; i++) {
+            Vertex a1  = this.sqlgGraph.addVertex(T.label, "A", "age", i);
+            Vertex b1  = this.sqlgGraph.addVertex(T.label, "B", "age", i);
+            Vertex c1  = this.sqlgGraph.addVertex(T.label, "C", "age", i);
+            a1.addEdge("ab", b1);
+            b1.addEdge("bc", c1);
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex,Vertex> g=this.sqlgGraph.traversal().V().hasLabel("A").repeat(out()).times(2).order().by("age").range(10, 20);
+        ensureRangeGlobal(g);
+        List<Vertex> vertexList = g.toList();
+        ensureNoRangeGlobal(g);
+        assertEquals(10,vertexList.size());
+        for (Vertex v:vertexList){
+    		assertEquals("C",v.label());
+    		int i=(Integer)v.property("age").value();
+    		assertTrue(i>=10 && i<20);
+    	}
+	}
+	
+    @Test
+	public void testRangeBoth(){
+		for (int i = 0; i < 100; i++) {
+            Vertex a1  = this.sqlgGraph.addVertex(T.label, "A", "age", i);
+            Vertex b1  = this.sqlgGraph.addVertex(T.label, "B", "age", i);
+            Vertex c1  = this.sqlgGraph.addVertex(T.label, "C", "age", i);
+            a1.addEdge("ab", b1);
+            b1.addEdge("bc", c1);
+        }
+        this.sqlgGraph.tx().commit();  
+        GraphTraversal<Vertex,Vertex> g=this.sqlgGraph.traversal().V().hasLabel("B").both().order().by("age").range(10, 20);
+        ensureRangeGlobal(g);
+        List<Vertex> vertexList = g.toList();
+        // cannot be done in SQL
+        ensureRangeGlobal(g);
+        assertEquals(10,vertexList.size());
+        for (Vertex v:vertexList){
+    		assertTrue(v.label().equals("A") || v.label().equals("C") );
+    		int i=(Integer)v.property("age").value();
+    		assertTrue(String.valueOf(i),i>=5 && i<10);
+    	}
 	}
 }
