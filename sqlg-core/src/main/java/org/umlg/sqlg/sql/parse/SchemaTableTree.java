@@ -2,6 +2,8 @@ package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
@@ -86,6 +88,11 @@ public class SchemaTableTree {
     private boolean localStep = false;
     private boolean fakeEmit = false;
 
+    /**
+     * range limitation, if any
+     */
+    private Range<Long> range;
+    
     enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -113,6 +120,7 @@ public class SchemaTableTree {
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
                     List<HasContainer> hasContainers,
                     List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
+                    Range<Long> range,
                     STEP_TYPE stepType,
                     boolean emit,
                     boolean untilFirst,
@@ -123,6 +131,7 @@ public class SchemaTableTree {
         this(sqlgGraph, schemaTable, stepDepth, replacedStepDepth);
         this.hasContainers = hasContainers;
         this.comparators = comparators;
+        this.range = range;
         this.labels = Collections.unmodifiableSet(labels);
         this.stepType = stepType;
         this.emit = emit;
@@ -145,6 +154,7 @@ public class SchemaTableTree {
                 elementClass,
                 replacedStep.getHasContainers(),
                 replacedStep.getComparators(),
+                replacedStep.getRange(),
                 replacedStep.getDepth(),
                 isEdgeVertexStep,
                 replacedStep.isEmit(),
@@ -177,6 +187,7 @@ public class SchemaTableTree {
                 elementClass,
                 replacedStep.getHasContainers(),
                 replacedStep.getComparators(),
+                replacedStep.getRange(),
                 replacedStep.getDepth(),
                 false,
                 emit,
@@ -191,6 +202,7 @@ public class SchemaTableTree {
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
             List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
+            Range<Long> range,
             int stepDepth,
             boolean isEdgeVertexStep,
             boolean emit,
@@ -203,6 +215,7 @@ public class SchemaTableTree {
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
             schemaTableTree.comparators = new ArrayList<>(comparators);
+            schemaTableTree.range = range;
         }
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
@@ -532,6 +545,7 @@ public class SchemaTableTree {
                 //last entry, only order on the last entry as duplicate paths are for the same SchemaTable
                 if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
                     result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
+                    result += schemaTableTree.toRangeClause(sqlgGraph);
                 }
                 countInner++;
             }
@@ -709,6 +723,7 @@ public class SchemaTableTree {
             //construct the order by clause for the comparators
             for (SchemaTableTree schemaTableTree : distinctQueryStack) {
                 singlePathSql += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, -1);
+                singlePathSql += schemaTableTree.toRangeClause(sqlgGraph);
             }
         }
 
@@ -962,6 +977,13 @@ public class SchemaTableTree {
             }
         }
         return result;
+    }
+    
+    private String toRangeClause(SqlgGraph sqlgGraph){
+    	if (range!=null){
+    		return " "+sqlgGraph.getSqlDialect().getRangeClause(range);
+    	}
+    	return "";
     }
 
     private SchemaTableTree findSelectSchemaTable(String select) {
@@ -1801,6 +1823,8 @@ public class SchemaTableTree {
                 .append(this.hasContainers.toString()).append(" ")
                 .append("Comparators = ")
                 .append(this.comparators.toString()).append(" ")
+                .append("Range = ")
+                .append(String.valueOf(range)).append(" ")
                 .append(this.direction != null ? this.direction.toString() : "").append(" ")
                 .append("isVertexStep = ").append(this.isEdgeVertexStep())
                 .append(" isUntilFirst = ").append(this.isUntilFirst())
@@ -1970,27 +1994,33 @@ public class SchemaTableTree {
     }
 
     public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement) throws SQLException {
-        for (Map.Entry<String, Pair<String, PropertyType>> entry : getColumnNamePropertyName().entrySet()) {
-            String columnName = entry.getKey();
-            String propertyName = entry.getValue().getKey();
-            PropertyType propertyType = entry.getValue().getValue();
-            //make sure that if we request an array-backed type, we do it using
-            //the getArray() call. Don't bother for byte arrays, because they are
-            //handled differently by all supported DBs, so getObject() on them
-            //works.
-            Object o = (propertyType != null && propertyType.isArray()
-                    && propertyType != PropertyType.byte_ARRAY
-                    && propertyType != PropertyType.BYTE_ARRAY)
-                    ? resultSet.getArray(columnName)
-                    : resultSet.getObject(columnName);
-            if (!Objects.isNull(o)) {
-                if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                    ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, columnName);
-                } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                    ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, columnName);
-                } else {
-                    sqlgElement.loadProperty(resultSet, propertyName, o, getColumnNameAliasMap(), this.stepDepth, propertyType);
-                }
+    	for (int ix=1;ix<=resultSet.getMetaData().getColumnCount();ix++){
+    		
+        //for (Map.Entry<String, Pair<String, PropertyType>> entry : getColumnNamePropertyName().entrySet()) {
+            String columnName = resultSet.getMetaData().getColumnLabel(ix);//entry.getKey();
+            Pair<String, PropertyType> p=getColumnNamePropertyName().get(columnName);
+            if (p!=null){
+	            String propertyName = p.getKey();
+	            PropertyType propertyType = p.getValue();
+	            
+	            //make sure that if we request an array-backed type, we do it using
+	            //the getArray() call. Don't bother for byte arrays, because they are
+	            //handled differently by all supported DBs, so getObject() on them
+	            //works.
+	            Object o = (propertyType != null && propertyType.isArray()
+	                    && propertyType != PropertyType.byte_ARRAY
+	                    && propertyType != PropertyType.BYTE_ARRAY)
+	                    ? resultSet.getArray(ix)
+	                    : resultSet.getObject(ix);
+	            if (!Objects.isNull(o)) {
+	                if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+	                    ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, ix);
+	                } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+	                    ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, ix);
+	                } else {
+	                    sqlgElement.loadProperty(resultSet, propertyName, o, getColumnNameAliasMap(), this.stepDepth, propertyType);
+	                }
+	            }
             }
         }
     }
@@ -2024,4 +2054,5 @@ public class SchemaTableTree {
     public void setFakeEmit(boolean fakeEmit) {
         this.fakeEmit = fakeEmit;
     }
+    
 }

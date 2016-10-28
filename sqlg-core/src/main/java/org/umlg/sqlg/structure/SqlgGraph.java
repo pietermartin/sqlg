@@ -1089,7 +1089,7 @@ public class SqlgGraph implements Graph {
                     int type = rsmd.getColumnType(i);
                     //make sure to obtain array using getArray()
                     //At least in H2, this makes a difference...
-                    Object o = type == Types.ARRAY ? rs.getArray(columnName) : rs.getObject(columnName);
+                    Object o = type == Types.ARRAY ? rs.getArray(i) : rs.getObject(i);
                     this.sqlDialect.putJsonObject(obj, columnName, type, o);
                     if (first) {
                         this.sqlDialect.putJsonMetaObject(this.mapper, metaNode, columnName, type, o);

@@ -296,29 +296,35 @@ public class SqlgVertex extends SqlgElement implements Vertex {
 
                     ResultSet resultSet = preparedStatement.executeQuery();
                     while (resultSet.next()) {
-                        Set<String> inVertexColumnNames = new HashSet<>();
-                        Set<String> outVertexColumnNames = new HashSet<>();
-                        String inVertexColumnName = "";
-                        String outVertexColumnName = "";
+                        Set<Integer> inVertexColumnIndexs = new HashSet<>();
+                        Set<Integer> outVertexColumnIndexs = new HashSet<>();
+                        int inVertexColumnIndex = 0;
+                        int outVertexColumnIndex = 0;
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+                        int idIdx=0;
                         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                             String columnName = resultSetMetaData.getColumnLabel(i);
                             if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                                inVertexColumnNames.add(columnName);
+                                inVertexColumnIndexs.add(i);
                             } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                                outVertexColumnNames.add(columnName);
+                                outVertexColumnIndexs.add(i);
+                            } else if (columnName.equals(SchemaManager.ID)){
+                            	idIdx=i;
                             }
                         }
-                        if (inVertexColumnNames.isEmpty() || outVertexColumnNames.isEmpty()) {
+                        if (inVertexColumnIndexs.isEmpty() || outVertexColumnIndexs.isEmpty()) {
                             throw new IllegalStateException("BUG: in or out vertex id not set!!!!");
                         }
+                        if (idIdx==0) {
+                            throw new IllegalStateException("BUG: no ID column!!!!");
+                        }
 
-                        Long edgeId = resultSet.getLong("ID");
+                        Long edgeId = resultSet.getLong(idIdx);
                         Long inId = null;
                         Long outId = null;
 
                         //Only one in out pair should ever be set per row
-                        for (String inColumnName : inVertexColumnNames) {
+                        for (Integer inColumnName : inVertexColumnIndexs) {
                             if (inId != null) {
                                 @SuppressWarnings("unused")
                                 Long tempInId = resultSet.getLong(inColumnName);
@@ -329,11 +335,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 Long tempInId = resultSet.getLong(inColumnName);
                                 if (!resultSet.wasNull()) {
                                     inId = tempInId;
-                                    inVertexColumnName = inColumnName;
+                                    inVertexColumnIndex = inColumnName;
                                 }
                             }
                         }
-                        for (String outColumnName : outVertexColumnNames) {
+                        for (Integer outColumnName : outVertexColumnIndexs) {
                             if (outId != null) {
                                 @SuppressWarnings("unused")
                                 Long tempOutId = resultSet.getLong(outColumnName);
@@ -344,22 +350,22 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 Long tempOutId = resultSet.getLong(outColumnName);
                                 if (!resultSet.wasNull()) {
                                     outId = tempOutId;
-                                    outVertexColumnName = outColumnName;
+                                    outVertexColumnIndex = outColumnName;
                                 }
                             }
                         }
-                        if (inVertexColumnName.isEmpty() || outVertexColumnName.isEmpty()) {
-                            throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
+                        if (inVertexColumnIndex==0 || outVertexColumnIndex==0) {
+                            throw new IllegalStateException("inVertexColumnIndex or outVertexColumnIndex is unknown!");
                         }
-                        SchemaTable inSchemaTable = SchemaTable.from(this.sqlgGraph, inVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                        SchemaTable outSchemaTable = SchemaTable.from(this.sqlgGraph, outVertexColumnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                        SchemaTable inSchemaTable = SchemaTable.from(this.sqlgGraph, resultSetMetaData.getColumnLabel(inVertexColumnIndex), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                        SchemaTable outSchemaTable = SchemaTable.from(this.sqlgGraph, resultSetMetaData.getColumnLabel(outVertexColumnIndex), this.sqlgGraph.getSqlDialect().getPublicSchema());
 
                         List<Object> keyValues = new ArrayList<>();
                         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                             String columnName = resultSetMetaData.getColumnLabel(i);
-                            if (!((columnName.equals("ID") || columnName.equals(inVertexColumnNames) || columnName.equals(outVertexColumnNames)))) {
+                            if (!((columnName.equals("ID") || columnName.equals(inVertexColumnIndexs) || columnName.equals(outVertexColumnIndexs)))) {
                                 keyValues.add(columnName);
-                                keyValues.add(resultSet.getObject(columnName));
+                                keyValues.add(resultSet.getObject(i));
                             }
                         }
                         SqlgEdge sqlGEdge = null;
@@ -722,20 +728,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         }
                         ResultSet resultSet = preparedStatement.executeQuery();
                         while (resultSet.next()) {
-                            Set<String> inVertexColumnNames = new HashSet<>();
-                            Set<String> outVertexColumnNames = new HashSet<>();
-                            String inVertexColumnName = "";
-                            String outVertexColumnName = "";
+                            Set<Integer> inVertexColumnIndexes = new HashSet<>();
+                            Set<Integer> outVertexColumnIndexes = new HashSet<>();
+                            int inVertexColumnIndex = 0;
+                            int outVertexColumnIndex = 0;
                             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                 String columnName = resultSetMetaData.getColumnLabel(i);
                                 if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                                    inVertexColumnNames.add(columnName);
+                                    inVertexColumnIndexes.add(i);
                                 } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                                    outVertexColumnNames.add(columnName);
+                                    outVertexColumnIndexes.add(i);
                                 }
                             }
-                            if (inVertexColumnNames.isEmpty() && outVertexColumnNames.isEmpty()) {
+                            if (inVertexColumnIndexes.isEmpty() && outVertexColumnIndexes.isEmpty()) {
                                 throw new IllegalStateException("BUG: in or out vertex id not set!!!!");
                             }
 
@@ -743,7 +749,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             Long outId = null;
 
                             //Only one in out pair should ever be set per row
-                            for (String inColumnName : inVertexColumnNames) {
+                            for (Integer inColumnName : inVertexColumnIndexes) {
                                 if (inId != null) {
                                     resultSet.getLong(inColumnName);
                                     if (!resultSet.wasNull()) {
@@ -753,11 +759,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     Long tempInId = resultSet.getLong(inColumnName);
                                     if (!resultSet.wasNull()) {
                                         inId = tempInId;
-                                        inVertexColumnName = inColumnName;
+                                        inVertexColumnIndex = inColumnName;
                                     }
                                 }
                             }
-                            for (String outColumnName : outVertexColumnNames) {
+                            for (Integer outColumnName : outVertexColumnIndexes) {
                                 if (outId != null) {
                                     resultSet.getLong(outColumnName);
                                     if (!resultSet.wasNull()) {
@@ -767,22 +773,22 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     Long tempOutId = resultSet.getLong(outColumnName);
                                     if (!resultSet.wasNull()) {
                                         outId = tempOutId;
-                                        outVertexColumnName = outColumnName;
+                                        outVertexColumnIndex = outColumnName;
                                     }
                                 }
                             }
-                            if (inVertexColumnName.isEmpty() && outVertexColumnName.isEmpty()) {
-                                throw new IllegalStateException("inVertexColumnName or outVertexColumnName is empty!");
+                            if (inVertexColumnIndex==0 && outVertexColumnIndex==0) {
+                                throw new IllegalStateException("inVertexColumnIndex or outVertexColumnIndex is unknown!");
                             }
 
                             List<Object> keyValues = new ArrayList<>();
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                 String columnName = resultSetMetaData.getColumnLabel(i);
                                 if (!(columnName.equals("ID") ||
-                                        inVertexColumnNames.contains(columnName) || outVertexColumnNames.contains(columnName))) {
+                                        inVertexColumnIndexes.contains(columnName) || outVertexColumnIndexes.contains(columnName))) {
                                     //this values end up in SqlElement.properties.
                                     //Its a ConcurrentHashMap which does not allow null key or value
-                                    Object object = resultSet.getObject(columnName);
+                                    Object object = resultSet.getObject(i);
                                     if (object != null) {
                                         keyValues.add(columnName);
                                         keyValues.add(object);
@@ -926,7 +932,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            Object o = resultSet.getObject(columnName);
+            Object o = resultSet.getObject(i);
             if (!columnName.equals("ID")
                     && !columnName.equals(SchemaManager.VERTEX_SCHEMA)
                     && !columnName.equals(VERTEX_TABLE)

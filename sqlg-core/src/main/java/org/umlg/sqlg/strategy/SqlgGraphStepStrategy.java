@@ -1,9 +1,12 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
+
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.InlineFilterStrategy;
@@ -87,7 +90,49 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         sqlgStep.parseForStrategy();
         if (!sqlgStep.isForMultipleQueries()) {
             collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+        } else {
+        	// check if next step isn't a range
+            if (stepIterator.hasNext()){
+            	step=stepIterator.next();
+            	if (!collectRangeGlobalStep(step, stepIterator, traversal, lastReplacedStep,true)){
+            		stepIterator.previous();
+            	}
+            }
         }
+    }
+    
+    /**
+     * collect a range global step
+     * @param step the current step to collect
+     * @param iterator the step iterator
+     * @param traversal the traversal of all steps
+     * @param replacedStep the current replaced step collecting the info
+     * @param multiple are we in a multiple label query?
+     * @return true if we impacted the iterator by removing the current step, false otherwise
+     */
+    private static boolean collectRangeGlobalStep(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep,boolean multiple){
+    	if (step instanceof RangeGlobalStep<?>){
+        	RangeGlobalStep<?> rgs=(RangeGlobalStep<?>)step;
+        	if (!multiple || rgs.getLowRange()==0){
+        		long high=rgs.getHighRange();
+        		// when we have multiple labels, we are going to apply the range on the first label first
+        		// if we retrieve more than the given range, we don't bother looking at the other labels
+        		// so we always ask for one more row here: better to retrieve an extra row and see there's no point
+        		// hitting another table
+        		if (multiple){
+        			high+=1;
+        		}
+        		replacedStep.setRange(Range.between(rgs.getLowRange(),high ));
+        		if (!multiple){
+        			iterator.remove();
+        			traversal.removeStep(step);
+        			return true;
+        		}
+	            
+        	}
+    	} 
+    	return false;
+   
     }
 
     private static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
@@ -96,6 +141,15 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             iterator.remove();
             traversal.removeStep(step);
             replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
+            // check if next step isn't a range
+            if (iterator.hasNext()){
+            	step=iterator.next();
+            	if (!collectRangeGlobalStep(step, iterator, traversal, replacedStep,false)){
+                	iterator.previous();
+            	}
+            }
+        } else if (collectRangeGlobalStep(step, iterator, traversal, replacedStep,false)){
+        	// noop
         } else {
             collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
         }
@@ -111,6 +165,8 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
+            } else if (collectRangeGlobalStep(currentStep, iterator, traversal, replacedStep,false)){
+            	// noop
             } else {
                 iterator.previous();
                 break;

@@ -3,6 +3,8 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
+
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
@@ -37,6 +39,10 @@ public class ReplacedStep<S, E> {
     private Set<String> labels;
     private List<HasContainer> hasContainers;
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
+    /**
+     * range limitation if any
+     */
+    private Range<Long> range;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
     private boolean emit;
@@ -524,6 +530,7 @@ public class ReplacedStep<S, E> {
                             0,
                             hasContainersWithoutLabel,
                             this.comparators,
+                            this.range,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
@@ -577,6 +584,7 @@ public class ReplacedStep<S, E> {
 	                            0,
 	                            hasContainers,
 	                            this.comparators,
+	                            this.range,
 	                            SchemaTableTree.STEP_TYPE.GRAPH_STEP,
 	                            ReplacedStep.this.emit,
 	                            ReplacedStep.this.untilFirst,
@@ -668,4 +676,11 @@ public class ReplacedStep<S, E> {
         this.hasContainers.addAll(hasContainers);
     }
 
+    public Range<Long> getRange() {
+		return range;
+	}
+    
+    public void setRange(Range<Long> range) {
+		this.range = range;
+	}
 }
