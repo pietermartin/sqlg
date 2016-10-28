@@ -1994,27 +1994,33 @@ public class SchemaTableTree {
     }
 
     public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement) throws SQLException {
-        for (Map.Entry<String, Pair<String, PropertyType>> entry : getColumnNamePropertyName().entrySet()) {
-            String columnName = entry.getKey();
-            String propertyName = entry.getValue().getKey();
-            PropertyType propertyType = entry.getValue().getValue();
-            //make sure that if we request an array-backed type, we do it using
-            //the getArray() call. Don't bother for byte arrays, because they are
-            //handled differently by all supported DBs, so getObject() on them
-            //works.
-            Object o = (propertyType != null && propertyType.isArray()
-                    && propertyType != PropertyType.byte_ARRAY
-                    && propertyType != PropertyType.BYTE_ARRAY)
-                    ? resultSet.getArray(columnName)
-                    : resultSet.getObject(columnName);
-            if (!Objects.isNull(o)) {
-                if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                    ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, columnName);
-                } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                    ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, columnName);
-                } else {
-                    sqlgElement.loadProperty(resultSet, propertyName, o, getColumnNameAliasMap(), this.stepDepth, propertyType);
-                }
+    	for (int ix=1;ix<=resultSet.getMetaData().getColumnCount();ix++){
+    		
+        //for (Map.Entry<String, Pair<String, PropertyType>> entry : getColumnNamePropertyName().entrySet()) {
+            String columnName = resultSet.getMetaData().getColumnLabel(ix);//entry.getKey();
+            Pair<String, PropertyType> p=getColumnNamePropertyName().get(columnName);
+            if (p!=null){
+	            String propertyName = p.getKey();
+	            PropertyType propertyType = p.getValue();
+	            
+	            //make sure that if we request an array-backed type, we do it using
+	            //the getArray() call. Don't bother for byte arrays, because they are
+	            //handled differently by all supported DBs, so getObject() on them
+	            //works.
+	            Object o = (propertyType != null && propertyType.isArray()
+	                    && propertyType != PropertyType.byte_ARRAY
+	                    && propertyType != PropertyType.BYTE_ARRAY)
+	                    ? resultSet.getArray(ix)
+	                    : resultSet.getObject(ix);
+	            if (!Objects.isNull(o)) {
+	                if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+	                    ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, ix);
+	                } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+	                    ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, ix);
+	                } else {
+	                    sqlgElement.loadProperty(resultSet, propertyName, o, getColumnNameAliasMap(), this.stepDepth, propertyType);
+	                }
+	            }
             }
         }
     }
