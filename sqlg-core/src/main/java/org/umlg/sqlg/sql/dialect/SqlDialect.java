@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.apache.commons.lang3.Range;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -386,4 +388,14 @@ public interface SqlDialect {
     Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException;
 
     void setArray(PreparedStatement statement, int index, PropertyType type, Object[] values) throws SQLException;
+    
+    /**
+     * range condition
+     * @param low
+     * @param high
+     * @return
+     */
+    default String getRangeClause(Range<Long> r){
+    	return "LIMIT "+(r.getMaximum()-r.getMinimum())+" OFFSET "+r.getMinimum();
+    }
 }

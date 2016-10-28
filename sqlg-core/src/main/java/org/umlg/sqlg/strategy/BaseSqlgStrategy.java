@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
@@ -192,7 +193,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     lastReplacedStep = replacedStep;
                     chooseStepAdded = false;
                 } else {
-                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
+                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep || s instanceof RangeGlobalStep)) {
                         doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
                     }
                     break;
