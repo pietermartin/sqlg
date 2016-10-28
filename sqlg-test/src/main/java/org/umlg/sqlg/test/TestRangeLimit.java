@@ -42,18 +42,18 @@ public class TestRangeLimit extends BaseTest {
 	 * since it was changed into a Range on the ReplacedStep
 	 * @param g
 	 */
-	private void ensureSQLImplementsRange(GraphTraversal<?, ?>g){
+	private void ensureNoRangeGlobal(GraphTraversal<?, ?>g){
 		DefaultGraphTraversal<?, ?> dgt=(DefaultGraphTraversal<?, ?>)g;
 		for (Step<?, ?> s:dgt.getSteps()){
 			assertFalse(s instanceof RangeGlobalStep<?>);
 		}
 	}
 	
+	
 	@Test
 	public void testRangeOnVertexLabels(){
-		this.sqlgGraph.tx().streamingBatchModeOn();
-        for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.streamVertex(T.label, "A", "name", "a" + i);
+		for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
         GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A").order().by("name").range(1, 4).values("name");
@@ -70,7 +70,36 @@ public class TestRangeLimit extends BaseTest {
         	previous=n;
         	cnt++;
         }
-        ensureSQLImplementsRange(g);
+        ensureNoRangeGlobal(g);
+        assertEquals(3,cnt);
+        assertEquals(names.toString(),3,names.size());
+        assertTrue(names.toString(),names.contains("a1"));
+        assertTrue(names.toString(),names.contains("a10"));
+        assertTrue(names.toString(),names.contains("a11"));
+        
+	}
+	
+	@Test
+	public void testRangeOnVertexLabelsCriteria(){
+		for (int i = 0; i < 100; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i,"prop0","value");
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A").has("prop0","value").order().by("name").range(1, 4).values("name");
+        ensureRangeGlobal(g);
+        int cnt=0;
+        Set<String> names=new HashSet<>();
+        String previous=null;
+        while (g.hasNext()){
+        	String n=(String)g.next();
+        	names.add(n);
+        	if (previous!=null){
+        		assertTrue(previous.compareTo(n)<0);
+        	}
+        	previous=n;
+        	cnt++;
+        }
+        ensureNoRangeGlobal(g);
         assertEquals(3,cnt);
         assertEquals(names.toString(),3,names.size());
         assertTrue(names.toString(),names.contains("a1"));
@@ -81,9 +110,8 @@ public class TestRangeLimit extends BaseTest {
 	
 	@Test
 	public void testRangeOnVertexLabelsNoOrder(){
-		this.sqlgGraph.tx().streamingBatchModeOn();
-        for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.streamVertex(T.label, "A", "name", "a" + i);
+		for (int i = 0; i < 20; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
         GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A").range(1, 4).values("name");
@@ -95,7 +123,7 @@ public class TestRangeLimit extends BaseTest {
         	names.add(n);
         	cnt++;
         }
-        ensureSQLImplementsRange(g);
+        ensureNoRangeGlobal(g);
         assertEquals(3,cnt);
         assertEquals(names.toString(),3,names.size());
         
@@ -103,9 +131,8 @@ public class TestRangeLimit extends BaseTest {
 	
 	@Test
 	public void testLimitOnVertexLabels(){
-		this.sqlgGraph.tx().streamingBatchModeOn();
-        for (int i = 0; i < 100; i++) {
-            this.sqlgGraph.streamVertex(T.label, "A", "name", "a" + i);
+		for (int i = 0; i < 20; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
         GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A").order().by("name").limit(3).values("name");
@@ -122,7 +149,7 @@ public class TestRangeLimit extends BaseTest {
         	previous=n;
         	cnt++;
         }
-        ensureSQLImplementsRange(g);
+        ensureNoRangeGlobal(g);
         assertEquals(3,cnt);
         assertEquals(names.toString(),3,names.size());
         assertTrue(names.toString(),names.contains("a1"));
@@ -133,7 +160,7 @@ public class TestRangeLimit extends BaseTest {
 	
 	@Test
 	public void testRangeOnEdgeLabels(){
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 20; i++) {
             Vertex a=this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
             Vertex b=this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
             a.addEdge("E", b, "name", "e" + i);
@@ -153,7 +180,7 @@ public class TestRangeLimit extends BaseTest {
         	previous=n;
         	cnt++;
         }
-        ensureSQLImplementsRange(g);
+        ensureNoRangeGlobal(g);
         assertEquals(3,cnt);
         assertEquals(names.toString(),3,names.size());
         assertTrue(names.toString(),names.contains("e1"));
@@ -163,10 +190,91 @@ public class TestRangeLimit extends BaseTest {
 	}
 	
 	@Test
+	public void testRangeOnMultipleLabelsOrdered(){
+		for (int i = 0; i < 20; i++) {
+            Vertex a=this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+            Vertex b=this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("E", b, "name", "e" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A","B").order().by("name").range(1, 4).values("name");
+        ensureRangeGlobal(g);
+        int cnt=0;
+        Set<String> names=new HashSet<>();
+        String previous=null;
+        while (g.hasNext()){
+        	String n=(String)g.next();
+        	names.add(n);
+        	if (previous!=null){
+        		assertTrue(previous.compareTo(n)<0);
+        	}
+        	previous=n;
+        	cnt++;
+        }
+        // order by on multiple labels is not done in SQL, so the range isn't
+        ensureRangeGlobal(g);
+        assertEquals(3,cnt);
+        assertEquals(names.toString(),3,names.size());
+        assertTrue(names.toString(),names.contains("a1"));
+        assertTrue(names.toString(),names.contains("a10"));
+        assertTrue(names.toString(),names.contains("a11"));
+        
+	}
+	
+	@Test
+	public void testRangeOnMultipleLabelsOffset(){
+		for (int i = 0; i < 20; i++) {
+            Vertex a=this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+            Vertex b=this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("E", b, "name", "e" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A","B").range(1, 4).values("name");
+        ensureRangeGlobal(g);
+        int cnt=0;
+        Set<String> names=new HashSet<>();
+        while (g.hasNext()){
+        	String n=(String)g.next();
+        	names.add(n);
+        	cnt++;
+        }
+        // cannot have offset on different labels
+        ensureRangeGlobal(g);
+        assertEquals(3,cnt);
+        assertEquals(names.toString(),3,names.size());
+        
+	}
+	
+	@Test
+	public void testRangeOnMultipleLabels(){
+		for (int i = 0; i < 20; i++) {
+            Vertex a=this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+            Vertex b=this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("E", b, "name", "e" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex,Object> g=this.sqlgGraph.traversal().V().hasLabel("A","B").limit(4).values("name");
+        ensureRangeGlobal(g);
+        int cnt=0;
+        Set<String> names=new HashSet<>();
+        while (g.hasNext()){
+        	String n=(String)g.next();
+        	names.add(n);
+        	cnt++;
+        }
+        // we still have to cut the union result
+        ensureRangeGlobal(g);
+        assertEquals(4,cnt);
+        assertEquals(names.toString(),4,names.size());
+        
+	}
+	
+	
+	@Test
 	public void testRangeOnEdgesOutput(){
 		Vertex a=this.sqlgGraph.addVertex(T.label, "A", "name", "a0");
         
-		for (int i = 0; i < 100; i++) {
+		for (int i = 0; i < 20; i++) {
             Vertex b=this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
             a.addEdge("E", b, "name", "e" + i);
         }
@@ -185,7 +293,7 @@ public class TestRangeLimit extends BaseTest {
         	previous=n;
         	cnt++;
         }
-        ensureSQLImplementsRange(g);
+        ensureNoRangeGlobal(g);
         assertEquals(3,cnt);
         assertEquals(names.toString(),3,names.size());
         assertTrue(names.toString(),names.contains("b1"));
