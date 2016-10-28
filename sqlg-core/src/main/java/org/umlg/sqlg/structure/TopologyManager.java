@@ -1,17 +1,18 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.umlg.sqlg.topology.Index;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.umlg.sqlg.structure.SchemaManager.SCHEMA_VERTEX_DISPLAY;
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_VERTEX_LABEL_NAME;
+import static org.umlg.sqlg.structure.SchemaManager.*;
 
 /**
  * Created by pieter on 2015/12/08.
@@ -24,7 +25,8 @@ public class TopologyManager {
     public static final String FOUND_IN_SQLG_S_TOPOLOGY_BUG = " found in Sqlg's topology. BUG!!!";
     public static final String MULTIPLE = "Multiple ";
 
-    private TopologyManager() {}
+    private TopologyManager() {
+    }
 
     public static Vertex addSchema(SqlgGraph sqlgGraph, String schema) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
@@ -170,7 +172,7 @@ public class TopologyManager {
             Vertex edgeVertex = edgeVertices.get(0);
 
             String foreignKeyVertexTable;
-            if (in)  {
+            if (in) {
                 foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
             } else {
                 foreignKeyVertexTable = foreignKey.getTable().substring(0, foreignKey.getTable().length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
@@ -227,6 +229,47 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
 
+    }
+
+    public static void addPropertyIndex(SqlgGraph sqlgGraph, String schema, String prefixedTable, Pair<String, PropertyType> column, Index index) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX) || prefixedTable.startsWith(SchemaManager.EDGE_PREFIX), "prefixedTable must be prefixed with %s or %s. prefixedTable = %s", VERTEX_PREFIX, EDGE_PREFIX, prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> propertyVertices;
+
+            if (prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX)) {
+                propertyVertices = traversalSource.V()
+                        .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                        .has("name", schema)
+                        .out(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", prefixedTable.substring(SchemaManager.VERTEX_PREFIX.length()))
+                        .out(SchemaManager.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                        .has("name", column.getKey())
+                        .toList();
+
+            } else {
+                propertyVertices = traversalSource.V()
+                        .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                        .has("name", schema)
+                        .out(SchemaManager.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SchemaManager.SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .out(SchemaManager.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                        .has("name", column.getKey())
+                        .toList();
+            }
+
+            if (propertyVertices.size() == 0) {
+                throw new IllegalStateException("Found no vertex for " + schema + "." + prefixedTable);
+            }
+            if (propertyVertices.size() > 1) {
+                throw new IllegalStateException("Found more than one vertex for " + schema + "." + prefixedTable);
+            }
+            Vertex propertyVertex = propertyVertices.get(0);
+            propertyVertex.property("index_type", index.name());
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
     }
 
     static void addEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, Map<String, PropertyType> column) {

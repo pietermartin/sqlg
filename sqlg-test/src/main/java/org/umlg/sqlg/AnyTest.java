@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.index.TestIndex;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.schema.TestSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchema.class
+        TestIndex.class
 })
 public class AnyTest {
 }

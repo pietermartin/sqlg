@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.topology.Topology;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -100,6 +101,7 @@ public class SchemaManager {
      * Property table's type property
      */
     public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
+    public static final String SQLG_SCHEMA_PROPERTY_INDEX_TYPE = "index_type";
 
     public static final String VERTEX_PREFIX = "V_";
     public static final String EDGE_PREFIX = "E_";
@@ -161,16 +163,35 @@ public class SchemaManager {
         return sqlDialect;
     }
 
+    public Topology getTopology() {
+        return topology;
+    }
+
+    void ensureVertexTableExist(final String schema, final String label, final Map<String, PropertyType> columns) {
+        this.topology.ensureVertexTableExist(schema, label, columns);
+    }
+
     void ensureVertexTableExist(final String schema, final String label, final Object... keyValues) {
-        this.topology.ensureVertexTableExist(schema, label, keyValues);
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        ensureVertexTableExist(schema, label, columns);
+    }
+
+    public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, final Map<String, PropertyType> columns) {
+        return this.topology.ensureEdgeTableExist(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
     }
 
     public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Object... keyValues) {
-        return this.topology.ensureEdgeTableExist(edgeLabelName, foreignKeyOut, foreignKeyIn, keyValues);
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        return ensureEdgeTableExist(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+    }
+
+    void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
+        this.topology.ensureVertexTemporaryTableExist(schema, table, columns);
     }
 
     void ensureVertexTemporaryTableExist(final String schema, final String table, final Object... keyValues) {
-        this.topology.ensureVertexTemporaryTableExist(schema, table, keyValues);
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        ensureVertexTemporaryTableExist(schema, table, columns);
     }
 
     boolean schemaExist(String schema) {

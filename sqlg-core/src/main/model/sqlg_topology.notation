@@ -280,6 +280,10 @@
           <element xmi:type="uml:EnumerationLiteral" href="sqlg_topology.uml#_-KU-MJMEEeaXH6RvC9nWPA"/>
           <layoutConstraint xmi:type="notation:Location" xmi:id="_-KgkYZMEEeaXH6RvC9nWPA"/>
         </children>
+        <children xmi:type="notation:Shape" xmi:id="_7ITpMJx8Eeabt7o0hisyzg" type="EnumerationLiteral_LiteralLabel">
+          <element xmi:type="uml:EnumerationLiteral" href="sqlg_topology.uml#_7IAuQJx8Eeabt7o0hisyzg"/>
+          <layoutConstraint xmi:type="notation:Location" xmi:id="_7ITpMZx8Eeabt7o0hisyzg"/>
+        </children>
         <styles xmi:type="notation:TitleStyle" xmi:id="_74k-BpMEEeaXH6RvC9nWPA"/>
         <styles xmi:type="notation:SortingStyle" xmi:id="_74k-B5MEEeaXH6RvC9nWPA"/>
         <styles xmi:type="notation:FilteringStyle" xmi:id="_74k-CJMEEeaXH6RvC9nWPA"/>

@@ -40,7 +40,7 @@ public class VertexLabel extends AbstractElement {
         VertexLabel vertexLabel = new VertexLabel(schema, label);
         //Add the properties directly. As they are pre-created do not add them to uncommittedProperties.
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
-            Property property = new Property(propertyEntry.getKey(), propertyEntry.getValue());
+            Property property = new Property(vertexLabel, propertyEntry.getKey(), propertyEntry.getValue());
             vertexLabel.properties.put(propertyEntry.getKey(), property);
         }
         return vertexLabel;
@@ -124,7 +124,7 @@ public class VertexLabel extends AbstractElement {
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
                         TopologyManager.addVertexColumn(sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        this.uncommittedProperties.put(column.getKey(), new Property(column.getKey(), column.getValue()));
+                        this.uncommittedProperties.put(column.getKey(), new Property(this, column.getKey(), column.getValue()));
                     }
                 }
             }

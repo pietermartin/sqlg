@@ -13,13 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
 import static org.umlg.sqlg.topology.Topology.OBJECT_MAPPER;
@@ -74,7 +72,7 @@ public class Schema {
         this.name = name;
     }
 
-    void ensureVertexTableExist(final SqlgGraph sqlgGraph, final String label, final Object... keyValues) {
+    void ensureVertexTableExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
@@ -83,18 +81,16 @@ public class Schema {
             this.topology.lock();
             vertexLabelOptional = this.getVertexLabel(label);
             if (!vertexLabelOptional.isPresent()) {
-                final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
                 this.createVertexLabel(sqlgGraph, label, columns);
             }
         } else {
             VertexLabel vertexLabel = vertexLabelOptional.get();
             //check if all the columns are there.
-            final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
             vertexLabel.ensureColumnsExist(sqlgGraph, columns);
         }
     }
 
-    SchemaTable ensureEdgeTableExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Object... keyValues) {
+    SchemaTable ensureEdgeTableExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(foreignKeyOut, "Given outTable must not be null");
         Objects.requireNonNull(foreignKeyIn, "Given inTable must not be null");
@@ -105,19 +101,18 @@ public class Schema {
             this.topology.lock();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (!edgeLabelOptional.isPresent()) {
-                final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
                 edgeLabel = this.createEdgeLabel(sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), keyValues);
+                edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), keyValues);
+            edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
         }
         return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
     }
 
-    private EdgeLabel internalEnsureEdgeTableExists(SqlgGraph sqlgGraph, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, EdgeLabel edgeLabel, Object[] keyValues) {
+    private EdgeLabel internalEnsureEdgeTableExists(SqlgGraph sqlgGraph, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, EdgeLabel edgeLabel, Map<String, PropertyType> columns) {
         //need to check that the out foreign keys exist.
         Optional<VertexLabel> outVertexLabelOptional = this.getVertexLabel(foreignKeyOut.getTable());
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
@@ -131,7 +126,6 @@ public class Schema {
         edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, false, outVertexLabelOptional.get(), foreignKeyOut);
         //noinspection OptionalGetWithoutIsPresent
         edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, true, inVertexLabelOptional.get(), foreignKeyIn);
-        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         edgeLabel.ensureColumnsExist(sqlgGraph, columns);
         return edgeLabel;
     }

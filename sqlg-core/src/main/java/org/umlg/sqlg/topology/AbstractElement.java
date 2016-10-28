@@ -31,7 +31,7 @@ public abstract class AbstractElement {
     public AbstractElement(String label, Map<String, PropertyType> columns) {
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
-            Property property = new Property(propertyEntry.getKey(), propertyEntry.getValue());
+            Property property = new Property(this, propertyEntry.getKey(), propertyEntry.getValue());
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
     }
@@ -44,6 +44,24 @@ public abstract class AbstractElement {
 
     public String getLabel() {
         return this.label;
+    }
+
+    public Optional<Property> getProperty(String key) {
+        Property property = this.properties.get(key);
+        if (property != null) {
+            return Optional.of(property);
+        } else {
+            if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+                property = this.uncommittedProperties.get(key);
+                if (property != null) {
+                    return Optional.of(property);
+                } else {
+                    return Optional.empty();
+                }
+            } else {
+                return Optional.empty();
+            }
+        }
     }
 
     public Map<String, PropertyType> getPropertyTypeMap() {
@@ -120,7 +138,7 @@ public abstract class AbstractElement {
     }
 
     void addProperty(Vertex propertyVertex) {
-        Property property = new Property(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
+        Property property = new Property(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
@@ -148,7 +166,7 @@ public abstract class AbstractElement {
         ArrayNode propertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedProperties");
         if (propertiesNode != null) {
             for (JsonNode propertyNode : propertiesNode) {
-                Property property = Property.fromNotifyJson(propertyNode);
+                Property property = Property.fromNotifyJson(this, propertyNode);
                 this.properties.put(property.getName(), property);
             }
         }

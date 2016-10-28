@@ -98,7 +98,7 @@ public class EdgeLabel extends AbstractElement {
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
                         TopologyManager.addEdgeColumn(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column);
                         addColumn(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        this.uncommittedProperties.put(column.getKey(), new Property(column.getKey(), column.getValue()));
+                        this.uncommittedProperties.put(column.getKey(), new Property(this, column.getKey(), column.getValue()));
                     }
                 }
             }

@@ -142,9 +142,10 @@ There will be 2 entries in 'EdgeLabel'</body>
             </eAnnotations>
             <ownedEnd xmi:type="uml:Property" xmi:id="_kVwM5JMEEeaXH6RvC9nWPA" name="inEdgelabel" type="_3NWG8MzgEeW174sSW5_77g" association="_kVwM4JMEEeaXH6RvC9nWPA"/>
           </packagedElement>
-          <packagedElement xmi:type="uml:Enumeration" xmi:id="_74kW8JMEEeaXH6RvC9nWPA" name="Constraint">
+          <packagedElement xmi:type="uml:Enumeration" xmi:id="_74kW8JMEEeaXH6RvC9nWPA" name="Index">
             <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_88kKkJMEEeaXH6RvC9nWPA" name="UNIQUE"/>
             <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_-KU-MJMEEeaXH6RvC9nWPA" name="NON_UNIQUE"/>
+            <ownedLiteral xmi:type="uml:EnumerationLiteral" xmi:id="_7IAuQJx8Eeabt7o0hisyzg" name="NONE"/>
           </packagedElement>
           <packagedElement xmi:type="uml:Association" xmi:id="_A1MB8JMFEeaXH6RvC9nWPA" name="property_constraint" memberEnd="_A1MB85MFEeaXH6RvC9nWPA _A1MpAJMFEeaXH6RvC9nWPA">
             <eAnnotations xmi:type="ecore:EAnnotation" xmi:id="_A1MB8ZMFEeaXH6RvC9nWPA" source="org.eclipse.papyrus">

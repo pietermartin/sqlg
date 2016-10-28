@@ -18,7 +18,6 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -86,8 +85,10 @@ public class Topology {
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
 
         columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_PROPERTY_INDEX_TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
         columns.remove(SQLG_SCHEMA_PROPERTY_TYPE);
+        columns.remove(SQLG_SCHEMA_PROPERTY_INDEX_TYPE);
 
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
         VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
@@ -157,16 +158,29 @@ public class Topology {
     }
 
     /**
+     * Ensures that the vertex table and property columns exist in the db. The default schema is assumed.
+     * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
+     * see if the element has not been added in the mean time.
+     *
+     * @param label      The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     * @param columns    The properties with their types.
+     * @see {@link PropertyType}
+     */
+    public void ensureVertexTableExist(final String label, final Map<String, PropertyType> columns) {
+        ensureVertexTableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
+    }
+
+    /**
      * Ensures that the schema, vertex table and property columns exist in the db.
      * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
      * see if the element has not been added in the mean time.
      *
      * @param schemaName The schema the vertex is in.
      * @param label      The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
-     * @param keyValues  The properties. The key translates to the columns's name. The value is interrogated to infer the columns's type.
+     * @param columns    The properties with their types.
      * @see {@link PropertyType}
      */
-    public void ensureVertexTableExist(final String schemaName, final String label, final Object... keyValues) {
+    public void ensureVertexTableExist(final String schemaName, final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(schemaName, GIVEN_TABLES_MUST_NOT_BE_NULL);
         Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
@@ -181,14 +195,14 @@ public class Topology {
                 //create the schema and the vertex label.
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
-                schema.ensureVertexTableExist(this.sqlgGraph, label, keyValues);
+                schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
             } else {
                 schema = schemaOptional.get();
-                schema.ensureVertexTableExist(this.sqlgGraph, label, keyValues);
+                schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
             }
         } else {
             schema = schemaOptional.get();
-            schema.ensureVertexTableExist(this.sqlgGraph, label, keyValues);
+            schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
         }
     }
 
@@ -200,10 +214,10 @@ public class Topology {
      * @param edgeLabelName The label for the edge.
      * @param foreignKeyOut The {@link SchemaTable} that represents the out vertex.
      * @param foreignKeyIn  The {@link SchemaTable} that represents the in vertex.
-     * @param keyValues     The edge's properties.
+     * @param columns       The edge's properties with their type.
      * @return The {@link SchemaTable} that represents the edge.
      */
-    public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Object... keyValues) {
+    public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(foreignKeyOut, "Given outTable must not be null");
         Objects.requireNonNull(foreignKeyIn, "Given inTable must not be null");
@@ -214,7 +228,7 @@ public class Topology {
         //outVertexSchema will be there as the Precondition checked it.
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Schema outVertexSchema = this.getSchema(foreignKeyOut.getSchema()).get();
-        return outVertexSchema.ensureEdgeTableExist(this.sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, keyValues);
+        return outVertexSchema.ensureEdgeTableExist(this.sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
     }
 
     /**
@@ -228,8 +242,6 @@ public class Topology {
      */
     public void ensureVertexColumnsExist(String schemaName, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
-        Preconditions.checkState(!schemaName.equals(SQLG_SCHEMA), "Topology.ensureVertexColumnsExist may not be called for \"%s\"", SQLG_SCHEMA);
-
         if (!schemaName.equals(SQLG_SCHEMA)) {
             Schema schema = this.schemas.get(schemaName);
             if (schema == null) {
@@ -269,11 +281,10 @@ public class Topology {
         }
     }
 
-    public void ensureVertexTemporaryTableExist(final String schema, final String table, final Object... keyValues) {
+    public void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
         Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         final String prefixedTable = VERTEX_PREFIX + table;
-        final ConcurrentHashMap<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         if (!this.temporaryTables.containsKey(prefixedTable)) {
             this.temporaryTables.put(prefixedTable, columns);
             createTempTable(prefixedTable, columns);
@@ -325,6 +336,10 @@ public class Topology {
 
     public boolean existVertexLabel(String schemaName, String label) {
         return getVertexLabel(schemaName, label).isPresent();
+    }
+
+    public Optional<VertexLabel> getVertexLabel(String label) {
+        return getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), label);
     }
 
     public Optional<VertexLabel> getVertexLabel(String schemaName, String label) {

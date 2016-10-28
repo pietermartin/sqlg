@@ -25,6 +25,8 @@ import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.topology.Index;
+import org.umlg.sqlg.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -290,6 +292,10 @@ public class SqlgGraph implements Graph {
 
     public SchemaManager getSchemaManager() {
         return schemaManager;
+    }
+
+    public Topology getTopology() {
+        return this.schemaManager.getTopology();
     }
 
     public GremlinParser getGremlinParser() {
@@ -1109,45 +1115,11 @@ public class SqlgGraph implements Graph {
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
-//        int i = 0;
-//        String key = "";
-//        Object value;
-//        for (Object keyValue : dummykeyValues) {
-//            if (i++ % 2 == 0) {
-//                key = (String) keyValue;
-//            } else {
-//                value = keyValue;
-//                if (!key.equals(T.label)) {
-//                    ElementHelper.validateProperty(key, value);
-//                    this.sqlDialect.validateProperty(key, value);
-//                }
-//
-//            }
-//        }
-//        this.tx().readWrite();
-//        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
-//        this.getSchemaManager().createVertexIndex(schemaTablePair, dummykeyValues);
-    }
-
-    public void createEdgeLabeledIndex(String label, Object... dummykeyValues) {
-//        int i = 0;
-//        String key = "";
-//        Object value;
-//        for (Object keyValue : dummykeyValues) {
-//            if (i++ % 2 == 0) {
-//                key = (String) keyValue;
-//            } else {
-//                value = keyValue;
-//                if (!key.equals(T.label)) {
-//                    ElementHelper.validateProperty(key, value);
-//                    this.sqlDialect.validateProperty(key, value);
-//                }
-//
-//            }
-//        }
-//        this.tx().readWrite();
-//        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
-//        this.getSchemaManager().createEdgeIndex(schemaTablePair, dummykeyValues);
+        Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(dummykeyValues);
+        this.getTopology().ensureVertexTableExist(label, columns);
+        for (Map.Entry<String, PropertyType> columnPRopertyType : columns.entrySet()) {
+            this.getTopology().getVertexLabel(this.sqlDialect.getPublicSchema(), label).get().getProperty(columnPRopertyType.getKey()).get().ensureIndexExist(this, Index.NON_UNIQUE);
+        }
     }
 
     public long countVertices() {
