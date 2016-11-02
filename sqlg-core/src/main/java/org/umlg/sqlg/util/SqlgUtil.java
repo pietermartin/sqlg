@@ -477,7 +477,7 @@ public class SqlgUtil {
             } else {
                 //value
                 //skip the label as that is not a property but the table
-                if (key.equals(label) || key.equals(T.id)) {
+                if (keyValue == null || key.equals(label) || key.equals(T.id)) {
                     continue;
                 }
                 result.put((String) key, keyValue);

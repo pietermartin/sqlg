@@ -364,7 +364,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         List<Object> keyValues = new ArrayList<>();
                         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                             String columnName = resultSetMetaData.getColumnLabel(i);
-                            if (!((columnName.equals("ID") || columnName.equals(inVertexColumnIndexs) || columnName.equals(outVertexColumnIndexs)))) {
+                            if (!((columnName.equals("ID") || inVertexColumnIndexs.contains(i) || outVertexColumnIndexs.contains(i)))) {
                                 keyValues.add(columnName);
                                 keyValues.add(resultSet.getObject(i));
                             }
@@ -786,7 +786,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                                 String columnName = resultSetMetaData.getColumnLabel(i);
                                 if (!(columnName.equals("ID") ||
-                                        inVertexColumnIndexes.contains(columnName) || outVertexColumnIndexes.contains(columnName))) {
+                                        inVertexColumnIndexes.contains(i) || outVertexColumnIndexes.contains(i))) {
                                     //this values end up in SqlElement.properties.
                                     //Its a ConcurrentHashMap which does not allow null key or value
                                     Object object = resultSet.getObject(i);
