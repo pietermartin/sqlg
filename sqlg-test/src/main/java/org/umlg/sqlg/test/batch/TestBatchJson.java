@@ -11,6 +11,8 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.BatchManager;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -78,6 +80,26 @@ public class TestBatchJson extends BaseTest {
         assertEquals(10, vertices.size());
         value = vertices.get(0).value("doc");
         assertEquals(json, value);
+    }
+
+    @Test
+    public void testBatchJsonContainingEmbeddedJson() throws IOException {
+        String jsonQuery = "{" +
+                "\"chartEnabled\":true," +
+                "\"geom\":\"{\\\"type\\\":\\\"LineString\\\"," +
+                "\\\"coordinates\\\":[[29.86946571,-24.77036915],[29.8698364927907,-24.7697827794629],[29.8690949272093,-24.7697827794629]]}\"," +
+                "\"id\":\"2\"}}";
+        LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode json = objectMapper.readTree(jsonQuery);
+        keyValues.put("serializedReport", json);
+        this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.STREAMING);
+        this.sqlgGraph.streamVertex("Test", keyValues);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Test").toList();
+        assertEquals(1, vertices.size());
+        JsonNode jsonNodeAgain = vertices.get(0).value("serializedReport");
+        assertEquals(json, jsonNodeAgain);
     }
 
 }

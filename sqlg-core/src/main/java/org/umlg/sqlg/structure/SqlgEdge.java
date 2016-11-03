@@ -58,6 +58,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         super(sqlgGraph, id, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
+        properties.clear();
+        properties.putAll(SqlgUtil.transformToInsertValues(keyValues));
     }
 
     /**
