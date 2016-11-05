@@ -4,6 +4,8 @@
 * Fix a bug where hasId uses the P.neq predicate.
 * Use BIGSERIAL for auto increment columns in Postgresql [#91](https://github.com/pietermartin/sqlg/issues/91)
 * Fix bug [#92](https://github.com/pietermartin/sqlg/issues/92)
+* Broaded SqlgGraph.bulkAddEdges to take a Collection of ids as opposed to a List.
+    Fix bug [#102](https://github.com/pietermartin/sqlg/issues/102)
 
 ##1.3.2
 

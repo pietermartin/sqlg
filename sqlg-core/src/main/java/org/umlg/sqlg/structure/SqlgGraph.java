@@ -51,7 +51,7 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
         method = "*",
-        reason = "Fails for HSQLDB. HSQLDB existVertexLabel its own interrupt logic that does not play well with TinkerPop's interrupt.")
+        reason = "Fails for HSQLDB. HSQLDB has its own interrupt logic that does not play well with TinkerPop's interrupt.")
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
@@ -418,6 +418,7 @@ public class SqlgGraph implements Graph {
     }
 
     public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
+    public <L, R> void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
         if (!(this.sqlDialect instanceof SqlBulkDialect)) {
             throw new UnsupportedOperationException(String.format("Bulk mode is not supported for %s", this.sqlDialect.dialectName()));
         }
@@ -574,8 +575,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public String toString() {
-//        return super.toString();
-        return StringFactory.graphString(this, "SqlGraph") + " " + hashCode() + " (" + configuration.getProperty(JDBC_URL) + ")";
+        return StringFactory.graphString(this, "SqlGraph") + " (" + configuration.getProperty(JDBC_URL) + ")";
     }
 
     public ISqlGFeatures features() {

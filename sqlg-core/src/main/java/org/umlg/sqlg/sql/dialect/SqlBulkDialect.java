@@ -7,11 +7,10 @@ import org.umlg.sqlg.structure.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-
-import static javax.swing.JOptionPane.ERROR_MESSAGE;
 
 /**
  * Date: 2016/09/03
@@ -49,6 +48,8 @@ public interface SqlBulkDialect extends SqlDialect {
 
     default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
+    default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+        throw new UnsupportedOperationException(ERROR_MESSAGE + dialectName());
     }
 
     default String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
