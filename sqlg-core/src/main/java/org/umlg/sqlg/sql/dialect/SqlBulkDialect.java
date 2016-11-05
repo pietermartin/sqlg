@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 
+import static javax.swing.JOptionPane.ERROR_MESSAGE;
+
 /**
  * Date: 2016/09/03
  * Time: 2:56 PM
@@ -46,10 +48,8 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
-        throw SqlgExceptions.batchModeNotSupported(dialectName());
     default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
-        throw new UnsupportedOperationException(ERROR_MESSAGE + dialectName());
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
     default String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {

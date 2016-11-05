@@ -417,8 +417,7 @@ public class SqlgGraph implements Graph {
         return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
-    public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
-    public <L, R> void bulkAddEdges(String inVertexLabel, String outVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
+    public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
         if (!(this.sqlDialect instanceof SqlBulkDialect)) {
             throw new UnsupportedOperationException(String.format("Bulk mode is not supported for %s", this.sqlDialect.dialectName()));
         }
