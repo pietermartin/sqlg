@@ -7,6 +7,7 @@ import org.umlg.sqlg.structure.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -49,7 +50,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw new UnsupportedOperationException(ERROR_MESSAGE + dialectName());
     }
 
-    default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, List<Pair<L, R>> uids) {
+    default <L, R> void bulkAddEdges(SqlgGraph sqlgGraph, SchemaTable in, SchemaTable out, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
         throw new UnsupportedOperationException(ERROR_MESSAGE + dialectName());
     }
 
