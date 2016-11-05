@@ -191,41 +191,31 @@ public class EdgeLabel extends AbstractElement {
         }
     }
 
-    public void afterCommit() {
-
-        for (Iterator<VertexLabel> it = this.uncommittedInVertexLabels.iterator(); it.hasNext(); ) {
-            VertexLabel vertexLabel = it.next();
-            this.inVertexLabels.add(vertexLabel);
-            it.remove();
+    void afterCommit() {
+        super.afterCommit();
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<VertexLabel> it = this.uncommittedInVertexLabels.iterator(); it.hasNext(); ) {
+                VertexLabel vertexLabel = it.next();
+                this.inVertexLabels.add(vertexLabel);
+                it.remove();
+            }
+            for (Iterator<VertexLabel> it = this.uncommittedOutVertexLabels.iterator(); it.hasNext(); ) {
+                VertexLabel vertexLabel = it.next();
+                this.outVertexLabels.add(vertexLabel);
+                it.remove();
+            }
         }
-
-        for (Iterator<VertexLabel> it = this.uncommittedOutVertexLabels.iterator(); it.hasNext(); ) {
-            VertexLabel vertexLabel = it.next();
-            this.outVertexLabels.add(vertexLabel);
-            it.remove();
-        }
-
-        for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Property> entry = it.next();
-            this.properties.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
-        }
-
     }
 
-//    public void afterRollback() {
-//
-//        this.uncommittedInVertexLabels.clear();
-//        this.uncommittedOutVertexLabels.clear();
-//
-//        for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-//            Map.Entry<String, Property> entry = it.next();
-//            entry.getValue().afterRollback();
-//            it.remove();
-//        }
-//
-//    }
+    void afterRollbackInEdges() {
+        super.afterRollback();
+        this.uncommittedInVertexLabels.clear();
+    }
+
+    void afterRollbackOutEdges() {
+        super.afterRollback();
+        this.uncommittedOutVertexLabels.clear();
+    }
 
     @Override
     public String toString() {

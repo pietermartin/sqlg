@@ -50,6 +50,10 @@ public class Property {
         return propertyType;
     }
 
+    public Index getIndex() {
+        return index;
+    }
+
     public void ensureIndexExist(SqlgGraph sqlgGraph, Index index) {
         sqlgGraph.tx().readWrite();
         if (this.index == Index.NONE) {
@@ -109,13 +113,14 @@ public class Property {
         }
     }
 
-    public void afterCommit() {
+    void afterCommit() {
         if (this.uncommittedIndex != null) {
             this.index = this.uncommittedIndex;
         }
+        this.uncommittedIndex = null;
     }
 
-    public void afterRollback() {
+    void afterRollback() {
         this.uncommittedIndex = null;
     }
 

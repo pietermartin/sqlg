@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.schema.TestMultipleThreadMultipleJvm;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,11 @@ import org.umlg.sqlg.test.index.TestIndex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestIndex.class
+//        TestSchema.class,
+//        TestIndex.class,
+//        TestMultiThread.class
+        TestMultipleThreadMultipleJvm.class
+//        TestTopology.class
 })
 public class AnyTest {
 }

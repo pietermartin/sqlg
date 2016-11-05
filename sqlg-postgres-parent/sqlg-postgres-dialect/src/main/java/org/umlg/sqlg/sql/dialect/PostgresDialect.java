@@ -43,7 +43,7 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
 import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA;
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_SCHEMA;
+import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_LOG;
 import static org.umlg.sqlg.topology.Topology.SQLG_NOTIFICATION_CHANNEL;
 
 /**
@@ -66,6 +66,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     private ScheduledFuture<?> future;
     private Semaphore listeningSemaphore;
+    private ExecutorService executorService;
 
     @SuppressWarnings("unused")
     public PostgresDialect() {
@@ -490,7 +491,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             break;
                         case LOCALTIME:
                             sql.append("'");
-                            sql.append(shiftDST((LocalTime)value).toString());
+                            sql.append(shiftDST((LocalTime) value).toString());
                             sql.append("'::TIME");
                             break;
                         case ZONEDDATETIME:
@@ -974,8 +975,8 @@ public class PostgresDialect extends BaseSqlDialect {
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
                     break;
                 case LOCALTIME:
-                	LocalTime lt = (LocalTime) value;
-                	result = shiftDST(lt).toString();
+                    LocalTime lt = (LocalTime) value;
+                    result = shiftDST(lt).toString();
                     break;
                 case ZONEDDATETIME_ARRAY:
                     ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
@@ -1528,26 +1529,27 @@ public class PostgresDialect extends BaseSqlDialect {
      * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character,
      * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded
      * by the escape character."
+     *
      * @param s
      * @return
      */
     private String escapeSpecialCharacters(String s) {
-    	StringBuilder sb=new StringBuilder();
-    	boolean needEscape=false;
-    	for (int a=0;a<s.length();a++){
-    		char c=s.charAt(a);
-    		if (c=='\n' || c=='\r' || c==0 || c==COPY_COMMAND_DELIMITER.charAt(0)){
-    			needEscape=true;
-    		}
-    		if (c==ESCAPE || c==QUOTE){
-    			needEscape=true;
-    			sb.append(ESCAPE);
-    		}
-    		sb.append(c);
-    	}
-    	if (needEscape){
-    		return QUOTE+sb.toString()+QUOTE;
-    	}
+        StringBuilder sb = new StringBuilder();
+        boolean needEscape = false;
+        for (int a = 0; a < s.length(); a++) {
+            char c = s.charAt(a);
+            if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
+                needEscape = true;
+            }
+            if (c == ESCAPE || c == QUOTE) {
+                needEscape = true;
+                sb.append(ESCAPE);
+            }
+            sb.append(c);
+        }
+        if (needEscape) {
+            return QUOTE + sb.toString() + QUOTE;
+        }
         return s;
     }
 
@@ -2221,7 +2223,6 @@ public class PostgresDialect extends BaseSqlDialect {
             sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
             this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyType, inPropertyType);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
-//            sqlgGraph.getSchemaManager().ensureEdgeTableExist(in.getSchema(), edgeLabel, out, in);
             sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeLabel, out, in);
 
             StringBuilder sql = new StringBuilder("INSERT INTO \n");
@@ -2596,13 +2597,13 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append(SQLG_SCHEMA);
         sql.append("\".\"");
         sql.append(SchemaManager.VERTEX_PREFIX);
-        sql.append(SQLG_SCHEMA_SCHEMA);
-        sql.append("\" IN ACCESS EXCLUSIVE MODE");
+        sql.append(SQLG_SCHEMA_LOG);
+        sql.append("\" IN EXCLUSIVE MODE");
         if (this.needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+            logger.info(sql.toString());
         }
         Connection conn = sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
@@ -2614,7 +2615,8 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void registerListener(SqlgGraph sqlgGraph) {
-        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Postgresql notification listener"));
+        this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "Notification merge " + sqlgGraph.toString()));
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Notification listener " + sqlgGraph.toString()));
         try {
             this.listeningSemaphore = new Semaphore(1);
             this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph, this.listeningSemaphore), 500, MILLISECONDS);
@@ -2629,6 +2631,7 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public void unregisterListener() {
         this.future.cancel(true);
+        this.executorService.shutdownNow();
     }
 
     @Override
@@ -2636,10 +2639,10 @@ public class PostgresDialect extends BaseSqlDialect {
         Connection connection = sqlgGraph.tx().getConnection();
         try {
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            logger.info(String.format("notifyChange pid = %s", pgConnection.getBackendPID()));
+//            logger.info(String.format("notifyChange pid = %s", pgConnection.getBackendPID()));
             sqlgGraph.addVertex(
                     T.label,
-                    SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_LOG,
+                    SchemaManager.SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
                     "timestamp", timestamp,
                     "pid", pgConnection.getBackendPID(),
                     "log", jsonNode
@@ -2657,6 +2660,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
         private SqlgGraph sqlgGraph;
         private Semaphore semaphore;
+        private boolean canceled;
 
         Listener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
             this.sqlgGraph = sqlgGraph;
@@ -2666,17 +2670,16 @@ public class PostgresDialect extends BaseSqlDialect {
         @Override
         public void run() {
             try {
-                logger.info(String.format("start change listening on graph %s", this.sqlgGraph.toString()));
-                Connection connection = sqlgGraph.tx().getConnection();
-                PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
-                Statement stmt = connection.createStatement();
-                stmt.execute("LISTEN " + SQLG_NOTIFICATION_CHANNEL);
-                stmt.close();
-                connection.commit();
-                this.semaphore.release();
-                // issue a dummy query to contact the backend
-                // and receive any pending notifications.
+                Connection connection = this.sqlgGraph.tx().getConnection();
                 while (true) {
+                    PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
+                    Statement stmt = connection.createStatement();
+                    stmt.execute("LISTEN " + SQLG_NOTIFICATION_CHANNEL);
+                    stmt.close();
+                    connection.commit();
+                    this.semaphore.release();
+                    // issue a dummy query to contact the backend
+                    // and receive any pending notifications.
                     stmt = connection.createStatement();
                     ResultSet rs = stmt.executeQuery("SELECT 1");
                     rs.close();
@@ -2688,36 +2691,44 @@ public class PostgresDialect extends BaseSqlDialect {
                         for (int i = 0; i < notifications.length; i++) {
                             int pid = notifications[i].getPID();
                             String notify = notifications[i].getParameter();
-                            try {
-                                logger.info(String.format("notification pid %s", String.valueOf(pid)));
-                                LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                                this.sqlgGraph.getSchemaManager().merge(pid, timestamp);
-                            } catch (Exception e) {
-                                //swallow
-                                logger.error("pg notify error", e);
-                            }
+                            LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                            executorService.submit(() -> {
+                                try {
+                                    ((SqlSchemaChangeDialect)this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
+                                    this.sqlgGraph.getSchemaManager().merge(pid, timestamp);
+                                } finally {
+                                    this.sqlgGraph.tx().commit();
+                                }
+                            });
                         }
                     }
                     Thread.sleep(100);
                 }
-            } catch (SQLException | InterruptedException e){
+            } catch (SQLException e) {
+                logger.error(String.format("change listener on graph %s error", this.sqlgGraph.toString()), e);
+                this.sqlgGraph.tx().rollback();
                 throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
+                this.sqlgGraph.tx().rollback();
+                //swallow
             }
         }
     }
 
     /**
      * Postgres gets confused by DST, it sets the timezone badly and then reads the wrong value out, so we convert the value to "winter time"
+     *
      * @param lt the current time
      * @return the time in "winter time" if there is DST in effect today
      */
     @SuppressWarnings("deprecation")
-	private static Time shiftDST(LocalTime lt){
-        Time t=Time.valueOf(lt);
-        int offset=Calendar.getInstance().get(Calendar.DST_OFFSET)/1000;
+    private static Time shiftDST(LocalTime lt) {
+        Time t = Time.valueOf(lt);
+        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
         // I know this are deprecated methods, but it's so much clearer than alternatives
-    	int m=t.getSeconds();
-    	t.setSeconds(m+offset);
-    	return t;
+        int m = t.getSeconds();
+        t.setSeconds(m + offset);
+        return t;
     }
 }

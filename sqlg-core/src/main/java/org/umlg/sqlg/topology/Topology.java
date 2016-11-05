@@ -42,7 +42,8 @@ public class Topology {
     private ReentrantLock schemaLock;
 
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
-    private Map<String, Schema> schemas = new HashMap<>();
+    //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
+    private Map<String, Schema> schemas = new ConcurrentHashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -61,7 +62,7 @@ public class Topology {
     //This is so because modification happen one at a time via the lock.
     private SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
 
-    private static final int LOCK_TIMEOUT = 10;
+    private static final int LOCK_TIMEOUT = 100;
 
     /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
@@ -125,24 +126,23 @@ public class Topology {
         //only lock if the lock is not already owned by this thread.
         if (!isLockHeldByCurrentThread()) {
             try {
+                this.sqlgGraph.tx().readWrite();
                 if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
                     throw new RuntimeException("timeout lapsed to acquire lock schema creation.");
                 }
                 if (this.distributed) {
                     ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
                 }
-                if (!this.notificationTimestamps.isEmpty()) {
-                    //load the log to see if the schema has not already been created.
-                    //the last loaded log
-                    LocalDateTime timestamp = this.notificationTimestamps.last();
-                    List<Vertex> logs = this.sqlgGraph.topology().V()
-                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                            .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
-                            .toList();
-                    for (Vertex logVertex : logs) {
-                        ObjectNode log = logVertex.value("log");
-                        fromNotifyJson(timestamp, log);
-                    }
+                //load the log to see if the schema has not already been created.
+                //the last loaded log
+                LocalDateTime timestamp = this.notificationTimestamps.last();
+                List<Vertex> logs = this.sqlgGraph.topology().V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                        .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
+                        .toList();
+                for (Vertex logVertex : logs) {
+                    ObjectNode log = logVertex.value("log");
+                    fromNotifyJson(timestamp, log);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -158,16 +158,41 @@ public class Topology {
     }
 
     /**
+     * Ensures that the schema exists.
+     *
+     * @param schemaName The schem to create if it does not exist.
+     */
+    public Schema ensureSchemaExist(final String schemaName) {
+        Optional<Schema> schemaOptional = this.getSchema(schemaName);
+        Schema schema;
+        if (!schemaOptional.isPresent()) {
+            this.lock();
+            //search again after the lock is obtained.
+            schemaOptional = this.getSchema(schemaName);
+            if (!schemaOptional.isPresent()) {
+                //create the schema and the vertex label.
+                schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
+                this.uncommittedSchemas.put(schemaName, schema);
+                return schema;
+            } else {
+                return schemaOptional.get();
+            }
+        } else {
+            return schemaOptional.get();
+        }
+    }
+
+    /**
      * Ensures that the vertex table and property columns exist in the db. The default schema is assumed.
      * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
      * see if the element has not been added in the mean time.
      *
-     * @param label      The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
-     * @param columns    The properties with their types.
+     * @param label   The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     * @param columns The properties with their types.
      * @see {@link PropertyType}
      */
-    public void ensureVertexTableExist(final String label, final Map<String, PropertyType> columns) {
-        ensureVertexTableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
+    public VertexLabel ensureVertexTableExist(final String label, final Map<String, PropertyType> columns) {
+        return ensureVertexTableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
     }
 
     /**
@@ -180,30 +205,14 @@ public class Topology {
      * @param columns    The properties with their types.
      * @see {@link PropertyType}
      */
-    public void ensureVertexTableExist(final String schemaName, final String label, final Map<String, PropertyType> columns) {
+    public VertexLabel ensureVertexTableExist(final String schemaName, final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(schemaName, GIVEN_TABLES_MUST_NOT_BE_NULL);
         Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
-        Optional<Schema> schemaOptional = this.getSchema(schemaName);
-        Schema schema;
-        if (!schemaOptional.isPresent()) {
-            this.lock();
-            //search again after the lock is obtained.
-            schemaOptional = this.getSchema(schemaName);
-            if (!schemaOptional.isPresent()) {
-                //create the schema and the vertex label.
-                schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
-                this.uncommittedSchemas.put(schemaName, schema);
-                schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
-            } else {
-                schema = schemaOptional.get();
-                schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
-            }
-        } else {
-            schema = schemaOptional.get();
-            schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
-        }
+        Schema schema = this.ensureSchemaExist(schemaName);
+        Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
+        return schema.ensureVertexTableExist(this.sqlgGraph, label, columns);
     }
 
     /**
@@ -323,6 +332,15 @@ public class Topology {
         return getSchema(schema).isPresent();
     }
 
+    public Set<Schema> getSchemas() {
+        Set<Schema> result = new HashSet<>();
+        result.addAll(this.schemas.values());
+        if (this.isLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedSchemas.values());
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
     public Optional<Schema> getSchema(String schema) {
         Schema result = this.schemas.get(schema);
         if (result == null) {
@@ -373,31 +391,37 @@ public class Topology {
         if (jsonNodeOptional.isPresent() && this.distributed) {
             SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
             LocalDateTime timestamp = LocalDateTime.now();
-            this.ownPids.add(sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get()));
+            int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
+            this.ownPids.add(pid);
         }
     }
 
     public void afterCommit() {
         this.temporaryTables.clear();
-        for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Schema> entry = it.next();
-            this.schemas.put(entry.getKey(), entry.getValue());
-            it.remove();
+        if (this.isLockHeldByCurrentThread()) {
+            for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Schema> entry = it.next();
+                this.schemas.put(entry.getKey(), entry.getValue());
+                it.remove();
+            }
         }
         for (Schema schema : this.schemas.values()) {
             schema.afterCommit();
         }
         if (isLockHeldByCurrentThread()) {
+//            logger.info(String.format("Unlock %s", this.sqlgGraph.toString()));
             this.schemaLock.unlock();
         }
     }
 
     public void afterRollback() {
         this.temporaryTables.clear();
-        for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Schema> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+        if (this.isLockHeldByCurrentThread()) {
+            for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Schema> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
         }
         for (Schema schema : this.schemas.values()) {
             schema.afterRollback();
@@ -582,6 +606,8 @@ public class Topology {
             Vertex log = logs.get(0);
             LocalDateTime timestamp = log.value("timestamp");
             this.notificationTimestamps.add(timestamp);
+        } else {
+            this.notificationTimestamps.add(LocalDateTime.now());
         }
 
         //First load all VertexLabels, their out edges and properties
@@ -641,12 +667,14 @@ public class Topology {
         }
         if (this.isLockHeldByCurrentThread()) {
             for (Schema schema : this.uncommittedSchemas.values()) {
+                schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
                 Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
-                if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
-                    schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-                }
                 if (jsonNodeOptional.isPresent()) {
                     schemaArrayNode.add(jsonNodeOptional.get());
+                } else {
+                    ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                    schemaNode.put("name", schema.getName());
+                    schemaArrayNode.add(schemaNode);
                 }
             }
         }
@@ -660,23 +688,20 @@ public class Topology {
     }
 
     public void fromNotifyJson(int pid, LocalDateTime notifyTimestamp) {
-        logger.info(String.format("fromNotifyJson pids = %s, pid = %d", this.ownPids.toString(), pid));
         if (!this.ownPids.contains(pid)) {
-            logger.info(String.format("fromNotifyJson for %s", notifyTimestamp.toString()));
             List<Vertex> logs = this.sqlgGraph.topology().V()
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                    .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp).toList();
+                    .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp)
+                    .toList();
             Preconditions.checkState(logs.size() == 1, "There must be one and only be one log");
-
             LocalDateTime timestamp = logs.get(0).value("timestamp");
             Preconditions.checkState(timestamp.equals(notifyTimestamp), "notify log's timestamp does not match.");
             int backEndPid = logs.get(0).value("pid");
             Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
-
             ObjectNode log = logs.get(0).value("log");
             fromNotifyJson(timestamp, log);
         } else {
-            logger.info(String.format("ignoring pid %s", String.valueOf(pid)));
+            this.ownPids.remove(pid);
         }
     }
 

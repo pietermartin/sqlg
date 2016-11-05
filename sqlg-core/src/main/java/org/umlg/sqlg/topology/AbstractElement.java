@@ -142,6 +142,35 @@ public abstract class AbstractElement {
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
+    void afterCommit() {
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Property> entry = it.next();
+                this.properties.put(entry.getKey(), entry.getValue());
+                entry.getValue().afterCommit();
+                it.remove();
+            }
+        }
+        for (Iterator<Map.Entry<String, Property>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, Property> entry = it.next();
+            entry.getValue().afterCommit();
+        }
+    }
+
+    protected void afterRollback() {
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Property> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
+        }
+        for (Iterator<Map.Entry<String, Property>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, Property> entry = it.next();
+            entry.getValue().afterRollback();
+        }
+    }
+
     public JsonNode toJson() {
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (Property property : this.properties.values()) {

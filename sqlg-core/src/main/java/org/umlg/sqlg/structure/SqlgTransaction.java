@@ -12,7 +12,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * This class is a singleton. Instantiated and owned by SqlG.
+ * This class is a singleton. Instantiated and owned by SqlGraph.
  * It manages the opening, commit, rollback and close of the java.sql.Connection in a threadvar.
  * Date: 2014/07/12
  * Time: 2:18 PM
@@ -38,7 +38,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             return new PreparedStatementCache();
         }
     };
-
 
     SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
         super(sqlgGraph);
@@ -137,7 +136,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     public void streamingWithLockBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_LOCK);
+            this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.STREAMING_WITH_LOCK);
         } else {
             throw new IllegalStateException(BATCH_MODE_NOT_SUPPORTED);
         }
@@ -175,7 +174,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     public void normalBatchModeOn() {
         if (this.sqlgGraph.features().supportsBatchMode()) {
             readWrite();
-            threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
+            this.threadLocalTx.get().getBatchManager().batchModeOn(BatchManager.BatchModeType.NORMAL);
         } else {
             throw new IllegalStateException(BATCH_MODE_NOT_SUPPORTED);
         }
@@ -187,7 +186,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
 
     public boolean isInNormalBatchMode() {
-        return isOpen() && threadLocalTx.get().getBatchManager().isInNormalMode();
+        return isOpen() && this.threadLocalTx.get().getBatchManager().isInNormalMode();
     }
 
     public boolean isInStreamingBatchMode() {
@@ -228,7 +227,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         if (!isOpen()) {
             throw new IllegalStateException("A transaction must be in progress to add a elementPropertyRollback function!");
         }
-        threadLocalTx.get().getElementPropertyRollback().put(elementPropertyRollback, null);
+        this.threadLocalTx.get().getElementPropertyRollback().put(elementPropertyRollback, null);
     }
 
     void beforeCommit(BeforeCommit beforeCommitFunction) {
@@ -245,7 +244,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     @Override
     public boolean isOpen() {
-        return threadLocalTx.get() != null;
+        return this.threadLocalTx.get() != null;
     }
 
     SqlgVertex putVertexIfAbsent(SqlgGraph sqlgGraph, String schema, String table, Long id) {

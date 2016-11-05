@@ -72,7 +72,7 @@ public class Schema {
         this.name = name;
     }
 
-    void ensureVertexTableExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
+    VertexLabel ensureVertexTableExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
@@ -81,12 +81,15 @@ public class Schema {
             this.topology.lock();
             vertexLabelOptional = this.getVertexLabel(label);
             if (!vertexLabelOptional.isPresent()) {
-                this.createVertexLabel(sqlgGraph, label, columns);
+                return this.createVertexLabel(sqlgGraph, label, columns);
+            } else {
+                return vertexLabelOptional.get();
             }
         } else {
             VertexLabel vertexLabel = vertexLabelOptional.get();
             //check if all the columns are there.
             vertexLabel.ensureColumnsExist(sqlgGraph, columns);
+            return vertexLabel;
         }
     }
 
@@ -209,6 +212,7 @@ public class Schema {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
+            logger.error("schema creation failed " + sqlgGraph.toString(), e);
             throw new RuntimeException(e);
         }
     }
@@ -280,7 +284,7 @@ public class Schema {
     Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
         for (EdgeLabel edgeLabel : getEdgeLabels()) {
-            if (edgeLabel.getSchema().equals(this) && edgeLabel.getLabel().equals(edgeLabelName)) {
+            if (edgeLabel.getLabel().equals(edgeLabelName)) {
                 return Optional.of(edgeLabel);
             }
         }
@@ -473,11 +477,13 @@ public class Schema {
         return result;
     }
 
-    public void afterCommit() {
-        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, VertexLabel> entry = it.next();
-            this.vertexLabels.put(entry.getKey(), entry.getValue());
-            it.remove();
+    void afterCommit() {
+        if (this.getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, VertexLabel> entry = it.next();
+                this.vertexLabels.put(entry.getKey(), entry.getValue());
+                it.remove();
+            }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
@@ -485,13 +491,23 @@ public class Schema {
     }
 
     public void afterRollback() {
-        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, VertexLabel> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+        if (this.getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, VertexLabel> entry = it.next();
+                entry.getValue().afterRollbackForInEdges();
+                it.remove();
+            }
+            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, VertexLabel> entry = it.next();
+                entry.getValue().afterRollbackForOutEdges();
+                it.remove();
+            }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-            vertexLabel.afterRollback();
+            vertexLabel.afterRollbackForInEdges();
+        }
+        for (VertexLabel vertexLabel : this.vertexLabels.values()) {
+            vertexLabel.afterRollbackForOutEdges();
         }
     }
 
@@ -603,7 +619,7 @@ public class Schema {
         }
     }
 
-    public void loadInEdgeLabels(GraphTraversalSource traversalSource, Vertex schemaVertex) {
+    void loadInEdgeLabels(GraphTraversalSource traversalSource, Vertex schemaVertex) {
         //Load the in edges via the out edges. This is necessary as the out vertex is needed to know the schema the edge is in.
         //As all edges are already loaded via the out edges this will only set the in edge association.
         List<Path> inEdges = traversalSource
@@ -611,7 +627,9 @@ public class Schema {
                 .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
                 //a vertex does not necessarily have properties so use optional.
                 .optional(
-                        __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex").in(SQLG_SCHEMA_IN_EDGES_EDGE).as("inVertex").in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("inSchema")
+                        __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
+                                .in(SQLG_SCHEMA_IN_EDGES_EDGE).as("inVertex")
+                                .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("inSchema")
                 )
                 .path()
                 .toList();
@@ -763,6 +781,5 @@ public class Schema {
                 }
             }
         }
-        System.out.println("test a bit");
     }
 }

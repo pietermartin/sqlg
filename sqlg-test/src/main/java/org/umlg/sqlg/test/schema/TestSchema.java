@@ -4,7 +4,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
@@ -14,12 +13,31 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/08/13
  * Time: 10:49 AM
  */
 public class TestSchema extends BaseTest {
+
+    @Test
+    public void testEdgeAcrossSchemaCreatesPropertyInAll() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C.C");
+        Edge ab1 = a1.addEdge("yourEdge", b1);
+        Edge bc1 = b1.addEdge("yourEdge", c1);
+        this.sqlgGraph.tx().commit();
+        ab1.property("test", "halo");
+        this.sqlgGraph.tx().commit();
+        assertTrue(this.sqlgGraph.traversal().E(ab1.id()).next().property("test").isPresent());
+        assertFalse(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
+        bc1.property("test", "halo");
+        this.sqlgGraph.tx().commit();
+        assertTrue(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
+    }
 
     @Test
     public void testEdgesAcrossSchema() {
@@ -109,13 +127,13 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", address);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertTrue(this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"))!=null);
+        assertTrue(this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"))!=null);
 
         Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
-        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
+        assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
         Map<String, Set<String>> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
-        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+        assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car");
         person.addEdge("drives", car);
@@ -124,10 +142,12 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", pet);
 
         labels = this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
-        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
+        assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
         edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
-        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+        assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+
+        this.sqlgGraph.tx().rollback();
     }
 
     @Test
@@ -139,9 +159,9 @@ public class TestSchema extends BaseTest {
 
         List<Vertex> vertices =  this.sqlgGraph.traversal().V().hasLabel("A").toList();
         assertEquals(3, vertices.size());
-        Assert.assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
-        Assert.assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
-        Assert.assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
+        assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
+        assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
+        assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
     }
 
     @Test

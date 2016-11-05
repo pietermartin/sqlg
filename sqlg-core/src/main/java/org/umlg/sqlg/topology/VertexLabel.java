@@ -182,18 +182,21 @@ public class VertexLabel extends AbstractElement {
         return Pair.of(inSchemaTables, outSchemaTables);
     }
 
-    public void afterCommit() {
-        for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.iterator(); it.hasNext(); ) {
-            EdgeLabel edgeLabel = it.next();
-            this.outEdgeLabels.add(edgeLabel);
-            edgeLabel.afterCommit();
-            it.remove();
-        }
-        for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.iterator(); it.hasNext(); ) {
-            EdgeLabel edgeLabel = it.next();
-            this.inEdgeLabels.add(edgeLabel);
-            edgeLabel.afterCommit();
-            it.remove();
+    void afterCommit() {
+        super.afterCommit();
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.iterator(); it.hasNext(); ) {
+                EdgeLabel edgeLabel = it.next();
+                this.outEdgeLabels.add(edgeLabel);
+                edgeLabel.afterCommit();
+                it.remove();
+            }
+            for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.iterator(); it.hasNext(); ) {
+                EdgeLabel edgeLabel = it.next();
+                this.inEdgeLabels.add(edgeLabel);
+                edgeLabel.afterCommit();
+                it.remove();
+            }
         }
         for (Iterator<EdgeLabel> it = this.outEdgeLabels.iterator(); it.hasNext(); ) {
             EdgeLabel edgeLabel = it.next();
@@ -203,21 +206,34 @@ public class VertexLabel extends AbstractElement {
             EdgeLabel edgeLabel = it.next();
             edgeLabel.afterCommit();
         }
-        for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Property> entry = it.next();
-            this.properties.put(entry.getKey(), entry.getValue());
-            entry.getValue().afterCommit();
-            it.remove();
+    }
+
+    void afterRollbackForInEdges() {
+        super.afterRollback();
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.iterator(); it.hasNext(); ) {
+                EdgeLabel edgeLabel = it.next();
+                edgeLabel.afterRollbackInEdges();
+                it.remove();
+            }
         }
     }
 
-    public void afterRollback() {
-        this.uncommittedOutEdgeLabels.clear();
-        this.uncommittedInEdgeLabels.clear();
-        for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Property> entry = it.next();
-            entry.getValue().afterRollback();
-            it.remove();
+    void afterRollbackForOutEdges() {
+        super.afterRollback();
+        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.iterator(); it.hasNext(); ) {
+                EdgeLabel edgeLabel = it.next();
+                it.remove();
+                //It is important to first remove the EdgeLabel from the iterator as the EdgeLabel's outVertex is still
+                // present and its needed for the hashCode method which is invoked during the it.remove()
+                edgeLabel.afterRollbackOutEdges();
+            }
+        }
+        //Only need to go though the outEdgeLabels. All edgeLabels will be touched
+        for (Iterator<EdgeLabel> it = this.outEdgeLabels.iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            edgeLabel.afterRollbackOutEdges();
         }
     }
 
