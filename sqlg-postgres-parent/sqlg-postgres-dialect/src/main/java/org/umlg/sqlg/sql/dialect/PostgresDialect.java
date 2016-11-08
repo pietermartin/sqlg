@@ -2694,12 +2694,12 @@ public class PostgresDialect extends BaseSqlDialect {
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                             executorService.submit(() -> {
                                 try {
-                                    ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
+                                    this.sqlgGraph.getTopology().z_internalLock();
                                     this.sqlgGraph.getSchemaManager().merge(pid, timestamp);
                                 } catch (Exception e) {
                                     logger.error("Error in Postgresql notification", e);
                                 } finally {
-                                    this.sqlgGraph.tx().commit();
+                                    this.sqlgGraph.tx().rollback();
                                 }
                             });
                         }

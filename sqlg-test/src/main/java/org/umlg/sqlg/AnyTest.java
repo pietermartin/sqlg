@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopology;
+import org.umlg.sqlg.test.schema.TestMultipleThreadMultipleJvm;
 
 /**
  * Date: 2014/07/16
@@ -14,8 +14,8 @@ import org.umlg.sqlg.test.topology.TestTopology;
 //        TestIndex.class,
 //        TestMultiThread.class
 //        TestMultipleThreadMultipleJvm.class,
-        TestTopology.class,
-//        TestTopologyMultipleGraphs.class
+//        TestTopology.class,
+        TestMultipleThreadMultipleJvm.class
 })
 public class AnyTest {
 }

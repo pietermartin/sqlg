@@ -151,6 +151,26 @@ public class Topology {
     }
 
     /**
+     * Not for public consumption. Used for the notification.
+     */
+    public void z_internalLock() {
+        //only lock if the lock is not already owned by this thread.
+        if (!isLockHeldByCurrentThread()) {
+            try {
+                this.sqlgGraph.tx().readWrite();
+                if (!this.schemaLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+                    throw new RuntimeException("timeout lapsed to acquire lock schema creation.");
+                }
+                if (this.distributed) {
+                    ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
      * @return true if the current thread owns the lock.
      */
     boolean isLockHeldByCurrentThread() {
@@ -285,7 +305,6 @@ public class Topology {
             if (schema == null) {
                 throw new IllegalStateException(String.format("BUG: schema %s can not be null", schemaName));
             }
-            //createVertexLabel the table
             schema.ensureEdgeColumnsExist(this.sqlgGraph, label, columns);
         }
     }
@@ -409,7 +428,6 @@ public class Topology {
             schema.afterCommit();
         }
         if (isLockHeldByCurrentThread()) {
-//            logger.info(String.format("Unlock %s", this.sqlgGraph.toString()));
             this.schemaLock.unlock();
         }
     }
