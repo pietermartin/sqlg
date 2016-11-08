@@ -135,7 +135,26 @@ public class Property {
         Property property = new Property(
                 abstractElement,
                 jsonNode.get("name").asText(),
-                PropertyType.from(jsonNode.get("propertyType").asText()));
+                PropertyType.valueOf(jsonNode.get("propertyType").asText()));
         return property;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.getName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof Property)) {
+            return false;
+        }
+        Property other = (Property)o;
+        return this.getName().equals(other.getName())  &&
+                this.getPropertyType() == other.getPropertyType() &&
+                this.getIndex() == other.getIndex();
     }
 }

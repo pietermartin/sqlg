@@ -201,4 +201,22 @@ public abstract class AbstractElement {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof AbstractElement)) {
+            return false;
+        }
+        AbstractElement other = (AbstractElement)o;
+        if (!this.label.equals(other.label)) {
+            return false;
+        }
+        if (!this.properties.equals(other.properties)) {
+            return false;
+        }
+        return true;
+    }
+
 }

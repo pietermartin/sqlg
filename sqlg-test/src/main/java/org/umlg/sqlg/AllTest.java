@@ -18,11 +18,11 @@ import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
-import org.umlg.sqlg.test.schema.TestMultiThread;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
+import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
@@ -119,6 +119,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestOtherVertex.class,
         TestGremlinMod.class,
         TestTopologyUpgrade.class,
+        TestTopologyMultipleGraphs.class,
         TestTraversals.class,
         TestGremlinOptional.class,
         TestAlias.class,

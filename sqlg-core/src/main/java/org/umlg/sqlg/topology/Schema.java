@@ -689,28 +689,6 @@ public class Schema {
         }
     }
 
-    @Override
-    public int hashCode() {
-        return this.name.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == null) {
-            return false;
-        }
-        if (!(other instanceof Schema)) {
-            return false;
-        }
-        Schema otherSchema = (Schema) other;
-        return otherSchema.name.equals(this.name);
-    }
-
-    @Override
-    public String toString() {
-        return "schema: " + this.name;
-    }
-
     public JsonNode toJson() {
         ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
@@ -763,7 +741,7 @@ public class Schema {
         }
     }
 
-    void fromNotifyJson(JsonNode jsonSchema) {
+    void fromNotifyJsonOutEdges(JsonNode jsonSchema) {
         for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
             JsonNode vertexLabels = jsonSchema.get(s);
             if (vertexLabels != null) {
@@ -777,9 +755,67 @@ public class Schema {
                         vertexLabel = new VertexLabel(this, vertexLabelName);
                         this.vertexLabels.put(vertexLabelName, vertexLabel);
                     }
-                    vertexLabel.fromNotifyJson(vertexLabelJson);
+                    vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson);
                 }
             }
         }
+    }
+
+    void fromNotifyJsonInEdges(JsonNode jsonSchema) {
+        for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
+            JsonNode vertexLabels = jsonSchema.get(s);
+            if (vertexLabels != null) {
+                for (JsonNode vertexLabelJson : vertexLabels) {
+                    String vertexLabelName = vertexLabelJson.get("label").asText();
+                    Optional<VertexLabel> vertexLabelOptional = getVertexLabel(vertexLabelName);
+                    Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel must be present");
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+                    VertexLabel vertexLabel = vertexLabelOptional.get();
+                    vertexLabel.fromNotifyJsonInEdge(vertexLabelJson);
+                }
+            }
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return this.name.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof Schema)) {
+            return false;
+        }
+        //only equals on the name of the schema. it is assumed that the VertexLabels (tables) are the same.
+        Schema other = (Schema) o;
+        return this.name.equals(other.name);
+    }
+
+    public boolean deepEquals(Schema other) {
+        Preconditions.checkState(this.name.equals(other.name), "deepEquals is called after the regular equals. i.e. the names must be equals");
+        if (!(this.vertexLabels.equals(other.getVertexLabels()))) {
+            return false;
+        } else {
+            if (!this.vertexLabels.equals(other.getVertexLabels())) {
+                return false;
+            }
+            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
+                VertexLabel vertexLabel = vertexLabelEntry.getValue();
+                VertexLabel otherVertexLabel = other.getVertexLabels().get(vertexLabelEntry.getKey());
+                if (!vertexLabel.deepEquals(otherVertexLabel)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "schema: " + this.name;
     }
 }

@@ -667,7 +667,9 @@ public class Topology {
         }
         if (this.isLockHeldByCurrentThread()) {
             for (Schema schema : this.uncommittedSchemas.values()) {
-                schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                if (schemaArrayNode == null) {
+                    schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                }
                 Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
                 if (jsonNodeOptional.isPresent()) {
                     schemaArrayNode.add(jsonNodeOptional.get());
@@ -707,19 +709,57 @@ public class Topology {
 
     private void fromNotifyJson(LocalDateTime timestamp, ObjectNode log) {
         ArrayNode schemas = (ArrayNode) log.get("schemas");
+        //first load all the schema as they might be required later
         for (JsonNode jsonSchema : schemas) {
             String schemaName = jsonSchema.get("name").asText();
             Optional<Schema> schemaOptional = getSchema(schemaName);
             Schema schema;
-            if (schemaOptional.isPresent()) {
-                schema = schemaOptional.get();
-            } else {
+            if (!schemaOptional.isPresent()) {
                 //add to map
                 schema = Schema.instantiateSchema(this, schemaName);
                 this.schemas.put(schemaName, schema);
             }
-            schema.fromNotifyJson(jsonSchema);
+        }
+        for (JsonNode jsonSchema : schemas) {
+            String schemaName = jsonSchema.get("name").asText();
+            Optional<Schema> schemaOptional = getSchema(schemaName);
+            Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            Schema schema = schemaOptional.get();
+            schema.fromNotifyJsonOutEdges(jsonSchema);
+        }
+        for (JsonNode jsonSchema : schemas) {
+            String schemaName = jsonSchema.get("name").asText();
+            Optional<Schema> schemaOptional = getSchema(schemaName);
+            Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            Schema schema = schemaOptional.get();
+            schema.fromNotifyJsonInEdges(jsonSchema);
         }
         this.notificationTimestamps.add(timestamp);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof Topology)) {
+            return false;
+        }
+        Topology other = (Topology) o;
+        if (this.schemas.equals(other.schemas)) {
+            //check each schema individually as schema equals does not check the VertexLabels
+            for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
+                Schema schema = schemaEntry.getValue();
+                Schema otherSchema = other.schemas.get(schemaEntry.getKey());
+                if (!schema.deepEquals(otherSchema)) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
     }
 }

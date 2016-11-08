@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
-import org.umlg.sqlg.topology.Schema;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -18,7 +17,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.*;
 
 import static org.junit.Assert.assertEquals;
@@ -47,7 +45,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
         }
     }
 
-        @Test
+    @Test
     public void testMultiThreadedLocking() throws Exception {
         //number graphs, pretending its a separate jvm
         int NUMBER_OF_GRAPHS = 10;
@@ -100,6 +98,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                 results.add(
                         poolPerGraphsExecutorCompletionService.submit(() -> {
                                     for (int i = 0; i < NUMBER_OF_SCHEMAS; i++) {
+                                        //noinspection Duplicates
                                         try {
                                             sqlgGraphAsync.getTopology().ensureSchemaExist("schema_" + i);
                                             final Random random = new Random();
@@ -120,16 +119,70 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             }
             poolPerGraph.shutdown();
 
-            List<Set<Schema>>  schemas = new ArrayList<>();
             for (Future<SqlgGraph> result : results) {
-                SqlgGraph sqlgGraph = result.get(100, TimeUnit.SECONDS);
-                schemas.add(sqlgGraph.getTopology().getSchemas());
+                result.get(100, TimeUnit.SECONDS);
             }
             Thread.sleep(1000);
-            Set<Schema> rootGraphSchemas = this.sqlgGraph.getTopology().getSchemas();
-            assertEquals(NUMBER_OF_GRAPHS, schemas.size());
-            for (Set<Schema> schema : schemas) {
-                assertEquals(rootGraphSchemas, schema);
+            for (SqlgGraph graph : graphs) {
+                assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
+            }
+        } finally {
+            for (SqlgGraph graph : graphs) {
+                graph.close();
+            }
+        }
+    }
+
+    @Test
+    public void testMultiThreadedSchemaCreation2() throws Exception {
+        //number graphs, pretending its a separate jvm
+        int NUMBER_OF_GRAPHS = 19;
+        int NUMBER_OF_SCHEMAS = 1000;
+        //Pre-create all the graphs
+        List<SqlgGraph> graphs = new ArrayList<>();
+        for (int i = 0; i < NUMBER_OF_GRAPHS; i++) {
+            graphs.add(SqlgGraph.open(configuration));
+        }
+        logger.info(String.format("Done firing up %d graphs", NUMBER_OF_GRAPHS));
+
+        ExecutorService poolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);
+        CompletionService<SqlgGraph> poolPerGraphsExecutorCompletionService = new ExecutorCompletionService<>(poolPerGraph);
+        try {
+
+            List<Future<SqlgGraph>> results = new ArrayList<>();
+            for (final SqlgGraph sqlgGraphAsync : graphs) {
+
+                for (int i = 0; i < NUMBER_OF_SCHEMAS; i++) {
+                    final int count = i;
+                    results.add(
+                            poolPerGraphsExecutorCompletionService.submit(() -> {
+                                        //noinspection Duplicates
+                                        try {
+                                            sqlgGraphAsync.getTopology().ensureSchemaExist("schema_" + count);
+                                            final Random random = new Random();
+                                            if (random.nextBoolean()) {
+                                                sqlgGraphAsync.tx().commit();
+                                            } else {
+                                                sqlgGraphAsync.tx().rollback();
+                                            }
+                                        } catch (Exception e) {
+                                            sqlgGraphAsync.tx().rollback();
+                                            throw new RuntimeException(e);
+                                        }
+                                        return sqlgGraphAsync;
+                                    }
+                            )
+                    );
+                }
+            }
+            poolPerGraph.shutdown();
+
+            for (Future<SqlgGraph> result : results) {
+                result.get(100, TimeUnit.SECONDS);
+            }
+            Thread.sleep(1000);
+            for (SqlgGraph graph : graphs) {
+                assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
             }
         } finally {
             for (SqlgGraph graph : graphs) {

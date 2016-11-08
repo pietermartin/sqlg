@@ -207,14 +207,14 @@ public class EdgeLabel extends AbstractElement {
         }
     }
 
-    void afterRollbackInEdges() {
+    void afterRollbackInEdges(VertexLabel vertexLabel) {
         super.afterRollback();
-        this.uncommittedInVertexLabels.clear();
+        this.uncommittedInVertexLabels.remove(vertexLabel);
     }
 
-    void afterRollbackOutEdges() {
+    void afterRollbackOutEdges(VertexLabel vertexLabel) {
         super.afterRollback();
-        this.uncommittedOutVertexLabels.clear();
+        this.uncommittedOutVertexLabels.remove(vertexLabel);
     }
 
     @Override
@@ -364,7 +364,7 @@ public class EdgeLabel extends AbstractElement {
 
     @Override
     public boolean equals(Object other) {
-        if (other == null) {
+        if (!super.equals(other)) {
             return false;
         }
         if (!(other instanceof EdgeLabel)) {
@@ -376,8 +376,40 @@ public class EdgeLabel extends AbstractElement {
         return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
     }
 
+    public boolean deepEquals(EdgeLabel otherEdgeLabel) {
+        Preconditions.checkState(this.equals(otherEdgeLabel), "equals must have passed before calling deepEquals");
+
+        //check every out and in edge
+        for (VertexLabel outVertexLabel : this.outVertexLabels) {
+            boolean ok = false;
+            for (VertexLabel otherOutVertexLabel : otherEdgeLabel.outVertexLabels) {
+                if (outVertexLabel.equals(otherOutVertexLabel)) {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok) {
+                return false;
+            }
+        }
+        for (VertexLabel inVertexLabel : this.inVertexLabels) {
+            boolean ok = false;
+            for (VertexLabel otherInVertexLabel : otherEdgeLabel.inVertexLabels) {
+                if (inVertexLabel.equals(otherInVertexLabel)) {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public JsonNode toJson() {
         ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        edgeLabelNode.put("schema", getSchema().getName());
         edgeLabelNode.put("label", getLabel());
 
         JsonNode propertyNode = super.toJson();
@@ -406,7 +438,7 @@ public class EdgeLabel extends AbstractElement {
                 outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
                 outVertexLabelArrayNode.add(outVertexLabelObjectNode);
             }
-            edgeLabelNode.set("unCommittedOutVertexLabels", outVertexLabelArrayNode);
+            edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
 
             inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
@@ -425,6 +457,7 @@ public class EdgeLabel extends AbstractElement {
 
         boolean foundSomething = false;
         ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        edgeLabelNode.put("schema", getSchema().getName());
         edgeLabelNode.put("label", getLabel());
 
         Optional<JsonNode> propertyNode = super.toNotifyJson();
@@ -441,7 +474,7 @@ public class EdgeLabel extends AbstractElement {
                 outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
                 outVertexLabelArrayNode.add(outVertexLabelObjectNode);
             }
-            edgeLabelNode.set("unCommittedOutVertexLabels", outVertexLabelArrayNode);
+            edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
         }
 
         if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
