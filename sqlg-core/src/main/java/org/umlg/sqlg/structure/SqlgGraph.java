@@ -1116,7 +1116,7 @@ public class SqlgGraph implements Graph {
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
         Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(dummykeyValues);
-        this.getTopology().ensureVertexTableExist(label, columns);
+        this.getTopology().ensureVertexLabelExist(label, columns);
         for (Map.Entry<String, PropertyType> columnPRopertyType : columns.entrySet()) {
             this.getTopology().getVertexLabel(this.sqlDialect.getPublicSchema(), label).get().getProperty(columnPRopertyType.getKey()).get().ensureIndexExist(this, Index.NON_UNIQUE);
         }

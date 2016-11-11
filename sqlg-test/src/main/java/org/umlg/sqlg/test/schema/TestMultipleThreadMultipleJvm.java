@@ -2,23 +2,23 @@ package org.umlg.sqlg.test.schema;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
+import org.umlg.sqlg.topology.VertexLabel;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.junit.Assert.assertEquals;
@@ -38,6 +38,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             configuration = new PropertiesConfiguration(sqlProperties);
             Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
             configuration.addProperty("distributed", true);
+            configuration.addProperty("maxPoolSize", 3);
             if (!configuration.containsKey("jdbc.url"))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
 
@@ -80,8 +81,8 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
     @Test
     public void testMultiThreadedSchemaCreation() throws Exception {
         //number graphs, pretending its a separate jvm
-        int NUMBER_OF_GRAPHS = 19;
-        int NUMBER_OF_SCHEMAS = 1000;
+        int NUMBER_OF_GRAPHS = 5;
+        int NUMBER_OF_SCHEMAS = 100;
         //Pre-create all the graphs
         List<SqlgGraph> graphs = new ArrayList<>();
         for (int i = 0; i < NUMBER_OF_GRAPHS; i++) {
@@ -137,8 +138,8 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
     @Test
     public void testMultiThreadedSchemaCreation2() throws Exception {
         //number graphs, pretending its a separate jvm
-        int NUMBER_OF_GRAPHS = 19;
-        int NUMBER_OF_SCHEMAS = 1000;
+        int NUMBER_OF_GRAPHS = 5;
+        int NUMBER_OF_SCHEMAS = 100;
         //Pre-create all the graphs
         List<SqlgGraph> graphs = new ArrayList<>();
         for (int i = 0; i < NUMBER_OF_GRAPHS; i++) {
@@ -195,8 +196,8 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
     @Test
     public void testMultiThreadedVertexLabelCreation() throws Exception {
         //number graphs, pretending its a separate jvm
-        int NUMBER_OF_GRAPHS = 19;
-        int NUMBER_OF_SCHEMAS = 1000;
+        int NUMBER_OF_GRAPHS = 5;
+        int NUMBER_OF_SCHEMAS = 100;
         //Pre-create all the graphs
         List<SqlgGraph> graphs = new ArrayList<>();
         for (int i = 0; i < NUMBER_OF_GRAPHS; i++) {
@@ -207,24 +208,20 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
         ExecutorService poolPerGraph = Executors.newFixedThreadPool(NUMBER_OF_GRAPHS);
         CompletionService<SqlgGraph> poolPerGraphsExecutorCompletionService = new ExecutorCompletionService<>(poolPerGraph);
         try {
-
+            Map<String, PropertyType> properties = new HashMap<>();
+            properties.put("name", PropertyType.STRING);
+            properties.put("age", PropertyType.INTEGER);
             List<Future<SqlgGraph>> results = new ArrayList<>();
             for (final SqlgGraph sqlgGraphAsync : graphs) {
-
                 for (int i = 0; i < NUMBER_OF_SCHEMAS; i++) {
                     final int count = i;
                     results.add(
                             poolPerGraphsExecutorCompletionService.submit(() -> {
                                         //noinspection Duplicates
                                         try {
-                                            if (count % 2 == 0) {
-                                            } else {
-                                                sqlgGraphAsync.getTopology().ensureVertexTableExist("schema_" + count, "tableOut_" + count, Collections.emptyMap());
-                                                sqlgGraphAsync.getTopology().ensureVertexTableExist("schema_" + count, "tableIn_" + count, Collections.emptyMap());
-                                                SchemaTable foreignKeyOut = SchemaTable.of("schema_" + count, "tableOut_" + count);
-                                                SchemaTable foreignKeyIn = SchemaTable.of("schema_" + count, "tableIn_" + count);
-                                                sqlgGraphAsync.getTopology().ensureEdgeTableExist("schema_" + count, foreignKeyOut, foreignKeyIn, Collections.emptyMap());
-                                            }
+                                            VertexLabel outVertexLabel = sqlgGraphAsync.getTopology().ensureVertexLabelExist("schema_" + count, "tableOut_" + count, properties);
+                                            VertexLabel inVertexLabel = sqlgGraphAsync.getTopology().ensureVertexLabelExist("schema_" + count, "tableIn_" + count, properties);
+                                            sqlgGraphAsync.getTopology().ensureEdgeLabelExist("edge_" + count, outVertexLabel, inVertexLabel, properties);
                                             final Random random = new Random();
                                             if (random.nextBoolean()) {
                                                 sqlgGraphAsync.tx().commit();
@@ -241,22 +238,60 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                     );
                 }
             }
-            poolPerGraph.shutdown();
-
             for (Future<SqlgGraph> result : results) {
-                result.get(100, TimeUnit.SECONDS);
+                result.get(5, TimeUnit.MINUTES);
             }
             Thread.sleep(1000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
                 assertEquals(this.sqlgGraph.getTopology().toJson(), graph.getTopology().toJson());
             }
+            logger.info("starting inserting data");
+
+            for (final SqlgGraph sqlgGraphAsync : graphs) {
+                for (int i = 0; i < NUMBER_OF_SCHEMAS; i++) {
+                    final int count = i;
+                    results.add(
+                            poolPerGraphsExecutorCompletionService.submit(() -> {
+                                        //noinspection Duplicates
+                                        try {
+                                            Vertex v1 = sqlgGraphAsync.addVertex(T.label, "schema_" + count + "." + "tableOut_" + count, "name", "asdasd", "age", 1);
+                                            Vertex v2 = sqlgGraphAsync.addVertex(T.label, "schema_" + count + "." + "tableIn_" + count, "name", "asdasd", "age", 1);
+                                            v1.addEdge("edge_" + count, v2, "name", "asdasd", "age", 1);
+                                            sqlgGraphAsync.tx().commit();
+                                            final Random random = new Random();
+                                            if (random.nextBoolean()) {
+                                            } else {
+                                                sqlgGraphAsync.tx().rollback();
+                                            }
+                                        } catch (Exception e) {
+                                            sqlgGraphAsync.tx().rollback();
+                                            throw new RuntimeException(e);
+                                        }
+                                        return sqlgGraphAsync;
+                                    }
+                            )
+                    );
+                }
+            }
+            poolPerGraph.shutdown();
+
+            for (Future<SqlgGraph> result : results) {
+                result.get(30, TimeUnit.SECONDS);
+            }
+            logger.info("starting querying data");
+            List<Vertex> vertices = this.sqlgGraph.traversal().V().out().toList();
+            this.sqlgGraph.tx().rollback();
+            for (SqlgGraph graph : graphs) {
+                logger.info("assert querying data");
+                assertEquals(vertices, graph.traversal().V().out().toList());
+                graph.tx().rollback();
+            }
         } finally {
             for (SqlgGraph graph : graphs) {
                 graph.close();
             }
         }
-
     }
 
 }

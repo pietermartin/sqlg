@@ -93,7 +93,7 @@ public class Schema {
         }
     }
 
-    SchemaTable ensureEdgeTableExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
+    EdgeLabel ensureEdgeTableExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> columns) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(foreignKeyOut, "Given outTable must not be null");
         Objects.requireNonNull(foreignKeyIn, "Given inTable must not be null");
@@ -112,7 +112,7 @@ public class Schema {
         } else {
             edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
         }
-        return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
+        return edgeLabel;
     }
 
     private EdgeLabel internalEnsureEdgeTableExists(SqlgGraph sqlgGraph, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, EdgeLabel edgeLabel, Map<String, PropertyType> columns) {
@@ -174,7 +174,7 @@ public class Schema {
 
     public void ensureVertexColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
-        Preconditions.checkState(!isSqlgSchema(), "Schema.ensureVertexColumnsExist may not be called for \"%s\"", SQLG_SCHEMA);
+        Preconditions.checkState(!isSqlgSchema(), "Schema.ensureVertexLabelPropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
         Optional<VertexLabel> vertexLabel = getVertexLabel(label);
         Preconditions.checkState(vertexLabel.isPresent(), String.format("BUG: vertexLabel \"%s\" must exist", label));
@@ -185,7 +185,7 @@ public class Schema {
 
     public void ensureEdgeColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
-        Preconditions.checkState(!isSqlgSchema(), "Schema.ensureEdgeColumnsExist may not be called for \"%s\"", SQLG_SCHEMA);
+        Preconditions.checkState(!isSqlgSchema(), "Schema.ensureEdgePropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
         Optional<EdgeLabel> edgeLabel = getEdgeLabel(label);
         Preconditions.checkState(edgeLabel.isPresent(), "BUG: edgeLabel \"%s\" must exist", label);

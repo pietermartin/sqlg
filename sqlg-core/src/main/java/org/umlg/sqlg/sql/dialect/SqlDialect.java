@@ -381,6 +381,8 @@ public interface SqlDialect {
 
     List<String> sqlgTopologyCreationScripts();
 
+    String sqlgAddPropertyIndexTypeColumn();
+
     default Long getPrimaryKeyStartValue() {
         return 1L;
     }

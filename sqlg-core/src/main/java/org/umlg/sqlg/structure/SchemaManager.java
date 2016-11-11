@@ -168,7 +168,7 @@ public class SchemaManager {
     }
 
     void ensureVertexTableExist(final String schema, final String label, final Map<String, PropertyType> columns) {
-        this.topology.ensureVertexTableExist(schema, label, columns);
+        this.topology.ensureVertexLabelExist(schema, label, columns);
     }
 
     void ensureVertexTableExist(final String schema, final String label, final Object... keyValues) {
@@ -177,7 +177,7 @@ public class SchemaManager {
     }
 
     public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, final Map<String, PropertyType> columns) {
-        return this.topology.ensureEdgeTableExist(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+        return this.topology.ensureEdgeLabelExist(edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
     }
 
     public SchemaTable ensureEdgeTableExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Object... keyValues) {
@@ -230,12 +230,12 @@ public class SchemaManager {
 
     private void ensureVertexColumnsExist(String schema, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
-        this.topology.ensureVertexColumnsExist(schema, label, columns);
+        this.topology.ensureVertexLabelPropertiesExist(schema, label, columns);
     }
 
     private void ensureEdgeColumnsExist(String schema, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
-        this.topology.ensureEdgeColumnsExist(schema, label, columns);
+        this.topology.ensureEdgePropertiesExist(schema, label, columns);
     }
 
     public void close() {
@@ -249,15 +249,13 @@ public class SchemaManager {
         }
         //check if the topology schema exists, if not createVertexLabel it
         boolean existSqlgSchema = existSqlgSchema();
-        if (!existSqlgSchema) {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            createSqlgSchema();
-            //committing here will ensure that sqlg creates the tables.
-            this.sqlgGraph.tx().commit();
-            stopWatch.stop();
-            logger.debug("Time to createVertexLabel sqlg topology: " + stopWatch.toString());
-        }
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        createSqlgSchema();
+        //committing here will ensure that sqlg creates the tables.
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        logger.debug("Time to createVertexLabel sqlg topology: " + stopWatch.toString());
         if (!existSqlgSchema) {
             addPublicSchema();
             this.sqlgGraph.tx().commit();
@@ -265,17 +263,37 @@ public class SchemaManager {
         if (!existSqlgSchema) {
             //old versions of sqlg needs the topology populated from the information_schema table.
             logger.debug("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
-            upgradeSqlgToTopologySchema();
+            loadSqlgSchemaFromInformationSchema();
             logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
+        } else {
+            //make sure the property index column exist, this if for upgrading from 1.3.2 to 1.4.0
+            ensurePropertyIndexTypeExist();
+            this.sqlgGraph.tx().commit();
         }
-        loadUserSchema();
+        cacheTopology();
         this.sqlgGraph.tx().commit();
-        if (distributed) {
+
+    }
+
+    private void ensurePropertyIndexTypeExist() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            String catalog = null;
+            String schemaPattern = "sqlg_schema";
+            ResultSet propertyRs = metadata.getColumns(catalog, schemaPattern, "V_property", "index_type");
+            if (!propertyRs.next()) {
+                Statement statement = conn.createStatement();
+                String sql = this.sqlDialect.sqlgAddPropertyIndexTypeColumn();
+                statement.execute(sql);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
 
     }
 
-    private void upgradeSqlgToTopologySchema() {
+    private void loadSqlgSchemaFromInformationSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             DatabaseMetaData metadata = conn.getMetaData();
@@ -437,8 +455,8 @@ public class SchemaManager {
     /**
      * Load the schema from the topology.
      */
-    private void loadUserSchema() {
-        this.topology.loadUserSchema();
+    private void cacheTopology() {
+        this.topology.cacheTopology();
     }
 
     private void addPublicSchema() {

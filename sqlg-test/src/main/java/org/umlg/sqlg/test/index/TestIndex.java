@@ -184,9 +184,9 @@ public class TestIndex extends BaseTest {
         columns.put("name", PropertyType.STRING);
 
         String publicSchema = this.sqlgGraph.getSqlDialect().getPublicSchema();
-        this.sqlgGraph.getTopology().ensureVertexTableExist("Person", columns);
-        this.sqlgGraph.getTopology().ensureVertexTableExist("Address", columns);
-        this.sqlgGraph.getTopology().ensureEdgeTableExist("person_address", SchemaTable.of(publicSchema, "Person"), SchemaTable.of(publicSchema, "Address"), columns);
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", columns);
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("Address", columns);
+        this.sqlgGraph.getTopology().ensureEdgeLabelExist("person_address", SchemaTable.of(publicSchema, "Person"), SchemaTable.of(publicSchema, "Address"), columns);
         this.sqlgGraph.getTopology().getEdgeLabel(publicSchema, "person_address").get().getProperty("name").get().ensureIndexExist(this.sqlgGraph, Index.UNIQUE);
         this.sqlgGraph.tx().commit();
 
