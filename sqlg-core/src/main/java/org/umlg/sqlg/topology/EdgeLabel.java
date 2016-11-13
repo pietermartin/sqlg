@@ -82,7 +82,7 @@ public class EdgeLabel extends AbstractElement {
         if (!this.outVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
             return vertexLabel.getSchema();
-        } else if (this.topology.isLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
+        } else if (this.topology.isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
             return vertexLabel.getSchema();
         } else {
@@ -193,7 +193,7 @@ public class EdgeLabel extends AbstractElement {
 
     void afterCommit() {
         super.afterCommit();
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<VertexLabel> it = this.uncommittedInVertexLabels.iterator(); it.hasNext(); ) {
                 VertexLabel vertexLabel = it.next();
                 this.inVertexLabels.add(vertexLabel);
@@ -230,7 +230,7 @@ public class EdgeLabel extends AbstractElement {
         for (VertexLabel vertexLabel : this.outVertexLabels) {
             result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
         }
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
                 result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
             }
@@ -431,7 +431,7 @@ public class EdgeLabel extends AbstractElement {
         }
         edgeLabelNode.set("inVertexLabels", inVertexLabelArrayNode);
 
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
                 ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -466,7 +466,7 @@ public class EdgeLabel extends AbstractElement {
             edgeLabelNode.set("uncommittedProperties", propertyNode.get());
         }
 
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
@@ -477,7 +477,7 @@ public class EdgeLabel extends AbstractElement {
             edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
         }
 
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {

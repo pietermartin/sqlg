@@ -2621,8 +2621,8 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void registerListener(SqlgGraph sqlgGraph) {
-        this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "Notification merge " + sqlgGraph.toString()));
-        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Notification listener " + sqlgGraph.toString()));
+        this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "Sqlg notification merge " + sqlgGraph.toString()));
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
         try {
             this.listeningSemaphore = new Semaphore(1);
             this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph, this.listeningSemaphore), 500, MILLISECONDS);
@@ -2645,13 +2645,27 @@ public class PostgresDialect extends BaseSqlDialect {
         Connection connection = sqlgGraph.tx().getConnection();
         try {
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
-            sqlgGraph.addVertex(
-                    T.label,
-                    SchemaManager.SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
-                    "timestamp", timestamp,
-                    "pid", pgConnection.getBackendPID(),
-                    "log", jsonNode
-            );
+            if (sqlgGraph.tx().isInBatchMode()) {
+                BatchManager.BatchModeType batchModeType = sqlgGraph.tx().getBatchModeType();
+                sqlgGraph.tx().flush();
+                sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NONE);
+                sqlgGraph.addVertex(
+                        T.label,
+                        SchemaManager.SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
+                        "timestamp", timestamp,
+                        "pid", pgConnection.getBackendPID(),
+                        "log", jsonNode
+                );
+                sqlgGraph.tx().batchMode(batchModeType);
+            } else {
+                sqlgGraph.addVertex(
+                        T.label,
+                        SchemaManager.SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
+                        "timestamp", timestamp,
+                        "pid", pgConnection.getBackendPID(),
+                        "log", jsonNode
+                );
+            }
             try (Statement statement = connection.createStatement()) {
                 statement.execute("NOTIFY " + SQLG_NOTIFICATION_CHANNEL + ", '" + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'");
             }
@@ -2699,8 +2713,8 @@ public class PostgresDialect extends BaseSqlDialect {
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                             executorService.submit(() -> {
                                 try {
-                                    this.sqlgGraph.getTopology().z_internalLock();
-                                    this.sqlgGraph.getSchemaManager().merge(pid, timestamp);
+                                    this.sqlgGraph.getTopology().z_internalWriteLock();
+                                    this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
                                 } catch (Exception e) {
                                     logger.error("Error in Postgresql notification", e);
                                 } finally {

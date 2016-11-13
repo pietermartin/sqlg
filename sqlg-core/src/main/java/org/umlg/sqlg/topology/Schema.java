@@ -135,7 +135,7 @@ public class Schema {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private EdgeLabel createEdgeLabel(final SqlgGraph sqlgGraph, final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, final Map<String, PropertyType> columns) {
-        Preconditions.checkArgument(this.topology.isLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
+        Preconditions.checkArgument(this.topology.isWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -255,7 +255,7 @@ public class Schema {
         if (vertexLabel != null) {
             return Optional.of(vertexLabel);
         } else {
-            if (this.topology.isLockHeldByCurrentThread()) {
+            if (this.topology.isWriteLockHeldByCurrentThread()) {
                 vertexLabel = this.uncommittedVertexLabels.get(vertexLabelName);
                 if (vertexLabel != null) {
                     return Optional.of(vertexLabel);
@@ -273,7 +273,7 @@ public class Schema {
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             result.addAll(vertexLabel.getOutEdgeLabels());
         }
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
                 result.addAll(vertexLabel.getOutEdgeLabels());
             }
@@ -301,7 +301,7 @@ public class Schema {
                 result.put(vertexLabelQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
             }
         }
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
                 String vertexLabelQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -327,7 +327,7 @@ public class Schema {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
             result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
         }
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
                 String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -351,7 +351,7 @@ public class Schema {
                 result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
             }
         }
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
                 String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -380,7 +380,7 @@ public class Schema {
                 break;
             }
         }
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
                 String prefixedVertexName = SchemaManager.VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -410,7 +410,7 @@ public class Schema {
             result.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
         }
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedResult = new HashMap<>();
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
                 String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -444,7 +444,7 @@ public class Schema {
             }
         }
         Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedResult = null;
-        if (this.topology.isLockHeldByCurrentThread()) {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
                 String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -478,7 +478,7 @@ public class Schema {
     }
 
     void afterCommit() {
-        if (this.getTopology().isLockHeldByCurrentThread()) {
+        if (this.getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, VertexLabel> entry = it.next();
                 this.vertexLabels.put(entry.getKey(), entry.getValue());
@@ -491,7 +491,7 @@ public class Schema {
     }
 
     public void afterRollback() {
-        if (this.getTopology().isLockHeldByCurrentThread()) {
+        if (this.getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, VertexLabel> entry = it.next();
                 entry.getValue().afterRollbackForInEdges();
@@ -704,7 +704,7 @@ public class Schema {
         boolean foundVertexLabels = false;
         ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
-        if (this.getTopology().isLockHeldByCurrentThread() && !this.getUncommittedVertexLabels().isEmpty()) {
+        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.getUncommittedVertexLabels().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
                 //VertexLabel toNotifyJson always returns something even though its an Optional.

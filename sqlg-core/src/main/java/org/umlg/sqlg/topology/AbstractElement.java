@@ -51,7 +51,7 @@ public abstract class AbstractElement {
         if (property != null) {
             return Optional.of(property);
         } else {
-            if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+            if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
                 property = this.uncommittedProperties.get(key);
                 if (property != null) {
                     return Optional.of(property);
@@ -69,7 +69,7 @@ public abstract class AbstractElement {
         for (Map.Entry<String, Property> propertyEntry : this.properties.entrySet()) {
             result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
         }
-        if (getSchema().getTopology().isLockHeldByCurrentThread()) {
+        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, Property> propertyEntry : this.uncommittedProperties.entrySet()) {
                 result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
             }
@@ -143,7 +143,7 @@ public abstract class AbstractElement {
     }
 
     void afterCommit() {
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Property> entry = it.next();
                 this.properties.put(entry.getKey(), entry.getValue());
@@ -158,7 +158,7 @@ public abstract class AbstractElement {
     }
 
     protected void afterRollback() {
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Property> entry = it.next();
                 entry.getValue().afterRollback();
@@ -180,7 +180,7 @@ public abstract class AbstractElement {
     }
 
     protected Optional<JsonNode> toNotifyJson() {
-        if (this.getSchema().getTopology().isLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty()) {
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (Property property : this.uncommittedProperties.values()) {
                 propertyArrayNode.add(property.toNotifyJson());

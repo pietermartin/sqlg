@@ -44,12 +44,12 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         if (!(startStep instanceof GraphStep) || !(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
-        this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().get();
 
         final GraphStep originalGraphStep = (GraphStep) startStep;
 
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
-            this.sqlgGraph.tx().flush();
+        if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
+            sqlgGraph.tx().flush();
         }
 
         if (originalGraphStep.getIds().length > 0) {
@@ -70,7 +70,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
-        return new SqlgGraphStepCompiled(this.sqlgGraph, traversal, ((GraphStep) startStep).getReturnClass(), ((GraphStep) startStep).isStartStep(), ((GraphStep) startStep).getIds());
+        return new SqlgGraphStepCompiled((SqlgGraph) traversal.getGraph().get(), traversal, ((GraphStep) startStep).getReturnClass(), ((GraphStep) startStep).isStartStep(), ((GraphStep) startStep).getIds());
     }
 
     @Override

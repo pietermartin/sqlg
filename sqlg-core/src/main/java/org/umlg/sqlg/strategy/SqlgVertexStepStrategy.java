@@ -35,11 +35,11 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
         if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
-        this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
+        SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().get();
         //This is because in normal BatchMode the new vertices are cached with it edges.
         //The query will read from the cache if this is for a cached vertex
-        if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
-            this.sqlgGraph.tx().flush();
+        if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
+            sqlgGraph.tx().flush();
         }
         List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
         ListIterator<Step> stepIterator = steps.listIterator();
@@ -54,7 +54,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         SqlgVertexStepCompiled sqlgStep = new SqlgVertexStepCompiled(traversal);
-        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager());
+        ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph) traversal.getGraph().get()).getSchemaManager());
         sqlgStep.addReplacedStep(replacedStep);
         return sqlgStep;
     }

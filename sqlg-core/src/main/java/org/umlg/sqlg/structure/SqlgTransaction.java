@@ -113,6 +113,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 }
             }
             Connection connection = threadLocalTx.get().getConnection();
+            connection.setAutoCommit(false);
             connection.rollback();
             if (this.afterRollbackFunction != null) {
                 this.afterRollbackFunction.doAfterRollback();
@@ -197,7 +198,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
         return isOpen() && this.threadLocalTx.get().getBatchManager().isInStreamingModeWithLock();
     }
 
-    BatchManager.BatchModeType getBatchModeType() {
+    public BatchManager.BatchModeType getBatchModeType() {
         assert isOpen() : "SqlgTransaction.getBatchModeType() must be called within a transaction.";
         return this.threadLocalTx.get().getBatchManager().getBatchModeType();
     }

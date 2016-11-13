@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  */
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
-    protected SqlgGraph sqlgGraph;
+//    protected SqlgGraph sqlgGraph;
     protected Logger logger = LoggerFactory.getLogger(getClass().getName());
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
@@ -119,7 +119,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
                     pathCount++;
 
-                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph)traversal.getGraph().get()).getSchemaManager(), (AbstractStep) step, pathCount);
                     if (sqlgStep == null) {
                         sqlgStep = constructSqlgStep(traversal, step);
                         alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;

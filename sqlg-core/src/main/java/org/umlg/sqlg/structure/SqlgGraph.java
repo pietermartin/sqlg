@@ -204,12 +204,6 @@ public class SqlgGraph implements Graph {
     private Configuration configuration = new BaseConfiguration();
     private final ISqlGFeatures features = new SqlGFeatures();
 
-    static {
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
-                .addStrategies(new SqlgVertexStepStrategy())
-                .addStrategies(new SqlgGraphStepStrategy())
-                .addStrategies(TopologyStrategy.build().create()));
-    }
 
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
@@ -219,6 +213,12 @@ public class SqlgGraph implements Graph {
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
         sqlgGraph.schemaManager.loadSchema();
+
+        //This has some static suckness
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
+                .addStrategies(new SqlgVertexStepStrategy())
+                .addStrategies(new SqlgGraphStepStrategy())
+                .addStrategies(TopologyStrategy.build().create()));
         return (G) sqlgGraph;
     }
 

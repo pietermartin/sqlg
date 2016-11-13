@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
@@ -185,14 +184,13 @@ public class TestTopologyUpgrade extends BaseTest {
     @Test
     public void testGratefulDeadDBUpgrade() throws Exception {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
-        Graph g = this.sqlgGraph;
         GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
+                .mapper(this.sqlgGraph.io(GryoIo.build()).mapper().create())
                 .create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
-            reader.readGraph(stream, g);
+            reader.readGraph(stream, this.sqlgGraph);
         }
-        Traversal<Vertex, Long> traversal = get_g_V_both_both_count(g.traversal());
+        Traversal<Vertex, Long> traversal = get_g_V_both_both_count(this.sqlgGraph.traversal());
         Assert.assertEquals(new Long(1406914), traversal.next());
         Assert.assertFalse(traversal.hasNext());
 
@@ -204,36 +202,21 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
 
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            sqlgGraph1.tx().normalBatchModeOn();
-            sqlgGraph1.traversal().V().forEachRemaining(Element::remove);
-            sqlgGraph1.tx().commit();
-            g = sqlgGraph1;
-            reader = GryoReader.build()
-                    .mapper(g.io(GryoIo.build()).mapper().create())
-                    .create();
-            try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
-                reader.readGraph(stream, g);
+        for (int i = 0; i < 2; i++) {
+            try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+                sqlgGraph1.tx().normalBatchModeOn();
+                sqlgGraph1.traversal().V().forEachRemaining(Element::remove);
+                sqlgGraph1.tx().commit();
+                reader = GryoReader.build()
+                        .mapper(sqlgGraph1.io(GryoIo.build()).mapper().create())
+                        .create();
+                try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
+                    reader.readGraph(stream, sqlgGraph1);
+                }
+                traversal = get_g_V_both_both_count(sqlgGraph1.traversal());
+                Assert.assertEquals(new Long(1406914), traversal.next());
+                Assert.assertFalse(traversal.hasNext());
             }
-            traversal = get_g_V_both_both_count(g.traversal());
-            Assert.assertEquals(new Long(1406914), traversal.next());
-            Assert.assertFalse(traversal.hasNext());
-        }
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            sqlgGraph1.tx().normalBatchModeOn();
-            sqlgGraph1.traversal().V().forEachRemaining(Element::remove);
-            sqlgGraph1.tx().commit();
-            g = sqlgGraph1;
-            reader = GryoReader.build()
-                    .mapper(g.io(GryoIo.build()).mapper().create())
-                    .create();
-            try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
-                reader.readGraph(stream, g);
-            }
-            traversal = get_g_V_both_both_count(g.traversal());
-            Assert.assertEquals(new Long(1406914), traversal.next());
-            Assert.assertFalse(traversal.hasNext());
-
         }
     }
 

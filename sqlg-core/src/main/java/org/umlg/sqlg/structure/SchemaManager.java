@@ -587,7 +587,4 @@ public class SchemaManager {
         this.topology.createTempTable(tmpTableIdentified, columns);
     }
 
-    public void merge(int pid, LocalDateTime timestamp) {
-        this.topology.fromNotifyJson(pid, timestamp);
-    }
 }
