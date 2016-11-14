@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static org.umlg.sqlg.structure.SchemaManager.*;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 
 /**
  * Date: 2016/09/04
@@ -406,7 +407,6 @@ public class Topology {
      * @param foreignKeyIn  The {@link SchemaTable} that represents the in vertex.
      * @param properties    The edge's properties with their type.
      * @return The {@link SchemaTable} that represents the edge.
-     * @deprecated Use {@link Topology#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      */
     public SchemaTable ensureEdgeLabelExist(final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, Map<String, PropertyType> properties) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
