@@ -44,6 +44,12 @@ public class H2Dialect extends BaseSqlDialect {
     public Set<String> getDefaultSchemas() {
         return ImmutableSet.of("PUBLIC", "INFORMATION_SCHEMA");
     }
+    
+    @Override
+    public String createSchemaStatement() {
+    	// if ever schema is created outside of sqlg while the graph is already instantiated
+    	return "CREATE SCHEMA IF NOT EXISTS ";
+    }
 
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column,

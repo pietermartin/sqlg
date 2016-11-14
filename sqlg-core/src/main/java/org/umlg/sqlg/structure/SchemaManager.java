@@ -338,7 +338,7 @@ public class SchemaManager {
         return sqlDialect;
     }
 
-    void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
+    public void ensureVertexTableExist(final String schema, final String table, final Object... keyValues) {
         Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
         Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
         final String prefixedTable = VERTEX_PREFIX + table;
@@ -387,13 +387,43 @@ public class SchemaManager {
         }
     }
 
-    boolean schemaExist(String schema) {
+    /**
+     * does the schema exist and is committed?
+     * @param schema
+     * @return
+     */
+    public boolean schemaExist(String schema) {
         return this.localSchemas.containsKey(schema);
     }
+    
+    /**
+     * Ensure the given schema exists
+     * @param schema the schema name
+     * @return true if the schema already existed, false it it was created (but still uncommitted)
+     */
+    public boolean ensureSchemaExists(String schema){
+    	 if (!this.sqlDialect.getPublicSchema().equals(schema) && !this.localSchemas.containsKey(schema)) {
+             if (!this.uncommittedSchemas.contains(schema)) {
+            	 //Make sure the current thread/transaction owns the lock
+            	 lock(schema, "N/A");
+                 this.uncommittedSchemas.add(schema);
+                 createSchema(schema);
+                 if (!SQLG_SCHEMA.equals(schema)) {
+                     TopologyManager.addSchema(this.sqlgGraph, schema);
+                 }
+                 return false;
+             }
+         }
+    	 return true;
+    }
 
+    /**
+     * Create schema
+     * @param schema
+     */
     public void createSchema(String schema) {
         StringBuilder sql = new StringBuilder();
-        sql.append("CREATE SCHEMA ");
+        sql.append(this.sqlDialect.createSchemaStatement());
         sql.append(this.sqlDialect.maybeWrapInQoutes(schema));
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");

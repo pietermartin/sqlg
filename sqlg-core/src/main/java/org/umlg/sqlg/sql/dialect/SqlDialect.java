@@ -256,6 +256,14 @@ public interface SqlDialect {
         return "CREATE TEMPORARY TABLE ";
     }
 
+    /**
+     * 
+     * @return the statement head to create a schema
+     */
+    default String createSchemaStatement() {
+        return "CREATE SCHEMA ";
+    }
+    
     default void prepareDB(Connection conn) {
     }
 
