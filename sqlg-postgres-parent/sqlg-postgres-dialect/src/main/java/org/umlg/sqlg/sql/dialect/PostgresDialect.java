@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableSet;
 import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -42,9 +41,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA;
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_LOG;
-import static org.umlg.sqlg.topology.Topology.SQLG_NOTIFICATION_CHANNEL;
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2014/07/16
@@ -218,10 +215,13 @@ public class PostgresDialect extends BaseSqlDialect {
                     if (vertices.getLeft().isEmpty()) {
                         //copy command needs at least one field.
                         //check if the dummy field exist, if not createVertexLabel it
-                        sqlgGraph.getSchemaManager().ensureVertexColumnExist(
+                        Map<String, PropertyType> columns = new HashMap<>();
+                        columns.put(COPY_DUMMY, PropertyType.from(0));
+                        sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                                 schemaTable.getSchema(),
                                 schemaTable.getTable(),
-                                ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
+                                columns
+                        );
                         sql.append(maybeWrapInQoutes(COPY_DUMMY));
                     } else {
                         int count = 1;
@@ -766,10 +766,13 @@ public class PostgresDialect extends BaseSqlDialect {
         if (keyValueMap.isEmpty()) {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
-            sqlgGraph.getSchemaManager().ensureVertexColumnExist(
+            Map<String, PropertyType> columns = new HashMap<>();
+            columns.put(COPY_DUMMY, PropertyType.from(0));
+            sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                     vertex.getSchema(),
                     vertex.getTable(),
-                    ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
+                    columns
+            );
             sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {
             int count = 1;
@@ -874,10 +877,13 @@ public class PostgresDialect extends BaseSqlDialect {
         if (keyValueMap.isEmpty()) {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
-            sqlgGraph.getSchemaManager().ensureVertexColumnExist(
+            Map<String, PropertyType> columns = new HashMap<>();
+            columns.put(COPY_DUMMY, PropertyType.from(0));
+            sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                     schemaTable.getSchema(),
                     schemaTable.getTable(),
-                    ImmutablePair.of(COPY_DUMMY, PropertyType.from(0)));
+                    columns
+            );
             sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {
             int count = 1;
@@ -2223,7 +2229,14 @@ public class PostgresDialect extends BaseSqlDialect {
             sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
             this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyType, inPropertyType);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
-            sqlgGraph.getSchemaManager().ensureEdgeTableExist(edgeLabel, out, in);
+
+            Optional<VertexLabel> outVertexLabelOptional = sqlgGraph.getTopology().getVertexLabel(out.getSchema(), out.getTable());
+            Optional<VertexLabel> inVertexLabelOptional = sqlgGraph.getTopology().getVertexLabel(in.getSchema(), in.getTable());
+            Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", out.toString());
+            Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", in.toString());
+
+            //noinspection OptionalGetWithoutIsPresent
+            sqlgGraph.getTopology().ensureEdgeLabelExist(edgeLabel, outVertexLabelOptional.get(), inVertexLabelOptional.get(), Collections.emptyMap());
 
             StringBuilder sql = new StringBuilder("INSERT INTO \n");
             sql.append(this.maybeWrapInQoutes(out.getSchema()));
@@ -2411,7 +2424,6 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE SCHEMA IF NOT EXISTS \"sqlg_schema\";");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"schemaVertex\" TEXT);");
@@ -2651,7 +2663,7 @@ public class PostgresDialect extends BaseSqlDialect {
                 sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NONE);
                 sqlgGraph.addVertex(
                         T.label,
-                        SchemaManager.SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
+                        SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
                         "timestamp", timestamp,
                         "pid", pgConnection.getBackendPID(),
                         "log", jsonNode
@@ -2660,7 +2672,7 @@ public class PostgresDialect extends BaseSqlDialect {
             } else {
                 sqlgGraph.addVertex(
                         T.label,
-                        SchemaManager.SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
+                        SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
                         "timestamp", timestamp,
                         "pid", pgConnection.getBackendPID(),
                         "log", jsonNode
@@ -2713,7 +2725,6 @@ public class PostgresDialect extends BaseSqlDialect {
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                             executorService.submit(() -> {
                                 try {
-                                    this.sqlgGraph.getTopology().z_internalWriteLock();
                                     this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
                                 } catch (Exception e) {
                                     logger.error("Error in Postgresql notification", e);

@@ -13,7 +13,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.strategy.TopologyStrategy;
-import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -21,6 +20,8 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.List;
+
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2016/02/06
@@ -252,11 +253,11 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
                 TopologyStrategy.build().selectFrom(
-                        SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES
+                        SQLG_SCHEMA_SCHEMA_TABLES
                 ).create()
         );
         List<Vertex> schemas = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA)
+                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                 .toList();
         Assert.assertEquals(1, schemas.size());
         Long count = this.sqlgGraph.topology().V().count().next();

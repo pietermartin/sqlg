@@ -61,7 +61,7 @@ public class TestJNDIInitialization {
         //obtain the connection that we will later supply from JNDI
         SqlgGraph g = SqlgGraph.open(configuration);
         ds = g.getSqlgDataSource().get(url);
-        g.getSchemaManager().close();
+//        g.getTopology().close();
 
         //change the connection url to be a JNDI one
         configuration.setProperty("jdbc.url", "jndi:testConnection");

@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,10 +14,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -64,13 +60,116 @@ public class Topology {
 
     private static final int LOCK_TIMEOUT = 100;
 
+
+    @SuppressWarnings("WeakerAccess")
+    public static final String CREATED_ON = "createdOn";
+
+    @SuppressWarnings("WeakerAccess")
+    public static final String SCHEMA_VERTEX_DISPLAY = "schemaVertex";
+
+    /**
+     * Rdbms schema that holds sqlg topology.
+     */
+    public static final String SQLG_SCHEMA = "sqlg_schema";
+    /**
+     * Table storing the graph's schemas.
+     */
+    public static final String SQLG_SCHEMA_SCHEMA = "schema";
+    /**
+     * Schema's name.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_SCHEMA_NAME = "name";
+    /**
+     * Table storing the graphs vertex labels.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_LABEL = "vertex";
+    /**
+     * VertexLabel's name property.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_VERTEX_LABEL_NAME = "name";
+    /**
+     * Table storing the graphs edge labels.
+     */
+    public static final String SQLG_SCHEMA_EDGE_LABEL = "edge";
+    /**
+     * EdgeLabel's name property.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_EDGE_LABEL_NAME = "name";
+    /**
+     * Table storing the graphs element properties.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_PROPERTY = "property";
+    /**
+     * Edge table for the schema to vertex edge.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_SCHEMA_VERTEX_EDGE = "schema_vertex";
+    /**
+     * Edge table for the vertices in edges.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_IN_EDGES_EDGE = "in_edges";
+    /**
+     * Edge table for the vertices out edges.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_OUT_EDGES_EDGE = "out_edges";
+    /**
+     * Edge table for the vertex's properties.
+     */
+    public static final String SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE = "vertex_property";
+    /**
+     * Edge table for the edge's properties.
+     */
+    public static final String SQLG_SCHEMA_EDGE_PROPERTIES_EDGE = "edge_property";
+    /**
+     * Property table's name property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_PROPERTY_NAME = "name";
+    /**
+     * Table storing the logs.
+     */
+    public static final String SQLG_SCHEMA_LOG = "log";
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_LOG_TIMESTAMP = "timestamp";
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_LOG_LOG = "log";
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_LOG_PID = "pid";
+
+    /**
+     * Property table's type property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_PROPERTY_INDEX_TYPE = "index_type";
+
+    public static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_LOG,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE
+    );
+
     /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
      * As the topology, i.e. sqlg_schema is created upfront the meta topology is pre-loaded.
      *
      * @param sqlgGraph The graph.
      */
-    public Topology(SqlgGraph sqlgGraph) {
+    Topology(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.distributed = sqlgGraph.configuration().getBoolean(SqlgGraph.DISTRIBUTED, false);
         this.reentrantReadWriteLock = new ReentrantReadWriteLock();
@@ -116,6 +215,26 @@ public class Topology {
 
         //add the public schema
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
+
+        if (this.distributed) {
+            ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
+        }
+
+        this.sqlgGraph.tx().beforeCommit(this::beforeCommit);
+        this.sqlgGraph.tx().afterCommit(this::afterCommit);
+
+        this.sqlgGraph.tx().afterRollback(() -> {
+            if (this.sqlgGraph.getSqlDialect().supportsTransactionalSchema()) {
+                afterRollback();
+            } else {
+                afterCommit();
+            }
+        });
+    }
+
+    void close() {
+        if (this.distributed)
+            ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).unregisterListener();
     }
 
     /**
@@ -153,7 +272,7 @@ public class Topology {
     /**
      * Not for public consumption. Used for the notification.
      */
-    public void z_internalWriteLock() {
+    private void z_internalWriteLock() {
         //only lock if the lock is not already owned by this thread.
         if (!isWriteLockHeldByCurrentThread()) {
             try {
@@ -188,7 +307,7 @@ public class Topology {
     /**
      * Ensures that the schema exists.
      *
-     * @param schemaName The schem to create if it does not exist.
+     * @param schemaName The schema to create if it does not exist.
      */
     public Schema ensureSchemaExist(final String schemaName) {
         Optional<Schema> schemaOptional = this.getSchema(schemaName);
@@ -217,7 +336,7 @@ public class Topology {
      *
      * @param label   The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
      * @param columns The properties with their types.
-     * @see {@link PropertyType}
+     * @see PropertyType
      */
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
         return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
@@ -231,11 +350,11 @@ public class Topology {
      * @param schemaName The schema the vertex is in.
      * @param label      The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
      * @param properties The properties with their types.
-     * @see {@link PropertyType}
+     * @see PropertyType
      */
     public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties) {
-        Objects.requireNonNull(schemaName, GIVEN_TABLES_MUST_NOT_BE_NULL);
-        Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
+        Objects.requireNonNull(schemaName, "Given tables must not be null");
+        Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
         Schema schema = this.ensureSchemaExist(schemaName);
@@ -265,6 +384,16 @@ public class Topology {
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Schema outVertexSchema = this.getSchema(foreignKeyOut.getSchema()).get();
         return outVertexSchema.ensureEdgeTableExist(this.sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, properties);
+    }
+
+    public void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
+        Objects.requireNonNull(schema, "Given schema may not be null");
+        Objects.requireNonNull(table, "Given table may not be null");
+        final String prefixedTable = VERTEX_PREFIX + table;
+        if (!this.temporaryTables.containsKey(prefixedTable)) {
+            this.temporaryTables.put(prefixedTable, columns);
+            createTempTable(prefixedTable, columns);
+        }
     }
 
     /**
@@ -338,17 +467,8 @@ public class Topology {
         }
     }
 
-    public void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
-        Objects.requireNonNull(schema, GIVEN_TABLES_MUST_NOT_BE_NULL);
-        Objects.requireNonNull(table, GIVEN_TABLE_MUST_NOT_BE_NULL);
-        final String prefixedTable = VERTEX_PREFIX + table;
-        if (!this.temporaryTables.containsKey(prefixedTable)) {
-            this.temporaryTables.put(prefixedTable, columns);
-            createTempTable(prefixedTable, columns);
-        }
-    }
 
-    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
+    void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName));
@@ -376,21 +496,27 @@ public class Topology {
         }
     }
 
+    @SuppressWarnings("WeakerAccess")
     public boolean existSchema(String schema) {
         return getSchema(schema).isPresent();
     }
 
     public Set<Schema> getSchemas() {
-        Set<Schema> result = new HashSet<>();
-        result.addAll(this.schemas.values());
-        if (this.isWriteLockHeldByCurrentThread()) {
-            result.addAll(this.uncommittedSchemas.values());
+        this.z_internalReadLock();
+        try {
+            Set<Schema> result = new HashSet<>();
+            result.addAll(this.schemas.values());
+            if (this.isWriteLockHeldByCurrentThread()) {
+                result.addAll(this.uncommittedSchemas.values());
+            }
+            return Collections.unmodifiableSet(result);
+        } finally {
+            this.z_internalReadUnLock();
         }
-        return Collections.unmodifiableSet(result);
     }
 
     public Optional<Schema> getSchema(String schema) {
-//        this.z_internalReadLock();
+        this.z_internalReadLock();
         try {
             Schema result = this.schemas.get(schema);
             if (result == null) {
@@ -401,7 +527,7 @@ public class Topology {
             }
             return Optional.ofNullable(result);
         } finally {
-//            this.z_internalReadUnLock();
+            this.z_internalReadUnLock();
         }
     }
 
@@ -439,7 +565,7 @@ public class Topology {
         }
     }
 
-    public void beforeCommit() {
+    private void beforeCommit() {
         Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
         if (jsonNodeOptional.isPresent() && this.distributed) {
             SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
@@ -449,7 +575,7 @@ public class Topology {
         }
     }
 
-    public void afterCommit() {
+    private void afterCommit() {
         this.temporaryTables.clear();
         if (this.isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
@@ -471,7 +597,7 @@ public class Topology {
         }
     }
 
-    public void afterRollback() {
+    private void afterRollback() {
         this.temporaryTables.clear();
         if (this.isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
@@ -494,27 +620,7 @@ public class Topology {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
-        z_internalReadLock();
-        try {
-            Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
-            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                result.putAll(schemaEntry.getValue().getAllTables());
-            }
-
-            result.putAll(this.temporaryTables);
-
-            if (!this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
-                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                    result.putAll(schemaEntry.getValue().getAllTables());
-                }
-            }
-            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                result.putAll(schemaEntry.getValue().getAllTables());
-            }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalReadUnLock();
-        }
+        return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
@@ -687,14 +793,14 @@ public class Topology {
         }
     }
 
-    public void cacheTopology() {
+    void cacheTopology() {
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         //load the last log
         //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
         //loaded as the notification might not have been received yet.
         List<Vertex> logs = traversalSource.V()
-                .hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_LOG)
-                .order().by(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_LOG_TIMESTAMP, Order.decr)
+                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                .order().by(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG_TIMESTAMP, Order.decr)
                 .limit(1)
                 .toList();
         Preconditions.checkState(logs.size() <= 1, "must load one or zero logs in cacheTopology");
@@ -708,7 +814,7 @@ public class Topology {
         }
 
         //First load all VertexLabels, their out edges and properties
-        List<Vertex> schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+        List<Vertex> schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
             Optional<Schema> schemaOptional = getSchema(schemaName);
@@ -726,10 +832,12 @@ public class Topology {
             schema.loadVertexOutEdgesAndProperties(traversalSource, schemaVertex);
         }
         //Now load the in edges
-        schemaVertices = traversalSource.V().hasLabel(SchemaManager.SQLG_SCHEMA + "." + SchemaManager.SQLG_SCHEMA_SCHEMA).toList();
+        schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
         for (Vertex schemaVertex : schemaVertices) {
             String schemaName = schemaVertex.value("name");
             Optional<Schema> schemaOptional = getSchema(schemaName);
+            Preconditions.checkState(schemaOptional.isPresent(), "schema %s must be present when loading in edges.", schemaName);
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
             Schema schema = schemaOptional.get();
             schema.loadInEdgeLabels(traversalSource, schemaVertex);
         }
@@ -737,13 +845,18 @@ public class Topology {
     }
 
     public JsonNode toJson() {
-        ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-        ArrayNode schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-        for (Schema schema : this.schemas.values()) {
-            schemaArrayNode.add(schema.toJson());
+        z_internalReadLock();
+        try {
+            ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+            ArrayNode schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            for (Schema schema : this.schemas.values()) {
+                schemaArrayNode.add(schema.toJson());
+            }
+            topologyNode.set("schemas", schemaArrayNode);
+            return topologyNode;
+        } finally {
+            z_internalReadUnLock();
         }
-        topologyNode.set("schemas", schemaArrayNode);
-        return topologyNode;
     }
 
     @Override
@@ -752,55 +865,66 @@ public class Topology {
     }
 
     private Optional<JsonNode> toNotifyJson() {
-        ArrayNode schemaArrayNode = null;
-        for (Schema schema : this.schemas.values()) {
-            Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
-            if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
-                schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
-            }
-            if (jsonNodeOptional.isPresent()) {
-                schemaArrayNode.add(jsonNodeOptional.get());
-            }
-        }
-        if (this.isWriteLockHeldByCurrentThread()) {
-            for (Schema schema : this.uncommittedSchemas.values()) {
-                if (schemaArrayNode == null) {
+        z_internalReadLock();
+        try {
+            ArrayNode schemaArrayNode = null;
+            for (Schema schema : this.schemas.values()) {
+                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
                     schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
                 }
-                Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
                 if (jsonNodeOptional.isPresent()) {
+                    //noinspection ConstantConditions
                     schemaArrayNode.add(jsonNodeOptional.get());
-                } else {
-                    ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-                    schemaNode.put("name", schema.getName());
-                    schemaArrayNode.add(schemaNode);
                 }
             }
-        }
-        if (schemaArrayNode != null) {
-            ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-            topologyNode.set("schemas", schemaArrayNode);
-            return Optional.of(topologyNode);
-        } else {
-            return Optional.empty();
+            if (this.isWriteLockHeldByCurrentThread()) {
+                for (Schema schema : this.uncommittedSchemas.values()) {
+                    if (schemaArrayNode == null) {
+                        schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                    }
+                    Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
+                    if (jsonNodeOptional.isPresent()) {
+                        schemaArrayNode.add(jsonNodeOptional.get());
+                    } else {
+                        ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                        schemaNode.put("name", schema.getName());
+                        schemaArrayNode.add(schemaNode);
+                    }
+                }
+            }
+            if (schemaArrayNode != null) {
+                ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                topologyNode.set("schemas", schemaArrayNode);
+                return Optional.of(topologyNode);
+            } else {
+                return Optional.empty();
+            }
+        } finally {
+            z_internalReadUnLock();
         }
     }
 
     public void fromNotifyJson(int pid, LocalDateTime notifyTimestamp) {
-        if (!this.ownPids.contains(pid)) {
-            List<Vertex> logs = this.sqlgGraph.topology().V()
-                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                    .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp)
-                    .toList();
-            Preconditions.checkState(logs.size() == 1, String.format("There must be one and only be one log, found %d", logs.size()));
-            LocalDateTime timestamp = logs.get(0).value("timestamp");
-            Preconditions.checkState(timestamp.equals(notifyTimestamp), "notify log's timestamp does not match.");
-            int backEndPid = logs.get(0).value("pid");
-            Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
-            ObjectNode log = logs.get(0).value("log");
-            fromNotifyJson(timestamp, log);
-        } else {
-            this.ownPids.remove(pid);
+        z_internalWriteLock();
+        try {
+            if (!this.ownPids.contains(pid)) {
+                List<Vertex> logs = this.sqlgGraph.topology().V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                        .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp)
+                        .toList();
+                Preconditions.checkState(logs.size() == 1, String.format("There must be one and only be one log, found %d", logs.size()));
+                LocalDateTime timestamp = logs.get(0).value("timestamp");
+                Preconditions.checkState(timestamp.equals(notifyTimestamp), "notify log's timestamp does not match.");
+                int backEndPid = logs.get(0).value("pid");
+                Preconditions.checkState(backEndPid == pid, "notify pids do not match.");
+                ObjectNode log = logs.get(0).value("log");
+                fromNotifyJson(timestamp, log);
+            } else {
+                this.ownPids.remove(pid);
+            }
+        } finally {
+            this.sqlgGraph.tx().rollback();
         }
     }
 
@@ -838,25 +962,30 @@ public class Topology {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null) {
-            return false;
-        }
-        if (!(o instanceof Topology)) {
-            return false;
-        }
-        Topology other = (Topology) o;
-        if (this.schemas.equals(other.schemas)) {
-            //check each schema individually as schema equals does not check the VertexLabels
-            for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
-                Schema schema = schemaEntry.getValue();
-                Optional<Schema> otherSchemaOptional = other.getSchema(schemaEntry.getKey());
-                if (otherSchemaOptional.isPresent() && !schema.deepEquals(otherSchemaOptional.get())) {
-                    return false;
-                }
+        z_internalReadLock();
+        try {
+            if (o == null) {
+                return false;
             }
-            return true;
-        } else {
-            return false;
+            if (!(o instanceof Topology)) {
+                return false;
+            }
+            Topology other = (Topology) o;
+            if (this.schemas.equals(other.schemas)) {
+                //check each schema individually as schema equals does not check the VertexLabels
+                for (Map.Entry<String, Schema> schemaEntry : schemas.entrySet()) {
+                    Schema schema = schemaEntry.getValue();
+                    Optional<Schema> otherSchemaOptional = other.getSchema(schemaEntry.getKey());
+                    if (otherSchemaOptional.isPresent() && !schema.deepEquals(otherSchemaOptional.get())) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } finally {
+            z_internalReadUnLock();
         }
     }
 }

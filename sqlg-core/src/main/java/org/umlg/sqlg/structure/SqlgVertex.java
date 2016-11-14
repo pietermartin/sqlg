@@ -132,19 +132,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 this.sqlgGraph.getSqlDialect().validateProperty(key, value);
             }
         }
-        SchemaTable edgeSchemaTable = this.sqlgGraph.getSchemaManager().ensureEdgeTableExist(
-                label,
-                SchemaTable.of(
-                        this.schema,
-                        this.table
-                ),
-                SchemaTable.of(
-                        ((SqlgVertex) inVertex).schema,
-                        ((SqlgVertex) inVertex).table
-                ),
-                keyValues);
-
-        return new SqlgEdge(this.sqlgGraph, complete, edgeSchemaTable.getSchema(), label, (SqlgVertex) inVertex, this, keyValues);
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        Optional<VertexLabel> outVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.schema, this.table);
+        Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex)inVertex).schema, ((SqlgVertex)inVertex).table);
+        Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
+        Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", ((SqlgVertex)inVertex).schema + "." + ((SqlgVertex)inVertex).table);
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
+        return new SqlgEdge(this.sqlgGraph, complete, edgeLabel.getSchema().getName(), label, (SqlgVertex) inVertex, this, keyValues);
     }
 
     @Override

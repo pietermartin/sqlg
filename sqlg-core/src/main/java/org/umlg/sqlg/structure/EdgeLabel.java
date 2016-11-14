@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,7 +8,6 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,6 +16,7 @@ import java.sql.Statement;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 
 /**
  * Date: 2016/09/04
@@ -78,7 +78,7 @@ public class EdgeLabel extends AbstractElement {
     }
 
     @Override
-    protected Schema getSchema() {
+    public Schema getSchema() {
         if (!this.outVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
             return vertexLabel.getSchema();
@@ -98,7 +98,7 @@ public class EdgeLabel extends AbstractElement {
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
                         TopologyManager.addEdgeColumn(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column);
                         addColumn(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        this.uncommittedProperties.put(column.getKey(), new Property(this, column.getKey(), column.getValue()));
+                        this.uncommittedProperties.put(column.getKey(), new PropertyColumn(this, column.getKey(), column.getValue()));
                     }
                 }
             }

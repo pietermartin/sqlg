@@ -25,8 +25,6 @@ import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
-import org.umlg.sqlg.topology.Index;
-import org.umlg.sqlg.topology.Topology;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -34,6 +32,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA_TABLES;
 
 /**
  * Date: 2014/07/12
@@ -196,6 +195,7 @@ public class SqlgGraph implements Graph {
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
     private SchemaManager schemaManager;
+    private Topology topology;
     private GremlinParser gremlinParser;
     private SqlDialect sqlDialect;
     private String jdbcUrl;
@@ -204,6 +204,13 @@ public class SqlgGraph implements Graph {
     private Configuration configuration = new BaseConfiguration();
     private final ISqlGFeatures features = new SqlGFeatures();
 
+    //This has some static suckness
+    static {
+        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
+                .addStrategies(new SqlgVertexStepStrategy())
+                .addStrategies(new SqlgGraphStepStrategy())
+                .addStrategies(TopologyStrategy.build().create()));
+    }
 
     public static <G extends Graph> G open(final Configuration configuration) {
         if (null == configuration) throw Graph.Exceptions.argumentCanNotBeNull("configuration");
@@ -212,13 +219,8 @@ public class SqlgGraph implements Graph {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", JDBC_URL));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
-        sqlgGraph.schemaManager.loadSchema();
-
-        //This has some static suckness
-        TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
-                .addStrategies(new SqlgVertexStepStrategy())
-                .addStrategies(new SqlgGraphStepStrategy())
-                .addStrategies(TopologyStrategy.build().create()));
+        SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph, configuration);
+        sqlgStartupManager.loadSchema();
         return (G) sqlgGraph;
     }
 
@@ -251,7 +253,8 @@ public class SqlgGraph implements Graph {
                         throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
                     }
                     this.sqlDialect = p.instantiateDialect();
-                };
+                }
+                ;
             } else {
                 SqlgPlugin p = findSqlgPlugin(jdbcUrl);
                 if (p == null) {
@@ -265,6 +268,7 @@ public class SqlgGraph implements Graph {
 
             logger.info(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
             try (Connection conn = this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection()) {
+                //This is used by Hsqldb to set the transaction semantics. MVCC and cache
                 this.sqlDialect.prepareDB(conn);
             }
         } catch (Exception e) {
@@ -272,11 +276,12 @@ public class SqlgGraph implements Graph {
         }
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
         this.tx().readWrite();
-        this.schemaManager = new SchemaManager(this, this.sqlDialect, configuration);
+        this.topology = new Topology(this);
+        this.schemaManager = new SchemaManager(this, this.topology);
         this.gremlinParser = new GremlinParser(this);
-        if (!this.sqlDialect.supportSchemas() && !this.schemaManager.schemaExist(this.sqlDialect.getPublicSchema())) {
+        if (!this.sqlDialect.supportSchemas() && !this.getTopology().existSchema(this.sqlDialect.getPublicSchema())) {
             //This is for mariadb. Need to make sure a db called public exist
-            this.schemaManager.createSchema(this.sqlDialect.getPublicSchema());
+            this.getTopology().ensureSchemaExist(this.sqlDialect.getPublicSchema());
         }
         this.tx().commit();
     }
@@ -312,7 +317,7 @@ public class SqlgGraph implements Graph {
     }
 
     public GraphTraversalSource topology() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SchemaManager.SQLG_SCHEMA_SCHEMA_TABLES).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SQLG_SCHEMA_SCHEMA_TABLES).create());
     }
 
     @Override
@@ -342,7 +347,8 @@ public class SqlgGraph implements Graph {
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
             this.tx().readWrite();
-            this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+            final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+            this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
             return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
         }
     }
@@ -397,7 +403,9 @@ public class SqlgGraph implements Graph {
         validateVertexKeysValues(keyValues, keys);
 
         this.tx().readWrite();
-        this.schemaManager.ensureVertexTemporaryTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        getTopology().ensureVertexTemporaryTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         return new SqlgVertex(this, schemaTablePair.getTable(), keyValues);
     }
 
@@ -413,7 +421,8 @@ public class SqlgGraph implements Graph {
         validateVertexKeysValues(keyValues, keys);
 
         this.tx().readWrite();
-        this.schemaManager.ensureVertexTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
     }
 
@@ -421,7 +430,7 @@ public class SqlgGraph implements Graph {
         if (!(this.sqlDialect instanceof SqlBulkDialect)) {
             throw new UnsupportedOperationException(String.format("Bulk mode is not supported for %s", this.sqlDialect.dialectName()));
         }
-        SqlBulkDialect sqlBulkDialect = (SqlBulkDialect)this.sqlDialect;
+        SqlBulkDialect sqlBulkDialect = (SqlBulkDialect) this.sqlDialect;
         if (!this.tx().isInStreamingBatchMode() && !this.tx().isInStreamingWithLockBatchMode()) {
             throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
@@ -563,7 +572,7 @@ public class SqlgGraph implements Graph {
         logger.info(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
-        this.schemaManager.close();
+        this.topology.close();
         this.sqlgDataSource.close(this.getJdbcUrl());
     }
 

@@ -13,7 +13,7 @@ import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
-import org.umlg.sqlg.topology.VertexLabel;
+import org.umlg.sqlg.structure.VertexLabel;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;

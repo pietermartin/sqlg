@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 /**
  * Created by pieter on 2016/10/27.

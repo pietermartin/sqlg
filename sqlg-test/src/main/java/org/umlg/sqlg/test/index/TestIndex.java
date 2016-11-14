@@ -5,11 +5,11 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.Index;
+import org.umlg.sqlg.structure.PropertyColumn;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
-import org.umlg.sqlg.topology.Index;
-import org.umlg.sqlg.topology.Property;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -33,7 +33,7 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         }
         this.sqlgGraph.tx().commit();
-        Optional<Property> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel("Person").get().getProperty("name");
+        Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel("Person").get().getProperty("name");
         assertTrue(propertyOptional.isPresent());
         propertyOptional.get().ensureIndexExist(this.sqlgGraph, Index.NON_UNIQUE);
         this.sqlgGraph.tx().commit();
@@ -57,7 +57,7 @@ public class TestIndex extends BaseTest {
     public void testUniqueIndexViaTopolgy() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         this.sqlgGraph.tx().commit();
-        Optional<Property> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel("Person").get().getProperty("name");
+        Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel("Person").get().getProperty("name");
         assertTrue(propertyOptional.isPresent());
         propertyOptional.get().ensureIndexExist(this.sqlgGraph, Index.UNIQUE);
         this.sqlgGraph.tx().commit();

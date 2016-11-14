@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -12,7 +12,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -20,7 +19,7 @@ import java.sql.Statement;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.SchemaManager.*;
-import static org.umlg.sqlg.topology.Topology.OBJECT_MAPPER;
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2016/09/04
@@ -41,7 +40,7 @@ public class Schema {
      * @return The Schema that represents 'sqlg_schema'
      */
     static Schema instantiateSqlgSchema(Topology topology) {
-        return new Schema(topology, SchemaManager.SQLG_SCHEMA);
+        return new Schema(topology, SQLG_SCHEMA);
     }
 
     /**
@@ -73,7 +72,7 @@ public class Schema {
     }
 
     VertexLabel ensureVertexTableExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
-        Objects.requireNonNull(label, GIVEN_TABLE_MUST_NOT_BE_NULL);
+        Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
@@ -690,9 +689,9 @@ public class Schema {
     }
 
     public JsonNode toJson() {
-        ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+        ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
-        ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+        ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (VertexLabel vertexLabel : this.getVertexLabels().values()) {
             vertexLabelArrayNode.add(vertexLabel.toJson());
         }
@@ -702,10 +701,10 @@ public class Schema {
 
     public Optional<JsonNode> toNotifyJson() {
         boolean foundVertexLabels = false;
-        ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+        ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
         if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.getUncommittedVertexLabels().isEmpty()) {
-            ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
                 //VertexLabel toNotifyJson always returns something even though its an Optional.
                 //This is because it extends AbstractElement's toNotifyJson that does not always return something.
@@ -717,7 +716,7 @@ public class Schema {
             foundVertexLabels = true;
         }
         if (!this.getVertexLabels().isEmpty()) {
-            ArrayNode vertexLabelArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+            ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getVertexLabels().values()) {
                 JsonNode notifyJson = vertexLabel.toNotifyJson().get();
                 if (notifyJson.get("uncommittedProperties") != null ||

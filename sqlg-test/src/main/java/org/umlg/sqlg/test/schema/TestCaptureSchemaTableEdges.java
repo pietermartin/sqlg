@@ -6,13 +6,14 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Map;
 import java.util.Set;
+
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 
 /**
  * Date: 2015/01/02
@@ -66,7 +67,7 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
         car2.addEdge("model", toyota);
         this.sqlgGraph.tx().rollback();
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTables = this.sqlgGraph.getSchemaManager().getTableLabels();
-        Assert.assertTrue(localTables.containsKey(SchemaTable.of(SchemaManager.SQLG_SCHEMA, "V_vertex")));
+        Assert.assertTrue(localTables.containsKey(SchemaTable.of(SQLG_SCHEMA, "V_vertex")));
         Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
         Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
         Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));

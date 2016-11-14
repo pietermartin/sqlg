@@ -379,6 +379,10 @@ public interface SqlDialect {
         return Collections.emptyList();
     }
 
+    default String sqlgSqlgSchemaCreationScript() {
+        return "CREATE SCHEMA \"sqlg_schema\";";
+    }
+
     List<String> sqlgTopologyCreationScripts();
 
     String sqlgAddPropertyIndexTypeColumn();

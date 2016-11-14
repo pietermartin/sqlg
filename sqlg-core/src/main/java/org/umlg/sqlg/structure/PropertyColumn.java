@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -6,10 +6,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -22,20 +18,20 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
  * Date: 2016/09/04
  * Time: 8:50 AM
  */
-public class Property {
+public class PropertyColumn {
 
-    private Logger logger = LoggerFactory.getLogger(Property.class.getName());
+    private Logger logger = LoggerFactory.getLogger(PropertyColumn.class.getName());
     private AbstractElement abstractElement;
     private String name;
     private PropertyType propertyType;
     private Index index;
     private Index uncommittedIndex;
 
-    public Property(AbstractElement abstractElement, String name, PropertyType propertyType) {
+    public PropertyColumn(AbstractElement abstractElement, String name, PropertyType propertyType) {
         this(abstractElement, name, propertyType, Index.NONE);
     }
 
-    public Property(AbstractElement abstractElement, String name, PropertyType propertyType, Index index) {
+    public PropertyColumn(AbstractElement abstractElement, String name, PropertyType propertyType, Index index) {
         this.abstractElement = abstractElement;
         this.name = name;
         this.propertyType = propertyType;
@@ -131,8 +127,8 @@ public class Property {
         return propertyObjectNode;
     }
 
-    public static Property fromNotifyJson(AbstractElement abstractElement, JsonNode jsonNode) {
-        Property property = new Property(
+    public static PropertyColumn fromNotifyJson(AbstractElement abstractElement, JsonNode jsonNode) {
+        PropertyColumn property = new PropertyColumn(
                 abstractElement,
                 jsonNode.get("name").asText(),
                 PropertyType.valueOf(jsonNode.get("propertyType").asText()));
@@ -149,10 +145,10 @@ public class Property {
         if (o == null) {
             return false;
         }
-        if (!(o instanceof Property)) {
+        if (!(o instanceof PropertyColumn)) {
             return false;
         }
-        Property other = (Property)o;
+        PropertyColumn other = (PropertyColumn)o;
         return this.getName().equals(other.getName())  &&
                 this.getPropertyType() == other.getPropertyType() &&
                 this.getIndex() == other.getIndex();

@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -6,16 +6,14 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_PROPERTY_NAME;
-import static org.umlg.sqlg.structure.SchemaManager.SQLG_SCHEMA_PROPERTY_TYPE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_NAME;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_TYPE;
 
 /**
  * Date: 2016/09/14
@@ -25,13 +23,13 @@ public abstract class AbstractElement {
 
     private Logger logger = LoggerFactory.getLogger(AbstractElement.class.getName());
     protected String label;
-    protected Map<String, Property> properties = new HashMap<>();
-    protected Map<String, Property> uncommittedProperties = new HashMap<>();
+    protected Map<String, PropertyColumn> properties = new HashMap<>();
+    protected Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
 
     public AbstractElement(String label, Map<String, PropertyType> columns) {
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
-            Property property = new Property(this, propertyEntry.getKey(), propertyEntry.getValue());
+            PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
     }
@@ -46,8 +44,8 @@ public abstract class AbstractElement {
         return this.label;
     }
 
-    public Optional<Property> getProperty(String key) {
-        Property property = this.properties.get(key);
+    public Optional<PropertyColumn> getProperty(String key) {
+        PropertyColumn property = this.properties.get(key);
         if (property != null) {
             return Optional.of(property);
         } else {
@@ -66,11 +64,11 @@ public abstract class AbstractElement {
 
     public Map<String, PropertyType> getPropertyTypeMap() {
         Map<String, PropertyType> result = new HashMap<>();
-        for (Map.Entry<String, Property> propertyEntry : this.properties.entrySet()) {
+        for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
             result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
         }
         if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, Property> propertyEntry : this.uncommittedProperties.entrySet()) {
+            for (Map.Entry<String, PropertyColumn> propertyEntry : this.uncommittedProperties.entrySet()) {
                 result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
             }
         }
@@ -138,42 +136,42 @@ public abstract class AbstractElement {
     }
 
     void addProperty(Vertex propertyVertex) {
-        Property property = new Property(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
+        PropertyColumn property = new PropertyColumn(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
     void afterCommit() {
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Property> entry = it.next();
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
                 this.properties.put(entry.getKey(), entry.getValue());
                 entry.getValue().afterCommit();
                 it.remove();
             }
         }
-        for (Iterator<Map.Entry<String, Property>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Property> entry = it.next();
+        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, PropertyColumn> entry = it.next();
             entry.getValue().afterCommit();
         }
     }
 
     protected void afterRollback() {
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<Map.Entry<String, Property>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, Property> entry = it.next();
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
                 entry.getValue().afterRollback();
                 it.remove();
             }
         }
-        for (Iterator<Map.Entry<String, Property>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, Property> entry = it.next();
+        for (Iterator<Map.Entry<String, PropertyColumn>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, PropertyColumn> entry = it.next();
             entry.getValue().afterRollback();
         }
     }
 
     public JsonNode toJson() {
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-        for (Property property : this.properties.values()) {
+        for (PropertyColumn property : this.properties.values()) {
             propertyArrayNode.add(property.toNotifyJson());
         }
         return propertyArrayNode;
@@ -182,7 +180,7 @@ public abstract class AbstractElement {
     protected Optional<JsonNode> toNotifyJson() {
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty()) {
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (Property property : this.uncommittedProperties.values()) {
+            for (PropertyColumn property : this.uncommittedProperties.values()) {
                 propertyArrayNode.add(property.toNotifyJson());
             }
             return Optional.of(propertyArrayNode);
@@ -195,7 +193,7 @@ public abstract class AbstractElement {
         ArrayNode propertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedProperties");
         if (propertiesNode != null) {
             for (JsonNode propertyNode : propertiesNode) {
-                Property property = Property.fromNotifyJson(this, propertyNode);
+                PropertyColumn property = PropertyColumn.fromNotifyJson(this, propertyNode);
                 this.properties.put(property.getName(), property);
             }
         }

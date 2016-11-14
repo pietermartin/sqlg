@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -175,15 +176,20 @@ public abstract class SqlgElement implements Element {
         PropertyType.from(value);
         //Check if column exist
         if (this instanceof Vertex) {
-            this.sqlgGraph.getSchemaManager().ensureVertexColumnExist(
+            Map<String, PropertyType> columns = new HashMap<>();
+            columns.put(key, PropertyType.from(value));
+            this.sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
                     this.schema,
                     this.table,
-                    ImmutablePair.of(key, PropertyType.from(value)));
+                    columns
+            );
         } else {
-            this.sqlgGraph.getSchemaManager().ensureEdgeColumnExist(
+            Map<String, PropertyType> columns = new HashedMap<>();
+            columns.put(key, PropertyType.from(value));
+            this.sqlgGraph.getTopology().ensureEdgePropertiesExist(
                     this.schema,
                     this.table,
-                    ImmutablePair.of(key, PropertyType.from(value)));
+                    columns);
         }
         load();
         updateRow(key, value);

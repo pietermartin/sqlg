@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
+import org.umlg.sqlg.test.schema.TestMultipleThreadMultipleJvm;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyUpgrade.class
+        TestMultipleThreadMultipleJvm.class
 })
 public class AnyTest {
 }

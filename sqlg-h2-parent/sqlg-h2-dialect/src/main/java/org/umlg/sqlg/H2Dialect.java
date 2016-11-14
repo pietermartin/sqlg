@@ -461,7 +461,6 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE SCHEMA \"sqlg_schema\";");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"schemaVertex\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");

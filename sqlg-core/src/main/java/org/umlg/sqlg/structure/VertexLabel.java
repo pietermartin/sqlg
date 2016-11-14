@@ -1,4 +1,4 @@
-package org.umlg.sqlg.topology;
+package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -8,17 +8,15 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.TopologyManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.*;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 
 /**
  * Date: 2016/09/04
@@ -40,7 +38,7 @@ public class VertexLabel extends AbstractElement {
         VertexLabel vertexLabel = new VertexLabel(schema, label);
         //Add the properties directly. As they are pre-created do not add them to uncommittedProperties.
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
-            Property property = new Property(vertexLabel, propertyEntry.getKey(), propertyEntry.getValue());
+            PropertyColumn property = new PropertyColumn(vertexLabel, propertyEntry.getKey(), propertyEntry.getValue());
             vertexLabel.properties.put(propertyEntry.getKey(), property);
         }
         return vertexLabel;
@@ -124,7 +122,7 @@ public class VertexLabel extends AbstractElement {
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
                         TopologyManager.addVertexColumn(sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        this.uncommittedProperties.put(column.getKey(), new Property(this, column.getKey(), column.getValue()));
+                        this.uncommittedProperties.put(column.getKey(), new PropertyColumn(this, column.getKey(), column.getValue()));
                     }
                 }
             }
