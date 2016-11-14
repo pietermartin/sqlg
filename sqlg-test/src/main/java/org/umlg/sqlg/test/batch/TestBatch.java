@@ -1111,4 +1111,13 @@ public class TestBatch extends BaseTest {
     	Object o=this.sqlgGraph.traversal().V().hasLabel("Empty").values("empty").next();
     	assertEquals("",o);
     }
+
+    @Test
+    public void testEmpty106() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex("A", Collections.singletonMap("emptyProperty", ""));
+        this.sqlgGraph.tx().commit();
+        Vertex a = this.sqlgGraph.traversal().V().hasLabel("A").next();
+        assertEquals("", a.property("emptyProperty").value());
+    }
 }
