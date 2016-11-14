@@ -65,6 +65,12 @@ public class PostgresDialect extends BaseSqlDialect {
     public String dialectName() {
         return "Postgresql";
     }
+    
+    @Override
+    public String createSchemaStatement() {
+    	// if ever schema is created outside of sqlg while the graph is already instantiated
+    	return "CREATE SCHEMA IF NOT EXISTS ";
+    }
 
     @Override
     public boolean supportsBatchMode() {

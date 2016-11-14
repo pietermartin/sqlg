@@ -6,10 +6,13 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.test.BaseTest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Map;
@@ -137,6 +140,26 @@ public class TestSchema extends BaseTest {
         assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("A.eee").count().next().intValue());
         assertEquals(0, this.sqlgGraph.traversal().E().hasLabel("B.eee").count().next().intValue());
         assertEquals(0, this.sqlgGraph.traversal().E().hasLabel("public.eee").count().next().intValue());
+    }
+    
+    @Test
+    public void testEnsureSchema(){
+    	SchemaManager mgr=this.sqlgGraph.getSchemaManager();
+    	this.sqlgGraph.addVertex(T.label, "A.A");
+    	this.sqlgGraph.tx().commit();
+
+    	assertTrue(mgr.schemaExist(this.sqlgGraph.getSqlDialect().getPublicSchema()));
+    	assertTrue(mgr.schemaExist("A"));
+    	assertTrue(mgr.ensureSchemaExists("A"));
+    	
+    	assertFalse(mgr.schemaExist("B"));
+    	// false means didn't exist
+    	assertFalse(mgr.ensureSchemaExists("B"));
+    	// not committed yet
+    	assertFalse(mgr.schemaExist("B"));
+    	this.sqlgGraph.tx().commit();
+    	assertTrue(mgr.schemaExist("B"));
+    	
     }
 
 }
