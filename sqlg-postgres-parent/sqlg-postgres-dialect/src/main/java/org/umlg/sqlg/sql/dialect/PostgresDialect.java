@@ -1456,6 +1456,18 @@ public class PostgresDialect extends BaseSqlDialect {
                             valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
                             sb.append(valueOfArrayAsString);
                             break;
+                        case STRING:
+                            String strValue = (String) value;
+                            if (value == null) {
+                                sb.append(getBatchNull());
+                            } else if (((String) value).trim().isEmpty()) {
+                                // quote empty string
+                                sb.append(QUOTE);
+                                sb.append(QUOTE);
+                            } else {
+                                sb.append(valueToStreamString(propertyType, value));
+                            }
+                            break;
                         default:
                             sb.append(valueToStreamString(propertyType, value));
                     }
@@ -1495,6 +1507,18 @@ public class PostgresDialect extends BaseSqlDialect {
                     case byte_ARRAY:
                         valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
                         sb.append(valueOfArrayAsString);
+                        break;
+                    case STRING:
+                        String strValue = (String) value;
+                        if (value == null) {
+                            sb.append(getBatchNull());
+                        } else if (((String) value).trim().isEmpty()) {
+                            // quote empty string
+                            sb.append(QUOTE);
+                            sb.append(QUOTE);
+                        } else {
+                            sb.append(valueToStreamString(propertyType, value));
+                        }
                         break;
                     default:
                         sb.append(valueToStreamString(propertyType, value));
