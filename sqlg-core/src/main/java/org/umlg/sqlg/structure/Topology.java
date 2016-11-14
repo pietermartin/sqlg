@@ -523,7 +523,9 @@ public class Topology {
         try {
             Schema result = this.schemas.get(schema);
             if (result == null) {
-                result = this.uncommittedSchemas.get(schema);
+                if (isWriteLockHeldByCurrentThread()) {
+                    result = this.uncommittedSchemas.get(schema);
+                }
                 if (result == null) {
                     result = this.metaSchemas.get(schema);
                 }
@@ -694,6 +696,7 @@ public class Topology {
         return toJson().toString();
     }
 
+    //TODO why is uncommittedSchemas being added to "schemas" and not "uncommittedSchemas"
     private Optional<JsonNode> toNotifyJson() {
         z_internalReadLock();
         try {
@@ -820,7 +823,6 @@ public class Topology {
     }
 
     //cache
-
     public Map<String, Map<String, PropertyType>> getAllTables() {
         return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
     }
