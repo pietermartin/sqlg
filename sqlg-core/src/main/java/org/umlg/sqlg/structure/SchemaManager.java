@@ -103,13 +103,6 @@ public class SchemaManager {
         return this.topology.getTableLabels();
     }
 
-    /**
-     * <code>Schema.vertexLabels</code> contains committed tables with its labels.
-     * <code>Schema.uncommittedVertexLabels</code> contains uncommitted tables with its labels.
-     *
-     * @param schemaTable
-     * @return
-     */
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
         return this.topology.getTableLabels(schemaTable);
     }

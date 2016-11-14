@@ -56,7 +56,7 @@ public class TestMultiThreadedBatch extends BaseTest {
         executorService.awaitTermination(60000, TimeUnit.SECONDS);
         Assert.assertEquals(100, tables.size());
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
+            Assert.assertTrue(this.sqlgGraph.getTopology().existVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             Assert.assertEquals(20000, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
             List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
             for (Vertex v : persons) {

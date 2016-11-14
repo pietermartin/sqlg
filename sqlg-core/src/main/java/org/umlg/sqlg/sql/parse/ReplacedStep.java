@@ -34,7 +34,7 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  */
 public class ReplacedStep<S, E> {
 
-    private SchemaManager schemaManager;
+    private Topology topology;
     private AbstractStep<S, E> step;
     private Set<String> labels;
     private List<HasContainer> hasContainers;
@@ -57,27 +57,27 @@ public class ReplacedStep<S, E> {
 
     /**
      * Used for SqlgVertexStepStrategy. It is a fake ReplacedStep to simulate the incoming vertex from which the traversal continues.
-     * @param schemaManager
+     * @param topology
      * @return
      */
-    public static ReplacedStep from(SchemaManager schemaManager) {
+    public static ReplacedStep from(Topology topology) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = null;
         replacedStep.labels = new HashSet<>();
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
-        replacedStep.schemaManager = schemaManager;
+        replacedStep.topology = topology;
         replacedStep.fake = true;
         return replacedStep;
     }
 
-    public static <S, E> ReplacedStep from(SchemaManager schemaManager, AbstractStep<S, E> step, int pathCount) {
+    public static <S, E> ReplacedStep from(Topology topology, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.step = step;
         replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
-        replacedStep.schemaManager = schemaManager;
+        replacedStep.topology = topology;
         replacedStep.fake = false;
         return replacedStep;
     }
@@ -128,7 +128,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkArgument(schemaTableTree.getSchemaTable().isVertexTable(), "Expected a Vertex table found " + schemaTableTree.getSchemaTable().getTable());
 
         Set<SchemaTableTree> result = new HashSet<>();
-        Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.schemaManager.getTableLabels(schemaTableTree.getSchemaTable());
+        Pair<Set<SchemaTable>, Set<SchemaTable>> inAndOutLabelsFromCurrentPosition = this.topology.getTableLabels(schemaTableTree.getSchemaTable());
 
         VertexStep vertexStep = (VertexStep) this.step;
         String[] edgeLabels = vertexStep.getEdgeLabels();
@@ -172,7 +172,7 @@ public class ReplacedStep<S, E> {
                         this.labels);
                 result.add(schemaTableTreeChild);
             } else {
-                Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getAllEdgeForeignKeys();
+                Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
                 Set<String> foreignKeys = edgeForeignKeys.get(inLabelsToTravers.toString());
                 boolean filter;
                 boolean first = true;
@@ -211,7 +211,7 @@ public class ReplacedStep<S, E> {
                         this.labels);
                 result.add(schemaTableTreeChild);
             } else {
-                Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getAllEdgeForeignKeys();
+                Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
                 Set<String> foreignKeys = edgeForeignKeys.get(outLabelToTravers.toString());
                 boolean filter;
                 boolean first = true;
@@ -291,7 +291,7 @@ public class ReplacedStep<S, E> {
     private Set<SchemaTableTree> calculatePathFromEdgeToVertex(SchemaTableTree schemaTableTree, SchemaTable labelToTravers, Direction direction) {
         Preconditions.checkArgument(labelToTravers.isEdgeTable());
         Set<SchemaTableTree> result = new HashSet<>();
-        Map<String, Set<String>> edgeForeignKeys = this.schemaManager.getAllEdgeForeignKeys();
+        Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
         //join from the edge table to the incoming vertex table
         Set<String> foreignKeys = edgeForeignKeys.get(labelToTravers.toString());
         //Every foreignKey for the given direction must be joined on
@@ -454,7 +454,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
 
-        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.schemaManager, this.hasContainers);
+        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.topology, this.hasContainers);
 
         //This list is to reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();

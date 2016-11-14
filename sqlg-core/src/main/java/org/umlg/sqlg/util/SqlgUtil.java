@@ -582,7 +582,7 @@ public class SqlgUtil {
         }
     }
 
-    public static Map<String, Map<String, PropertyType>> filterHasContainers(SchemaManager schemaManager, List<HasContainer> hasContainers) {
+    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers) {
         HasContainer fromHasContainer = null;
         HasContainer withoutHasContainer = null;
 
@@ -599,11 +599,11 @@ public class SqlgUtil {
         //from and without are mutually exclusive, only one will ever be set.
         Map<String, Map<String, PropertyType>> filteredAllTables;
         if (fromHasContainer != null) {
-            filteredAllTables = schemaManager.getAllTablesFrom((List<String>) fromHasContainer.getPredicate().getValue());
+            filteredAllTables = topology.getAllTablesFrom((List<String>) fromHasContainer.getPredicate().getValue());
         } else if (withoutHasContainer != null) {
-            filteredAllTables = schemaManager.getAllTablesWithout((List<String>) withoutHasContainer.getPredicate().getValue());
+            filteredAllTables = topology.getAllTablesWithout((List<String>) withoutHasContainer.getPredicate().getValue());
         } else {
-            filteredAllTables = schemaManager.getAllTables();
+            filteredAllTables = topology.getAllTables();
         }
         return filteredAllTables;
     }

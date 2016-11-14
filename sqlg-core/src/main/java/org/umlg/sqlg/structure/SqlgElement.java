@@ -616,7 +616,7 @@ public abstract class SqlgElement implements Element {
                 ) {
             return;
         }
-        PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTablePrefixed()).get(propertyName);
+        PropertyType propertyType = this.sqlgGraph.getTopology().getTableFor(getSchemaTablePrefixed()).get(propertyName);
         loadProperty(resultSet, propertyName, o, Collections.emptyMap(), -1, propertyType);
     }
 

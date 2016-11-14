@@ -200,7 +200,7 @@ public class PostgresDialect extends BaseSqlDialect {
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
             for (SchemaTable schemaTable : vertexCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
+                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
 
                 //insert the labeled vertices
                 long endHigh;
@@ -279,7 +279,7 @@ public class PostgresDialect extends BaseSqlDialect {
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
 
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables()
+                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getAllTables()
                         .get(metaEdge.getSchemaTable().getSchema() + "." + SchemaManager.EDGE_PREFIX + metaEdge.getSchemaTable().getTable());
                 long endHigh;
                 long numberInserted;
@@ -352,7 +352,7 @@ public class PostgresDialect extends BaseSqlDialect {
     public <T extends SqlgElement> void flushElementPropertyCache(SqlgGraph sqlgGraph, boolean forVertices, Map<SchemaTable, Pair<SortedSet<String>, Map<T, Map<String, Object>>>> schemaVertexPropertyCache) {
 
         Connection conn = sqlgGraph.tx().getConnection();
-        Map<String, Map<String, PropertyType>> allTables = sqlgGraph.getSchemaManager().getAllTables();
+        Map<String, Map<String, PropertyType>> allTables = sqlgGraph.getTopology().getAllTables();
         for (SchemaTable schemaTable : schemaVertexPropertyCache.keySet()) {
 
             Pair<SortedSet<String>, Map<T, Map<String, Object>>> vertexKeysPropertyCache = schemaVertexPropertyCache.get(schemaTable);
@@ -754,7 +754,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     private String internalConstructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, boolean isTemp, SqlgVertex vertex, Map<String, Object> keyValueMap) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get((isTemp == false ? vertex.getSchema() + "." : "") + SchemaManager.VERTEX_PREFIX + vertex.getTable());
+        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getAllTables().get((!isTemp ? vertex.getSchema() + "." : "") + SchemaManager.VERTEX_PREFIX + vertex.getTable());
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         if (!isTemp) {
@@ -801,7 +801,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(sqlgEdge.getSchema() + "." + SchemaManager.EDGE_PREFIX + sqlgEdge.getTable());
+        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getAllTables().get(sqlgEdge.getSchema() + "." + SchemaManager.EDGE_PREFIX + sqlgEdge.getTable());
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
@@ -1144,7 +1144,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
                 SchemaTable schemaTable = schemaVertices.getKey();
 
-                Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
+                Pair<Set<SchemaTable>, Set<SchemaTable>> tableLabels = sqlgGraph.getTopology().getTableLabels(SchemaTable.of(schemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + schemaTable.getTable()));
 
                 //This is causing dead locks under load
 //                dropForeignKeys(sqlgGraph, schemaTable);
@@ -1258,8 +1258,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     private void dropForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
 
-        SchemaManager schemaManager = sqlgGraph.getSchemaManager();
-        Map<String, Set<String>> edgeForeignKeys = schemaManager.getEdgeForeignKeys();
+        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
 
         for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
             String edgeTable = edgeForeignKey.getKey();
@@ -1299,8 +1298,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     private void createForeignKeys(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        SchemaManager schemaManager = sqlgGraph.getSchemaManager();
-        Map<String, Set<String>> edgeForeignKeys = schemaManager.getEdgeForeignKeys();
+        Map<String, Set<String>> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys();
 
         for (Map.Entry<String, Set<String>> edgeForeignKey : edgeForeignKeys.entrySet()) {
             String edgeTable = edgeForeignKey.getKey();
@@ -2205,8 +2203,8 @@ public class PostgresDialect extends BaseSqlDialect {
         if (!uids.isEmpty()) {
             //createVertexLabel temp table and copy the uids into it
             Map<String, PropertyType> columns = new HashMap<>();
-            Map<String, PropertyType> outProperties = sqlgGraph.getSchemaManager().getTableFor(out.withPrefix(SchemaManager.VERTEX_PREFIX));
-            Map<String, PropertyType> inProperties = sqlgGraph.getSchemaManager().getTableFor(in.withPrefix(SchemaManager.VERTEX_PREFIX));
+            Map<String, PropertyType> outProperties = sqlgGraph.getTopology().getTableFor(out.withPrefix(SchemaManager.VERTEX_PREFIX));
+            Map<String, PropertyType> inProperties = sqlgGraph.getTopology().getTableFor(in.withPrefix(SchemaManager.VERTEX_PREFIX));
             PropertyType outPropertyType;
             if (idFields.getLeft().equals(SchemaManager.ID)) {
                 outPropertyType = PropertyType.INTEGER;
@@ -2226,7 +2224,7 @@ public class PostgresDialect extends BaseSqlDialect {
             random.nextBytes(bytes);
             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
             tmpTableIdentified = SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
-            sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+            sqlgGraph.getTopology().createTempTable(tmpTableIdentified, columns);
             this.copyInBulkTempEdges(sqlgGraph, SchemaTable.of(out.getSchema(), tmpTableIdentified), uids, outPropertyType, inPropertyType);
             //executeRegularQuery copy from select. select the edge ids to copy into the new table by joining on the temp table
 

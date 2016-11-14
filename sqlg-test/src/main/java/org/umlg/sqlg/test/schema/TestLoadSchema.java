@@ -45,7 +45,7 @@ public class TestLoadSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
             assertTrue(vv.property("createOn").isPresent());
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             assertTrue(propertyTypeMap.containsKey("createOn"));
             sqlgGraph1.tx().rollback();
@@ -61,7 +61,7 @@ public class TestLoadSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
             assertTrue(vv.property("createOn").isPresent());
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             assertTrue(propertyTypeMap.containsKey("createOn"));
             sqlgGraph1.tx().rollback();
@@ -77,7 +77,7 @@ public class TestLoadSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
             assertTrue(vv.property("createOn").isPresent());
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             assertTrue(propertyTypeMap.containsKey("createOn"));
             sqlgGraph1.tx().rollback();
@@ -96,7 +96,7 @@ public class TestLoadSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v1.id()).next();
             assertTrue(vv.property("doc").isPresent());
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             assertTrue(propertyTypeMap.containsKey("doc"));
             sqlgGraph1.tx().rollback();
@@ -111,7 +111,7 @@ public class TestLoadSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex vv = sqlgGraph1.traversal().V(v.id()).next();
             assertFalse(vv.property("ID").isPresent());
-            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getSchemaManager().getAllTables().get(SchemaTable.of(
+            Map<String, PropertyType> propertyTypeMap = sqlgGraph1.getTopology().getAllTables().get(SchemaTable.of(
                     sqlgGraph1.getSqlDialect().getPublicSchema(), "V_Person").toString());
             assertFalse(propertyTypeMap.containsKey("ID"));
             sqlgGraph1.tx().rollback();
@@ -256,8 +256,8 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
             assertEquals(1, sqlgGraph.traversal().V(realBscWE.id()).in("workspaceElement").count().next().intValue());
-            assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("plan.E_workspaceElement").size());
-            assertEquals(2, sqlgGraph.getSchemaManager().getEdgeForeignKeys().get("real.E_workspaceElement").size());
+            assertEquals(2, sqlgGraph.getTopology().getAllEdgeForeignKeys().get("plan.E_workspaceElement").size());
+            assertEquals(2, sqlgGraph.getTopology().getAllEdgeForeignKeys().get("real.E_workspaceElement").size());
         }
     }
 

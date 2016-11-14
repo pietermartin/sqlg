@@ -119,7 +119,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
                     pathCount++;
 
-                    ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph)traversal.getGraph().get()).getSchemaManager(), (AbstractStep) step, pathCount);
+                    ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph)traversal.getGraph().get()).getTopology(), (AbstractStep) step, pathCount);
                     if (sqlgStep == null) {
                         sqlgStep = constructSqlgStep(traversal, step);
                         alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;

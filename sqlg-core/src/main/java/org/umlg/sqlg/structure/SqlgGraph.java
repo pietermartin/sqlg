@@ -1143,7 +1143,7 @@ public class SqlgGraph implements Graph {
 
     private long countElements(boolean returnVertices) {
         long count = 0;
-        Set<String> tables = this.getSchemaManager().getAllTables().keySet();
+        Set<String> tables = this.getTopology().getAllTables().keySet();
         for (String table : tables) {
             SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
             if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
@@ -1203,7 +1203,7 @@ public class SqlgGraph implements Graph {
             for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
                 SchemaTable schemaTable = schemaTableListEntry.getKey();
                 String tableName = (returnVertices ? VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
-                if (this.getSchemaManager().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
+                if (this.getTopology().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
                     List<Long> schemaTableIds = schemaTableListEntry.getValue();
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
                     sql.append("\"");
@@ -1254,7 +1254,7 @@ public class SqlgGraph implements Graph {
             }
         } else {
             //TODO use a union query
-            Set<String> tables = this.getSchemaManager().getAllTables().keySet();
+            Set<String> tables = this.getTopology().getAllTables().keySet();
             for (String table : tables) {
                 SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
                 if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {

@@ -54,7 +54,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     @Override
     protected SqlgStep constructSqlgStep(Traversal.Admin<?, ?> traversal, Step startStep) {
         SqlgVertexStepCompiled sqlgStep = new SqlgVertexStepCompiled(traversal);
-        ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph) traversal.getGraph().get()).getSchemaManager());
+        ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph) traversal.getGraph().get()).getTopology());
         sqlgStep.addReplacedStep(replacedStep);
         return sqlgStep;
     }

@@ -127,12 +127,12 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", address);
         this.sqlgGraph.tx().commit();
 
-        assertTrue(this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"))!=null);
+        assertTrue(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"))!=null);
 
-        Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
+        Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
         assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
-        Map<String, Set<String>> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
+        Map<String, Set<String>> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys();
         assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car");
@@ -141,10 +141,10 @@ public class TestSchema extends BaseTest {
         Vertex pet = this.sqlgGraph.addVertex(T.label, "Pet");
         person.addEdge("person_address", pet);
 
-        labels = this.sqlgGraph.getSchemaManager().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
+        labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
         assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
-        edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys();
+        edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys();
         assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         this.sqlgGraph.tx().rollback();

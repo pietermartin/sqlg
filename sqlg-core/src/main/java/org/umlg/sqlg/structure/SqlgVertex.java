@@ -225,20 +225,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Set<SchemaTable> inVertexLabels = new HashSet<>();
         Set<SchemaTable> outVertexLabels = new HashSet<>();
         if (direction == Direction.IN) {
-            inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
+            inVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
             if (labels.length > 0) {
                 retainLabels(inVertexLabels, labels);
             }
             directions.add(direction);
         } else if (direction == Direction.OUT) {
-            outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getRight());
+            outVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getRight());
             if (labels.length > 0) {
                 retainLabels(outVertexLabels, labels);
             }
             directions.add(direction);
         } else {
-            inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
-            outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getRight());
+            inVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
+            outVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getRight());
             if (labels.length > 0) {
                 retainLabels(inVertexLabels, labels);
                 retainLabels(outVertexLabels, labels);
@@ -414,7 +414,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             this.sqlgGraph.tx().getBatchManager().removeVertex(this.schema, this.table, this);
         } else {
             //Remove all internalEdges
-            Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed());
+            Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed());
             //in edges
             for (SchemaTable schemaTable : foreignKeys.getLeft()) {
                 deleteEdgesWithInKey(schemaTable, this.id());
@@ -484,7 +484,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         int i = 1;
-        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getSchemaManager().getAllTablesWithout(Collections.emptyList()).get(getSchemaTablePrefixed().toString());
+        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getAllTablesWithout(Collections.emptyList()).get(getSchemaTablePrefixed().toString());
         if (!keyValueMap.isEmpty()) {
             Preconditions.checkState(!columnPropertyTypeMap.isEmpty(), getSchemaTablePrefixed().toString() + " not found in SchemaManager's allTables map!");
             sql.append(" ( ");
@@ -587,20 +587,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Set<SchemaTable> inVertexLabels = new HashSet<>();
         Set<SchemaTable> outVertexLabels = new HashSet<>();
         if (direction == Direction.IN) {
-            inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
+            inVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
             if (labels.length > 0) {
                 retainLabels(inVertexLabels, labels);
             }
             directions.add(direction);
         } else if (direction == Direction.OUT) {
-            outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getRight());
+            outVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getRight());
             if (labels.length > 0) {
                 retainLabels(outVertexLabels, labels);
             }
             directions.add(direction);
         } else {
-            inVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
-            outVertexLabels.addAll(this.sqlgGraph.getSchemaManager().getTableLabels(this.getSchemaTablePrefixed()).getRight());
+            inVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getLeft());
+            outVertexLabels.addAll(this.sqlgGraph.getTopology().getTableLabels(this.getSchemaTablePrefixed()).getRight());
             if (labels.length > 0) {
                 retainLabels(inVertexLabels, labels);
                 retainLabels(outVertexLabels, labels);
@@ -610,7 +610,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         for (Direction d : directions) {
             for (SchemaTable schemaTable : (d == Direction.IN ? inVertexLabels : outVertexLabels)) {
-                Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getEdgeForeignKeys(schemaTable.getSchema() + "." + schemaTable.getTable());
+                Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getEdgeForeignKeys(schemaTable.getSchema() + "." + schemaTable.getTable());
                 Set<SchemaTable> tables;
                 switch (d) {
                     case IN:

@@ -37,6 +37,7 @@ public class Topology {
     private SqlgGraph sqlgGraph;
     private boolean distributed;
     private ReentrantReadWriteLock reentrantReadWriteLock;
+    private boolean dirty = false;
 
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
@@ -250,6 +251,7 @@ public class Topology {
                 if (!this.reentrantReadWriteLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
                     throw new RuntimeException("timeout lapsed to acquire lock schema creation.");
                 }
+                this.dirty = true;
                 if (this.distributed) {
                     ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
                 }
@@ -281,6 +283,7 @@ public class Topology {
                 if (!this.reentrantReadWriteLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
                     throw new RuntimeException("Timeout lapsed to acquire write lock for notification.");
                 }
+                this.dirty = true;
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -468,7 +471,7 @@ public class Topology {
     }
 
 
-    void createTempTable(String tableName, Map<String, PropertyType> columns) {
+    public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName));
@@ -619,179 +622,6 @@ public class Topology {
         }
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTables() {
-        return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
-    }
-
-    public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
-        z_internalReadLock();
-        try {
-            Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
-            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
-            }
-
-            result.putAll(this.temporaryTables);
-
-            if (!this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
-                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                    result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
-                }
-            }
-            //And the meta schema tables
-            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
-            }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalReadUnLock();
-        }
-    }
-
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
-        z_internalReadLock();
-        try {
-            Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
-            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
-            }
-
-            result.putAll(this.temporaryTables);
-
-            if (!this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
-                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                    result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
-                }
-            }
-            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
-            }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalReadUnLock();
-        }
-    }
-
-    public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        z_internalReadLock();
-        try {
-            Map<String, PropertyType> result = new HashMap<>();
-            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                    result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
-                }
-            }
-
-            for (Map<String, PropertyType> stringPropertyTypeMap : this.temporaryTables.values()) {
-                result.putAll(stringPropertyTypeMap);
-            }
-
-            if (!this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
-                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                    if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                        result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
-                    }
-                }
-            }
-            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                    result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
-                }
-            }
-            return Collections.unmodifiableMap(result);
-        } finally {
-            z_internalReadUnLock();
-        }
-    }
-
-    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
-        z_internalReadLock();
-        try {
-            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
-            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-                map.putAll(result);
-            }
-            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-                map.putAll(result);
-            }
-            return map;
-        } finally {
-            z_internalReadUnLock();
-        }
-    }
-
-    /**
-     * Returns all the in and out SchemaTables that schemaTable has edges to.
-     *
-     * @param schemaTable The schemaTable for whom we want the in and out SchemaTables
-     * @return a Pair of in and out SchemaTables.
-     */
-    public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
-        z_internalReadLock();
-        try {
-            Set<SchemaTable> inSchemaTables = new HashSet<>();
-            Set<SchemaTable> outSchemaTables = new HashSet<>();
-            if (!schemaTable.getSchema().equals(SQLG_SCHEMA)) {
-                for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
-                    if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                        Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
-                        if (result.isPresent()) {
-                            inSchemaTables.addAll(result.get().getLeft());
-                            outSchemaTables.addAll(result.get().getRight());
-                            break;
-                        }
-                    }
-                }
-                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                    if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                        Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
-                        if (result.isPresent()) {
-                            inSchemaTables.addAll(result.get().getLeft());
-                            outSchemaTables.addAll(result.get().getRight());
-                            break;
-                        }
-                    }
-                }
-            } else {
-                for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                    if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
-                        Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
-                        if (result.isPresent()) {
-                            inSchemaTables.addAll(result.get().getLeft());
-                            outSchemaTables.addAll(result.get().getRight());
-                            break;
-                        }
-                    }
-                }
-            }
-            return Pair.of(
-                    inSchemaTables,
-                    outSchemaTables);
-        } finally {
-            z_internalReadUnLock();
-        }
-    }
-
-    public Map<String, Set<String>> getAllEdgeForeignKeys() {
-        z_internalReadLock();
-        try {
-            Map<String, Set<String>> result = new HashMap<>();
-            for (Schema schema : this.schemas.values()) {
-                result.putAll(schema.getAllEdgeForeignKeys());
-            }
-            for (Schema schema : this.uncommittedSchemas.values()) {
-                result.putAll(schema.getAllEdgeForeignKeys());
-            }
-            for (Schema schema : this.metaSchemas.values()) {
-                result.putAll(schema.getAllEdgeForeignKeys());
-            }
-            return result;
-        } finally {
-            z_internalReadUnLock();
-        }
-    }
 
     void cacheTopology() {
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
@@ -984,6 +814,195 @@ public class Topology {
             } else {
                 return false;
             }
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    //cache
+
+    public Map<String, Map<String, PropertyType>> getAllTables() {
+        return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
+    }
+
+    public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
+        Topology.this.z_internalReadLock();
+        try {
+            Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
+            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+                result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
+            }
+
+            result.putAll(Topology.this.temporaryTables);
+
+            if (!Topology.this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
+                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                    result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
+                }
+            }
+
+            //And the meta schema tables
+            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+                result.putAll(schemaEntry.getValue().getAllTablesWithout(filter));
+            }
+            return Collections.unmodifiableMap(result);
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
+        z_internalReadLock();
+        try {
+            Map<String, Map<String, PropertyType>> result = new ConcurrentHashMap<>();
+            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+                result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
+            }
+
+            result.putAll(Topology.this.temporaryTables);
+
+            if (!Topology.this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
+                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                    result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
+                }
+            }
+            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+                result.putAll(schemaEntry.getValue().getAllTablesFrom(selectFrom));
+            }
+            return Collections.unmodifiableMap(result);
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
+        z_internalReadLock();
+        try {
+            Map<String, PropertyType> result = new HashMap<>();
+            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                    result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
+                }
+            }
+
+            for (Map<String, PropertyType> stringPropertyTypeMap : this.temporaryTables.values()) {
+                result.putAll(stringPropertyTypeMap);
+            }
+
+            if (!Topology.this.uncommittedSchemas.isEmpty() && isWriteLockHeldByCurrentThread()) {
+                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                    if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                        result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
+                    }
+                }
+            }
+            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+                if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+                    result.putAll(schemaEntry.getValue().getTableFor(schemaTable));
+                }
+            }
+            return Collections.unmodifiableMap(result);
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
+        z_internalReadLock();
+        try {
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
+            for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+                map.putAll(result);
+            }
+            if (this.isWriteLockHeldByCurrentThread()) {
+                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+                    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+                    map.putAll(result);
+                }
+            }
+            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+                map.putAll(result);
+            }
+            return map;
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    /**
+     * Returns all the in and out SchemaTables that schemaTable has edges to.
+     *
+     * @param schemaTable The schemaTable for whom we want the in and out SchemaTables
+     * @return a Pair of in and out SchemaTables.
+     */
+    public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
+        return getTableLabels().get(schemaTable);
+//            z_internalReadLock();
+//            try {
+//                Set<SchemaTable> inSchemaTables = new HashSet<>();
+//                Set<SchemaTable> outSchemaTables = new HashSet<>();
+//                if (!schemaTable.getSchema().equals(SQLG_SCHEMA)) {
+//                    for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
+//                        if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+//                            Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+//                            if (result.isPresent()) {
+//                                inSchemaTables.addAll(result.get().getLeft());
+//                                outSchemaTables.addAll(result.get().getRight());
+//                                break;
+//                            }
+//                        }
+//                    }
+//                    for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+//                        if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+//                            Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+//                            if (result.isPresent()) {
+//                                inSchemaTables.addAll(result.get().getLeft());
+//                                outSchemaTables.addAll(result.get().getRight());
+//                                break;
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+//                        if (schemaEntry.getKey().equals(schemaTable.getSchema())) {
+//                            Optional<Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels(schemaTable);
+//                            if (result.isPresent()) {
+//                                inSchemaTables.addAll(result.get().getLeft());
+//                                outSchemaTables.addAll(result.get().getRight());
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
+//                return Pair.of(
+//                        inSchemaTables,
+//                        outSchemaTables);
+//            } finally {
+//                z_internalReadUnLock();
+//            }
+    }
+
+    public Set<String> getEdgeForeignKeys(String schemaTable) {
+        return getAllEdgeForeignKeys().get(schemaTable);
+    }
+
+    //cache
+    public Map<String, Set<String>> getAllEdgeForeignKeys() {
+        z_internalReadLock();
+        try {
+            Map<String, Set<String>> result = new HashMap<>();
+            for (Schema schema : this.schemas.values()) {
+                result.putAll(schema.getAllEdgeForeignKeys());
+            }
+            for (Schema schema : this.uncommittedSchemas.values()) {
+                result.putAll(schema.getAllEdgeForeignKeys());
+            }
+            for (Schema schema : this.metaSchemas.values()) {
+                result.putAll(schema.getAllEdgeForeignKeys());
+            }
+            return result;
         } finally {
             z_internalReadUnLock();
         }

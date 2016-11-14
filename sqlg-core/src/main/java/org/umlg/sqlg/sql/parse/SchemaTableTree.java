@@ -107,7 +107,7 @@ public class SchemaTableTree {
         this.comparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers);
     }
 
     /**
@@ -137,7 +137,7 @@ public class SchemaTableTree {
         this.emit = emit;
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getSchemaManager(), this.hasContainers);
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers);
         initializeAliasColumnNameMaps();
     }
 
@@ -256,7 +256,7 @@ public class SchemaTableTree {
 
                     if (containsLabelledColumn(columnName)) {
                         String propertyName = propertyNameFromLabeledAlias(columnName);
-                        PropertyType propertyType = this.sqlgGraph.getSchemaManager().getTableFor(getSchemaTable()).get(propertyName);
+                        PropertyType propertyType = this.sqlgGraph.getTopology().getTableFor(getSchemaTable()).get(propertyName);
                         this.columnNamePropertyName.put(alias, Pair.of(propertyName, propertyType));
                     }
                 }
@@ -762,7 +762,7 @@ public class SchemaTableTree {
             random.nextBytes(bytes);
             String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
             tmpTableIdentified = SchemaManager.VERTEX_PREFIX + SchemaManager.BULK_TEMP_EDGE + tmpTableIdentified;
-            sqlgGraph.getSchemaManager().createTempTable(tmpTableIdentified, columns);
+            sqlgGraph.getTopology().createTempTable(tmpTableIdentified, columns);
 
             Map<String, Object> withInOutMap = new HashMap<>();
             if (hasContainer.getBiPredicate() == Contains.within) {
@@ -1320,7 +1320,7 @@ public class SchemaTableTree {
     private String printEdgeInOutVertexIdOuterFromClauseFor(String prepend, String sql, SchemaTableTree previousSchemaTableTree) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
         //Do not print all the edge foreign key ids. Only the edge ids that this outer clause is for.
-        Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString())
+        Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString())
                 .stream().filter(foreignKeyName ->
                         foreignKeyName.equals(previousSchemaTableTree.getSchemaTable().withOutPrefix().toString() + SchemaManager.IN_VERTEX_COLUMN_END)
                                 ||
@@ -1339,7 +1339,7 @@ public class SchemaTableTree {
     private static void printEdgeInOutVertexIdFromClauseFor(SqlgGraph sqlgGraph, SchemaTableTree firstSchemaTableTree, SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Preconditions.checkState(lastSchemaTableTree.getSchemaTable().isEdgeTable());
 
-        Set<String> edgeForeignKeys = sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
+        Set<String> edgeForeignKeys = sqlgGraph.getTopology().getAllEdgeForeignKeys().get(lastSchemaTableTree.getSchemaTable().toString());
         for (String edgeForeignKey : edgeForeignKeys) {
             if (firstSchemaTableTree == null || !firstSchemaTableTree.equals(lastSchemaTableTree) ||
                     firstSchemaTableTree.getDirection() != getDirectionForForeignKey(edgeForeignKey)) {
@@ -1357,7 +1357,7 @@ public class SchemaTableTree {
     private String printLabeledEdgeInOutVertexIdOuterFromClauseFor(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
-        Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
+        Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
         int propertyCount = 1;
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += " a" + counter + ".";
@@ -1372,7 +1372,7 @@ public class SchemaTableTree {
     private void printLabeledEdgeInOutVertexIdFromClauseFor(ColumnList cols) {
         Preconditions.checkState(this.getSchemaTable().isEdgeTable());
 
-        Set<String> edgeForeignKeys = this.sqlgGraph.getSchemaManager().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
+        Set<String> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys().get(this.getSchemaTable().toString());
         for (String edgeForeignKey : edgeForeignKeys) {
             String alias = cols.getAlias(this.getSchemaTable(), edgeForeignKey, this.stepDepth);
             if (alias == null) {
