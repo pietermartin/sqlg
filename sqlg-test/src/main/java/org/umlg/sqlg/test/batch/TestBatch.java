@@ -1102,4 +1102,13 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
+    @Test
+    public void testEmpty(){
+    	this.sqlgGraph.tx().normalBatchModeOn();
+    	Vertex person1 = this.sqlgGraph.addVertex(T.label, "Empty","empty","");
+    	this.sqlgGraph.tx().commit();
+    	assertNotNull(person1.id());
+    	Object o=this.sqlgGraph.traversal().V().hasLabel("Empty").values("empty").next();
+    	assertEquals("",o);
+    }
 }

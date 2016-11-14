@@ -194,8 +194,8 @@ public class PostgresDialect extends BaseSqlDialect {
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
 
                 //insert the labeled vertices
-                long endHigh;
-                long numberInserted;
+                long endHigh=0;
+                long numberInserted=0;
                 try (InputStream is = mapVertexToInputStream(propertyTypeMap, vertices)) {
                     StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
@@ -235,19 +235,22 @@ public class PostgresDialect extends BaseSqlDialect {
                         logger.debug(sql.toString());
                     }
                     numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
-                        ResultSet resultSet = preparedStatement.executeQuery();
-                        resultSet.next();
-                        endHigh = resultSet.getLong(1);
-                        resultSet.close();
-                    }
-                    //set the id on the vertex
-                    long id = endHigh - numberInserted + 1;
-                    for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
-                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                    if (numberInserted>0){
+	                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+	                        ResultSet resultSet = preparedStatement.executeQuery();
+	                        resultSet.next();
+	                        endHigh = resultSet.getLong(1);
+	                        resultSet.close();
+	                    }
+	                    //set the id on the vertex
+	                    long id = endHigh - numberInserted + 1;
+	                    for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
+	                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+	                    }
+	                    verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
                     }
                 }
-                verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
+                
             }
             return verticesRanges;
         } catch (Exception e) {
@@ -1522,7 +1525,7 @@ public class PostgresDialect extends BaseSqlDialect {
      */
     private String escapeSpecialCharacters(String s) {
     	StringBuilder sb=new StringBuilder();
-    	boolean needEscape=false;
+    	boolean needEscape=s.length()==0; // escape empty strings
     	for (int a=0;a<s.length();a++){
     		char c=s.charAt(a);
     		if (c=='\n' || c=='\r' || c==0 || c==COPY_COMMAND_DELIMITER.charAt(0)){
