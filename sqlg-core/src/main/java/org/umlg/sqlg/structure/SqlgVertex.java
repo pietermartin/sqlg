@@ -41,6 +41,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sqlgGraph.tx().add(this);
         }
     }
+    
+    @Override
+    public String label() {
+    	if (this.schema!=null && this.schema.length()>0 && !schema.equals(sqlgGraph.getSqlDialect().getPublicSchema())){
+    		return this.schema+"."+this.table;
+    	}
+    	return super.label();
+    }
+	
 
     SqlgVertex(SqlgGraph sqlgGraph, String table, Object... keyValues) {
         super(sqlgGraph, "", table);

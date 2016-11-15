@@ -14,6 +14,7 @@ import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
+import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
@@ -141,7 +142,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestSchemaTableTreeAndHasContainer.class,
         TestEscapedValues.class,
         TestRepeatStepOnEdges.class,
-        TestLoadingAdjacent.class
+        TestLoadingAdjacent.class,
+        TestLabelsSchema.class
         //TODO fails, issue #65
 //        TestEdgeFromDifferentSchema.class
 })
