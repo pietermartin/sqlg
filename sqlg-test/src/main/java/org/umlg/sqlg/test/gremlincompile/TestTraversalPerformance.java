@@ -6,9 +6,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.*;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +27,30 @@ public class TestTraversalPerformance extends BaseTest {
     public void testSpeed() throws InterruptedException {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
+        Map<String, Object> columns = new HashMap<>();
+        for (int i = 0; i < 100; i++) {
+            columns.put("property_" + i, "asdasd");
+        }
+        //Create a large schema, it slows the maps  down
+//        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 1000; i++) {
+            if (i % 100 == 0) {
+                stopWatch.stop();
+                System.out.println("got " + i + " time taken " + stopWatch.toString());
+                stopWatch.reset();
+                stopWatch.start();
+            }
+            Vertex person = this.sqlgGraph.addVertex("Person_" + i, columns);
+            Vertex dog = this.sqlgGraph.addVertex("Dog_" + i, columns);
+            ((SqlgVertex)person).addEdgeWithMap("pet_" + i, dog, columns);
+            this.sqlgGraph.tx().commit();
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println("done time taken " + stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 1; i < 100_001; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "God", "name", "god" + i);
