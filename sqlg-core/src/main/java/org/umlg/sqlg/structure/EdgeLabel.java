@@ -241,6 +241,14 @@ public class EdgeLabel extends AbstractElement {
         return result;
     }
 
+    Set<VertexLabel> getUncommittedOutVertexLabels() {
+        return uncommittedOutVertexLabels;
+    }
+
+    Set<VertexLabel> getUncommittedInVertexLabels() {
+        return uncommittedInVertexLabels;
+    }
+
     public void ensureEdgeForeignKeysExist(SqlgGraph sqlgGraph, boolean in, VertexLabel vertexLabel, SchemaTable vertexSchemaTable) {
         Preconditions.checkArgument(vertexLabel.getSchema().getName().equals(vertexSchemaTable.getSchema()));
         Preconditions.checkArgument(vertexLabel.getLabel().equals(vertexSchemaTable.getTable()));

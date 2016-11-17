@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test;
 
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
@@ -56,7 +56,6 @@ public class TestAddVertexViaMap extends BaseTest {
         Assert.assertEquals(1, markos.size());
         markos.get(0).property("name", "marko2");
         this.sqlgGraph.tx().commit();
-
     }
 
 }

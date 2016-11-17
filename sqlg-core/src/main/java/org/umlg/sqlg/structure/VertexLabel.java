@@ -92,7 +92,7 @@ public class VertexLabel extends AbstractElement {
             }
         }
         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
-            for (EdgeLabel uncommittedOutEdgeLabel : uncommittedOutEdgeLabels) {
+            for (EdgeLabel uncommittedOutEdgeLabel : this.uncommittedOutEdgeLabels) {
                 if (uncommittedOutEdgeLabel.getLabel().equals(edgeLabelName)) {
                     return Optional.of(uncommittedOutEdgeLabel);
                 }
@@ -107,6 +107,17 @@ public class VertexLabel extends AbstractElement {
             result.addAll(this.uncommittedOutEdgeLabels);
         }
         return result;
+    }
+
+    Optional<EdgeLabel> getUncommittedOutEdgeLabel(String edgeLabelName) {
+        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+            for (EdgeLabel uncommittedOutEdgeLabel : this.uncommittedOutEdgeLabels) {
+                if (uncommittedOutEdgeLabel.getLabel().equals(edgeLabelName)) {
+                    return Optional.of(uncommittedOutEdgeLabel);
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     void addToUncommittedInEdgeLabels(EdgeLabel edgeLabel) {
@@ -211,6 +222,7 @@ public class VertexLabel extends AbstractElement {
                 EdgeLabel edgeLabel = it.next();
                 this.outEdgeLabels.add(edgeLabel);
                 edgeLabel.afterCommit();
+                this.getSchema().addToAllEdgeCache(edgeLabel);
                 it.remove();
             }
             for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.iterator(); it.hasNext(); ) {
