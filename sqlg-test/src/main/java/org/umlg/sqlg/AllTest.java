@@ -147,8 +147,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestEscapedValues.class,
         TestRepeatStepOnEdges.class,
         TestLoadingAdjacent.class,
-        TestLoadingAdjacent.class,
-        TestLabelsSchema.class
+        TestLabelsSchema.class,
         //TODO fails, issue #65
 //        TestEdgeFromDifferentSchema.class
         TestBatchModeMultipleGraphs.class

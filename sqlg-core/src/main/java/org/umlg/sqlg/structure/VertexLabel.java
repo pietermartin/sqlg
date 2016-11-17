@@ -85,6 +85,22 @@ public class VertexLabel extends AbstractElement {
         return result;
     }
 
+    Optional<EdgeLabel> getOutEdgeLabel(String edgeLabelName) {
+        for (EdgeLabel outEdgeLabel : outEdgeLabels) {
+            if (outEdgeLabel.getLabel().equals(edgeLabelName)) {
+                return Optional.of(outEdgeLabel);
+            }
+        }
+        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+            for (EdgeLabel uncommittedOutEdgeLabel : uncommittedOutEdgeLabels) {
+                if (uncommittedOutEdgeLabel.getLabel().equals(edgeLabelName)) {
+                    return Optional.of(uncommittedOutEdgeLabel);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     Set<EdgeLabel> getUncommittedOutEdgeLabels() {
         Set<EdgeLabel> result = new HashSet<>();
         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {

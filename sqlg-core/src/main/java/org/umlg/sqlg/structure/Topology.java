@@ -382,13 +382,8 @@ public class Topology {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName must not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel must not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel must not be null");
-
-        SchemaTable foreignKeyOut = SchemaTable.of(outVertexLabel.getSchema().getName(), outVertexLabel.getLabel());
-        SchemaTable foreignKeyIn = SchemaTable.of(inVertexLabel.getSchema().getName(), inVertexLabel.getLabel());
-
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
-        Schema outVertexSchema = this.getSchema(foreignKeyOut.getSchema()).get();
-        return outVertexSchema.ensureEdgeLabelExist(this.sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, properties);
+        Schema outVertexSchema = outVertexLabel.getSchema();
+        return outVertexSchema.ensureEdgeLabelExist(this.sqlgGraph, edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
     public void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
@@ -426,8 +421,14 @@ public class Topology {
         //outVertexSchema will be there as the Precondition checked it.
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Schema outVertexSchema = this.getSchema(foreignKeyOut.getSchema()).get();
+        Schema inVertexSchema = this.getSchema(foreignKeyIn.getSchema()).get();
+        Optional<VertexLabel> outVertexLabel = outVertexSchema.getVertexLabel(foreignKeyOut.getTable());
+        Optional<VertexLabel> inVertexLabel = inVertexSchema.getVertexLabel(foreignKeyIn.getTable());
+        Preconditions.checkState(outVertexLabel.isPresent(), "out VertexLabel must be present");
+        Preconditions.checkState(inVertexLabel.isPresent(), "in VertexLabel must be present");
 
-        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(this.sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, properties);
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(this.sqlgGraph, edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties);
         return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
     }
 

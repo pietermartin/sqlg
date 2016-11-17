@@ -300,7 +300,7 @@ public class SqlgGraph implements Graph {
     }
 
     public Topology getTopology() {
-        return this.schemaManager.getTopology();
+        return this.topology;
     }
 
     public GremlinParser getGremlinParser() {
