@@ -75,6 +75,16 @@ public abstract class AbstractElement {
         return result;
     }
 
+    public Map<String, PropertyType> getUncommittedPropertyTypeMap() {
+        Map<String, PropertyType> result = new HashMap<>();
+        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            for (Map.Entry<String, PropertyColumn> propertyEntry : this.uncommittedProperties.entrySet()) {
+                result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
+            }
+        }
+        return result;
+    }
+
     protected static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
         int i = 1;
         //This is to make the columns sorted

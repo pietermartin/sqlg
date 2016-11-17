@@ -128,7 +128,10 @@ public class SchemaTableTree {
                     int replacedStepDepth,
                     Set<String> labels
     ) {
-        this(sqlgGraph, schemaTable, stepDepth, replacedStepDepth);
+        this.sqlgGraph = sqlgGraph;
+        this.schemaTable = schemaTable;
+        this.stepDepth = stepDepth;
+        this.replacedStepDepth = replacedStepDepth;
         this.hasContainers = hasContainers;
         this.comparators = comparators;
         this.range = range;

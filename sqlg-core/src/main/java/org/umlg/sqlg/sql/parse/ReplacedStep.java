@@ -3,7 +3,6 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
@@ -57,6 +56,7 @@ public class ReplacedStep<S, E> {
 
     /**
      * Used for SqlgVertexStepStrategy. It is a fake ReplacedStep to simulate the incoming vertex from which the traversal continues.
+     *
      * @param topology
      * @return
      */
@@ -372,7 +372,7 @@ public class ReplacedStep<S, E> {
             if (idHasContainer.getBiPredicate() == Compare.neq || idHasContainer.getBiPredicate() == Contains.without) {
                 schemaTableTree1.getHasContainers().add(new HasContainer(T.id.getAccessor(), P.without(idsToAdd)));
                 toRemove.add(idHasContainer);
-            } else if (idHasContainer.getBiPredicate() ==  Compare.eq || idHasContainer.getBiPredicate() == Contains.within) {
+            } else if (idHasContainer.getBiPredicate() == Compare.eq || idHasContainer.getBiPredicate() == Contains.within) {
                 schemaTableTree1.getHasContainers().add(new HasContainer(T.id.getAccessor(), P.within(idsToAdd)));
                 toRemove.add(idHasContainer);
             } else {
@@ -547,53 +547,53 @@ public class ReplacedStep<S, E> {
 
             for (HasContainer h : hasContainersWithLabel) {
                 //check if the table exist
-            	String tbl = (String) h.getValue();
-            	boolean isVertex= graphStep.getReturnClass().isAssignableFrom(Vertex.class);
+                String tbl = (String) h.getValue();
+                boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
                 SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, tbl);
                 String table = (isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
                 SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
                 // all potential tables
-                Set<SchemaTable> potentialsTables=new HashSet<>();
+                Set<SchemaTable> potentialsTables = new HashSet<>();
                 potentialsTables.add(schemaTableWithPrefix);
                 // edges usually don't have schema, so we're matching any table with any schema if we weren't given any
-                if (!isVertex && !tbl.contains(".")){
-                	for (String key:filteredAllTables.keySet()){
-                		if (key.endsWith("."+table)){
-                			potentialsTables.add(SchemaTable.from(sqlgGraph,key,sqlgGraph.getSqlDialect().getPublicSchema()));
-                		}
-                	}
+                if (!isVertex && !tbl.contains(".")) {
+                    for (String key : filteredAllTables.keySet()) {
+                        if (key.endsWith("." + table)) {
+                            potentialsTables.add(SchemaTable.from(sqlgGraph, key, sqlgGraph.getSqlDialect().getPublicSchema()));
+                        }
+                    }
                 }
-                for (SchemaTable schemaTableForLabel:potentialsTables){
-	                if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
-	
-	                    List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
-	                    if (!groupedIds.isEmpty()) {
-	                        Collection<RecordId> recordIds = groupedIds.get(schemaTable);
-	                        if (!recordIds.isEmpty()) {
-	                            List<Long> ids = recordIds.stream().map(id -> id.getId()).collect(Collectors.toList());
-	                            HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
-	                            hasContainers.add(idHasContainer);
-	                            toRemove.add(idHasContainer);
-	                        } else {
-	                            continue;
-	                        }
-	                    }
-	                    SchemaTableTree schemaTableTree = new SchemaTableTree(
-	                            sqlgGraph,
-	                            schemaTableForLabel,
-	                            0,
-	                            hasContainers,
-	                            this.comparators,
-	                            this.range,
-	                            SchemaTableTree.STEP_TYPE.GRAPH_STEP,
-	                            ReplacedStep.this.emit,
-	                            ReplacedStep.this.untilFirst,
-	                            ReplacedStep.this.leftJoin,
-	                            replacedStepDepth,
-	                            ReplacedStep.this.labels
-	                    );
-	                    result.add(schemaTableTree);
-	                }
+                for (SchemaTable schemaTableForLabel : potentialsTables) {
+                    if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
+
+                        List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
+                        if (!groupedIds.isEmpty()) {
+                            Collection<RecordId> recordIds = groupedIds.get(schemaTable);
+                            if (!recordIds.isEmpty()) {
+                                List<Long> ids = recordIds.stream().map(RecordId::getId).collect(Collectors.toList());
+                                HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
+                                hasContainers.add(idHasContainer);
+                                toRemove.add(idHasContainer);
+                            } else {
+                                continue;
+                            }
+                        }
+                        SchemaTableTree schemaTableTree = new SchemaTableTree(
+                                sqlgGraph,
+                                schemaTableForLabel,
+                                0,
+                                hasContainers,
+                                this.comparators,
+                                this.range,
+                                SchemaTableTree.STEP_TYPE.GRAPH_STEP,
+                                ReplacedStep.this.emit,
+                                ReplacedStep.this.untilFirst,
+                                ReplacedStep.this.leftJoin,
+                                replacedStepDepth,
+                                ReplacedStep.this.labels
+                        );
+                        result.add(schemaTableTree);
+                    }
                 }
 
             }
@@ -677,10 +677,10 @@ public class ReplacedStep<S, E> {
     }
 
     public Range<Long> getRange() {
-		return range;
-	}
-    
+        return range;
+    }
+
     public void setRange(Range<Long> range) {
-		this.range = range;
-	}
+        this.range = range;
+    }
 }

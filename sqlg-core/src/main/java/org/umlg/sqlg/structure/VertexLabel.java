@@ -85,6 +85,14 @@ public class VertexLabel extends AbstractElement {
         return result;
     }
 
+    Set<EdgeLabel> getUncommittedOutEdgeLabels() {
+        Set<EdgeLabel> result = new HashSet<>();
+        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedOutEdgeLabels);
+        }
+        return result;
+    }
+
     void addToUncommittedInEdgeLabels(EdgeLabel edgeLabel) {
         this.uncommittedInEdgeLabels.add(edgeLabel);
     }

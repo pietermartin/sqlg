@@ -10,7 +10,10 @@ import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,21 +25,32 @@ public class TestTraversalPerformance extends BaseTest {
 
     @Test
     public void testSpeed() throws InterruptedException {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         Map<String, Object> columns = new HashMap<>();
         for (int i = 0; i < 100; i++) {
             columns.put("property_" + i, "asdasd");
         }
         //Create a large schema, it slows the maps  down
         this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
+            if (i % 100 == 0) {
+                stopWatch.stop();
+                System.out.println("got " + i + " time taken " + stopWatch.toString());
+                stopWatch.reset();
+                stopWatch.start();
+            }
             Vertex person = this.sqlgGraph.addVertex("Person_" + i, columns);
             Vertex dog = this.sqlgGraph.addVertex("Dog_" + i, columns);
-            ((SqlgVertex)person).addEdgeWithMap("pet", dog, columns);
+            ((SqlgVertex) person).addEdgeWithMap("pet_" + i, dog, columns);
+            this.sqlgGraph.tx().commit();
         }
         this.sqlgGraph.tx().commit();
-
-        StopWatch stopWatch = new StopWatch();
+        stopWatch.stop();
+        System.out.println("done time taken " + stopWatch.toString());
+        stopWatch.reset();
         stopWatch.start();
+
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 1; i < 100_001; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "God", "name", "god" + i);
@@ -54,13 +68,8 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for insert: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 10; i++) {
-            GraphTraversal<Vertex, Path> traversal = sqlgGraph.traversal()
-                    .V()
-                    .hasLabel("God").as("god")
-                    .out("hand").as("hand")
-                    .out("finger").as("finger")
-                    .path();
+        for (int i = 0; i < 1; i++) {
+            GraphTraversal<Vertex, Path> traversal = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").path();
             while (traversal.hasNext()) {
                 Path path = traversal.next();
                 List<Object> objects = path.objects();
@@ -74,22 +83,17 @@ public class TestTraversalPerformance extends BaseTest {
             stopWatch.start();
         }
         stopWatch.stop();
+        System.out.println("Time for gremlin: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Map<String, Vertex>> traversalMap = sqlgGraph.traversal()
-                .V()
-                .hasLabel("God").as("god")
-                .out("hand").as("hand")
-                .out("finger").as("finger")
-                .<Vertex>select("god", "hand", "finger")
-                .toList();
+        List<Map<String, Vertex>> traversalMap = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").<Vertex>select("god", "hand", "finger").toList();
         assertEquals(1_000_000, traversalMap.size());
         stopWatch.stop();
         System.out.println("Time for gremlin 2: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             Connection connection = sqlgGraph.tx().getConnection();
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery("SELECT\n" +
@@ -127,7 +131,7 @@ public class TestTraversalPerformance extends BaseTest {
         }
         stopWatch.stop();
         stopWatch.reset();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             stopWatch.start();
             Connection connection = sqlgGraph.tx().getConnection();
             try (Statement statement = connection.createStatement()) {
@@ -168,4 +172,6 @@ public class TestTraversalPerformance extends BaseTest {
         }
 //        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
     }
+
+
 }

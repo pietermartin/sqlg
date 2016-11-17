@@ -484,8 +484,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         int i = 1;
-        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getAllTablesWithout(Collections.emptyList()).get(getSchemaTablePrefixed().toString());
+//        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getAllTablesWithout(Collections.emptyList()).get(getSchemaTablePrefixed().toString());
         if (!keyValueMap.isEmpty()) {
+            Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getTableFor(getSchemaTablePrefixed());
             Preconditions.checkState(!columnPropertyTypeMap.isEmpty(), getSchemaTablePrefixed().toString() + " not found in SchemaManager's allTables map!");
             sql.append(" ( ");
             for (String column : keyValueMap.keySet()) {

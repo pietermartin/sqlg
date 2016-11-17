@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,10 @@ import org.umlg.sqlg.test.schema.TestSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTraversalPerformance.class
+        TestTraversalPerformance.class
+//        LocalDateTest.class
 //        TestLoadSchema.class
-        TestSchema.class
+//        TestSchema.class
 })
 public class AnyTest {
 }
