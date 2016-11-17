@@ -33,7 +33,7 @@ public class TestTraversalPerformance extends BaseTest {
         }
         //Create a large schema, it slows the maps  down
 //        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             if (i % 100 == 0) {
                 stopWatch.stop();
                 System.out.println("got " + i + " time taken " + stopWatch.toString());
@@ -68,7 +68,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for insert: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 100; i++) {
             GraphTraversal<Vertex, Path> traversal = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").path();
             while (traversal.hasNext()) {
                 Path path = traversal.next();
@@ -86,8 +86,14 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for gremlin: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Map<String, Vertex>> traversalMap = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").<Vertex>select("god", "hand", "finger").toList();
-        assertEquals(1_000_000, traversalMap.size());
+        for (int i = 0; i < 100; i++) {
+            List<Map<String, Vertex>> traversalMap = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").<Vertex>select("god", "hand", "finger").toList();
+            assertEquals(1_000_000, traversalMap.size());
+            stopWatch.stop();
+            System.out.println("Time for gremlin 2: " + stopWatch.toString());
+            stopWatch.reset();
+            stopWatch.start();
+        }
         stopWatch.stop();
         System.out.println("Time for gremlin 2: " + stopWatch.toString());
         stopWatch.reset();
@@ -172,4 +178,5 @@ public class TestTraversalPerformance extends BaseTest {
         }
 //        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
     }
+
 }
