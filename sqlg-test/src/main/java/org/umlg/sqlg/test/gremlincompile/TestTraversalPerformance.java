@@ -32,8 +32,8 @@ public class TestTraversalPerformance extends BaseTest {
             columns.put("property_" + i, "asdasd");
         }
         //Create a large schema, it slows the maps  down
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 100; i++) {
+//        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 1000; i++) {
             if (i % 100 == 0) {
                 stopWatch.stop();
                 System.out.println("got " + i + " time taken " + stopWatch.toString());
@@ -42,7 +42,7 @@ public class TestTraversalPerformance extends BaseTest {
             }
             Vertex person = this.sqlgGraph.addVertex("Person_" + i, columns);
             Vertex dog = this.sqlgGraph.addVertex("Dog_" + i, columns);
-            ((SqlgVertex) person).addEdgeWithMap("pet_" + i, dog, columns);
+            ((SqlgVertex)person).addEdgeWithMap("pet_" + i, dog, columns);
             this.sqlgGraph.tx().commit();
         }
         this.sqlgGraph.tx().commit();
@@ -172,6 +172,4 @@ public class TestTraversalPerformance extends BaseTest {
         }
 //        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
     }
-
-
 }
