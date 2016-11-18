@@ -105,6 +105,12 @@ public class VertexLabel extends AbstractElement {
         Set<EdgeLabel> result = new HashSet<>();
         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedOutEdgeLabels);
+            for (EdgeLabel outEdgeLabel : this.outEdgeLabels) {
+                Map<String, PropertyType> propertyMap = outEdgeLabel.getUncommittedPropertyTypeMap();
+                if (!propertyMap.isEmpty()) {
+                    result.add(outEdgeLabel);
+                }
+            }
         }
         return result;
     }
@@ -400,6 +406,9 @@ public class VertexLabel extends AbstractElement {
                     edgeLabel.addToOutVertexLabel(this);
                     this.outEdgeLabels.add(edgeLabel);
                     edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel);
+                    //Babysit the cache
+                    this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyTypeMap());
+                    this.getSchema().addToAllEdgeCache(edgeLabel);
                 }
             }
         }

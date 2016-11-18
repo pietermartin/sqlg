@@ -412,7 +412,7 @@ public class Schema {
         }
         for (EdgeLabel edgeLabel : this.getUncommittedEdgeLabels()) {
             String edgeQualifiedName = this.name + "." + EDGE_PREFIX + edgeLabel.getLabel();
-            result.put(edgeQualifiedName, edgeLabel.getPropertyTypeMap());
+            result.put(edgeQualifiedName, edgeLabel.getUncommittedPropertyTypeMap());
         }
         return result;
     }
@@ -815,6 +815,7 @@ public class Schema {
                         this.vertexLabels.put(vertexLabelName, vertexLabel);
                     }
                     vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson);
+                    this.getTopology().addToAllTables(this.getName() + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel.getPropertyTypeMap());
                 }
             }
         }

@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -28,6 +29,70 @@ public class TestMultiThread extends BaseTest {
 
     private Logger logger = LoggerFactory.getLogger(TestMultiThread.class.getName());
 
+    /**
+     * This test is a duplicate of TransactionTest.shouldSupportTransactionIsolationCommitCheck but with the schema created upfront else it deadlocks.
+     * @throws Exception
+     */
+    @Test
+    public void shouldSupportTransactionIsolationCommitCheck() throws Exception {
+        Vertex v1 = this.sqlgGraph.addVertex();
+        this.sqlgGraph.tx().commit();
+        v1.remove();
+        this.sqlgGraph.tx().commit();
+        // the purpose of this test is to simulate gremlin server access to a graph instance, where one thread modifies
+        // the graph and a separate thread cannot affect the transaction of the first
+        final CountDownLatch latchCommittedInOtherThread = new CountDownLatch(1);
+        final CountDownLatch latchCommitInOtherThread = new CountDownLatch(1);
+
+        final AtomicBoolean noVerticesInFirstThread = new AtomicBoolean(false);
+
+        // this thread starts a transaction then waits while the second thread tries to commit it.
+        final Thread threadTxStarter = new Thread("thread1") {
+            @Override
+            public void run() {
+                TestMultiThread.this.sqlgGraph.addVertex();
+                latchCommitInOtherThread.countDown();
+
+                try {
+                    latchCommittedInOtherThread.await();
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+
+                TestMultiThread.this.sqlgGraph.tx().rollback();
+
+                // there should be no vertices here
+                noVerticesInFirstThread.set(!TestMultiThread.this.sqlgGraph.vertices().hasNext());
+            }
+        };
+
+        threadTxStarter.start();
+
+        // this thread tries to commit the transaction started in the first thread above.
+        final Thread threadTryCommitTx = new Thread("thread2") {
+            @Override
+            public void run() {
+                try {
+                    latchCommitInOtherThread.await();
+                } catch (InterruptedException ie) {
+                    throw new RuntimeException(ie);
+                }
+
+                // try to commit the other transaction
+                TestMultiThread.this.sqlgGraph.tx().commit();
+
+                latchCommittedInOtherThread.countDown();
+            }
+        };
+
+        threadTryCommitTx.start();
+
+        threadTxStarter.join();
+        threadTryCommitTx.join();
+
+        assertTrue(noVerticesInFirstThread.get());
+        assertVertexEdgeCounts(0, 0);
+    }
     @Test
     public void shouldExecuteWithCompetingThreads() throws InterruptedException {
         final Graph graph = this.sqlgGraph;

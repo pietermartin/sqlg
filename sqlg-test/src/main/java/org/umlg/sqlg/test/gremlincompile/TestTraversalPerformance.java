@@ -33,7 +33,7 @@ public class TestTraversalPerformance extends BaseTest {
         }
         //Create a large schema, it slows the maps  down
 //        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10; i++) {
             if (i % 100 == 0) {
                 stopWatch.stop();
                 System.out.println("got " + i + " time taken " + stopWatch.toString());

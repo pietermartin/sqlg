@@ -10,11 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTraversalPerformance.class
-//        TestAddVertexViaMap.class
-//        LocalDateTest.class
-//        TestLoadSchema.class
-//        TestSchema.class
+        TestTraversalPerformance.class,
 })
 public class AnyTest {
 }

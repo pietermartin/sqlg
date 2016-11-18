@@ -849,6 +849,10 @@ public class Topology {
         }
     }
 
+    /**
+     * This only returns uncommitted values. So committed properties will not be in the map.
+     * @return A map or uncommitted properties for all Vertex and Edge labels.
+     */
     private Map<String, Map<String, PropertyType>> getUncommittedAllTables() {
         Preconditions.checkState(isWriteLockHeldByCurrentThread());
         Map<String, Map<String, PropertyType>> result = new HashMap<>();
@@ -868,7 +872,14 @@ public class Topology {
         try {
             Map<String, Map<String, PropertyType>> result = new HashMap<>(this.allTableCache);
             if (this.isWriteLockHeldByCurrentThread()) {
-                result.putAll(this.getUncommittedAllTables());
+                Map<String, Map<String, PropertyType>> uncommittedTables = this.getUncommittedAllTables();
+                for (String table : uncommittedTables.keySet()) {
+                    if (result.containsKey(table)) {
+                        result.get(table).putAll(uncommittedTables.get(table));
+                    } else {
+                        result.put(table, uncommittedTables.get(table));
+                    }
+                }
             }
             for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
                 result.remove(sqlgSchemaSchemaTable);
@@ -990,5 +1001,9 @@ public class Topology {
         } finally {
             z_internalReadUnLock();
         }
+    }
+
+    void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
+        this.allTableCache.put(tableName, propertyTypeMap);
     }
 }

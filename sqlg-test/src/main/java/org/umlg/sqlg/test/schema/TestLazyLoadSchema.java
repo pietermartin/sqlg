@@ -5,7 +5,10 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -45,6 +48,7 @@ public class TestLazyLoadSchema extends BaseTest {
             Thread.sleep(1000);
             Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            Assert.assertEquals("a", sqlgGraph1.traversal().V().has(T.label, "Person").next().value("name"));
             sqlgGraph1.tx().rollback();
         }
     }
@@ -171,7 +175,7 @@ public class TestLazyLoadSchema extends BaseTest {
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Vertex personVertex = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
             Vertex dogVertex = this.sqlgGraph.addVertex(T.label, "Dog", "name", "b");
-            Edge petEdge = personVertex.addEdge("pet", dogVertex);
+            Edge petEdge = personVertex.addEdge("pet", dogVertex, "test", "this");
             this.sqlgGraph.tx().commit();
 
             //allow time for notification to happen
@@ -179,6 +183,7 @@ public class TestLazyLoadSchema extends BaseTest {
 
             Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "pet").count().next().intValue());
+            Assert.assertEquals("this", sqlgGraph1.traversal().E().has(T.label, "pet").next().value("test"));
             Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
             Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Dog").count().next().intValue());
 

@@ -58,6 +58,11 @@ import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA_TABLES;
 
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldSupportTransactionIsolationCommitCheck",
+        reason = "Fails for as the schema creation deadlock because of unnatural locking in the test.")
+
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
         reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
 
