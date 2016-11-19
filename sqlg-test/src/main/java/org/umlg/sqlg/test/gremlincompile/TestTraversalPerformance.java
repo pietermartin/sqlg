@@ -23,6 +23,26 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestTraversalPerformance extends BaseTest {
 
+//    @Test
+    public void tes() {
+        for (int i = 1; i < 100_001; i++) {
+            Vertex a = this.sqlgGraph.addVertex(T.label, "God", "name", "god" + i);
+            for (int j = 0; j < 2; j++) {
+                Vertex b = this.sqlgGraph.addVertex(T.label, "Hand", "name", "name_" + j);
+                a.addEdge("hand", b);
+                for (int k = 0; k < 5; k++) {
+                    Vertex c = this.sqlgGraph.addVertex(T.label, "Finger", "name", "name_" + k);
+                    b.addEdge("finger", c);
+                }
+            }
+            if (i % 10 == 0) {
+                this.sqlgGraph.tx().commit();
+            }
+        }
+        this.sqlgGraph.tx().commit();
+
+    }
+
     @Test
     public void testSpeed() throws InterruptedException {
         StopWatch stopWatch = new StopWatch();
@@ -32,8 +52,8 @@ public class TestTraversalPerformance extends BaseTest {
             columns.put("property_" + i, "asdasd");
         }
         //Create a large schema, it slows the maps  down
-//        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 10; i++) {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 1000; i++) {
             if (i % 100 == 0) {
                 stopWatch.stop();
                 System.out.println("got " + i + " time taken " + stopWatch.toString());
@@ -43,7 +63,7 @@ public class TestTraversalPerformance extends BaseTest {
             Vertex person = this.sqlgGraph.addVertex("Person_" + i, columns);
             Vertex dog = this.sqlgGraph.addVertex("Dog_" + i, columns);
             ((SqlgVertex)person).addEdgeWithMap("pet_" + i, dog, columns);
-            this.sqlgGraph.tx().commit();
+//            this.sqlgGraph.tx().commit();
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();

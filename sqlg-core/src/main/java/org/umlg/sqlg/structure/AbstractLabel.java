@@ -19,14 +19,14 @@ import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_TYPE;
  * Date: 2016/09/14
  * Time: 11:19 AM
  */
-public abstract class AbstractElement {
+public abstract class AbstractLabel {
 
-    private Logger logger = LoggerFactory.getLogger(AbstractElement.class.getName());
+    private Logger logger = LoggerFactory.getLogger(AbstractLabel.class.getName());
     protected String label;
     protected Map<String, PropertyColumn> properties = new HashMap<>();
     protected Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
 
-    public AbstractElement(String label, Map<String, PropertyType> columns) {
+    public AbstractLabel(String label, Map<String, PropertyType> columns) {
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
@@ -34,7 +34,7 @@ public abstract class AbstractElement {
         }
     }
 
-    AbstractElement(String label) {
+    AbstractLabel(String label) {
         this.label = label;
     }
 
@@ -62,30 +62,34 @@ public abstract class AbstractElement {
         }
     }
 
-    public Map<String, PropertyType> getPropertyTypeMap() {
-        Map<String, PropertyType> result = new HashMap<>();
-        for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
-            result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
-        }
+    Map<String, PropertyColumn> getPropertyColumnMap() {
+        Map<String, PropertyColumn> result = new HashMap<>();
+        result.putAll(this.properties);
         if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, PropertyColumn> propertyEntry : this.uncommittedProperties.entrySet()) {
-                result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
-            }
+            result.putAll(this.uncommittedProperties);
         }
         return result;
     }
 
-    public Map<String, PropertyType> getUncommittedPropertyTypeMap() {
+    //TODO remove this method. PropertyColumnn should be used all the way up the stack
+    Map<String, PropertyType> getPropertyTypeMap() {
         Map<String, PropertyType> result = new HashMap<>();
+        this.properties.forEach((k, v) -> result.put(k, v.getPropertyType()));
         if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, PropertyColumn> propertyEntry : this.uncommittedProperties.entrySet()) {
-                result.put(propertyEntry.getValue().getName(), propertyEntry.getValue().getPropertyType());
-            }
+            this.uncommittedProperties.forEach((k, v) -> result.put(k, v.getPropertyType()));
         }
         return result;
     }
 
-    protected static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
+    Map<String, PropertyColumn> getUncommittedPropertyTypeMap() {
+        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            return this.uncommittedProperties;
+        } else {
+            return Collections.emptyMap();
+        }
+    }
+
+    static void buildColumns(SqlgGraph sqlgGraph, Map<String, PropertyType> columns, StringBuilder sql) {
         int i = 1;
         //This is to make the columns sorted
         List<String> keys = new ArrayList<>(columns.keySet());
@@ -214,10 +218,10 @@ public abstract class AbstractElement {
         if (o == null) {
             return false;
         }
-        if (!(o instanceof AbstractElement)) {
+        if (!(o instanceof AbstractLabel)) {
             return false;
         }
-        AbstractElement other = (AbstractElement)o;
+        AbstractLabel other = (AbstractLabel) o;
         if (!this.label.equals(other.label)) {
             return false;
         }

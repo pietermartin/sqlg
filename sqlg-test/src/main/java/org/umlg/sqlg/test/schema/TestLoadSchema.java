@@ -253,6 +253,7 @@ public class TestLoadSchema extends BaseTest {
         planBsc.addEdge("workspaceElement", planBscWE);
 
         this.sqlgGraph.tx().commit();
+        assertEquals(1, sqlgGraph.traversal().V(realBscWE.id()).in("workspaceElement").count().next().intValue());
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
             assertEquals(1, sqlgGraph.traversal().V(realBscWE.id()).in("workspaceElement").count().next().intValue());

@@ -33,7 +33,9 @@ public class Schema {
     private String name;
     private Map<String, VertexLabel> vertexLabels = new HashMap<>();
     private Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
-    private Map<String, EdgeLabel> allEdgeLabelCache = new HashMap<>();
+
+    private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
+    private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
 
     /**
      * Creates the SqlgSchema. The sqlg_schema always exist and is created via sql in {@link SqlDialect#sqlgTopologyCreationScripts()}
@@ -107,7 +109,8 @@ public class Schema {
             this.topology.lock();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (!edgeLabelOptional.isPresent()) {
-                edgeLabel = this.createEdgeLabel(sqlgGraph, edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+                edgeLabel = this.createEdgeLabel(sqlgGraph, edgeLabelName, outVertexLabel, inVertexLabel, columns);
+                this.uncommittedOutEdgeLabels.put(edgeLabelName, edgeLabel);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
                 edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
@@ -137,26 +140,21 @@ public class Schema {
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private EdgeLabel createEdgeLabel(final SqlgGraph sqlgGraph, final String edgeLabelName, final SchemaTable foreignKeyOut, final SchemaTable foreignKeyIn, final Map<String, PropertyType> columns) {
+    private EdgeLabel createEdgeLabel(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, final Map<String, PropertyType> columns) {
         Preconditions.checkArgument(this.topology.isWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
 
-        Optional<Schema> inVertexSchema = this.topology.getSchema(foreignKeyIn.getSchema());
-        Preconditions.checkState(inVertexSchema.isPresent(), "schema not found for \"%s\"", foreignKeyIn.getSchema());
-
-        //The out and in vertex labels must already exist.
-        Optional<VertexLabel> outVertexLabel = this.getVertexLabel(foreignKeyOut.getTable());
-        Preconditions.checkState(outVertexLabel.isPresent(), "BUG: Out vertex label for edge creation can not be null. out vertex label = \"%s\"", foreignKeyOut.getTable());
-
-        Optional<VertexLabel> inVertexLabel = inVertexSchema.get().getVertexLabel(foreignKeyIn.getTable());
-        Preconditions.checkState(inVertexLabel.isPresent(), "BUG: In vertex label for edge creation can not be null. in vertex label = \"%s\"", foreignKeyIn.getTable());
+        Schema inVertexSchema = inVertexLabel.getSchema();
 
         //Edge may not already exist.
         Preconditions.checkState(!getEdgeLabel(edgeLabelName).isPresent(), "BUG: Edge \"%s\" already exists!", edgeLabelName);
 
+        SchemaTable foreignKeyOut = SchemaTable.of(this.name, outVertexLabel.getLabel());
+        SchemaTable foreignKeyIn = SchemaTable.of(inVertexSchema.name, inVertexLabel.getLabel());
+
         TopologyManager.addEdgeLabel(sqlgGraph, this.getName(), EDGE_PREFIX + edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
-        return outVertexLabel.get().addEdgeLabel(sqlgGraph, edgeLabelName, inVertexLabel.get(), columns);
+        return outVertexLabel.addEdgeLabel(sqlgGraph, edgeLabelName, inVertexLabel, columns);
     }
 
     VertexLabel createSqlgSchemaVertexLabel(String vertexLabelName, Map<String, PropertyType> columns) {
@@ -244,7 +242,7 @@ public class Schema {
         return this.vertexLabels;
     }
 
-    private Map<String, VertexLabel> getUncommittedVertexLabels() {
+    public Map<String, VertexLabel> getUncommittedVertexLabels() {
         return this.uncommittedVertexLabels;
     }
 
@@ -271,111 +269,97 @@ public class Schema {
         }
     }
 
-    Set<EdgeLabel> getEdgeLabels() {
-        Set<EdgeLabel> result = new HashSet<>();
-        result.addAll(this.allEdgeLabelCache.values());
+    Map<String, EdgeLabel> getEdgeLabels() {
+        Map<String, EdgeLabel> result = new HashMap<>();
+        result.putAll(this.outEdgeLabels);
         if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-                result.addAll(vertexLabel.getOutEdgeLabels());
+                result.putAll(vertexLabel.getOutEdgeLabels());
             }
             for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-                result.addAll(vertexLabel.getOutEdgeLabels());
+                result.putAll(vertexLabel.getOutEdgeLabels());
             }
         }
-//        for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-//            result.addAll(vertexLabel.getOutEdgeLabels());
-//        }
-//        if (this.topology.isWriteLockHeldByCurrentThread()) {
-//            for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-//                result.addAll(vertexLabel.getOutEdgeLabels());
-//            }
-//        }
         return result;
     }
 
-    Set<EdgeLabel> getUncommittedEdgeLabels() {
-        Set<EdgeLabel> result = new HashSet<>();
+    Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
+        Map<String, EdgeLabel> result = new HashMap<>();
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-            result.addAll(vertexLabel.getUncommittedOutEdgeLabels());
+            result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
         }
         if (this.topology.isWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-                result.addAll(vertexLabel.getUncommittedOutEdgeLabels());
+                result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
             }
         }
         return result;
-    }
-
-    Optional<EdgeLabel> getEdgeLabel(VertexLabel outVertexLabel, String edgeLabelName) {
-        Preconditions.checkArgument(outVertexLabel != null, "outVertexLabel may not be null");
-        Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edge label may not start with \"%s\"", EDGE_PREFIX);
-        Preconditions.checkArgument(!edgeLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", VERTEX_PREFIX);
-        Optional<EdgeLabel> edgeLabelOptional = outVertexLabel.getOutEdgeLabel(edgeLabelName);
-        if (edgeLabelOptional.isPresent()) {
-            return edgeLabelOptional;
-        }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
-            edgeLabelOptional = outVertexLabel.getOutEdgeLabel(edgeLabelName);
-            if (edgeLabelOptional.isPresent()) {
-                return edgeLabelOptional;
-            }
-        }
-        return Optional.empty();
     }
 
     Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
-        EdgeLabel edgeLabel = this.allEdgeLabelCache.get(edgeLabelName);
+        EdgeLabel edgeLabel = this.outEdgeLabels.get(edgeLabelName);
         if (edgeLabel != null) {
             return Optional.of(edgeLabel);
         }
         if (this.topology.isWriteLockHeldByCurrentThread()) {
-            //Need to look through the vertexLabels as they might have uncommittedEdgeLabels
-            for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-                Optional<EdgeLabel> edgeLabelOptional = vertexLabel.getUncommittedOutEdgeLabel(edgeLabelName);
-                if (edgeLabelOptional.isPresent()) {
-                    return edgeLabelOptional;
-                }
-            }
-            for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-                Optional<EdgeLabel> edgeLabelOptional = vertexLabel.getUncommittedOutEdgeLabel(edgeLabelName);
-                if (edgeLabelOptional.isPresent()) {
-                    return edgeLabelOptional;
-                }
+            edgeLabel = this.uncommittedOutEdgeLabels.get(edgeLabelName);
+            if (edgeLabel != null) {
+                return Optional.of(edgeLabel);
             }
         }
         return Optional.empty();
     }
 
+//    public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
+//        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+//        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
+//            Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
+//            String vertexLabelQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+//            if (!filter.contains(vertexLabelQualifiedName)) {
+//                result.put(vertexLabelQualifiedName, vertexLabelEntry.getValue().getPropertyColumnMap());
+//            }
+//        }
+//        if (this.topology.isWriteLockHeldByCurrentThread()) {
+//            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+//                Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
+//                String vertexLabelQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+//                if (!filter.contains(vertexLabelQualifiedName)) {
+//                    result.put(vertexLabelQualifiedName, vertexLabelEntry.getValue().getPropertyColumnMap());
+//                }
+//            }
+//        }
+//        for (EdgeLabel edgeLabel : this.getEdgeLabels()) {
+//            Preconditions.checkState(!edgeLabel.getLabel().startsWith(EDGE_PREFIX), "edgeLabel may not start with %s", EDGE_PREFIX);
+//            String edgeLabelQualifiedName = edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel();
+//            if (!filter.contains(edgeLabelQualifiedName)) {
+//                result.put(edgeLabelQualifiedName, edgeLabel.getPropertyColumnMap());
+//            }
+//        }
+//        return result;
+//    }
 
-    public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
-        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
-            Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
-            String vertexLabelQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-            if (!filter.contains(vertexLabelQualifiedName)) {
-                result.put(vertexLabelQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
-            }
-        }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-                Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
-                String vertexLabelQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-                if (!filter.contains(vertexLabelQualifiedName)) {
-                    result.put(vertexLabelQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
-                }
-            }
-        }
-        for (EdgeLabel edgeLabel : this.getEdgeLabels()) {
-            Preconditions.checkState(!edgeLabel.getLabel().startsWith(EDGE_PREFIX), "edgeLabel may not start with %s", EDGE_PREFIX);
-            String edgeLabelQualifiedName = edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel();
-            if (!filter.contains(edgeLabelQualifiedName)) {
-                result.put(edgeLabelQualifiedName, edgeLabel.getPropertyTypeMap());
-            }
-        }
-        return result;
-    }
+//    Map<String, PropertyType> getAllTables() {
+//        Map<String, AbstractLabel> result = new HashMap<>();
+//        result.putAll(this.vertexLabels);
+//        if (this.topology.isWriteLockHeldByCurrentThread()) {
+//            result.putAll(this.uncommittedVertexLabels);
+//        }
+//        result.putAll(getEdgeLabels());
+//        return result;
+//    }
 
+//    Map<String, AbstractLabel> getAllTables() {
+//        Map<String, AbstractLabel> result = new HashMap<>();
+//        result.putAll(this.vertexLabels);
+//        if (this.topology.isWriteLockHeldByCurrentThread()) {
+//            result.putAll(this.uncommittedVertexLabels);
+//        }
+//        result.putAll(getEdgeLabels());
+//        return result;
+//    }
+
+    //remove in favour of PropertyColumn
     Map<String, Map<String, PropertyType>> getAllTables() {
         Map<String, Map<String, PropertyType>> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
@@ -388,65 +372,77 @@ public class Schema {
                 result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
             }
         }
-        for (EdgeLabel edgeLabel : this.getEdgeLabels()) {
+        for (EdgeLabel edgeLabel : this.getEdgeLabels().values()) {
             String edgeQualifiedName = this.name + "." + EDGE_PREFIX + edgeLabel.getLabel();
             result.put(edgeQualifiedName, edgeLabel.getPropertyTypeMap());
         }
         return result;
     }
 
-    Map<String, Map<String, PropertyType>> getUncommittedLabels() {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+    Map<String, AbstractLabel> getUncommittedLabels() {
+        Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-            Map<String, PropertyType> uncommittedPropertyTypeMap = vertexLabelEntry.getValue().getUncommittedPropertyTypeMap();
-            if (!uncommittedPropertyTypeMap.isEmpty()) {
-                result.put(vertexQualifiedName, uncommittedPropertyTypeMap);
+            Map<String, PropertyColumn> uncommittedPropertyColumnMap = vertexLabelEntry.getValue().getUncommittedPropertyTypeMap();
+            if (!uncommittedPropertyColumnMap.isEmpty()) {
+                result.put(vertexQualifiedName, vertexLabelEntry.getValue());
             }
         }
         if (this.topology.isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-                String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-                result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
+            for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
+                result.put(this.name + "." + VERTEX_PREFIX + vertexLabel.getLabel(), vertexLabel);
             }
         }
-        for (EdgeLabel edgeLabel : this.getUncommittedEdgeLabels()) {
-            String edgeQualifiedName = this.name + "." + EDGE_PREFIX + edgeLabel.getLabel();
-            result.put(edgeQualifiedName, edgeLabel.getUncommittedPropertyTypeMap());
+        for (EdgeLabel edgeLabel : this.getUncommittedOutEdgeLabels().values()) {
+            result.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel);
         }
         return result;
     }
 
 
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
-        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
-            Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
-            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-            if (selectFrom.contains(vertexQualifiedName)) {
-                result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
-            }
-        }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-                Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
-                String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
-                if (selectFrom.contains(vertexQualifiedName)) {
-                    result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
-                }
-            }
-        }
-        for (EdgeLabel edgeLabel : this.getEdgeLabels()) {
-            Preconditions.checkState(!edgeLabel.getLabel().startsWith(EDGE_PREFIX), "edgeLabel may not start with %s", EDGE_PREFIX);
-            String edgeQualifiedName = this.name + "." + EDGE_PREFIX + edgeLabel.getLabel();
-            if (selectFrom.contains(edgeQualifiedName)) {
-                result.put(edgeQualifiedName, edgeLabel.getPropertyTypeMap());
-            }
-        }
-        return result;
-    }
+//    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
+//        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+//        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
+//            Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
+//            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+//            if (selectFrom.contains(vertexQualifiedName)) {
+//                result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyColumnMap());
+//            }
+//        }
+//        if (this.topology.isWriteLockHeldByCurrentThread()) {
+//            for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+//                Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with %s", VERTEX_PREFIX);
+//                String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+//                if (selectFrom.contains(vertexQualifiedName)) {
+//                    result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyColumnMap());
+//                }
+//            }
+//        }
+//        for (EdgeLabel edgeLabel : this.getEdgeLabels()) {
+//            Preconditions.checkState(!edgeLabel.getLabel().startsWith(EDGE_PREFIX), "edgeLabel may not start with %s", EDGE_PREFIX);
+//            String edgeQualifiedName = this.name + "." + EDGE_PREFIX + edgeLabel.getLabel();
+//            if (selectFrom.contains(edgeQualifiedName)) {
+//                result.put(edgeQualifiedName, edgeLabel.getPropertyColumnMap());
+//            }
+//        }
+//        return result;
+//    }
 
-    public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
+//    Map<String, PropertyColumn> getTableFor(SchemaTable schemaTable) {
+//        Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.getTable());
+//        if (vertexLabelOptional.isPresent()) {
+//            return vertexLabelOptional.get().getPropertyColumnMap();
+//        } else {
+//            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.getTable());
+//            if (edgeLabelOptional.isPresent()) {
+//                return edgeLabelOptional.get().getPropertyColumnMap();
+//            }
+//        }
+//        return Collections.emptyMap();
+//    }
+
+    //TODO remove this method. PropertyColumn must go all the way up the stack.
+    Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
         Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.getTable());
         if (vertexLabelOptional.isPresent()) {
             return vertexLabelOptional.get().getPropertyTypeMap();
@@ -459,7 +455,7 @@ public class Schema {
         return Collections.emptyMap();
     }
 
-    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
+    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
@@ -528,7 +524,7 @@ public class Schema {
 
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
-        for (EdgeLabel edgeLabel : this.getEdgeLabels()) {
+        for (EdgeLabel edgeLabel : this.getEdgeLabels().values()) {
             Preconditions.checkState(!edgeLabel.getLabel().startsWith(EDGE_PREFIX), "edgeLabel may not start with %s", EDGE_PREFIX);
             result.put(this.getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getAllEdgeForeignKeys());
         }
@@ -546,6 +542,7 @@ public class Schema {
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
         }
+        this.uncommittedOutEdgeLabels.clear();
     }
 
     void afterRollback() {
@@ -567,6 +564,7 @@ public class Schema {
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterRollbackForOutEdges();
         }
+        this.uncommittedOutEdgeLabels.clear();
     }
 
     public boolean isSqlgSchema() {
@@ -673,7 +671,7 @@ public class Schema {
                     //load the property
                     edgeLabel.addProperty(edgePropertyVertex);
                 }
-                this.allEdgeLabelCache.put(edgeLabelName, edgeLabel);
+                this.outEdgeLabels.put(edgeLabelName, edgeLabel);
             }
         }
     }
@@ -882,18 +880,17 @@ public class Schema {
     void cacheEdgeLabels() {
         for (Iterator<Map.Entry<String, VertexLabel>> it = this.vertexLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, VertexLabel> entry = it.next();
-            this.vertexLabels.put(entry.getKey(), entry.getValue());
-            for (EdgeLabel edgeLabel : entry.getValue().getOutEdgeLabels()) {
-                this.allEdgeLabelCache.put(edgeLabel.getLabel(), edgeLabel);
+            for (EdgeLabel edgeLabel : entry.getValue().getOutEdgeLabels().values()) {
+                this.outEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
             }
         }
     }
 
     void addToAllEdgeCache(EdgeLabel edgeLabel) {
-        if (!this.allEdgeLabelCache.containsKey(edgeLabel.getLabel())) {
-            this.allEdgeLabelCache.put(edgeLabel.getLabel(), edgeLabel);
+        if (!this.outEdgeLabels.containsKey(edgeLabel.getLabel())) {
+            this.outEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
         } else {
-            this.allEdgeLabelCache.put(edgeLabel.getLabel(), edgeLabel);
+            this.outEdgeLabels.put(edgeLabel.getLabel(), edgeLabel);
         }
     }
 }

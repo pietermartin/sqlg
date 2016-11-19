@@ -21,18 +21,18 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 public class PropertyColumn {
 
     private Logger logger = LoggerFactory.getLogger(PropertyColumn.class.getName());
-    private AbstractElement abstractElement;
+    private AbstractLabel abstractLabel;
     private String name;
     private PropertyType propertyType;
     private Index index;
     private Index uncommittedIndex;
 
-    public PropertyColumn(AbstractElement abstractElement, String name, PropertyType propertyType) {
-        this(abstractElement, name, propertyType, Index.NONE);
+    public PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
+        this(abstractLabel, name, propertyType, Index.NONE);
     }
 
-    public PropertyColumn(AbstractElement abstractElement, String name, PropertyType propertyType, Index index) {
-        this.abstractElement = abstractElement;
+    public PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType, Index index) {
+        this.abstractLabel = abstractLabel;
         this.name = name;
         this.propertyType = propertyType;
         this.index = index;
@@ -54,13 +54,13 @@ public class PropertyColumn {
         sqlgGraph.tx().readWrite();
         if (this.index == Index.NONE) {
             if (this.uncommittedIndex == null) {
-                this.abstractElement.getSchema().getTopology().lock();
+                this.abstractLabel.getSchema().getTopology().lock();
                 if (this.uncommittedIndex == null) {
-                    Schema schema = this.abstractElement.getSchema();
+                    Schema schema = this.abstractLabel.getSchema();
                     TopologyManager.addPropertyIndex(
                             sqlgGraph,
                             schema.getName(),
-                            (this.abstractElement instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + this.abstractElement.getLabel(),
+                            (this.abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + this.abstractLabel.getLabel(),
                             Pair.of(this.name, this.propertyType),
                             index
                     );
@@ -68,7 +68,7 @@ public class PropertyColumn {
                             sqlgGraph,
                             SchemaTable.of(
                                     schema.getName(),
-                                    this.abstractElement.getLabel()
+                                    this.abstractLabel.getLabel()
                             ),
                             Pair.of(this.name, this.propertyType),
                             index
@@ -80,7 +80,7 @@ public class PropertyColumn {
     }
 
     private void addIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Pair<String, PropertyType> namePropertyTypePair, Index index) {
-        String prefix = this.abstractElement instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
+        String prefix = this.abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
         StringBuilder sql = new StringBuilder("CREATE ");
         if (index == Index.UNIQUE) {
             sql.append("UNIQUE ");
@@ -127,9 +127,9 @@ public class PropertyColumn {
         return propertyObjectNode;
     }
 
-    public static PropertyColumn fromNotifyJson(AbstractElement abstractElement, JsonNode jsonNode) {
+    public static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
         PropertyColumn property = new PropertyColumn(
-                abstractElement,
+                abstractLabel,
                 jsonNode.get("name").asText(),
                 PropertyType.valueOf(jsonNode.get("propertyType").asText()));
         return property;

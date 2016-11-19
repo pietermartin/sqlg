@@ -22,7 +22,7 @@ import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
  * Date: 2016/09/04
  * Time: 8:49 AM
  */
-public class EdgeLabel extends AbstractElement {
+public class EdgeLabel extends AbstractLabel {
 
     private Logger logger = LoggerFactory.getLogger(EdgeLabel.class.getName());
     //This just won't stick in my brain.
@@ -42,7 +42,7 @@ public class EdgeLabel extends AbstractElement {
     public static EdgeLabel createEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
-        if (!inVertexLabel.getSchema().getName().equals(SQLG_SCHEMA)) {
+        if (!inVertexLabel.getSchema().isSqlgSchema()) {
             edgeLabel.createEdgeTable(sqlgGraph, outVertexLabel, inVertexLabel, properties);
         }
         return edgeLabel;
@@ -253,22 +253,23 @@ public class EdgeLabel extends AbstractElement {
         Preconditions.checkArgument(vertexLabel.getSchema().getName().equals(vertexSchemaTable.getSchema()));
         Preconditions.checkArgument(vertexLabel.getLabel().equals(vertexSchemaTable.getTable()));
 
-        Set<String> uncommittedForeignKeys = getAllEdgeForeignKeys();
+        Set<String> allEdgeForeignKeys = getAllEdgeForeignKeys();
         SchemaTable foreignKey = SchemaTable.of(vertexSchemaTable.getSchema(), vertexSchemaTable.getTable() + (in ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
-        if (!uncommittedForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
+        if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
             //Make sure the current thread/transaction owns the lock
-            this.getSchema().getTopology().lock();
-            uncommittedForeignKeys = getAllEdgeForeignKeys();
-            if (!uncommittedForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
+            Schema schema = this.getSchema();
+            schema.getTopology().lock();
+            allEdgeForeignKeys = getAllEdgeForeignKeys();
+            if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
                 TopologyManager.addLabelToEdge(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), in, foreignKey);
                 if (in) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
-                    vertexLabel.addToUncommittedInEdgeLabels(this);
+                    vertexLabel.addToUncommittedInEdgeLabels(schema, this);
                 } else {
                     this.uncommittedOutVertexLabels.add(vertexLabel);
-                    vertexLabel.addToUncommittedOutEdgeLabels(this);
+                    vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
                 }
-                addEdgeForeignKey(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
+                addEdgeForeignKey(sqlgGraph, schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
             }
         }
     }

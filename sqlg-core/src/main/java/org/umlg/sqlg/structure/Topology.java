@@ -221,7 +221,7 @@ public class Topology {
         sqlgSchema.cacheEdgeLabels();
         //populate the allTablesCache
         sqlgSchema.getVertexLabels().values().forEach((v) -> this.allTableCache.put(v.getSchema().getName() + "." + VERTEX_PREFIX + v.getLabel(), v.getPropertyTypeMap()));
-        sqlgSchema.getEdgeLabels().forEach((e) -> this.allTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
+        sqlgSchema.getEdgeLabels().values().forEach((e) -> this.allTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
 
         if (this.distributed) {
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
@@ -488,7 +488,7 @@ public class Topology {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        AbstractElement.buildColumns(this.sqlgGraph, columns, sql);
+        AbstractLabel.buildColumns(this.sqlgGraph, columns, sql);
         sql.append(") ");
         sql.append(this.sqlgGraph.getSqlDialect().afterCreateTemporaryTableStatement());
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
@@ -525,15 +525,15 @@ public class Topology {
                 it.remove();
             }
             //merge the allTableCache and uncommittedAllTables
-            Map<String, Map<String, PropertyType>> uncommittedAllTables = getUncommittedAllTables();
-            for (Map.Entry<String, Map<String, PropertyType>> stringMapEntry : uncommittedAllTables.entrySet()) {
+            Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
+            for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
                 String uncommittedSchemaTable = stringMapEntry.getKey();
-                Map<String, PropertyType> uncommittedProperties = stringMapEntry.getValue();
+                AbstractLabel uncommittedProperties = stringMapEntry.getValue();
                 Map<String, PropertyType> committedProperties = this.allTableCache.get(uncommittedSchemaTable);
                 if (committedProperties != null) {
-                    committedProperties.putAll(uncommittedProperties);
+                    committedProperties.putAll(uncommittedProperties.getPropertyTypeMap());
                 } else {
-                    this.allTableCache.put(uncommittedSchemaTable, uncommittedProperties);
+                    this.allTableCache.put(uncommittedSchemaTable, uncommittedProperties.getPropertyTypeMap());
                 }
             }
         }
@@ -849,13 +849,9 @@ public class Topology {
         }
     }
 
-    /**
-     * This only returns uncommitted values. So committed properties will not be in the map.
-     * @return A map or uncommitted properties for all Vertex and Edge labels.
-     */
-    private Map<String, Map<String, PropertyType>> getUncommittedAllTables() {
+    private Map<String, AbstractLabel> getUncommittedAllTables() {
         Preconditions.checkState(isWriteLockHeldByCurrentThread());
-        Map<String, Map<String, PropertyType>> result = new HashMap<>();
+        Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
             result.putAll(schema.getUncommittedLabels());
@@ -872,12 +868,12 @@ public class Topology {
         try {
             Map<String, Map<String, PropertyType>> result = new HashMap<>(this.allTableCache);
             if (this.isWriteLockHeldByCurrentThread()) {
-                Map<String, Map<String, PropertyType>> uncommittedTables = this.getUncommittedAllTables();
-                for (String table : uncommittedTables.keySet()) {
+                Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
+                for (String table : uncommittedLabels.keySet()) {
                     if (result.containsKey(table)) {
-                        result.get(table).putAll(uncommittedTables.get(table));
+                        result.get(table).putAll(uncommittedLabels.get(table).getPropertyTypeMap());
                     } else {
-                        result.put(table, uncommittedTables.get(table));
+                        result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
                     }
                 }
             }
