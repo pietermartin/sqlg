@@ -75,7 +75,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
     @Override
     protected boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep) {
-        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass) && !(stepClass.isAssignableFrom(GraphStep.class) && alreadyReplacedGraphStep);
+        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);// && !(stepClass.isAssignableFrom(GraphStep.class) && alreadyReplacedGraphStep);
     }
 
     @Override
