@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
  */
 public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
 
-//    protected SqlgGraph sqlgGraph;
     protected Logger logger = LoggerFactory.getLogger(getClass().getName());
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
@@ -54,7 +53,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
 
-    public BaseSqlgStrategy() {
+    BaseSqlgStrategy() {
     }
 
     protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
@@ -119,9 +118,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
                     pathCount++;
 
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
                     ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph)traversal.getGraph().get()).getTopology(), (AbstractStep) step, pathCount);
-                    if (sqlgStep == null) {
-                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
                     if (sqlgStep == null || step instanceof GraphStep) {
                         sqlgStep = constructSqlgStep(traversal, step);
                         if (previous!=null){
