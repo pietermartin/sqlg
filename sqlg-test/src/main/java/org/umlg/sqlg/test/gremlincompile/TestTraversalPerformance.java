@@ -59,6 +59,8 @@ public class TestTraversalPerformance extends BaseTest {
                 System.out.println("got " + i + " time taken " + stopWatch.toString());
                 stopWatch.reset();
                 stopWatch.start();
+                this.sqlgGraph.tx().commit();
+                this.sqlgGraph.tx().normalBatchModeOn();
             }
             Vertex person = this.sqlgGraph.addVertex("Person_" + i, columns);
             Vertex dog = this.sqlgGraph.addVertex("Dog_" + i, columns);

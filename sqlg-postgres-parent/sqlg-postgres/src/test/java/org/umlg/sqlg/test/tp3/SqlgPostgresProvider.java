@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.tp3;
 
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.PostgresPlugin;
 import org.umlg.sqlg.SqlgPlugin;
@@ -18,6 +19,8 @@ import java.util.Properties;
  */
 public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
 
+	private Logger logger = LoggerFactory.getLogger(SqlgPostgresProvider.class.getName());
+
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
     	Map<String, Object> m= new HashMap<String, Object>() {{
@@ -27,6 +30,7 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
             put("jdbc.password", "postgres");
             put("maxPoolSize", 10);
         }};
+		logger.info("Start test: " + test.getSimpleName() + "." + testMethodName);
         
     	InputStream sqlProperties = Thread.currentThread().getContextClassLoader().getResourceAsStream("sqlg.properties");
         
