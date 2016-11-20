@@ -7,6 +7,7 @@ import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.github.TestGithub;
+import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
@@ -148,6 +149,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestRepeatStepOnEdges.class,
         TestLoadingAdjacent.class,
         TestLabelsSchema.class,
+        MidTraversalGraphTest.class,
         //TODO fails, issue #65
 //        TestEdgeFromDifferentSchema.class
         TestBatchModeMultipleGraphs.class,

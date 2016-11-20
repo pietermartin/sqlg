@@ -121,7 +121,12 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
                     ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph)traversal.getGraph().get()).getTopology(), (AbstractStep) step, pathCount);
                     if (sqlgStep == null) {
+                    ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getSchemaManager(), (AbstractStep) step, pathCount);
+                    if (sqlgStep == null || step instanceof GraphStep) {
                         sqlgStep = constructSqlgStep(traversal, step);
+                        if (previous!=null){
+                        	sqlgStep.setPreviousStep(previous);
+                        }
                         alreadyReplacedGraphStep = alreadyReplacedGraphStep || step instanceof GraphStep;
                         //TODO this suck but brain is stuck.
                         if (this instanceof SqlgGraphStepStrategy) {
@@ -181,7 +186,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         }
                     }
-                    if (previous != null) {
+                    if (previous != null && !(step instanceof GraphStep)) {
                         sqlgStep.addReplacedStep(replacedStep);
                         int index = TraversalHelper.stepIndex(step, traversal);
                         if (index != -1) {
