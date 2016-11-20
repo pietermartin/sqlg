@@ -1,6 +1,14 @@
 package org.umlg.sqlg.strategy;
 
-import com.google.common.base.Preconditions;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -21,8 +29,7 @@ import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.util.*;
-import java.util.function.Supplier;
+import com.google.common.base.Preconditions;
 
 /**
  * Date: 2015/02/20
@@ -38,7 +45,7 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
 
     private transient Supplier<Iterator<Emit<E>>> iteratorSupplier;
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
-
+    private Traverser.Admin<E> previousHead;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
@@ -46,6 +53,8 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
         this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this::elements);
     }
 
+
+    
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
@@ -58,7 +67,9 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                     E e = (E) o;
                     Set<String> labels = labelIter.next();
                     this.labels = labels;
-                    if (first) {
+                    if (!isStart && previousHead!=null){
+                    	traverser=previousHead.split(e, this);
+                    } else if (first) {
                         first = false;
                         traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
                     } else {
@@ -67,10 +78,15 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                 }
                 return traverser;
             } else {
-                if (this.done)
-                    throw FastNoSuchElementException.instance();
-                else {
-                    this.done = true;
+            	if (this.isStart) {
+                    if (this.done)
+                        throw FastNoSuchElementException.instance();
+                    else {
+                        this.done = true;
+                        this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
+                    }
+                } else {
+                    this.previousHead = this.starts.next();
                     this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
                 }
             }
