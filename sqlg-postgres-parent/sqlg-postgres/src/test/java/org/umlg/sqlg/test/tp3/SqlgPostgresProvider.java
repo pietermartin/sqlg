@@ -1,16 +1,16 @@
 package org.umlg.sqlg.test.tp3;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
 import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.PostgresPlugin;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.structure.SqlgGraph;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * Date: 2014/07/13
@@ -20,7 +20,6 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-    	System.out.println(graphName);
     	Map<String, Object> m= new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);

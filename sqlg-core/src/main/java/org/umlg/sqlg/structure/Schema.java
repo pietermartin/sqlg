@@ -524,6 +524,11 @@ public class Schema {
 
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
+//        for (Map.Entry<String, EdgeLabel> stringEdgeLabelEntry : getEdgeLabels().entrySet()) {
+//            String edgeSchemaAndLabel = stringEdgeLabelEntry.getKey();
+//            EdgeLabel edgeLabel = stringEdgeLabelEntry.getValue();
+//            result.put(edgeSchemaAndLabel, edgeLabel.getAllEdgeForeignKeys());
+//        }
         for (EdgeLabel edgeLabel : this.getEdgeLabels().values()) {
             Preconditions.checkState(!edgeLabel.getLabel().startsWith(EDGE_PREFIX), "edgeLabel may not start with %s", EDGE_PREFIX);
             result.put(this.getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getAllEdgeForeignKeys());

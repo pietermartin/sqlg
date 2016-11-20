@@ -979,7 +979,6 @@ public class Topology {
         return getAllEdgeForeignKeys().get(schemaTable);
     }
 
-    //cache
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         z_internalReadLock();
         try {
