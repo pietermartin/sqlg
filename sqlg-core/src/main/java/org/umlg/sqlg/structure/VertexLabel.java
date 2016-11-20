@@ -311,9 +311,9 @@ public class VertexLabel extends AbstractLabel {
         return toJson().toString();
     }
 
-    void addToOutEdgeLabels(EdgeLabel edgeLabel) {
+    void addToOutEdgeLabels(String schema, EdgeLabel edgeLabel) {
         edgeLabel.addToOutVertexLabel(this);
-        this.outEdgeLabels.put(edgeLabel.getSchema().getName() + "." + edgeLabel.getLabel(), edgeLabel);
+        this.outEdgeLabels.put(schema + "." + edgeLabel.getLabel(), edgeLabel);
     }
 
     void addToInEdgeLabels(EdgeLabel edgeLabel) {
