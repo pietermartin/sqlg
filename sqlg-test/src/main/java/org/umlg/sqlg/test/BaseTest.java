@@ -30,6 +30,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -44,15 +45,23 @@ public abstract class BaseTest {
     protected SqlgGraph sqlgGraph;
     protected GraphTraversalSource gt;
     protected static Configuration configuration;
+    private long start;
 
     @Rule
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
-            logger.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
+            BaseTest.this.start = System.currentTimeMillis();
+//            logger.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
         }
 
         protected void finished(Description description) {
-//            logger.info("Finished test: " + description.getClassName() + "." + description.getMethodName());
+            long millis = System.currentTimeMillis() - BaseTest.this.start;
+            String time = String.format("%02d min, %02d sec, %02d mil",
+                    TimeUnit.MILLISECONDS.toMinutes(millis),
+                    TimeUnit.MILLISECONDS.toSeconds(millis) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millis)),
+                    TimeUnit.MILLISECONDS.toMillis(millis) - TimeUnit.SECONDS.toMillis(TimeUnit.MILLISECONDS.toSeconds(millis))
+            );
+            logger.info(String.format("Finished test: %s.%s Time taken: %s", description.getClassName(), description.getMethodName(), time));
         }
     };
 
@@ -87,18 +96,19 @@ public abstract class BaseTest {
 
     /**
      * return a clone of the configuration
+     *
      * @return
      */
-    protected static Configuration getConfigurationClone(){
-		Configuration conf = new PropertiesConfiguration();
-        Iterator<String> it=configuration.getKeys();
-        while (it.hasNext()){
-        	String s=it.next();
-        	conf.setProperty(s, configuration.getProperty(s));
+    protected static Configuration getConfigurationClone() {
+        Configuration conf = new PropertiesConfiguration();
+        Iterator<String> it = configuration.getKeys();
+        while (it.hasNext()) {
+            String s = it.next();
+            conf.setProperty(s, configuration.getProperty(s));
         }
         return conf;
-	}
-    
+    }
+
     protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
         return v.graph().traversal().V(v);
     }
@@ -151,7 +161,7 @@ public abstract class BaseTest {
 
     }
 
-    protected void printTraversalForm(final Traversal<?,?> traversal) {
+    protected void printTraversalForm(final Traversal<?, ?> traversal) {
         final boolean muted = Boolean.parseBoolean(System.getProperty("muteTestLogs", "false"));
 
         if (!muted) System.out.println("   pre-strategy:" + traversal);
