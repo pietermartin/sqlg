@@ -19,11 +19,11 @@ import java.util.Properties;
  */
 public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
 
-	private Logger logger = LoggerFactory.getLogger(SqlgPostgresProvider.class.getName());
+    private Logger logger = LoggerFactory.getLogger(SqlgPostgresProvider.class.getName());
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
-    	Map<String, Object> m= new HashMap<String, Object>() {{
+        Map<String, Object> m = new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
             put("jdbc.username", "postgres");
@@ -31,35 +31,34 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
             put("maxPoolSize", 10);
         }};
 
-		logger.info("Starting test: " + test.getSimpleName() + "." + testMethodName);
+        logger.info("Starting test: " + test.getSimpleName() + "." + testMethodName);
 
-    	InputStream sqlProperties = Thread.currentThread().getContextClassLoader().getResourceAsStream("sqlg.properties");
-        
-    	if (sqlProperties!=null){
-        	Properties p=new Properties();
-        	try {
-	        	p.load(sqlProperties);
-	        	sqlProperties.close();
-	        	for (String k:p.stringPropertyNames()){
-	        		String v=p.getProperty(k);
-	        		if (k.equals("jdbc.url")){
-	        			v=v.substring(0, v.lastIndexOf("/")+1);
-	        			v=v+graphName;
-	        		}
-	        		m.put(k, v);
-	        	}
-        	} catch (IOException ioe){
-        		LoggerFactory.getLogger(getClass()).error("Cannot read properties from sqlg.properties",ioe.getMessage());
-        	}
+        InputStream sqlProperties = Thread.currentThread().getContextClassLoader().getResourceAsStream("sqlg.properties");
+
+        if (sqlProperties != null) {
+            Properties p = new Properties();
+            try {
+                p.load(sqlProperties);
+                sqlProperties.close();
+                for (String k : p.stringPropertyNames()) {
+                    String v = p.getProperty(k);
+                    if (k.equals("jdbc.url")) {
+                        v = v.substring(0, v.lastIndexOf("/") + 1);
+                        v = v + graphName;
+                    }
+                    m.put(k, v);
+                }
+            } catch (IOException ioe) {
+                LoggerFactory.getLogger(getClass()).error("Cannot read properties from sqlg.properties", ioe.getMessage());
+            }
 
         }
-    	return m;
-        
+        return m;
+
 
     }
 
-    
-    
+
     @Override
     public SqlgPlugin getSqlgPlugin() {
         return new PostgresPlugin();
