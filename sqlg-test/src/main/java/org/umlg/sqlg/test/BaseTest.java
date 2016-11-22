@@ -52,7 +52,7 @@ public abstract class BaseTest {
         }
 
         protected void finished(Description description) {
-            logger.info("Finished test: " + description.getClassName() + "." + description.getMethodName());
+//            logger.info("Finished test: " + description.getClassName() + "." + description.getMethodName());
         }
     };
 

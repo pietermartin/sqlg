@@ -30,8 +30,9 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
             put("jdbc.password", "postgres");
             put("maxPoolSize", 10);
         }};
-		logger.info("Start test: " + test.getSimpleName() + "." + testMethodName);
-        
+
+		logger.info("Starting test: " + test.getSimpleName() + "." + testMethodName);
+
     	InputStream sqlProperties = Thread.currentThread().getContextClassLoader().getResourceAsStream("sqlg.properties");
         
     	if (sqlProperties!=null){
