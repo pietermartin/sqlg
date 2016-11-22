@@ -33,7 +33,7 @@ public class TestIndex extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         }
         this.sqlgGraph.tx().commit();
-        Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel("Person").get().getProperty("name");
+        Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person").get().getProperty("name");
         assertTrue(propertyOptional.isPresent());
         propertyOptional.get().ensureIndexExist(this.sqlgGraph, Index.NON_UNIQUE);
         this.sqlgGraph.tx().commit();
@@ -57,7 +57,7 @@ public class TestIndex extends BaseTest {
     public void testUniqueIndexViaTopolgy() {
         this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         this.sqlgGraph.tx().commit();
-        Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel("Person").get().getProperty("name");
+        Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person").get().getProperty("name");
         assertTrue(propertyOptional.isPresent());
         propertyOptional.get().ensureIndexExist(this.sqlgGraph, Index.UNIQUE);
         this.sqlgGraph.tx().commit();

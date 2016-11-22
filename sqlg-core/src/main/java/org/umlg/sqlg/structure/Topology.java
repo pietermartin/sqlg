@@ -778,11 +778,6 @@ public class Topology {
 
     /////////////////////////////////getters and cache/////////////////////////////
 
-    @SuppressWarnings("WeakerAccess")
-    public boolean existSchema(String schema) {
-        return getSchema(schema).isPresent();
-    }
-
     public Set<Schema> getSchemas() {
         this.z_internalReadLock();
         try {
@@ -813,14 +808,6 @@ public class Topology {
         } finally {
             this.z_internalReadUnLock();
         }
-    }
-
-    public boolean existVertexLabel(String schemaName, String label) {
-        return getVertexLabel(schemaName, label).isPresent();
-    }
-
-    public Optional<VertexLabel> getVertexLabel(String label) {
-        return getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), label);
     }
 
     public Optional<VertexLabel> getVertexLabel(String schemaName, String label) {

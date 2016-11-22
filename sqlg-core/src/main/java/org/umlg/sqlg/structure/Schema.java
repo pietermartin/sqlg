@@ -26,7 +26,7 @@ import static org.umlg.sqlg.structure.Topology.*;
  * Date: 2016/09/04
  * Time: 8:49 AM
  */
-public class Schema {
+class Schema {
 
     private static Logger logger = LoggerFactory.getLogger(Schema.class.getName());
     private Topology topology;
@@ -166,7 +166,7 @@ public class Schema {
         return vertexLabel;
     }
 
-    VertexLabel createVertexLabel(SqlgGraph sqlgGraph, String vertexLabelName, Map<String, PropertyType> columns) {
+    private VertexLabel createVertexLabel(SqlgGraph sqlgGraph, String vertexLabelName, Map<String, PropertyType> columns) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
         VertexLabel vertexLabel = VertexLabel.createVertexLabel(sqlgGraph, this, vertexLabelName, columns);
@@ -174,7 +174,7 @@ public class Schema {
         return vertexLabel;
     }
 
-    public void ensureVertexColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
+    void ensureVertexColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
         Preconditions.checkState(!isSqlgSchema(), "Schema.ensureVertexLabelPropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -185,7 +185,7 @@ public class Schema {
         vertexLabel.get().ensureColumnsExist(sqlgGraph, columns);
     }
 
-    public void ensureEdgeColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
+    void ensureEdgeColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
         Preconditions.checkState(!isSqlgSchema(), "Schema.ensureEdgePropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -235,7 +235,7 @@ public class Schema {
         return name;
     }
 
-    public Topology getTopology() {
+    Topology getTopology() {
         return topology;
     }
 
@@ -245,10 +245,6 @@ public class Schema {
 
     private Map<String, VertexLabel> getUncommittedVertexLabels() {
         return this.uncommittedVertexLabels;
-    }
-
-    public boolean existVertexLabel(String vertexLabelName) {
-        return getVertexLabel(vertexLabelName).isPresent();
     }
 
     Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
@@ -276,18 +272,10 @@ public class Schema {
         if (this.topology.isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
         }
-//        if (this.topology.isWriteLockHeldByCurrentThread()) {
-//            for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
-//                result.putAll(vertexLabel.getOutEdgeLabels());
-//            }
-//            for (VertexLabel vertexLabel : this.vertexLabels.values()) {
-//                result.putAll(vertexLabel.getOutEdgeLabels());
-//            }
-//        }
         return result;
     }
 
-    Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
+    private Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
@@ -454,7 +442,7 @@ public class Schema {
         this.uncommittedOutEdgeLabels.clear();
     }
 
-    public boolean isSqlgSchema() {
+    boolean isSqlgSchema() {
         return this.name.equals(SQLG_SCHEMA);
     }
 
@@ -636,7 +624,7 @@ public class Schema {
         }
     }
 
-    public JsonNode toJson() {
+    JsonNode toJson() {
         ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
         ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -647,7 +635,7 @@ public class Schema {
         return schemaNode;
     }
 
-    public Optional<JsonNode> toNotifyJson() {
+    Optional<JsonNode> toNotifyJson() {
         boolean foundVertexLabels = false;
         ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
@@ -666,15 +654,18 @@ public class Schema {
         if (!this.getVertexLabels().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getVertexLabels().values()) {
-                JsonNode notifyJson = vertexLabel.toNotifyJson().get();
-                if (notifyJson.get("uncommittedProperties") != null ||
-                        notifyJson.get("uncommittedOutEdgeLabels") != null ||
-                        notifyJson.get("uncommittedInEdgeLabels") != null ||
-                        notifyJson.get("outEdgeLabels") != null ||
-                        notifyJson.get("inEdgeLabels") != null) {
+                Optional<JsonNode> notifyJsonOptional = vertexLabel.toNotifyJson();
+                if (notifyJsonOptional.isPresent()) {
+                    JsonNode notifyJson = notifyJsonOptional.get();
+                    if (notifyJson.get("uncommittedProperties") != null ||
+                            notifyJson.get("uncommittedOutEdgeLabels") != null ||
+                            notifyJson.get("uncommittedInEdgeLabels") != null ||
+                            notifyJson.get("outEdgeLabels") != null ||
+                            notifyJson.get("inEdgeLabels") != null) {
 
-                    vertexLabelArrayNode.add(notifyJson);
-                    foundVertexLabels = true;
+                        vertexLabelArrayNode.add(notifyJsonOptional.get());
+                        foundVertexLabels = true;
+                    }
                 }
             }
             if (vertexLabelArrayNode.size() > 0) {
@@ -743,7 +734,7 @@ public class Schema {
         return this.name.equals(other.name);
     }
 
-    public boolean deepEquals(Schema other) {
+    boolean deepEquals(Schema other) {
         Preconditions.checkState(this.name.equals(other.name), "deepEquals is called after the regular equals. i.e. the names must be equals");
         if (!(this.vertexLabels.equals(other.getVertexLabels()))) {
             return false;
@@ -768,8 +759,7 @@ public class Schema {
     }
 
     void cacheEdgeLabels() {
-        for (Iterator<Map.Entry<String, VertexLabel>> it = this.vertexLabels.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<String, VertexLabel> entry = it.next();
+        for (Map.Entry<String, VertexLabel> entry : this.vertexLabels.entrySet()) {
             for (EdgeLabel edgeLabel : entry.getValue().getOutEdgeLabels().values()) {
                 this.outEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel);
             }

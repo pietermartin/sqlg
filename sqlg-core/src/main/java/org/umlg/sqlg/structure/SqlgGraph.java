@@ -284,7 +284,7 @@ public class SqlgGraph implements Graph {
         this.topology = new Topology(this);
         this.schemaManager = new SchemaManager(this, this.topology);
         this.gremlinParser = new GremlinParser(this);
-        if (!this.sqlDialect.supportSchemas() && !this.getTopology().existSchema(this.sqlDialect.getPublicSchema())) {
+        if (!this.sqlDialect.supportSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
             //This is for mariadb. Need to make sure a db called public exist
             this.getTopology().ensureSchemaExist(this.sqlDialect.getPublicSchema());
         }

@@ -181,15 +181,15 @@ public class TestSchema extends BaseTest {
     	this.sqlgGraph.addVertex(T.label, "A.A");
     	this.sqlgGraph.tx().commit();
 
-    	assertTrue(mgr.existSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()));
-    	assertTrue(mgr.existSchema("A"));
+    	assertTrue(mgr.getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()).isPresent());
+    	assertTrue(mgr.getSchema("A").isPresent());
     	assertNotNull(mgr.ensureSchemaExist("A"));
 
-    	assertFalse(mgr.existSchema("B"));
+    	assertFalse(mgr.getSchema("B").isPresent());
     	assertNotNull(mgr.ensureSchemaExist("B"));
-    	assertTrue(mgr.existSchema("B"));
+    	assertTrue(mgr.getSchema("B").isPresent());
     	this.sqlgGraph.tx().commit();
-    	assertTrue(mgr.existSchema("B"));
+    	assertTrue(mgr.getSchema("B").isPresent());
     }
 
 }
