@@ -21,20 +21,13 @@ import static org.junit.Assert.assertEquals;
  */
 public class MidTraversalGraphTest extends BaseTest {
 
-	public MidTraversalGraphTest() {
-	}
-
 	@Test
 	public void g_V_hasLabelXpersonX_V_hasLabelXsoftwareX_name() {
 		loadModern();
 		GraphTraversal<Vertex, String> t = this.sqlgGraph.traversal().V().hasLabel("person").V().hasLabel("software").values("name");
 		printTraversalForm(t);
-//        while (t.hasNext()) {
-//            System.out.println(t.next());
-//        }
 		checkResults(Arrays.asList("lop", "lop", "lop", "lop", "ripple", "ripple", "ripple", "ripple"), t);
 	}
-
 
 	@Test
 	public void testMidTraversalV(){
