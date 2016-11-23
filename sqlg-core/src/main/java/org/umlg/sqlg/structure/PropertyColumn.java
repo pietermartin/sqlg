@@ -27,22 +27,22 @@ public class PropertyColumn {
     private Index index;
     private Index uncommittedIndex;
 
-    public PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
+    PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType) {
         this(abstractLabel, name, propertyType, Index.NONE);
     }
 
-    public PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType, Index index) {
+    private PropertyColumn(AbstractLabel abstractLabel, String name, PropertyType propertyType, Index index) {
         this.abstractLabel = abstractLabel;
         this.name = name;
         this.propertyType = propertyType;
         this.index = index;
     }
 
-    public String getName() {
+    String getName() {
         return name;
     }
 
-    public PropertyType getPropertyType() {
+    PropertyType getPropertyType() {
         return propertyType;
     }
 
@@ -120,14 +120,14 @@ public class PropertyColumn {
         this.uncommittedIndex = null;
     }
 
-    public JsonNode toNotifyJson() {
+    JsonNode toNotifyJson() {
         ObjectNode propertyObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         propertyObjectNode.put("name", this.name);
         propertyObjectNode.put("propertyType", this.propertyType.name());
         return propertyObjectNode;
     }
 
-    public static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
+    static PropertyColumn fromNotifyJson(AbstractLabel abstractLabel, JsonNode jsonNode) {
         PropertyColumn property = new PropertyColumn(
                 abstractLabel,
                 jsonNode.get("name").asText(),

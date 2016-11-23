@@ -153,7 +153,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         //TODO fails, issue #65
 //        TestEdgeFromDifferentSchema.class
         TestBatchModeMultipleGraphs.class,
-        TestDetachedEdge.class
+        TestDetachedEdge.class,
+        TestSchemaEagerCreation.class
 })
 public class AllTest {
 }

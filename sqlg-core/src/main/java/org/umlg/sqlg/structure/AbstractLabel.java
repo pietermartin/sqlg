@@ -24,9 +24,9 @@ public abstract class AbstractLabel {
     private Logger logger = LoggerFactory.getLogger(AbstractLabel.class.getName());
     protected String label;
     protected Map<String, PropertyColumn> properties = new HashMap<>();
-    protected Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
+    Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
 
-    public AbstractLabel(String label, Map<String, PropertyType> columns) {
+    AbstractLabel(String label, Map<String, PropertyType> columns) {
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
@@ -183,7 +183,7 @@ public abstract class AbstractLabel {
         }
     }
 
-    public JsonNode toJson() {
+    protected JsonNode toJson() {
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.properties.values()) {
             propertyArrayNode.add(property.toNotifyJson());
@@ -203,7 +203,7 @@ public abstract class AbstractLabel {
         }
     }
 
-    public void fromPropertyNotifyJson(JsonNode vertexLabelJson) {
+    void fromPropertyNotifyJson(JsonNode vertexLabelJson) {
         ArrayNode propertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedProperties");
         if (propertiesNode != null) {
             for (JsonNode propertyNode : propertiesNode) {

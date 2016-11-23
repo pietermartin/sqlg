@@ -146,9 +146,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex)inVertex).schema, ((SqlgVertex)inVertex).table);
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
         Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", ((SqlgVertex)inVertex).schema + "." + ((SqlgVertex)inVertex).table);
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
-        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
-        return new SqlgEdge(this.sqlgGraph, complete, edgeLabel.getSchema().getName(), label, (SqlgVertex) inVertex, this, keyValues);
+        //noinspection OptionalGetWithoutIsPresent
+        this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
+        return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValues);
     }
 
     @Override

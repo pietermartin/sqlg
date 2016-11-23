@@ -13,6 +13,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSo
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 
 import java.sql.Connection;
@@ -337,7 +338,18 @@ public class Topology {
     }
 
     /**
-     * Ensures that the vertex table and property columns exist in the db. The default schema is assumed.
+     * Ensures that the vertex table exist in the db. The default schema is assumed. @See {@link SqlDialect#getPublicSchema()}
+     * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
+     * see if the element has not been added in the mean time.
+     *
+     * @param label   The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     */
+    public VertexLabel ensureVertexLabelExist(final String label) {
+        return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, Collections.emptyMap());
+    }
+
+    /**
+     * Ensures that the vertex table and property columns exist in the db. The default schema is assumed. @See {@link SqlDialect#getPublicSchema()}
      * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
      * see if the element has not been added in the mean time.
      *
@@ -347,6 +359,18 @@ public class Topology {
      */
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
         return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, columns);
+    }
+
+    /**
+     * Ensures that the schema, vertex table exist in the db.
+     * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
+     * see if the element has not been added in the mean time.
+     *
+     * @param schemaName The schema the vertex is in.
+     * @param label      The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     */
+    public VertexLabel ensureVertexLabelExist(final String schemaName, final String label) {
+        return ensureVertexLabelExist(schemaName, label, Collections.emptyMap());
     }
 
     /**
@@ -438,6 +462,19 @@ public class Topology {
      * Ensures that the vertex's table has the required columns.
      * If a columns needs to be created a lock will be obtained.
      * The vertex's schema and table must already exists.
+     * The default "public" schema will be used. {@link SqlDialect#getPublicSchema()}
+     *
+     * @param label The vertex's label.
+     * @param properties The properties to create if they do not exist.
+     */
+    public void ensureVertexLabelPropertiesExist(String label, Map<String, PropertyType> properties) {
+        ensureVertexLabelPropertiesExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, properties);
+    }
+
+    /**
+     * Ensures that the vertex's table has the required columns.
+     * If a columns needs to be created a lock will be obtained.
+     * The vertex's schema and table must already exists.
      *
      * @param schemaName The schema the vertex resides in.
      * @param label      The vertex's label.
@@ -453,6 +490,19 @@ public class Topology {
             //createVertexLabel the table
             schemaOptional.get().ensureVertexColumnsExist(this.sqlgGraph, label, properties);
         }
+    }
+
+    /**
+     * Ensures that the edge's table has the required columns.
+     * The default schema is assumed. @see {@link SqlDialect#getPublicSchema()}
+     * If a columns needs to be created a lock will be obtained.
+     * The edge's schema and table must already exists.
+     *
+     * @param label      The edge's label.
+     * @param properties The properties to create if they do not exist.
+     */
+    public void ensureEdgePropertiesExist(String label, Map<String, PropertyType> properties) {
+        ensureEdgePropertiesExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, properties);
     }
 
     /**
@@ -853,7 +903,16 @@ public class Topology {
     public Map<String, Map<String, PropertyType>> getAllTables() {
         this.z_internalReadLock();
         try {
-            Map<String, Map<String, PropertyType>> result = new HashMap<>(this.allTableCache);
+            //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
+            Map<String, Map<String, PropertyType>> result;
+            if (this.isWriteLockHeldByCurrentThread()) {
+                result = new HashMap<>();
+                for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
+                    result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
+                }
+            } else {
+                result = new HashMap<>(this.allTableCache);
+            }
             if (this.isWriteLockHeldByCurrentThread()) {
                 Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
                 for (String table : uncommittedLabels.keySet()) {
@@ -867,7 +926,15 @@ public class Topology {
             for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
                 result.remove(sqlgSchemaSchemaTable);
             }
+
             return Collections.unmodifiableMap(result);
+
+//            Map<String, Map<String, PropertyType>> unmodifiableResult = new HashMap<>();
+//            for (Map.Entry<String, Map<String, PropertyType>> stringMapEntry : result.entrySet()) {
+//                unmodifiableResult.put(stringMapEntry.getKey(), Collections.unmodifiableMap(stringMapEntry.getValue()));
+//            }
+//            return Collections.unmodifiableMap(unmodifiableResult);
+//            return Collections.unmodifiableMap(result);
         } finally {
             z_internalReadUnLock();
         }

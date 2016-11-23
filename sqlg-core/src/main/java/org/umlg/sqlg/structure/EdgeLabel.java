@@ -33,13 +33,13 @@ public class EdgeLabel extends AbstractLabel {
     private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
     private Topology topology;
 
-    public static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(true, edgeLabelName, outVertexLabel, inVertexLabel, properties);
         return edgeLabel;
     }
 
-    public static EdgeLabel createEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    static EdgeLabel createEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
         if (!inVertexLabel.getSchema().isSqlgSchema()) {
@@ -50,14 +50,6 @@ public class EdgeLabel extends AbstractLabel {
 
     static EdgeLabel loadFromDb(Topology topology, String edgeLabelName) {
         return new EdgeLabel(topology, edgeLabelName);
-    }
-
-    public static EdgeLabel from(VertexLabel vertexLabel, JsonNode unCommittedOutEdgeLabel) {
-        String edgeLabelName = unCommittedOutEdgeLabel.get("label").asText();
-        EdgeLabel edgeLabel = new EdgeLabel(vertexLabel.getSchema().getTopology(), edgeLabelName);
-        edgeLabel.outVertexLabels.add(vertexLabel);
-        return edgeLabel;
-
     }
 
     private EdgeLabel(boolean forSqlgSchema, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
@@ -78,7 +70,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     @Override
-    public Schema getSchema() {
+    protected Schema getSchema() {
         if (!this.outVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
             return vertexLabel.getSchema();
@@ -90,7 +82,7 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
+    void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
@@ -222,7 +214,7 @@ public class EdgeLabel extends AbstractLabel {
         return toJson().toString();
     }
 
-    public Set<String> getAllEdgeForeignKeys() {
+    Set<String> getAllEdgeForeignKeys() {
         Set<String> result = new HashSet<>();
         for (VertexLabel vertexLabel : this.inVertexLabels) {
             result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
@@ -249,7 +241,7 @@ public class EdgeLabel extends AbstractLabel {
         return uncommittedInVertexLabels;
     }
 
-    public void ensureEdgeForeignKeysExist(SqlgGraph sqlgGraph, boolean in, VertexLabel vertexLabel, SchemaTable vertexSchemaTable) {
+    void ensureEdgeForeignKeysExist(SqlgGraph sqlgGraph, boolean in, VertexLabel vertexLabel, SchemaTable vertexSchemaTable) {
         Preconditions.checkArgument(vertexLabel.getSchema().getName().equals(vertexSchemaTable.getSchema()));
         Preconditions.checkArgument(vertexLabel.getLabel().equals(vertexSchemaTable.getTable()));
 
@@ -350,11 +342,11 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    public void addToOutVertexLabel(VertexLabel vertexLabel) {
+    void addToOutVertexLabel(VertexLabel vertexLabel) {
         this.outVertexLabels.add(vertexLabel);
     }
 
-    public void addToInVertexLabel(VertexLabel vertexLabel) {
+    void addToInVertexLabel(VertexLabel vertexLabel) {
         this.inVertexLabels.add(vertexLabel);
     }
 
@@ -385,7 +377,7 @@ public class EdgeLabel extends AbstractLabel {
         return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
     }
 
-    public boolean deepEquals(EdgeLabel otherEdgeLabel) {
+    boolean deepEquals(EdgeLabel otherEdgeLabel) {
         Preconditions.checkState(this.equals(otherEdgeLabel), "equals must have passed before calling deepEquals");
 
         //check every out and in edge
@@ -416,13 +408,12 @@ public class EdgeLabel extends AbstractLabel {
         return true;
     }
 
-    public JsonNode toJson() {
+    @Override
+    protected JsonNode toJson() {
         ObjectNode edgeLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         edgeLabelNode.put("schema", getSchema().getName());
         edgeLabelNode.put("label", getLabel());
-
-        JsonNode propertyNode = super.toJson();
-        edgeLabelNode.set("properties", propertyNode);
+        edgeLabelNode.set("properties", super.toJson());
 
         ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (VertexLabel outVertexLabel : this.outVertexLabels) {

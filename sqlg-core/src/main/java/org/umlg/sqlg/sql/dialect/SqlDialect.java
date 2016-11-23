@@ -267,6 +267,10 @@ public interface SqlDialect {
     default void prepareDB(Connection conn) {
     }
 
+    /**
+     * A getter to return the "public" schema for the database. For postgresql it is "public" and for HSQLDB it is "PUBLIC"
+     * @return the database's public schema.
+     */
     default String getPublicSchema() {
         return "public";
     }

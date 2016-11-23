@@ -10,6 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+//        TestSchemaEagerCreation.class,
         TestTraversalPerformance.class
 })
 public class AnyTest {

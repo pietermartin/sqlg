@@ -178,7 +178,7 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-    public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
+    void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
@@ -193,7 +193,6 @@ public class VertexLabel extends AbstractLabel {
             }
         }
     }
-
 
     //TODO refactor out columns as its already in the object as this.properties.
     private void createVertexLabelOnDb(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
@@ -321,9 +320,12 @@ public class VertexLabel extends AbstractLabel {
         this.inEdgeLabels.put(edgeLabel.getSchema().getName() + "." + edgeLabel.getLabel(), edgeLabel);
     }
 
-    public JsonNode toJson() {
+    @Override
+    protected JsonNode toJson() {
         ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        vertexLabelNode.put("schema", getSchema().getName());
         vertexLabelNode.put("label", getLabel());
+        vertexLabelNode.set("properties", super.toJson());
 
         ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
@@ -481,7 +483,7 @@ public class VertexLabel extends AbstractLabel {
         return this.schema.equals(otherVertexLabel.getSchema()) && super.equals(otherVertexLabel);
     }
 
-    public boolean deepEquals(VertexLabel other) {
+    boolean deepEquals(VertexLabel other) {
         Preconditions.checkState(this.equals(other), "deepEquals is only called after equals has succeeded");
         if (!this.outEdgeLabels.equals(other.outEdgeLabels)) {
             return false;
