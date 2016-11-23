@@ -1,10 +1,5 @@
 package org.umlg.sqlg.test.graph;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.List;
-import java.util.Map;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -12,6 +7,12 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * test graph steps in the middle of traversal
@@ -21,9 +22,20 @@ import org.umlg.sqlg.test.BaseTest;
 public class MidTraversalGraphTest extends BaseTest {
 
 	public MidTraversalGraphTest() {
-		
 	}
-	
+
+	@Test
+	public void g_V_hasLabelXpersonX_V_hasLabelXsoftwareX_name() {
+		loadModern();
+		GraphTraversal<Vertex, String> t = this.sqlgGraph.traversal().V().hasLabel("person").V().hasLabel("software").values("name");
+		printTraversalForm(t);
+//        while (t.hasNext()) {
+//            System.out.println(t.next());
+//        }
+		checkResults(Arrays.asList("lop", "lop", "lop", "lop", "ripple", "ripple", "ripple", "ripple"), t);
+	}
+
+
 	@Test
 	public void testMidTraversalV(){
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
