@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -456,18 +457,31 @@ public class SqlgUtil {
                 //value
                 //key
                 //skip the label as that is not a property but the table
-                if (key.equals(label) || keys.contains(key)) {
+                if (key == label || keys.contains(key)) {
                     continue;
                 }
                 keys.add((String) key);
-                result.put((String) key, PropertyType.from(keyValue));
+                if (keyValue == null) {
+                    //assume a String for null
+                    result.put((String) key, PropertyType.STRING);
+                } else {
+                    result.put((String) key, PropertyType.from(keyValue));
+                }
             }
         }
         return result;
     }
 
-    public static Map<String, Object> transformToInsertValues(Object... keyValues) {
-        Map<String, Object> result = new LinkedHashMap<>();
+    /**
+     * Transforms the key values into 2 maps. One for all values and one for where the values are not null.
+     * The not null values map is needed to set the properties on the {@link SqlgElement}
+     *
+     * @param keyValues The properties as a key value array.
+     * @return A {@link Pair} left is a map of all key values and right is a map where the value of the key is not null.
+     */
+    public static Pair<Map<String, Object>, Map<String, Object>> transformToInsertValues(Object... keyValues) {
+        Map<String, Object> resultAllValues = new LinkedHashMap<>();
+        Map<String, Object> resultNotNullValues = new LinkedHashMap<>();
         int i = 1;
         Object key = null;
         for (Object keyValue : keyValues) {
@@ -477,13 +491,16 @@ public class SqlgUtil {
             } else {
                 //value
                 //skip the label as that is not a property but the table
-                if (keyValue == null || key.equals(label) || key.equals(T.id)) {
+                if (key == label || key == T.id) {
                     continue;
                 }
-                result.put((String) key, keyValue);
+                if (keyValue != null) {
+                    resultNotNullValues.put((String) key, keyValue);
+                }
+                resultAllValues.put((String) key, keyValue);
             }
         }
-        return result;
+        return Pair.of(resultAllValues, resultNotNullValues);
     }
 
 

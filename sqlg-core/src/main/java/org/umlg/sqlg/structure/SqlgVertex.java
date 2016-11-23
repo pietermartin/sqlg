@@ -469,19 +469,21 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
     private void insertTemporaryVertex(Object... keyValues) {
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues).getLeft();
         this.sqlgGraph.tx().getBatchManager().addTemporaryVertex(this, keyValueMap);
     }
 
     private void insertVertex(boolean complete, Object... keyValues) {
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = SqlgUtil.transformToInsertValues(keyValues);
+        Map<String, Object> keyAllValueMap = keyValueMapPair.getLeft();
+        Map<String, Object> keyNotNullValueMap = keyValueMapPair.getRight();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddVertex(complete, keyValueMap);
+            internalBatchAddVertex(complete, keyAllValueMap);
         } else {
-            internalAddVertex(keyValueMap);
+            internalAddVertex(keyNotNullValueMap);
         }
         //Cache the properties
-        this.properties.putAll(keyValueMap);
+        this.properties.putAll(keyNotNullValueMap);
     }
 
     private void internalBatchAddVertex(boolean complete, Map<String, Object> keyValueMap) {
@@ -805,14 +807,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             switch (d) {
                                 case IN:
                                     sqlGVertex = SqlgVertex.of(this.sqlgGraph, outId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
-                                    Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
+                                    Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray()).getRight();
                                     sqlGVertex.properties.clear();
                                     sqlGVertex.properties.putAll(keyValueMap);
                                     vertices.add(sqlGVertex);
                                     break;
                                 case OUT:
                                     sqlGVertex = SqlgVertex.of(this.sqlgGraph, inId, joinSchemaTable.getSchema(), joinSchemaTable.getTable());
-                                    keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray());
+                                    keyValueMap = SqlgUtil.transformToInsertValues(keyValues.toArray()).getRight();
                                     sqlGVertex.properties.clear();
                                     sqlGVertex.properties.putAll(keyValueMap);
                                     vertices.add(sqlGVertex);

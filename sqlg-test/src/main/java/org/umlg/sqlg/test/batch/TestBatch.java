@@ -33,6 +33,22 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
+    public void testNullProperties() {
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "John", "surname", "Smith");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "John1");
+        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "Smith2");
+        Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person", "name", "");
+        Vertex v4 = this.sqlgGraph.addVertex(T.label, "Person", "name", "\"\"");
+        this.sqlgGraph.tx().commit();
+        assertFalse(this.sqlgGraph.traversal().V(v1.id()).next().property("surname").isPresent());
+        assertFalse(this.sqlgGraph.traversal().V(v2.id()).next().property("name").isPresent());
+        assertEquals("", this.sqlgGraph.traversal().V(v3.id()).next().property("name").value());
+        assertEquals("\"\"", this.sqlgGraph.traversal().V(v4.id()).next().property("name").value());
+    }
+
+    @Test
     public void testQueryWhileInserting() {
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 1; i < 101; i++) {

@@ -250,6 +250,9 @@ public class PostgresDialect extends BaseSqlDialect {
                     sql.append(COPY_COMMAND_QUOTE);
                     sql.append(" ESCAPE '");
                     sql.append(ESCAPE);
+                    sql.append("'");
+                    sql.append(" NULL '");
+                    sql.append(BATCH_NULL);
                     sql.append("';");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
@@ -270,7 +273,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
                     }
                 }
-
+                
             }
             return verticesRanges;
         } catch (Exception e) {
@@ -803,6 +806,9 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append(COPY_COMMAND_QUOTE);
         sql.append(" ESCAPE '");
         sql.append(ESCAPE);
+        sql.append("'");
+        sql.append(" NULL'");
+        sql.append(BATCH_NULL);
         sql.append("';");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
@@ -934,7 +940,12 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     countKeys++;
                     Object value = entry.getValue();
-                    PropertyType propertyType = PropertyType.from(value);
+                    PropertyType propertyType;
+                    if (value == null) {
+                        propertyType = PropertyType.STRING;
+                    } else {
+                        propertyType = PropertyType.from(value);
+                    }
                     if (JSON_ARRAY == propertyType) {
                         throw SqlgExceptions.invalidPropertyType(propertyType);
                     }
@@ -1471,9 +1482,9 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     countKeys++;
                     Object value = triple.get(key);
-                    if (value == null) {
-                        sb.append(getBatchNull());
-                    }
+//                    if (value == null) {
+//                        sb.append(getBatchNull());
+//                    }
                     switch (propertyType) {
                         case BYTE_ARRAY:
                             String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
@@ -1511,9 +1522,9 @@ public class PostgresDialect extends BaseSqlDialect {
             for (String key : edgeCache.getLeft()) {
                 PropertyType propertyType = propertyTypeMap.get(key);
                 Object value = triple.getRight().get(key);
-                if (value == null) {
-                    sb.append(getBatchNull());
-                }
+//                if (value == null) {
+//                    sb.append(getBatchNull());
+//                }
                 switch (propertyType) {
                     case BYTE_ARRAY:
                         String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));

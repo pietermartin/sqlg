@@ -7,10 +7,12 @@ import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -28,9 +30,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -421,5 +426,50 @@ public abstract class BaseTest {
             else
                 assertEquals(expected, e.id());
         }
+    }
+
+    //copied from TinkerPop
+    protected static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+        final List<T> results = traversal.toList();
+        Assert.assertFalse(traversal.hasNext());
+        if (expectedResults.size() != results.size()) {
+            logger.error("Expected results: " + expectedResults);
+            logger.error("Actual results:   " + results);
+            Assert.assertEquals("Checking result size", expectedResults.size(), results.size());
+        }
+
+        for (T t : results) {
+            if (t instanceof Map) {
+                Assert.assertThat("Checking map result existence: " + t, expectedResults.stream().filter(e -> e instanceof Map).filter(e -> internalCheckMap((Map) e, (Map) t)).findAny().isPresent(), CoreMatchers.is(true));
+            } else {
+                Assert.assertThat("Checking result existence: " + t, expectedResults.contains(t), CoreMatchers.is(true));
+            }
+        }
+        final Map<T, Long> expectedResultsCount = new HashMap<>();
+        final Map<T, Long> resultsCount = new HashMap<>();
+        Assert.assertEquals("Checking indexing is equivalent", expectedResultsCount.size(), resultsCount.size());
+        expectedResults.forEach(t -> MapHelper.incr(expectedResultsCount, t, 1l));
+        results.forEach(t -> MapHelper.incr(resultsCount, t, 1l));
+        expectedResultsCount.forEach((k, v) -> Assert.assertEquals("Checking result group counts", v, resultsCount.get(k)));
+        Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
+    }
+
+    private static <A, B> boolean internalCheckMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+        final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
+        final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
+
+        if (expectedList.size() != actualList.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < actualList.size(); i++) {
+            if (!actualList.get(i).getKey().equals(expectedList.get(i).getKey())) {
+                return false;
+            }
+            if (!actualList.get(i).getValue().equals(expectedList.get(i).getValue())) {
+                return false;
+            }
+        }
+        return true;
     }
 }
