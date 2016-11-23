@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import org.apache.commons.lang3.Range;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.PropertyType;
@@ -257,13 +256,12 @@ public interface SqlDialect {
     }
 
     /**
-     * 
      * @return the statement head to create a schema
      */
     default String createSchemaStatement() {
         return "CREATE SCHEMA ";
     }
-    
+
     default void prepareDB(Connection conn) {
     }
 
@@ -381,6 +379,7 @@ public interface SqlDialect {
     /**
      * These are internal columns used by sqlg that must be ignored when loading elements.
      * eg. '_copy_dummy' when doing using the copy command on postgresql.
+     *
      * @return
      */
     default List<String> columnsToIgnore() {
@@ -396,14 +395,15 @@ public interface SqlDialect {
     Object convertArray(PropertyType propertyType, java.sql.Array array) throws SQLException;
 
     void setArray(PreparedStatement statement, int index, PropertyType type, Object[] values) throws SQLException;
-    
+
     /**
      * range condition
+     *
      * @param low
      * @param high
      * @return
      */
-    default String getRangeClause(Range<Long> r){
-    	return "LIMIT "+(r.getMaximum()-r.getMinimum())+" OFFSET "+r.getMinimum();
+    default String getRangeClause(Range<Long> r) {
+        return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
     }
 }

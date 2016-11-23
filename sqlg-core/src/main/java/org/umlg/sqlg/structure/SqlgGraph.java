@@ -460,14 +460,24 @@ public class SqlgGraph implements Graph {
         for (Object keyValue : keyValues) {
             if (i++ % 2 == 0) {
                 key = keyValue;
-                if (!key.equals(T.label) && previousBatchModeKeys != null && !previousBatchModeKeys.isEmpty() && !key.equals(previousBatchModeKeys.get(keyCount++))) {
+                if (key != T.label && previousBatchModeKeys != null && !previousBatchModeKeys.isEmpty() && !key.equals(previousBatchModeKeys.get(keyCount++))) {
                     throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
                 }
             } else {
-                value = keyValue;
-                if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty((String) key, value);
-                    this.sqlDialect.validateProperty(key, value);
+                if (key != T.label) {
+                    value = keyValue;
+                    if (null == key)
+                        throw Property.Exceptions.propertyKeyCanNotBeNull();
+                    if (((String)key).isEmpty())
+                        throw Property.Exceptions.propertyKeyCanNotBeEmpty();
+                    if (Graph.Hidden.isHidden((String)key))
+                        throw Property.Exceptions.propertyKeyCanNotBeAHiddenKey((String)key);
+
+                    if (value != null) {
+                        this.sqlDialect.validateProperty(key, value);
+                    } else {
+                        this.sqlDialect.validateColumnName((String)key);
+                    }
                 }
             }
         }

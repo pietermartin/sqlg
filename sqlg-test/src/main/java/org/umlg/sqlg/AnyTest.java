@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
+import org.umlg.sqlg.test.batch.TestBatch;
+import org.umlg.sqlg.test.batch.TestBatchedStreaming;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,9 @@ import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        MidTraversalGraphTest.class
+        TestBatch.class,
+        TestBatchedStreaming.class,
+//        MidTraversalGraphTest.class
 })
 public class AnyTest {
 }

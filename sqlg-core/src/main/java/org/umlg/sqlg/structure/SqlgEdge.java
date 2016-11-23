@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         properties.clear();
-        properties.putAll(SqlgUtil.transformToInsertValues(keyValues));
+        properties.putAll(SqlgUtil.transformToInsertValues(keyValues).getRight());
     }
 
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -100,14 +101,16 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     protected void insertEdge(boolean complete, Object... keyValues) throws SQLException {
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues);
+        Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = SqlgUtil.transformToInsertValues(keyValues);
+        Map<String, Object> allKeyValueMap = keyValueMapPair.getLeft();
+        Map<String, Object> notNullKeyValueMap = keyValueMapPair.getRight();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-            internalBatchAddEdge(complete, keyValueMap);
+            internalBatchAddEdge(complete, allKeyValueMap);
         } else {
-            internalAddEdge(keyValueMap);
+            internalAddEdge(notNullKeyValueMap);
         }
         //Cache the properties
-        this.properties.putAll(keyValueMap);
+        this.properties.putAll(notNullKeyValueMap);
     }
 
     private void internalBatchAddEdge(boolean complete, Map<String, Object> keyValueMap) {

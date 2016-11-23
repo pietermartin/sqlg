@@ -65,11 +65,11 @@ public class PostgresDialect extends BaseSqlDialect {
     public String dialectName() {
         return "Postgresql";
     }
-    
+
     @Override
     public String createSchemaStatement() {
-    	// if ever schema is created outside of sqlg while the graph is already instantiated
-    	return "CREATE SCHEMA IF NOT EXISTS ";
+        // if ever schema is created outside of sqlg while the graph is already instantiated
+        return "CREATE SCHEMA IF NOT EXISTS ";
     }
 
     @Override
@@ -200,8 +200,8 @@ public class PostgresDialect extends BaseSqlDialect {
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getSchemaManager().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
 
                 //insert the labeled vertices
-                long endHigh=0;
-                long numberInserted=0;
+                long endHigh = 0;
+                long numberInserted = 0;
                 try (InputStream is = mapVertexToInputStream(propertyTypeMap, vertices)) {
                     StringBuilder sql = new StringBuilder();
                     sql.append("COPY ");
@@ -236,27 +236,30 @@ public class PostgresDialect extends BaseSqlDialect {
                     sql.append(COPY_COMMAND_QUOTE);
                     sql.append(" ESCAPE '");
                     sql.append(ESCAPE);
+                    sql.append("'");
+                    sql.append(" NULL '");
+                    sql.append(BATCH_NULL);
                     sql.append("';");
                     if (logger.isDebugEnabled()) {
                         logger.debug(sql.toString());
                     }
                     numberInserted = copyManager.copyIn(sql.toString(), is);
-                    if (numberInserted>0){
-	                    try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
-	                        ResultSet resultSet = preparedStatement.executeQuery();
-	                        resultSet.next();
-	                        endHigh = resultSet.getLong(1);
-	                        resultSet.close();
-	                    }
-	                    //set the id on the vertex
-	                    long id = endHigh - numberInserted + 1;
-	                    for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
-	                        sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
-	                    }
-	                    verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
+                    if (numberInserted > 0) {
+                        try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + SchemaManager.VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
+                            ResultSet resultSet = preparedStatement.executeQuery();
+                            resultSet.next();
+                            endHigh = resultSet.getLong(1);
+                            resultSet.close();
+                        }
+                        //set the id on the vertex
+                        long id = endHigh - numberInserted + 1;
+                        for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
+                            sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
+                        }
+                        verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
                     }
                 }
-                
+
             }
             return verticesRanges;
         } catch (Exception e) {
@@ -488,7 +491,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             break;
                         case LOCALTIME:
                             sql.append("'");
-                            sql.append(shiftDST((LocalTime)value).toString());
+                            sql.append(shiftDST((LocalTime) value).toString());
                             sql.append("'::TIME");
                             break;
                         case ZONEDDATETIME:
@@ -786,6 +789,9 @@ public class PostgresDialect extends BaseSqlDialect {
         sql.append(COPY_COMMAND_QUOTE);
         sql.append(" ESCAPE '");
         sql.append(ESCAPE);
+        sql.append("'");
+        sql.append(" NULL'");
+        sql.append(BATCH_NULL);
         sql.append("';");
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
@@ -914,7 +920,12 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     countKeys++;
                     Object value = entry.getValue();
-                    PropertyType propertyType = PropertyType.from(value);
+                    PropertyType propertyType;
+                    if (value == null) {
+                        propertyType = PropertyType.STRING;
+                    } else {
+                        propertyType = PropertyType.from(value);
+                    }
                     if (JSON_ARRAY == propertyType) {
                         throw SqlgExceptions.invalidPropertyType(propertyType);
                     }
@@ -972,8 +983,8 @@ public class PostgresDialect extends BaseSqlDialect {
                     result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
                     break;
                 case LOCALTIME:
-                	LocalTime lt = (LocalTime) value;
-                	result = shiftDST(lt).toString();
+                    LocalTime lt = (LocalTime) value;
+                    result = shiftDST(lt).toString();
                     break;
                 case ZONEDDATETIME_ARRAY:
                     ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
@@ -1453,9 +1464,9 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     countKeys++;
                     Object value = triple.get(key);
-                    if (value == null) {
-                        sb.append(getBatchNull());
-                    }
+//                    if (value == null) {
+//                        sb.append(getBatchNull());
+//                    }
                     switch (propertyType) {
                         case BYTE_ARRAY:
                             String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
@@ -1493,9 +1504,9 @@ public class PostgresDialect extends BaseSqlDialect {
             for (String key : edgeCache.getLeft()) {
                 PropertyType propertyType = propertyTypeMap.get(key);
                 Object value = triple.getRight().get(key);
-                if (value == null) {
-                    sb.append(getBatchNull());
-                }
+//                if (value == null) {
+//                    sb.append(getBatchNull());
+//                }
                 switch (propertyType) {
                     case BYTE_ARRAY:
                         String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
@@ -1522,30 +1533,31 @@ public class PostgresDialect extends BaseSqlDialect {
 
     /**
      * this follows the PostgreSQL rules at https://www.postgresql.org/docs/current/static/sql-copy.html#AEN77663
-     * "If the value contains the delimiter character, the QUOTE character, the NULL string, a carriage return, 
-     * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character, 
-     * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded 
+     * "If the value contains the delimiter character, the QUOTE character, the NULL string, a carriage return,
+     * or line feed character, then the whole value is prefixed and suffixed by the QUOTE character,
+     * and any occurrence within the value of a QUOTE character or the ESCAPE character is preceded
      * by the escape character."
+     *
      * @param s
      * @return
      */
     private String escapeSpecialCharacters(String s) {
-    	StringBuilder sb=new StringBuilder();
-    	boolean needEscape=s.length()==0; // escape empty strings
-    	for (int a=0;a<s.length();a++){
-    		char c=s.charAt(a);
-    		if (c=='\n' || c=='\r' || c==0 || c==COPY_COMMAND_DELIMITER.charAt(0)){
-    			needEscape=true;
-    		}
-    		if (c==ESCAPE || c==QUOTE){
-    			needEscape=true;
-    			sb.append(ESCAPE);
-    		}
-    		sb.append(c);
-    	}
-    	if (needEscape){
-    		return QUOTE+sb.toString()+QUOTE;
-    	}
+        StringBuilder sb = new StringBuilder();
+        boolean needEscape = s.length() == 0; // escape empty strings
+        for (int a = 0; a < s.length(); a++) {
+            char c = s.charAt(a);
+            if (c == '\n' || c == '\r' || c == 0 || c == COPY_COMMAND_DELIMITER.charAt(0)) {
+                needEscape = true;
+            }
+            if (c == ESCAPE || c == QUOTE) {
+                needEscape = true;
+                sb.append(ESCAPE);
+            }
+            sb.append(c);
+        }
+        if (needEscape) {
+            return QUOTE + sb.toString() + QUOTE;
+        }
         return s;
     }
 
@@ -2573,19 +2585,20 @@ public class PostgresDialect extends BaseSqlDialect {
             throw new RuntimeException(e);
         }
     }
-    
+
     /**
      * Postgres gets confused by DST, it sets the timezone badly and then reads the wrong value out, so we convert the value to "winter time"
+     *
      * @param lt the current time
      * @return the time in "winter time" if there is DST in effect today
      */
     @SuppressWarnings("deprecation")
-	private static Time shiftDST(LocalTime lt){
-        Time t=Time.valueOf(lt);
-        int offset=Calendar.getInstance().get(Calendar.DST_OFFSET)/1000;
+    private static Time shiftDST(LocalTime lt) {
+        Time t = Time.valueOf(lt);
+        int offset = Calendar.getInstance().get(Calendar.DST_OFFSET) / 1000;
         // I know this are deprecated methods, but it's so much clearer than alternatives
-    	int m=t.getSeconds();
-    	t.setSeconds(m+offset);
-    	return t;
+        int m = t.getSeconds();
+        t.setSeconds(m + offset);
+        return t;
     }
 }
