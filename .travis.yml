@@ -1,8 +1,7 @@
 dist: trusty
 sudo: required
 before_install:
-  - sudo sed -i -e 's/#max_locks_per_transaction.*/max_locks_per_transaction = 128/' /etc/postgresql/9.3/main/postgresql.conf
-#  - sudo systemctl restart postgresql
+  - sudo sed -i -e 's/#max_locks_per_transaction.*/max_locks_per_transaction = 256/' /etc/postgres5/main/postgresql.conf
   - sudo /etc/init.d/postgresql restart
 language: java
 jdk:
