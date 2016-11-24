@@ -10,7 +10,7 @@ jdk:
 #env:
 #    - MAVEN_OPTS="-Xmx4096m"
 #script: "./run-tests.sh"
-script: "./run-tests.sh"
+script:
   - sudo rm /etc/mavenrc
   - export MAVEN_OPTS="-Xmx4098m"
   - mvn -e test

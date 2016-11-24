@@ -35,8 +35,15 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
         Optional<PropertyColumn> propertyOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person").get().getProperty("name");
         assertTrue(propertyOptional.isPresent());
+        assertTrue(propertyOptional.get().getIndex()==Index.NONE);
+        propertyOptional.get().ensureIndexExist(this.sqlgGraph, Index.NON_UNIQUE);
+        this.sqlgGraph.tx().rollback();
+        propertyOptional = this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person").get().getProperty("name");
+        assertTrue(propertyOptional.isPresent());
+        assertTrue(propertyOptional.get().getIndex()==Index.NONE);
         propertyOptional.get().ensureIndexExist(this.sqlgGraph, Index.NON_UNIQUE);
         this.sqlgGraph.tx().commit();
+        assertTrue(propertyOptional.get().getIndex()==Index.NON_UNIQUE);
         //Check if the index is being used
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {

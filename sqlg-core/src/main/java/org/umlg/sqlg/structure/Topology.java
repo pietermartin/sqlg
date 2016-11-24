@@ -842,6 +842,13 @@ public class Topology {
         }
     }
 
+    public Schema getPublicSchema() {
+        Optional<Schema> schema = getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema());
+        Preconditions.checkState(schema.isPresent(), "BUG: The public schema must always be present");
+        //noinspection OptionalGetWithoutIsPresent
+        return schema.get();
+    }
+
     public Optional<Schema> getSchema(String schema) {
         this.z_internalReadLock();
         try {

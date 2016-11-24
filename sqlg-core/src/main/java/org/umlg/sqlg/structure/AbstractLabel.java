@@ -62,16 +62,6 @@ public abstract class AbstractLabel {
         }
     }
 
-    Map<String, PropertyColumn> getPropertyColumnMap() {
-        Map<String, PropertyColumn> result = new HashMap<>();
-        result.putAll(this.properties);
-        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            result.putAll(this.uncommittedProperties);
-        }
-        return result;
-    }
-
-    //TODO remove this method. PropertyColumnn should be used all the way up the stack
     Map<String, PropertyType> getPropertyTypeMap() {
         Map<String, PropertyType> result = new HashMap<>();
         this.properties.forEach((k, v) -> result.put(k, v.getPropertyType()));

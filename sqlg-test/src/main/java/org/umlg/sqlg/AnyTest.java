@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
+import org.umlg.sqlg.test.index.TestIndex;
 
 /**
  * Date: 2014/07/16
@@ -10,9 +10,10 @@ import org.umlg.sqlg.test.batch.TestMultiThreadedBatch;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestIndex.class,
 //        TestSchemaEagerCreation.class,
 //        TestTraversalPerformance.class,
-        TestMultiThreadedBatch.class
+//        TestMultiThreadedBatch.class
 })
 public class AnyTest {
 }

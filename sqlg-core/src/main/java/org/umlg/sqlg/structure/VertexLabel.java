@@ -178,7 +178,7 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-    void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
+    public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);

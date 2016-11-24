@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.schema;
 
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -83,6 +84,13 @@ public class TestSchemaEagerCreation extends BaseTest {
         this.sqlgGraph.getTopology().ensureEdgePropertiesExist("ab", properties);
         this.sqlgGraph.tx().commit();
         assertFalse(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
+    }
+
+    @Test
+    public void testVertexLabelPropertiesViaVertexLabel() {
+        this.sqlgGraph.addVertex(T.label, "Person");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.getTopology().getPublicSchema();
     }
 
     private void createModernSchema() {
