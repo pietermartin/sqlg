@@ -32,14 +32,14 @@ public class TestMultiThreadedBatch extends BaseTest {
         sqlgGraph.tx().rollback();
         Set<Integer> tables = new ConcurrentSkipListSet<>();
         ExecutorService executorService = Executors.newFixedThreadPool(1);
-        for (int j = 0; j < 100; j++) {
+        for (int j = 0; j < 50; j++) {
             executorService.submit(() -> {
                 sqlgGraph.tx().rollback();
                 sqlgGraph.tx().normalBatchModeOn();
                 final Random random = new Random();
                 int randomInt = random.nextInt();
                 try {
-                    for (int i = 0; i < 10000; i++) {
+                    for (int i = 0; i < 1000; i++) {
                         Vertex v1 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", randomInt);
                         Vertex v2 = sqlgGraph.addVertex(T.label, "Person" + String.valueOf(randomInt), "name", randomInt);
                         v1.addEdge(String.valueOf(randomInt), v2, "name", randomInt);
@@ -54,10 +54,10 @@ public class TestMultiThreadedBatch extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(60000, TimeUnit.SECONDS);
-        Assert.assertEquals(100, tables.size());
+        Assert.assertEquals(50, tables.size());
         for (Integer i : tables) {
             Assert.assertTrue(this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
-            Assert.assertEquals(20000, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
+            Assert.assertEquals(2000, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
             List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
             for (Vertex v : persons) {
                 Assert.assertEquals(i, v.value("name"));
