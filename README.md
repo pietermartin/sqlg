@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/pietermartin/sqlg.svg?branch=master)](https://travis-ci.org/pietermartin/sqlg)
+[![Build Status](https://snap-ci.com/pietermartin/sqlg/branch/master/build_image)](https://snap-ci.com/pietermartin/sqlg/branch/master)
 
 Sqlg
 ====
