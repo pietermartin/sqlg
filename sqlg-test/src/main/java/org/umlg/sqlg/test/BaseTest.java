@@ -56,7 +56,7 @@ public abstract class BaseTest {
     public TestRule watcher = new TestWatcher() {
         protected void starting(Description description) {
             BaseTest.this.start = System.currentTimeMillis();
-//            logger.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
+            logger.info("Starting test: " + description.getClassName() + "." + description.getMethodName());
         }
 
         protected void finished(Description description) {
