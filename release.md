@@ -2,4 +2,3 @@
 * mvn clean deploy -P release
 * log in to https://oss.sonatype.org
 * close and release the artifacts
-* test codeship
