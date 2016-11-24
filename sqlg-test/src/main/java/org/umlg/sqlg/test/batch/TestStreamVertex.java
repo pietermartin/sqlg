@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -258,20 +257,20 @@ public class TestStreamVertex extends BaseTest {
     @Test
     public void testUsingConnectionDuringResultSetIter() {
         this.sqlgGraph.tx().streamingBatchModeOn();
-        for (int i = 1; i < 1000001; i++) {
+        for (int i = 1; i < 100_001; i++) {
             LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
             for (int j = 0; j < 2; j++) {
                 keyValue.put("name" + j, "a" + i);
             }
             this.sqlgGraph.streamVertex("Person", keyValue);
-            if (i % 250000 == 0) {
+            if (i % 25_000 == 0) {
                 this.sqlgGraph.tx().commit();
                 this.sqlgGraph.tx().streamingBatchModeOn();
                 System.out.println(i);
             }
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().has(T.label, "Person");
+        Assert.assertEquals(100_000, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().intValue());
 
     }
 
@@ -280,13 +279,13 @@ public class TestStreamVertex extends BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        for (int i = 1; i < 1000001; i++) {
+        for (int i = 1; i < 100_001; i++) {
             LinkedHashMap<String, Object> keyValue = new LinkedHashMap<>();
             for (int j = 0; j < 2; j++) {
                 keyValue.put("name" + j, "a" + i);
             }
             this.sqlgGraph.streamVertex("Person", keyValue);
-            if (i % 250000 == 0) {
+            if (i % 25_000 == 0) {
                 this.sqlgGraph.tx().commit();
                 this.sqlgGraph.tx().streamingBatchModeOn();
                 System.out.println(i);
@@ -297,7 +296,7 @@ public class TestStreamVertex extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        Assert.assertEquals(1000000L, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
+        Assert.assertEquals(100_000L, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next().longValue());
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
