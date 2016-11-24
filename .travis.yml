@@ -6,7 +6,7 @@ jdk:
 #    - MAVEN_OPTS="-Xmx4096m"
 script: "./run-tests.sh"
 addons:
-  postgresql: "9.4"
+  postgresql: "9.5"
 before_script:
   - psql -c 'create database "sqlgraphdb";' -U postgres
   - psql -c 'create database "g1";' -U postgres
