@@ -13,7 +13,7 @@ jdk:
 script:
   - sudo rm /etc/mavenrc
   - export MAVEN_OPTS="-Xmx5012m"
-  - mvn -e -X test
+  - mvn -e test
 addons:
   postgresql: "9.5"
 before_script:
