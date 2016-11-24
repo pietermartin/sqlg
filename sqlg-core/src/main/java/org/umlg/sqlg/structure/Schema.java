@@ -26,7 +26,7 @@ import static org.umlg.sqlg.structure.Topology.*;
  * Date: 2016/09/04
  * Time: 8:49 AM
  */
-class Schema {
+public class Schema {
 
     private static Logger logger = LoggerFactory.getLogger(Schema.class.getName());
     private Topology topology;
@@ -239,30 +239,17 @@ class Schema {
         return topology;
     }
 
-    Map<String, VertexLabel> getVertexLabels() {
-        return this.vertexLabels;
-    }
-
     private Map<String, VertexLabel> getUncommittedVertexLabels() {
         return this.uncommittedVertexLabels;
     }
 
-    Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
+    public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", SchemaManager.VERTEX_PREFIX);
-        VertexLabel vertexLabel = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        VertexLabel vertexLabel = getVertexLabels().get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         if (vertexLabel != null) {
             return Optional.of(vertexLabel);
         } else {
-            if (this.topology.isWriteLockHeldByCurrentThread()) {
-                vertexLabel = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-                if (vertexLabel != null) {
-                    return Optional.of(vertexLabel);
-                } else {
-                    return Optional.empty();
-                }
-            } else {
-                return Optional.empty();
-            }
+            return Optional.empty();
         }
     }
 
@@ -322,6 +309,15 @@ class Schema {
             result.put(edgeQualifiedName, edgeLabel.getPropertyTypeMap());
         }
         return result;
+    }
+
+    public Map<String, VertexLabel> getVertexLabels() {
+        Map<String, VertexLabel> result = new HashMap<>();
+        result.putAll(this.vertexLabels);
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedVertexLabels);
+        }
+        return Collections.unmodifiableMap(result);
     }
 
     Map<String, AbstractLabel> getUncommittedLabels() {

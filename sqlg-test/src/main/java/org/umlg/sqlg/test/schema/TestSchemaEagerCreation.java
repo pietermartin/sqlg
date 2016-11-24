@@ -4,13 +4,16 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyColumn;
 import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.Schema;
 import org.umlg.sqlg.structure.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.*;
 
@@ -86,11 +89,43 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertFalse(this.sqlgGraph.getTopology().getAllTables().get(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_ab").isEmpty());
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testVertexLabelPropertiesViaVertexLabel() {
+        Schema schema = this.sqlgGraph.getTopology().getPublicSchema();
         this.sqlgGraph.addVertex(T.label, "Person");
+        Optional<VertexLabel> vertexLabel = schema.getVertexLabel("Person");
+        assertTrue(vertexLabel.isPresent());
+        this.sqlgGraph.tx().rollback();
+        vertexLabel = schema.getVertexLabel("Person");
+        assertFalse(vertexLabel.isPresent());
+
+        this.sqlgGraph.addVertex(T.label, "Person");
+        vertexLabel = schema.getVertexLabel("Person");
+        assertTrue(vertexLabel.isPresent());
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.getTopology().getPublicSchema();
+        vertexLabel = schema.getVertexLabel("Person");
+        assertTrue(vertexLabel.isPresent());
+
+        vertexLabel = schema.getVertexLabel("Person");
+        assertTrue(vertexLabel.isPresent());
+        Map<String, PropertyType> properties = new HashMap<>();
+        properties.put("name", PropertyType.STRING);
+        properties.put("age", PropertyType.INTEGER);
+        vertexLabel.get().ensureColumnsExist(this.sqlgGraph, properties);
+        assertEquals(2, vertexLabel.get().getProperties().size());
+        this.sqlgGraph.tx().rollback();
+        assertEquals(0, vertexLabel.get().getProperties().size());
+
+        vertexLabel.get().ensureColumnsExist(this.sqlgGraph, properties);
+        this.sqlgGraph.tx().commit();
+        assertEquals(2, vertexLabel.get().getProperties().size());
+        PropertyColumn propertyColumnName = vertexLabel.get().getProperties().get("name");
+        PropertyColumn propertyColumnAge = vertexLabel.get().getProperties().get("age");
+        assertNotNull(propertyColumnName);
+        assertNotNull(propertyColumnAge);
+        assertEquals(PropertyType.STRING, propertyColumnName.getPropertyType());
+        assertEquals(PropertyType.INTEGER, propertyColumnAge.getPropertyType());
     }
 
     private void createModernSchema() {

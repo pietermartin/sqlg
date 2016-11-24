@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.schema.TestSchemaEagerCreation;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,10 @@ import org.umlg.sqlg.test.index.TestIndex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestIndex.class,
-//        TestSchemaEagerCreation.class,
+//        TestRepeatStepGraphOut.class,
+//        TestStreamVertex.class
+//        TestIndex.class,
+        TestSchemaEagerCreation.class,
 //        TestTraversalPerformance.class,
 //        TestMultiThreadedBatch.class
 })

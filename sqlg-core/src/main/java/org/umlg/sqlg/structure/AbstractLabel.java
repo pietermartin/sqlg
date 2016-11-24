@@ -44,22 +44,37 @@ public abstract class AbstractLabel {
         return this.label;
     }
 
-    public Optional<PropertyColumn> getProperty(String key) {
-        PropertyColumn property = this.properties.get(key);
-        if (property != null) {
-            return Optional.of(property);
-        } else {
-            if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-                property = this.uncommittedProperties.get(key);
-                if (property != null) {
-                    return Optional.of(property);
-                } else {
-                    return Optional.empty();
-                }
-            } else {
-                return Optional.empty();
-            }
+    public Map<String, PropertyColumn> getProperties() {
+        Map<String, PropertyColumn> result = new HashMap<>();
+        result.putAll(this.properties);
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedProperties);
         }
+        return result;
+    }
+
+    public Optional<PropertyColumn> getProperty(String key) {
+        PropertyColumn propertyColumn = getProperties().get(key);
+        if (propertyColumn != null) {
+            return Optional.of(propertyColumn);
+        } else {
+            return Optional.empty();
+        }
+//        PropertyColumn property = this.properties.get(key);
+//        if (property != null) {
+//            return Optional.of(property);
+//        } else {
+//            if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+//                property = this.uncommittedProperties.get(key);
+//                if (property != null) {
+//                    return Optional.of(property);
+//                } else {
+//                    return Optional.empty();
+//                }
+//            } else {
+//                return Optional.empty();
+//            }
+//        }
     }
 
     Map<String, PropertyType> getPropertyTypeMap() {

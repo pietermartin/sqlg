@@ -38,11 +38,11 @@ public class PropertyColumn {
         this.index = index;
     }
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
-    PropertyType getPropertyType() {
+    public PropertyType getPropertyType() {
         return propertyType;
     }
 
