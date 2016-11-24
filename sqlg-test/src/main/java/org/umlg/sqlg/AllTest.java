@@ -11,7 +11,6 @@ import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
-import org.umlg.sqlg.test.index.TestForeignKeyIndexPerformance;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
@@ -67,7 +66,6 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestEdgeHas.class,
         TestBatch.class,
         TestNormalBatchUpdate.class,
-        TestForeignKeyIndexPerformance.class,
         TestMultiThreadedBatch.class,
         TestMultiThread.class,
         TestMultipleThreadMultipleJvm.class,
