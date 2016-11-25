@@ -9,7 +9,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>sqlg :: sqlg-postgres-parent</artifactId>
+    <artifactId>sqlg-postgres-parent</artifactId>
+    <name>sqlg :: sqlg</name>
     <packaging>pom</packaging>
 
     <modules>
