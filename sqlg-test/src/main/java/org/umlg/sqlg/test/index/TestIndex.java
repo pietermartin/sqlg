@@ -29,6 +29,7 @@ public class TestIndex extends BaseTest {
 
     @Test
     public void testIndexViaTopology() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsTransactionalSchema());
         for (int i = 0; i < 5000; i++) {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         }
