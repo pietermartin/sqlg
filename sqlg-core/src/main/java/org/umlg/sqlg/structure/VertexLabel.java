@@ -81,17 +81,23 @@ public class VertexLabel extends AbstractLabel {
         return result;
     }
 
-    Map<String, EdgeLabel> getOutEdgeLabels() {
+    public Map<String, EdgeLabel> getOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         result.putAll(this.outEdgeLabels);
         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
         }
-        return result;
+        return Collections.unmodifiableMap(result);
     }
 
-    Optional<EdgeLabel> getOutEdgeLabel(String edgeLabelName) {
-        EdgeLabel edgeLabel = getOutEdgeLabels().get(edgeLabelName);
+    /**
+     * Out EdgeLabels are always in the same schema as the this VertexLabel' schema.
+     * So the edgeLabelName must not contain the schema prefix
+     * @param edgeLabelName
+     * @return
+     */
+    public Optional<EdgeLabel> getOutEdgeLabel(String edgeLabelName) {
+        EdgeLabel edgeLabel = getOutEdgeLabels().get(this.schema.getName() + "." + edgeLabelName);
         if (edgeLabel != null) {
             return Optional.of(edgeLabel);
         }

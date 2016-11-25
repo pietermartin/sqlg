@@ -8,6 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,7 +77,11 @@ public class Schema {
         this.name = name;
     }
 
-    VertexLabel ensureVertexLabelExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
+    public VertexLabel ensureVertexLabelExist(final SqlgGraph sqlgGraph, final String label) {
+        return ensureVertexLabelExist(sqlgGraph, label, Collections.emptyMap());
+    }
+
+    public VertexLabel ensureVertexLabelExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
@@ -133,9 +138,9 @@ public class Schema {
         Preconditions.checkState(inVertexLabelOptional.isPresent(), "In vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
 
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, false, outVertexLabelOptional.get(), foreignKeyOut);
+        edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, Direction.OUT, outVertexLabelOptional.get());
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, true, inVertexLabelOptional.get(), foreignKeyIn);
+        edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, Direction.IN, inVertexLabelOptional.get());
         edgeLabel.ensureColumnsExist(sqlgGraph, columns);
         return edgeLabel;
     }
@@ -275,7 +280,7 @@ public class Schema {
         return result;
     }
 
-    Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
+    public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
         EdgeLabel edgeLabel = this.outEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
         if (edgeLabel != null) {

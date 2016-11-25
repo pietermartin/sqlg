@@ -1,13 +1,11 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
-import org.umlg.sqlg.structure.PropertyColumn;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.Schema;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Collections;
@@ -126,6 +124,54 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertNotNull(propertyColumnAge);
         assertEquals(PropertyType.STRING, propertyColumnName.getPropertyType());
         assertEquals(PropertyType.INTEGER, propertyColumnAge.getPropertyType());
+    }
+
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @Test
+    public void testEdgeLabelsProperties() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+        a.addEdge("ab", b);
+        this.sqlgGraph.tx().commit();
+
+        Optional<VertexLabel> vertexLabelAOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A");
+        assertTrue(vertexLabelAOptional.isPresent());
+        Optional<VertexLabel> vertexLabelBOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B");
+        assertTrue(vertexLabelBOptional.isPresent());
+        Optional<EdgeLabel> edgeLabelOptional = vertexLabelAOptional.get().getOutEdgeLabel("ab");
+        assertTrue(edgeLabelOptional.isPresent());
+
+        Map<String, PropertyType> properties = new HashMap<>();
+        properties.put("name", PropertyType.STRING);
+        properties.put("age", PropertyType.INTEGER);
+        EdgeLabel edgeLabel = edgeLabelOptional.get();
+        edgeLabel.ensureColumnsExist(this.sqlgGraph, properties);
+        this.sqlgGraph.tx().rollback();
+
+        edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
+        assertTrue(edgeLabel.getProperties().isEmpty());
+
+        edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
+        edgeLabel.ensureColumnsExist(this.sqlgGraph, properties);
+        this.sqlgGraph.tx().commit();
+
+        edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
+        assertEquals(2, edgeLabel.getProperties().size());
+    }
+
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @Test
+    public void testEdgeLabelAddVertexLabels() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+        a.addEdge("ab", b);
+        this.sqlgGraph.tx().commit();
+
+        Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
+        assertTrue(edgeLabelOptional.isPresent());
+
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "C");
+//        this.sqlgGraph.getTopology().ensuEd
     }
 
     private void createModernSchema() {

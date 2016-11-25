@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -82,7 +83,7 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
+    public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
@@ -241,20 +242,18 @@ public class EdgeLabel extends AbstractLabel {
         return uncommittedInVertexLabels;
     }
 
-    void ensureEdgeForeignKeysExist(SqlgGraph sqlgGraph, boolean in, VertexLabel vertexLabel, SchemaTable vertexSchemaTable) {
-        Preconditions.checkArgument(vertexLabel.getSchema().getName().equals(vertexSchemaTable.getSchema()));
-        Preconditions.checkArgument(vertexLabel.getLabel().equals(vertexSchemaTable.getTable()));
-
+    void ensureEdgeForeignKeysExist(SqlgGraph sqlgGraph, Direction direction, VertexLabel vertexLabel) {
         Set<String> allEdgeForeignKeys = getAllEdgeForeignKeys();
-        SchemaTable foreignKey = SchemaTable.of(vertexSchemaTable.getSchema(), vertexSchemaTable.getTable() + (in ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
+        SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
+        SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
         if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
             schema.getTopology().lock();
             allEdgeForeignKeys = getAllEdgeForeignKeys();
             if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
-                TopologyManager.addLabelToEdge(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), in, foreignKey);
-                if (in) {
+                TopologyManager.addLabelToEdge(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
+                if (direction == Direction.IN) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedInEdgeLabels(schema, this);
                 } else {

@@ -10,12 +10,7 @@ import org.umlg.sqlg.test.schema.TestSchemaEagerCreation;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestRepeatStepGraphOut.class,
-//        TestStreamVertex.class
-//        TestIndex.class,
         TestSchemaEagerCreation.class,
-//        TestTraversalPerformance.class,
-//        TestMultiThreadedBatch.class
 })
 public class AnyTest {
 }
