@@ -19,8 +19,8 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person");
         this.sqlgGraph.tx().commit();
-        person1 = this.sqlgGraph.v(person1.id());
-        person2 = this.sqlgGraph.v(person2.id());
+        person1 = this.sqlgGraph.traversal().V(person1.id()).next();
+        person2 = this.sqlgGraph.traversal().V(person2.id()).next();
         person1.addEdge("friend", person2);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(1, vertexTraversal(person1).out("friend").count().next().intValue());
@@ -32,8 +32,8 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
-        person1 = this.sqlgGraph.v(person1.id());
-        person2 = this.sqlgGraph.v(person2.id());
+        person1 = this.sqlgGraph.traversal().V(person1.id()).next();
+        person2 = this.sqlgGraph.traversal().V(person2.id()).next();
         person1.addEdge("friend", person2);
         Assert.assertEquals("john", person1.value("name"));
         Assert.assertEquals("peter", person2.value("name"));
@@ -49,8 +49,8 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex person2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
-        person1 = this.sqlgGraph.v(person1.id());
-        person2 = this.sqlgGraph.v(person2.id());
+        person1 = this.sqlgGraph.traversal().V(person1.id()).next();
+        person2 = this.sqlgGraph.traversal().V(person2.id()).next();
         person1.addEdge("friend", person2);
         Assert.assertEquals("john", person1.value("name"));
         Assert.assertEquals("peter", person2.value("name"));

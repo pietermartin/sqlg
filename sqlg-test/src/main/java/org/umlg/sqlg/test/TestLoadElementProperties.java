@@ -16,7 +16,7 @@ public class TestLoadElementProperties extends BaseTest {
     public void testLoadVertexProperties() {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         this.sqlgGraph.tx().commit();
-        marko = this.sqlgGraph.v(marko.id());
+        marko = this.sqlgGraph.traversal().V(marko.id()).next();
         Assert.assertEquals("marko", marko.property("name").value());
     }
 
@@ -26,7 +26,7 @@ public class TestLoadElementProperties extends BaseTest {
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Edge friend = marko.addEdge("friend", john, "weight", 1);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.e(friend.id()).property("weight").value());
+        Assert.assertEquals(1, this.sqlgGraph.traversal().E(friend.id()).next().property("weight").value());
     }
 
 }

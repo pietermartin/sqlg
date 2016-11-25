@@ -34,7 +34,7 @@ public class TestUpdateVertex extends BaseTest {
         Vertex vertex = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a", "property2", "b");
         this.sqlgGraph.tx().commit();
 
-        vertex = this.sqlgGraph.v(vertex.id());
+        vertex = this.sqlgGraph.traversal().V(vertex.id()).next();
         vertex.property("property1", "aa");
         assertEquals("b", vertex.value("property2"));
 

@@ -196,7 +196,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            v1 = sqlgGraph.v(v1.id());
+            v1 = sqlgGraph.traversal().V(v1.id()).next();
             assertNotNull(v1);
             assertEquals(true, v1.property("aBoolean").value());
             assertEquals((short) 1, v1.property("aShort").value());
@@ -205,7 +205,7 @@ public class TestLoadSchema extends BaseTest {
             assertEquals(1D, v1.property("aDouble").value());
             assertEquals("aaaaaaaaaaaaa", v1.property("aString").value());
 
-            v2 = sqlgGraph.v(v2.id());
+            v2 = sqlgGraph.traversal().V(v2.id()).next();
             assertEquals(true, v2.property("bBoolean").value());
             assertEquals((short) 2, v2.property("bShort").value());
             assertEquals(2, v2.property("bInteger").value());
@@ -273,9 +273,9 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            assertEquals(2, vertexTraversal(sqlgGraph.v(realBsc.id())).out("workspaceElement").count().next().intValue());
-            assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).in("workspaceElement").count().next().intValue());
-            assertEquals(1, vertexTraversal(sqlgGraph.v(planBsc.id())).in("workspaceElement").count().next().intValue());
+            assertEquals(2, vertexTraversal(sqlgGraph.traversal().V(realBsc.id()).next()).out("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(realBscWE.id()).next()).in("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(planBsc.id()).next()).in("workspaceElement").count().next().intValue());
         }
     }
 
@@ -291,8 +291,8 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            assertEquals(1, vertexTraversal(sqlgGraph.v(realBscWE.id())).out("workspaceElement").count().next().intValue());
-            assertEquals(1, vertexTraversal(sqlgGraph.v(planBscWE.id())).out("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(realBscWE.id()).next()).out("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(planBscWE.id()).next()).out("workspaceElement").count().next().intValue());
         }
     }
 
@@ -320,7 +320,7 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            v2 = sqlgGraph.v(v2.id());
+            v2 = sqlgGraph.traversal().V(v2.id()).next();
             //This fails if the columns are not loaded per schema and table
             v2.property("name1", "joe");
             sqlgGraph.tx().commit();

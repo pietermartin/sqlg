@@ -271,7 +271,7 @@ public class SqlgGraph implements Graph {
                         this.configuration);
             }
 
-            logger.info(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
+            logger.debug(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
             try (Connection conn = this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection()) {
                 //This is used by Hsqldb to set the transaction semantics. MVCC and cache
                 this.sqlDialect.prepareDB(conn);
@@ -554,24 +554,6 @@ public class SqlgGraph implements Graph {
         }
     }
 
-    /**
-     * Use {@link SqlgGraph#traversal()}
-     */
-    @Deprecated
-    public Vertex v(final Object id) {
-        Iterator<Vertex> t = this.vertices(id);
-        return t.hasNext() ? t.next() : null;
-    }
-
-    /**
-     * Use {@link SqlgGraph#traversal()}
-     */
-    @Deprecated
-    public Edge e(final Object id) {
-        Iterator<Edge> t = this.edges(id);
-        return t.hasNext() ? t.next() : null;
-    }
-
     @Override
     public SqlgTransaction tx() {
         return this.sqlgTransaction;
@@ -584,7 +566,7 @@ public class SqlgGraph implements Graph {
 
     @Override
     public void close() throws Exception {
-        logger.info(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
+        logger.debug(String.format("Closing graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
         if (this.tx().isOpen())
             this.tx().close();
         this.topology.close();

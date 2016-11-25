@@ -309,7 +309,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            v1 = sqlgGraph.v(v1.id());
+            v1 = sqlgGraph.traversal().V(v1.id()).next();
             assertEquals(1, sqlgGraph.traversal().V(v1.id()).out("bts_btsalm").count().next().intValue());
             assertEquals(1, sqlgGraph.traversal().V(v1.id()).out("bts_btsalmtos").count().next().intValue());
         }
@@ -466,7 +466,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals("john", v1.value("name"));
         assertEquals("john", this.sqlgGraph.traversal().V().next().value("name"));
-        v1 = this.sqlgGraph.v(v1.id());
+        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         assertEquals("john", v1.value("name"));
         assertEquals("john", this.sqlgGraph.traversal().V().next().value("name"));
     }
@@ -478,7 +478,7 @@ public class TestBatch extends BaseTest {
         v1.property("name", "john");
         v1.property("surname", "aaaa");
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.v(v1.id());
+        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         assertEquals("john", v1.value("name"));
         assertEquals("aaaa", v1.value("surname"));
         assertEquals("john", this.sqlgGraph.traversal().V().next().value("name"));
@@ -508,7 +508,7 @@ public class TestBatch extends BaseTest {
         colleague.property("toRemove").remove();
         this.sqlgGraph.tx().commit();
 
-        marko = this.sqlgGraph.v(marko.id());
+        marko = this.sqlgGraph.traversal().V(marko.id()).next();
         assertFalse(marko.property("name").isPresent());
     }
 
@@ -638,6 +638,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals(Long.valueOf(2), vertexTraversal(person).out().count().next());
     }
+
     @Test
     public void testCacheAndUpdateVERTICESLabels() {
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -652,7 +653,7 @@ public class TestBatch extends BaseTest {
             person1.addEdge("Friend", person2);
         }
         this.sqlgGraph.tx().commit();
-        person1 = this.sqlgGraph.v(person1.id());
+        person1 = this.sqlgGraph.traversal().V(person1.id()).next();
         assertTrue(vertexTraversal(person1).out("Friend").hasNext());
         assertEquals(Long.valueOf(10000), vertexTraversal(person1).out("Friend").count().next());
         List<Vertex> friends = vertexTraversal(person1).out("Friend").toList();
@@ -698,7 +699,7 @@ public class TestBatch extends BaseTest {
         rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
         this.sqlgGraph.tx().commit();
 
-        softwareVersion = this.sqlgGraph.v(softwareVersion.id());
+        softwareVersion = this.sqlgGraph.traversal().V(softwareVersion.id()).next();
         assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).in("vendorTechnology_softwareVersion").next().value("name"));
     }
 
@@ -718,7 +719,7 @@ public class TestBatch extends BaseTest {
         rwe1.addEdge("workspaceElement_softwareVersion", softwareVersion);
         this.sqlgGraph.tx().commit();
 
-        softwareVersion = this.sqlgGraph.v(softwareVersion.id());
+        softwareVersion = this.sqlgGraph.traversal().V(softwareVersion.id()).next();
         assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).out("softwareVersion_vendorTechnology").next().value("name"));
     }
 
@@ -727,8 +728,8 @@ public class TestBatch extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
         this.sqlgGraph.tx().commit();
-        assertEquals("a", this.sqlgGraph.v(v1.id()).value("name"));
-        assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
+        assertEquals("a", this.sqlgGraph.traversal().V(v1.id()).next().value("name"));
+        assertEquals("b", this.sqlgGraph.traversal().V(v2.id()).next().value("surname"));
 
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -736,8 +737,8 @@ public class TestBatch extends BaseTest {
         v2.property("surname", "bb");
         this.sqlgGraph.tx().commit();
 
-        assertEquals("aa", this.sqlgGraph.v(v1.id()).value("name"));
-        assertEquals("bb", this.sqlgGraph.v(v2.id()).value("surname"));
+        assertEquals("aa", this.sqlgGraph.traversal().V(v1.id()).next().value("name"));
+        assertEquals("bb", this.sqlgGraph.traversal().V(v2.id()).next().value("surname"));
     }
 
     @Test
@@ -748,8 +749,8 @@ public class TestBatch extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
         this.sqlgGraph.tx().commit();
-        assertEquals("a", this.sqlgGraph.v(v1.id()).value("name"));
-        assertEquals("b", this.sqlgGraph.v(v2.id()).value("surname"));
+        assertEquals("a", this.sqlgGraph.traversal().V(v1.id()).next().value("name"));
+        assertEquals("b", this.sqlgGraph.traversal().V(v2.id()).next().value("surname"));
 
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -770,21 +771,21 @@ public class TestBatch extends BaseTest {
         v2.property("double", 2D);
         this.sqlgGraph.tx().commit();
 
-        assertEquals("aa", this.sqlgGraph.v(v1.id()).value("name"));
-        assertEquals(true, this.sqlgGraph.v(v1.id()).value("boolean"));
-        assertEquals((short) 1, this.sqlgGraph.v(v1.id()).<Short>value("short").shortValue());
-        assertEquals(1, this.sqlgGraph.v(v1.id()).<Integer>value("integer").intValue());
-        assertEquals(1L, this.sqlgGraph.v(v1.id()).<Long>value("long").longValue(), 0);
-        assertEquals(1F, this.sqlgGraph.v(v1.id()).<Float>value("float").floatValue(), 0);
-        assertEquals(1D, this.sqlgGraph.v(v1.id()).<Double>value("double").doubleValue(), 0);
+        assertEquals("aa", this.sqlgGraph.traversal().V(v1.id()).next().value("name"));
+        assertEquals(true, this.sqlgGraph.traversal().V(v1.id()).next().value("boolean"));
+        assertEquals((short) 1, this.sqlgGraph.traversal().V(v1.id()).next().<Short>value("short").shortValue());
+        assertEquals(1, this.sqlgGraph.traversal().V(v1.id()).next().<Integer>value("integer").intValue());
+        assertEquals(1L, this.sqlgGraph.traversal().V(v1.id()).next().<Long>value("long").longValue(), 0);
+        assertEquals(1F, this.sqlgGraph.traversal().V(v1.id()).next().<Float>value("float").floatValue(), 0);
+        assertEquals(1D, this.sqlgGraph.traversal().V(v1.id()).next().<Double>value("double").doubleValue(), 0);
 
-        assertEquals("bb", this.sqlgGraph.v(v2.id()).value("surname"));
-        assertEquals(false, this.sqlgGraph.v(v2.id()).value("boolean"));
-        assertEquals((short) 2, this.sqlgGraph.v(v2.id()).<Short>value("short").shortValue());
-        assertEquals(2, this.sqlgGraph.v(v2.id()).<Integer>value("integer").intValue());
-        assertEquals(2L, this.sqlgGraph.v(v2.id()).<Long>value("long").longValue(), 0);
-        assertEquals(2F, this.sqlgGraph.v(v2.id()).<Float>value("float").floatValue(), 0);
-        assertEquals(2D, this.sqlgGraph.v(v2.id()).<Double>value("double").doubleValue(), 0);
+        assertEquals("bb", this.sqlgGraph.traversal().V(v2.id()).next().value("surname"));
+        assertEquals(false, this.sqlgGraph.traversal().V(v2.id()).next().value("boolean"));
+        assertEquals((short) 2, this.sqlgGraph.traversal().V(v2.id()).next().<Short>value("short").shortValue());
+        assertEquals(2, this.sqlgGraph.traversal().V(v2.id()).next().<Integer>value("integer").intValue());
+        assertEquals(2L, this.sqlgGraph.traversal().V(v2.id()).next().<Long>value("long").longValue(), 0);
+        assertEquals(2F, this.sqlgGraph.traversal().V(v2.id()).next().<Float>value("float").floatValue(), 0);
+        assertEquals(2D, this.sqlgGraph.traversal().V(v2.id()).next().<Double>value("double").doubleValue(), 0);
     }
 
     @Test
@@ -1024,14 +1025,14 @@ public class TestBatch extends BaseTest {
         Vertex sqlgVertex3 = this.sqlgGraph.addVertex(T.label, "Person", "property1", "a3", "property2", "b3", "property3", "c3");
         this.sqlgGraph.tx().commit();
 
-        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+        sqlgVertex1 = this.sqlgGraph.traversal().V(sqlgVertex1.id()).next();
         assertEquals("a1", sqlgVertex1.value("property1"));
         assertEquals("b1", sqlgVertex1.value("property2"));
         assertEquals("c1", sqlgVertex1.value("property3"));
 
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().normalBatchModeOn();
-        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+        sqlgVertex1 = this.sqlgGraph.traversal().V(sqlgVertex1.id()).next();
         sqlgVertex1.property("property1", "a11");
         sqlgVertex2.property("property2", "b22");
         sqlgVertex3.property("property3", "c33");
@@ -1041,17 +1042,17 @@ public class TestBatch extends BaseTest {
         assertEquals("b1", sqlgVertex1.value("property2"));
         assertEquals("c1", sqlgVertex1.value("property3"));
 
-        sqlgVertex1 = this.sqlgGraph.v(sqlgVertex1.id());
+        sqlgVertex1 = this.sqlgGraph.traversal().V(sqlgVertex1.id()).next();
         assertEquals("a11", sqlgVertex1.value("property1"));
         assertEquals("b1", sqlgVertex1.value("property2"));
         assertEquals("c1", sqlgVertex1.value("property3"));
 
-        sqlgVertex2 = this.sqlgGraph.v(sqlgVertex2.id());
+        sqlgVertex2 = this.sqlgGraph.traversal().V(sqlgVertex2.id()).next();
         assertEquals("a2", sqlgVertex2.value("property1"));
         assertEquals("b22", sqlgVertex2.value("property2"));
         assertEquals("c2", sqlgVertex2.value("property3"));
 
-        sqlgVertex3 = this.sqlgGraph.v(sqlgVertex3.id());
+        sqlgVertex3 = this.sqlgGraph.traversal().V(sqlgVertex3.id()).next();
         assertEquals("a3", sqlgVertex3.value("property1"));
         assertEquals("b3", sqlgVertex3.value("property2"));
         assertEquals("c33", sqlgVertex3.value("property3"));
@@ -1119,13 +1120,13 @@ public class TestBatch extends BaseTest {
     }
 
     @Test
-    public void testEmpty(){
-    	this.sqlgGraph.tx().normalBatchModeOn();
-    	Vertex person1 = this.sqlgGraph.addVertex(T.label, "Empty","empty","");
-    	this.sqlgGraph.tx().commit();
-    	assertNotNull(person1.id());
-    	Object o=this.sqlgGraph.traversal().V().hasLabel("Empty").values("empty").next();
-    	assertEquals("",o);
+    public void testEmpty() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex person1 = this.sqlgGraph.addVertex(T.label, "Empty", "empty", "");
+        this.sqlgGraph.tx().commit();
+        assertNotNull(person1.id());
+        Object o = this.sqlgGraph.traversal().V().hasLabel("Empty").values("empty").next();
+        assertEquals("", o);
     }
 
     @Test

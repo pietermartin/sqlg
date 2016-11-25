@@ -52,7 +52,7 @@ public class TestEdgeCache extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            v1 = sqlgGraph.v(v1.id());
+            v1 = sqlgGraph.traversal().V(v1.id()).next();
             assertEquals(1, sqlgGraph.traversal().V(v1.id()).out("bts_btsalm").count().next().intValue());
             assertEquals(1, sqlgGraph.traversal().V(v1.id()).out("bts_btsalmtos").count().next().intValue());
         }

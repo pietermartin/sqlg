@@ -23,11 +23,11 @@ public class TestGetById extends BaseTest {
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         this.sqlgGraph.tx().commit();
-        Vertex v = this.sqlgGraph.v(marko.id());
+        Vertex v = this.sqlgGraph.traversal().V(marko.id()).next();
         Assert.assertEquals(marko, v);
-        v = this.sqlgGraph.v(john.id());
+        v = this.sqlgGraph.traversal().V(john.id()).next();
         Assert.assertEquals(john, v);
-        v = this.sqlgGraph.v(peter.id());
+        v = this.sqlgGraph.traversal().V(peter.id()).next();
         Assert.assertEquals(peter, v);
     }
 
@@ -38,8 +38,8 @@ public class TestGetById extends BaseTest {
         Edge friendEdge = marko.addEdge("friend", john);
         Edge familyEdge = marko.addEdge("family", john);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(friendEdge, this.sqlgGraph.e(friendEdge.id()));
-        Assert.assertEquals(familyEdge, this.sqlgGraph.e(familyEdge.id()));
+        Assert.assertEquals(friendEdge, this.sqlgGraph.traversal().E(friendEdge.id()).next());
+        Assert.assertEquals(familyEdge, this.sqlgGraph.traversal().E(familyEdge.id()).next());
     }
 
     @Test
