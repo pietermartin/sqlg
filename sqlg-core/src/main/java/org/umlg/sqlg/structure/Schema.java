@@ -138,9 +138,9 @@ public class Schema {
         Preconditions.checkState(inVertexLabelOptional.isPresent(), "In vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
 
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, Direction.OUT, outVertexLabelOptional.get());
+        edgeLabel.ensureEdgeVertexLabelExist(sqlgGraph, Direction.OUT, outVertexLabelOptional.get());
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.ensureEdgeForeignKeysExist(sqlgGraph, Direction.IN, inVertexLabelOptional.get());
+        edgeLabel.ensureEdgeVertexLabelExist(sqlgGraph, Direction.IN, inVertexLabelOptional.get());
         edgeLabel.ensureColumnsExist(sqlgGraph, columns);
         return edgeLabel;
     }

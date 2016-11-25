@@ -234,15 +234,29 @@ public class EdgeLabel extends AbstractLabel {
         return result;
     }
 
-    Set<VertexLabel> getUncommittedOutVertexLabels() {
-        return uncommittedOutVertexLabels;
+    public Set<VertexLabel> getOutVertexLabels() {
+        Set<VertexLabel> result = new HashSet<>();
+        result.addAll(this.outVertexLabels);
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedOutVertexLabels);
+        }
+        return result;
     }
 
-    Set<VertexLabel> getUncommittedInVertexLabels() {
-        return uncommittedInVertexLabels;
+    public Set<VertexLabel> getInVertexLabels() {
+        Set<VertexLabel> result = new HashSet<>();
+        result.addAll(this.inVertexLabels);
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            result.addAll(this.uncommittedInVertexLabels);
+        }
+        return result;
     }
 
-    void ensureEdgeForeignKeysExist(SqlgGraph sqlgGraph, Direction direction, VertexLabel vertexLabel) {
+    public void ensureEdgeVertexLabelExist(SqlgGraph sqlgGraph, Direction direction, VertexLabel vertexLabel) {
+        //if the direction is OUT then the vertexLabel must be in the same schema as the edgeLabel (this)
+        if (direction == Direction.OUT) {
+            Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
+        }
         Set<String> allEdgeForeignKeys = getAllEdgeForeignKeys();
         SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
         SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
@@ -266,7 +280,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     private void addEdgeForeignKey(SqlgGraph sqlgGraph, String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
-        Preconditions.checkState(!this.getSchema().isSqlgSchema(), "BUG: ensureEdgeForeignKeysExist may not be called for %s", SQLG_SCHEMA);
+        Preconditions.checkState(!this.getSchema().isSqlgSchema(), "BUG: ensureEdgeVertexLabelExist may not be called for %s", SQLG_SCHEMA);
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER TABLE ");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));

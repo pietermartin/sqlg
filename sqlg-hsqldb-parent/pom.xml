@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>sqlg-hsqldb-parent</artifactId>
+    <artifactId>sqlg :: sqlg-hsqldb-parent</artifactId>
     <packaging>pom</packaging>
 
     <modules>
