@@ -8,10 +8,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -166,6 +163,8 @@ public class TestSchemaEagerCreation extends BaseTest {
         Vertex b = this.sqlgGraph.addVertex(T.label, "B");
         a.addEdge("ab", b);
         this.sqlgGraph.tx().commit();
+        List<Map<String, Vertex>> result =  this.sqlgGraph.traversal().V(a).as("a").out("ab").as("b").<Vertex>select("a", "b").toList();
+
 
         Optional<EdgeLabel> edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
         assertTrue(edgeLabelOptional.isPresent());
