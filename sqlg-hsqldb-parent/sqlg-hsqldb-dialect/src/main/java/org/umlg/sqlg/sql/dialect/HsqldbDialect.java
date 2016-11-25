@@ -551,7 +551,7 @@ public class HsqldbDialect extends BaseSqlDialect {
 
     @Override
     public String sqlgAddPropertyIndexTypeColumn() {
-        return "";
+        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" LONGVARCHAR DEFAULT 'NONE';";
     }
 
     @Override
