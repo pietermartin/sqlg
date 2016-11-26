@@ -133,6 +133,39 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_PROPERTY_NAME = "name";
+
+    /**
+     * Table storing the graphs indexes.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_INDEX = "index";
+    /**
+     * Index table's name property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_INDEX_NAME = "name";
+    /**
+     * Index table's index_type property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_INDEX_INDEX_TYPE = "index_type";
+    /**
+     * Edge table for the VertexLabel to Index.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_VERTEX_INDEX_EDGE = "vertex_index";
+    /**
+     * Edge table for the EdgeLabel to Index.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_EDGE_INDEX_EDGE = "edge_index";
+    /**
+     * Edge table for Index to Property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_INDEX_PROPERTY_EDGE = "index_property";
+
+
     /**
      * Table storing the logs.
      */
@@ -149,20 +182,22 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_PROPERTY_TYPE = "type";
-    @SuppressWarnings("WeakerAccess")
-    public static final String SQLG_SCHEMA_PROPERTY_INDEX_TYPE = "index_type";
 
     public static final List<String> SQLG_SCHEMA_SCHEMA_TABLES = Arrays.asList(
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_SCHEMA,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_VERTEX_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_INDEX,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_LOG,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_OUT_EDGES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_INDEX_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE
     );
 
     /**
@@ -184,29 +219,36 @@ public class Topology {
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
+        columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
+        VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
+        columns.remove(SCHEMA_VERTEX_DISPLAY);
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
 
         columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyType.STRING);
-        columns.put(SQLG_SCHEMA_PROPERTY_INDEX_TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
-        columns.remove(SQLG_SCHEMA_PROPERTY_TYPE);
-        columns.remove(SQLG_SCHEMA_PROPERTY_INDEX_TYPE);
 
-        columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
-        VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
+        columns.clear();
+        columns.put(SQLG_SCHEMA_INDEX_NAME, PropertyType.STRING);
+        columns.put(SQLG_SCHEMA_INDEX_INDEX_TYPE, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        VertexLabel indexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_INDEX, columns);
 
-        columns.remove(SCHEMA_VERTEX_DISPLAY);
-
         @SuppressWarnings("unused")
-        EdgeLabel schemaVertexEdgeLabel = schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
+        EdgeLabel schemaToVertexEdgeLabel = schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
         @SuppressWarnings("unused")
-        EdgeLabel schemaVertexInEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
+        EdgeLabel vertexInEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_IN_EDGES_EDGE, edgeVertexLabel, columns);
         @SuppressWarnings("unused")
-        EdgeLabel schemaVertexOutEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
+        EdgeLabel vertexOutEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_OUT_EDGES_EDGE, edgeVertexLabel, columns);
         @SuppressWarnings("unused")
-        EdgeLabel schemaVertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
+        EdgeLabel vertexPropertyEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE, propertyVertexLabel, columns);
         @SuppressWarnings("unused")
-        EdgeLabel schemaEdgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
+        EdgeLabel edgePropertyEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE, propertyVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel vertexIndexEdgeLabel = vertexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel edgeIndexEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel indexPropertyEdgeLabel = indexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
 
         columns.clear();
         columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, PropertyType.LOCALDATETIME);

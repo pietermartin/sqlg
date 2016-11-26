@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.Range;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.PropertyType;
@@ -273,14 +274,16 @@ public interface SqlDialect {
         return "public";
     }
 
-    default String indexName(SchemaTable schemaTable, String prefix, String column) {
+    default String indexName(SchemaTable schemaTable, String prefix, List<String> columns) {
+        Preconditions.checkState(!columns.isEmpty(), "SqlDialect.indexName may not be called with an empty list of columns");
         StringBuilder sb = new StringBuilder();
         sb.append(schemaTable.getSchema());
         sb.append("_");
         sb.append(prefix);
         sb.append(schemaTable.getTable());
         sb.append("_");
-        sb.append(column);
+        //noinspection OptionalGetWithoutIsPresent
+        sb.append(columns.stream().reduce((a, b) -> a + "_" + b).get());
         sb.append("Idx");
         return sb.toString();
     }

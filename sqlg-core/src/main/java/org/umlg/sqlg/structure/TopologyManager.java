@@ -232,7 +232,60 @@ public class TopologyManager {
 
     }
 
-    public static void addPropertyIndex(SqlgGraph sqlgGraph, String schema, String prefixedTable, Pair<String, PropertyType> column, Index index) {
+    public static void addIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, Index index, IndexType indexType, List<PropertyColumn> properties) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            //get the abstractLabel's vertex
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> abstractLabelVertexes;
+            if (abstractLabel instanceof VertexLabel) {
+                abstractLabelVertexes = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has(SQLG_SCHEMA_SCHEMA_NAME, abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", abstractLabel.getLabel())
+                        .toList();
+            } else {
+                abstractLabelVertexes = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has(SQLG_SCHEMA_SCHEMA_NAME, abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .has("name", abstractLabel.getLabel())
+                        .toList();
+            }
+            Preconditions.checkState(!abstractLabelVertexes.isEmpty(), "AbstractLabel %s.%s does not exists", abstractLabel.getSchema().getName(), abstractLabel.getLabel());
+            Preconditions.checkState(abstractLabelVertexes.size() == 1, "BUG: multiple AbstractLabels found for %s.%s", abstractLabel.getSchema().getName(), abstractLabel.getLabel());
+            Vertex abstractLabelVertex = abstractLabelVertexes.get(0);
+
+            Vertex indexVertex = sqlgGraph.addVertex(
+                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_INDEX,
+                    SQLG_SCHEMA_INDEX_NAME, index.getName(),
+                    SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.name(),
+                    CREATED_ON, LocalDateTime.now()
+            );
+
+            if (abstractLabel instanceof VertexLabel) {
+                abstractLabelVertex.addEdge(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertex);
+            } else {
+                abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
+            }
+            for (PropertyColumn property : properties) {
+                List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
+                        .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                        .has("name", property.getName())
+                        .toList();
+                Preconditions.checkState(!propertyVertexes.isEmpty(), "Property %s for AbstractLabel %s.%s does not exists", property.getName(), abstractLabel.getSchema().getName(), abstractLabel.getLabel());
+                Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property.getName(), abstractLabel.getSchema().getName(), abstractLabel.getLabel());
+                Vertex propertyVertex = propertyVertexes.get(0);
+                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
+            }
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+
+    public static void addPropertyIndex(SqlgGraph sqlgGraph, String schema, String prefixedTable, Pair<String, PropertyType> column, IndexType indexType) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX) || prefixedTable.startsWith(SchemaManager.EDGE_PREFIX), "prefixedTable must be prefixed with %s or %s. prefixedTable = %s", VERTEX_PREFIX, EDGE_PREFIX, prefixedTable);
@@ -267,7 +320,7 @@ public class TopologyManager {
                 throw new IllegalStateException("Found more than one vertex for " + schema + "." + prefixedTable);
             }
             Vertex propertyVertex = propertyVertices.get(0);
-            propertyVertex.property("index_type", index.name());
+            propertyVertex.property("index_type", indexType.name());
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

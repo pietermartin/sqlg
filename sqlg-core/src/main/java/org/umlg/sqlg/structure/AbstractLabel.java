@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_NAME;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_TYPE;
@@ -25,6 +26,8 @@ public abstract class AbstractLabel {
     protected String label;
     protected Map<String, PropertyColumn> properties = new HashMap<>();
     Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
+    protected Map<String, Index> indexes = new HashMap<>();
+    Map<String, Index> uncommittedIndexes = new HashMap<>();
 
     AbstractLabel(String label, Map<String, PropertyType> columns) {
         this.label = label;
@@ -36,6 +39,32 @@ public abstract class AbstractLabel {
 
     AbstractLabel(String label) {
         this.label = label;
+    }
+
+    public Index ensureIndexExists(final SqlgGraph sqlgGraph, final IndexType indexType, final List<PropertyColumn> properties) {
+
+        String prefix = this instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX;
+        SchemaTable schemaTable = SchemaTable.of(this.getSchema().getName(), this.getLabel());
+        String indexName = sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
+
+        Optional<Index> indexOptional = this.getIndex(indexName);
+        if (!indexOptional.isPresent()) {
+            this.getSchema().getTopology().lock();
+            indexOptional = this.getIndex(indexName);
+            if (!indexOptional.isPresent()) {
+                return this.createIndex(sqlgGraph, indexName, indexType, properties);
+            } else {
+                return indexOptional.get();
+            }
+        } else {
+            return indexOptional.get();
+        }
+    }
+
+    private Index createIndex(SqlgGraph sqlgGraph, String indexName, IndexType indexType, List<PropertyColumn> properties) {
+        Index index = Index.createIndex(sqlgGraph, this, indexName, indexType, properties);
+        this.uncommittedIndexes.put(indexName, index);
+        return index;
     }
 
     protected abstract Schema getSchema();
@@ -60,21 +89,24 @@ public abstract class AbstractLabel {
         } else {
             return Optional.empty();
         }
-//        PropertyColumn property = this.properties.get(key);
-//        if (property != null) {
-//            return Optional.of(property);
-//        } else {
-//            if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-//                property = this.uncommittedProperties.get(key);
-//                if (property != null) {
-//                    return Optional.of(property);
-//                } else {
-//                    return Optional.empty();
-//                }
-//            } else {
-//                return Optional.empty();
-//            }
-//        }
+    }
+
+    public Map<String, Index> getIndexes() {
+        Map<String, Index> result = new HashMap<>();
+        result.putAll(this.indexes);
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedIndexes);
+        }
+        return result;
+    }
+
+    public Optional<Index> getIndex(String key) {
+        Index index = getIndexes().get(key);
+        if (index != null) {
+            return Optional.of(index);
+        } else {
+            return Optional.empty();
+        }
     }
 
     Map<String, PropertyType> getPropertyTypeMap() {
@@ -167,6 +199,12 @@ public abstract class AbstractLabel {
                 entry.getValue().afterCommit();
                 it.remove();
             }
+            for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Index> entry = it.next();
+                this.indexes.put(entry.getKey(), entry.getValue());
+                entry.getValue().afterCommit();
+                it.remove();
+            }
         }
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.properties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
@@ -178,6 +216,11 @@ public abstract class AbstractLabel {
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, PropertyColumn> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
+            for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, Index> entry = it.next();
                 entry.getValue().afterRollback();
                 it.remove();
             }

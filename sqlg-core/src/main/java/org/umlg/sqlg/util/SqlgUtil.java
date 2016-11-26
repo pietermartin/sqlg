@@ -443,6 +443,18 @@ public class SqlgUtil {
         return result;
     }
 
+    public static List<String> transformToKeyList(Object... keyValues) {
+        List<String> keys = new ArrayList<>();
+        int i = 1;
+        for (Object keyValue : keyValues) {
+            if (i++ % 2 != 0) {
+                keys.add((String)keyValue);
+            }
+        }
+        return keys;
+
+    }
+
     public static ConcurrentHashMap<String, PropertyType> transformToColumnDefinitionMap(Object... keyValues) {
         //This is to ensure the keys are unique
         Set<String> keys = new HashSet<>();

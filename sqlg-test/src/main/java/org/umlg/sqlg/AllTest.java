@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
@@ -152,7 +153,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
 //        TestEdgeFromDifferentSchema.class
         TestBatchModeMultipleGraphs.class,
         TestDetachedEdge.class,
-        TestSchemaEagerCreation.class
+        TestSchemaEagerCreation.class,
+        TestIndexTopologyTraversal.class
 })
 public class AllTest {
 }
