@@ -22,11 +22,13 @@ public enum PropertyType {
     STRING(String.class.getName(), new String[]{}),
     LOCALDATE(LocalDate.class.getName(), new String[]{}),
     LOCALDATETIME(LocalDateTime.class.getName(), new String[]{}),
-    ZONEDDATETIME(ZonedDateTime.class.getName(), new String[]{SchemaManager.ZONEID}),
     LOCALTIME(LocalTime.class.getName(), new String[]{}),
+
+    ZONEDDATETIME(ZonedDateTime.class.getName(), new String[]{SchemaManager.ZONEID}),
     //years is the first default column
     PERIOD(Period.class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS}),
     DURATION(Duration.class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
+
     JSON(JsonNode.class.getName(), new String[]{}),
 
     //GIS

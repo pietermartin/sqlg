@@ -27,6 +27,7 @@ import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
@@ -273,7 +274,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
                     }
                 }
-                
+
             }
             return verticesRanges;
         } catch (Exception e) {
@@ -818,7 +819,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public String constructCompleteCopyCommandSqlEdge(SqlgGraph sqlgGraph, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
-        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(sqlgEdge.getSchema(),EDGE_PREFIX + sqlgEdge.getTable()));
+        Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(SchemaTable.of(sqlgEdge.getSchema(), EDGE_PREFIX + sqlgEdge.getTable()));
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         sql.append(maybeWrapInQoutes(sqlgEdge.getSchema()));
@@ -1716,26 +1717,33 @@ public class PostgresDialect extends BaseSqlDialect {
             case Types.BINARY:
                 return byte_ARRAY;
             case Types.ARRAY:
-                switch (typeName) {
-                    case "_bool":
-                        return boolean_ARRAY;
-                    case "_int2":
-                        return short_ARRAY;
-                    case "_int4":
-                        return PropertyType.int_ARRAY;
-                    case "_int8":
-                        return PropertyType.long_ARRAY;
-                    case "_float4":
-                        return PropertyType.float_ARRAY;
-                    case "_float8":
-                        return PropertyType.double_ARRAY;
-                    case "_text":
-                        return PropertyType.STRING_ARRAY;
-                    default:
-                        throw new RuntimeException("Array type not supported " + typeName);
-                }
+                return  sqlArrayTypeNameToPropertyType(typeName);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
+        }
+    }
+
+    @Override
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName) {
+        switch (typeName) {
+            case "_bool":
+                return boolean_ARRAY;
+            case "_int2":
+                return short_ARRAY;
+            case "_int4":
+                return PropertyType.int_ARRAY;
+            case "_int8":
+                return PropertyType.long_ARRAY;
+            case "_float4":
+                return PropertyType.float_ARRAY;
+            case "_float8":
+                return PropertyType.double_ARRAY;
+            case "_text":
+                return PropertyType.STRING_ARRAY;
+            case "_timestamptz":
+                return PropertyType.ZONEDDATETIME_ARRAY;
+            default:
+                throw new RuntimeException("Array type not supported " + typeName);
         }
     }
 

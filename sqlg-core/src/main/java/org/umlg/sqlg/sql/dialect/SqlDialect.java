@@ -25,6 +25,15 @@ public interface SqlDialect {
 
     PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName);
 
+    /**
+     * "TYPE_NAME" is column meta data returned by the jdbc driver.
+     * This method returns the TYPE_NAME for the sql {@link Types} constant.
+     * This method is only called for array types.
+     *
+     * @return the TYPE_NAME for the given Types constant.
+     */
+    PropertyType sqlArrayTypeNameToPropertyType(String typeName);
+
     void validateProperty(Object key, Object value);
 
     default boolean needsSemicolon() {

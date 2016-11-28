@@ -13,15 +13,18 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.strategy.TopologyStrategy;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Statement;
+import java.time.Duration;
+import java.time.Period;
+import java.time.ZonedDateTime;
 import java.util.List;
-
-import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2016/02/06
@@ -253,11 +256,11 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
                 TopologyStrategy.build().selectFrom(
-                        SQLG_SCHEMA_SCHEMA_TABLES
+                        Topology.SQLG_SCHEMA_SCHEMA_TABLES
                 ).create()
         );
         List<Vertex> schemas = traversalSource.V()
-                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                 .toList();
         Assert.assertEquals(1, schemas.size());
         Long count = this.sqlgGraph.topology().V().count().next();
@@ -290,6 +293,123 @@ public class TestTopologyUpgrade extends BaseTest {
                     .out("vertex_property").toList();
             Assert.assertEquals(2, propertyVertices.size());
         }
+    }
+
+    @Test
+    public void testUpgradeTypesWithMoreThanOneColumn() throws Exception {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        Duration duration = Duration.ofDays(1);
+        Period period = Period.of(1, 1, 1);
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "zonedDateTime", zonedDateTime);
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a2", "duration", duration);
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a3", "period", period);
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            //assert zonedDateTime
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "zonedDateTime").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.ZONEDDATETIME, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            List<Vertex> vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a1").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertEquals(zonedDateTime, vertices.get(0).value("zonedDateTime"));
+
+            //assert duration
+            propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "duration").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.DURATION, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a2").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertEquals(duration, vertices.get(0).value("duration"));
+
+            //assert period
+            propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "period").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.PERIOD, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a3").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertEquals(period, vertices.get(0).value("period"));
+        }
+    }
+
+    @Test
+    public void testUpgradeArrayTypesWithMoreThanOneColumn() throws Exception {
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
+        Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
+        Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "zonedDateTimes", zonedDateTimes);
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a2", "durations", durations);
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a3", "periods", periods);
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            //assert zonedDateTimes
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "zonedDateTimes").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.ZONEDDATETIME_ARRAY, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            List<Vertex> vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a1").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertArrayEquals(zonedDateTimes, vertices.get(0).value("zonedDateTimes"));
+
+            //assert durations
+            propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "durations").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.DURATION_ARRAY, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a2").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertArrayEquals(durations, vertices.get(0).value("durations"));
+
+            //assert periods
+            propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "periods").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.PERIOD_ARRAY, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a3").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertArrayEquals(periods, vertices.get(0).value("periods"));
+        }
+
     }
 
 

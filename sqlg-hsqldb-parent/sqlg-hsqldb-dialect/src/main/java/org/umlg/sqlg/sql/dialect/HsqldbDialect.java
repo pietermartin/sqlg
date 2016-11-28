@@ -342,26 +342,31 @@ public class HsqldbDialect extends BaseSqlDialect {
             case Types.VARBINARY:
                 return PropertyType.byte_ARRAY;
             case Types.ARRAY:
-                switch (typeName) {
-                    case "BOOLEAN ARRAY":
-                        return PropertyType.boolean_ARRAY;
-                    case "SMALLINT ARRAY":
-                        return PropertyType.short_ARRAY;
-                    case "INTEGER ARRAY":
-                        return PropertyType.int_ARRAY;
-                    case "BIGINT ARRAY":
-                        return PropertyType.long_ARRAY;
-                    case "DOUBLE ARRAY":
-                        return PropertyType.double_ARRAY;
-                    default:
-                        if (typeName.contains("VARCHAR") && typeName.contains("ARRAY")) {
-                            return PropertyType.STRING_ARRAY;
-                        } else {
-                            throw new RuntimeException(String.format("Array type not supported sqlType = %s and typeName = %s", new String[]{String.valueOf(sqlType), typeName}));
-                        }
-                }
+                return sqlArrayTypeNameToPropertyType(typeName);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
+        }
+    }
+
+    @Override
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName) {
+        switch (typeName) {
+            case "BOOLEAN ARRAY":
+                return PropertyType.boolean_ARRAY;
+            case "SMALLINT ARRAY":
+                return PropertyType.short_ARRAY;
+            case "INTEGER ARRAY":
+                return PropertyType.int_ARRAY;
+            case "BIGINT ARRAY":
+                return PropertyType.long_ARRAY;
+            case "DOUBLE ARRAY":
+                return PropertyType.double_ARRAY;
+            default:
+                if (typeName.contains("VARCHAR") && typeName.contains("ARRAY")) {
+                    return PropertyType.STRING_ARRAY;
+                } else {
+                    throw new RuntimeException(String.format("Array type not supported typeName = %s", new String[]{typeName}));
+                }
         }
     }
 

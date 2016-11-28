@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -19,7 +20,7 @@ import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA;
 
 /**
  * This class contains the logic to ensure all is well on startup.
- *
+ * <p>
  * Date: 2016/11/14
  * Time: 10:22 AM
  */
@@ -128,17 +129,60 @@ class SqlgStartupManager {
                     continue;
                 }
 
-                Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTable = new HashMap<>();
                 Map<String, PropertyType> columns = new ConcurrentHashMap<>();
                 //get the columns
                 ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                 while (columnsRs.next()) {
-                    String column = columnsRs.getString(4);
-                    if (!column.equals(SchemaManager.ID)) {
+                    String columnName = columnsRs.getString(4);
+                    if (!columnName.equals(SchemaManager.ID)) {
                         int columnType = columnsRs.getInt(5);
                         String typeName = columnsRs.getString("TYPE_NAME");
-                        PropertyType propertyType = this.sqlDialect.sqlTypeToPropertyType(this.sqlgGraph, schema, table, column, columnType, typeName);
-                        columns.put(column, propertyType);
+                        //check for ZONEDDATETIME, PERIOD, DURATION as they use more than one field to represent the type
+                        PropertyType propertyType = null;
+                        if (columnsRs.next()) {
+                            String column2Name = columnsRs.getString(4);
+                            String typeName2 = columnsRs.getString("TYPE_NAME");
+                            if (column2Name.startsWith(columnName + "~~~")) {
+                                int column2Type = columnsRs.getInt(5);
+                                if (column2Type == Types.VARCHAR) {
+                                    propertyType = PropertyType.ZONEDDATETIME;
+                                } else if ((column2Type == Types.ARRAY && this.sqlDialect.sqlArrayTypeNameToPropertyType(typeName2) == PropertyType.STRING_ARRAY)) {
+                                    propertyType = PropertyType.ZONEDDATETIME_ARRAY;
+                                } else {
+                                    if (columnsRs.next()) {
+                                        String column3Name = columnsRs.getString(4);
+                                        if (column3Name.startsWith(columnName + "~~~")) {
+                                            int column3Type = columnsRs.getInt(5);
+                                            if (column3Type == Types.ARRAY) {
+                                                String typeName3 = columnsRs.getString("TYPE_NAME");
+                                                Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName3) == PropertyType.int_ARRAY, "Only Period have a third column and it must be a Integer");
+                                                propertyType = PropertyType.PERIOD_ARRAY;
+                                            } else {
+                                                Preconditions.checkState(column3Type == Types.INTEGER, "Only Period have a third column and it must be a Integer");
+                                                propertyType = PropertyType.PERIOD;
+                                            }
+                                        } else {
+                                            columnsRs.previous();
+                                            column2Type = columnsRs.getInt(5);
+                                            typeName2 = columnsRs.getString("TYPE_NAME");
+                                            if (column2Type == Types.ARRAY) {
+                                                Preconditions.checkState(sqlDialect.sqlArrayTypeNameToPropertyType(typeName2) == PropertyType.int_ARRAY, "Only Period have a third column and it must be a Integer");
+                                                propertyType = PropertyType.DURATION_ARRAY;
+                                            } else {
+                                                Preconditions.checkState(column2Type == Types.INTEGER, "Only Duration and Period have a second column and it must be a Integer");
+                                                propertyType = PropertyType.DURATION;
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                columnsRs.previous();
+                            }
+                        }
+                        if (propertyType == null) {
+                            propertyType = this.sqlDialect.sqlTypeToPropertyType(this.sqlgGraph, schema, table, columnName, columnType, typeName);
+                        }
+                        columns.put(columnName, propertyType);
                     }
 
                 }
