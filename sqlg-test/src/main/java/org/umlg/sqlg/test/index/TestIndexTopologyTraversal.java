@@ -40,7 +40,5 @@ public class TestIndexTopologyTraversal extends BaseTest {
                 .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
                 .toList();
         assertEquals(1, indexProperties.size());
-
-
     }
 }

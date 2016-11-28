@@ -5,16 +5,23 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/11/03
@@ -46,9 +53,9 @@ public class TestLazyLoadSchema extends BaseTest {
             this.sqlgGraph.tx().commit();
             //postgresql notify only happens after the commit, need to wait a bit.
             Thread.sleep(1000);
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
-            Assert.assertEquals("a", sqlgGraph1.traversal().V().has(T.label, "Person").next().value("name"));
+            assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            assertEquals("a", sqlgGraph1.traversal().V().has(T.label, "Person").next().value("name"));
             sqlgGraph1.tx().rollback();
         }
     }
@@ -63,8 +70,8 @@ public class TestLazyLoadSchema extends BaseTest {
             //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
             sqlgGraph1.tx().rollback();
         }
     }
@@ -79,10 +86,10 @@ public class TestLazyLoadSchema extends BaseTest {
             //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
             Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").<Vertex>has("name", "a").next();
-            Assert.assertFalse(v11.property("surname").isPresent());
+            assertFalse(v11.property("surname").isPresent());
             //the next alter will lock if this transaction is still active
             sqlgGraph1.tx().rollback();
 
@@ -93,7 +100,7 @@ public class TestLazyLoadSchema extends BaseTest {
             Thread.sleep(1_000);
 
             Vertex v12 = sqlgGraph1.addVertex(T.label, "Person", "surname", "ccc");
-            Assert.assertEquals("ccc", v12.value("surname"));
+            assertEquals("ccc", v12.value("surname"));
             sqlgGraph1.tx().rollback();
         }
     }
@@ -119,7 +126,7 @@ public class TestLazyLoadSchema extends BaseTest {
             v11.addEdge("friend", v12);
             sqlgGraph1.tx().commit();
 
-            Assert.assertEquals(1, vertexTraversal(v11).out("friend").count().next().intValue());
+            assertEquals(1, vertexTraversal(v11).out("friend").count().next().intValue());
             sqlgGraph1.tx().rollback();
         }
     }
@@ -136,11 +143,11 @@ public class TestLazyLoadSchema extends BaseTest {
             //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
-            Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
+            assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
 
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
-            Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
+            assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
             sqlgGraph1.tx().rollback();
         }
     }
@@ -155,15 +162,15 @@ public class TestLazyLoadSchema extends BaseTest {
             this.sqlgGraph.tx().commit();
             Vertex v3 = this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");
             Vertex v4 = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
-            Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
+            assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
             this.sqlgGraph.tx().commit();
 
             //allow time for notification to happen
             Thread.sleep(1000);
 
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
-            Assert.assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "friend").count().next().intValue());
+            assertEquals(2, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
 
             sqlgGraph1.tx().rollback();
         }
@@ -181,16 +188,16 @@ public class TestLazyLoadSchema extends BaseTest {
             //allow time for notification to happen
             Thread.sleep(1_000);
 
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "pet").count().next().intValue());
-            Assert.assertEquals("this", sqlgGraph1.traversal().E().has(T.label, "pet").next().value("test"));
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Dog").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "pet").count().next().intValue());
+            assertEquals("this", sqlgGraph1.traversal().E().has(T.label, "pet").next().value("test"));
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Dog").count().next().intValue());
 
-            Assert.assertEquals(dogVertex, sqlgGraph1.traversal().V(personVertex.id()).out("pet").next());
-            Assert.assertEquals(personVertex, sqlgGraph1.traversal().V(dogVertex.id()).in("pet").next());
-            Assert.assertEquals("a", sqlgGraph1.traversal().V(personVertex.id()).next().<String>value("name"));
-            Assert.assertEquals("b", sqlgGraph1.traversal().V(dogVertex.id()).next().<String>value("name"));
+            assertEquals(dogVertex, sqlgGraph1.traversal().V(personVertex.id()).out("pet").next());
+            assertEquals(personVertex, sqlgGraph1.traversal().V(dogVertex.id()).in("pet").next());
+            assertEquals("a", sqlgGraph1.traversal().V(personVertex.id()).next().<String>value("name"));
+            assertEquals("b", sqlgGraph1.traversal().V(dogVertex.id()).next().<String>value("name"));
 
             sqlgGraph1.tx().rollback();
 
@@ -200,7 +207,7 @@ public class TestLazyLoadSchema extends BaseTest {
 
             //allow time for notification to happen
             Thread.sleep(1_000);
-            Assert.assertEquals("AAA", sqlgGraph1.traversal().V(personVertex.id()).next().<String>value("surname"));
+            assertEquals("AAA", sqlgGraph1.traversal().V(personVertex.id()).next().<String>value("surname"));
 
             //add property to the edge
             petEdge.property("edgeProperty1", "a");
@@ -208,7 +215,7 @@ public class TestLazyLoadSchema extends BaseTest {
 
             //allow time for notification to happen
             Thread.sleep(1_000);
-            Assert.assertEquals("a", sqlgGraph1.traversal().E(petEdge.id()).next().<String>value("edgeProperty1"));
+            assertEquals("a", sqlgGraph1.traversal().E(petEdge.id()).next().<String>value("edgeProperty1"));
 
             //add an edge
             Vertex addressVertex = this.sqlgGraph.addVertex(T.label, "Address", "name", "1 Nowhere");
@@ -217,14 +224,47 @@ public class TestLazyLoadSchema extends BaseTest {
 
             //allow time for notification to happen
             Thread.sleep(1_000);
-            Assert.assertEquals(2, sqlgGraph1.traversal().E().count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "pet").count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "homeAddress").count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Dog").count().next().intValue());
-            Assert.assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Address").count().next().intValue());
+            assertEquals(2, sqlgGraph1.traversal().E().count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "pet").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().E().has(T.label, "homeAddress").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Dog").count().next().intValue());
+            assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Address").count().next().intValue());
 
         }
+    }
+
+    @Test
+    public void loadIndex() throws Exception {
+        //Create a new sqlgGraph
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+
+            Map<String, PropertyType> properties = new HashMap<>();
+            properties.put("name", PropertyType.STRING);
+            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", properties);
+            vertexLabel.ensureIndexExists(this.sqlgGraph, IndexType.UNIQUE, Collections.singletonList(vertexLabel.getProperty("name").get()));
+            this.sqlgGraph.tx().commit();
+            Optional<Index> index = this.sqlgGraph.getTopology().getPublicSchema()
+                    .getVertexLabel("A").get()
+                    .getIndex(this.sqlgGraph.getSqlDialect()
+                            .indexName(
+                                    SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"),
+                                    SchemaManager.VERTEX_PREFIX,
+                                    Collections.singletonList("name")));
+            assertTrue(index.isPresent());
+
+            //allow time for notification to happen
+            Thread.sleep(1_000);
+            index = sqlgGraph1.getTopology().getPublicSchema()
+                    .getVertexLabel("A").get()
+                    .getIndex(this.sqlgGraph.getSqlDialect()
+                            .indexName(
+                                    SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"),
+                                    SchemaManager.VERTEX_PREFIX,
+                                    Collections.singletonList("name")));
+            assertTrue(index.isPresent());
+        }
+
     }
 
 }

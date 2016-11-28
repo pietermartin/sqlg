@@ -384,7 +384,7 @@ public class Topology {
      * If any element does not exist the a lock is first obtained. After the lock is obtained the maps are rechecked to
      * see if the element has not been added in the mean time.
      *
-     * @param label   The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
+     * @param label The vertex's label. Translates to a table prepended with 'V_'  and the table's name being the label.
      */
     public VertexLabel ensureVertexLabelExist(final String label) {
         return ensureVertexLabelExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), label, Collections.emptyMap());
@@ -506,7 +506,7 @@ public class Topology {
      * The vertex's schema and table must already exists.
      * The default "public" schema will be used. {@link SqlDialect#getPublicSchema()}
      *
-     * @param label The vertex's label.
+     * @param label      The vertex's label.
      * @param properties The properties to create if they do not exist.
      */
     public void ensureVertexLabelPropertiesExist(String label, Map<String, PropertyType> properties) {
@@ -742,39 +742,53 @@ public class Topology {
         return toJson().toString();
     }
 
-    //TODO why is uncommittedSchemas being added to "schemas" and not "uncommittedSchemas"
+    /**
+     * Product the json that goes into the sqlg_schema.V_log table. Other graphs will read it to sync their schema.
+     *
+     * @return The json.
+     */
     private Optional<JsonNode> toNotifyJson() {
         z_internalReadLock();
         try {
-            ArrayNode schemaArrayNode = null;
+            ArrayNode committedSchemaArrayNode = null;
+            ObjectNode topologyNode = null;
             for (Schema schema : this.schemas.values()) {
                 Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
-                if (jsonNodeOptional.isPresent() && schemaArrayNode == null) {
-                    schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                if (jsonNodeOptional.isPresent() && committedSchemaArrayNode == null) {
+                    committedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
                 }
                 if (jsonNodeOptional.isPresent()) {
                     //noinspection ConstantConditions
-                    schemaArrayNode.add(jsonNodeOptional.get());
+                    committedSchemaArrayNode.add(jsonNodeOptional.get());
                 }
             }
+            if (committedSchemaArrayNode != null) {
+                topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                topologyNode.set("schemas", committedSchemaArrayNode);
+            }
+            ArrayNode unCommittedSchemaArrayNode = null;
             if (this.isWriteLockHeldByCurrentThread()) {
                 for (Schema schema : this.uncommittedSchemas.values()) {
-                    if (schemaArrayNode == null) {
-                        schemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                    if (unCommittedSchemaArrayNode == null) {
+                        unCommittedSchemaArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
                     }
                     Optional<JsonNode> jsonNodeOptional = schema.toNotifyJson();
                     if (jsonNodeOptional.isPresent()) {
-                        schemaArrayNode.add(jsonNodeOptional.get());
+                        unCommittedSchemaArrayNode.add(jsonNodeOptional.get());
                     } else {
                         ObjectNode schemaNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
                         schemaNode.put("name", schema.getName());
-                        schemaArrayNode.add(schemaNode);
+                        unCommittedSchemaArrayNode.add(schemaNode);
                     }
                 }
             }
-            if (schemaArrayNode != null) {
-                ObjectNode topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
-                topologyNode.set("schemas", schemaArrayNode);
+            if (unCommittedSchemaArrayNode != null) {
+                if (topologyNode == null) {
+                    topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                }
+                topologyNode.set("uncommittedSchemas", unCommittedSchemaArrayNode);
+            }
+            if (topologyNode != null) {
                 return Optional.of(topologyNode);
             } else {
                 return Optional.empty();
@@ -808,33 +822,37 @@ public class Topology {
     }
 
     private void fromNotifyJson(LocalDateTime timestamp, ObjectNode log) {
-        ArrayNode schemas = (ArrayNode) log.get("schemas");
-        //first load all the schema as they might be required later
-        for (JsonNode jsonSchema : schemas) {
-            String schemaName = jsonSchema.get("name").asText();
-            Optional<Schema> schemaOptional = getSchema(schemaName);
-            Schema schema;
-            if (!schemaOptional.isPresent()) {
-                //add to map
-                schema = Schema.instantiateSchema(this, schemaName);
-                this.schemas.put(schemaName, schema);
+        for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
+            ArrayNode schemas = (ArrayNode) log.get(s);
+            if (schemas != null) {
+                //first load all the schema as they might be required later
+                for (JsonNode jsonSchema : schemas) {
+                    String schemaName = jsonSchema.get("name").asText();
+                    Optional<Schema> schemaOptional = getSchema(schemaName);
+                    Schema schema;
+                    if (!schemaOptional.isPresent()) {
+                        //add to map
+                        schema = Schema.instantiateSchema(this, schemaName);
+                        this.schemas.put(schemaName, schema);
+                    }
+                }
+                for (JsonNode jsonSchema : schemas) {
+                    String schemaName = jsonSchema.get("name").asText();
+                    Optional<Schema> schemaOptional = getSchema(schemaName);
+                    Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+                    Schema schema = schemaOptional.get();
+                    schema.fromNotifyJsonOutEdges(jsonSchema);
+                }
+                for (JsonNode jsonSchema : schemas) {
+                    String schemaName = jsonSchema.get("name").asText();
+                    Optional<Schema> schemaOptional = getSchema(schemaName);
+                    Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
+                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+                    Schema schema = schemaOptional.get();
+                    schema.fromNotifyJsonInEdges(jsonSchema);
+                }
             }
-        }
-        for (JsonNode jsonSchema : schemas) {
-            String schemaName = jsonSchema.get("name").asText();
-            Optional<Schema> schemaOptional = getSchema(schemaName);
-            Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
-            Schema schema = schemaOptional.get();
-            schema.fromNotifyJsonOutEdges(jsonSchema);
-        }
-        for (JsonNode jsonSchema : schemas) {
-            String schemaName = jsonSchema.get("name").asText();
-            Optional<Schema> schemaOptional = getSchema(schemaName);
-            Preconditions.checkState(schemaOptional.isPresent(), "Schema must be present here");
-            @SuppressWarnings("OptionalGetWithoutIsPresent")
-            Schema schema = schemaOptional.get();
-            schema.fromNotifyJsonInEdges(jsonSchema);
         }
         this.notificationTimestamps.add(timestamp);
     }

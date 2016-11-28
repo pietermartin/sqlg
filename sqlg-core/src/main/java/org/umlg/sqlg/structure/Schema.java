@@ -316,6 +316,10 @@ public class Schema {
         return result;
     }
 
+    Map<String, VertexLabel> getVertexLabelsOnly() {
+        return this.vertexLabels;
+    }
+
     public Map<String, VertexLabel> getVertexLabels() {
         Map<String, VertexLabel> result = new HashMap<>();
         result.putAll(this.vertexLabels);
@@ -648,9 +652,9 @@ public class Schema {
             schemaNode.set("uncommittedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;
         }
-        if (!this.getVertexLabels().isEmpty()) {
+        if (!this.getVertexLabelsOnly().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
-            for (VertexLabel vertexLabel : this.getVertexLabels().values()) {
+            for (VertexLabel vertexLabel : this.getVertexLabelsOnly().values()) {
                 Optional<JsonNode> notifyJsonOptional = vertexLabel.toNotifyJson();
                 if (notifyJsonOptional.isPresent()) {
                     JsonNode notifyJson = notifyJsonOptional.get();

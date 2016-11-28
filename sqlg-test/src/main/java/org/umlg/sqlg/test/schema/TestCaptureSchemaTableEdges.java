@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.schema;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -13,6 +12,7 @@ import org.umlg.sqlg.test.BaseTest;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.Assert.*;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 
 /**
@@ -35,22 +35,22 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = this.sqlgGraph.getTopology().getTableLabels();
-        Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
-        Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
-        Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
+        assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
+        assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
+        assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
         Pair<Set<SchemaTable>, Set<SchemaTable>> person = localTabels.get(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
-        Assert.assertEquals(0, person.getLeft().size());
-        Assert.assertEquals(1, person.getRight().size());
-        Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", person.getRight().iterator().next().toString());
+        assertEquals(0, person.getLeft().size());
+        assertEquals(1, person.getRight().size());
+        assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", person.getRight().iterator().next().toString());
         Pair<Set<SchemaTable>, Set<SchemaTable>> car = localTabels.get(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car"));
-        Assert.assertEquals(1, car.getLeft().size());
-        Assert.assertEquals(1, car.getRight().size());
-        Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", car.getLeft().iterator().next().toString());
+        assertEquals(1, car.getLeft().size());
+        assertEquals(1, car.getRight().size());
+        assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", car.getLeft().iterator().next().toString());
 
         Pair<Set<SchemaTable>, Set<SchemaTable>> model = localTabels.get(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model"));
-        Assert.assertEquals(1, model.getLeft().size());
-        Assert.assertEquals(0, model.getRight().size());
-        Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_model", model.getLeft().iterator().next().toString());
+        assertEquals(1, model.getLeft().size());
+        assertEquals(0, model.getRight().size());
+        assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_model", model.getLeft().iterator().next().toString());
     }
 
     @Test
@@ -67,12 +67,12 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
         car2.addEdge("model", toyota);
         this.sqlgGraph.tx().rollback();
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTables = this.sqlgGraph.getTopology().getTableLabels();
-        Assert.assertTrue(localTables.containsKey(SchemaTable.of(SQLG_SCHEMA, "V_vertex")));
-        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
-        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
-        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
-        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_drives")));
-        Assert.assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_model")));
+        assertTrue(localTables.containsKey(SchemaTable.of(SQLG_SCHEMA, "V_vertex")));
+        assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
+        assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
+        assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
+        assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_drives")));
+        assertFalse(localTables.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_model")));
     }
 
     @Test
@@ -90,23 +90,23 @@ public class TestCaptureSchemaTableEdges extends BaseTest {
 
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = this.sqlgGraph.getTopology().getTableLabels();
-            Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
-            Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
-            Assert.assertTrue(localTabels.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
-            Pair<Set<SchemaTable>, Set<SchemaTable>> person = localTabels.get(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
-            Assert.assertEquals(0, person.getLeft().size());
-            Assert.assertEquals(1, person.getRight().size());
-            Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", person.getRight().iterator().next().toString());
-            Pair<Set<SchemaTable>, Set<SchemaTable>> car = localTabels.get(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car"));
-            Assert.assertEquals(1, car.getLeft().size());
-            Assert.assertEquals(1, car.getRight().size());
-            Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", car.getLeft().iterator().next().toString());
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> localTabels = sqlgGraph.getTopology().getTableLabels();
+            assertTrue(localTabels.containsKey(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")));
+            assertTrue(localTabels.containsKey(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car")));
+            assertTrue(localTabels.containsKey(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model")));
+            Pair<Set<SchemaTable>, Set<SchemaTable>> person = localTabels.get(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
+            assertEquals(0, person.getLeft().size());
+            assertEquals(1, person.getRight().size());
+            assertEquals(sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", person.getRight().iterator().next().toString());
+            Pair<Set<SchemaTable>, Set<SchemaTable>> car = localTabels.get(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "V_Car"));
+            assertEquals(1, car.getLeft().size());
+            assertEquals(1, car.getRight().size());
+            assertEquals(sqlgGraph.getSqlDialect().getPublicSchema() + ".E_drives", car.getLeft().iterator().next().toString());
 
-            Pair<Set<SchemaTable>, Set<SchemaTable>> model = localTabels.get(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model"));
-            Assert.assertEquals(1, model.getLeft().size());
-            Assert.assertEquals(0, model.getRight().size());
-            Assert.assertEquals(this.sqlgGraph.getSqlDialect().getPublicSchema() + ".E_model", model.getLeft().iterator().next().toString());
+            Pair<Set<SchemaTable>, Set<SchemaTable>> model = localTabels.get(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "V_Model"));
+            assertEquals(1, model.getLeft().size());
+            assertEquals(0, model.getRight().size());
+            assertEquals(sqlgGraph.getSqlDialect().getPublicSchema() + ".E_model", model.getLeft().iterator().next().toString());
         }
     }
 }

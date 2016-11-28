@@ -1,5 +1,9 @@
 package org.umlg.sqlg.structure;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -10,6 +14,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
@@ -101,6 +106,35 @@ public class Index {
         }
     }
 
+    protected Optional<JsonNode> toNotifyJson() {
+        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
+        ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        result.put("name", this.name);
+        result.put("indexType", this.uncommittedIndexType.name());
+        ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (PropertyColumn property : this.uncommittedProperties) {
+            propertyArrayNode.add(property.toNotifyJson());
+        }
+        result.set("uncommittedProperties", propertyArrayNode);
+        return Optional.of(result);
+    }
+
+    public static Index fromNotifyJson(AbstractLabel abstractLabel, JsonNode indexNode) {
+        IndexType indexType = IndexType.valueOf(indexNode.get("indexType").asText());
+        String name = indexNode.get("name").asText();
+        ArrayNode propertiesNode = (ArrayNode) indexNode.get("uncommittedProperties");
+        List<PropertyColumn> properties = new ArrayList<>();
+        for (JsonNode propertyNode : propertiesNode) {
+            String propertyName = propertyNode.get("name").asText();
+            PropertyType propertyType = PropertyType.valueOf(propertyNode.get("propertyType").asText());
+            Optional<PropertyColumn> propertyColumnOptional = abstractLabel.getProperty(propertyName);
+            Preconditions.checkState(propertyColumnOptional.isPresent(), "BUG: property %s for PropertyType %s not found.", propertyName, propertyType.name());
+            //noinspection OptionalGetWithoutIsPresent
+            properties.add(propertyColumnOptional.get());
+        }
+        return new Index(name, indexType, abstractLabel, properties);
+    }
+
     public static Index createIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = new Index(indexName, indexType, abstractLabel, properties);
         SchemaTable schemaTable = SchemaTable.of(abstractLabel.getSchema().getName(), abstractLabel.getLabel());
@@ -108,4 +142,5 @@ public class Index {
         TopologyManager.addIndex(sqlgGraph, abstractLabel, index, indexType, properties);
         return index;
     }
+
 }

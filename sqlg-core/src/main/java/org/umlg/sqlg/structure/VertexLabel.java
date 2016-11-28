@@ -365,9 +365,10 @@ public class VertexLabel extends AbstractLabel {
         ObjectNode vertexLabelNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         vertexLabelNode.put("label", getLabel());
 
-        Optional<JsonNode> propertyNode = super.toNotifyJson();
-        if (propertyNode.isPresent()) {
-            vertexLabelNode.set("uncommittedProperties", propertyNode.get());
+        Optional<JsonNode> abstractLabelNode = super.toNotifyJson();
+        if (abstractLabelNode.isPresent()) {
+            vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
+            vertexLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
         }
 
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutEdgeLabels.isEmpty()) {

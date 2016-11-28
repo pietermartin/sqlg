@@ -2,6 +2,8 @@ package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -241,11 +243,22 @@ public abstract class AbstractLabel {
 
     protected Optional<JsonNode> toNotifyJson() {
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty()) {
+            ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (PropertyColumn property : this.uncommittedProperties.values()) {
                 propertyArrayNode.add(property.toNotifyJson());
             }
-            return Optional.of(propertyArrayNode);
+            ArrayNode indexArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (Index index: this.uncommittedIndexes.values()) {
+                //noinspection OptionalGetWithoutIsPresent
+                Optional<JsonNode> indexJsonOptional = index.toNotifyJson();
+                Preconditions.checkState(indexJsonOptional.isPresent());
+                //noinspection OptionalGetWithoutIsPresent
+                indexArrayNode.add(indexJsonOptional.get());
+            }
+            result.set("uncommittedProperties", propertyArrayNode);
+            result.set("uncommittedIndexes", indexArrayNode);
+            return Optional.of(result);
         } else {
             return Optional.empty();
         }
@@ -257,6 +270,13 @@ public abstract class AbstractLabel {
             for (JsonNode propertyNode : propertiesNode) {
                 PropertyColumn property = PropertyColumn.fromNotifyJson(this, propertyNode);
                 this.properties.put(property.getName(), property);
+            }
+        }
+        ArrayNode indexNodes = (ArrayNode) vertexLabelJson.get("uncommittedIndexes");
+        if (indexNodes != null) {
+            for (JsonNode indexNode : indexNodes) {
+                Index index = Index.fromNotifyJson(this, indexNode);
+                this.indexes.put(index.getName(), index);
             }
         }
     }

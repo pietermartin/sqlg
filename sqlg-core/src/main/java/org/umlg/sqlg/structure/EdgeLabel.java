@@ -473,10 +473,11 @@ public class EdgeLabel extends AbstractLabel {
         edgeLabelNode.put("schema", getSchema().getName());
         edgeLabelNode.put("label", getLabel());
 
-        Optional<JsonNode> propertyNode = super.toNotifyJson();
-        if (propertyNode.isPresent()) {
+        Optional<JsonNode> abstractLabelNode = super.toNotifyJson();
+        if (abstractLabelNode.isPresent()) {
             foundSomething = true;
-            edgeLabelNode.set("uncommittedProperties", propertyNode.get());
+            edgeLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
+            edgeLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
         }
 
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
