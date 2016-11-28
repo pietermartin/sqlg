@@ -163,6 +163,35 @@ public class VertexLabel extends AbstractLabel {
     }
 
     /**
+     * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
+     * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
+     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(SqlgGraph, String, VertexLabel, VertexLabel, Map)}
+     *
+     * @param sqlgGraph The graph.
+     * @param edgeLabelName The EdgeLabel's label's name.
+     * @param inVertexLabel The edge's in VertexLabel.
+     * @return The {@link EdgeLabel}.
+     */
+    public EdgeLabel ensureEdgeLabelExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel inVertexLabel) {
+        return this.getSchema().ensureEdgeLabelExist(sqlgGraph, edgeLabelName, this, inVertexLabel, Collections.emptyMap());
+    }
+
+    /**
+     * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
+     * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
+     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(SqlgGraph, String, VertexLabel, VertexLabel, Map)}
+     *
+     * @param sqlgGraph The graph.
+     * @param edgeLabelName The EdgeLabel's label's name.
+     * @param inVertexLabel The edge's in VertexLabel.
+     * @param properties The EdgeLabel's properties
+     * @return
+     */
+    public EdgeLabel ensureEdgeLabelExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        return this.getSchema().ensureEdgeLabelExist(sqlgGraph, edgeLabelName, this, inVertexLabel, properties);
+    }
+
+    /**
      * Called via {@link Schema#ensureEdgeLabelExist(SqlgGraph, String, VertexLabel, VertexLabel, Map)}
      * This is called when the {@link EdgeLabel} does not exist and needs to be created.
      *

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
+import org.umlg.sqlg.test.schema.TestSchemaEagerCreation;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyMultipleGraphs.class,
+        TestSchemaEagerCreation.class,
 //        TestNotifyJson.class,
 //        TestIndexTopologyTraversal.class,
 })

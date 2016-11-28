@@ -220,6 +220,23 @@ public class TestSchemaEagerCreation extends BaseTest {
 
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @Test
+    public void testAddEdgeLabelViaOutVertexLabel() {
+        VertexLabel a = this.sqlgGraph.getTopology()
+                .ensureSchemaExist("A")
+                .ensureVertexLabelExist(this.sqlgGraph, "A");
+        Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("A");
+        assertTrue(schemaOptional.isPresent());
+        VertexLabel b = schemaOptional.get().ensureVertexLabelExist(this.sqlgGraph, "B");
+        a.ensureEdgeLabelExist(this.sqlgGraph, "ab", b);
+        this.sqlgGraph.tx().commit();
+
+        Optional<EdgeLabel> edgeLabel = this.sqlgGraph.getTopology().getSchema("A").get().getEdgeLabel("ab");
+        assertTrue(edgeLabel.isPresent());
+        assertEquals("ab", edgeLabel.get().getLabel());
+    }
+
     private void createModernSchema() {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name", PropertyType.STRING);
@@ -234,4 +251,5 @@ public class TestSchemaEagerCreation extends BaseTest {
         this.sqlgGraph.getTopology().ensureEdgeLabelExist("knows", personVertexLabel, personVertexLabel, properties);
         this.sqlgGraph.getTopology().ensureEdgeLabelExist("created", personVertexLabel, softwareVertexLabel, properties);
     }
+
 }
