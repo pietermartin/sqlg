@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.h2.jdbc.JdbcArray;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -13,10 +15,7 @@ import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.lang.reflect.Array;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
 import java.time.*;
 import java.util.*;
 
@@ -44,16 +43,16 @@ public class H2Dialect extends BaseSqlDialect {
     public Set<String> getDefaultSchemas() {
         return ImmutableSet.of("PUBLIC", "INFORMATION_SCHEMA");
     }
-    
+
     @Override
     public String createSchemaStatement() {
-    	// if ever schema is created outside of sqlg while the graph is already instantiated
-    	return "CREATE SCHEMA IF NOT EXISTS ";
+        // if ever schema is created outside of sqlg while the graph is already instantiated
+        return "CREATE SCHEMA IF NOT EXISTS ";
     }
 
     @Override
     public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column,
-            int sqlType, String typeName) {
+                                              int sqlType, String typeName,  ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (sqlType) {
             case Types.BOOLEAN:
                 return PropertyType.BOOLEAN;
@@ -76,15 +75,76 @@ public class H2Dialect extends BaseSqlDialect {
             case Types.TIME:
                 return PropertyType.LOCALTIME;
             case Types.VARBINARY:
-                return PropertyType.byte_ARRAY;
+                return PropertyType.BYTE_ARRAY;
             case Types.ARRAY:
-                //H2 supports just an array - we cannot specify the element type, so let's just pick
-                //something...
-                return PropertyType.JSON_ARRAY;
+                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
         }
     }
+
+    /**
+     * All this is because H2 does not return the TYPE_NAME for column meta data.
+     * The strategy is to actualy query the table get the column's value and interrogate it to get its type.
+     * If the column has no data then we are stuffed and an exception is thrown.
+     * @param typeName
+     * @param sqlgGraph
+     * @param schema
+     * @param table
+     * @param columnName
+     * @param metaDataIter
+     * @return
+     */
+    @Override
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
+        Connection connection = sqlgGraph.tx().getConnection();
+        try (Statement statement = connection.createStatement()) {
+            String sql = "SELECT \"" + columnName + "\" FROM \"" + schema + "\".\"" + table + "\" WHERE \"" + columnName + "\" IS NOT NULL LIMIT 1";
+            ResultSet rs = statement.executeQuery(sql);
+            if (!rs.next()) {
+                throw new IllegalStateException("The sqlg_schema can not be created because the column " + schema + "." + table + "." + columnName + " has no data in it. For arrays on H2 there must be data in the column to determine the type.");
+            } else {
+                java.sql.Array o = rs.getArray(1);
+                JdbcArray jdbcArray = (JdbcArray) o;
+                Object[] array = (Object[]) jdbcArray.getArray();
+                for (Object o1 : array) {
+                    if (o1 instanceof Byte) {
+                        return PropertyType.BYTE_ARRAY;
+                    } else if (o1 instanceof Short) {
+                        return PropertyType.SHORT_ARRAY;
+                    } else if (o1 instanceof Integer) {
+                        return PropertyType.INTEGER_ARRAY;
+                    } else if (o1 instanceof Long) {
+                        return PropertyType.LONG_ARRAY;
+                    } else if (o1 instanceof Float) {
+                        return PropertyType.FLOAT_ARRAY;
+                    } else if (o1 instanceof Double) {
+                        return PropertyType.DOUBLE_ARRAY;
+                    } else if (o1 instanceof String) {
+                        return PropertyType.STRING_ARRAY;
+                    } else if (o1 instanceof Timestamp) {
+                        //ja well this sucks but I know of no other way to distinguish between LocalDateTime and LocalDate
+                        Timestamp timestamp = (Timestamp)o1;
+                        LocalDateTime localDateTime = timestamp.toLocalDateTime();
+                        if (localDateTime.getHour() == 0 && localDateTime.getMinute() == 0 && localDateTime.getSecond() == 0 && localDateTime.getNano() == 0) {
+                            return PropertyType.LOCALDATE_ARRAY;
+                        } else {
+                            return PropertyType.LOCALDATETIME_ARRAY;
+                        }
+                    } else if (o1 instanceof Time) {
+                        return PropertyType.LOCALTIME_ARRAY;
+                    } else {
+                        throw new UnsupportedOperationException("H2 does not support typeName on arrays");
+                    }
+                }
+            }
+            rs.close();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        throw new UnsupportedOperationException("H2 does not support typeName on arrays");
+    }
+
 
     @Override
     public void validateProperty(Object key, Object value) {
@@ -186,10 +246,22 @@ public class H2Dialect extends BaseSqlDialect {
                 return new String[]{"VARCHAR"};
             case ZONEDDATETIME:
                 return new String[]{"TIMESTAMP", "VARCHAR"};
-            case BOOLEAN_ARRAY: case boolean_ARRAY: case DOUBLE_ARRAY: case double_ARRAY:
-            case FLOAT_ARRAY: case float_ARRAY: case int_ARRAY: case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY: case LOCALDATETIME_ARRAY: case LOCALTIME_ARRAY: case LONG_ARRAY:
-            case long_ARRAY: case SHORT_ARRAY: case short_ARRAY: case STRING_ARRAY:
+            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
+            case DOUBLE_ARRAY:
+            case double_ARRAY:
+            case FLOAT_ARRAY:
+            case float_ARRAY:
+            case int_ARRAY:
+            case INTEGER_ARRAY:
+            case LOCALDATE_ARRAY:
+            case LOCALDATETIME_ARRAY:
+            case LOCALTIME_ARRAY:
+            case LONG_ARRAY:
+            case long_ARRAY:
+            case SHORT_ARRAY:
+            case short_ARRAY:
+            case STRING_ARRAY:
                 return new String[]{"ARRAY"};
             case DURATION_ARRAY:
                 return new String[]{"ARRAY", "ARRAY"};
@@ -245,10 +317,23 @@ public class H2Dialect extends BaseSqlDialect {
                 return Types.BINARY;
             case BYTE_ARRAY:
                 return Types.BINARY;
-            case BOOLEAN_ARRAY: case boolean_ARRAY: case DOUBLE_ARRAY: case double_ARRAY:
-            case DURATION_ARRAY: case FLOAT_ARRAY: case float_ARRAY: case int_ARRAY: case INTEGER_ARRAY:
-            case LOCALDATE_ARRAY: case LOCALDATETIME_ARRAY: case LOCALTIME_ARRAY: case LONG_ARRAY: case long_ARRAY:
-            case SHORT_ARRAY: case short_ARRAY: case STRING_ARRAY:
+            case BOOLEAN_ARRAY:
+            case boolean_ARRAY:
+            case DOUBLE_ARRAY:
+            case double_ARRAY:
+            case DURATION_ARRAY:
+            case FLOAT_ARRAY:
+            case float_ARRAY:
+            case int_ARRAY:
+            case INTEGER_ARRAY:
+            case LOCALDATE_ARRAY:
+            case LOCALDATETIME_ARRAY:
+            case LOCALTIME_ARRAY:
+            case LONG_ARRAY:
+            case long_ARRAY:
+            case SHORT_ARRAY:
+            case short_ARRAY:
+            case STRING_ARRAY:
                 return Types.ARRAY;
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
@@ -319,7 +404,7 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public void putJsonMetaObject(ObjectMapper mapper, ArrayNode metaNodeArray, String columnName, int sqlType,
-            Object o) {
+                                  Object o) {
         switch (sqlType) {
             case Types.ARRAY:
                 try {
@@ -470,12 +555,18 @@ public class H2Dialect extends BaseSqlDialect {
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"schemaVertex\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"type\" VARCHAR, \"index_type\" VARCHAR DEFAULT 'NONE');");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"type\" VARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"index_type\" VARCHAR);");
+
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_log\" (\"ID\" IDENTITY PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" VARCHAR);");
         return result;
     }
@@ -534,7 +625,7 @@ public class H2Dialect extends BaseSqlDialect {
 
     @Override
     public void setArray(PreparedStatement statement, int index, PropertyType type,
-            Object[] values) throws SQLException {
+                         Object[] values) throws SQLException {
         statement.setObject(index, values);
     }
 

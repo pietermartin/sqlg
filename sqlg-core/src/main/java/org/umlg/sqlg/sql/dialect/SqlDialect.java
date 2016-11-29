@@ -6,16 +6,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.Range;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.sql.*;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public interface SqlDialect {
 
@@ -23,7 +21,7 @@ public interface SqlDialect {
 
     Set<String> getDefaultSchemas();
 
-    PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName);
+    PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter);
 
     /**
      * "TYPE_NAME" is column meta data returned by the jdbc driver.
@@ -32,7 +30,7 @@ public interface SqlDialect {
      *
      * @return the TYPE_NAME for the given Types constant.
      */
-    PropertyType sqlArrayTypeNameToPropertyType(String typeName);
+    PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter);
 
     void validateProperty(Object key, Object value);
 

@@ -11,6 +11,7 @@ import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         TestTopologyUpgrade.class,
+//        TestLoadArrayProperties.class
 //        TestNotifyJson.class,
 //        TestIndexTopologyTraversal.class,
 })

@@ -1,8 +1,11 @@
 package org.umlg.sqlg.test.topology;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -21,9 +24,8 @@ import org.umlg.sqlg.test.BaseTest;
 import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.time.Duration;
-import java.time.Period;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -208,15 +210,6 @@ public class TestTopologyUpgrade extends BaseTest {
 
         for (int i = 0; i < 2; i++) {
             try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-                sqlgGraph1.tx().normalBatchModeOn();
-                sqlgGraph1.traversal().V().forEachRemaining(Element::remove);
-                sqlgGraph1.tx().commit();
-                reader = GryoReader.build()
-                        .mapper(sqlgGraph1.io(GryoIo.build()).mapper().create())
-                        .create();
-                try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/grateful-dead.kryo")) {
-                    reader.readGraph(stream, sqlgGraph1);
-                }
                 traversal = get_g_V_both_both_count(sqlgGraph1.traversal());
                 Assert.assertEquals(new Long(1406914), traversal.next());
                 Assert.assertFalse(traversal.hasNext());
@@ -354,6 +347,44 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @Test
+    public void testUpgradeTypesWithMoreThanOneColumnOnEdge() throws Exception {
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        Duration duration = Duration.ofDays(1);
+        Period period = Period.of(1, 1, 1);
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a2");
+        a1.addEdge("ab", a2, "zonedDateTime", zonedDateTime, "duration", duration, "period", period);
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            //assert zonedDateTime
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
+                    .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                    .has(Topology.SQLG_SCHEMA_PROPERTY_NAME, "zonedDateTime").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.ZONEDDATETIME, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            List<Edge> edges = sqlgGraph1.traversal().E().hasLabel("ab").toList();
+            Assert.assertEquals(1, edges.size());
+            Assert.assertEquals(zonedDateTime, edges.get(0).value("zonedDateTime"));
+            Assert.assertEquals(duration, edges.get(0).value("duration"));
+            Assert.assertEquals(period, edges.get(0).value("period"));
+        }
+    }
+
+    @Test
     public void testUpgradeArrayTypesWithMoreThanOneColumn() throws Exception {
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
         Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
@@ -409,9 +440,221 @@ public class TestTopologyUpgrade extends BaseTest {
             Assert.assertEquals(1, vertices.size());
             Assert.assertArrayEquals(periods, vertices.get(0).value("periods"));
         }
-
     }
 
+    @Test
+    public void testUpgradeTypesWithMoreThanOneColumnOnEdgeArrays() throws Exception {
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusMonths(1), ZonedDateTime.now().minusMonths(2)};
+        Duration[] durations = new Duration[]{Duration.ofDays(1), Duration.ofDays(2), Duration.ofDays(3)};
+        Period[] periods = new Period[]{Period.of(1, 1, 1), Period.of(2, 2, 2), Period.of(3, 3, 3)};
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a2");
+        a1.addEdge("ab", a2, "zonedDateTimes", zonedDateTimes, "durations", durations, "periods", periods);
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            //assert zonedDateTime
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out(Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has(Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "A")
+                    .out(Topology.SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .out(Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                    .has(Topology.SQLG_SCHEMA_PROPERTY_NAME, "zonedDateTimes").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.ZONEDDATETIME_ARRAY, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            List<Edge> edges = sqlgGraph1.traversal().E().hasLabel("ab").toList();
+            Assert.assertEquals(1, edges.size());
+            Assert.assertArrayEquals(zonedDateTimes, edges.get(0).value("zonedDateTimes"));
+            Assert.assertArrayEquals(durations, edges.get(0).value("durations"));
+            Assert.assertArrayEquals(periods, edges.get(0).value("periods"));
+        }
+    }
+
+    @Test
+    public void testUpgradeJson() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
+        ObjectNode json = new ObjectMapper().createObjectNode();
+        json.put("halo", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "json", json);
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            //assert zonedDateTimes
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "json").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.JSON, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            List<Vertex> vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a1").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertEquals(json, vertices.get(0).value("json"));
+        }
+    }
+
+    @Test
+    public void testUpgradeJsonArrays() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsJson());
+        ObjectNode json1 = new ObjectMapper().createObjectNode();
+        json1.put("halo", "asdasd");
+        ObjectNode json2 = new ObjectMapper().createObjectNode();
+        json2.put("halo", "asdasd");
+        ObjectNode[] jsons = new ObjectNode[]{json1, json2};
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "a1", "jsons", jsons);
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            List<Vertex> schemaVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A").toList();
+            Assert.assertEquals(1, schemaVertices.size());
+            //assert zonedDateTimes
+            List<Vertex> propertyVertices = sqlgGraph1.topology().V().hasLabel("sqlg_schema.schema").has("name", "A")
+                    .out("schema_vertex")
+                    .has("name", "A")
+                    .out("vertex_property")
+                    .has("name", "jsons").toList();
+            Assert.assertEquals(1, propertyVertices.size());
+            Assert.assertEquals(PropertyType.JSON_ARRAY, PropertyType.valueOf(propertyVertices.get(0).value("type")));
+            List<Vertex> vertices = sqlgGraph1.traversal().V().hasLabel("A.A").has("name", "a1").toList();
+            Assert.assertEquals(1, vertices.size());
+            Assert.assertArrayEquals(jsons, vertices.get(0).value("jsons"));
+        }
+    }
+
+    @Test
+    public void testUpdateLocalDateTimeAndZonedDateTime() throws Exception {
+        LocalDateTime localDateTime = LocalDateTime.now();
+        ZonedDateTime zonedDateTime = ZonedDateTime.now();
+        this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime, "zonedDateTime", zonedDateTime);
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(localDateTime, sqlgGraph1.traversal().V().hasLabel("A").next().value("localDateTime"));
+            Assert.assertEquals(zonedDateTime, sqlgGraph1.traversal().V().hasLabel("A").next().value("zonedDateTime"));
+        }
+    }
+
+    @Test
+    public void testUpgradeArrays() throws Exception {
+        Byte[] bytes = new Byte[]{1, 2, 3};
+        byte[] bytes2 = new byte[]{1, 2, 3};
+        Short[] shorts = new Short[]{1, 2, 3};
+        short[] shorts2 = new short[]{1, 2, 3};
+        Integer[] integers = new Integer[]{1, 2, 3};
+        int[] integers2 = new int[]{1, 2, 3};
+        Long[] longs = new Long[]{1L, 2L, 3L};
+        long[] longs2 = new long[]{1L, 2L, 3L};
+        Double[] doubles = new Double[]{1D, 2D, 3D};
+        double[] doubles2 = new double[]{1D, 2D, 3D};
+        String[] strings = new String[]{"a", "b", "c"};
+        LocalDate[] localDates = new LocalDate[]{LocalDate.now(), LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(3)};
+        LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now().minusMonths(2), LocalDateTime.now().minusMonths(3)};
+        LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
+        ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusHours(2), ZonedDateTime.now().minusHours(3)};
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A",
+                "bytes", bytes, "bytes2", bytes2,
+                "shorts", shorts, "shorts2", shorts2,
+                "integers", integers, "integers2", integers2,
+                "longs", longs, "longs2", longs2,
+                "doubles", doubles, "doubles2", doubles2,
+                "strings", strings,
+                "localDates", localDates,
+                "localDateTimes", localDateTimes,
+                "localTimes", localTimes,
+                "zonedDateTimes", zonedDateTimes
+        );
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertArrayEquals(bytes, sqlgGraph1.traversal().V().hasLabel("A").next().value("bytes"));
+            Assert.assertArrayEquals(bytes, sqlgGraph1.traversal().V().hasLabel("A").next().value("bytes2"));
+            Assert.assertArrayEquals(shorts, sqlgGraph1.traversal().V().hasLabel("A").next().value("shorts"));
+            Assert.assertArrayEquals(shorts, sqlgGraph1.traversal().V().hasLabel("A").next().value("shorts2"));
+            Assert.assertArrayEquals(integers, sqlgGraph1.traversal().V().hasLabel("A").next().value("integers"));
+            Assert.assertArrayEquals(integers, sqlgGraph1.traversal().V().hasLabel("A").next().value("integers2"));
+            Assert.assertArrayEquals(longs, sqlgGraph1.traversal().V().hasLabel("A").next().value("longs"));
+            Assert.assertArrayEquals(longs, sqlgGraph1.traversal().V().hasLabel("A").next().value("longs2"));
+            Assert.assertArrayEquals(doubles, sqlgGraph1.traversal().V().hasLabel("A").next().value("doubles"));
+            Assert.assertArrayEquals(doubles, sqlgGraph1.traversal().V().hasLabel("A").next().value("doubles2"));
+            Assert.assertArrayEquals(strings, sqlgGraph1.traversal().V().hasLabel("A").next().value("strings"));
+            Assert.assertArrayEquals(localDates, sqlgGraph1.traversal().V().hasLabel("A").next().value("localDates"));
+            Assert.assertArrayEquals(localDateTimes, sqlgGraph1.traversal().V().hasLabel("A").next().value("localDateTimes"));
+            LocalTime[] value = sqlgGraph1.traversal().V().hasLabel("A").next().value("localTimes");
+            List<LocalTime> localTimes1 = new ArrayList<>();
+            for (LocalTime localTime : value) {
+                localTimes1.add(localTime.minusNanos(localTime.getNano()));
+            }
+            Assert.assertArrayEquals(localTimes1.toArray(), value);
+            Assert.assertArrayEquals(zonedDateTimes, sqlgGraph1.traversal().V().hasLabel("A").next().value("zonedDateTimes"));
+        }
+    }
+
+    @Test
+    public void testUpgradeFloatArrays() throws Exception {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Float[] floats = new Float[]{1F, 2F, 3F};
+        float[] floats2 = new float[]{1F, 2F, 3F};
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A",
+                "floats", floats, "floats2", floats2
+        );
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertArrayEquals(floats, sqlgGraph1.traversal().V().hasLabel("A").next().value("floats"));
+            Assert.assertArrayEquals(floats, sqlgGraph1.traversal().V().hasLabel("A").next().value("floats2"));
+        }
+    }
 
     private Traversal<Vertex, Long> get_g_V_both_both_count(GraphTraversalSource g) {
         return g.V().both().both().count();

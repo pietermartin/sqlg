@@ -1,3 +1,12 @@
+##1.3.4
+
+* Rewrite of the topology/schema management. `SchemaManager` is replaced with `Topology`.
+There are now object representing the topology. `Topology`, `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn` and `Index`
+* Strengthened the reloading of the topology from the information_schema tables.
+This highlighted some limitations. It is not possible to tell a primitive array from a object array. 
+As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become `Integer[]{1,2,3}`
+    
+
 ##1.3.3
 
 * Ensure SqlgGraphStepStrategy and SqlgVertexStepStrategy fires before InlineFilterStrategy.

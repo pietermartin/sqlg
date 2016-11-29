@@ -1678,7 +1678,7 @@ public class PostgresDialect extends BaseSqlDialect {
      * @return
      */
     @Override
-    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName) {
+    public PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (sqlType) {
             case Types.BIT:
                 return PropertyType.BOOLEAN;
@@ -1704,7 +1704,7 @@ public class PostgresDialect extends BaseSqlDialect {
                 //this is a f up as only JSON can be used for other.
                 //means all the gis data types which are also OTHER are not supported
                 switch (typeName) {
-                    case "JSON":
+                    case "jsonb":
                         return PropertyType.JSON;
                     case "geometry":
                         return getPostGisGeometryType(sqlgGraph, schema, table, column);
@@ -1715,33 +1715,46 @@ public class PostgresDialect extends BaseSqlDialect {
 
                 }
             case Types.BINARY:
-                return byte_ARRAY;
+                return BYTE_ARRAY;
             case Types.ARRAY:
-                return  sqlArrayTypeNameToPropertyType(typeName);
+                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column,  metaDataIter);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
         }
     }
 
     @Override
-    public PropertyType sqlArrayTypeNameToPropertyType(String typeName) {
+    public PropertyType sqlArrayTypeNameToPropertyType(String typeName, SqlgGraph sqlgGraph, String schema, String table, String columnName, ListIterator<Triple<String, Integer, String>> metaDataIter) {
         switch (typeName) {
             case "_bool":
-                return boolean_ARRAY;
+                return BOOLEAN_ARRAY;
             case "_int2":
-                return short_ARRAY;
+                return SHORT_ARRAY;
             case "_int4":
-                return PropertyType.int_ARRAY;
+                return PropertyType.INTEGER_ARRAY;
             case "_int8":
-                return PropertyType.long_ARRAY;
+                return PropertyType.LONG_ARRAY;
             case "_float4":
-                return PropertyType.float_ARRAY;
+                return PropertyType.FLOAT_ARRAY;
             case "_float8":
-                return PropertyType.double_ARRAY;
+                return PropertyType.DOUBLE_ARRAY;
             case "_text":
                 return PropertyType.STRING_ARRAY;
+            case "_date":
+                return PropertyType.LOCALDATE_ARRAY;
+            case "_timetz":
+                return PropertyType.LOCALTIME_ARRAY;
             case "_timestamptz":
-                return PropertyType.ZONEDDATETIME_ARRAY;
+                //need to check the next column to know if its a LocalDateTime or ZonedDateTime array
+                Triple<String, Integer, String> metaData = metaDataIter.next();
+                metaDataIter.previous();
+                if (metaData.getLeft().startsWith(columnName + "~~~")) {
+                    return PropertyType.ZONEDDATETIME_ARRAY;
+                } else {
+                    return PropertyType.LOCALDATETIME_ARRAY;
+                }
+            case "_jsonb":
+                return PropertyType.JSON_ARRAY;
             default:
                 throw new RuntimeException("Array type not supported " + typeName);
         }
