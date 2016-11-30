@@ -101,6 +101,10 @@
                     <!--<argLine>-Xmx4096m</argLine>-->
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <includes>
+                        <include>**/SqlgH2StructureStandardTest.java</include>
+                        <include>**/SqlgH2ProcessStandardTest.java</include>
+                        <include>**/H2AllTest.java</include>
+
                         <include>**/SqlgHsqldbStructureStandardTest.java</include>
                         <include>**/SqlgHsqldbProcessStandardTest.java</include>
                         <include>**/HsqldbAllTest.java</include>
