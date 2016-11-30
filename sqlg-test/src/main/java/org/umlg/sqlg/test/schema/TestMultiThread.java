@@ -171,7 +171,6 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(6000, TimeUnit.SECONDS);
-        assertEquals(100, tables.size());
         for (Integer i : tables) {
             assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
@@ -198,7 +197,6 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(60, TimeUnit.SECONDS);
-        assertEquals(100, tables.size());
         for (Integer i : tables) {
             assertTrue(this.sqlgGraph.getSchemaManager().tableExist(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person" + String.valueOf(i)));
             assertEquals(10, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", String.valueOf(i)).count().next().intValue());
