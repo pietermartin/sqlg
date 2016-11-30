@@ -95,6 +95,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 this.threadLocalTx.get().clear();
                 this.threadLocalTx.remove();
             }
+            this.threadLocalPreparedStatementTx.remove();
         }
     }
 
@@ -130,6 +131,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             if (isOpen()) {
                 this.threadLocalTx.get().clear();
                 this.threadLocalTx.remove();
+                this.threadLocalPreparedStatementTx.remove();
             }
         }
     }
