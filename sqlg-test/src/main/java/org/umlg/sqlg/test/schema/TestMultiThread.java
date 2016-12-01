@@ -18,8 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/09/24
@@ -93,6 +92,7 @@ public class TestMultiThread extends BaseTest {
         assertTrue(noVerticesInFirstThread.get());
         assertVertexEdgeCounts(0, 0);
     }
+
     @Test
     public void shouldExecuteWithCompetingThreads() throws InterruptedException {
         final Graph graph = this.sqlgGraph;
@@ -105,45 +105,51 @@ public class TestMultiThread extends BaseTest {
             new Thread() {
                 @Override
                 public void run() {
-                    final Random random = new Random();
-                    for (int i = 0; i < 100; i++) {
-                        if (random.nextBoolean()) {
-                            final Vertex a = graph.addVertex();
-                            final Vertex b = graph.addVertex();
-                            final Edge e = a.addEdge("friend", b);
-
-                            vertices.getAndAdd(2);
-                            a.property("test", this.getId());
-                            b.property("blah", random.nextDouble());
-                            e.property("bloop", random.nextInt());
-                            edges.getAndAdd(1);
-                            graph.tx().commit();
-                        } else {
-                            final Vertex a = graph.addVertex();
-                            final Vertex b = graph.addVertex();
-                            final Edge e = a.addEdge("friend", b);
-
-                            a.property("test", this.getId());
-                            b.property("blah", random.nextDouble());
-                            e.property("bloop", random.nextInt());
-
+                    try {
+                        final Random random = new Random();
+                        for (int i = 0; i < 100; i++) {
                             if (random.nextBoolean()) {
-                                graph.tx().commit();
+                                final Vertex a = graph.addVertex();
+                                final Vertex b = graph.addVertex();
+                                final Edge e = a.addEdge("friend", b);
+
                                 vertices.getAndAdd(2);
+                                a.property("test", this.getId());
+                                b.property("blah", random.nextDouble());
+                                e.property("bloop", random.nextInt());
                                 edges.getAndAdd(1);
+                                graph.tx().commit();
                             } else {
-                                graph.tx().rollback();
+                                final Vertex a = graph.addVertex();
+                                final Vertex b = graph.addVertex();
+                                final Edge e = a.addEdge("friend", b);
+
+                                a.property("test", this.getId());
+                                b.property("blah", random.nextDouble());
+                                e.property("bloop", random.nextInt());
+
+                                if (random.nextBoolean()) {
+                                    graph.tx().commit();
+                                    vertices.getAndAdd(2);
+                                    edges.getAndAdd(1);
+                                } else {
+                                    graph.tx().rollback();
+                                }
                             }
                         }
+                        countDownLatch.countDown();
+                        completedThreads.getAndAdd(1);
+                        logger.debug("shouldExecuteWithCompetingThreads " + completedThreads.get());
+                    } catch (Exception e) {
+                        logger.error("failure", e);
+                        fail(e.getMessage());
                     }
-                    countDownLatch.countDown();
-                    completedThreads.getAndAdd(1);
-                    logger.debug("shouldExecuteWithCompetingThreads " + completedThreads.get());
                 }
             }.start();
         }
         countDownLatch.await();
         assertEquals(completedThreads.get(), totalThreads);
+        System.out.println(vertices.get());
         assertVertexEdgeCounts(vertices.get(), edges.get());
     }
 
@@ -222,6 +228,5 @@ public class TestMultiThread extends BaseTest {
         //+ 1 for the public schema
         assertEquals(schemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
     }
-
 
 }
