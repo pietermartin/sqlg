@@ -157,8 +157,8 @@ class SqlgStartupManager {
                     while (metaDataIter.hasNext()) {
                         Triple<String, Integer, String> tripple = metaDataIter.next();
                         String columnName = tripple.getLeft();
-                        String typeName = tripple.getRight();
                         int columnType = tripple.getMiddle();
+                        String typeName = tripple.getRight();
                         if (!columnName.equals(SchemaManager.ID)) {
                             extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                         }
