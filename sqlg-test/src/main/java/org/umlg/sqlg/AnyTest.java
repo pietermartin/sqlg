@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestSchemaEagerCreation;
+import org.umlg.sqlg.test.schema.TestMultiThread;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.schema.TestSchemaEagerCreation;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchemaEagerCreation.class,
+        TestMultiThread.class,
 //        TestLoadArrayProperties.class
 //        TestNotifyJson.class,
 //        TestIndexTopologyTraversal.class,
