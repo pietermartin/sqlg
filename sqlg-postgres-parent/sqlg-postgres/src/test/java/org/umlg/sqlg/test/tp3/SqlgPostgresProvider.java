@@ -23,6 +23,7 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
 
     @Override
     public Map<String, Object> getBaseConfiguration(String graphName, Class<?> test, String testMethodName, LoadGraphWith.GraphData loadGraphWith) {
+        logger.info("Postgresql, Starting test: " + test.getSimpleName() + "." + testMethodName);
         Map<String, Object> m = new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
             put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
@@ -30,8 +31,6 @@ public class SqlgPostgresProvider extends SqlgAbstractGraphProvider {
             put("jdbc.password", "postgres");
             put("maxPoolSize", 10);
         }};
-
-        logger.info("Starting test: " + test.getSimpleName() + "." + testMethodName);
 
         InputStream sqlProperties = Thread.currentThread().getContextClassLoader().getResourceAsStream("sqlg.properties");
 
