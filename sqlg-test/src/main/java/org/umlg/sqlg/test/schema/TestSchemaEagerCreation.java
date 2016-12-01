@@ -28,6 +28,23 @@ public class TestSchemaEagerCreation extends BaseTest {
     }
 
     @Test
+    public void testVertexEdgeHasSameName() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "halo1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name2", "halo2");
+        a1.addEdge("A", b2, "name3", "halo3");
+        this.sqlgGraph.tx().commit();
+
+        Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperties();
+        assertTrue(properties.containsKey("name1"));
+
+        properties = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("B").get().getProperties();
+        assertTrue(properties.containsKey("name2"));
+
+        properties = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("A").get().getProperties();
+        assertTrue(properties.containsKey("name3"));
+    }
+
+    @Test
     public void testModern() {
         createModernSchema();
         this.sqlgGraph.tx().rollback();

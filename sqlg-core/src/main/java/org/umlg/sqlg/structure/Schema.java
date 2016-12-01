@@ -351,13 +351,15 @@ public class Schema {
         return result;
     }
 
-    //TODO remove this method. PropertyColumn must go all the way up the stack.
     Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.getTable());
-        if (vertexLabelOptional.isPresent()) {
-            return vertexLabelOptional.get().getPropertyTypeMap();
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        if (schemaTable.isVertexTable()) {
+            Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
+            if (vertexLabelOptional.isPresent()) {
+                return vertexLabelOptional.get().getPropertyTypeMap();
+            }
         } else {
-            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.getTable());
+            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.withOutPrefix().getTable());
             if (edgeLabelOptional.isPresent()) {
                 return edgeLabelOptional.get().getPropertyTypeMap();
             }

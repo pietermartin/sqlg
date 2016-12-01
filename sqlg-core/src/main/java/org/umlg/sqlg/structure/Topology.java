@@ -1048,7 +1048,7 @@ public class Topology {
         try {
             Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
             if (schemaOptional.isPresent()) {
-                return schemaOptional.get().getTableFor(schemaTable.withOutPrefix());
+                return schemaOptional.get().getTableFor(schemaTable);
             }
             if (isWriteLockHeldByCurrentThread()) {
                 Map<String, PropertyType> temporaryPropertyMap = this.temporaryTables.get(schemaTable.getTable());
