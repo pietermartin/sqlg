@@ -27,6 +27,10 @@ public class PropertyColumn {
         return propertyType;
     }
 
+    AbstractLabel getAbstractLabel() {
+        return abstractLabel;
+    }
+
     void afterCommit() {
     }
 

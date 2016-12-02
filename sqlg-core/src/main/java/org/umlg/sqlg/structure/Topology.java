@@ -569,6 +569,11 @@ public class Topology {
         }
     }
 
+    public GlobalIndex ensureGlobalIndexExist(final Set<PropertyColumn> properties) {
+        Objects.requireNonNull(properties, "properties may not be null");
+        return GlobalIndex.ensureGlobalIndexExist(this.sqlgGraph, properties);
+    }
+
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);
         StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTemporaryTableStatement());
