@@ -45,6 +45,8 @@ public class Topology {
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Map<String, Schema> metaSchemas = new HashMap<>();
+    private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes= new HashMap<>();
+    private Map<String, GlobalUniqueIndex> globalUniqueIndexes= new HashMap<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -569,10 +571,41 @@ public class Topology {
         }
     }
 
-    public GlobalIndex ensureGlobalIndexExist(final Set<PropertyColumn> properties) {
+    public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
-        return GlobalIndex.ensureGlobalIndexExist(this.sqlgGraph, properties);
+        String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(properties);
+        Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
+        if (!globalIndexOptional.isPresent()) {
+            //take any property
+            properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
+            globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
+            if (!globalIndexOptional.isPresent()) {
+                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
+                this.uncommittedGlobalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
+                return globalUniqueIndex;
+            } else {
+                return globalIndexOptional.get();
+            }
+        } else {
+            return globalIndexOptional.get();
+        }
     }
+
+    public Optional<GlobalUniqueIndex> getGlobalUniqueIndex(String name) {
+        Objects.requireNonNull(name, () -> "name may not be null for getGlobalUniqueIndex");
+        GlobalUniqueIndex globalUniqueIndex = getGlobalUniqueIndexes().get(name);
+        return Optional.ofNullable(globalUniqueIndex);
+    }
+
+    public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
+        Map<String, GlobalUniqueIndex> result = new HashMap<>();
+        result.putAll(this.globalUniqueIndexes);
+        if (this.isWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedGlobalUniqueIndexes);
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);

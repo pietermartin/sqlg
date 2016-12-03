@@ -155,7 +155,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestDetachedEdge.class,
         TestSchemaEagerCreation.class,
         TestIndexTopologyTraversal.class,
-        TestNotifyJson.class
+        TestNotifyJson.class,
+        TestGlobalUniqueIndex.class
 })
 public class AllTest {
 }
