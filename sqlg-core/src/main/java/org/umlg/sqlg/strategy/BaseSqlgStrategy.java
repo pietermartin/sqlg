@@ -49,7 +49,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     protected Logger logger = LoggerFactory.getLogger(getClass().getName());
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
-    public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
+    private static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
 
@@ -89,6 +89,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     }
                 } catch (UnoptimizableException e) {
                     //swallow as it is used for process flow only.
+                    //noinspection ConstantConditions
+                    lastReplacedStep.addLabel((pathCount) + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                     return;
                 }
             } else if (step instanceof ChooseStep) {

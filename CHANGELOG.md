@@ -1,13 +1,21 @@
-##1.3.4
+##1.3.3
 
 * Rewrite of the topology/schema management. `SchemaManager` is replaced with `Topology`.
 There are now object representing the topology. `Topology`, `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn` and `Index`
 * Strengthened the reloading of the topology from the information_schema tables.
 This highlighted some limitations. It is not possible to tell a primitive array from a object array. 
 As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become `Integer[]{1,2,3}`
-    
 
-##1.3.3
+    Example of how to fix a property' type
+    
+    update sqlg_schema."V_property" set type = 'byte_ARRAY' where name = 'password' and type = 'BYTE_ARRAY'
+    update sqlg_schema."V_property" set type = 'byte_ARRAY' where name = 'password_salt' and type = 'BYTE_ARRAY'
+* Fix bug [#116](https://github.com/pietermartin/sqlg/issues/116)
+
+    If `RepeapStep` could not be optimized the incoming emit `Element` did not get a label so it was not being returned from the sql.
+
+
+##1.3.2
 
 * Ensure SqlgGraphStepStrategy and SqlgVertexStepStrategy fires before InlineFilterStrategy.
 * Fix a bug where hasId uses the P.neq predicate.
@@ -15,9 +23,6 @@ As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become
 * Fix bug [#92](https://github.com/pietermartin/sqlg/issues/92)
 * Broaded SqlgGraph.bulkAddEdges to take a Collection of ids as opposed to a List.
     Fix bug [#102](https://github.com/pietermartin/sqlg/issues/102)
-
-##1.3.2
-
 * Fix bug [#73](https://github.com/pietermartin/sqlg/issues/73)
         Thanks to [JPMoresmau](https://github.com/JPMoresmau)
 
