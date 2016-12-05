@@ -1,14 +1,6 @@
 package org.umlg.sqlg.strategy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -29,7 +21,8 @@ import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import com.google.common.base.Preconditions;
+import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Date: 2015/02/20
