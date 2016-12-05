@@ -45,8 +45,8 @@ public class Topology {
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Map<String, Schema> metaSchemas = new HashMap<>();
-    private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes= new HashMap<>();
-    private Map<String, GlobalUniqueIndex> globalUniqueIndexes= new HashMap<>();
+    private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
+    private Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -166,6 +166,20 @@ public class Topology {
      */
     @SuppressWarnings("WeakerAccess")
     public static final String SQLG_SCHEMA_INDEX_PROPERTY_EDGE = "index_property";
+    /**
+     * Table storing the graphs unique property constraints.
+     */
+    public static final String SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX = "globalUniqueIndex";
+    /**
+     * Edge table for GlobalUniqueIndex to Property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE = "globalUniqueIndex_property";
+    /**
+     * GlobalUniqueIndex table's name property
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final String SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_NAME = "name";
 
 
     /**
@@ -191,6 +205,7 @@ public class Topology {
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_EDGE_LABEL,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_PROPERTY,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_INDEX,
+            SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
             SQLG_SCHEMA + "." + VERTEX_PREFIX + SQLG_SCHEMA_LOG,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_SCHEMA_VERTEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_IN_EDGES_EDGE,
@@ -199,7 +214,8 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_PROPERTIES_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_VERTEX_INDEX_EDGE,
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_EDGE_INDEX_EDGE,
-            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_INDEX_PROPERTY_EDGE,
+            SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE
     );
 
     /**
@@ -235,6 +251,12 @@ public class Topology {
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel indexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_INDEX, columns);
 
+        columns.clear();
+        columns.put(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_NAME, PropertyType.STRING);
+        columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
+        VertexLabel globalUniqueIndexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX, columns);
+
+        columns.clear();
         @SuppressWarnings("unused")
         EdgeLabel schemaToVertexEdgeLabel = schemaVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE, vertexVertexLabel, columns);
         @SuppressWarnings("unused")
@@ -251,6 +273,8 @@ public class Topology {
         EdgeLabel edgeIndexEdgeLabel = edgeVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertexLabel, columns);
         @SuppressWarnings("unused")
         EdgeLabel indexPropertyEdgeLabel = indexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
+        @SuppressWarnings("unused")
+        EdgeLabel globalUniqueIndexPropertyEdgeLabel = globalUniqueIndexVertexLabel.loadSqlgSchemaEdgeLabel(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE, propertyVertexLabel, columns);
 
         columns.clear();
         columns.put(SQLG_SCHEMA_LOG_TIMESTAMP, PropertyType.LOCALDATETIME);
@@ -580,7 +604,7 @@ public class Topology {
             properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
             globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
             if (!globalIndexOptional.isPresent()) {
-                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
+                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(sqlgGraph, this, globalUniqueIndexName, properties);
                 this.uncommittedGlobalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
                 return globalUniqueIndex;
             } else {
@@ -654,6 +678,11 @@ public class Topology {
                 this.schemas.put(entry.getKey(), entry.getValue());
                 it.remove();
             }
+            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
+                this.globalUniqueIndexes.put(entry.getKey(), entry.getValue());
+                it.remove();
+            }
             //merge the allTableCache and uncommittedAllTables
             Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
             for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
@@ -672,6 +701,9 @@ public class Topology {
             for (Schema schema : this.schemas.values()) {
                 schema.afterCommit();
             }
+            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
+                globalUniqueIndex.afterCommit();
+            }
         } finally {
             z_internalReadUnLock();
         }
@@ -688,11 +720,19 @@ public class Topology {
                 entry.getValue().afterRollback();
                 it.remove();
             }
+            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
+                entry.getValue().afterRollback();
+                it.remove();
+            }
         }
         z_internalReadLock();
         try {
             for (Schema schema : this.schemas.values()) {
                 schema.afterRollback();
+            }
+            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
+                globalUniqueIndex.afterRollback();
             }
         } finally {
             z_internalReadUnLock();

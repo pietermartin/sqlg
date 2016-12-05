@@ -364,7 +364,55 @@ public class TopologyManager {
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
+    }
 
+    static void addGlobalUniqueIndex(SqlgGraph sqlgGraph, String globalUniqueIndexName, Set<PropertyColumn> properties) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> uniquePropertyConstraints = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
+                    .has("name", globalUniqueIndexName)
+                    .toList();
+            if (uniquePropertyConstraints.size() > 0) {
+                throw new IllegalStateException("Unique property constraint with name already exists. name = " + globalUniqueIndexName);
+            }
+            Vertex globalUniquePropertyConstraint = sqlgGraph.addVertex(
+                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                    "name", globalUniqueIndexName,
+                    CREATED_ON, LocalDateTime.now()
+            );
+            for (PropertyColumn property : properties) {
+                String elementLabel = property.getAbstractLabel().getLabel();
+                List<Vertex> uniquePropertyConstraintProperty;
+                if (property.getAbstractLabel() instanceof VertexLabel) {
+                    uniquePropertyConstraintProperty = traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
+                            .has("name", elementLabel)
+                            .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                            .has("name", property.getName())
+                            .toList();
+                } else {
+                    if (true)
+                        throw new RuntimeException("TODO");
+                    uniquePropertyConstraintProperty = traversalSource.V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
+                            .has("name", elementLabel)
+                            .as("a")
+                            .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .has("name", property.getAbstractLabel().getSchema().getName())
+                            .<Vertex>select("a")
+                            .toList();
+                }
+                if (uniquePropertyConstraintProperty.size() == 0) {
+                    throw new IllegalStateException("Found no Property for " + property.getAbstractLabel().getSchema().getName() + "." + property.getAbstractLabel().getLabel() + "." + property.getName());
+                }
+                Vertex propertyVertex = uniquePropertyConstraintProperty.get(0);
+                globalUniquePropertyConstraint.addEdge(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE, propertyVertex);
+            }
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
     }
 
     private static BatchManager.BatchModeType flushAndSetTxToNone(SqlgGraph sqlgGraph) {

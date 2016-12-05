@@ -10,6 +10,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -24,11 +25,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
 
     /**
      * Called from @link {@link SqlgVertex} to create a brand new edge.
+     *
      * @param sqlgGraph The graph.
      * @param streaming If in batch mode this indicates if its streaming or not.
-     * @param schema The schema the edge is in.
-     * @param table The edge's label which translates to a table name.
-     * @param inVertex The edge's in vertex.
+     * @param schema    The schema the edge is in.
+     * @param table     The edge's label which translates to a table name.
+     * @param inVertex  The edge's in vertex.
      * @param outVertex The edge's out vertex.
      * @param keyValues The properties of the edge.
      */
@@ -46,11 +48,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
     /**
      * Called from {@link SqlgVertex#edges(Direction, String...)}
      * The edge already exist and must supply its table id. Not a {@link RecordId}.
+     *
      * @param sqlgGraph The graph.
-     * @param id The edge's id. This the edge's table's id. Not a {@link RecordId}.
-     * @param schema The schema the edge is in.
-     * @param table The table the edge is in. This translates to its label.
-     * @param inVertex The in vertex.
+     * @param id        The edge's id. This the edge's table's id. Not a {@link RecordId}.
+     * @param schema    The schema the edge is in.
+     * @param table     The table the edge is in. This translates to its label.
+     * @param inVertex  The in vertex.
      * @param outVertex The out vertex.
      * @param keyValues The properties of the edge. #TODO this is not used at present. It is loaded again from the db
      *                  when the property is accessed.
@@ -67,10 +70,11 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * Called from {@link SqlgGraph#elements(boolean, List)} and {@link SqlgUtil#loadLabeledElements(SqlgGraph, ResultSet, LinkedList, Map)}
      * and {@link SqlgUtil#loadElement(SqlgGraph, Map, ResultSet, SchemaTableTree)}
      * This is the primary constructor for loading edges from the db via gremlin.
+     *
      * @param sqlgGraph The graph.
-     * @param id The edge's id. This the edge's table's id. Not a {@link RecordId}.
-     * @param schema The schema the edge is in.
-     * @param table The table the edge is in. This translates to its label.
+     * @param id        The edge's id. This the edge's table's id. Not a {@link RecordId}.
+     * @param schema    The schema the edge is in.
+     * @param table     The table the edge is in. This translates to its label.
      */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
@@ -151,26 +155,16 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
         sql.append(" (");
-        int i = 1;
-        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getTableFor(getSchemaTablePrefixed());
-        for (String column : keyValueMap.keySet()) {
-            PropertyType propertyType = columnPropertyTypeMap.get(column);
-            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-            int count = 1;
-            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
-                if (count > 1) {
-                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
-                } else {
-                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-                }
-                if (count++ < sqlDefinitions.length) {
-                    sql.append(",");
-                }
-            }
-            if (i++ < keyValueMap.size()) {
-                sql.append(", ");
-            }
-        }
+
+        //sync up the keyValueMap with its PropertyColumn
+        Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+                .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
+                .getProperties();
+        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = keyValueMap.entrySet().stream().collect(
+                Collectors.toMap(Map.Entry::getKey, (Map.Entry<String, Object> e) -> Pair.of(properties.get(e.getKey()), e.getValue()))
+        );
+        writeColumnNames(propertyColumnValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -178,25 +172,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(", ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.outVertex.schema + "." + this.outVertex.table + SchemaManager.OUT_VERTEX_COLUMN_END));
         sql.append(") VALUES (");
-        i = 1;
-        for (String column : keyValueMap.keySet()) {
-            PropertyType propertyType = columnPropertyTypeMap.get(column);
-            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-            int count = 1;
-            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
-                if (count > 1) {
-                    sql.append("?");
-                } else {
-                    sql.append("?");
-                }
-                if (count++ < sqlDefinitions.length) {
-                    sql.append(",");
-                }
-            }
-            if (i++ < keyValueMap.size()) {
-                sql.append(", ");
-            }
-        }
+        writeColumnParameters(propertyColumnValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
         }
@@ -208,10 +184,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        i = 1;
+        int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            i = SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
+            i = SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyColumnValueMap);
             preparedStatement.setLong(i++, this.inVertex.recordId.getId());
             preparedStatement.setLong(i, this.outVertex.recordId.getId());
             preparedStatement.executeUpdate();
@@ -301,7 +277,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 }
             }
         }
-        if (inVertexColumnName == null || inVertexColumnIndex==0 || outVertexColumnName == null || outVertexColumnIndex==0) {
+        if (inVertexColumnName == null || inVertexColumnIndex == 0 || outVertexColumnName == null || outVertexColumnIndex == 0) {
             throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
         }
         Long inId = resultSet.getLong(inVertexColumnIndex);

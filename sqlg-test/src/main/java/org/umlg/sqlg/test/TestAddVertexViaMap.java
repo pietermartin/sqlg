@@ -8,7 +8,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgVertex;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,19 +42,19 @@ public class TestAddVertexViaMap extends BaseTest {
         Assert.assertEquals("p3", e1.property("name3").value());
     }
 
-    @Test
-    public void howToUpdateManyRows() {
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "joe");
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
-        this.sqlgGraph.tx().commit();
-
-        List<Vertex> markos = this.sqlgGraph.traversal().V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
-        Assert.assertFalse(markos.isEmpty());
-        Assert.assertEquals(1, markos.size());
-        markos.get(0).property("name", "marko2");
-        this.sqlgGraph.tx().commit();
-    }
+//    @Test
+//    public void howToUpdateManyRows() {
+//        this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+//        this.sqlgGraph.addVertex(T.label, "Person", "name", "joe");
+//        this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+//        this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
+//        this.sqlgGraph.tx().commit();
+//
+//        List<Vertex> markos = this.sqlgGraph.traversal().V().has(T.label, "Person").<Vertex>has("name", "marko").toList();
+//        Assert.assertFalse(markos.isEmpty());
+//        Assert.assertEquals(1, markos.size());
+//        markos.get(0).property("name", "marko2");
+//        this.sqlgGraph.tx().commit();
+//    }
 
 }

@@ -15,19 +15,36 @@ import java.util.*;
 public class GlobalUniqueIndex {
 
     private Logger logger = LoggerFactory.getLogger(GlobalUniqueIndex.class.getName());
+    private Topology topology;
     private String name;
     private Set<PropertyColumn> properties = new HashSet<>();
     private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
 
-    public GlobalUniqueIndex(String name, Set<PropertyColumn> uncommittedProperties) {
+    public GlobalUniqueIndex(Topology topology, String name, Set<PropertyColumn> uncommittedProperties) {
+        this.topology = topology;
         this.name = name;
         this.uncommittedProperties = uncommittedProperties;
     }
 
-    static GlobalUniqueIndex createGlobalUniqueIndex(SqlgGraph sqlgGraph, String globalUniqueIndexName, Set<PropertyColumn> properties) {
-        GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(globalUniqueIndexName, properties);
+    void afterCommit() {
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
+            Iterator<PropertyColumn> propertyColumnIterator = this.uncommittedProperties.iterator();
+            while (propertyColumnIterator.hasNext()) {
+                PropertyColumn propertyColumn = propertyColumnIterator.next();
+                this.properties.add(propertyColumn);
+                propertyColumnIterator.remove();
+            }
+        }
+    }
+
+    void afterRollback() {
+        this.uncommittedProperties.clear();
+    }
+
+    static GlobalUniqueIndex createGlobalUniqueIndex(SqlgGraph sqlgGraph, Topology topology, String globalUniqueIndexName, Set<PropertyColumn> properties) {
+        GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
         globalUniqueIndex.createGlobalUniqueIndexOnDb(sqlgGraph, globalUniqueIndexName, properties);
-//        TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
+        TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
         return globalUniqueIndex;
     }
 

@@ -250,12 +250,12 @@ public class Schema {
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", SchemaManager.VERTEX_PREFIX);
-        VertexLabel vertexLabel = getVertexLabels().get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        if (vertexLabel != null) {
-            return Optional.of(vertexLabel);
-        } else {
-            return Optional.empty();
+//        VertexLabel vertexLabel = getVertexLabels().get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
+        if (result == null && this.topology.isWriteLockHeldByCurrentThread()) {
+            result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
+        return Optional.ofNullable(result);
     }
 
     Map<String, EdgeLabel> getEdgeLabels() {

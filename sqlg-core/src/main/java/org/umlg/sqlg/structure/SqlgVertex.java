@@ -13,6 +13,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.umlg.sqlg.structure.SchemaManager.VERTEX_TABLE;
 
@@ -495,50 +496,34 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
-        int i = 1;
-//        Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getAllTablesWithout(Collections.emptyList()).get(getSchemaTablePrefixed().toString());
+        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
         if (!keyValueMap.isEmpty()) {
-            Map<String, PropertyType> columnPropertyTypeMap = this.sqlgGraph.getTopology().getTableFor(getSchemaTablePrefixed());
-            Preconditions.checkState(!columnPropertyTypeMap.isEmpty(), getSchemaTablePrefixed().toString() + " not found in SchemaManager's allTables map!");
+            Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+                    .getSchema(this.schema).orElseThrow(()->new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                    .getVertexLabel(this.table).orElseThrow(()->new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
+                    .getProperties();
+
+
+            Map<String, GlobalUniqueIndex> globalUniqueIndexMap = new HashMap<>();
+            //sync up the keyValueMap with its PropertyColumn
+            for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+
+                PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
+                propertyColumnValueMap.put(keyValueEntry.getKey(), Pair.of(propertyColumn, keyValueEntry.getValue()));
+//                globalUniqueIndexMap.put(keyValueEntry.getKey(), propertyColumn.getGlobalUniqueIndex());
+
+            }
+            propertyColumnValueMap = keyValueMap.entrySet().stream().collect(
+                    Collectors.toMap(Map.Entry::getKey, (Map.Entry<String, Object> e) -> Pair.of(properties.get(e.getKey()), e.getValue()))
+            );
+
+
+
+
             sql.append(" ( ");
-            for (String column : keyValueMap.keySet()) {
-                PropertyType propertyType = columnPropertyTypeMap.get(column);
-                String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-                int count = 1;
-                for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
-                    if (count > 1) {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
-                    } else {
-                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-                    }
-                    if (count++ < sqlDefinitions.length) {
-                        sql.append(",");
-                    }
-                }
-                if (i++ < keyValueMap.size()) {
-                    sql.append(", ");
-                }
-            }
+            writeColumnNames(propertyColumnValueMap, sql);
             sql.append(") VALUES ( ");
-            i = 1;
-            for (String column : keyValueMap.keySet()) {
-                PropertyType propertyType = columnPropertyTypeMap.get(column);
-                String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-                int count = 1;
-                for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
-                    if (count > 1) {
-                        sql.append("?");
-                    } else {
-                        sql.append("?");
-                    }
-                    if (count++ < sqlDefinitions.length) {
-                        sql.append(",");
-                    }
-                }
-                if (i++ < keyValueMap.size()) {
-                    sql.append(", ");
-                }
-            }
+            writeColumnParameters(propertyColumnValueMap, sql);
             sql.append(")");
         } else {
             sql.append(" DEFAULT VALUES");
@@ -549,10 +534,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        i = 1;
+        int i = 1;
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString(), Statement.RETURN_GENERATED_KEYS)) {
-            SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, i, conn, preparedStatement, keyValueMap);
+            SqlgUtil.setKeyValuesAsParameterUsingPropertyColumn(this.sqlgGraph, i, preparedStatement, propertyColumnValueMap);
             preparedStatement.executeUpdate();
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
             if (generatedKeys.next()) {
@@ -731,7 +716,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                             }
                             Map<String, Object> keyValues = new HashMap<>();
                             keyValues.put(hasContainer.getKey(), hasContainer.getValue());
-                            SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, conn, preparedStatement, keyValues);
+                            SqlgUtil.setKeyValuesAsParameter(this.sqlgGraph, countHasContainers++, preparedStatement, keyValues);
                         }
                         ResultSet resultSet = preparedStatement.executeQuery();
                         while (resultSet.next()) {

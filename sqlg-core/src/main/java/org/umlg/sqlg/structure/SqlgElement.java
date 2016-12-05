@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -241,7 +242,7 @@ public abstract class SqlgElement implements Element {
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 Map<String, Object> keyValue = new HashMap<>();
                 keyValue.put(key, value);
-                setKeyValuesAsParameter(this.sqlgGraph, 1, conn, preparedStatement, keyValue);
+                setKeyValuesAsParameter(this.sqlgGraph, 1, preparedStatement, keyValue);
                 preparedStatement.setLong(2, ((RecordId) this.id()).getId());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
@@ -303,10 +304,10 @@ public abstract class SqlgElement implements Element {
     public int hashCode() {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
-        	// if we have an ID, we have a constant hashcode
-        	if (this.id() != null){
-        		return ElementHelper.hashCode(this);
-        	}
+            // if we have an ID, we have a constant hashcode
+            if (this.id() != null) {
+                return ElementHelper.hashCode(this);
+            }
             return super.hashCode();
         } else {
             return ElementHelper.hashCode(this);
@@ -314,14 +315,14 @@ public abstract class SqlgElement implements Element {
     }
 
 
-    private static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, Connection conn, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
+    private static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, int i, PreparedStatement preparedStatement, Map<String, Object> keyValues) throws SQLException {
         List<ImmutablePair<PropertyType, Object>> typeAndValues = SqlgUtil.transformToTypeAndValue(keyValues);
-        i = setKeyValueAsParameter(sqlgGraph, i, conn, preparedStatement, typeAndValues);
+        i = setKeyValueAsParameter(sqlgGraph, i, preparedStatement, typeAndValues);
         return i;
     }
 
-    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, Connection conn, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
-        return SqlgUtil.setKeyValuesAsParameter(sqlgGraph, true, parameterStartIndex++, conn, preparedStatement, typeAndValues);
+    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
+        return SqlgUtil.setKeyValuesAsParameter(sqlgGraph, true, parameterStartIndex++, preparedStatement, typeAndValues);
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
@@ -360,6 +361,95 @@ public abstract class SqlgElement implements Element {
                 .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
 
         return properties;
+    }
+
+    protected void writeColumnNames(Map<String, Pair<PropertyColumn, Object>> keyValueMap, StringBuilder sql) {
+        int i = 1;
+        for (String column : keyValueMap.keySet()) {
+            Pair<PropertyColumn, Object> propertyColumnValue = keyValueMap.get(column);
+            PropertyType propertyType = propertyColumnValue.getLeft().getPropertyType();
+            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            int count = 1;
+            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                if (count > 1) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                } else {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+                }
+                if (count++ < sqlDefinitions.length) {
+                    sql.append(",");
+                }
+            }
+            if (i++ < keyValueMap.size()) {
+                sql.append(", ");
+            }
+        }
+    }
+
+    protected void writeColumnNames(Map<String, Object> keyValueMap, StringBuilder sql, Map<String, PropertyType> columnPropertyTypeMap) {
+        int i = 1;
+        for (String column : keyValueMap.keySet()) {
+            PropertyType propertyType = columnPropertyTypeMap.get(column);
+            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            int count = 1;
+            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                if (count > 1) {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
+                } else {
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
+                }
+                if (count++ < sqlDefinitions.length) {
+                    sql.append(",");
+                }
+            }
+            if (i++ < keyValueMap.size()) {
+                sql.append(", ");
+            }
+        }
+    }
+
+    protected void writeColumnParameters(Map<String, Pair<PropertyColumn, Object>> keyValueMap, StringBuilder sql) {
+        int i = 1;
+        for (String column : keyValueMap.keySet()) {
+            PropertyType propertyType = keyValueMap.get(column).getLeft().getPropertyType();
+            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            int count = 1;
+            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                if (count > 1) {
+                    sql.append("?");
+                } else {
+                    sql.append("?");
+                }
+                if (count++ < sqlDefinitions.length) {
+                    sql.append(",");
+                }
+            }
+            if (i++ < keyValueMap.size()) {
+                sql.append(", ");
+            }
+        }
+    }
+
+    protected void writeColumnParameters(Map<String, Object> keyValueMap, StringBuilder sql, Map<String, PropertyType> columnPropertyTypeMap) {
+        int i = 1;
+        for (String column : keyValueMap.keySet()) {
+            PropertyType propertyType = columnPropertyTypeMap.get(column);
+            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
+            int count = 1;
+            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
+                if (count > 1) {
+                    sql.append("?");
+                } else {
+                    sql.append("?");
+                }
+                if (count++ < sqlDefinitions.length) {
+                    sql.append(",");
+                }
+            }
+            if (i++ < keyValueMap.size()) {
+                sql.append(", ");
+            }
+        }
     }
 
     @Override
