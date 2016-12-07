@@ -3,10 +3,7 @@ package org.umlg.sqlg.structure;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -386,28 +383,6 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected void writeColumnNames(Map<String, Object> keyValueMap, StringBuilder sql, Map<String, PropertyType> columnPropertyTypeMap) {
-        int i = 1;
-        for (String column : keyValueMap.keySet()) {
-            PropertyType propertyType = columnPropertyTypeMap.get(column);
-            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-            int count = 1;
-            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
-                if (count > 1) {
-                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column + propertyType.getPostFixes()[count - 2]));
-                } else {
-                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-                }
-                if (count++ < sqlDefinitions.length) {
-                    sql.append(",");
-                }
-            }
-            if (i++ < keyValueMap.size()) {
-                sql.append(", ");
-            }
-        }
-    }
-
     protected void writeColumnParameters(Map<String, Pair<PropertyColumn, Object>> keyValueMap, StringBuilder sql) {
         int i = 1;
         for (String column : keyValueMap.keySet()) {
@@ -430,26 +405,10 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    protected void writeColumnParameters(Map<String, Object> keyValueMap, StringBuilder sql, Map<String, PropertyType> columnPropertyTypeMap) {
-        int i = 1;
-        for (String column : keyValueMap.keySet()) {
-            PropertyType propertyType = columnPropertyTypeMap.get(column);
-            String[] sqlDefinitions = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(propertyType);
-            int count = 1;
-            for (@SuppressWarnings("unused") String sqlDefinition : sqlDefinitions) {
-                if (count > 1) {
-                    sql.append("?");
-                } else {
-                    sql.append("?");
-                }
-                if (count++ < sqlDefinitions.length) {
-                    sql.append(",");
-                }
-            }
-            if (i++ < keyValueMap.size()) {
-                sql.append(", ");
-            }
-        }
+    static void insertGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
+        sqlgGraph.addVertex(
+                T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
     }
 
     @Override

@@ -3,9 +3,6 @@ package org.umlg.sqlg.structure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.*;
 
 /**
@@ -19,11 +16,19 @@ public class GlobalUniqueIndex {
     private String name;
     private Set<PropertyColumn> properties = new HashSet<>();
     private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
+    public static final String GLOBAL_UNIQUE_INDEX_VALUE = "value";
 
     public GlobalUniqueIndex(Topology topology, String name, Set<PropertyColumn> uncommittedProperties) {
         this.topology = topology;
         this.name = name;
         this.uncommittedProperties = uncommittedProperties;
+        for (PropertyColumn uncommittedProperty : uncommittedProperties) {
+            uncommittedProperty.addGlobalUniqueIndex(this);
+        }
+    }
+
+    public String getName() {
+        return name;
     }
 
     void afterCommit() {
@@ -42,39 +47,17 @@ public class GlobalUniqueIndex {
     }
 
     static GlobalUniqueIndex createGlobalUniqueIndex(SqlgGraph sqlgGraph, Topology topology, String globalUniqueIndexName, Set<PropertyColumn> properties) {
+        //all PropertyColumns must be for the same PropertyType
+        PropertyType propertyType = properties.iterator().next().getPropertyType();
+        Map<String, PropertyType> valueColumn = new HashMap<>();
+        valueColumn.put(GLOBAL_UNIQUE_INDEX_VALUE, propertyType);
+        VertexLabel vertexLabel = topology.getGlobalUniqueIndexSchema().ensureVertexLabelExist(sqlgGraph, globalUniqueIndexName, valueColumn);
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        PropertyColumn valuePropertyColumn = vertexLabel.getProperty(GLOBAL_UNIQUE_INDEX_VALUE).get();
+        vertexLabel.ensureIndexExists(sqlgGraph, IndexType.UNIQUE, Collections.singletonList(valuePropertyColumn));
         GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
-        globalUniqueIndex.createGlobalUniqueIndexOnDb(sqlgGraph, globalUniqueIndexName, properties);
         TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
         return globalUniqueIndex;
-    }
-
-    private void createGlobalUniqueIndexOnDb(SqlgGraph sqlgGraph, String globalUniqueIndexName, Set<PropertyColumn> properties) {
-        StringBuilder sql = new StringBuilder(sqlgGraph.getSqlDialect().createTableStatement());
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
-        sql.append(".");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(globalUniqueIndexName));
-        sql.append(" (");
-        //The properties must all be of the same type
-        Map<String, PropertyType> columns = new HashMap<String, PropertyType>() {{
-            put(globalUniqueIndexName, properties.iterator().next().getPropertyType());
-        }};
-        VertexLabel.buildColumns(sqlgGraph, columns, sql);
-        sql.append(", PRIMARY KEY (");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(globalUniqueIndexName));
-        sql.append("))");
-        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
-        Connection conn = sqlgGraph.tx().getConnection();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute(sql.toString());
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
     }
 
     static String globalUniqueIndexName(Set<PropertyColumn> properties) {

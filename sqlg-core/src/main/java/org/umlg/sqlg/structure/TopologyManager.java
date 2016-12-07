@@ -393,19 +393,29 @@ public class TopologyManager {
                             .has("name", property.getName())
                             .toList();
                 } else {
-                    if (true)
-                        throw new RuntimeException("TODO");
-                    uniquePropertyConstraintProperty = traversalSource.V()
+                    Set<Vertex> edges = traversalSource.V()
                             .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
                             .has("name", elementLabel)
                             .as("a")
                             .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                            .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                             .has("name", property.getAbstractLabel().getSchema().getName())
                             .<Vertex>select("a")
+                            .toSet();
+                    if (edges.size() == 0) {
+                        throw new IllegalStateException(String.format("Found no edge for %s.%s", property.getAbstractLabel().getSchema().getName(), elementLabel));
+                    }
+                    if (edges.size() > 1) {
+                        throw new IllegalStateException(String.format("Found more than one edge for %s.%s", property.getAbstractLabel().getSchema().getName(), elementLabel));
+                    }
+                    Vertex edge = edges.iterator().next();
+                    uniquePropertyConstraintProperty = traversalSource.V(edge)
+                            .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                            .has("name", property.getName())
                             .toList();
                 }
                 if (uniquePropertyConstraintProperty.size() == 0) {
-                    throw new IllegalStateException("Found no Property for " + property.getAbstractLabel().getSchema().getName() + "." + property.getAbstractLabel().getLabel() + "." + property.getName());
+                    throw new IllegalStateException(String.format("Found no Property for %s.%s.%s", property.getAbstractLabel().getSchema().getName(), property.getAbstractLabel().getLabel(), property.getName()));
                 }
                 Vertex propertyVertex = uniquePropertyConstraintProperty.get(0);
                 globalUniquePropertyConstraint.addEdge(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE, propertyVertex);

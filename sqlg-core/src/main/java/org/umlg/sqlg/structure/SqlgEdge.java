@@ -150,20 +150,32 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
+
+
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.EDGE_PREFIX + this.table));
         sql.append(" (");
 
-        //sync up the keyValueMap with its PropertyColumn
-        Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
-                .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
-                .getProperties();
-        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = keyValueMap.entrySet().stream().collect(
-                Collectors.toMap(Map.Entry::getKey, (Map.Entry<String, Object> e) -> Pair.of(properties.get(e.getKey()), e.getValue()))
-        );
+        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
+        if (!keyValueMap.isEmpty()) {
+            Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+                    .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                    .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
+                    .getProperties();
+
+            //sync up the keyValueMap with its PropertyColumn
+            for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+                PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
+                Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
+                propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
+                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                    SqlgElement.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+                }
+            }
+        }
+
         writeColumnNames(propertyColumnValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");

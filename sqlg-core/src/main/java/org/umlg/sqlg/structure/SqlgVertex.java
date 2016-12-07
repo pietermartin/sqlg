@@ -13,7 +13,6 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.umlg.sqlg.structure.SchemaManager.VERTEX_TABLE;
 
@@ -42,15 +41,15 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             sqlgGraph.tx().add(this);
         }
     }
-    
+
     @Override
     public String label() {
-    	if (this.schema!=null && this.schema.length()>0 && !schema.equals(sqlgGraph.getSqlDialect().getPublicSchema())){
-    		return this.schema+"."+this.table;
-    	}
-    	return super.label();
+        if (this.schema != null && this.schema.length() > 0 && !schema.equals(sqlgGraph.getSqlDialect().getPublicSchema())) {
+            return this.schema + "." + this.table;
+        }
+        return super.label();
     }
-	
+
 
     SqlgVertex(SqlgGraph sqlgGraph, String table, Object... keyValues) {
         super(sqlgGraph, "", table);
@@ -144,9 +143,9 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
         final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         Optional<VertexLabel> outVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.schema, this.table);
-        Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex)inVertex).schema, ((SqlgVertex)inVertex).table);
+        Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex) inVertex).schema, ((SqlgVertex) inVertex).table);
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
-        Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", ((SqlgVertex)inVertex).schema + "." + ((SqlgVertex)inVertex).table);
+        Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", ((SqlgVertex) inVertex).schema + "." + ((SqlgVertex) inVertex).table);
         //noinspection OptionalGetWithoutIsPresent
         this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
         return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValues);
@@ -306,21 +305,21 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                         int inVertexColumnIndex = 0;
                         int outVertexColumnIndex = 0;
                         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-                        int idIdx=0;
+                        int idIdx = 0;
                         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
                             String columnName = resultSetMetaData.getColumnLabel(i);
                             if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                                 inVertexColumnIndexs.add(i);
                             } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                                 outVertexColumnIndexs.add(i);
-                            } else if (columnName.equals(SchemaManager.ID)){
-                            	idIdx=i;
+                            } else if (columnName.equals(SchemaManager.ID)) {
+                                idIdx = i;
                             }
                         }
                         if (inVertexColumnIndexs.isEmpty() || outVertexColumnIndexs.isEmpty()) {
                             throw new IllegalStateException("BUG: in or out vertex id not set!!!!");
                         }
-                        if (idIdx==0) {
+                        if (idIdx == 0) {
                             throw new IllegalStateException("BUG: no ID column!!!!");
                         }
 
@@ -359,7 +358,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                 }
                             }
                         }
-                        if (inVertexColumnIndex==0 || outVertexColumnIndex==0) {
+                        if (inVertexColumnIndex == 0 || outVertexColumnIndex == 0) {
                             throw new IllegalStateException("inVertexColumnIndex or outVertexColumnIndex is unknown!");
                         }
                         SchemaTable inSchemaTable = SchemaTable.from(this.sqlgGraph, resultSetMetaData.getColumnLabel(inVertexColumnIndex), this.sqlgGraph.getSqlDialect().getPublicSchema());
@@ -497,28 +496,21 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
         Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
+
         if (!keyValueMap.isEmpty()) {
             Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
-                    .getSchema(this.schema).orElseThrow(()->new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getVertexLabel(this.table).orElseThrow(()->new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
+                    .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                    .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
                     .getProperties();
-
-
-            Map<String, GlobalUniqueIndex> globalUniqueIndexMap = new HashMap<>();
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-
                 PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
-                propertyColumnValueMap.put(keyValueEntry.getKey(), Pair.of(propertyColumn, keyValueEntry.getValue()));
-//                globalUniqueIndexMap.put(keyValueEntry.getKey(), propertyColumn.getGlobalUniqueIndex());
-
+                Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
+                propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
+                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                    SqlgElement.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+                }
             }
-            propertyColumnValueMap = keyValueMap.entrySet().stream().collect(
-                    Collectors.toMap(Map.Entry::getKey, (Map.Entry<String, Object> e) -> Pair.of(properties.get(e.getKey()), e.getValue()))
-            );
-
-
-
 
             sql.append(" ( ");
             writeColumnNames(propertyColumnValueMap, sql);
@@ -549,6 +541,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             throw new RuntimeException(e);
         }
     }
+
 
     private void retainLabels(Set<SchemaTable> vertexLabels, String... labels) {
         Set<SchemaTable> toRemove = new HashSet<>();
@@ -769,7 +762,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                                     }
                                 }
                             }
-                            if (inVertexColumnIndex==0 && outVertexColumnIndex==0) {
+                            if (inVertexColumnIndex == 0 && outVertexColumnIndex == 0) {
                                 throw new IllegalStateException("inVertexColumnIndex or outVertexColumnIndex is unknown!");
                             }
 

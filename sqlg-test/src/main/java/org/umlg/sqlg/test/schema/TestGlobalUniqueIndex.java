@@ -1,15 +1,14 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.umlg.sqlg.structure.PropertyColumn;
-import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
+
+import static org.junit.Assert.*;
 
 /**
  * Date: 2016/12/03
@@ -17,20 +16,171 @@ import java.util.Map;
  */
 public class TestGlobalUniqueIndex extends BaseTest {
 
+//    @Test
+//    public void testGlobalUniqueIndexOnVertex() {
+//        Map<String, PropertyType> properties = new HashMap<>();
+//        properties.put("namec", PropertyType.STRING);
+//        properties.put("namea", PropertyType.STRING);
+//        properties.put("nameb", PropertyType.STRING);
+//        this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
+//        @SuppressWarnings("OptionalGetWithoutIsPresent")
+//        Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperties().values();
+//        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
+//        this.sqlgGraph.tx().commit();
+//
+//        Schema globalUniqueIndexSchema = this.sqlgGraph.getTopology().getGlobalUniqueIndexSchema();
+//        Optional<GlobalUniqueIndex> globalUniqueIndexOptional = globalUniqueIndexSchema.getGlobalUniqueIndex("namea_nameb_namec");
+//        assertTrue(globalUniqueIndexOptional.isPresent());
+//
+//        Optional<PropertyColumn> nameaPropertyColumnOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperty("namea");
+//        assertTrue(nameaPropertyColumnOptional.isPresent());
+//        @SuppressWarnings("OptionalGetWithoutIsPresent")
+//        Set<GlobalUniqueIndex> globalUniqueIndices = nameaPropertyColumnOptional.get().getGlobalUniqueIndices();
+//        assertEquals(1, globalUniqueIndices.size());
+//        assertEquals("namea_nameb_namec", globalUniqueIndices.iterator().next().getName());
+//
+//        this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
+//        this.sqlgGraph.tx().commit();
+//        try {
+//            this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
+//            fail("GlobalUniqueIndex should prevent this from executing");
+//        } catch (Exception e) {
+//            //swallow
+//        }
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
+//        this.sqlgGraph.tx().commit();
+//    }
+//
+//    @Test
+//    public void testGlobalUniqueIndexOnVertexNormalBatchMode() {
+//        Map<String, PropertyType> properties = new HashMap<>();
+//        properties.put("namec", PropertyType.STRING);
+//        properties.put("namea", PropertyType.STRING);
+//        properties.put("nameb", PropertyType.STRING);
+//        this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
+//        @SuppressWarnings("OptionalGetWithoutIsPresent")
+//        Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperties().values();
+//        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
+//        this.sqlgGraph.tx().commit();
+//
+//        Schema globalUniqueIndexSchema = this.sqlgGraph.getTopology().getGlobalUniqueIndexSchema();
+//        Optional<GlobalUniqueIndex> globalUniqueIndexOptional = globalUniqueIndexSchema.getGlobalUniqueIndex("namea_nameb_namec");
+//        assertTrue(globalUniqueIndexOptional.isPresent());
+//
+//        Optional<PropertyColumn> nameaPropertyColumnOptional = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperty("namea");
+//        assertTrue(nameaPropertyColumnOptional.isPresent());
+//        @SuppressWarnings("OptionalGetWithoutIsPresent")
+//        Set<GlobalUniqueIndex> globalUniqueIndices = nameaPropertyColumnOptional.get().getGlobalUniqueIndices();
+//        assertEquals(1, globalUniqueIndices.size());
+//        assertEquals("namea_nameb_namec", globalUniqueIndices.iterator().next().getName());
+//
+//        this.sqlgGraph.tx().normalBatchModeOn();
+//        this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
+//        this.sqlgGraph.tx().commit();
+//        try {
+//            this.sqlgGraph.tx().normalBatchModeOn();
+//            this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
+//            this.sqlgGraph.tx().commit();
+//            fail("GlobalUniqueIndex should prevent this from executing");
+//        } catch (Exception e) {
+//            //swallow
+//        }
+//        this.sqlgGraph.tx().rollback();
+//        this.sqlgGraph.tx().normalBatchModeOn();
+//        this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
+//        this.sqlgGraph.tx().commit();
+//    }
+
     @Test
-    public void testGlobalUniqueIndex() {
+    public void testGlobalUniqueIndexOnEdge() {
         Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("namec", PropertyType.STRING);
+        properties.put("name", PropertyType.STRING);
+        VertexLabel vertexLabelA = this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
+        VertexLabel vertexLabelB = this.sqlgGraph.getTopology().ensureVertexLabelExist("B", properties);
+        properties.clear();
         properties.put("namea", PropertyType.STRING);
         properties.put("nameb", PropertyType.STRING);
-        this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
-        this.sqlgGraph.tx().commit();
-
-        Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperties().values();
+        properties.put("namec", PropertyType.STRING);
+        vertexLabelA.ensureEdgeLabelExist(this.sqlgGraph, "ab", vertexLabelB, properties);
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperties().values();
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
         this.sqlgGraph.tx().commit();
 
-        this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
+        Schema globalUniqueIndexSchema = this.sqlgGraph.getTopology().getGlobalUniqueIndexSchema();
+        Optional<GlobalUniqueIndex> globalUniqueIndexOptional = globalUniqueIndexSchema.getGlobalUniqueIndex("namea_nameb_namec");
+        assertTrue(globalUniqueIndexOptional.isPresent());
+
+        Optional<PropertyColumn> nameaPropertyColumnOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperty("namea");
+        assertTrue(nameaPropertyColumnOptional.isPresent());
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Set<GlobalUniqueIndex> globalUniqueIndices = nameaPropertyColumnOptional.get().getGlobalUniqueIndices();
+        assertEquals(1, globalUniqueIndices.size());
+        assertEquals("namea_nameb_namec", globalUniqueIndices.iterator().next().getName());
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        a1.addEdge("ab", b1, "namea", "a", "nameb", "b", "namec", "c");
+        this.sqlgGraph.tx().commit();
+        try {
+            a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+            b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+            a1.addEdge("ab", b1, "namea", "a", "nameb", "b", "namec", "c");
+            fail("GlobalUniqueIndex should prevent this from executing");
+        } catch (Exception e) {
+            //swallow
+        }
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
+    public void testGlobalUniqueIndexOnEdgeNormalBatchMode() {
+        Map<String, PropertyType> properties = new HashMap<>();
+        properties.put("name", PropertyType.STRING);
+        VertexLabel vertexLabelA = this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
+        VertexLabel vertexLabelB = this.sqlgGraph.getTopology().ensureVertexLabelExist("B", properties);
+        properties.clear();
+        properties.put("namea", PropertyType.STRING);
+        properties.put("nameb", PropertyType.STRING);
+        properties.put("namec", PropertyType.STRING);
+        vertexLabelA.ensureEdgeLabelExist(this.sqlgGraph, "ab", vertexLabelB, properties);
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperties().values();
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
+        this.sqlgGraph.tx().commit();
+
+        Schema globalUniqueIndexSchema = this.sqlgGraph.getTopology().getGlobalUniqueIndexSchema();
+        Optional<GlobalUniqueIndex> globalUniqueIndexOptional = globalUniqueIndexSchema.getGlobalUniqueIndex("namea_nameb_namec");
+        assertTrue(globalUniqueIndexOptional.isPresent());
+
+        Optional<PropertyColumn> nameaPropertyColumnOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperty("namea");
+        assertTrue(nameaPropertyColumnOptional.isPresent());
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Set<GlobalUniqueIndex> globalUniqueIndices = nameaPropertyColumnOptional.get().getGlobalUniqueIndices();
+        assertEquals(1, globalUniqueIndices.size());
+        assertEquals("namea_nameb_namec", globalUniqueIndices.iterator().next().getName());
+
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        a1.addEdge("ab", b1, "namea", "a", "nameb", "b", "namec", "c");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        try {
+            a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+            b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+            a1.addEdge("ab", b1, "namea", "a", "nameb", "b", "namec", "c");
+            this.sqlgGraph.tx().commit();
+            fail("GlobalUniqueIndex should prevent this from executing");
+        } catch (Exception e) {
+            //swallow
+        }
+        this.sqlgGraph.tx().rollback();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
         this.sqlgGraph.tx().commit();
     }
 

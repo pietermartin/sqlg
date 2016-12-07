@@ -39,6 +39,10 @@ public class Schema {
     private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
 
+    public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
+    private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
+    private Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
+
     /**
      * Creates the SqlgSchema. The sqlg_schema always exist and is created via sql in {@link SqlDialect#sqlgTopologyCreationScripts()}
      *
@@ -58,6 +62,16 @@ public class Schema {
      */
     static Schema createPublicSchema(Topology topology, String publicSchemaName) {
         return new Schema(topology, publicSchemaName);
+    }
+
+    /**
+     * Creates the 'gui_schema'. A schema in which to store the GlbalUniqueIndexes. The 'gui_schema' always already exist and is pre-loaded in {@link Topology()} @see {@link Topology#cacheTopology()}
+     *
+     * @param topology The {@link Topology} that contains the public schema.
+     * @return The Schema that represents 'public'
+     */
+    static Schema createGlobalUniqueIndexSchema(Topology topology) {
+        return new Schema(topology, GLOBAL_UNIQUE_INDEX_SCHEMA);
     }
 
     static Schema createSchema(SqlgGraph sqlgGraph, Topology topology, String name) {
@@ -409,6 +423,40 @@ public class Schema {
         return result;
     }
 
+    public GlobalUniqueIndex ensureGlobalUniqueIndexExist(SqlgGraph sqlgGraph, final Set<PropertyColumn> properties) {
+        String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(properties);
+        Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
+        if (!globalIndexOptional.isPresent()) {
+            //take any property
+            properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
+            globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
+            if (!globalIndexOptional.isPresent()) {
+                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(sqlgGraph, this.topology, globalUniqueIndexName, properties);
+                this.uncommittedGlobalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
+                return globalUniqueIndex;
+            } else {
+                return globalIndexOptional.get();
+            }
+        } else {
+            return globalIndexOptional.get();
+        }
+    }
+
+    public Optional<GlobalUniqueIndex> getGlobalUniqueIndex(String name) {
+        Objects.requireNonNull(name, () -> "name may not be null for getGlobalUniqueIndex");
+        GlobalUniqueIndex globalUniqueIndex = getGlobalUniqueIndexes().get(name);
+        return Optional.ofNullable(globalUniqueIndex);
+    }
+
+    public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
+        Map<String, GlobalUniqueIndex> result = new HashMap<>();
+        result.putAll(this.globalUniqueIndexes);
+        if (this.getTopology().isWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedGlobalUniqueIndexes);
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
     void afterCommit() {
         if (this.getTopology().isWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
@@ -416,9 +464,21 @@ public class Schema {
                 this.vertexLabels.put(entry.getKey(), entry.getValue());
                 it.remove();
             }
+            if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
+                    Map.Entry<String, GlobalUniqueIndex> entry = it.next();
+                    this.globalUniqueIndexes.put(entry.getKey(), entry.getValue());
+                    it.remove();
+                }
+            }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
+        }
+        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
+                globalUniqueIndex.afterCommit();
+            }
         }
         this.uncommittedOutEdgeLabels.clear();
     }
@@ -435,12 +495,24 @@ public class Schema {
                 entry.getValue().afterRollbackForOutEdges();
                 it.remove();
             }
+            if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+                for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
+                    Map.Entry<String, GlobalUniqueIndex> entry = it.next();
+                    entry.getValue().afterRollback();
+                    it.remove();
+                }
+            }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterRollbackForInEdges();
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterRollbackForOutEdges();
+        }
+        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
+                globalUniqueIndex.afterRollback();
+            }
         }
         this.uncommittedOutEdgeLabels.clear();
     }

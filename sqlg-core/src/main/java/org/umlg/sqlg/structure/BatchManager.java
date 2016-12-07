@@ -105,6 +105,20 @@ public class BatchManager {
                 pairs.getLeft().addAll(keyValueMap.keySet());
                 pairs.getRight().put(sqlgVertex, keyValueMap);
             }
+            if (!keyValueMap.isEmpty()) {
+                Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+                        .getSchema(schemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", schemaTable.getSchema())))
+                        .getVertexLabel(schemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", schemaTable.getTable())))
+                        .getProperties();
+                //sync up the keyValueMap with its PropertyColumn
+                for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+                    PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
+                    Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
+                    for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                        SqlgElement.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+                    }
+                }
+            }
         } else {
             if (this.streamingBatchModeVertexSchemaTable == null) {
                 this.streamingBatchModeVertexSchemaTable = sqlgVertex.getSchemaTable();
@@ -148,6 +162,20 @@ public class BatchManager {
             } else {
                 triples.getLeft().addAll(keyValueMap.keySet());
                 triples.getRight().put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
+            }
+            if (!keyValueMap.isEmpty()) {
+                Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+                        .getSchema(outSchemaTable.getSchema()).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", outSchemaTable.getSchema())))
+                        .getEdgeLabel(outSchemaTable.getTable()).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", outSchemaTable.getTable())))
+                        .getProperties();
+                //sync up the keyValueMap with its PropertyColumn
+                for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+                    PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
+                    Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
+                    for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                        SqlgElement.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+                    }
+                }
             }
         } else {
             if (this.streamingBatchModeEdgeSchemaTable == null) {

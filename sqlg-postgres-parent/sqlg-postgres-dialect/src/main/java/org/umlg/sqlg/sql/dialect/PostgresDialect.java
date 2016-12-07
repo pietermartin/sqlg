@@ -209,7 +209,6 @@ public class PostgresDialect extends BaseSqlDialect {
             CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
             for (SchemaTable schemaTable : vertexCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-//                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getAllTables().get(schemaTable.getSchema() + "." + SchemaManager.VERTEX_PREFIX + schemaTable.getTable());
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(VERTEX_PREFIX));
                 //insert the labeled vertices
                 long endHigh;
@@ -1717,7 +1716,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case Types.BINARY:
                 return BYTE_ARRAY;
             case Types.ARRAY:
-                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column,  metaDataIter);
+                return sqlArrayTypeNameToPropertyType(typeName, sqlgGraph, schema, table, column, metaDataIter);
             default:
                 throw new IllegalStateException("Unknown sqlType " + sqlType);
         }
@@ -2465,6 +2464,8 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
+
+        result.add("CREATE SCHEMA IF NOT EXISTS \"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\";");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"schemaVertex\" TEXT);");

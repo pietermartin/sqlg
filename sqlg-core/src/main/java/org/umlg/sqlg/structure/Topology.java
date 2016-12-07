@@ -45,8 +45,6 @@ public class Topology {
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Map<String, Schema> metaSchemas = new HashMap<>();
-    private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
-    private Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -285,6 +283,9 @@ public class Topology {
 
         //add the public schema
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
+
+        //add the global unique index schema
+        this.schemas.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
 
         //populate the schema's allEdgesCache
         sqlgSchema.cacheEdgeLabels();
@@ -597,39 +598,9 @@ public class Topology {
 
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
-        String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(properties);
-        Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
-        if (!globalIndexOptional.isPresent()) {
-            //take any property
-            properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
-            globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
-            if (!globalIndexOptional.isPresent()) {
-                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(sqlgGraph, this, globalUniqueIndexName, properties);
-                this.uncommittedGlobalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
-                return globalUniqueIndex;
-            } else {
-                return globalIndexOptional.get();
-            }
-        } else {
-            return globalIndexOptional.get();
-        }
+        Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(()->new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
+        return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(this.sqlgGraph, properties);
     }
-
-    public Optional<GlobalUniqueIndex> getGlobalUniqueIndex(String name) {
-        Objects.requireNonNull(name, () -> "name may not be null for getGlobalUniqueIndex");
-        GlobalUniqueIndex globalUniqueIndex = getGlobalUniqueIndexes().get(name);
-        return Optional.ofNullable(globalUniqueIndex);
-    }
-
-    public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
-        Map<String, GlobalUniqueIndex> result = new HashMap<>();
-        result.putAll(this.globalUniqueIndexes);
-        if (this.isWriteLockHeldByCurrentThread()) {
-            result.putAll(this.uncommittedGlobalUniqueIndexes);
-        }
-        return Collections.unmodifiableMap(result);
-    }
-
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {
         this.sqlgGraph.getSqlDialect().assertTableName(tableName);
@@ -678,11 +649,7 @@ public class Topology {
                 this.schemas.put(entry.getKey(), entry.getValue());
                 it.remove();
             }
-            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
-                this.globalUniqueIndexes.put(entry.getKey(), entry.getValue());
-                it.remove();
-            }
+
             //merge the allTableCache and uncommittedAllTables
             Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
             for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
@@ -701,9 +668,6 @@ public class Topology {
             for (Schema schema : this.schemas.values()) {
                 schema.afterCommit();
             }
-            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
-                globalUniqueIndex.afterCommit();
-            }
         } finally {
             z_internalReadUnLock();
         }
@@ -720,19 +684,11 @@ public class Topology {
                 entry.getValue().afterRollback();
                 it.remove();
             }
-            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
-                entry.getValue().afterRollback();
-                it.remove();
-            }
         }
         z_internalReadLock();
         try {
             for (Schema schema : this.schemas.values()) {
                 schema.afterRollback();
-            }
-            for (GlobalUniqueIndex globalUniqueIndex : this.globalUniqueIndexes.values()) {
-                globalUniqueIndex.afterRollback();
             }
         } finally {
             z_internalReadUnLock();
@@ -983,6 +939,13 @@ public class Topology {
     public Schema getPublicSchema() {
         Optional<Schema> schema = getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema());
         Preconditions.checkState(schema.isPresent(), "BUG: The public schema must always be present");
+        //noinspection OptionalGetWithoutIsPresent
+        return schema.get();
+    }
+
+    public Schema getGlobalUniqueIndexSchema() {
+        Optional<Schema> schema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
+        Preconditions.checkState(schema.isPresent(), "BUG: The global unque index schema %s must always be present", Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
         //noinspection OptionalGetWithoutIsPresent
         return schema.get();
     }

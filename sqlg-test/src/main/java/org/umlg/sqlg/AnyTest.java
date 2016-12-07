@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestAddVertexViaMap;
+import org.umlg.sqlg.test.schema.TestGlobalUniqueIndex;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,8 @@ import org.umlg.sqlg.test.TestAddVertexViaMap;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestAddVertexViaMap.class,
-//        TestGlobalUniqueIndex.class,
+//        TestAddVertexViaMap.class,
+        TestGlobalUniqueIndex.class,
 })
 public class AnyTest {
 }
