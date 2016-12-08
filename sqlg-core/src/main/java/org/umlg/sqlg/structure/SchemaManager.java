@@ -112,14 +112,15 @@ public class SchemaManager {
     }
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
-        return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
+//        return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
+        return getAllTablesWithout(this.getTopology().getSqlgSchemaVertexLabels());
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
+    public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
         return this.topology.getAllTablesWithout(filter);
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
+    public Map<String, Map<String, PropertyType>> getAllTablesFrom(Set<TopologyInf> selectFrom) {
         return this.topology.getAllTablesFrom(selectFrom);
     }
 

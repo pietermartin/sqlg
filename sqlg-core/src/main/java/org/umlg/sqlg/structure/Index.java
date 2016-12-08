@@ -24,7 +24,7 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
  * Date: 2016/11/26
  * Time: 7:35 PM
  */
-public class Index {
+public class Index implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(Index.class.getName());
     private String name;

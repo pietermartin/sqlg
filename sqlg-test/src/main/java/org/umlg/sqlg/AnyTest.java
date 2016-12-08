@@ -12,6 +12,7 @@ import org.umlg.sqlg.test.schema.TestGlobalUniqueIndex;
 @Suite.SuiteClasses({
 //        TestAddVertexViaMap.class,
         TestGlobalUniqueIndex.class,
+//        TestMultiThread.class
 })
 public class AnyTest {
 }

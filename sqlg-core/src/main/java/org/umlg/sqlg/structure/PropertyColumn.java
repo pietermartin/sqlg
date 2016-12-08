@@ -11,7 +11,7 @@ import java.util.Set;
  * Date: 2016/09/04
  * Time: 8:50 AM
  */
-public class PropertyColumn {
+public class PropertyColumn implements TopologyInf {
 
     private AbstractLabel abstractLabel;
     private String name;
@@ -95,7 +95,7 @@ public class PropertyColumn {
         if (!(o instanceof PropertyColumn)) {
             return false;
         }
-        PropertyColumn other = (PropertyColumn)o;
+        PropertyColumn other = (PropertyColumn) o;
         return this.getName().equals(other.getName()) && this.getPropertyType() == other.getPropertyType();
     }
 }

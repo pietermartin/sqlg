@@ -33,7 +33,8 @@ public class TestSqlgSchema  extends BaseTest {
 
             GraphTraversalSource traversalSource = sqlgGraph1.traversal().withStrategies(
                     TopologyStrategy.build().selectFrom(
-                            SQLG_SCHEMA_SCHEMA_TABLES
+                            sqlgGraph1.getTopology().getSqlgSchemaVertexLabels()
+//                            SQLG_SCHEMA_SCHEMA_TABLES
                     ).create()
             );
             //Assert the schema

@@ -22,7 +22,7 @@ import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_TYPE;
  * Date: 2016/09/14
  * Time: 11:19 AM
  */
-public abstract class AbstractLabel {
+public abstract class AbstractLabel  implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(AbstractLabel.class.getName());
     protected String label;

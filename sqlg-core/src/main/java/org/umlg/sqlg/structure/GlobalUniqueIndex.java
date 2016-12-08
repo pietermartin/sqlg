@@ -1,17 +1,13 @@
 package org.umlg.sqlg.structure;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
 
 /**
  * Date: 2016/12/01
  * Time: 10:10 PM
  */
-public class GlobalUniqueIndex {
+public class GlobalUniqueIndex implements TopologyInf {
 
-    private Logger logger = LoggerFactory.getLogger(GlobalUniqueIndex.class.getName());
     private Topology topology;
     private String name;
     private Set<PropertyColumn> properties = new HashSet<>();
@@ -56,6 +52,7 @@ public class GlobalUniqueIndex {
         PropertyColumn valuePropertyColumn = vertexLabel.getProperty(GLOBAL_UNIQUE_INDEX_VALUE).get();
         vertexLabel.ensureIndexExists(sqlgGraph, IndexType.UNIQUE, Collections.singletonList(valuePropertyColumn));
         GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
+        topology.addToGlobalUniqueIndexes(globalUniqueIndex);
         TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
         return globalUniqueIndex;
     }

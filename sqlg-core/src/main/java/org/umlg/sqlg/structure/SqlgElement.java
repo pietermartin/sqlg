@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -438,7 +439,14 @@ public abstract class SqlgElement implements Element {
 
     static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
 
-        sqlgGraph.traversal().V()
+        List<Vertex> globalUniqueIndexVertexes = sqlgGraph.globalUniqueIndexes()
+                .V().hasLabel(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName())
+                .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue()).toList();
+        Preconditions.checkState(globalUniqueIndexVertexes.size() == 1, "GlobalUniqueIndex for %s and value %s not found",
+                Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                propertyColumnObjectPair.getValue());
+        Vertex globalUniqueIndexVertex = globalUniqueIndexVertexes.get(0);
+        System.out.println(globalUniqueIndex);
 
 
     }

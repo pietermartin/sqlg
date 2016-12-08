@@ -27,7 +27,7 @@ import static org.umlg.sqlg.structure.Topology.*;
  * Date: 2016/09/04
  * Time: 8:49 AM
  */
-public class Schema {
+public class Schema implements TopologyInf {
 
     private static Logger logger = LoggerFactory.getLogger(Schema.class.getName());
     private Topology topology;

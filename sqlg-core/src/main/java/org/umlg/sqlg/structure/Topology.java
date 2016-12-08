@@ -45,6 +45,8 @@ public class Topology {
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Map<String, Schema> metaSchemas = new HashMap<>();
+    private Set<TopologyInf> sqlgSchemaVertexLabels = new HashSet<>();
+    private Set<TopologyInf> globalUniqueIndexes = new HashSet<>();
 
     static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -216,6 +218,10 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE
     );
 
+    public static final List<String> SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_SCHEMA = Arrays.asList(
+            Schema.GLOBAL_UNIQUE_INDEX_SCHEMA
+    );
+
     /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
      * As the topology, i.e. sqlg_schema is created upfront the meta topology is pre-loaded.
@@ -235,24 +241,30 @@ public class Topology {
         columns.put(SQLG_SCHEMA_PROPERTY_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel schemaVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_SCHEMA, columns);
+        this.sqlgSchemaVertexLabels.add(schemaVertexLabel);
         columns.put(SCHEMA_VERTEX_DISPLAY, PropertyType.STRING);
         VertexLabel vertexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_VERTEX_LABEL, columns);
+        this.sqlgSchemaVertexLabels.add(vertexVertexLabel);
         columns.remove(SCHEMA_VERTEX_DISPLAY);
         VertexLabel edgeVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_EDGE_LABEL, columns);
+        this.sqlgSchemaVertexLabels.add(edgeVertexLabel);
 
         columns.put(SQLG_SCHEMA_PROPERTY_TYPE, PropertyType.STRING);
         VertexLabel propertyVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_PROPERTY, columns);
+        this.sqlgSchemaVertexLabels.add(propertyVertexLabel);
 
         columns.clear();
         columns.put(SQLG_SCHEMA_INDEX_NAME, PropertyType.STRING);
         columns.put(SQLG_SCHEMA_INDEX_INDEX_TYPE, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel indexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_INDEX, columns);
+        this.sqlgSchemaVertexLabels.add(indexVertexLabel);
 
         columns.clear();
         columns.put(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_NAME, PropertyType.STRING);
         columns.put(CREATED_ON, PropertyType.LOCALDATETIME);
         VertexLabel globalUniqueIndexVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX, columns);
+        this.sqlgSchemaVertexLabels.add(globalUniqueIndexVertexLabel);
 
         columns.clear();
         @SuppressWarnings("unused")
@@ -280,6 +292,7 @@ public class Topology {
         columns.put(SQLG_SCHEMA_LOG_PID, PropertyType.INTEGER);
         @SuppressWarnings("unused")
         VertexLabel logVertexLabel = sqlgSchema.createSqlgSchemaVertexLabel(SQLG_SCHEMA_LOG, columns);
+        this.sqlgSchemaVertexLabels.add(logVertexLabel);
 
         //add the public schema
         this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
@@ -922,6 +935,15 @@ public class Topology {
 
     /////////////////////////////////getters and cache/////////////////////////////
 
+
+    public Set<TopologyInf> getSqlgSchemaVertexLabels() {
+        return this.sqlgSchemaVertexLabels;
+    }
+
+    public Set<TopologyInf> getGlobalUniqueIndexes() {
+        return this.globalUniqueIndexes;
+    }
+
     public Set<Schema> getSchemas() {
         this.z_internalReadLock();
         try {
@@ -1041,12 +1063,16 @@ public class Topology {
         }
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTablesWithout(List<String> filter) {
+    public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
         this.z_internalReadLock();
         try {
             Map<String, Map<String, PropertyType>> result = getAllTables();
-            for (String f : filter) {
-                this.allTableCache.remove(f);
+            for (TopologyInf f : filter) {
+                if (f instanceof AbstractLabel) {
+                    AbstractLabel abstractLabel = (AbstractLabel)f;
+                    Schema schema = abstractLabel.getSchema();
+                    this.allTableCache.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel());
+                }
             }
             return Collections.unmodifiableMap(result);
         } finally {
@@ -1054,14 +1080,26 @@ public class Topology {
         }
     }
 
-    public Map<String, Map<String, PropertyType>> getAllTablesFrom(List<String> selectFrom) {
+    public Map<String, Map<String, PropertyType>> getAllTablesFrom(Set<TopologyInf> selectFrom) {
         z_internalReadLock();
         try {
             Map<String, Map<String, PropertyType>> result = new HashMap<>();
-            for (String f : selectFrom) {
-                Map<String, PropertyType> tmp = this.allTableCache.get(f);
-                if (!tmp.isEmpty()) {
-                    result.put(f, tmp);
+            for (TopologyInf f : selectFrom) {
+                if (f instanceof AbstractLabel) {
+                    AbstractLabel abstractLabel = (AbstractLabel)f;
+                    Schema schema = abstractLabel.getSchema();
+                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel();
+                    Map<String, PropertyType> tmp = this.allTableCache.get(key);
+                    if (!tmp.isEmpty()) {
+                        result.put(key, tmp);
+                    }
+                } else if (f instanceof GlobalUniqueIndex) {
+                    GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex)f;
+                    String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + SchemaManager.VERTEX_PREFIX  + globalUniqueIndex.getName();
+                    Map<String, PropertyType> tmp = this.allTableCache.get(key);
+                    if (!tmp.isEmpty()) {
+                        result.put(key, tmp);
+                    }
                 }
             }
             return Collections.unmodifiableMap(result);
@@ -1148,5 +1186,9 @@ public class Topology {
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
         this.allTableCache.put(tableName, propertyTypeMap);
+    }
+
+    void addToGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
+        this.globalUniqueIndexes.add(globalUniqueIndex);
     }
 }

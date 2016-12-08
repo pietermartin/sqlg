@@ -647,9 +647,9 @@ public class SqlgUtil {
         //from and without are mutually exclusive, only one will ever be set.
         Map<String, Map<String, PropertyType>> filteredAllTables;
         if (fromHasContainer != null) {
-            filteredAllTables = topology.getAllTablesFrom((List<String>) fromHasContainer.getPredicate().getValue());
+            filteredAllTables = topology.getAllTablesFrom((Set<TopologyInf>) fromHasContainer.getPredicate().getValue());
         } else if (withoutHasContainer != null) {
-            filteredAllTables = topology.getAllTablesWithout((List<String>) withoutHasContainer.getPredicate().getValue());
+            filteredAllTables = topology.getAllTablesWithout((Set<TopologyInf>) withoutHasContainer.getPredicate().getValue());
         } else {
             filteredAllTables = topology.getAllTables();
         }

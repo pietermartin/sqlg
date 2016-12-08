@@ -18,7 +18,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Date: 2014/09/24
@@ -225,8 +227,8 @@ public class TestMultiThread extends BaseTest {
         }
         executorService.shutdown();
         executorService.awaitTermination(5, TimeUnit.SECONDS);
-        //+ 1 for the public schema
-        assertEquals(schemas.size() + 1, this.sqlgGraph.getTopology().getSchemas().size());
+        //+ 1 for the public schema and gui_schema i.e. globalUniqueIndex
+        assertEquals(schemas.size() + 2, this.sqlgGraph.getTopology().getSchemas().size());
     }
 
 }

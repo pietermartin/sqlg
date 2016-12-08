@@ -41,7 +41,8 @@ public class TestGlobalUniqueIndex extends BaseTest {
 //        @SuppressWarnings("OptionalGetWithoutIsPresent")
 //        Set<GlobalUniqueIndex> globalUniqueIndices = nameaPropertyColumnOptional.get().getGlobalUniqueIndices();
 //        assertEquals(1, globalUniqueIndices.size());
-//        assertEquals("namea_nameb_namec", globalUniqueIndices.iterator().next().getName());
+//        GlobalUniqueIndex globalUniqueIndex = globalUniqueIndices.iterator().next();
+//        assertEquals("namea_nameb_namec", globalUniqueIndex.getName());
 //
 //        this.sqlgGraph.addVertex(T.label, "A", "namea", "a");
 //        this.sqlgGraph.tx().commit();
@@ -54,6 +55,12 @@ public class TestGlobalUniqueIndex extends BaseTest {
 //        this.sqlgGraph.tx().rollback();
 //        this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
 //        this.sqlgGraph.tx().commit();
+//
+//        List<Vertex> globalUniqueIndexVertexes = this.sqlgGraph.globalUniqueIndexes().V().toList();
+//        assertEquals(2, globalUniqueIndexVertexes.size());
+//        assertTrue(globalUniqueIndexVertexes.stream().allMatch(g->g.label().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName())));
+//        assertEquals(1, globalUniqueIndexVertexes.stream().filter(g->g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).equals("a")).count());
+//        assertEquals(1, globalUniqueIndexVertexes.stream().filter(g->g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).equals("aa")).count());
 //    }
 //
 //    @Test

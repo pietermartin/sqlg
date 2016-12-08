@@ -32,7 +32,6 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA_TABLES;
 
 /**
  * Date: 2014/07/12
@@ -322,11 +321,11 @@ public class SqlgGraph implements Graph {
     }
 
     public GraphTraversalSource topology() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SQLG_SCHEMA_SCHEMA_TABLES).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(this.getTopology().getSqlgSchemaVertexLabels()).create());
     }
 
     public GraphTraversalSource globalUniqueIndexes() {
-        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SQLG_SCHEMA_SCHEMA_TABLES).create());
+        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(this.getTopology().getGlobalUniqueIndexes()).create());
     }
 
     @Override
