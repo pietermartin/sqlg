@@ -1028,13 +1028,6 @@ public class Topology {
                 Map<String, PropertyType> tmp = this.allTableCache.get(f);
                 if (!tmp.isEmpty()) {
                     result.put(f, tmp);
-                } else {
-                    if (isWriteLockHeldByCurrentThread()) {
-                        tmp = this.allTableCache.get(f);
-                        if (!tmp.isEmpty()) {
-                            result.put(f, tmp);
-                        }
-                    }
                 }
             }
             return Collections.unmodifiableMap(result);
