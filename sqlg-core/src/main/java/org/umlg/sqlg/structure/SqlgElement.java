@@ -219,10 +219,34 @@ public abstract class SqlgElement implements Element {
         }
 
         if (!elementInInsertedCache) {
+
+
+            //TODO needs optimizing, firing this all the time when there probably are no GlobalUniqueIndexes is a tad dum.
+            //GlobalUniqueIndex
+            Map<String, PropertyColumn> properties;
+            if (this instanceof Vertex) {
+                properties = this.sqlgGraph.getTopology()
+                        .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                        .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
+                        .getProperties();
+            } else {
+                properties = this.sqlgGraph.getTopology()
+                        .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                        .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
+                        .getProperties();
+            }
+            //sync up the keyValueMap with its PropertyColumn
+            PropertyColumn propertyColumn = properties.get(key);
+            Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, value);
+            for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                SqlgElement.updateGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+            }
+
+            String tableName = (this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table;
             StringBuilder sql = new StringBuilder("UPDATE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
-            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tableName));
             sql.append(" SET ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
@@ -251,6 +275,7 @@ public abstract class SqlgElement implements Element {
         //Cache the properties
         this.properties.put(key, value);
     }
+
 
     /**
      * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
@@ -409,6 +434,13 @@ public abstract class SqlgElement implements Element {
         sqlgGraph.addVertex(
                 T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
                 GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
+    }
+
+    static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
+
+        sqlgGraph.traversal().V()
+
+
     }
 
     @Override

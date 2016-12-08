@@ -325,6 +325,10 @@ public class SqlgGraph implements Graph {
         return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SQLG_SCHEMA_SCHEMA_TABLES).create());
     }
 
+    public GraphTraversalSource globalUniqueIndexes() {
+        return this.traversal().withStrategies(TopologyStrategy.build().selectFrom(SQLG_SCHEMA_SCHEMA_TABLES).create());
+    }
+
     @Override
     public Configuration configuration() {
         return this.configuration;
