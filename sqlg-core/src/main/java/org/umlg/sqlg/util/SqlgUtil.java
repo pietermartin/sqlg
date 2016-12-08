@@ -660,12 +660,8 @@ public class SqlgUtil {
         //remove the TopologyStrategy hasContainer
         Optional<HasContainer> fromHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)).findAny();
         Optional<HasContainer> withoutHasContainer = hasContainers.stream().filter(h -> h.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT)).findAny();
-        if (fromHasContainer.isPresent()) {
-            hasContainers.remove(fromHasContainer.get());
-        }
-        if (withoutHasContainer.isPresent()) {
-            hasContainers.remove(withoutHasContainer.get());
-        }
+        fromHasContainer.ifPresent(hasContainers::remove);
+        withoutHasContainer.ifPresent(hasContainers::remove);
     }
 
     public static void dropDb(SqlgGraph sqlgGraph) {

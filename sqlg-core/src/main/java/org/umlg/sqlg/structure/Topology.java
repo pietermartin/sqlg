@@ -1036,13 +1036,6 @@ public class Topology {
             }
 
             return Collections.unmodifiableMap(result);
-
-//            Map<String, Map<String, PropertyType>> unmodifiableResult = new HashMap<>();
-//            for (Map.Entry<String, Map<String, PropertyType>> stringMapEntry : result.entrySet()) {
-//                unmodifiableResult.put(stringMapEntry.getKey(), Collections.unmodifiableMap(stringMapEntry.getValue()));
-//            }
-//            return Collections.unmodifiableMap(unmodifiableResult);
-//            return Collections.unmodifiableMap(result);
         } finally {
             z_internalReadUnLock();
         }
