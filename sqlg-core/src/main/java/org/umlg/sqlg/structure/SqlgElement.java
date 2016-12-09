@@ -221,6 +221,10 @@ public abstract class SqlgElement implements Element {
 
         if (!elementInInsertedCache) {
 
+            Object oldValue = this.property(key).orElse(null);
+            if (oldValue != null && oldValue.equals(value)) {
+                return;
+            }
 
             //TODO needs optimizing, firing this all the time when there probably are no GlobalUniqueIndexes is a tad dum.
             //GlobalUniqueIndex
@@ -240,7 +244,7 @@ public abstract class SqlgElement implements Element {
             PropertyColumn propertyColumn = properties.get(key);
             Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, value);
             for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
-                SqlgElement.updateGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+                SqlgElement.updateGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, oldValue, propertyColumnObjectPair.getValue());
             }
 
             String tableName = (this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table;
@@ -437,18 +441,15 @@ public abstract class SqlgElement implements Element {
                 GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
     }
 
-    static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
-
+    static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Object oldValue, Object newValue) {
         List<Vertex> globalUniqueIndexVertexes = sqlgGraph.globalUniqueIndexes()
                 .V().hasLabel(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName())
-                .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue()).toList();
+                .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, oldValue).toList();
         Preconditions.checkState(globalUniqueIndexVertexes.size() == 1, "GlobalUniqueIndex for %s and value %s not found",
                 Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
-                propertyColumnObjectPair.getValue());
+                oldValue);
         Vertex globalUniqueIndexVertex = globalUniqueIndexVertexes.get(0);
-        System.out.println(globalUniqueIndex);
-
-
+        globalUniqueIndexVertex.property(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, newValue);
     }
 
     @Override
