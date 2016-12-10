@@ -97,8 +97,8 @@ public class PropertyColumn implements TopologyInf {
             return false;
         }
         PropertyColumn other = (PropertyColumn) o;
-        if (this.abstractLabel.getSchema().equals(other.abstractLabel.getSchema())) {
-            if (this.abstractLabel.equals(other.abstractLabel)) {
+        if (this.abstractLabel.getSchema().getName().equals(other.abstractLabel.getSchema().getName())) {
+            if (this.abstractLabel.getLabel().equals(other.abstractLabel.getLabel())) {
                 return this.getName().equals(other.getName()) && this.getPropertyType() == other.getPropertyType();
             } else {
                 return false;
@@ -106,5 +106,10 @@ public class PropertyColumn implements TopologyInf {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public String toString() {
+        return this.abstractLabel.getSchema().getName() + "." + this.abstractLabel.getLabel() + "." + this.name;
     }
 }

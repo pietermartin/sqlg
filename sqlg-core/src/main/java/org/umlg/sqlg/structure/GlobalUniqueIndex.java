@@ -64,10 +64,10 @@ public class GlobalUniqueIndex implements TopologyInf {
         return globalUniqueIndex;
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     static String globalUniqueIndexName(Set<PropertyColumn> properties) {
         List<PropertyColumn> propertyColumns = new ArrayList<>(properties);
-        Collections.sort(propertyColumns, Comparator.comparing(PropertyColumn::getName));
-        //noinspection OptionalGetWithoutIsPresent
-        return propertyColumns.stream().map(PropertyColumn::getName).reduce((a, b) -> a + "_" + b).get();
+        propertyColumns.sort(Comparator.comparing(PropertyColumn::getName));
+        return propertyColumns.stream().map(p->p.getAbstractLabel().getLabel() + "_" + p.getName()).reduce((a, b) -> a + "_" + b).get();
     }
 }

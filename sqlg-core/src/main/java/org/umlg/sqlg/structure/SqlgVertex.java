@@ -497,12 +497,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
 
         Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
-        Map<String, PropertyColumn> propertyColumns = null;
+        Map<String, PropertyColumn> propertyColumns = this.sqlgGraph.getTopology()
+                .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
+                .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
+                .getProperties();
         if (!keyValueMap.isEmpty()) {
-            propertyColumns = this.sqlgGraph.getTopology()
-                    .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
-                    .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
-                    .getProperties();
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
                 PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
@@ -534,9 +533,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             } else {
                 throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", SchemaManager.VERTICES));
             }
-            if (!keyValueMap.isEmpty()) {
-                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
-            }
+            insertGlobalUniqueIndex(keyValueMap, propertyColumns);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

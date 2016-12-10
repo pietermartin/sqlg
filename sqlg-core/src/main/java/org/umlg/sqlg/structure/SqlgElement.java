@@ -436,22 +436,31 @@ public abstract class SqlgElement implements Element {
     }
 
     protected void insertGlobalUniqueIndex(Map<String, Object> keyValueMap, Map<String, PropertyColumn> propertyColumns) {
-        for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-            PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
-            Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
+        for (PropertyColumn propertyColumn : propertyColumns.values()) {
             for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                Object value = keyValueMap.get(propertyColumn.getName());
+                Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, value);
                 this.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
             }
         }
     }
 
     private void insertGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
-        sqlgGraph.addVertex(
-                T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
-                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue(),
-                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
-                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
-        );
+        if (propertyColumnObjectPair.getRight() != null) {
+            sqlgGraph.addVertex(
+                    T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
+            );
+        } else {
+            //Need to insert null values else the update the code will not work.
+            sqlgGraph.addVertex(
+                    T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
+            );
+        }
     }
 
     private static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, RecordId recordId, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
@@ -460,9 +469,20 @@ public abstract class SqlgElement implements Element {
                 .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, recordId.toString())
                 .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName())
                 .toList();
-        Preconditions.checkState(globalUniqueIndexVertexes.size() == 1, "GlobalUniqueIndex for %s and recordId %s not found", Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(), recordId.toString());
-        Vertex globalUniqueIndexVertex = globalUniqueIndexVertexes.get(0);
-        globalUniqueIndexVertex.property(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
+
+        Preconditions.checkState(globalUniqueIndexVertexes.size() <= 1, "More than one GlobalUniqueIndex for %s and recordId %s found", Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(), recordId.toString());
+        if (!globalUniqueIndexVertexes.isEmpty()) {
+            Vertex globalUniqueIndexVertex = globalUniqueIndexVertexes.get(0);
+            globalUniqueIndexVertex.property(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
+        } else {
+            //This happens if the property is not present at all in which case the entry in the GlobalUniqueIndex table has not been created yet.
+            sqlgGraph.addVertex(
+                    T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, recordId.toString(),
+                    GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
+            );
+        }
     }
 
     @Override
