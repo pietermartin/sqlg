@@ -365,6 +365,38 @@ public class Schema implements TopologyInf {
         return result;
     }
 
+    Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        if (schemaTable.isVertexTable()) {
+            Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
+            if (vertexLabelOptional.isPresent()) {
+                return vertexLabelOptional.get().getProperties();
+            }
+        } else {
+            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.withOutPrefix().getTable());
+            if (edgeLabelOptional.isPresent()) {
+                return edgeLabelOptional.get().getProperties();
+            }
+        }
+        return Collections.emptyMap();
+    }
+
+    Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        if (schemaTable.isVertexTable()) {
+            Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
+            if (vertexLabelOptional.isPresent()) {
+                return vertexLabelOptional.get().getGlobalUniqueIndexProperties();
+            }
+        } else {
+            Optional<EdgeLabel> edgeLabelOptional = getEdgeLabel(schemaTable.withOutPrefix().getTable());
+            if (edgeLabelOptional.isPresent()) {
+                return edgeLabelOptional.get().getGlobalUniqueIndexProperties();
+            }
+        }
+        return Collections.emptyMap();
+    }
+
     Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
         Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {

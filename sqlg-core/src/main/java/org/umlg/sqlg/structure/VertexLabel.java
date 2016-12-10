@@ -62,8 +62,14 @@ public class VertexLabel extends AbstractLabel {
         this.schema = schema;
     }
 
-    private VertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
-        super(label, columns);
+    /**
+     * Only called for a new label being added.
+     * @param schema The schema.
+     * @param label The vertex's label.
+     * @param properties The vertex's properties.
+     */
+    private VertexLabel(Schema schema, String label, Map<String, PropertyType> properties) {
+        super(label, properties);
         this.schema = schema;
     }
 

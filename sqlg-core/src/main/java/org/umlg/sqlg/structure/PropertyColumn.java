@@ -65,6 +65,7 @@ public class PropertyColumn implements TopologyInf {
 
     void addGlobalUniqueIndex(GlobalUniqueIndex globalUniqueIndex) {
         this.uncommittedGlobalUniqueIndices.add(globalUniqueIndex);
+        this.abstractLabel.addGlobalUniqueIndexProperty(this);
     }
 
     JsonNode toNotifyJson() {
@@ -84,7 +85,7 @@ public class PropertyColumn implements TopologyInf {
 
     @Override
     public int hashCode() {
-        return this.getName().hashCode();
+        return (this.abstractLabel.getSchema().getName() + this.abstractLabel.getLabel() + this.getName()).hashCode();
     }
 
     @Override
@@ -96,6 +97,14 @@ public class PropertyColumn implements TopologyInf {
             return false;
         }
         PropertyColumn other = (PropertyColumn) o;
-        return this.getName().equals(other.getName()) && this.getPropertyType() == other.getPropertyType();
+        if (this.abstractLabel.getSchema().equals(other.abstractLabel.getSchema())) {
+            if (this.abstractLabel.equals(other.abstractLabel)) {
+                return this.getName().equals(other.getName()) && this.getPropertyType() == other.getPropertyType();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 }

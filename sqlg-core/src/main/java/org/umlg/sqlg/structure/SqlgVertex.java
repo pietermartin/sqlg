@@ -495,23 +495,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
         sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
-        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
 
+        Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
+        Map<String, PropertyColumn> propertyColumns = null;
         if (!keyValueMap.isEmpty()) {
-            Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+            propertyColumns = this.sqlgGraph.getTopology()
                     .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
                     .getVertexLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("VertexLabel %s not found", this.table)))
                     .getProperties();
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-                PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
+                PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
                 Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
                 propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
-                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
-                    SqlgElement.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
-                }
             }
-
             sql.append(" ( ");
             writeColumnNames(propertyColumnValueMap, sql);
             sql.append(") VALUES ( ");
@@ -535,7 +532,10 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             if (generatedKeys.next()) {
                 this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), generatedKeys.getLong(1));
             } else {
-                throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
+                throw new RuntimeException(String.format("Could not retrieve the id after an insert into %s", SchemaManager.VERTICES));
+            }
+            if (!keyValueMap.isEmpty()) {
+                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);

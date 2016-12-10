@@ -244,7 +244,7 @@ public abstract class SqlgElement implements Element {
             PropertyColumn propertyColumn = properties.get(key);
             Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, value);
             for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
-                SqlgElement.updateGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, oldValue, propertyColumnObjectPair.getValue());
+                SqlgElement.updateGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, this.recordId, propertyColumnObjectPair);
             }
 
             String tableName = (this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table;
@@ -435,21 +435,34 @@ public abstract class SqlgElement implements Element {
         }
     }
 
-    static void insertGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
-        sqlgGraph.addVertex(
-                T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
-                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
+    protected void insertGlobalUniqueIndex(Map<String, Object> keyValueMap, Map<String, PropertyColumn> propertyColumns) {
+        for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
+            PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
+            Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
+            for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                this.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
+            }
+        }
     }
 
-    static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Object oldValue, Object newValue) {
+    private void insertGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
+        sqlgGraph.addVertex(
+                T.label, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
+                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue(),
+                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, this.recordId.toString(),
+                GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName()
+        );
+    }
+
+    private static void updateGlobalUniqueIndex(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, RecordId recordId, Pair<PropertyColumn, Object> propertyColumnObjectPair) {
         List<Vertex> globalUniqueIndexVertexes = sqlgGraph.globalUniqueIndexes()
                 .V().hasLabel(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName())
-                .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, oldValue).toList();
-        Preconditions.checkState(globalUniqueIndexVertexes.size() == 1, "GlobalUniqueIndex for %s and value %s not found",
-                Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(),
-                oldValue);
+                .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, recordId.toString())
+                .has(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumnObjectPair.getKey().getName())
+                .toList();
+        Preconditions.checkState(globalUniqueIndexVertexes.size() == 1, "GlobalUniqueIndex for %s and recordId %s not found", Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName(), recordId.toString());
         Vertex globalUniqueIndexVertex = globalUniqueIndexVertexes.get(0);
-        globalUniqueIndexVertex.property(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, newValue);
+        globalUniqueIndexVertex.property(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, propertyColumnObjectPair.getValue());
     }
 
     @Override

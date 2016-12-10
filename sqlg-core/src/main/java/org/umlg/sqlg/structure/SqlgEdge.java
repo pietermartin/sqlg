@@ -10,7 +10,6 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Date: 2014/07/12
@@ -159,23 +158,20 @@ public class SqlgEdge extends SqlgElement implements Edge {
         sql.append(" (");
 
         Map<String, Pair<PropertyColumn, Object>> propertyColumnValueMap = new HashMap<>();
+        Map<String, PropertyColumn> propertyColumns = null;
         if (!keyValueMap.isEmpty()) {
-            Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology()
+            propertyColumns = this.sqlgGraph.getTopology()
                     .getSchema(this.schema).orElseThrow(() -> new IllegalStateException(String.format("Schema %s not found", this.schema)))
                     .getEdgeLabel(this.table).orElseThrow(() -> new IllegalStateException(String.format("EdgeLabel %s not found", this.table)))
                     .getProperties();
 
             //sync up the keyValueMap with its PropertyColumn
             for (Map.Entry<String, Object> keyValueEntry : keyValueMap.entrySet()) {
-                PropertyColumn propertyColumn = properties.get(keyValueEntry.getKey());
+                PropertyColumn propertyColumn = propertyColumns.get(keyValueEntry.getKey());
                 Pair<PropertyColumn, Object> propertyColumnObjectPair = Pair.of(propertyColumn, keyValueEntry.getValue());
                 propertyColumnValueMap.put(keyValueEntry.getKey(), propertyColumnObjectPair);
-                for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
-                    SqlgElement.insertGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, propertyColumnObjectPair);
-                }
             }
         }
-
         writeColumnNames(propertyColumnValueMap, sql);
         if (keyValueMap.size() > 0) {
             sql.append(", ");
@@ -209,9 +205,13 @@ public class SqlgEdge extends SqlgElement implements Edge {
             } else {
                 throw new RuntimeException("Could not retrieve the id after an insert into " + SchemaManager.VERTICES);
             }
+            if (!keyValueMap.isEmpty()) {
+                insertGlobalUniqueIndex(keyValueMap, propertyColumns);
+            }
         }
 
     }
+
 
     //TODO this needs optimizing, an edge created in the transaction need not go to the db to load itself again
     @Override

@@ -1108,6 +1108,32 @@ public class Topology {
         }
     }
 
+    public Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
+        z_internalReadLock();
+        try {
+            Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
+            if (schemaOptional.isPresent()) {
+                return Collections.unmodifiableMap(schemaOptional.get().getPropertiesFor(schemaTable));
+            }
+            return Collections.emptyMap();
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    public Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
+        z_internalReadLock();
+        try {
+            Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
+            if (schemaOptional.isPresent()) {
+                return Collections.unmodifiableMap(schemaOptional.get().getPropertiesWithGlobalUniqueIndexFor(schemaTable));
+            }
+            return Collections.emptyMap();
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
         z_internalReadLock();
         try {

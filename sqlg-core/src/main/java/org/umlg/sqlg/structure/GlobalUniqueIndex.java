@@ -13,6 +13,8 @@ public class GlobalUniqueIndex implements TopologyInf {
     private Set<PropertyColumn> properties = new HashSet<>();
     private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
     public static final String GLOBAL_UNIQUE_INDEX_VALUE = "value";
+    public static final String GLOBAL_UNIQUE_INDEX_RECORD_ID = "recordId";
+    public static final String GLOBAL_UNIQUE_INDEX_PROPERTY_NAME = "property";
 
     public GlobalUniqueIndex(Topology topology, String name, Set<PropertyColumn> uncommittedProperties) {
         this.topology = topology;
@@ -42,15 +44,20 @@ public class GlobalUniqueIndex implements TopologyInf {
         this.uncommittedProperties.clear();
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     static GlobalUniqueIndex createGlobalUniqueIndex(SqlgGraph sqlgGraph, Topology topology, String globalUniqueIndexName, Set<PropertyColumn> properties) {
         //all PropertyColumns must be for the same PropertyType
         PropertyType propertyType = properties.iterator().next().getPropertyType();
         Map<String, PropertyType> valueColumn = new HashMap<>();
+        valueColumn.put(GLOBAL_UNIQUE_INDEX_RECORD_ID, PropertyType.STRING);
+        valueColumn.put(GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, PropertyType.STRING);
         valueColumn.put(GLOBAL_UNIQUE_INDEX_VALUE, propertyType);
         VertexLabel vertexLabel = topology.getGlobalUniqueIndexSchema().ensureVertexLabelExist(sqlgGraph, globalUniqueIndexName, valueColumn);
-        @SuppressWarnings("OptionalGetWithoutIsPresent")
         PropertyColumn valuePropertyColumn = vertexLabel.getProperty(GLOBAL_UNIQUE_INDEX_VALUE).get();
+        PropertyColumn recordIdColumn = vertexLabel.getProperty(GLOBAL_UNIQUE_INDEX_RECORD_ID).get();
+        PropertyColumn propertyColumn = vertexLabel.getProperty(GLOBAL_UNIQUE_INDEX_PROPERTY_NAME).get();
         vertexLabel.ensureIndexExists(sqlgGraph, IndexType.UNIQUE, Collections.singletonList(valuePropertyColumn));
+        vertexLabel.ensureIndexExists(sqlgGraph, IndexType.UNIQUE, Arrays.asList(recordIdColumn, propertyColumn));
         GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
         topology.addToGlobalUniqueIndexes(globalUniqueIndex);
         TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);

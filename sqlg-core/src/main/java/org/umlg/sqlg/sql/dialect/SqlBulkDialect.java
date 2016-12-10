@@ -7,10 +7,7 @@ import org.umlg.sqlg.structure.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
+import java.util.*;
 
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
 
@@ -28,6 +25,14 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
+    default void flushVertexGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
+    }
+
+    default void flushEdgeGlobalUniqueIndexes(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
+    }
+
     default String getBatchNull() {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
@@ -36,7 +41,15 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
+    default void flushVertexGlobalUniqueIndexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexPropertyCache) {
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
+    }
+
     default void flushEdgePropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
+    }
+
+    default void flushEdgeGlobalUniqueIndexPropertyCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgEdge, Map<String, Object>>>> edgePropertyCache) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
@@ -53,6 +66,10 @@ public interface SqlBulkDialect extends SqlDialect {
     }
 
     default String constructCompleteCopyCommandTemporarySqlVertex(SqlgGraph sqlgGraph, SqlgVertex vertex, Map<String, Object> keyValueMap) {
+        throw SqlgExceptions.batchModeNotSupported(dialectName());
+    }
+
+    default String constructCompleteCopyCommandSqlVertex(SqlgGraph sqlgGraph, String schema, String table, Set<String> keys) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 

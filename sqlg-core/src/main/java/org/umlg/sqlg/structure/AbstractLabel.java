@@ -28,12 +28,19 @@ public abstract class AbstractLabel  implements TopologyInf {
     protected String label;
     protected Map<String, PropertyColumn> properties = new HashMap<>();
     Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
-    protected Map<String, Index> indexes = new HashMap<>();
-    Map<String, Index> uncommittedIndexes = new HashMap<>();
+    protected Map<String, PropertyColumn> globalUniqueIndexProperties = new HashMap<>();
+    Map<String, PropertyColumn> uncommittedGlobalUniqueIndexProperties = new HashMap<>();
+    private Map<String, Index> indexes = new HashMap<>();
+    private Map<String, Index> uncommittedIndexes = new HashMap<>();
 
-    AbstractLabel(String label, Map<String, PropertyType> columns) {
+    /**
+     * Only called for a new vertex/edge label being added.
+     * @param label The vertex or edge's label.
+     * @param properties The vertex's properties.
+     */
+    AbstractLabel(String label, Map<String, PropertyType> properties) {
         this.label = label;
-        for (Map.Entry<String, PropertyType> propertyEntry : columns.entrySet()) {
+        for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
             this.uncommittedProperties.put(propertyEntry.getKey(), property);
         }
@@ -80,6 +87,15 @@ public abstract class AbstractLabel  implements TopologyInf {
         result.putAll(this.properties);
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedProperties);
+        }
+        return result;
+    }
+
+    public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
+        Map<String, PropertyColumn> result = new HashMap<>();
+        result.putAll(this.globalUniqueIndexProperties);
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            result.putAll(this.uncommittedGlobalUniqueIndexProperties);
         }
         return result;
     }
@@ -201,6 +217,12 @@ public abstract class AbstractLabel  implements TopologyInf {
                 entry.getValue().afterCommit();
                 it.remove();
             }
+            for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedGlobalUniqueIndexProperties.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, PropertyColumn> entry = it.next();
+                this.globalUniqueIndexProperties.put(entry.getKey(), entry.getValue());
+                entry.getValue().afterCommit();
+                it.remove();
+            }
             for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Index> entry = it.next();
                 this.indexes.put(entry.getKey(), entry.getValue());
@@ -221,6 +243,7 @@ public abstract class AbstractLabel  implements TopologyInf {
                 entry.getValue().afterRollback();
                 it.remove();
             }
+            this.uncommittedGlobalUniqueIndexProperties.clear();
             for (Iterator<Map.Entry<String, Index>> it = this.uncommittedIndexes.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Index> entry = it.next();
                 entry.getValue().afterRollback();
@@ -299,4 +322,7 @@ public abstract class AbstractLabel  implements TopologyInf {
         return true;
     }
 
+    void addGlobalUniqueIndexProperty(PropertyColumn propertyColumn) {
+        this.uncommittedGlobalUniqueIndexProperties.put(propertyColumn.getName(), propertyColumn);
+    }
 }
