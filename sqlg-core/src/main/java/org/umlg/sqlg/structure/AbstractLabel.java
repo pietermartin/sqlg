@@ -26,6 +26,7 @@ public abstract class AbstractLabel  implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(AbstractLabel.class.getName());
     protected String label;
+    protected SqlgGraph sqlgGraph;
     protected Map<String, PropertyColumn> properties = new HashMap<>();
     Map<String, PropertyColumn> uncommittedProperties = new HashMap<>();
     protected Map<String, PropertyColumn> globalUniqueIndexProperties = new HashMap<>();
@@ -38,7 +39,8 @@ public abstract class AbstractLabel  implements TopologyInf {
      * @param label The vertex or edge's label.
      * @param properties The vertex's properties.
      */
-    AbstractLabel(String label, Map<String, PropertyType> properties) {
+    AbstractLabel(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> properties) {
+        this.sqlgGraph = sqlgGraph;
         this.label = label;
         for (Map.Entry<String, PropertyType> propertyEntry : properties.entrySet()) {
             PropertyColumn property = new PropertyColumn(this, propertyEntry.getKey(), propertyEntry.getValue());
@@ -46,22 +48,23 @@ public abstract class AbstractLabel  implements TopologyInf {
         }
     }
 
-    AbstractLabel(String label) {
+    AbstractLabel(SqlgGraph sqlgGraph, String label) {
+        this.sqlgGraph = sqlgGraph;
         this.label = label;
     }
 
-    public Index ensureIndexExists(final SqlgGraph sqlgGraph, final IndexType indexType, final List<PropertyColumn> properties) {
+    public Index ensureIndexExists(final IndexType indexType, final List<PropertyColumn> properties) {
 
         String prefix = this instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX;
         SchemaTable schemaTable = SchemaTable.of(this.getSchema().getName(), this.getLabel());
-        String indexName = sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
+        String indexName = this.sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
 
         Optional<Index> indexOptional = this.getIndex(indexName);
         if (!indexOptional.isPresent()) {
             this.getSchema().getTopology().lock();
             indexOptional = this.getIndex(indexName);
             if (!indexOptional.isPresent()) {
-                return this.createIndex(sqlgGraph, indexName, indexType, properties);
+                return this.createIndex(indexName, indexType, properties);
             } else {
                 return indexOptional.get();
             }
@@ -70,8 +73,8 @@ public abstract class AbstractLabel  implements TopologyInf {
         }
     }
 
-    private Index createIndex(SqlgGraph sqlgGraph, String indexName, IndexType indexType, List<PropertyColumn> properties) {
-        Index index = Index.createIndex(sqlgGraph, this, indexName, indexType, properties);
+    private Index createIndex(String indexName, IndexType indexType, List<PropertyColumn> properties) {
+        Index index = Index.createIndex(this.sqlgGraph, this, indexName, indexType, properties);
         this.uncommittedIndexes.put(indexName, index);
         return index;
     }
@@ -170,9 +173,9 @@ public abstract class AbstractLabel  implements TopologyInf {
         }
     }
 
-    protected void addColumn(SqlgGraph sqlgGraph, String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
+    protected void addColumn(String schema, String table, ImmutablePair<String, PropertyType> keyValue) {
         int count = 1;
-        String[] propertyTypeToSqlDefinition = sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(keyValue.getRight());
+        String[] propertyTypeToSqlDefinition = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(keyValue.getRight());
         for (String sqlDefinition : propertyTypeToSqlDefinition) {
             StringBuilder sql = new StringBuilder("ALTER TABLE ");
             sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));

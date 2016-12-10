@@ -68,8 +68,8 @@ public class TestGlobalUniqueIndex extends BaseTest {
     public void testGlobalIndexAcrossMultipleVertexLabels() {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("a", PropertyType.STRING);
-        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", properties);
-        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "B", properties);
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
         Set<PropertyColumn> globalUniqueIndexProperties = new HashSet<>();
         globalUniqueIndexProperties.add(aVertexLabel.getProperty("a").get());
         globalUniqueIndexProperties.add(bVertexLabel.getProperty("a").get());
@@ -135,9 +135,9 @@ public class TestGlobalUniqueIndex extends BaseTest {
     @Test
     public void testBatchModeGlobalUniqueIndexOnPropertyThatDoesNotYetExists() {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
-           put("name", PropertyType.STRING);
+            put("name", PropertyType.STRING);
         }};
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", properties);
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(vertexLabel.getProperties().values()));
         this.sqlgGraph.tx().commit();
 
@@ -164,7 +164,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", properties);
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(vertexLabel.getProperties().values()));
         this.sqlgGraph.tx().commit();
 
@@ -197,7 +197,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         properties.put("namea", PropertyType.STRING);
         properties.put("nameb", PropertyType.STRING);
         properties.put("namec", PropertyType.STRING);
-        vertexLabelA.ensureEdgeLabelExist(this.sqlgGraph, "ab", vertexLabelB, properties);
+        vertexLabelA.ensureEdgeLabelExist("ab", vertexLabelB, properties);
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperties().values();
         GlobalUniqueIndex globalUniqueIndex = this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
@@ -246,12 +246,12 @@ public class TestGlobalUniqueIndex extends BaseTest {
     public void testGlobalUniqueIndexAcrossDifferentEdges() {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("a", PropertyType.STRING);
-        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", properties);
-        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "B", properties);
-        EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist(this.sqlgGraph, "ab", bVertexLabel, properties);
-        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "C", properties);
-        VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "D", properties);
-        EdgeLabel cdEdgeLabel = cVertexLabel.ensureEdgeLabelExist(this.sqlgGraph, "cd", dVertexLabel, properties);
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
+        EdgeLabel abEdgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C", properties);
+        VertexLabel dVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("D", properties);
+        EdgeLabel cdEdgeLabel = cVertexLabel.ensureEdgeLabelExist("cd", dVertexLabel, properties);
 
         PropertyColumn abEdgeProperty = abEdgeLabel.getProperty("a").get();
         PropertyColumn cdEdgeProperty = cdEdgeLabel.getProperty("a").get();
@@ -284,7 +284,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         properties.put("namea", PropertyType.STRING);
         properties.put("nameb", PropertyType.STRING);
         properties.put("namec", PropertyType.STRING);
-        vertexLabelA.ensureEdgeLabelExist(this.sqlgGraph, "ab", vertexLabelB, properties);
+        vertexLabelA.ensureEdgeLabelExist("ab", vertexLabelB, properties);
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperties().values();
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
@@ -333,7 +333,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     @Test
     public void testVertexUniqueConstraintUpdate() {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", new HashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<String, PropertyType>() {{
             put("namea", PropertyType.STRING);
             put("nameb", PropertyType.STRING);
             put("namec", PropertyType.STRING);
@@ -361,7 +361,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     @Test
     public void testVertexUniqueConstraintUpdateNormalBatchMode() {
-        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", new HashMap<String, PropertyType>() {{
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<String, PropertyType>() {{
             put("namea", PropertyType.STRING);
             put("nameb", PropertyType.STRING);
             put("namec", PropertyType.STRING);
@@ -406,7 +406,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         properties.put("namea", PropertyType.STRING);
         properties.put("nameb", PropertyType.STRING);
         properties.put("namec", PropertyType.STRING);
-        vertexLabelA.ensureEdgeLabelExist(this.sqlgGraph, "ab", vertexLabelB, properties);
+        vertexLabelA.ensureEdgeLabelExist("ab", vertexLabelB, properties);
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab").get().getProperties().values();
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
@@ -437,13 +437,117 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
+    @Test
+    public void testVertexUniqueConstraintDelete() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<String, PropertyType>() {{
+            put("namea", PropertyType.STRING);
+            put("nameb", PropertyType.STRING);
+            put("namec", PropertyType.STRING);
+        }});
+        Set<PropertyColumn> properties = new HashSet<>(vertexLabel.getProperties().values());
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(properties);
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a2");
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(6, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+
+        try {
+            Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+            fail("GlobalUniqueIndex should prevent this form happening");
+        } catch (Exception e) {
+            //swallow
+            this.sqlgGraph.tx().rollback();
+        }
+        a1.remove();
+        this.sqlgGraph.tx().commit();
+        assertEquals(3, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+
+
+        this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+        //this time it passes.
+        this.sqlgGraph.tx().commit();
+        assertEquals(6, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+    }
+
+    @Test
+    public void testEdgeUniqueConstraintDelete() {
+        Map<String, PropertyType> properties = new HashMap<>();
+        properties.put("namea", PropertyType.STRING);
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
+        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
+
+        Set<PropertyColumn> propertyColumns = new HashSet<>(edgeLabel.getProperties().values());
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(propertyColumns);
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a2");
+        Edge edge = a1.addEdge("ab", a2, "namea", "123");
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(1, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+
+        try {
+            a1.addEdge("ab", a2, "namea", "123");
+            fail("GlobalUniqueIndex should prevent this form happening");
+        } catch (Exception e) {
+            //swallow
+            this.sqlgGraph.tx().rollback();
+        }
+        edge.remove();
+        this.sqlgGraph.tx().commit();
+
+        assertEquals(0, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+
+        a1.addEdge("ab", a2, "namea", "123");
+        //this time it passes.
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+    }
+
+    @Test
+    public void testVertexUniqueConstraintDeleteBatchMode() {
+        VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<String, PropertyType>() {{
+            put("namea", PropertyType.STRING);
+            put("nameb", PropertyType.STRING);
+            put("namec", PropertyType.STRING);
+        }});
+        Set<PropertyColumn> properties = new HashSet<>(vertexLabel.getProperties().values());
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(properties);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 1; i < 1001; i++) {
+            this.sqlgGraph.addVertex(T.label, "A", "namea", "a" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        assertEquals(3000, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+
+        try {
+            this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+            fail("GlobalUniqueIndex should prevent this form happening");
+        } catch (Exception e) {
+            //swallow
+            this.sqlgGraph.tx().rollback();
+        }
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.traversal().V().hasLabel("A").has("namea", "a1").next();
+        a1.remove();
+        this.sqlgGraph.tx().commit();
+        assertEquals(2997, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+
+        this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+        //this time it passes.
+        this.sqlgGraph.tx().commit();
+        assertEquals(3000, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+    }
+
     //Lukas's tests
     @Test
     public void testVertexSingleLabelUniqueConstraint() throws Exception {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};
-        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Person", properties);
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties);
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(personVertexLabel.getProperties().values()));
         this.sqlgGraph.tx().commit();
 
@@ -462,11 +566,11 @@ public class TestGlobalUniqueIndex extends BaseTest {
     @Test
     public void testVertexMultiLabelUniqueConstraint() throws Exception {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
-           put("name", PropertyType.STRING);
+            put("name", PropertyType.STRING);
         }};
-        VertexLabel chocolateVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Chocolate", properties);
-        VertexLabel candyVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Candy", properties);
-        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Icecream", properties);
+        VertexLabel chocolateVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Chocolate", properties);
+        VertexLabel candyVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Candy", properties);
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Icecream", properties);
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
             add(chocolateVertexLabel.getProperty("name").get());
             add(candyVertexLabel.getProperty("name").get());
@@ -491,9 +595,9 @@ public class TestGlobalUniqueIndex extends BaseTest {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
             put("name", PropertyType.STRING);
         }};
-        VertexLabel chocolateVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Chocolate", properties);
-        VertexLabel candyVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Candy", properties);
-        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Icecream", properties);
+        VertexLabel chocolateVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Chocolate", properties);
+        VertexLabel candyVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Candy", properties);
+        this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Icecream", properties);
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
             add(chocolateVertexLabel.getProperty("name").get());
         }});
@@ -528,9 +632,9 @@ public class TestGlobalUniqueIndex extends BaseTest {
     public void testUpdateUniqueProperty() throws Exception {
 
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
-           put("name", PropertyType.STRING);
+            put("name", PropertyType.STRING);
         }};
-        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "Person", properties);
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties);
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
             add(personVertexLabel.getProperty("name").get());
         }});
@@ -549,26 +653,26 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
-
-
-//
-//    @Test
-//    public void testDeleteUniqueProperty() throws Exception {
-//        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
-//        this.sqlgGraph.createVertexUniqueConstraint("name", "Person");
-//        this.sqlgGraph.tx().commit();
-//
-//        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
-//        try {
-//            this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
-//            Assert.fail("Should not be able to call a person a pre-existing name.");
-//        } catch (Exception e) {
-//            //good
-//        }
-//
-//        this.sqlgGraph.v(v.id()).remove();
-//
-//        this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
-//    }
+    @Test
+    public void testDeleteUniqueProperty() throws Exception {
+        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+            put("name", PropertyType.STRING);
+        }};
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties);
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(personVertexLabel.getProperties().values()));
+        this.sqlgGraph.tx().commit();
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
+        this.sqlgGraph.tx().commit();
+        try {
+            this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
+            fail("Should not be able to call a person a pre-existing name.");
+        } catch (Exception e) {
+            this.sqlgGraph.tx().rollback();
+            //good
+        }
+        this.sqlgGraph.traversal().V(v.id()).next().remove();
+        //this time it passes
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "Joseph");
+    }
 
 }

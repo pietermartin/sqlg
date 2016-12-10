@@ -21,12 +21,12 @@ public class TestIndexTopologyTraversal extends BaseTest {
     @Test
     public void testIndexTopologyTraversal() {
         Schema schemaA = this.sqlgGraph.getTopology().ensureSchemaExist("A");
-        VertexLabel aVertexLabel = schemaA.ensureVertexLabelExist(this.sqlgGraph, "A");
-        VertexLabel bVertexLabel = schemaA.ensureVertexLabelExist(this.sqlgGraph, "B");
+        VertexLabel aVertexLabel = schemaA.ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = schemaA.ensureVertexLabelExist("B");
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name", PropertyType.STRING);
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist("ab", aVertexLabel, bVertexLabel, properties);
-        edgeLabel.ensureIndexExists(this.sqlgGraph, IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
+        edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
         this.sqlgGraph.tx().commit();
 
         List<Vertex> indexes = this.sqlgGraph.topology().V().hasLabel("sqlg_schema.index").toList();

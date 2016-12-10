@@ -131,6 +131,40 @@ public abstract class SqlgElement implements Element {
             throw new RuntimeException(e);
         }
         this.removed = true;
+        removeGlobalUniqueIndex();
+    }
+
+    private void removeGlobalUniqueIndex() {
+        Map<String, PropertyColumn> properties = this.sqlgGraph.getTopology().getPropertiesWithGlobalUniqueIndexFor(this.getSchemaTablePrefixed());
+        for (PropertyColumn propertyColumn : properties.values()) {
+            for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+
+                StringBuilder sql = new StringBuilder("DELETE FROM ");
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA));
+                sql.append(".");
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName()));
+                sql.append(" WHERE ");
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("recordId"));
+                sql.append(" = ? AND ");
+                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("property"));
+                sql.append(" = ?");
+                if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+                    sql.append(";");
+                }
+                if (logger.isDebugEnabled()) {
+                    logger.debug(sql.toString());
+                }
+                Connection conn = this.sqlgGraph.tx().getConnection();
+                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                    preparedStatement.setString(1, this.id().toString());
+                    preparedStatement.setString(2, propertyColumn.getName());
+                    preparedStatement.executeUpdate();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        }
     }
 
     @Override

@@ -40,11 +40,11 @@ public class EdgeLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-    static EdgeLabel createEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+    static EdgeLabel createEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
         //edges are created in the out vertex's schema.
         EdgeLabel edgeLabel = new EdgeLabel(false, edgeLabelName, outVertexLabel, inVertexLabel, properties);
         if (!inVertexLabel.getSchema().isSqlgSchema()) {
-            edgeLabel.createEdgeTable(sqlgGraph, outVertexLabel, inVertexLabel, properties);
+            edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
         }
         return edgeLabel;
     }
@@ -54,7 +54,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     private EdgeLabel(boolean forSqlgSchema, String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
-        super(edgeLabelName, properties);
+        super(outVertexLabel.getSchema().getSqlgGraph(), edgeLabelName, properties);
         if (forSqlgSchema) {
             this.outVertexLabels.add(outVertexLabel);
             this.inVertexLabels.add(inVertexLabel);
@@ -66,7 +66,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     EdgeLabel(Topology topology, String edgeLabelName) {
-        super(edgeLabelName, Collections.emptyMap());
+        super(topology.getSqlgGraph(), edgeLabelName, Collections.emptyMap());
         this.topology = topology;
     }
 
@@ -83,14 +83,14 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
+    public void ensureColumnsExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.getSchema().getTopology().lock();
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
-                        TopologyManager.addEdgeColumn(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column);
-                        addColumn(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
+                        TopologyManager.addEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column);
+                        addColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
                         this.uncommittedProperties.put(column.getKey(), new PropertyColumn(this, column.getKey(), column.getValue()));
                     }
                 }
@@ -98,12 +98,12 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    private void createEdgeTable(SqlgGraph sqlgGraph, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
+    private void createEdgeTable(VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
 
         String schema = outVertexLabel.getSchema().getName();
         String tableName = EDGE_PREFIX + getLabel();
 
-        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+        SqlDialect sqlDialect = this.sqlgGraph.getSqlDialect();
         sqlDialect.assertTableName(tableName);
         StringBuilder sql = new StringBuilder(sqlDialect.createTableStatement());
         sql.append(sqlDialect.maybeWrapInQoutes(schema));
@@ -116,7 +116,7 @@ public class EdgeLabel extends AbstractLabel {
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        buildColumns(sqlgGraph, columns, sql);
+        buildColumns(this.sqlgGraph, columns, sql);
         sql.append(", ");
         sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(" ");
@@ -127,7 +127,7 @@ public class EdgeLabel extends AbstractLabel {
         sql.append(sqlDialect.getForeignKeyTypeDefinition());
 
         //foreign key definition start
-        if (sqlgGraph.isImplementForeignKeys()) {
+        if (this.sqlgGraph.isImplementForeignKeys()) {
             sql.append(", ");
             sql.append("FOREIGN KEY (");
             sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END));
@@ -176,7 +176,7 @@ public class EdgeLabel extends AbstractLabel {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = sqlgGraph.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
@@ -252,7 +252,7 @@ public class EdgeLabel extends AbstractLabel {
         return result;
     }
 
-    public void ensureEdgeVertexLabelExist(SqlgGraph sqlgGraph, Direction direction, VertexLabel vertexLabel) {
+    public void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel) {
         //if the direction is OUT then the vertexLabel must be in the same schema as the edgeLabel (this)
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
@@ -266,7 +266,7 @@ public class EdgeLabel extends AbstractLabel {
             schema.getTopology().lock();
             allEdgeForeignKeys = getAllEdgeForeignKeys();
             if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
-                TopologyManager.addLabelToEdge(sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
+                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
                 if (direction == Direction.IN) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedInEdgeLabels(schema, this);
@@ -274,29 +274,29 @@ public class EdgeLabel extends AbstractLabel {
                     this.uncommittedOutVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
                 }
-                addEdgeForeignKey(sqlgGraph, schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
+                addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
             }
         }
     }
 
-    private void addEdgeForeignKey(SqlgGraph sqlgGraph, String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
+    private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
         Preconditions.checkState(!this.getSchema().isSqlgSchema(), "BUG: ensureEdgeVertexLabelExist may not be called for %s", SQLG_SCHEMA);
         StringBuilder sql = new StringBuilder();
         sql.append("ALTER TABLE ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
         sql.append(".");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
         sql.append(" ADD COLUMN ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
         sql.append(" ");
-        sql.append(sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition());
-        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+        sql.append(this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition());
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = sqlgGraph.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
@@ -304,23 +304,23 @@ public class EdgeLabel extends AbstractLabel {
         }
         sql.setLength(0);
         //foreign key definition start
-        if (sqlgGraph.isImplementForeignKeys()) {
+        if (this.sqlgGraph.isImplementForeignKeys()) {
             sql.append(" ALTER TABLE ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
             sql.append(" ADD CONSTRAINT ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table + "_" + foreignKey.getSchema() + "." + foreignKey.getTable() + "_fkey"));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table + "_" + foreignKey.getSchema() + "." + foreignKey.getTable() + "_fkey"));
             sql.append(" FOREIGN KEY (");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
             sql.append(") REFERENCES ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(otherVertex.getSchema()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(otherVertex.getSchema()));
             sql.append(".");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + otherVertex.getTable()));
             sql.append(" (");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(")");
-            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if (logger.isDebugEnabled()) {
@@ -333,15 +333,15 @@ public class EdgeLabel extends AbstractLabel {
             }
         }
         sql.setLength(0);
-        if (sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
+        if (this.sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
             sql.append("\nCREATE INDEX ON ");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
             sql.append(" (");
-            sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
             sql.append(")");
-            if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+            if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
             }
             if (logger.isDebugEnabled()) {

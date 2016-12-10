@@ -48,7 +48,7 @@ public class TestNotifyJson extends BaseTest {
     public void testNotifyJson() {
         Map<String, PropertyType> properties  = new HashMap<>();
         properties.put("name", PropertyType.STRING);
-        this.sqlgGraph.getTopology().ensureSchemaExist("A").ensureVertexLabelExist(this.sqlgGraph, "A", properties);
+        this.sqlgGraph.getTopology().ensureSchemaExist("A").ensureVertexLabelExist("A", properties);
         this.sqlgGraph.tx().commit();
         List<Vertex> logs = this.sqlgGraph.topology().V().hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_LOG).toList();
         assertEquals(1, logs.size());

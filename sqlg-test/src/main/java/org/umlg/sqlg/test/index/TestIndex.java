@@ -46,7 +46,7 @@ public class TestIndex extends BaseTest {
         indexOptional = personVertexOptional.get().getIndex("name");
         assertFalse(indexOptional.isPresent());
 
-        Index index = personVertexOptional.get().ensureIndexExists(this.sqlgGraph, IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
+        Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
         this.sqlgGraph.tx().commit();
         assertTrue(index.getIndexType()==IndexType.NON_UNIQUE);
 
@@ -76,7 +76,7 @@ public class TestIndex extends BaseTest {
         Optional<PropertyColumn> propertyOptional = personVertexLabelOptional.get().getProperty("name");
         assertTrue(propertyOptional.isPresent());
 
-        personVertexLabelOptional.get().ensureIndexExists(this.sqlgGraph, IndexType.UNIQUE, Collections.singletonList(propertyOptional.get()));
+        personVertexLabelOptional.get().ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(propertyOptional.get()));
         this.sqlgGraph.tx().commit();
         try {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
@@ -203,7 +203,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.getTopology().ensureVertexLabelExist("Address", columns);
         this.sqlgGraph.getTopology().ensureEdgeLabelExist("person_address", SchemaTable.of(publicSchema, "Person"), SchemaTable.of(publicSchema, "Address"), columns);
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel(publicSchema, "person_address").get();
-        edgeLabel.ensureIndexExists(this.sqlgGraph, IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
+        edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
         this.sqlgGraph.tx().commit();
 
         for (int i = 0; i < 5000; i++) {
@@ -237,7 +237,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel("A", "test").get();
-        edgeLabel.ensureIndexExists(this.sqlgGraph, IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
+        edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
         this.sqlgGraph.tx().commit();
 
         assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), SchemaManager.EDGE_PREFIX, Collections.singletonList("name"))).get().getIndexType());

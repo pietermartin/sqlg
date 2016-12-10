@@ -52,13 +52,13 @@ public class VertexLabel extends AbstractLabel {
     static VertexLabel createVertexLabel(SqlgGraph sqlgGraph, Schema schema, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!schema.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
-        vertexLabel.createVertexLabelOnDb(sqlgGraph, columns);
+        vertexLabel.createVertexLabelOnDb(columns);
         TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns);
         return vertexLabel;
     }
 
     VertexLabel(Schema schema, String label) {
-        super(label);
+        super(schema.getSqlgGraph(), label);
         this.schema = schema;
     }
 
@@ -69,7 +69,7 @@ public class VertexLabel extends AbstractLabel {
      * @param properties The vertex's properties.
      */
     private VertexLabel(Schema schema, String label, Map<String, PropertyType> properties) {
-        super(label, properties);
+        super(schema.getSqlgGraph(), label, properties);
         this.schema = schema;
     }
 
@@ -171,7 +171,7 @@ public class VertexLabel extends AbstractLabel {
     /**
      * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
      * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
-     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(SqlgGraph, String, VertexLabel, VertexLabel, Map)}
+     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      *
      * @param sqlgGraph The graph.
      * @param edgeLabelName The EdgeLabel's label's name.
@@ -179,36 +179,34 @@ public class VertexLabel extends AbstractLabel {
      * @return The {@link EdgeLabel}.
      */
     public EdgeLabel ensureEdgeLabelExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel inVertexLabel) {
-        return this.getSchema().ensureEdgeLabelExist(sqlgGraph, edgeLabelName, this, inVertexLabel, Collections.emptyMap());
+        return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, Collections.emptyMap());
     }
 
     /**
      * Ensures that the {@link EdgeLabel} exists. It will be created if it does not exists.
      * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
-     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(SqlgGraph, String, VertexLabel, VertexLabel, Map)}
+     * This method is equivalent to {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      *
-     * @param sqlgGraph The graph.
      * @param edgeLabelName The EdgeLabel's label's name.
      * @param inVertexLabel The edge's in VertexLabel.
      * @param properties The EdgeLabel's properties
      * @return
      */
-    public EdgeLabel ensureEdgeLabelExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
-        return this.getSchema().ensureEdgeLabelExist(sqlgGraph, edgeLabelName, this, inVertexLabel, properties);
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, properties);
     }
 
     /**
-     * Called via {@link Schema#ensureEdgeLabelExist(SqlgGraph, String, VertexLabel, VertexLabel, Map)}
+     * Called via {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      * This is called when the {@link EdgeLabel} does not exist and needs to be created.
      *
-     * @param sqlgGraph
      * @param edgeLabelName
      * @param inVertexLabel
      * @param properties
      * @return
      */
-    EdgeLabel addEdgeLabel(SqlgGraph sqlgGraph, String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
-        EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(sqlgGraph, edgeLabelName, this, inVertexLabel, properties);
+    EdgeLabel addEdgeLabel(String edgeLabelName, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
+        EdgeLabel edgeLabel = EdgeLabel.createEdgeLabel(edgeLabelName, this, inVertexLabel, properties);
         if (this.schema.isSqlgSchema()) {
             this.outEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
             inVertexLabel.inEdgeLabels.put(this.schema.getName() + "." + edgeLabel.getLabel(), edgeLabel);
@@ -219,15 +217,15 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-    public void ensureColumnsExist(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
+    public void ensureColumnsExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
                     this.schema.getTopology().lock();
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
-                        TopologyManager.addVertexColumn(sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
-                        addColumn(sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
+                        TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
+                        addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
                         this.uncommittedProperties.put(column.getKey(), new PropertyColumn(this, column.getKey(), column.getValue()));
                     }
                 }
@@ -236,27 +234,27 @@ public class VertexLabel extends AbstractLabel {
     }
 
     //TODO refactor out columns as its already in the object as this.properties.
-    private void createVertexLabelOnDb(SqlgGraph sqlgGraph, Map<String, PropertyType> columns) {
-        StringBuilder sql = new StringBuilder(sqlgGraph.getSqlDialect().createTableStatement());
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
+    private void createVertexLabelOnDb(Map<String, PropertyType> columns) {
+        StringBuilder sql = new StringBuilder(this.sqlgGraph.getSqlDialect().createTableStatement());
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema.getName()));
         sql.append(".");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + getLabel()));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + getLabel()));
         sql.append(" (");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" ");
-        sql.append(sqlgGraph.getSqlDialect().getAutoIncrementPrimaryKeyConstruct());
+        sql.append(this.sqlgGraph.getSqlDialect().getAutoIncrementPrimaryKeyConstruct());
         if (columns.size() > 0) {
             sql.append(", ");
         }
-        buildColumns(sqlgGraph, columns, sql);
+        buildColumns(this.sqlgGraph, columns, sql);
         sql.append(")");
-        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = sqlgGraph.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {

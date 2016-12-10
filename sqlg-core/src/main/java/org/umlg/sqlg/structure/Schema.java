@@ -30,6 +30,7 @@ import static org.umlg.sqlg.structure.Topology.*;
 public class Schema implements TopologyInf {
 
     private static Logger logger = LoggerFactory.getLogger(Schema.class.getName());
+    private SqlgGraph sqlgGraph;
     private Topology topology;
     private String name;
     //The key is schema + "." + VERTEX_PREFIX + vertex label. i.e. "A.V_A"
@@ -77,7 +78,7 @@ public class Schema implements TopologyInf {
     static Schema createSchema(SqlgGraph sqlgGraph, Topology topology, String name) {
         Schema schema = new Schema(topology, name);
         Preconditions.checkArgument(!name.equals(SQLG_SCHEMA) && !sqlgGraph.getSqlDialect().getPublicSchema().equals(name), "createSchema may not be called for 'sqlg_schema' or 'public'");
-        schema.createSchemaOnDb(sqlgGraph);
+        schema.createSchemaOnDb();
         TopologyManager.addSchema(sqlgGraph, name);
         return schema;
     }
@@ -89,13 +90,18 @@ public class Schema implements TopologyInf {
     private Schema(Topology topology, String name) {
         this.topology = topology;
         this.name = name;
+        this.sqlgGraph = this.topology.getSqlgGraph();
     }
 
-    public VertexLabel ensureVertexLabelExist(final SqlgGraph sqlgGraph, final String label) {
-        return ensureVertexLabelExist(sqlgGraph, label, Collections.emptyMap());
+    SqlgGraph getSqlgGraph() {
+        return this.sqlgGraph;
     }
 
-    public VertexLabel ensureVertexLabelExist(final SqlgGraph sqlgGraph, final String label, final Map<String, PropertyType> columns) {
+    public VertexLabel ensureVertexLabelExist(final String label) {
+        return ensureVertexLabelExist(label, Collections.emptyMap());
+    }
+
+    public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(label, "Given table must not be null");
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
 
@@ -104,19 +110,19 @@ public class Schema implements TopologyInf {
             this.topology.lock();
             vertexLabelOptional = this.getVertexLabel(label);
             if (!vertexLabelOptional.isPresent()) {
-                return this.createVertexLabel(sqlgGraph, label, columns);
+                return this.createVertexLabel(label, columns);
             } else {
                 return vertexLabelOptional.get();
             }
         } else {
             VertexLabel vertexLabel = vertexLabelOptional.get();
             //check if all the columns are there.
-            vertexLabel.ensureColumnsExist(sqlgGraph, columns);
+            vertexLabel.ensureColumnsExist(columns);
             return vertexLabel;
         }
     }
 
-    public EdgeLabel ensureEdgeLabelExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, Map<String, PropertyType> columns) {
         Objects.requireNonNull(edgeLabelName, "Given edgeLabelName may not be null");
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel may not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel may not be null");
@@ -129,19 +135,19 @@ public class Schema implements TopologyInf {
             this.topology.lock();
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (!edgeLabelOptional.isPresent()) {
-                edgeLabel = this.createEdgeLabel(sqlgGraph, edgeLabelName, outVertexLabel, inVertexLabel, columns);
+                edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
             } else {
-                edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
+                edgeLabel = internalEnsureEdgeTableExists(foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
             }
         } else {
-            edgeLabel = internalEnsureEdgeTableExists(sqlgGraph, foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
+            edgeLabel = internalEnsureEdgeTableExists(foreignKeyOut, foreignKeyIn, edgeLabelOptional.get(), columns);
         }
         return edgeLabel;
     }
 
-    private EdgeLabel internalEnsureEdgeTableExists(SqlgGraph sqlgGraph, SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, EdgeLabel edgeLabel, Map<String, PropertyType> columns) {
+    private EdgeLabel internalEnsureEdgeTableExists(SchemaTable foreignKeyOut, SchemaTable foreignKeyIn, EdgeLabel edgeLabel, Map<String, PropertyType> columns) {
         //need to check that the out foreign keys exist.
         Optional<VertexLabel> outVertexLabelOptional = this.getVertexLabel(foreignKeyOut.getTable());
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
@@ -152,15 +158,15 @@ public class Schema implements TopologyInf {
         Preconditions.checkState(inVertexLabelOptional.isPresent(), "In vertex label not found for %s.%s", foreignKeyIn.getSchema(), foreignKeyIn.getTable());
 
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.ensureEdgeVertexLabelExist(sqlgGraph, Direction.OUT, outVertexLabelOptional.get());
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabelOptional.get());
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.ensureEdgeVertexLabelExist(sqlgGraph, Direction.IN, inVertexLabelOptional.get());
-        edgeLabel.ensureColumnsExist(sqlgGraph, columns);
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabelOptional.get());
+        edgeLabel.ensureColumnsExist(columns);
         return edgeLabel;
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private EdgeLabel createEdgeLabel(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, final Map<String, PropertyType> columns) {
+    private EdgeLabel createEdgeLabel(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, final Map<String, PropertyType> columns) {
         Preconditions.checkArgument(this.topology.isWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
@@ -173,8 +179,8 @@ public class Schema implements TopologyInf {
         SchemaTable foreignKeyOut = SchemaTable.of(this.name, outVertexLabel.getLabel());
         SchemaTable foreignKeyIn = SchemaTable.of(inVertexSchema.name, inVertexLabel.getLabel());
 
-        TopologyManager.addEdgeLabel(sqlgGraph, this.getName(), EDGE_PREFIX + edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
-        return outVertexLabel.addEdgeLabel(sqlgGraph, edgeLabelName, inVertexLabel, columns);
+        TopologyManager.addEdgeLabel(this.sqlgGraph, this.getName(), EDGE_PREFIX + edgeLabelName, foreignKeyOut, foreignKeyIn, columns);
+        return outVertexLabel.addEdgeLabel(edgeLabelName, inVertexLabel, columns);
     }
 
     VertexLabel createSqlgSchemaVertexLabel(String vertexLabelName, Map<String, PropertyType> columns) {
@@ -185,15 +191,15 @@ public class Schema implements TopologyInf {
         return vertexLabel;
     }
 
-    private VertexLabel createVertexLabel(SqlgGraph sqlgGraph, String vertexLabelName, Map<String, PropertyType> columns) {
+    private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyType> columns) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
-        VertexLabel vertexLabel = VertexLabel.createVertexLabel(sqlgGraph, this, vertexLabelName, columns);
+        VertexLabel vertexLabel = VertexLabel.createVertexLabel(this.sqlgGraph, this, vertexLabelName, columns);
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
         return vertexLabel;
     }
 
-    void ensureVertexColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
+    void ensureVertexColumnsExist(String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not start with \"%s\"", VERTEX_PREFIX);
         Preconditions.checkState(!isSqlgSchema(), "Schema.ensureVertexLabelPropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -201,39 +207,37 @@ public class Schema implements TopologyInf {
         Preconditions.checkState(vertexLabel.isPresent(), String.format("BUG: vertexLabel \"%s\" must exist", label));
 
         //noinspection OptionalGetWithoutIsPresent
-        vertexLabel.get().ensureColumnsExist(sqlgGraph, columns);
+        vertexLabel.get().ensureColumnsExist(columns);
     }
 
-    void ensureEdgeColumnsExist(SqlgGraph sqlgGraph, String label, Map<String, PropertyType> columns) {
+    void ensureEdgeColumnsExist(String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(!label.startsWith(EDGE_PREFIX), "label may not start with \"%s\"", EDGE_PREFIX);
         Preconditions.checkState(!isSqlgSchema(), "Schema.ensureEdgePropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
         Optional<EdgeLabel> edgeLabel = getEdgeLabel(label);
         Preconditions.checkState(edgeLabel.isPresent(), "BUG: edgeLabel \"%s\" must exist", label);
         //noinspection OptionalGetWithoutIsPresent
-        edgeLabel.get().ensureColumnsExist(sqlgGraph, columns);
+        edgeLabel.get().ensureColumnsExist(columns);
     }
 
     /**
      * Creates a new schema on the database. i.e. 'CREATE SCHEMA...' sql statement.
-     *
-     * @param sqlgGraph The graph.
      */
-    private void createSchemaOnDb(SqlgGraph sqlgGraph) {
+    private void createSchemaOnDb() {
         StringBuilder sql = new StringBuilder();
         sql.append("CREATE SCHEMA ");
-        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
-        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        Connection conn = sqlgGraph.tx().getConnection();
+        Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());
         } catch (SQLException e) {
-            logger.error("schema creation failed " + sqlgGraph.toString(), e);
+            logger.error("schema creation failed " + this.sqlgGraph.toString(), e);
             throw new RuntimeException(e);
         }
     }
@@ -455,7 +459,7 @@ public class Schema implements TopologyInf {
         return result;
     }
 
-    public GlobalUniqueIndex ensureGlobalUniqueIndexExist(SqlgGraph sqlgGraph, final Set<PropertyColumn> properties) {
+    public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(properties);
         Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
         if (!globalIndexOptional.isPresent()) {
@@ -463,7 +467,7 @@ public class Schema implements TopologyInf {
             properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
             globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
             if (!globalIndexOptional.isPresent()) {
-                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(sqlgGraph, this.topology, globalUniqueIndexName, properties);
+                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(this.sqlgGraph, this.topology, globalUniqueIndexName, properties);
                 this.uncommittedGlobalUniqueIndexes.put(globalUniqueIndexName, globalUniqueIndex);
                 return globalUniqueIndex;
             } else {

@@ -128,12 +128,12 @@ public class TestSchemaEagerCreation extends BaseTest {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name", PropertyType.STRING);
         properties.put("age", PropertyType.INTEGER);
-        vertexLabel.get().ensureColumnsExist(this.sqlgGraph, properties);
+        vertexLabel.get().ensureColumnsExist(properties);
         assertEquals(2, vertexLabel.get().getProperties().size());
         this.sqlgGraph.tx().rollback();
         assertEquals(0, vertexLabel.get().getProperties().size());
 
-        vertexLabel.get().ensureColumnsExist(this.sqlgGraph, properties);
+        vertexLabel.get().ensureColumnsExist(properties);
         this.sqlgGraph.tx().commit();
         assertEquals(2, vertexLabel.get().getProperties().size());
         PropertyColumn propertyColumnName = vertexLabel.get().getProperties().get("name");
@@ -163,14 +163,14 @@ public class TestSchemaEagerCreation extends BaseTest {
         properties.put("name", PropertyType.STRING);
         properties.put("age", PropertyType.INTEGER);
         EdgeLabel edgeLabel = edgeLabelOptional.get();
-        edgeLabel.ensureColumnsExist(this.sqlgGraph, properties);
+        edgeLabel.ensureColumnsExist(properties);
         this.sqlgGraph.tx().rollback();
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
         assertTrue(edgeLabel.getProperties().isEmpty());
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
-        edgeLabel.ensureColumnsExist(this.sqlgGraph, properties);
+        edgeLabel.ensureColumnsExist(properties);
         this.sqlgGraph.tx().commit();
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
@@ -189,8 +189,8 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertTrue(edgeLabelOptional.isPresent());
         EdgeLabel edgeLabel = edgeLabelOptional.get();
 
-        VertexLabel inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "C");
-        edgeLabel.ensureEdgeVertexLabelExist(this.sqlgGraph, Direction.IN, inVertexLabel);
+        VertexLabel inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
         this.sqlgGraph.tx().rollback();
 
         edgeLabelOptional = this.sqlgGraph.getTopology().getPublicSchema().getEdgeLabel("ab");
@@ -199,16 +199,16 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertEquals(1, edgeLabel.getOutVertexLabels().size());
         assertEquals(1, edgeLabel.getInVertexLabels().size());
 
-        inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "C");
-        edgeLabel.ensureEdgeVertexLabelExist(this.sqlgGraph, Direction.IN, inVertexLabel);
+        inVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.IN, inVertexLabel);
         this.sqlgGraph.tx().commit();
 
         assertEquals(1, edgeLabel.getOutVertexLabels().size());
         assertEquals(2, edgeLabel.getInVertexLabels().size());
 
-        VertexLabel outVertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("D").ensureVertexLabelExist(this.sqlgGraph, "D");
+        VertexLabel outVertexLabel = this.sqlgGraph.getTopology().ensureSchemaExist("D").ensureVertexLabelExist("D");
         try {
-            edgeLabel.ensureEdgeVertexLabelExist(this.sqlgGraph, Direction.OUT, outVertexLabel);
+            edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
             fail("Should fail as the out vertex is in a different schema to the edgeLabel");
         } catch (IllegalStateException e) {
             //swallow
@@ -219,16 +219,16 @@ public class TestSchemaEagerCreation extends BaseTest {
         assertEquals(1, edgeLabel.getOutVertexLabels().size());
         assertEquals(2, edgeLabel.getInVertexLabels().size());
 
-        outVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "D");
-        edgeLabel.ensureEdgeVertexLabelExist(this.sqlgGraph, Direction.OUT, outVertexLabel);
+        outVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("D");
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
         assertEquals(2, edgeLabel.getOutVertexLabels().size());
         assertEquals(2, edgeLabel.getInVertexLabels().size());
         this.sqlgGraph.tx().rollback();
         assertEquals(1, edgeLabel.getOutVertexLabels().size());
         assertEquals(2, edgeLabel.getInVertexLabels().size());
 
-        outVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "D");
-        edgeLabel.ensureEdgeVertexLabelExist(this.sqlgGraph, Direction.OUT, outVertexLabel);
+        outVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("D");
+        edgeLabel.ensureEdgeVertexLabelExist(Direction.OUT, outVertexLabel);
         assertEquals(2, edgeLabel.getOutVertexLabels().size());
         assertEquals(2, edgeLabel.getInVertexLabels().size());
         this.sqlgGraph.tx().commit();
@@ -242,10 +242,10 @@ public class TestSchemaEagerCreation extends BaseTest {
     public void testAddEdgeLabelViaOutVertexLabel() {
         VertexLabel a = this.sqlgGraph.getTopology()
                 .ensureSchemaExist("A")
-                .ensureVertexLabelExist(this.sqlgGraph, "A");
+                .ensureVertexLabelExist("A");
         Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("A");
         assertTrue(schemaOptional.isPresent());
-        VertexLabel b = schemaOptional.get().ensureVertexLabelExist(this.sqlgGraph, "B");
+        VertexLabel b = schemaOptional.get().ensureVertexLabelExist("B");
         a.ensureEdgeLabelExist(this.sqlgGraph, "ab", b);
         this.sqlgGraph.tx().commit();
 

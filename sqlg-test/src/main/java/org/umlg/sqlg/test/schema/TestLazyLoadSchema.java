@@ -241,8 +241,8 @@ public class TestLazyLoadSchema extends BaseTest {
 
             Map<String, PropertyType> properties = new HashMap<>();
             properties.put("name", PropertyType.STRING);
-            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist(this.sqlgGraph, "A", properties);
-            vertexLabel.ensureIndexExists(this.sqlgGraph, IndexType.UNIQUE, Collections.singletonList(vertexLabel.getProperty("name").get()));
+            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+            vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(vertexLabel.getProperty("name").get()));
             this.sqlgGraph.tx().commit();
             Optional<Index> index = this.sqlgGraph.getTopology().getPublicSchema()
                     .getVertexLabel("A").get()

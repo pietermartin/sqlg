@@ -198,6 +198,7 @@ public class BatchManager {
         this.sqlDialect.flushEdgeGlobalUniqueIndexes(this.sqlgGraph, this.edgeCache);
         this.sqlDialect.flushVertexGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.vertexPropertyCache);
         this.sqlDialect.flushEdgeGlobalUniqueIndexPropertyCache(this.sqlgGraph, this.edgePropertyCache);
+        this.sqlDialect.flushRemovedGlobalUniqueIndexVertices(this.sqlgGraph, this.removeVertexCache);
         this.clear();
         return verticesRange;
     }

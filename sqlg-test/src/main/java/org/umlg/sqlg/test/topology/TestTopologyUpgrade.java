@@ -250,7 +250,6 @@ public class TestTopologyUpgrade extends BaseTest {
         GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
                 TopologyStrategy.build().selectFrom(
                         this.sqlgGraph.getTopology().getSqlgSchemaVertexLabels()
-//                        Topology.SQLG_SCHEMA_SCHEMA_TABLES
                 ).create()
         );
         List<Vertex> schemas = traversalSource.V()
@@ -259,7 +258,7 @@ public class TestTopologyUpgrade extends BaseTest {
         //public and gui_schema
         Assert.assertEquals(2, schemas.size());
         Long count = this.sqlgGraph.topology().V().count().next();
-        Assert.assertEquals(6, count, 0);
+        Assert.assertEquals(7, count, 0);
     }
 
     @Test

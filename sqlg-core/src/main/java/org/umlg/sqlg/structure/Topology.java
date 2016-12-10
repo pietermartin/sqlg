@@ -322,6 +322,10 @@ public class Topology {
         });
     }
 
+    SqlgGraph getSqlgGraph() {
+        return this.sqlgGraph;
+    }
+
     void close() {
         if (this.distributed)
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).unregisterListener();
@@ -472,7 +476,7 @@ public class Topology {
 
         Schema schema = this.ensureSchemaExist(schemaName);
         Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
-        return schema.ensureVertexLabelExist(this.sqlgGraph, label, properties);
+        return schema.ensureVertexLabelExist(label, properties);
     }
 
     /**
@@ -491,7 +495,7 @@ public class Topology {
         Objects.requireNonNull(outVertexLabel, "Given outVertexLabel must not be null");
         Objects.requireNonNull(inVertexLabel, "Given inVertexLabel must not be null");
         Schema outVertexSchema = outVertexLabel.getSchema();
-        return outVertexSchema.ensureEdgeLabelExist(this.sqlgGraph, edgeLabelName, outVertexLabel, inVertexLabel, properties);
+        return outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel, inVertexLabel, properties);
     }
 
     public void ensureVertexTemporaryTableExist(final String schema, final String table, final Map<String, PropertyType> columns) {
@@ -536,7 +540,7 @@ public class Topology {
         Preconditions.checkState(inVertexLabel.isPresent(), "in VertexLabel must be present");
 
         @SuppressWarnings("OptionalGetWithoutIsPresent")
-        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(this.sqlgGraph, edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties);
+        EdgeLabel edgeLabel = outVertexSchema.ensureEdgeLabelExist(edgeLabelName, outVertexLabel.get(), inVertexLabel.get(), properties);
         return SchemaTable.of(foreignKeyOut.getSchema(), edgeLabel.getLabel());
     }
 
@@ -570,7 +574,7 @@ public class Topology {
                 throw new IllegalStateException(String.format("BUG: schema \"%s\" can not be null", schemaName));
             }
             //createVertexLabel the table
-            schemaOptional.get().ensureVertexColumnsExist(this.sqlgGraph, label, properties);
+            schemaOptional.get().ensureVertexColumnsExist(label, properties);
         }
     }
 
@@ -605,14 +609,14 @@ public class Topology {
             if (!schemaOptional.isPresent()) {
                 throw new IllegalStateException(String.format("BUG: schema %s can not be null", schemaName));
             }
-            schemaOptional.get().ensureEdgeColumnsExist(this.sqlgGraph, label, properties);
+            schemaOptional.get().ensureEdgeColumnsExist(label, properties);
         }
     }
 
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
         Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(()->new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
-        return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(this.sqlgGraph, properties);
+        return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(properties);
     }
 
     public void createTempTable(String tableName, Map<String, PropertyType> columns) {

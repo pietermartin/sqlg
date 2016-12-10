@@ -1092,13 +1092,13 @@ public class PostgresDialect extends BaseSqlDialect {
 
 
     @Override
-    public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Map<String, Object> keyValueMap) {
+    public String temporaryTableCopyCommandSqlVertex(SqlgGraph sqlgGraph, SchemaTable schemaTable, Set<String> keys) {
         StringBuilder sql = new StringBuilder();
         sql.append("COPY ");
         //Temp tables only
         sql.append(maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
         sql.append(" (");
-        if (keyValueMap.isEmpty()) {
+        if (keys.isEmpty()) {
             //copy command needs at least one field.
             //check if the dummy field exist, if not createVertexLabel it
             Map<String, PropertyType> columns = new HashMap<>();
@@ -1111,8 +1111,8 @@ public class PostgresDialect extends BaseSqlDialect {
             sql.append(maybeWrapInQoutes(COPY_DUMMY));
         } else {
             int count = 1;
-            for (String key : keyValueMap.keySet()) {
-                if (count > 1 && count <= keyValueMap.size()) {
+            for (String key : keys) {
+                if (count > 1 && count <= keys.size()) {
                     sql.append(", ");
                 }
                 count++;
@@ -1361,7 +1361,6 @@ public class PostgresDialect extends BaseSqlDialect {
         return result;
     }
 
-
     @Override
     public void flushRemovedVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
 
@@ -1401,15 +1400,6 @@ public class PostgresDialect extends BaseSqlDialect {
                         deleteEdges(sqlgGraph, schemaTable, subVertices, inLabels, true);
                         deleteEdges(sqlgGraph, schemaTable, subVertices, outLabels, false);
 
-//                        Pair<Set<Long>, Set<SchemaTable>> outLabels = Pair.of(new HashSet<>(), new HashSet<>());
-//                        Pair<Set<Long>, Set<SchemaTable>> inLabels = Pair.of(new HashSet<>(), new HashSet<>());
-                        //get all the in and out labels for each vertex
-                        //then for all in and out edges
-                        //then remove the edges
-//                        getInAndOutEdgesToRemove(sqlgGraph, subVertices, outLabels, inLabels);
-//                        deleteEdges(sqlgGraph, schemaTable, outLabels, true);
-//                        deleteEdges(sqlgGraph, schemaTable, inLabels, false);
-
                         StringBuilder sql = new StringBuilder("DELETE FROM ");
                         sql.append(sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(schemaTable.getSchema()));
                         sql.append(".");
@@ -1441,45 +1431,92 @@ public class PostgresDialect extends BaseSqlDialect {
                         } catch (SQLException e) {
                             throw new RuntimeException(e);
                         }
-
-//                        sql = new StringBuilder("DELETE FROM ");
-//                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(sqlgGraph.getSqlDialect().getPublicSchema()));
-//                        sql.append(".");
-//                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTICES));
-//                        sql.append(" WHERE ");
-//                        sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
-//                        sql.append(" in (");
-//
-//                        count = 1;
-//                        for (SqlgVertex vertex : subVertices) {
-//                            sql.append("?");
-//                            if (count++ < subVertices.size()) {
-//                                sql.append(",");
-//                            }
-//                        }
-//                        sql.append(")");
-//                        if (sqlgGraph.getSqlDialect().needsSemicolon()) {
-//                            sql.append(";");
-//                        }
-//                        if (logger.isDebugEnabled()) {
-//                            logger.debug(sql.toString());
-//                        }
-//                        conn = sqlgGraph.tx().getConnection();
-//                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-//                            count = 1;
-//                            for (SqlgVertex vertex : subVertices) {
-//                                preparedStatement.setLong(count++, (Long) vertex.id());
-//                            }
-//                            preparedStatement.executeUpdate();
-//                        } catch (SQLException e) {
-//                            throw new RuntimeException(e);
-//                        }
                     }
-
                 }
-
 //                createForeignKeys(sqlgGraph, schemaTable);
+            }
+        }
+    }
 
+    @Override
+    public void flushRemovedGlobalUniqueIndexVertices(SqlgGraph sqlgGraph, Map<SchemaTable, List<SqlgVertex>> removeVertexCache) {
+
+        if (!removeVertexCache.isEmpty()) {
+
+            Map<String, PropertyType> tmpColumns = new HashMap<>();
+            tmpColumns.put("recordId", PropertyType.STRING);
+            tmpColumns.put("property", PropertyType.STRING);
+
+
+            //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
+            for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
+
+                SchemaTable schemaTable = schemaVertices.getKey();
+                Map<String, PropertyColumn> propertyColumns = sqlgGraph.getTopology().getPropertiesWithGlobalUniqueIndexFor(schemaTable.withPrefix(SchemaManager.VERTEX_PREFIX));
+                for (PropertyColumn propertyColumn : propertyColumns.values()) {
+                    for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
+                        List<SqlgVertex> vertices = schemaVertices.getValue();
+                        int numberOfLoops = (vertices.size() / PARAMETER_LIMIT);
+                        int previous = 0;
+                        for (int i = 1; i <= numberOfLoops + 1; i++) {
+
+                            int subListTo = i * PARAMETER_LIMIT;
+                            List<SqlgVertex> subVertices;
+                            if (i <= numberOfLoops) {
+                                subVertices = vertices.subList(previous, subListTo);
+                            } else {
+                                subVertices = vertices.subList(previous, vertices.size());
+                            }
+
+                            previous = subListTo;
+
+                            if (!subVertices.isEmpty()) {
+
+                                SecureRandom random = new SecureRandom();
+                                byte bytes[] = new byte[6];
+                                random.nextBytes(bytes);
+                                String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+                                sqlgGraph.getTopology().createTempTable(SchemaManager.VERTEX_PREFIX + tmpTableIdentified, tmpColumns);
+                                String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect())
+                                        .temporaryTableCopyCommandSqlVertex(
+                                                sqlgGraph,
+                                                SchemaTable.of("public", tmpTableIdentified), tmpColumns.keySet());
+                                OutputStream out = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(sqlgGraph, copySql);
+                                for (SqlgVertex sqlgVertex : subVertices) {
+                                    Map<String, Object> tmpMap = new HashMap<>();
+                                    tmpMap.put("recordId", sqlgVertex.id().toString());
+                                    tmpMap.put("property", propertyColumn.getName());
+                                    ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(out, tmpMap);
+                                }
+                                try {
+                                    out.close();
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                StringBuilder sql = new StringBuilder("WITH tmp as (SELECT * FROM " + sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + tmpTableIdentified) + ")\n");
+                                sql.append("DELETE FROM ");
+                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA));
+                                sql.append(".");
+                                sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName()));
+                                sql.append("as gui \nUSING tmp WHERE ");
+                                sql.append("tmp.\"recordId\" = gui.\"recordId\" AND tmp.property = gui.property");
+                                if (sqlgGraph.getSqlDialect().needsSemicolon()) {
+                                    sql.append(";");
+                                }
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug(sql.toString());
+                                }
+                                Connection conn = sqlgGraph.tx().getConnection();
+                                try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                                    preparedStatement.executeUpdate();
+                                } catch (SQLException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }
+
+                    }
+                }
             }
         }
     }

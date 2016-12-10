@@ -1131,7 +1131,7 @@ public class SqlgGraph implements Graph {
         for (String key : keys) {
             properties.add(vertexLabel.getProperty(key).get());
         }
-        this.getTopology().getPublicSchema().getVertexLabel(label).get().ensureIndexExists(this, IndexType.NON_UNIQUE, properties);
+        this.getTopology().getPublicSchema().getVertexLabel(label).get().ensureIndexExists(IndexType.NON_UNIQUE, properties);
     }
 
     public long countVertices() {
