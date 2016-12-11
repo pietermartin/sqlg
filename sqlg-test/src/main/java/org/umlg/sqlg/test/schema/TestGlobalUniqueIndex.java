@@ -18,6 +18,61 @@ import static org.junit.Assert.*;
 public class TestGlobalUniqueIndex extends BaseTest {
 
     @Test
+    public void testGlobalUniqueIndexAccrossMultipleVerticesAndEdges() {
+
+        Map<String, PropertyType> properties = new HashMap<>();
+        properties.put("name1", PropertyType.STRING);
+        properties.put("name2", PropertyType.STRING);
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+        properties.clear();
+        properties.put("name3", PropertyType.STRING);
+        properties.put("name4", PropertyType.STRING);
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
+        properties.clear();
+        properties.put("name5", PropertyType.STRING);
+        properties.put("name6", PropertyType.STRING);
+        EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
+        Set<PropertyColumn> globalUniqueIndexPRopertyColumns = new HashSet<>();
+        globalUniqueIndexPRopertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
+        globalUniqueIndexPRopertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
+        globalUniqueIndexPRopertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPRopertyColumns);
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, this.sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
+        assertEquals("globalUniqueIndex_0", this.sqlgGraph.getTopology().getGlobalUniqueIndexes().iterator().next().getName());
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "1", "name2", "2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name3", "3", "name4", "4");
+        a1.addEdge("ab", b1, "name5", "5", "name6", "6");
+        this.sqlgGraph.tx().commit();
+        try {
+            a1.addEdge("ab", b1, "name5", "5", "name6", "6");
+            fail("GlobalUniqueIndex should not allow this to happen");
+        } catch (Exception e) {
+            //swallow
+            this.sqlgGraph.tx().rollback();
+        }
+        //This should pass
+        a1.addEdge("ab", b1, "name5", "7", "name6", "8");
+    }
+
+    @Test
+    public void testTopologyGlobalUniqueIndexCache() {
+        Map<String, PropertyType> properties = new HashMap<>();
+        properties.put("namec", PropertyType.STRING);
+        properties.put("namea", PropertyType.STRING);
+        properties.put("nameb", PropertyType.STRING);
+        this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
+        @SuppressWarnings("OptionalGetWithoutIsPresent")
+        Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperties().values();
+        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
+        assertEquals(1, this.sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, this.sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
+    }
+
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
+    @Test
     public void testGlobalUniqueIndexOnVertex() {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("namec", PropertyType.STRING);
@@ -64,6 +119,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         assertEquals(3, globalUniqueIndexVertexes.stream().filter(g -> g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID).equals(aa.id().toString())).count());
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testGlobalIndexAcrossMultipleVertexLabels() {
         Map<String, PropertyType> properties = new HashMap<>();
@@ -85,6 +141,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testGlobalUniqueIndexOnVertexNormalBatchMode() {
         Map<String, PropertyType> properties = new HashMap<>();
@@ -187,6 +244,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testGlobalUniqueIndexOnEdge() {
         Map<String, PropertyType> properties = new HashMap<>();
@@ -274,6 +332,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testGlobalUniqueIndexOnEdgeNormalBatchMode() {
         Map<String, PropertyType> properties = new HashMap<>();
@@ -447,13 +506,13 @@ public class TestGlobalUniqueIndex extends BaseTest {
         Set<PropertyColumn> properties = new HashSet<>(vertexLabel.getProperties().values());
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(properties);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a2");
+        this.sqlgGraph.addVertex(T.label, "A", "namea", "a2");
         this.sqlgGraph.tx().commit();
 
         assertEquals(6, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
 
         try {
-            Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
+            this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
             fail("GlobalUniqueIndex should prevent this form happening");
         } catch (Exception e) {
             //swallow
@@ -563,6 +622,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testVertexMultiLabelUniqueConstraint() throws Exception {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
@@ -590,6 +650,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testVertexMultipleConstraintsOnSingleProperty() throws Exception {
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
@@ -628,6 +689,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testUpdateUniqueProperty() throws Exception {
 

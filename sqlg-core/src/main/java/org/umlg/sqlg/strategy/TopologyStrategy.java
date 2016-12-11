@@ -16,8 +16,8 @@ import java.util.Set;
  */
 public class TopologyStrategy extends AbstractTraversalStrategy<TraversalStrategy.DecorationStrategy> implements TraversalStrategy.DecorationStrategy {
 
-    private final Set<TopologyInf> selectFrom;
-    private final Set<TopologyInf> selectWithout;
+    private final Set<? extends TopologyInf> selectFrom;
+    private final Set<? extends TopologyInf> selectWithout;
     public static final String TOPOLOGY_SELECTION_FROM = "~~TopologySelectionFrom~~";
     public static final String TOPOLOGY_SELECTION_WITHOUT = "~~TopologySelectionWithout~~";
     public static final String TOPOLOGY_SELECTION_GLOBAL_UNIQUE_INDEX = "~~TopologySelectionGlobalUniqueIndex~~";
@@ -51,14 +51,14 @@ public class TopologyStrategy extends AbstractTraversalStrategy<TraversalStrateg
 
     public final static class Builder {
 
-        private Set<TopologyInf> selectFrom;
-        private Set<TopologyInf> selectWithout;
+        private Set<? extends TopologyInf> selectFrom;
+        private Set<? extends TopologyInf> selectWithout;
 
         public TopologyStrategy create() {
             return new TopologyStrategy(this);
         }
 
-        public Builder selectFrom(Set<TopologyInf> selectFrom) {
+        public Builder selectFrom(Set<? extends TopologyInf> selectFrom) {
             if (this.selectWithout != null) {
                 throw new IllegalStateException("selectWithout and selectFrom are mutually exclusive. selectWithout is already set.");
             }

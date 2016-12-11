@@ -3,6 +3,7 @@ package org.umlg.sqlg.structure;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -37,6 +38,7 @@ public class PropertyColumn implements TopologyInf {
         return abstractLabel;
     }
 
+
     public Set<GlobalUniqueIndex> getGlobalUniqueIndices() {
         HashSet<GlobalUniqueIndex> result = new HashSet<>();
         result.addAll(this.globalUniqueIndices);
@@ -63,12 +65,22 @@ public class PropertyColumn implements TopologyInf {
         }
     }
 
-    void addGlobalUniqueIndex(GlobalUniqueIndex globalUniqueIndex) {
-        this.uncommittedGlobalUniqueIndices.add(globalUniqueIndex);
-        this.abstractLabel.addGlobalUniqueIndexProperty(this);
+    /**
+     * Only called from {@link Topology#fromNotifyJson(int, LocalDateTime)}
+     *
+     * @param globalUniqueIndex The {@link GlobalUniqueIndex} to add.
+     */
+    void addToGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
+        this.globalUniqueIndices.add(globalUniqueIndex);
+        this.abstractLabel.addGlobalUniqueIndexToProperties(this);
     }
 
-    JsonNode toNotifyJson() {
+    void addGlobalUniqueIndex(GlobalUniqueIndex globalUniqueIndex) {
+        this.uncommittedGlobalUniqueIndices.add(globalUniqueIndex);
+        this.abstractLabel.addGlobalUniqueIndexToUncommittedProperties(this);
+    }
+
+    ObjectNode toNotifyJson() {
         ObjectNode propertyObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         propertyObjectNode.put("name", this.name);
         propertyObjectNode.put("propertyType", this.propertyType.name());

@@ -17,6 +17,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
@@ -83,6 +84,13 @@ public class Schema implements TopologyInf {
         return schema;
     }
 
+    /**
+     * Only called from {@link Topology#fromNotifyJson(int, LocalDateTime)}
+     *
+     * @param topology The {@link Topology}
+     * @param schemaName The schema's name
+     * @return The Schema that has already been created by another graph.
+     */
     static Schema instantiateSchema(Topology topology, String schemaName) {
         return new Schema(topology, schemaName);
     }
@@ -460,7 +468,7 @@ public class Schema implements TopologyInf {
     }
 
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
-        String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(properties);
+        String globalUniqueIndexName = GlobalUniqueIndex.globalUniqueIndexName(this.topology, properties);
         Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
         if (!globalIndexOptional.isPresent()) {
             //take any property

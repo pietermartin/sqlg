@@ -19,9 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2016/11/27
@@ -73,8 +71,6 @@ public class TestNotifyJson extends BaseTest {
         assertTrue(propertiesJson instanceof ArrayNode);
         ArrayNode propertiesArray = (ArrayNode)propertiesJson;
         assertEquals(1, propertiesArray.size());
-
-
-
     }
+
 }

@@ -173,12 +173,11 @@ public class VertexLabel extends AbstractLabel {
      * "this" is the out {@link VertexLabel} and inVertexLabel is the inVertexLabel
      * This method is equivalent to {@link Schema#ensureEdgeLabelExist(String, VertexLabel, VertexLabel, Map)}
      *
-     * @param sqlgGraph The graph.
      * @param edgeLabelName The EdgeLabel's label's name.
      * @param inVertexLabel The edge's in VertexLabel.
      * @return The {@link EdgeLabel}.
      */
-    public EdgeLabel ensureEdgeLabelExist(final SqlgGraph sqlgGraph, final String edgeLabelName, final VertexLabel inVertexLabel) {
+    public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel) {
         return this.getSchema().ensureEdgeLabelExist(edgeLabelName, this, inVertexLabel, Collections.emptyMap());
     }
 

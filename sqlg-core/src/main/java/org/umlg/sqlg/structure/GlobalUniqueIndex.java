@@ -1,5 +1,11 @@
 package org.umlg.sqlg.structure;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
+
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -16,7 +22,7 @@ public class GlobalUniqueIndex implements TopologyInf {
     public static final String GLOBAL_UNIQUE_INDEX_RECORD_ID = "recordId";
     public static final String GLOBAL_UNIQUE_INDEX_PROPERTY_NAME = "property";
 
-    public GlobalUniqueIndex(Topology topology, String name, Set<PropertyColumn> uncommittedProperties) {
+    private GlobalUniqueIndex(Topology topology, String name, Set<PropertyColumn> uncommittedProperties) {
         this.topology = topology;
         this.name = name;
         this.uncommittedProperties = uncommittedProperties;
@@ -25,8 +31,29 @@ public class GlobalUniqueIndex implements TopologyInf {
         }
     }
 
+    private GlobalUniqueIndex(Topology topology, String name) {
+        this.topology = topology;
+        this.name = name;
+    }
+
+    static GlobalUniqueIndex instantiateGlobalUniqueIndex(Topology topology, String name) {
+        return new GlobalUniqueIndex(topology, name);
+    }
+
     public String getName() {
         return name;
+    }
+
+    /**
+     * Called from {@link Topology#fromNotifyJson(int, LocalDateTime)}
+     *
+     * @param properties The properties.
+     */
+    void addGlobalUniqueProperties(Set<PropertyColumn> properties) {
+        for (PropertyColumn property : properties) {
+            property.addToGlobalUniqueIndexes(this);
+        }
+        this.properties = properties;
     }
 
     void afterCommit() {
@@ -59,15 +86,36 @@ public class GlobalUniqueIndex implements TopologyInf {
         vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(valuePropertyColumn));
         vertexLabel.ensureIndexExists(IndexType.UNIQUE, Arrays.asList(recordIdColumn, propertyColumn));
         GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
-        topology.addToGlobalUniqueIndexes(globalUniqueIndex);
+        topology.addToUncommittedGlobalUniqueIndexes(globalUniqueIndex);
         TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
         return globalUniqueIndex;
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    static String globalUniqueIndexName(Set<PropertyColumn> properties) {
+    static String globalUniqueIndexName(Topology topology, Set<PropertyColumn> properties) {
         List<PropertyColumn> propertyColumns = new ArrayList<>(properties);
         propertyColumns.sort(Comparator.comparing(PropertyColumn::getName));
-        return propertyColumns.stream().map(p->p.getAbstractLabel().getLabel() + "_" + p.getName()).reduce((a, b) -> a + "_" + b).get();
+        String name = propertyColumns.stream().map(p -> p.getAbstractLabel().getLabel() + "_" + p.getName()).reduce((a, b) -> a + "_" + b).get();
+        if (("gui_schema_V_A" + name).length() > 50) {
+            name = "globalUniqueIndex_" + topology.getGlobalUniqueIndexes().size();
+        }
+        return name;
     }
+
+    Optional<JsonNode> toNotifyJson() {
+        Preconditions.checkState(this.topology.isWriteLockHeldByCurrentThread(), "GlobalUniqueIndex toNotifyJson() may only be called is the lock is held.");
+        ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (PropertyColumn property : this.uncommittedProperties) {
+            ObjectNode objectNode = property.toNotifyJson();
+            objectNode.put("schemaName", property.getAbstractLabel().getSchema().getName());
+            objectNode.put("abstractLabelLabel", property.getAbstractLabel().getLabel());
+            propertyArrayNode.add(objectNode);
+        }
+        result.put("name", getName());
+        result.set("uncommittedProperties", propertyArrayNode);
+        return Optional.of(result);
+    }
+
+
 }

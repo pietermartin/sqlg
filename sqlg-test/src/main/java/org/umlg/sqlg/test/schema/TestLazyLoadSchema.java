@@ -14,14 +14,9 @@ import org.umlg.sqlg.test.BaseTest;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Date: 2014/11/03
@@ -67,7 +62,6 @@ public class TestLazyLoadSchema extends BaseTest {
             //add a vertex in the old, the new should only see it after a commit
             this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
@@ -83,7 +77,6 @@ public class TestLazyLoadSchema extends BaseTest {
             //add a vertex in the old, the new should only see it after a commit
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
@@ -160,8 +153,8 @@ public class TestLazyLoadSchema extends BaseTest {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
             v1.addEdge("friend", v2);
             this.sqlgGraph.tx().commit();
-            Vertex v3 = this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");
-            Vertex v4 = this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
+            this.sqlgGraph.addVertex(T.label, "Animal", "name", "b");
+            this.sqlgGraph.addVertex(T.label, "Car", "name", "b");
             assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
             this.sqlgGraph.tx().commit();
 
@@ -234,6 +227,7 @@ public class TestLazyLoadSchema extends BaseTest {
         }
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void loadIndex() throws Exception {
         //Create a new sqlgGraph
@@ -264,7 +258,44 @@ public class TestLazyLoadSchema extends BaseTest {
                                     Collections.singletonList("name")));
             assertTrue(index.isPresent());
         }
+    }
 
+    @Test
+    public void testGlobalUniqueIndexViaNotify() throws Exception {
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Map<String, PropertyType> properties = new HashMap<>();
+            properties.put("name1", PropertyType.STRING);
+            properties.put("name2", PropertyType.STRING);
+            VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+            properties.clear();
+            properties.put("name3", PropertyType.STRING);
+            properties.put("name4", PropertyType.STRING);
+            VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
+            properties.clear();
+            properties.put("name5", PropertyType.STRING);
+            properties.put("name6", PropertyType.STRING);
+            EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
+            Set<PropertyColumn> globalUniqueIndexPropertyColumns = new HashSet<>();
+            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
+            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
+            globalUniqueIndexPropertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
+            this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
+            this.sqlgGraph.tx().commit();
+
+            //allow time for notification to happen
+            Thread.sleep(1_000);
+
+            assertEquals(1, sqlgGraph1.getTopology().getGlobalUniqueIndexes().size());
+
+            sqlgGraph1.addVertex(T.label, "A", "name1", "123");
+            sqlgGraph1.tx().commit();
+            try {
+                sqlgGraph.addVertex(T.label, "A", "name1", "123");
+                fail("GlobalUniqueIndex should prevent this from happening");
+            } catch (Exception e) {
+                //swallow
+            }
+        }
     }
 
 }

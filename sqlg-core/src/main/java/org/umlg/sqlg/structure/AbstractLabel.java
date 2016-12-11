@@ -325,7 +325,11 @@ public abstract class AbstractLabel  implements TopologyInf {
         return true;
     }
 
-    void addGlobalUniqueIndexProperty(PropertyColumn propertyColumn) {
+    void addGlobalUniqueIndexToUncommittedProperties(PropertyColumn propertyColumn) {
         this.uncommittedGlobalUniqueIndexProperties.put(propertyColumn.getName(), propertyColumn);
+    }
+
+    void addGlobalUniqueIndexToProperties(PropertyColumn propertyColumn) {
+        this.globalUniqueIndexProperties.put(propertyColumn.getName(), propertyColumn);
     }
 }

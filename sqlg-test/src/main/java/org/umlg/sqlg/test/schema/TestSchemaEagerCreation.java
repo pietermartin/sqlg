@@ -27,6 +27,7 @@ public class TestSchemaEagerCreation extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsTransactionalSchema());
     }
 
+    @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
     public void testVertexEdgeHasSameName() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "halo1");
@@ -246,7 +247,7 @@ public class TestSchemaEagerCreation extends BaseTest {
         Optional<Schema> schemaOptional = this.sqlgGraph.getTopology().getSchema("A");
         assertTrue(schemaOptional.isPresent());
         VertexLabel b = schemaOptional.get().ensureVertexLabelExist("B");
-        a.ensureEdgeLabelExist(this.sqlgGraph, "ab", b);
+        a.ensureEdgeLabelExist("ab", b);
         this.sqlgGraph.tx().commit();
 
         Optional<EdgeLabel> edgeLabel = this.sqlgGraph.getTopology().getSchema("A").get().getEdgeLabel("ab");
