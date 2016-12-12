@@ -8,7 +8,6 @@ import org.apache.tinkerpop.shaded.jackson.core.JsonProcessingException;
 import org.apache.tinkerpop.shaded.jackson.databind.SerializerProvider;
 import org.apache.tinkerpop.shaded.jackson.databind.jsontype.TypeSerializer;
 import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
-import org.umlg.sqlg.sql.parse.SchemaTableTree;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -48,20 +47,16 @@ public class SchemaTable implements Serializable, Comparable {
 
     public static SchemaTable from(SqlgGraph sqlgGraph, final String label, String defaultSchema) {
         Objects.requireNonNull(label, "label may not be null!");
-        String[] schemaLabel;
-        if (label.contains(SchemaTableTree.ALIAS_SEPARATOR)) {
-            schemaLabel = label.split("\\.");
-        } else {
-            schemaLabel = label.split("\\.");
-        }
+        int indexOfPeriod = label.indexOf(".");
         final String schema;
         final String table;
-        if (schemaLabel.length > 1) {
-            schema = schemaLabel[0];
-            table = label.substring(schema.length() + 1);
-        } else {
+        if (indexOfPeriod == -1) {
             schema = defaultSchema;
             table = label;
+        } else {
+            schema = label.substring(0, indexOfPeriod);
+            table = label.substring(indexOfPeriod + 1);
+
         }
         sqlgGraph.getSqlDialect().validateSchemaName(schema);
         sqlgGraph.getSqlDialect().validateTableName(table);

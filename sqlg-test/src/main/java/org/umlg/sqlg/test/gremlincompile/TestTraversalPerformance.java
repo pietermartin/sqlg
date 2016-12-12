@@ -89,6 +89,9 @@ public class TestTraversalPerformance extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
+        StopWatch stopWatchAddOnly = new StopWatch();
+        stopWatchAddOnly.start();
+
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 1; i < 1_00_001; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "God", "name", "god" + i);
@@ -100,13 +103,15 @@ public class TestTraversalPerformance extends BaseTest {
                     b.addEdge("finger", c);
                 }
             }
-//            if (i % 100_000 == 0) {
+//            if (i % 500_000 == 0) {
 //                this.sqlgGraph.tx().flush();
 //                stopWatch.split();
 //                System.out.println(stopWatch.toString());
 //                stopWatch.unsplit();
 //            }
         }
+        stopWatchAddOnly.stop();
+        System.out.println("Time for add only : " + stopWatchAddOnly.toString());
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println("Time for insert: " + stopWatch.toString());

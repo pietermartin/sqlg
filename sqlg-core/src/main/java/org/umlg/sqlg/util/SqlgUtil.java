@@ -519,7 +519,7 @@ public class SqlgUtil {
             if (!(keyValues[i] instanceof String) && !(keyValues[i] instanceof T)) {
                 throw Element.Exceptions.providedKeyValuesMustHaveALegalKeyOnEvenIndices();
             }
-            if (!keyValues[i].equals(T.id)) {
+            if (keyValues[i].equals(T.id)) {
                 throw Vertex.Exceptions.userSuppliedIdsNotSupported();
             }
             if (!keyValues[i].equals(T.label)) {
@@ -574,7 +574,7 @@ public class SqlgUtil {
             if (!(keyValues[i] instanceof String) && !(keyValues[i] instanceof T)) {
                 throw Element.Exceptions.providedKeyValuesMustHaveALegalKeyOnEvenIndices();
             }
-            if (!keyValues[i].equals(T.id)) {
+            if (keyValues[i].equals(T.id)) {
                 throw Vertex.Exceptions.userSuppliedIdsNotSupported();
             }
             if (!keyValues[i].equals(T.label)) {

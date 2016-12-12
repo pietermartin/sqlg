@@ -215,24 +215,37 @@ public class EdgeLabel extends AbstractLabel {
         return toJson().toString();
     }
 
-    boolean foreignKeysContains(Direction direction, VertexLabel vertexLabel) {
+    private boolean foreignKeysContains(Direction direction, VertexLabel vertexLabel) {
         switch (direction) {
             case OUT:
-                for (VertexLabel vl : this.outVertexLabels) {
-                    if (vl.equals(vertexLabel)) {
-                        return true;
-                    }
+                if (this.outVertexLabels.contains(vertexLabel)) {
+                    return true;
                 }
                 break;
             case IN:
-                for (VertexLabel vl : this.inVertexLabels) {
-                    if (vl.equals(vertexLabel)) {
-                        return true;
-                    }
+                if (this.inVertexLabels.contains(vertexLabel)) {
+                    return true;
                 }
                 break;
             case BOTH:
-                throw new IllegalStateException("foreignKeysConstains may not be called for Direction.BOTH");
+                throw new IllegalStateException("foreignKeysContains may not be called for Direction.BOTH");
+        }
+        if (this.topology.isWriteLockHeldByCurrentThread()) {
+            switch (direction) {
+                case OUT:
+                    if (this.uncommittedOutVertexLabels.contains(vertexLabel)) {
+                        return true;
+                    }
+                    break;
+                case IN:
+                    if (this.uncommittedInVertexLabels.contains(vertexLabel)) {
+                        return true;
+                    }
+                    break;
+                case BOTH:
+                    throw new IllegalStateException("foreignKeysContains may not be called for Direction.BOTH");
+            }
+
         }
         return false;
     }

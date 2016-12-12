@@ -319,9 +319,6 @@ public abstract class AbstractLabel  implements TopologyInf {
         if (!this.label.equals(other.label)) {
             return false;
         }
-        if (!this.properties.equals(other.properties)) {
-            return false;
-        }
         return true;
     }
 
