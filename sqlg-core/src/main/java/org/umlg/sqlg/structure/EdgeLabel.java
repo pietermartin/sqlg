@@ -215,6 +215,28 @@ public class EdgeLabel extends AbstractLabel {
         return toJson().toString();
     }
 
+    boolean foreignKeysContains(Direction direction, VertexLabel vertexLabel) {
+        switch (direction) {
+            case OUT:
+                for (VertexLabel vl : this.outVertexLabels) {
+                    if (vl.equals(vertexLabel)) {
+                        return true;
+                    }
+                }
+                break;
+            case IN:
+                for (VertexLabel vl : this.inVertexLabels) {
+                    if (vl.equals(vertexLabel)) {
+                        return true;
+                    }
+                }
+                break;
+            case BOTH:
+                throw new IllegalStateException("foreignKeysConstains may not be called for Direction.BOTH");
+        }
+        return false;
+    }
+
     Set<String> getAllEdgeForeignKeys() {
         Set<String> result = new HashSet<>();
         for (VertexLabel vertexLabel : this.inVertexLabels) {
@@ -257,15 +279,14 @@ public class EdgeLabel extends AbstractLabel {
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
         }
-        Set<String> allEdgeForeignKeys = getAllEdgeForeignKeys();
-        SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
+//        Set<String> allEdgeForeignKeys = getAllEdgeForeignKeys();
         SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
-        if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
+
+        if (!foreignKeysContains(direction, vertexLabel)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
             schema.getTopology().lock();
-            allEdgeForeignKeys = getAllEdgeForeignKeys();
-            if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
+            if (!foreignKeysContains(direction, vertexLabel)) {
                 TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
                 if (direction == Direction.IN) {
                     this.uncommittedInVertexLabels.add(vertexLabel);
@@ -274,9 +295,30 @@ public class EdgeLabel extends AbstractLabel {
                     this.uncommittedOutVertexLabels.add(vertexLabel);
                     vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
                 }
+                SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
                 addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
             }
+
         }
+
+//        if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
+//            //Make sure the current thread/transaction owns the lock
+//            Schema schema = this.getSchema();
+//            schema.getTopology().lock();
+//            allEdgeForeignKeys = getAllEdgeForeignKeys();
+//            if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
+//                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
+//                if (direction == Direction.IN) {
+//                    this.uncommittedInVertexLabels.add(vertexLabel);
+//                    vertexLabel.addToUncommittedInEdgeLabels(schema, this);
+//                } else {
+//                    this.uncommittedOutVertexLabels.add(vertexLabel);
+//                    vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
+//                }
+//                SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
+//                addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
+//            }
+//        }
     }
 
     private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
