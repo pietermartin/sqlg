@@ -1726,9 +1726,6 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     countKeys++;
                     Object value = triple.get(key);
-//                    if (value == null) {
-//                        sb.append(getBatchNull());
-//                    }
                     switch (propertyType) {
                         case BYTE_ARRAY:
                             String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
