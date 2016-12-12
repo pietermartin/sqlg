@@ -39,13 +39,6 @@ public abstract class SqlgElement implements Element {
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
 
-    /**
-     * Constructor only used for the Dummy element.
-     */
-    SqlgElement() {
-        this.sqlgGraph = null;
-    }
-
     public SqlgElement(SqlgGraph sqlgGraph, String schema, String table) {
         this.sqlgGraph = sqlgGraph;
         this.schema = schema;
