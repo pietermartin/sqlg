@@ -281,11 +281,11 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
                 result.get(30, TimeUnit.SECONDS);
             }
             logger.info("starting querying data");
-            List<Vertex> vertices = this.sqlgGraph.traversal().V().out().toList();
+            Set<Vertex> vertices = this.sqlgGraph.traversal().V().out().toSet();
             this.sqlgGraph.tx().rollback();
             for (SqlgGraph graph : graphs) {
                 logger.info("assert querying data");
-                assertEquals(vertices, graph.traversal().V().out().toList());
+                assertEquals(vertices, graph.traversal().V().out().toSet());
                 graph.tx().rollback();
             }
         } finally {
