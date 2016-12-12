@@ -474,7 +474,7 @@ public class Topology {
     public VertexLabel ensureVertexLabelExist(final String schemaName, final String label, final Map<String, PropertyType> properties) {
         Objects.requireNonNull(schemaName, "Given tables must not be null");
         Objects.requireNonNull(label, "Given table must not be null");
-        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
         Schema schema = this.ensureSchemaExist(schemaName);
         Preconditions.checkState(schema != null, "Schema must be present after calling ensureSchemaExist");
@@ -617,7 +617,7 @@ public class Topology {
 
     public GlobalUniqueIndex ensureGlobalUniqueIndexExist(final Set<PropertyColumn> properties) {
         Objects.requireNonNull(properties, "properties may not be null");
-        Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(()->new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
+        Schema globalUniqueIndexSchema = getSchema(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA).orElseThrow(() -> new IllegalStateException("BUG: Global unique index schema " + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + " must exist"));
         return globalUniqueIndexSchema.ensureGlobalUniqueIndexExist(properties);
     }
 
@@ -883,7 +883,7 @@ public class Topology {
                         .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
                         .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp)
                         .toList();
-                Preconditions.checkState(logs.size() == 1, String.format("There must be one and only be one log, found %d", logs.size()));
+                Preconditions.checkState(logs.size() == 1, "There must be one and only be one log, found %d", logs.size());
                 LocalDateTime timestamp = logs.get(0).value("timestamp");
                 Preconditions.checkState(timestamp.equals(notifyTimestamp), "notify log's timestamp does not match.");
                 int backEndPid = logs.get(0).value("pid");
@@ -942,9 +942,9 @@ public class Topology {
                 GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(this, globalUniqueIndexName);
 
                 Set<PropertyColumn> properties = new HashSet<>();
-                ArrayNode jsonProperties  = (ArrayNode) jsonGlobalUniqueIndex.get("uncommittedProperties");
+                ArrayNode jsonProperties = (ArrayNode) jsonGlobalUniqueIndex.get("uncommittedProperties");
                 for (JsonNode jsonProperty : jsonProperties) {
-                    ObjectNode propertyObjectNode = (ObjectNode)jsonProperty;
+                    ObjectNode propertyObjectNode = (ObjectNode) jsonProperty;
                     String propertyName = propertyObjectNode.get("name").asText();
                     String schemaName = propertyObjectNode.get("schemaName").asText();
                     Optional<Schema> schemaOptional = getSchema(schemaName);
@@ -1077,7 +1077,7 @@ public class Topology {
     }
 
     public Optional<VertexLabel> getVertexLabel(String schemaName, String label) {
-        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("vertex label may not start with %s", VERTEX_PREFIX));
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "vertex label may not start with %s", VERTEX_PREFIX);
         Optional<Schema> schemaOptional = this.getSchema(schemaName);
         if (schemaOptional.isPresent()) {
             return schemaOptional.get().getVertexLabel(label);
@@ -1103,7 +1103,7 @@ public class Topology {
     }
 
     private Map<String, AbstractLabel> getUncommittedAllTables() {
-        Preconditions.checkState(isWriteLockHeldByCurrentThread());
+        Preconditions.checkState(isWriteLockHeldByCurrentThread(), "getUncommittedAllTables must be called with the lock held");
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
             Schema schema = stringSchemaEntry.getValue();
@@ -1155,7 +1155,7 @@ public class Topology {
             Map<String, Map<String, PropertyType>> result = getAllTables();
             for (TopologyInf f : filter) {
                 if (f instanceof AbstractLabel) {
-                    AbstractLabel abstractLabel = (AbstractLabel)f;
+                    AbstractLabel abstractLabel = (AbstractLabel) f;
                     Schema schema = abstractLabel.getSchema();
                     this.allTableCache.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel());
                 }
@@ -1172,7 +1172,7 @@ public class Topology {
             Map<String, Map<String, PropertyType>> result = new HashMap<>();
             for (TopologyInf f : selectFrom) {
                 if (f instanceof AbstractLabel) {
-                    AbstractLabel abstractLabel = (AbstractLabel)f;
+                    AbstractLabel abstractLabel = (AbstractLabel) f;
                     Schema schema = abstractLabel.getSchema();
                     String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel();
                     Map<String, PropertyType> tmp = this.allTableCache.get(key);
@@ -1180,8 +1180,8 @@ public class Topology {
                         result.put(key, tmp);
                     }
                 } else if (f instanceof GlobalUniqueIndex) {
-                    GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex)f;
-                    String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + SchemaManager.VERTEX_PREFIX  + globalUniqueIndex.getName();
+                    GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
+                    String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName();
                     Map<String, PropertyType> tmp = this.allTableCache.get(key);
                     if (!tmp.isEmpty()) {
                         result.put(key, tmp);

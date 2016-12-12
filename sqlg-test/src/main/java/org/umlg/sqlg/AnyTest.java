@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
+import org.umlg.sqlg.test.batch.*;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,12 @@ import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestGlobalUniqueIndex.class,
-        TestTraversalPerformance.class,
+        TestBatch.class,
+        TestStreamVertex.class,
+        TestStreamEdge.class,
+        TestBatchedStreaming.class,
+        TestBatchTemporaryVertex.class
+//        TestTraversalPerformance.class,
 //        TestMultipleThreadMultipleJvm.class
 //        TestMultiThread.class
 })

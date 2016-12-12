@@ -111,7 +111,7 @@ public class Schema implements TopologyInf {
 
     public VertexLabel ensureVertexLabelExist(final String label, final Map<String, PropertyType> columns) {
         Objects.requireNonNull(label, "Given table must not be null");
-        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), String.format("label may not be prefixed with %s", VERTEX_PREFIX));
+        Preconditions.checkArgument(!label.startsWith(VERTEX_PREFIX), "label may not be prefixed with %s", VERTEX_PREFIX);
 
         Optional<VertexLabel> vertexLabelOptional = this.getVertexLabel(label);
         if (!vertexLabelOptional.isPresent()) {
@@ -212,7 +212,7 @@ public class Schema implements TopologyInf {
         Preconditions.checkState(!isSqlgSchema(), "Schema.ensureVertexLabelPropertiesExist may not be called for \"%s\"", SQLG_SCHEMA);
 
         Optional<VertexLabel> vertexLabel = getVertexLabel(label);
-        Preconditions.checkState(vertexLabel.isPresent(), String.format("BUG: vertexLabel \"%s\" must exist", label));
+        Preconditions.checkState(vertexLabel.isPresent(), "BUG: vertexLabel \"%s\" must exist", label);
 
         //noinspection OptionalGetWithoutIsPresent
         vertexLabel.get().ensureColumnsExist(columns);
@@ -276,7 +276,6 @@ public class Schema implements TopologyInf {
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", SchemaManager.VERTEX_PREFIX);
-//        VertexLabel vertexLabel = getVertexLabels().get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         if (result == null && this.topology.isWriteLockHeldByCurrentThread()) {
             result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);

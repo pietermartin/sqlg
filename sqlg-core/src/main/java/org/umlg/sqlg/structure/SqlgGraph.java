@@ -8,6 +8,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -258,7 +259,6 @@ public class SqlgGraph implements Graph {
                     }
                     this.sqlDialect = p.instantiateDialect();
                 }
-                ;
             } else {
                 SqlgPlugin p = findSqlgPlugin(jdbcUrl);
                 if (p == null) {
@@ -347,17 +347,14 @@ public class SqlgGraph implements Graph {
         if (this.tx().isInStreamingWithLockBatchMode()) {
             return internalStreamVertex(keyValues);
         } else {
-            ElementHelper.legalPropertyKeyValueArray(keyValues);
-            if (ElementHelper.getIdValue(keyValues).isPresent())
-                throw Vertex.Exceptions.userSuppliedIdsNotSupported();
-
-            validateVertexKeysValues(keyValues);
+            Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues);
+            final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
+            final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
             SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
             this.tx().readWrite();
-            final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
             this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-            return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+            return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
         }
     }
 
@@ -408,13 +405,12 @@ public class SqlgGraph implements Graph {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
-        validateVertexKeysValues(keyValues, keys);
-
+        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValuesTriple= SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
+        final Map<String, Object> allKeyValueMap = keyValuesTriple.getMiddle();
+        final Map<String, PropertyType> columns = keyValuesTriple.getLeft();
         this.tx().readWrite();
-
-        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         getTopology().ensureVertexTemporaryTableExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-        return new SqlgVertex(this, schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, schemaTablePair.getTable(), allKeyValueMap);
     }
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
@@ -426,12 +422,12 @@ public class SqlgGraph implements Graph {
             throw new IllegalStateException("Streaming batch mode must occur for one label at a time. Expected \"" + streamingBatchModeVertexSchemaTable + "\" found \"" + label + "\". First commit the transaction or call SqlgGraph.flush() before streaming a different label");
         }
         List<String> keys = this.tx().getBatchManager().getStreamingBatchModeVertexKeys();
-        validateVertexKeysValues(keyValues, keys);
-
+        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlDialect, keyValues, keys);
+        final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
+        final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
         this.tx().readWrite();
-        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
         this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
-        return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValues);
+        return new SqlgVertex(this, true, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
     }
 
     public <L, R> void bulkAddEdges(String outVertexLabel, String inVertexLabel, String edgeLabel, Pair<String, String> idFields, Collection<Pair<L, R>> uids) {
@@ -449,63 +445,7 @@ public class SqlgGraph implements Graph {
         }
     }
 
-    private void validateVertexKeysValues(Object[] keyValues) {
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (ElementHelper.getIdValue(keyValues).isPresent())
-            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
 
-        int i = 0;
-        Object key = null;
-        Object value;
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 == 0) {
-                key = keyValue;
-            } else {
-                value = keyValue;
-                if (!key.equals(T.label)) {
-                    ElementHelper.validateProperty((String) key, value);
-                    this.sqlDialect.validateProperty(key, value);
-                }
-
-            }
-        }
-    }
-
-    private void validateVertexKeysValues(Object[] keyValues, List<String> previousBatchModeKeys) {
-        ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (ElementHelper.getIdValue(keyValues).isPresent())
-            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
-
-        int i = 0;
-        int keyCount = 0;
-        Object key = null;
-        Object value;
-
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 == 0) {
-                key = keyValue;
-                if (key != T.label && previousBatchModeKeys != null && !previousBatchModeKeys.isEmpty() && !key.equals(previousBatchModeKeys.get(keyCount++))) {
-                    throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
-                }
-            } else {
-                if (key != T.label) {
-                    value = keyValue;
-                    if (null == key)
-                        throw Property.Exceptions.propertyKeyCanNotBeNull();
-                    if (((String)key).isEmpty())
-                        throw Property.Exceptions.propertyKeyCanNotBeEmpty();
-                    if (Graph.Hidden.isHidden((String)key))
-                        throw Property.Exceptions.propertyKeyCanNotBeAHiddenKey((String)key);
-
-                    if (value != null) {
-                        this.sqlDialect.validateProperty(key, value);
-                    } else {
-                        this.sqlDialect.validateColumnName((String)key);
-                    }
-                }
-            }
-        }
-    }
 
     @Override
     public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {

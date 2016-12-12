@@ -3,6 +3,7 @@ package org.umlg.sqlg.test;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -85,12 +86,16 @@ public abstract class BaseTest {
 
     @Before
     public void before() throws Exception {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         this.sqlgGraph = SqlgGraph.open(configuration);
         SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);
         this.gt = this.sqlgGraph.traversal();
+        stopWatch.stop();
+        logger.info("Startup time for test = " + stopWatch.toString());
     }
 
     @After

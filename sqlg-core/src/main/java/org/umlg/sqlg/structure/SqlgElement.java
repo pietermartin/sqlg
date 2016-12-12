@@ -38,6 +38,7 @@ public abstract class SqlgElement implements Element {
     protected Map<String, Object> properties = new ConcurrentHashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
+    int faskHashCodeId;
 
     /**
      * Constructor only used for the Dummy element.
@@ -354,7 +355,9 @@ public abstract class SqlgElement implements Element {
             if (this.id() != null && object != null && (object instanceof SqlgElement) && ((SqlgElement) object).id() != null) {
                 return ElementHelper.areEqual(this, object);
             } else {
-                return super.equals(object);
+                SqlgElement other = (SqlgElement)object;
+                return this.faskHashCodeId == other.faskHashCodeId;
+//                return super.equals(object);
             }
         } else {
             return ElementHelper.areEqual(this, object);
@@ -368,8 +371,9 @@ public abstract class SqlgElement implements Element {
             // if we have an ID, we have a constant hashcode
             if (this.id() != null) {
                 return ElementHelper.hashCode(this);
+            } else {
+                return this.faskHashCodeId;
             }
-            return super.hashCode();
         } else {
             return ElementHelper.hashCode(this);
         }

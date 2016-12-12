@@ -25,6 +25,7 @@ import static org.junit.Assert.*;
  * Date: 2014/09/12
  * Time: 5:14 PM
  */
+@SuppressWarnings({"UnnecessaryBoxing", "JavaDoc"})
 public class TestBatch extends BaseTest {
 
     @Before
@@ -95,6 +96,7 @@ public class TestBatch extends BaseTest {
     }
 
     //    @Test
+    @SuppressWarnings("unused")
     public void queryPerformance() {
         this.sqlgGraph.tx().normalBatchModeOn();
         StopWatch stopWatch = new StopWatch();
@@ -327,60 +329,54 @@ public class TestBatch extends BaseTest {
     public void testEdgeCopyHappensInIsolation() throws InterruptedException {
 
         //This is needed else the schema manager lock on creating schemas
-        Vertex firstVertex = sqlgGraph.addVertex();
-        sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex();
+        this.sqlgGraph.tx().commit();
         AtomicLong lastPerson = new AtomicLong();
         AtomicLong lastCar = new AtomicLong();
 
 
         CountDownLatch firstLatch = new CountDownLatch(1);
-        final Thread thread1 = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    sqlgGraph.tx().normalBatchModeOn();
-                    for (int i = 0; i < 100000; i++) {
-                        Vertex v1 = sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
-                        Vertex v2 = sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
-                        v1.addEdge("Friend", v2);
-                    }
-                    System.out.println("thread1 starting commit!");
-                    firstLatch.countDown();
-                    sqlgGraph.tx().commit();
-                    List<Vertex> persons = sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").toList();
-                    System.out.println("person size = " + persons.size());
-                    System.out.println(persons.get(persons.size() - 1).id());
-                    lastPerson.set(((RecordId) persons.get(persons.size() - 1).id()).getId());
-                    System.out.println("thread1 done!");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    fail(e.getMessage());
-                } finally {
-                    sqlgGraph.tx().rollback();
+        final Thread thread1 = new Thread(() -> {
+            try {
+                sqlgGraph.tx().normalBatchModeOn();
+                for (int i = 0; i < 100000; i++) {
+                    Vertex v1 = sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
+                    Vertex v2 = sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
+                    v1.addEdge("Friend", v2);
                 }
-
-            }
-        };
-        thread1.start();
-        final Thread thread2 = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    System.out.println("waiting for first thread!");
-                    firstLatch.await();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                    fail(e.getMessage());
-                }
-                Vertex v1 = sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
-                Vertex v2 = sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
-                v1.addEdge("Same", v2);
+                System.out.println("thread1 starting commit!");
+                firstLatch.countDown();
                 sqlgGraph.tx().commit();
-                List<Vertex> cars = sqlgGraph.traversal().V().<Vertex>has(T.label, "Car").toList();
-                lastCar.set(((RecordId) cars.get(cars.size() - 1).id()).getId());
-                System.out.println("second thread done!");
+                List<Vertex> persons = sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").toList();
+                System.out.println("person size = " + persons.size());
+                System.out.println(persons.get(persons.size() - 1).id());
+                lastPerson.set(((RecordId) persons.get(persons.size() - 1).id()).getId());
+                System.out.println("thread1 done!");
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail(e.getMessage());
+            } finally {
+                sqlgGraph.tx().rollback();
             }
-        };
+
+        });
+        thread1.start();
+        final Thread thread2 = new Thread(() -> {
+            try {
+                System.out.println("waiting for first thread!");
+                firstLatch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                fail(e.getMessage());
+            }
+            Vertex v1 = sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
+            Vertex v2 = sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
+            v1.addEdge("Same", v2);
+            sqlgGraph.tx().commit();
+            List<Vertex> cars = sqlgGraph.traversal().V().<Vertex>has(T.label, "Car").toList();
+            lastCar.set(((RecordId) cars.get(cars.size() - 1).id()).getId());
+            System.out.println("second thread done!");
+        });
         thread2.start();
         thread1.join();
         thread2.join();
@@ -411,10 +407,10 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().toList();
         for (Vertex v : vertices) {
-            shortList.remove((Short) v.value("age2"));
-            integerList.remove((Integer) v.value("age3"));
-            longList.remove((Long) v.value("age4"));
-            doubleList.remove((Double) v.value("age6"));
+            shortList.remove(v.<Short>value("age2"));
+            integerList.remove(v.<Integer>value("age3"));
+            longList.remove(v.<Long>value("age4"));
+            doubleList.remove(v.<Double>value("age6"));
         }
         assertTrue(shortList.isEmpty());
         assertTrue(integerList.isEmpty());
@@ -432,7 +428,7 @@ public class TestBatch extends BaseTest {
         for (int i = 0; i < 100; i++) {
             Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-            Edge e1 = v1.addEdge("Friend", v2,
+            v1.addEdge("Friend", v2,
                     "age2", (short) i,
                     "age3", i,
                     "age4", new Long(i),
@@ -447,10 +443,10 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         List<Edge> edges = this.sqlgGraph.traversal().E().toList();
         for (Edge e : edges) {
-            shortList.remove((Short) e.value("age2"));
-            integerList.remove((Integer) e.value("age3"));
-            longList.remove((Long) e.value("age4"));
-            doubleList.remove((Double) e.value("age6"));
+            shortList.remove(e.<Short>value("age2"));
+            integerList.remove(e.<Integer>value("age3"));
+            longList.remove(e.<Long>value("age4"));
+            doubleList.remove(e.<Double>value("age6"));
         }
         assertTrue(shortList.isEmpty());
         assertTrue(integerList.isEmpty());
@@ -502,7 +498,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-        Edge friend = marko.addEdge("Friend", john, "weight", 1);
+        marko.addEdge("Friend", john, "weight", 1);
         Edge colleague = marko.addEdge("Colleague", john, "toRemove", "a");
         marko.property("name").remove();
         colleague.property("toRemove").remove();
@@ -667,8 +663,8 @@ public class TestBatch extends BaseTest {
     @Test
     public void testBatchInsertDifferentKeys() {
         this.sqlgGraph.tx().normalBatchModeOn();
-        Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
-        Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
+        this.sqlgGraph.addVertex(T.label, "Person", "name", "a");
+        this.sqlgGraph.addVertex(T.label, "Person", "surname", "b");
         this.sqlgGraph.tx().commit();
 
         List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").<Vertex>has("name", "a").toList();
@@ -685,7 +681,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testVerticesOutLabelsForPersistentVertices() {
-        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
+        this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
         Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
         Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
         vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
@@ -705,7 +701,7 @@ public class TestBatch extends BaseTest {
 
     @Test
     public void testVerticesInLabelsForPersistentVertices() {
-        Vertex realWorkspace = this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
+        this.sqlgGraph.addVertex(T.label, "RealWorkspace", "name", "realWorkspace1");
         Vertex softwareVersion = this.sqlgGraph.addVertex(T.label, "SoftwareVersion", "name", "R15");
         Vertex vendorTechnology = this.sqlgGraph.addVertex(T.label, "VendorTechnology", "name", "Huawei_Gsm");
         softwareVersion.addEdge("softwareVersion_vendorTechnology", vendorTechnology);
@@ -775,17 +771,17 @@ public class TestBatch extends BaseTest {
         assertEquals(true, this.sqlgGraph.traversal().V(v1.id()).next().value("boolean"));
         assertEquals((short) 1, this.sqlgGraph.traversal().V(v1.id()).next().<Short>value("short").shortValue());
         assertEquals(1, this.sqlgGraph.traversal().V(v1.id()).next().<Integer>value("integer").intValue());
-        assertEquals(1L, this.sqlgGraph.traversal().V(v1.id()).next().<Long>value("long").longValue(), 0);
-        assertEquals(1F, this.sqlgGraph.traversal().V(v1.id()).next().<Float>value("float").floatValue(), 0);
-        assertEquals(1D, this.sqlgGraph.traversal().V(v1.id()).next().<Double>value("double").doubleValue(), 0);
+        assertEquals(1L, this.sqlgGraph.traversal().V(v1.id()).next().<Long>value("long"), 0);
+        assertEquals(1F, this.sqlgGraph.traversal().V(v1.id()).next().<Float>value("float"), 0);
+        assertEquals(1D, this.sqlgGraph.traversal().V(v1.id()).next().<Double>value("double"), 0);
 
         assertEquals("bb", this.sqlgGraph.traversal().V(v2.id()).next().value("surname"));
         assertEquals(false, this.sqlgGraph.traversal().V(v2.id()).next().value("boolean"));
         assertEquals((short) 2, this.sqlgGraph.traversal().V(v2.id()).next().<Short>value("short").shortValue());
         assertEquals(2, this.sqlgGraph.traversal().V(v2.id()).next().<Integer>value("integer").intValue());
-        assertEquals(2L, this.sqlgGraph.traversal().V(v2.id()).next().<Long>value("long").longValue(), 0);
-        assertEquals(2F, this.sqlgGraph.traversal().V(v2.id()).next().<Float>value("float").floatValue(), 0);
-        assertEquals(2D, this.sqlgGraph.traversal().V(v2.id()).next().<Double>value("double").doubleValue(), 0);
+        assertEquals(2L, this.sqlgGraph.traversal().V(v2.id()).next().<Long>value("long"), 0);
+        assertEquals(2F, this.sqlgGraph.traversal().V(v2.id()).next().<Float>value("float"), 0);
+        assertEquals(2D, this.sqlgGraph.traversal().V(v2.id()).next().<Double>value("double"), 0);
     }
 
     @Test
@@ -865,8 +861,8 @@ public class TestBatch extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
-        Edge edge1 = v1.addEdge("test", v2);
-        Edge edge2 = v1.addEdge("test", v3);
+        v1.addEdge("test", v2);
+        v1.addEdge("test", v3);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         v1.remove();
@@ -1080,7 +1076,7 @@ public class TestBatch extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
         for (int i = 0; i < 100000; i++) {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
-            Edge edge1 = v1.addEdge("test", v2);
+            v1.addEdge("test", v2);
         }
         this.sqlgGraph.tx().commit();
         assertEquals(100001, this.sqlgGraph.traversal().V().count().next().intValue());
@@ -1137,4 +1133,5 @@ public class TestBatch extends BaseTest {
         Vertex a = this.sqlgGraph.traversal().V().hasLabel("A").next();
         assertEquals("", a.property("emptyProperty").value());
     }
+
 }

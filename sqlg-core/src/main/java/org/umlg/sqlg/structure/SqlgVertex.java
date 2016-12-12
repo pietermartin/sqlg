@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -32,11 +33,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
      * @param sqlgGraph
      * @param schema
      * @param table
-     * @param keyValues
+     * @param keyValueMapPair
      */
-    public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Object... keyValues) {
+    public SqlgVertex(SqlgGraph sqlgGraph, boolean complete, String schema, String table, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
         super(sqlgGraph, schema, table);
-        insertVertex(complete, keyValues);
+        insertVertex(complete, keyValueMapPair);
         if (!sqlgGraph.tx().isInBatchMode()) {
             sqlgGraph.tx().add(this);
         }
@@ -51,9 +52,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     }
 
 
-    SqlgVertex(SqlgGraph sqlgGraph, String table, Object... keyValues) {
+    /**
+     * Only called for streaming temporary vertices. {@link SqlgGraph#internalStreamTemporaryVertex(Object...)} (Object...)}
+     */
+    SqlgVertex(SqlgGraph sqlgGraph, String table, Map<String, Object> keyValueMap) {
         super(sqlgGraph, "", table);
-        insertTemporaryVertex(keyValues);
+//        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues).getLeft();
+        this.sqlgGraph.tx().getBatchManager().addTemporaryVertex(this, keyValueMap);
     }
 
     public static SqlgVertex of(SqlgGraph sqlgGraph, Long id, String schema, String table) {
@@ -117,38 +122,26 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     private Edge addEdgeInternal(boolean complete, String label, Vertex inVertex, Object... keyValues) {
         if (null == inVertex) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Vertex.class, this.id());
+
         ElementHelper.validateLabel(label);
         if (label.contains("."))
             throw new IllegalStateException(String.format("Edge label may not contain a '.' , the edge will be stored in the schema of the owning vertex. label = %s", new Object[]{label}));
+
         ElementHelper.legalPropertyKeyValueArray(keyValues);
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
 
         List<String> previousBatchModeKeys = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeKeys();
-        int i = 0;
-        int keyCount = 0;
-        String key = "";
-        Object value;
-        for (Object keyValue : keyValues) {
-            if (i++ % 2 == 0) {
-                key = (String) keyValue;
-                if (!key.equals(T.label) && previousBatchModeKeys != null && !key.equals(previousBatchModeKeys.get(keyCount++))) {
-                    throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
-                }
-            } else {
-                value = keyValue;
-                ElementHelper.validateProperty(key, value);
-                this.sqlgGraph.getSqlDialect().validateProperty(key, value);
-            }
-        }
-        final Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(keyValues);
+        Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
+        final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
+        final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
         Optional<VertexLabel> outVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.schema, this.table);
         Optional<VertexLabel> inVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(((SqlgVertex) inVertex).schema, ((SqlgVertex) inVertex).table);
         Preconditions.checkState(outVertexLabelOptional.isPresent(), "Out VertexLabel must be present. Not found for %s", this.schema + "." + this.table);
         Preconditions.checkState(inVertexLabelOptional.isPresent(), "In VertexLabel must be present. Not found for %s", ((SqlgVertex) inVertex).schema + "." + ((SqlgVertex) inVertex).table);
         //noinspection OptionalGetWithoutIsPresent
         this.sqlgGraph.getTopology().ensureEdgeLabelExist(label, outVertexLabelOptional.get(), inVertexLabelOptional.get(), columns);
-        return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValues);
+        return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValueMapPair);
     }
 
     @Override
@@ -468,13 +461,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         }
     }
 
-    private void insertTemporaryVertex(Object... keyValues) {
-        Map<String, Object> keyValueMap = SqlgUtil.transformToInsertValues(keyValues).getLeft();
-        this.sqlgGraph.tx().getBatchManager().addTemporaryVertex(this, keyValueMap);
-    }
-
-    private void insertVertex(boolean complete, Object... keyValues) {
-        Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = SqlgUtil.transformToInsertValues(keyValues);
+    private void insertVertex(boolean complete, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
         Map<String, Object> keyAllValueMap = keyValueMapPair.getLeft();
         Map<String, Object> keyNotNullValueMap = keyValueMapPair.getRight();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {

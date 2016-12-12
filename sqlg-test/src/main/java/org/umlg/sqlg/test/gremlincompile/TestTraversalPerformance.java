@@ -6,7 +6,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
+import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.*;
@@ -42,7 +44,6 @@ public class TestTraversalPerformance extends BaseTest {
         this.sqlgGraph.tx().commit();
 
     }
-
     @Test
     public void testSpeed() throws InterruptedException {
         StopWatch stopWatch = new StopWatch();
@@ -53,19 +54,17 @@ public class TestTraversalPerformance extends BaseTest {
         }
         //Create a large schema, it slows the maps  down
         this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             if (i % 100 == 0) {
                 stopWatch.stop();
                 System.out.println("got " + i + " time taken " + stopWatch.toString());
                 stopWatch.reset();
                 stopWatch.start();
-                this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().normalBatchModeOn();
             }
             Vertex person = this.sqlgGraph.addVertex("Person_" + i, columns);
             Vertex dog = this.sqlgGraph.addVertex("Dog_" + i, columns);
             ((SqlgVertex)person).addEdgeWithMap("pet_" + i, dog, columns);
-//            this.sqlgGraph.tx().commit();
+            this.sqlgGraph.tx().commit();
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
@@ -73,8 +72,25 @@ public class TestTraversalPerformance extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
+        Thread.sleep(5_000);
+
+        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+           put("name", PropertyType.STRING);
+        }};
+        VertexLabel godVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("God", properties);
+        VertexLabel handVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Hand", properties);
+        VertexLabel fingerVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Finger", properties);
+        godVertexLabel.ensureEdgeLabelExist("hand", handVertexLabel);
+        handVertexLabel.ensureEdgeLabelExist("finger", fingerVertexLabel);
+        this.sqlgGraph.tx().commit();
+
+        stopWatch.stop();
+        System.out.println("done another time taken " + stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
+
         this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 1; i < 100_001; i++) {
+        for (int i = 1; i < 1_00_001; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "God", "name", "god" + i);
             for (int j = 0; j < 2; j++) {
                 Vertex b = this.sqlgGraph.addVertex(T.label, "Hand", "name", "name_" + j);
@@ -84,6 +100,12 @@ public class TestTraversalPerformance extends BaseTest {
                     b.addEdge("finger", c);
                 }
             }
+//            if (i % 100_000 == 0) {
+//                this.sqlgGraph.tx().flush();
+//                stopWatch.split();
+//                System.out.println(stopWatch.toString());
+//                stopWatch.unsplit();
+//            }
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
@@ -200,4 +222,5 @@ public class TestTraversalPerformance extends BaseTest {
         }
 //        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
     }
+
 }

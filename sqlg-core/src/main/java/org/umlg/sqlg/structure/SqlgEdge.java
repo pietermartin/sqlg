@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -31,14 +30,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
      * @param table     The edge's label which translates to a table name.
      * @param inVertex  The edge's in vertex.
      * @param outVertex The edge's out vertex.
-     * @param keyValues The properties of the edge.
+     * @param keyValueMapPair A pair of properties of the edge. Left contains all the properties and right the null valued properties.
      */
-    public SqlgEdge(SqlgGraph sqlgGraph, boolean streaming, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+    public SqlgEdge(SqlgGraph sqlgGraph, boolean streaming, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
         super(sqlgGraph, schema, table);
         this.inVertex = inVertex;
         this.outVertex = outVertex;
         try {
-            insertEdge(streaming, keyValues);
+            insertEdge(streaming, keyValueMapPair);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -66,8 +65,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     /**
-     * Called from {@link SqlgGraph#elements(boolean, List)} and {@link SqlgUtil#loadLabeledElements(SqlgGraph, ResultSet, LinkedList, Map)}
-     * and {@link SqlgUtil#loadElement(SqlgGraph, Map, ResultSet, SchemaTableTree)}
      * This is the primary constructor for loading edges from the db via gremlin.
      *
      * @param sqlgGraph The graph.
@@ -131,8 +128,8 @@ public class SqlgEdge extends SqlgElement implements Edge {
         return StringFactory.edgeString(this);
     }
 
-    protected void insertEdge(boolean complete, Object... keyValues) throws SQLException {
-        Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = SqlgUtil.transformToInsertValues(keyValues);
+    private void insertEdge(boolean complete, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) throws SQLException {
+//        Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = SqlgUtil.transformToInsertValues(keyValues);
         Map<String, Object> allKeyValueMap = keyValueMapPair.getLeft();
         Map<String, Object> notNullKeyValueMap = keyValueMapPair.getRight();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
