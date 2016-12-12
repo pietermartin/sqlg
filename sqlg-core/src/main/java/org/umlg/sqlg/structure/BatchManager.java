@@ -99,11 +99,9 @@ public class BatchManager {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> pairs = this.vertexCache.get(schemaTable);
             if (pairs == null) {
                 pairs = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
-//                sqlgVertex.faskHashCodeId = (pairs.getRight().size() + 1) * schemaTable.hashCode();
                 pairs.getRight().put(sqlgVertex, keyValueMap);
                 this.vertexCache.put(schemaTable, pairs);
             } else {
-//                sqlgVertex.faskHashCodeId = (pairs.getRight().size() + 1) * schemaTable.hashCode();
                 pairs.getLeft().addAll(keyValueMap.keySet());
                 pairs.getRight().put(sqlgVertex, keyValueMap);
             }
