@@ -131,8 +131,16 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (ElementHelper.getIdValue(keyValues).isPresent())
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
 
-        List<String> previousBatchModeKeys = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeKeys();
+        List<String> previousBatchModeKeys;
+        if (complete) {
+            previousBatchModeKeys = this.sqlgGraph.tx().getBatchManager().getStreamingBatchModeEdgeKeys();
+        } else {
+            previousBatchModeKeys = Collections.emptyList();
+        }
         Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> keyValueMapTriple = SqlgUtil.validateVertexKeysValues(this.sqlgGraph.getSqlDialect(), keyValues, previousBatchModeKeys);
+        if (!complete && keyValueMapTriple.getRight().size() != keyValueMapTriple.getMiddle().size()) {
+            throw Property.Exceptions.propertyValueCanNotBeNull();
+        }
         final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
         final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
         Optional<VertexLabel> outVertexLabelOptional = this.sqlgGraph.getTopology().getVertexLabel(this.schema, this.table);
