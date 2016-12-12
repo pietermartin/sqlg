@@ -538,27 +538,6 @@ public class SqlgUtil {
             }
         }
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
-
-
-//        ElementHelper.legalPropertyKeyValueArray(keyValues);
-//        if (ElementHelper.getIdValue(keyValues).isPresent())
-//            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
-//
-//        int i = 0;
-//        Object key = null;
-//        Object value;
-//        for (Object keyValue : keyValues) {
-//            if (i++ % 2 == 0) {
-//                key = keyValue;
-//            } else {
-//                value = keyValue;
-//                if (!key.equals(T.label)) {
-//                    ElementHelper.validateProperty((String) key, value);
-//                    this.sqlDialect.validateProperty(key, value);
-//                }
-//
-//            }
-//        }
     }
 
     public static Triple<Map<String, PropertyType>, Map<String, Object>, Map<String, Object>> validateVertexKeysValues(SqlDialect sqlDialect, Object[] keyValues, List<String> previousBatchModeKeys) {
@@ -599,41 +578,6 @@ public class SqlgUtil {
             }
         }
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
-
-
-//        ElementHelper.legalPropertyKeyValueArray(keyValues);
-//        if (ElementHelper.getIdValue(keyValues).isPresent())
-//            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
-//
-//        int i = 0;
-//        int keyCount = 0;
-//        Object key = null;
-//        Object value;
-//
-//        for (Object keyValue : keyValues) {
-//            if (i++ % 2 == 0) {
-//                key = keyValue;
-//                if (key != T.label && previousBatchModeKeys != null && !previousBatchModeKeys.isEmpty() && !key.equals(previousBatchModeKeys.get(keyCount++))) {
-//                    throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
-//                }
-//            } else {
-//                if (key != T.label) {
-//                    value = keyValue;
-//                    if (null == key)
-//                        throw Property.Exceptions.propertyKeyCanNotBeNull();
-//                    if (((String) key).isEmpty())
-//                        throw Property.Exceptions.propertyKeyCanNotBeEmpty();
-//                    if (Graph.Hidden.isHidden((String) key))
-//                        throw Property.Exceptions.propertyKeyCanNotBeAHiddenKey((String) key);
-//
-//                    if (value != null) {
-//                        this.sqlDialect.validateProperty(key, value);
-//                    } else {
-//                        this.sqlDialect.validateColumnName((String) key);
-//                    }
-//                }
-//            }
-//        }
     }
 
     /**
@@ -666,7 +610,6 @@ public class SqlgUtil {
         }
         return Pair.of(resultAllValues, resultNotNullValues);
     }
-
 
     public static List<ImmutablePair<PropertyType, Object>> transformToTypeAndValue(Multimap<String, Object> keyValues) {
         List<ImmutablePair<PropertyType, Object>> result = new ArrayList<>();
