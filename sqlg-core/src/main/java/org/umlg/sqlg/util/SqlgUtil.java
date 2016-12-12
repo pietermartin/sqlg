@@ -515,10 +515,12 @@ public class SqlgUtil {
         if (keyValues.length % 2 != 0)
             throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
 
-        boolean foundId = false;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (!(keyValues[i] instanceof String) && !(keyValues[i] instanceof T)) {
                 throw Element.Exceptions.providedKeyValuesMustHaveALegalKeyOnEvenIndices();
+            }
+            if (!keyValues[i].equals(T.id)) {
+                throw Vertex.Exceptions.userSuppliedIdsNotSupported();
             }
             if (!keyValues[i].equals(T.label)) {
                 String key = (String) keyValues[i];
@@ -526,9 +528,6 @@ public class SqlgUtil {
                 Object value = keyValues[i + 1];
                 ElementHelper.validateProperty(key, value);
                 sqlDialect.validateProperty(key, value);
-                if (!foundId && key.equals(T.id)) {
-                    foundId = true;
-                }
                 if (value != null) {
                     resultNotNullValues.put(key, value);
                     keyPropertyTypeMap.put(key, PropertyType.from(value));
@@ -537,9 +536,6 @@ public class SqlgUtil {
                 }
                 resultAllValues.put(key, value);
             }
-        }
-        if (foundId) {
-            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         }
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
 
@@ -573,11 +569,13 @@ public class SqlgUtil {
         if (keyValues.length % 2 != 0)
             throw Element.Exceptions.providedKeyValuesMustBeAMultipleOfTwo();
 
-        boolean foundId = false;
         int keyCount = 0;
         for (int i = 0; i < keyValues.length; i = i + 2) {
             if (!(keyValues[i] instanceof String) && !(keyValues[i] instanceof T)) {
                 throw Element.Exceptions.providedKeyValuesMustHaveALegalKeyOnEvenIndices();
+            }
+            if (!keyValues[i].equals(T.id)) {
+                throw Vertex.Exceptions.userSuppliedIdsNotSupported();
             }
             if (!keyValues[i].equals(T.label)) {
                 String key = (String) keyValues[i];
@@ -599,9 +597,6 @@ public class SqlgUtil {
                     throw new IllegalStateException("Streaming batch mode must occur for the same keys in the same order. Expected " + previousBatchModeKeys.get(keyCount - 1) + " found " + key);
                 }
             }
-        }
-        if (foundId) {
-            throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         }
         return Triple.of(keyPropertyTypeMap, resultAllValues, resultNotNullValues);
 
