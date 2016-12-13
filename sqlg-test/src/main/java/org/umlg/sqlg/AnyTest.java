@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.github.TestGithub;
+import org.umlg.sqlg.test.schema.TestGlobalUniqueIndex;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,7 @@ import org.umlg.sqlg.test.github.TestGithub;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTraversalPerformance.class,
-//        TestVertexEdges.class
-//        TestGremlinCompileE.class,
-        TestGithub.class
+        TestGlobalUniqueIndex.class
 })
 public class AnyTest {
 }

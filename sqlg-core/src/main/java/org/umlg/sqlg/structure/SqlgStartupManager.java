@@ -49,7 +49,10 @@ class SqlgStartupManager {
                 //This exist separately because Hsqldb and H2 do not support "id exist" in the schema creation sql.
                 createSqlgSchema();
             }
-            createSqlgSchemaTablesAndIndexes();
+            boolean existGuiSchema = existGuiSchema();
+            if (!existGuiSchema) {
+                createSqlgSchemaTablesAndIndexes();
+            }
             //committing here will ensure that sqlg creates the tables.
             this.sqlgGraph.tx().commit();
             stopWatch.stop();
@@ -354,13 +357,27 @@ class SqlgStartupManager {
         }
     }
 
-
     private boolean existSqlgSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
             if (this.sqlDialect.supportSchemas()) {
                 DatabaseMetaData metadata = conn.getMetaData();
                 ResultSet schemaRs = metadata.getSchemas(null /*catalog*/, SQLG_SCHEMA);
+                return schemaRs.next();
+            } else {
+                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private boolean existGuiSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            if (this.sqlDialect.supportSchemas()) {
+                DatabaseMetaData metadata = conn.getMetaData();
+                ResultSet schemaRs = metadata.getSchemas(null /*catalog*/, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
                 return schemaRs.next();
             } else {
                 throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");

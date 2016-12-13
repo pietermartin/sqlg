@@ -1,5 +1,7 @@
 ##1.3.3
 
+* Replace `ResultSet.getObject(index)` with `ResultSet.getString/Int...` as its faster.
+* Added support for global  unique indexes. This means that a unique index can be placed on multiple properties from any Vertex or Edge.
 * Rewrite of the topology/schema management. `SchemaManager` is replaced with `Topology`.
 There are now object representing the topology. `Topology`, `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn` and `Index`
 * Strengthened the reloading of the topology from the information_schema tables.
@@ -12,7 +14,7 @@ As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become
     update sqlg_schema."V_property" set type = 'byte_ARRAY' where name = 'password_salt' and type = 'BYTE_ARRAY'
 * Fix bug [#116](https://github.com/pietermartin/sqlg/issues/116)
 
-    If `RepeapStep` could not be optimized the incoming emit `Element` did not get a label so it was not being returned from the sql.
+    If a `RepeapStep` could not be optimized then the incoming emit `Element` did not get a label so it was not being returned from the sql.
 
 
 ##1.3.2
