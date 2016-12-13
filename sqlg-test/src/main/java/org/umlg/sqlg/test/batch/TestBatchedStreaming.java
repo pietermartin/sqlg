@@ -199,7 +199,7 @@ public class TestBatchedStreaming extends BaseTest {
         }
         this.sqlgGraph.tx().flush();
         this.sqlgGraph.tx().streamingBatchModeOn();
-        this.sqlgGraph.streamVertex("Person", new LinkedHashMap<String, Object>());
+        this.sqlgGraph.streamVertex("Person", new LinkedHashMap<>());
         this.sqlgGraph.tx().commit();
         assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
         assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Dog").count().next(), 0L);

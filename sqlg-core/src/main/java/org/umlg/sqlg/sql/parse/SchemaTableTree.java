@@ -2010,20 +2010,20 @@ public class SchemaTableTree {
                 //the getArray() call. Don't bother for byte arrays, because they are
                 //handled differently by all supported DBs, so getObject() on them
                 //works.
-                Object o = (propertyType != null && propertyType.isArray()
-                        && propertyType != PropertyType.byte_ARRAY
-                        && propertyType != PropertyType.BYTE_ARRAY)
-                        ? resultSet.getArray(ix)
-                        : resultSet.getObject(ix);
-                if (!Objects.isNull(o)) {
+//                Object o = (propertyType != null && propertyType.isArray()
+//                        && propertyType != PropertyType.byte_ARRAY
+//                        && propertyType != PropertyType.BYTE_ARRAY)
+//                        ? resultSet.getArray(ix)
+//                        : resultSet.getObject(ix);
+//                if (!Objects.isNull(o)) {
                     if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                         ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, ix);
                     } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
                         ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, ix);
                     } else {
-                        sqlgElement.loadProperty(resultSet, propertyName, o, getColumnNameAliasMap(), this.stepDepth, propertyType);
+                        sqlgElement.loadProperty(resultSet, propertyName, ix, getColumnNameAliasMap(), this.stepDepth, propertyType);
                     }
-                }
+//                }
             }
         }
     }

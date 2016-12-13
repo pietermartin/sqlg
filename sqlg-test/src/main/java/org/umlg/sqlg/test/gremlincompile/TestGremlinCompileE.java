@@ -96,6 +96,14 @@ public class TestGremlinCompileE extends BaseTest {
             v1.addEdge("walks", v2, "location", "river");
             edge.remove();
         });
+
+        this.sqlgGraph.tx().commit();
+
+        List<Edge> edgeList = vertexTraversal(v1).outE().toList();
+        for (Edge edge : edgeList) {
+            System.out.println(edge);
+        }
+
         assertEquals(8, vertexTraversal(v1).outE().count().next().intValue());
         assertEquals(0, vertexTraversal(v2).outE().count().next().intValue());
         v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);

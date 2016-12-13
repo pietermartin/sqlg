@@ -16,7 +16,6 @@ import java.util.*;
  */
 public class SqlgEdge extends SqlgElement implements Edge {
 
-    public static final String IN_OR_OUT_VERTEX_ID_NOT_SET = "in or out vertex id not set!!!!";
     private Logger logger = LoggerFactory.getLogger(SqlgEdge.class.getName());
     private SqlgVertex inVertex;
     private SqlgVertex outVertex;
@@ -24,12 +23,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
     /**
      * Called from @link {@link SqlgVertex} to create a brand new edge.
      *
-     * @param sqlgGraph The graph.
-     * @param streaming If in batch mode this indicates if its streaming or not.
-     * @param schema    The schema the edge is in.
-     * @param table     The edge's label which translates to a table name.
-     * @param inVertex  The edge's in vertex.
-     * @param outVertex The edge's out vertex.
+     * @param sqlgGraph       The graph.
+     * @param streaming       If in batch mode this indicates if its streaming or not.
+     * @param schema          The schema the edge is in.
+     * @param table           The edge's label which translates to a table name.
+     * @param inVertex        The edge's in vertex.
+     * @param outVertex       The edge's out vertex.
      * @param keyValueMapPair A pair of properties of the edge. Left contains all the properties and right the null valued properties.
      */
     public SqlgEdge(SqlgGraph sqlgGraph, boolean streaming, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) {
@@ -43,26 +42,26 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-    /**
-     * Called from {@link SqlgVertex#edges(Direction, String...)}
-     * The edge already exist and must supply its table id. Not a {@link RecordId}.
-     *
-     * @param sqlgGraph The graph.
-     * @param id        The edge's id. This the edge's table's id. Not a {@link RecordId}.
-     * @param schema    The schema the edge is in.
-     * @param table     The table the edge is in. This translates to its label.
-     * @param inVertex  The in vertex.
-     * @param outVertex The out vertex.
-     * @param keyValues The properties of the edge. #TODO this is not used at present. It is loaded again from the db
-     *                  when the property is accessed.
-     */
-    public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
-        super(sqlgGraph, id, schema, table);
-        this.inVertex = inVertex;
-        this.outVertex = outVertex;
-        properties.clear();
-        properties.putAll(SqlgUtil.transformToInsertValues(keyValues).getRight());
-    }
+//    /**
+//     * Called from {@link SqlgVertex#edges(Direction, String...)}
+//     * The edge already exist and must supply its table id. Not a {@link RecordId}.
+//     *
+//     * @param sqlgGraph The graph.
+//     * @param id        The edge's id. This the edge's table's id. Not a {@link RecordId}.
+//     * @param schema    The schema the edge is in.
+//     * @param table     The table the edge is in. This translates to its label.
+//     * @param inVertex  The in vertex.
+//     * @param outVertex The out vertex.
+//     * @param keyValues The properties of the edge. #TODO this is not used at present. It is loaded again from the db
+//     *                  when the property is accessed.
+//     */
+//    public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
+//        super(sqlgGraph, id, schema, table);
+//        this.inVertex = inVertex;
+//        this.outVertex = outVertex;
+//        properties.clear();
+//        properties.putAll(SqlgUtil.transformToInsertValues(keyValues).getRight());
+//    }
 
     /**
      * This is the primary constructor for loading edges from the db via gremlin.
@@ -129,7 +128,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void insertEdge(boolean complete, Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair) throws SQLException {
-//        Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = SqlgUtil.transformToInsertValues(keyValues);
         Map<String, Object> allKeyValueMap = keyValueMapPair.getLeft();
         Map<String, Object> notNullKeyValueMap = keyValueMapPair.getRight();
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode()) {
@@ -146,8 +144,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     private void internalAddEdge(Map<String, Object> keyValueMap) throws SQLException {
-
-
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
@@ -206,7 +202,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 insertGlobalUniqueIndex(keyValueMap, propertyColumns);
             }
         }
-
     }
 
 
@@ -249,13 +244,17 @@ public class SqlgEdge extends SqlgElement implements Edge {
     public void loadInVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
         SchemaTable inVertexColumnName = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
         Long inId = resultSet.getLong(columnIdx);
-        this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+        if (!resultSet.wasNull()) {
+            this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
+        }
     }
 
     public void loadOutVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
         SchemaTable outVertexColumnName = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
         Long outId = resultSet.getLong(columnIdx);
-        this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+        if (!resultSet.wasNull()) {
+            this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
+        }
     }
 
     @Override
@@ -267,27 +266,22 @@ public class SqlgEdge extends SqlgElement implements Edge {
         ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
         for (int i = 1; i <= resultSetMetaData.getColumnCount(); i++) {
             String columnName = resultSetMetaData.getColumnLabel(i);
-            Object o = resultSet.getObject(i);
             if (!columnName.equals("ID") &&
-                    !Objects.isNull(o) &&
                     !columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END) &&
                     !columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
 
-                loadProperty(resultSet, columnName, o);
-
+                loadProperty(resultSet, columnName, i);
             }
-            if (!Objects.isNull(o)) {
-                if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                    inVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                    inVertexColumnIndex = i;
-                } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                    outVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
-                    outVertexColumnIndex = i;
-                }
+            if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                inVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                inVertexColumnIndex = i;
+            } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                outVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                outVertexColumnIndex = i;
             }
         }
         if (inVertexColumnName == null || inVertexColumnIndex == 0 || outVertexColumnName == null || outVertexColumnIndex == 0) {
-            throw new IllegalStateException(IN_OR_OUT_VERTEX_ID_NOT_SET);
+            throw new IllegalStateException("in or out vertex id not set!!!!");
         }
         Long inId = resultSet.getLong(inVertexColumnIndex);
         Long outId = resultSet.getLong(outVertexColumnIndex);

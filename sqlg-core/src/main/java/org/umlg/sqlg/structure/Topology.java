@@ -347,17 +347,17 @@ public class Topology {
                 }
                 if (this.distributed) {
                     ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
-                }
-                //load the log to see if the schema has not already been created.
-                //the last loaded log
-                LocalDateTime timestamp = this.notificationTimestamps.last();
-                List<Vertex> logs = this.sqlgGraph.topology().V()
-                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                        .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
-                        .toList();
-                for (Vertex logVertex : logs) {
-                    ObjectNode log = logVertex.value("log");
-                    fromNotifyJson(timestamp, log);
+                    //load the log to see if the schema has not already been created.
+                    //the last loaded log
+                    LocalDateTime timestamp = this.notificationTimestamps.last();
+                    List<Vertex> logs = this.sqlgGraph.topology().V()
+                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                            .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
+                            .toList();
+                    for (Vertex logVertex : logs) {
+                        ObjectNode log = logVertex.value("log");
+                        fromNotifyJson(timestamp, log);
+                    }
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

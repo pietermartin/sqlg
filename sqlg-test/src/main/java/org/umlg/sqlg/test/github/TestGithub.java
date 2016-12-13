@@ -4,13 +4,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/04/26
@@ -18,21 +18,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestGithub extends BaseTest {
 
-//    @BeforeClass
-//    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
-//        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
-//        try {
-//            configuration = new PropertiesConfiguration(sqlProperties);
-//            configuration.setProperty("cache.vertices", true);
-//            if (!configuration.containsKey("jdbc.url")) {
-//                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
-//            }
-//        } catch (ConfigurationException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
-    //    @Test
+    @Test
     public void edgeUpdate() {
         Vertex a = this.sqlgGraph.addVertex("A");
         Vertex b = this.sqlgGraph.addVertex("B");
@@ -47,19 +33,7 @@ public class TestGithub extends BaseTest {
         assertEquals("someValue", found_a2b.property("someKey").value());
         assertEquals("anotherValue", found_a2b.property("anotherKey").value());
         assertEquals("someValue", a2b.property("someKey").value());
-//        assertEquals("anotherValue", a2b.property("anotherKey").value());
     }
-
-//    @Test
-//    public void testStaleEdge() {
-//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//        Vertex a1Again = this.sqlgGraph.traversal().V().hasLabel("A").next();
-//        this.sqlgGraph.tx().commit();
-//        a1Again.property("nameAgain", "a1");
-//        this.sqlgGraph.tx().commit();
-//        assertEquals("a1", a1.property("name").value());
-//        assertEquals("a1", a1.property("nameAgain").value());
-//    }
 
     @Test
     public void testEdge() {
@@ -73,8 +47,8 @@ public class TestGithub extends BaseTest {
                 .V().hasLabel("A")
                 .out("e")
                 .inE("e");
-        assertTrue(results.hasNext());
-        assertEquals(e1, results.next());
+        Assert.assertTrue(results.hasNext());
+        Assert.assertEquals(e1, results.next());
     }
 
     @Test
@@ -95,7 +69,6 @@ public class TestGithub extends BaseTest {
                 .inV().has("p", "c");
         assertEquals(c, results.next());
     }
-
 
     @Test
     public void testWhereQuery() {

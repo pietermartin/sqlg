@@ -117,7 +117,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for insert: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 100; i++) {
             GraphTraversal<Vertex, Path> traversal = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").path();
             while (traversal.hasNext()) {
                 Path path = traversal.next();
@@ -135,7 +135,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for gremlin: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5; i++) {
             List<Map<String, Vertex>> traversalMap = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").<Vertex>select("god", "hand", "finger").toList();
             assertEquals(1_000_000, traversalMap.size());
             stopWatch.stop();
@@ -210,13 +210,37 @@ public class TestTraversalPerformance extends BaseTest {
 
                 while (resultSet.next()) {
                     Long s1 = resultSet.getLong(1);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     String s2 = resultSet.getString(2);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     Long s3 = resultSet.getLong(3);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     String s4 = resultSet.getString(4);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     Long s5 = resultSet.getLong(5);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     String s6 = resultSet.getString(6);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     Long s7 = resultSet.getLong(7);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                     String s8 = resultSet.getString(8);
+                    if (resultSet.wasNull()) {
+                        System.out.println("");
+                    };
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

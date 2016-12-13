@@ -14,7 +14,6 @@ import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
-import java.sql.Date;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -518,7 +517,7 @@ public abstract class SqlgElement implements Element {
         return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
     }
 
-    public void loadProperty(ResultSet resultSet, String propertyName, Object o, Map<String, String> columnNameAliasMap, int stepDepth, PropertyType propertyType) throws SQLException {
+    public void loadProperty(ResultSet resultSet, String propertyName, int columnIndex, Map<String, String> columnNameAliasMap, int stepDepth, PropertyType propertyType) throws SQLException {
         if (propertyName.endsWith(SchemaManager.ZONEID) ||
                 propertyName.endsWith(SchemaManager.MONTHS) ||
                 propertyName.endsWith(SchemaManager.DAYS) ||
@@ -529,228 +528,331 @@ public abstract class SqlgElement implements Element {
         switch (propertyType) {
 
             case BOOLEAN:
-                this.properties.put(propertyName, o);
+                boolean aBoolean = resultSet.getBoolean(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, aBoolean);
+                }
                 break;
             case BYTE:
-                this.properties.put(propertyName, ((Integer) o).byteValue());
+                byte aByte = resultSet.getByte(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, aByte);
+                }
                 break;
             case SHORT:
-                short val = o instanceof Short ? (Short) o : ((Integer) o).shortValue();
-                this.properties.put(propertyName, val);
+                short s = resultSet.getShort(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, s);
+                }
                 break;
             case INTEGER:
-                this.properties.put(propertyName, o);
+                int anInt = resultSet.getInt(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, anInt);
+                }
                 break;
             case LONG:
-                this.properties.put(propertyName, o);
+                long aLong = resultSet.getLong(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, aLong);
+                }
                 break;
             case FLOAT:
-                this.properties.put(propertyName, ((Number) o).floatValue());
+                float aFloat = resultSet.getFloat(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, aFloat);
+                }
                 break;
             case DOUBLE:
-                this.properties.put(propertyName, ((Number) o).doubleValue());
+                double aDouble = resultSet.getDouble(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, aDouble);
+                }
                 break;
             case STRING:
-                this.properties.put(propertyName, o);
+                String string = resultSet.getString(columnIndex);
+                if (!resultSet.wasNull()) {
+                    this.properties.put(propertyName, string);
+                }
                 break;
             case LOCALDATE:
-                this.properties.put(propertyName, ((Date) o).toLocalDate());
+                java.sql.Date date = resultSet.getDate(columnIndex);
+                if (date != null) {
+                    this.properties.put(propertyName, date.toLocalDate());
+                }
                 break;
             case LOCALDATETIME:
-                this.properties.put(propertyName, ((Timestamp) o).toLocalDateTime());
+                Timestamp timestamp = resultSet.getTimestamp(columnIndex);
+                if (timestamp != null) {
+                    this.properties.put(propertyName, timestamp.toLocalDateTime());
+                }
                 break;
             case ZONEDDATETIME:
-                String zoneIdColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                String zonedId = columnNameAliasMap.get(zoneIdColumn);
-                if (zonedId == null) {
-                    zonedId = propertyName + propertyType.getPostFixes()[0];
+                Timestamp timestamp1 = resultSet.getTimestamp(columnIndex);
+                if (timestamp1 != null) {
+                    String zoneIdColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                    String zonedId = columnNameAliasMap.get(zoneIdColumn);
+                    if (zonedId == null) {
+                        zonedId = propertyName + propertyType.getPostFixes()[0];
+                    }
+                    String zoneId = resultSet.getString(zonedId);
+                    ZoneId zoneId1 = ZoneId.of(zoneId);
+                    ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(timestamp1.toLocalDateTime(), zoneId1);
+                    this.properties.put(propertyName, zonedDateTimeAGT);
                 }
-                String zoneId = resultSet.getString(zonedId);
-                ZoneId zoneId1 = ZoneId.of(zoneId);
-                ZonedDateTime zonedDateTimeAGT = ZonedDateTime.of(((Timestamp) o).toLocalDateTime(), zoneId1);
-                this.properties.put(propertyName, zonedDateTimeAGT);
                 break;
             case LOCALTIME:
-                this.properties.put(propertyName, ((Time) o).toLocalTime());
+                Time time = resultSet.getTime(columnIndex);
+                if (time != null) {
+                    this.properties.put(propertyName, time.toLocalTime());
+                }
                 break;
             case PERIOD:
-                int years = (Integer) o;
-                String monthColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                String aliasedMonth = columnNameAliasMap.get(monthColumn);
-                if (aliasedMonth == null) {
-                    aliasedMonth = propertyName + propertyType.getPostFixes()[0];
+                int years = resultSet.getInt(columnIndex);
+                if (!resultSet.wasNull()) {
+                    String monthColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                    String aliasedMonth = columnNameAliasMap.get(monthColumn);
+                    if (aliasedMonth == null) {
+                        aliasedMonth = propertyName + propertyType.getPostFixes()[0];
+                    }
+                    int months = resultSet.getInt(aliasedMonth);
+                    String dayColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
+                    String aliasedDay = columnNameAliasMap.get(dayColumn);
+                    if (aliasedDay == null) {
+                        aliasedDay = propertyName + propertyType.getPostFixes()[1];
+                    }
+                    int days = resultSet.getInt(aliasedDay);
+                    this.properties.put(propertyName, Period.of(years, months, days));
                 }
-                int months = resultSet.getInt(aliasedMonth);
-                String dayColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
-                String aliasedDay = columnNameAliasMap.get(dayColumn);
-                if (aliasedDay == null) {
-                    aliasedDay = propertyName + propertyType.getPostFixes()[1];
-                }
-                int days = resultSet.getInt(aliasedDay);
-                this.properties.put(propertyName, Period.of(years, months, days));
                 break;
             case DURATION:
-                long seconds = (Long) o;
-                //load the months and days as its needed to construct the Period
-                String nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                String aliasedNanos = columnNameAliasMap.get(nanosColumn);
-                if (aliasedNanos == null) {
-                    aliasedNanos = propertyName + propertyType.getPostFixes()[0];
+                long seconds = resultSet.getLong(columnIndex);
+                if (!resultSet.wasNull()) {
+                    //load the months and days as its needed to construct the Period
+                    String nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                    String aliasedNanos = columnNameAliasMap.get(nanosColumn);
+                    if (aliasedNanos == null) {
+                        aliasedNanos = propertyName + propertyType.getPostFixes()[0];
+                    }
+                    int nanos = resultSet.getInt(aliasedNanos);
+                    this.properties.put(propertyName, Duration.ofSeconds(seconds, nanos));
                 }
-                int nanos = resultSet.getInt(aliasedNanos);
-                this.properties.put(propertyName, Duration.ofSeconds(seconds, nanos));
                 break;
             case JSON:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
+                Object object = resultSet.getObject(columnIndex);
+                if (object != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object, propertyType);
+                }
                 break;
             case POINT:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
+                Object object1 = resultSet.getObject(columnIndex);
+                if (object1 != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object1, propertyType);
+                }
                 break;
             case LINESTRING:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
+                Object object2 = resultSet.getObject(columnIndex);
+                if (object2 != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object2, propertyType);
+                }
                 break;
             case POLYGON:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
+                Object object3 = resultSet.getObject(columnIndex);
+                if (object3 != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object3, propertyType);
+                }
                 break;
             case GEOGRAPHY_POINT:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
+                Object object4 = resultSet.getObject(columnIndex);
+                if (object4 != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object4, propertyType);
+                }
                 break;
             case GEOGRAPHY_POLYGON:
-                sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, o, propertyType);
+                Object object5 = resultSet.getObject(columnIndex);
+                if (object5 != null) {
+                    sqlgGraph.getSqlDialect().handleOther(this.properties, propertyName, object5, propertyType);
+                }
                 break;
             case boolean_ARRAY:
-                java.sql.Array array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                java.sql.Array array = resultSet.getArray(columnIndex);
+                if (array != null)  {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case BOOLEAN_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case byte_ARRAY:
-                this.properties.put(propertyName, o);
+                Object object6 = resultSet.getObject(columnIndex);
+                if (object6 != null) {
+                    this.properties.put(propertyName, object6);
+                }
                 break;
             case BYTE_ARRAY:
-                this.properties.put(propertyName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) o));
+                Object object7 = resultSet.getObject(columnIndex);
+                if (object7 != null) {
+                    this.properties.put(propertyName, SqlgUtil.convertPrimitiveByteArrayToByteArray((byte[]) object7));
+                }
                 break;
             case short_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case SHORT_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case int_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case INTEGER_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case long_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case LONG_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case float_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case FLOAT_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case double_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case DOUBLE_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case STRING_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case LOCALDATETIME_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case LOCALDATE_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case LOCALTIME_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             case ZONEDDATETIME_ARRAY:
-                array = (java.sql.Array) o;
-                zoneIdColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                zonedId = columnNameAliasMap.get(zoneIdColumn);
-                if (zonedId == null) {
-                    zonedId = propertyName + propertyType.getPostFixes()[0];
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    String zoneIdColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                    String zonedId = columnNameAliasMap.get(zoneIdColumn);
+                    if (zonedId == null) {
+                        zonedId = propertyName + propertyType.getPostFixes()[0];
+                    }
+                    java.sql.Array zoneIdArray = resultSet.getArray(zonedId);
+                    String[] objectZoneIdArray = (String[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.STRING_ARRAY, zoneIdArray);
+                    LocalDateTime[] localDateTimes = (LocalDateTime[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.LOCALDATETIME_ARRAY, array);
+                    ZonedDateTime[] zonedDateTimes = new ZonedDateTime[localDateTimes.length];
+                    int count = 0;
+                    for (LocalDateTime localDateTime : localDateTimes) {
+                        ZoneId zoneId1 = ZoneId.of(objectZoneIdArray[count]);
+                        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId1);
+                        zonedDateTimes[count++] = zonedDateTime;
+                    }
+                    this.properties.put(propertyName, zonedDateTimes);
                 }
-                java.sql.Array zoneIdArray = resultSet.getArray(zonedId);
-                String[] objectZoneIdArray = (String[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.STRING_ARRAY, zoneIdArray);
-                LocalDateTime[] localDateTimes = (LocalDateTime[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.LOCALDATETIME_ARRAY, array);
-                ZonedDateTime[] zonedDateTimes = new ZonedDateTime[localDateTimes.length];
-                int count = 0;
-                for (LocalDateTime localDateTime : localDateTimes) {
-                    zoneId1 = ZoneId.of(objectZoneIdArray[count]);
-                    ZonedDateTime zonedDateTime = ZonedDateTime.of(localDateTime, zoneId1);
-                    zonedDateTimes[count++] = zonedDateTime;
-                }
-                this.properties.put(propertyName, zonedDateTimes);
                 break;
             case DURATION_ARRAY:
-                array = (java.sql.Array) o;
-                nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                aliasedNanos = columnNameAliasMap.get(nanosColumn);
-                if (aliasedNanos == null) {
-                    aliasedNanos = propertyName + propertyType.getPostFixes()[0];
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    String nanosColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                    String aliasedNanos = columnNameAliasMap.get(nanosColumn);
+                    if (aliasedNanos == null) {
+                        aliasedNanos = propertyName + propertyType.getPostFixes()[0];
+                    }
+                    long[] secondsArray = (long[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.long_ARRAY, array);
+                    java.sql.Array nanosArray = resultSet.getArray(aliasedNanos);
+                    int[] nanoArray = (int[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.int_ARRAY, nanosArray);
+                    Duration[] durations = new Duration[secondsArray.length];
+                    int count = 0;
+                    for (Long second : secondsArray) {
+                        durations[count] = Duration.ofSeconds(second, nanoArray[count++]);
+                    }
+                    this.properties.put(propertyName, durations);
                 }
-                long[] secondsArray = (long[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.long_ARRAY, array);
-                java.sql.Array nanosArray = resultSet.getArray(aliasedNanos);
-                int[] nanoArray = (int[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.int_ARRAY, nanosArray);
-                Duration[] durations = new Duration[secondsArray.length];
-                count = 0;
-                for (Long second : secondsArray) {
-                    durations[count] = Duration.ofSeconds(second, nanoArray[count++]);
-                }
-                this.properties.put(propertyName, durations);
                 break;
             case PERIOD_ARRAY:
-                array = (java.sql.Array) o;
-                String monthsColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
-                String aliasedMonths = columnNameAliasMap.get(monthsColumn);
-                if (aliasedMonths == null) {
-                    aliasedMonths = propertyName + propertyType.getPostFixes()[0];
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    String monthsColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[0];
+                    String aliasedMonths = columnNameAliasMap.get(monthsColumn);
+                    if (aliasedMonths == null) {
+                        aliasedMonths = propertyName + propertyType.getPostFixes()[0];
+                    }
+                    String daysColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
+                    String aliasedDays = columnNameAliasMap.get(daysColumn);
+                    if (aliasedDays == null) {
+                        aliasedDays = propertyName + propertyType.getPostFixes()[1];
+                    }
+                    Integer[] yearsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, array);
+                    java.sql.Array monthsArray = resultSet.getArray(aliasedMonths);
+                    Integer[] monthsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, monthsArray);
+                    java.sql.Array daysArray = resultSet.getArray(aliasedDays);
+                    Integer[] daysIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, daysArray);
+                    Period[] periods = new Period[yearsIntegers.length];
+                    int count = 0;
+                    for (Integer year : yearsIntegers) {
+                        periods[count] = Period.of(year, monthsIntegers[count], daysIntegers[count++]);
+                    }
+                    this.properties.put(propertyName, periods);
                 }
-                String daysColumn = stepDepth + ALIAS_SEPARATOR + getSchemaTablePrefixed().toString().replace(".", ALIAS_SEPARATOR) + ALIAS_SEPARATOR + propertyName + propertyType.getPostFixes()[1];
-                String aliasedDays = columnNameAliasMap.get(daysColumn);
-                if (aliasedDays == null) {
-                    aliasedDays = propertyName + propertyType.getPostFixes()[1];
-                }
-                Integer[] yearsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, array);
-                java.sql.Array monthsArray = resultSet.getArray(aliasedMonths);
-                Integer[] monthsIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, monthsArray);
-                java.sql.Array daysArray = resultSet.getArray(aliasedDays);
-                Integer[] daysIntegers = (Integer[]) this.sqlgGraph.getSqlDialect().convertArray(PropertyType.INTEGER_ARRAY, daysArray);
-                Period[] periods = new Period[yearsIntegers.length];
-                count = 0;
-                for (Integer year : yearsIntegers) {
-                    periods[count] = Period.of(year, monthsIntegers[count], daysIntegers[count++]);
-                }
-                this.properties.put(propertyName, periods);
                 break;
             case JSON_ARRAY:
-                array = (java.sql.Array) o;
-                this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                array = resultSet.getArray(columnIndex);
+                if (array != null) {
+                    this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
+                }
                 break;
             default:
                 throw SqlgExceptions.invalidPropertyType(propertyType);
@@ -758,7 +860,7 @@ public abstract class SqlgElement implements Element {
 
     }
 
-    public void loadProperty(ResultSet resultSet, String propertyName, Object o) throws SQLException {
+    void loadProperty(ResultSet resultSet, String propertyName, int columnIndex) throws SQLException {
         if (propertyName.endsWith(SchemaManager.ZONEID) ||
                 propertyName.endsWith(SchemaManager.MONTHS) ||
                 propertyName.endsWith(SchemaManager.DAYS) ||
@@ -767,7 +869,7 @@ public abstract class SqlgElement implements Element {
             return;
         }
         PropertyType propertyType = this.sqlgGraph.getTopology().getTableFor(getSchemaTablePrefixed()).get(propertyName);
-        loadProperty(resultSet, propertyName, o, Collections.emptyMap(), -1, propertyType);
+        loadProperty(resultSet, propertyName, columnIndex, Collections.emptyMap(), -1, propertyType);
     }
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
