@@ -16,7 +16,7 @@ public class GlobalUniqueIndex implements TopologyInf {
 
     private Topology topology;
     private String name;
-    private boolean uncommitted = true;
+    private boolean committed = true;
     private Set<PropertyColumn> properties = new HashSet<>();
     private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
     public static final String GLOBAL_UNIQUE_INDEX_VALUE = "value";
@@ -38,7 +38,8 @@ public class GlobalUniqueIndex implements TopologyInf {
     }
 
     static GlobalUniqueIndex instantiateGlobalUniqueIndex(Topology topology, String name) {
-        return new GlobalUniqueIndex(topology, name);
+        GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, name);
+        return globalUniqueIndex;
     }
 
     public String getName() {
@@ -46,8 +47,8 @@ public class GlobalUniqueIndex implements TopologyInf {
     }
 
     @Override
-    public boolean isUncommitted() {
-        return uncommitted;
+    public boolean isCommitted() {
+        return this.committed;
     }
 
     /**
@@ -71,7 +72,7 @@ public class GlobalUniqueIndex implements TopologyInf {
                 propertyColumnIterator.remove();
             }
         }
-        this.uncommitted = false;
+        this.committed = true;
     }
 
     void afterRollback() {
@@ -95,6 +96,7 @@ public class GlobalUniqueIndex implements TopologyInf {
         GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
         topology.addToUncommittedGlobalUniqueIndexes(globalUniqueIndex);
         TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
+        globalUniqueIndex.committed = false;
         return globalUniqueIndex;
     }
 

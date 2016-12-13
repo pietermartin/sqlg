@@ -10,9 +10,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;
@@ -23,6 +21,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/10/29
@@ -128,6 +127,9 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             Thread.sleep(1000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
+                for (Schema schema : graph.getTopology().getSchemas()) {
+                    assertTrue(schema.isCommitted());
+                }
             }
         } finally {
             for (SqlgGraph graph : graphs) {

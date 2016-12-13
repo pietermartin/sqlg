@@ -5,10 +5,10 @@ package org.umlg.sqlg.structure;
  */
 public interface TopologyInf {
 
-    boolean isUncommitted();
-
-    default boolean isCommitted() {
-        return !isUncommitted();
+    default boolean isUncommitted() {
+        return !isCommitted();
     }
+
+    boolean isCommitted();
 
 }

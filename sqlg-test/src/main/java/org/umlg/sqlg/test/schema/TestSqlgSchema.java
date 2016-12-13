@@ -34,7 +34,6 @@ public class TestSqlgSchema  extends BaseTest {
             GraphTraversalSource traversalSource = sqlgGraph1.traversal().withStrategies(
                     TopologyStrategy.build().selectFrom(
                             sqlgGraph1.getTopology().getSqlgSchemaVertexLabels()
-//                            SQLG_SCHEMA_SCHEMA_TABLES
                     ).create()
             );
             //Assert the schema
@@ -94,9 +93,7 @@ public class TestSqlgSchema  extends BaseTest {
             Assert.assertEquals(1, petProperties.size());
             Assert.assertEquals("createdOn", petProperties.get(0).value("name"));
             Assert.assertEquals("LOCALDATETIME", petProperties.get(0).value("type"));
-
         }
-
     }
 
 }

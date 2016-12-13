@@ -28,7 +28,7 @@ public class Index implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(Index.class.getName());
     private String name;
-    private boolean uncommitted = true;
+    private boolean committed = true;
     private AbstractLabel abstractLabel;
     private IndexType indexType;
     private List<PropertyColumn> properties = new ArrayList<>();
@@ -47,8 +47,8 @@ public class Index implements TopologyInf {
     }
 
     @Override
-    public boolean isUncommitted() {
-        return uncommitted;
+    public boolean isCommitted() {
+        return this.committed;
     }
 
     public IndexType getIndexType() {
@@ -67,7 +67,7 @@ public class Index implements TopologyInf {
             }
             this.uncommittedIndexType = null;
         }
-        this.uncommitted = false;
+        this.committed = true;
     }
 
     void afterRollback() {
@@ -139,14 +139,16 @@ public class Index implements TopologyInf {
             //noinspection OptionalGetWithoutIsPresent
             properties.add(propertyColumnOptional.get());
         }
-        return new Index(name, indexType, abstractLabel, properties);
+        Index index = new Index(name, indexType, abstractLabel, properties);
+        return index;
     }
 
-    public static Index createIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String indexName, IndexType indexType, List<PropertyColumn> properties) {
+    static Index createIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = new Index(indexName, indexType, abstractLabel, properties);
         SchemaTable schemaTable = SchemaTable.of(abstractLabel.getSchema().getName(), abstractLabel.getLabel());
         index.addIndex(sqlgGraph, schemaTable, indexType, properties);
         TopologyManager.addIndex(sqlgGraph, abstractLabel, index, indexType, properties);
+        index.committed = false;
         return index;
     }
 

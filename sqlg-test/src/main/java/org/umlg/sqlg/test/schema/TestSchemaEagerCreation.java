@@ -129,12 +129,12 @@ public class TestSchemaEagerCreation extends BaseTest {
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name", PropertyType.STRING);
         properties.put("age", PropertyType.INTEGER);
-        vertexLabel.get().ensureColumnsExist(properties);
+        vertexLabel.get().ensurePropertiesExist(properties);
         assertEquals(2, vertexLabel.get().getProperties().size());
         this.sqlgGraph.tx().rollback();
         assertEquals(0, vertexLabel.get().getProperties().size());
 
-        vertexLabel.get().ensureColumnsExist(properties);
+        vertexLabel.get().ensurePropertiesExist(properties);
         this.sqlgGraph.tx().commit();
         assertEquals(2, vertexLabel.get().getProperties().size());
         PropertyColumn propertyColumnName = vertexLabel.get().getProperties().get("name");
@@ -164,14 +164,14 @@ public class TestSchemaEagerCreation extends BaseTest {
         properties.put("name", PropertyType.STRING);
         properties.put("age", PropertyType.INTEGER);
         EdgeLabel edgeLabel = edgeLabelOptional.get();
-        edgeLabel.ensureColumnsExist(properties);
+        edgeLabel.ensurePropertiesExist(properties);
         this.sqlgGraph.tx().rollback();
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
         assertTrue(edgeLabel.getProperties().isEmpty());
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();
-        edgeLabel.ensureColumnsExist(properties);
+        edgeLabel.ensurePropertiesExist(properties);
         this.sqlgGraph.tx().commit();
 
         edgeLabel = vertexLabelAOptional.get().getOutEdgeLabel("ab").get();

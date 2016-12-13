@@ -54,6 +54,7 @@ public class VertexLabel extends AbstractLabel {
         VertexLabel vertexLabel = new VertexLabel(schema, label, columns);
         vertexLabel.createVertexLabelOnDb(columns);
         TopologyManager.addVertexLabel(sqlgGraph, schema.getName(), label, columns);
+        vertexLabel.committed = false;
         return vertexLabel;
     }
 
@@ -216,7 +217,7 @@ public class VertexLabel extends AbstractLabel {
         return edgeLabel;
     }
 
-    public void ensureColumnsExist(Map<String, PropertyType> columns) {
+    public void ensurePropertiesExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 Preconditions.checkState(!this.schema.isSqlgSchema(), "schema may not be %s", SQLG_SCHEMA);
@@ -225,7 +226,9 @@ public class VertexLabel extends AbstractLabel {
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
                         TopologyManager.addVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), column);
                         addColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        this.uncommittedProperties.put(column.getKey(), new PropertyColumn(this, column.getKey(), column.getValue()));
+                        PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
+                        propertyColumn.setCommitted(false);
+                        this.uncommittedProperties.put(column.getKey(), propertyColumn);
                     }
                 }
             }

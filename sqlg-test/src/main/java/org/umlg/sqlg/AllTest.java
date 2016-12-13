@@ -79,7 +79,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestEdgeCache.class,
         TestVertexCache.class,
         TestTinkerpopBug.class,
-        TestLazyLoadSchema.class,
+        TestLoadSchemaViaNotify.class,
         TestCreateEdgeBetweenVertices.class,
         TestRemovedVertex.class,
         TestCaptureSchemaTableEdges.class,

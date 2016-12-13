@@ -46,6 +46,7 @@ public class EdgeLabel extends AbstractLabel {
         if (!inVertexLabel.getSchema().isSqlgSchema()) {
             edgeLabel.createEdgeTable(outVertexLabel, inVertexLabel, properties);
         }
+        edgeLabel.committed = false;
         return edgeLabel;
     }
 
@@ -83,7 +84,7 @@ public class EdgeLabel extends AbstractLabel {
         }
     }
 
-    public void ensureColumnsExist(Map<String, PropertyType> columns) {
+    public void ensurePropertiesExist(Map<String, PropertyType> columns) {
         for (Map.Entry<String, PropertyType> column : columns.entrySet()) {
             if (!this.properties.containsKey(column.getKey())) {
                 if (!this.uncommittedProperties.containsKey(column.getKey())) {
@@ -91,7 +92,9 @@ public class EdgeLabel extends AbstractLabel {
                     if (!this.uncommittedProperties.containsKey(column.getKey())) {
                         TopologyManager.addEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), column);
                         addColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), ImmutablePair.of(column.getKey(), column.getValue()));
-                        this.uncommittedProperties.put(column.getKey(), new PropertyColumn(this, column.getKey(), column.getValue()));
+                        PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
+                        propertyColumn.setCommitted(false);
+                        this.uncommittedProperties.put(column.getKey(), propertyColumn);
                     }
                 }
             }
