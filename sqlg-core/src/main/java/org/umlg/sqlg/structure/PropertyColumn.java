@@ -16,6 +16,7 @@ public class PropertyColumn implements TopologyInf {
 
     private AbstractLabel abstractLabel;
     private String name;
+    private boolean uncommitted = true;
     private PropertyType propertyType;
     private Set<GlobalUniqueIndex> globalUniqueIndices = new HashSet<>();
     private Set<GlobalUniqueIndex> uncommittedGlobalUniqueIndices = new HashSet<>();
@@ -28,6 +29,11 @@ public class PropertyColumn implements TopologyInf {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public boolean isUncommitted() {
+        return uncommitted;
     }
 
     public PropertyType getPropertyType() {
@@ -57,6 +63,7 @@ public class PropertyColumn implements TopologyInf {
                 globalUniqueIndexIter.remove();
             }
         }
+        this.uncommitted = false;
     }
 
     void afterRollback() {

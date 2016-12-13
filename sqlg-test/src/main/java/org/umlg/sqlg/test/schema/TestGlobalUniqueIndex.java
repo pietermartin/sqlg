@@ -24,20 +24,26 @@ public class TestGlobalUniqueIndex extends BaseTest {
         properties.put("name1", PropertyType.STRING);
         properties.put("name2", PropertyType.STRING);
         VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+        assertTrue(aVertexLabel.isUncommitted());
         properties.clear();
         properties.put("name3", PropertyType.STRING);
         properties.put("name4", PropertyType.STRING);
         VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
+        assertTrue(bVertexLabel.isUncommitted());
         properties.clear();
         properties.put("name5", PropertyType.STRING);
         properties.put("name6", PropertyType.STRING);
         EdgeLabel edgeLabel = aVertexLabel.ensureEdgeLabelExist("ab", bVertexLabel, properties);
+        assertTrue(edgeLabel.isUncommitted());
         Set<PropertyColumn> globalUniqueIndexPRopertyColumns = new HashSet<>();
         globalUniqueIndexPRopertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
         globalUniqueIndexPRopertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
         globalUniqueIndexPRopertyColumns.addAll(new HashSet<>(edgeLabel.getProperties().values()));
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPRopertyColumns);
         this.sqlgGraph.tx().commit();
+        assertFalse(aVertexLabel.isUncommitted());
+        assertFalse(bVertexLabel.isUncommitted());
+        assertFalse(edgeLabel.isUncommitted());
         assertEquals(1, this.sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
         assertEquals("globalUniqueIndex_0", this.sqlgGraph.getTopology().getGlobalUniqueIndexes().iterator().next().getName());
 
@@ -65,10 +71,14 @@ public class TestGlobalUniqueIndex extends BaseTest {
         this.sqlgGraph.getTopology().ensureVertexLabelExist("A", properties);
         @SuppressWarnings("OptionalGetWithoutIsPresent")
         Collection<PropertyColumn> propertyColumns = this.sqlgGraph.getTopology().getPublicSchema().getVertexLabel("A").get().getProperties().values();
-        this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
+        assertTrue(propertyColumns.stream().allMatch(PropertyColumn::isUncommitted));
+        GlobalUniqueIndex globalUniqueIndex = this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(propertyColumns));
+        assertTrue(globalUniqueIndex.isUncommitted());
         assertEquals(1, this.sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
         this.sqlgGraph.tx().commit();
         assertEquals(1, this.sqlgGraph.getTopology().getGlobalUniqueIndexes().size());
+        assertFalse(propertyColumns.stream().allMatch(PropertyColumn::isUncommitted));
+        assertFalse(globalUniqueIndex.isUncommitted());
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -259,7 +269,6 @@ public class TestGlobalUniqueIndex extends BaseTest {
         }
     }
 
-
     @Test
     public void testEdgeUniqueConstraintUpdate() {
         Map<String, PropertyType> properties = new HashMap<>();
@@ -377,6 +386,7 @@ public class TestGlobalUniqueIndex extends BaseTest {
             put("name", PropertyType.STRING);
         }};
         VertexLabel personVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("Person", properties);
+        assertTrue(personVertexLabel.isUncommitted());
         this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<>(personVertexLabel.getProperties().values()));
         this.sqlgGraph.tx().commit();
 

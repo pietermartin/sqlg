@@ -16,6 +16,7 @@ public class GlobalUniqueIndex implements TopologyInf {
 
     private Topology topology;
     private String name;
+    private boolean uncommitted = true;
     private Set<PropertyColumn> properties = new HashSet<>();
     private Set<PropertyColumn> uncommittedProperties = new HashSet<>();
     public static final String GLOBAL_UNIQUE_INDEX_VALUE = "value";
@@ -44,6 +45,11 @@ public class GlobalUniqueIndex implements TopologyInf {
         return name;
     }
 
+    @Override
+    public boolean isUncommitted() {
+        return uncommitted;
+    }
+
     /**
      * Called from {@link Topology#fromNotifyJson(int, LocalDateTime)}
      *
@@ -65,6 +71,7 @@ public class GlobalUniqueIndex implements TopologyInf {
                 propertyColumnIterator.remove();
             }
         }
+        this.uncommitted = false;
     }
 
     void afterRollback() {

@@ -34,6 +34,7 @@ public class Schema implements TopologyInf {
     private SqlgGraph sqlgGraph;
     private Topology topology;
     private String name;
+    private boolean uncommitted = true;
     //The key is schema + "." + VERTEX_PREFIX + vertex label. i.e. "A.V_A"
     private Map<String, VertexLabel> vertexLabels = new HashMap<>();
     private Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
@@ -103,6 +104,11 @@ public class Schema implements TopologyInf {
 
     SqlgGraph getSqlgGraph() {
         return this.sqlgGraph;
+    }
+
+    @Override
+    public boolean isUncommitted() {
+        return uncommitted;
     }
 
     public VertexLabel ensureVertexLabelExist(final String label) {
@@ -527,6 +533,7 @@ public class Schema implements TopologyInf {
             }
         }
         this.uncommittedOutEdgeLabels.clear();
+        this.uncommitted = false;
     }
 
     void afterRollback() {

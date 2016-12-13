@@ -28,6 +28,7 @@ public class Index implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(Index.class.getName());
     private String name;
+    private boolean uncommitted = true;
     private AbstractLabel abstractLabel;
     private IndexType indexType;
     private List<PropertyColumn> properties = new ArrayList<>();
@@ -43,6 +44,11 @@ public class Index implements TopologyInf {
 
     public String getName() {
         return name;
+    }
+
+    @Override
+    public boolean isUncommitted() {
+        return uncommitted;
     }
 
     public IndexType getIndexType() {
@@ -61,6 +67,7 @@ public class Index implements TopologyInf {
             }
             this.uncommittedIndexType = null;
         }
+        this.uncommitted = false;
     }
 
     void afterRollback() {
