@@ -117,7 +117,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for insert: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1; i++) {
             GraphTraversal<Vertex, Path> traversal = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").path();
             while (traversal.hasNext()) {
                 Path path = traversal.next();
@@ -135,7 +135,7 @@ public class TestTraversalPerformance extends BaseTest {
         System.out.println("Time for gremlin: " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1; i++) {
             List<Map<String, Vertex>> traversalMap = sqlgGraph.traversal().V().hasLabel("God").as("god").out("hand").as("hand").out("finger").as("finger").<Vertex>select("god", "hand", "finger").toList();
             assertEquals(1_000_000, traversalMap.size());
             stopWatch.stop();
@@ -148,7 +148,7 @@ public class TestTraversalPerformance extends BaseTest {
         stopWatch.reset();
         stopWatch.start();
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 20; i++) {
             Connection connection = sqlgGraph.tx().getConnection();
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery("SELECT\n" +
@@ -180,13 +180,13 @@ public class TestTraversalPerformance extends BaseTest {
                 throw new RuntimeException(e);
             }
             stopWatch.stop();
-            System.out.println("Time for name sql: " + stopWatch.toString());
+            System.out.println("Time for name sql 1: " + stopWatch.toString());
             stopWatch.reset();
             stopWatch.start();
         }
         stopWatch.stop();
         stopWatch.reset();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 20; i++) {
             stopWatch.start();
             Connection connection = sqlgGraph.tx().getConnection();
             try (Statement statement = connection.createStatement()) {
@@ -222,7 +222,47 @@ public class TestTraversalPerformance extends BaseTest {
                 throw new RuntimeException(e);
             }
             stopWatch.stop();
-            System.out.println("Time for index sql: " + stopWatch.toString());
+            System.out.println("Time for index sql 2: " + stopWatch.toString());
+            stopWatch.reset();
+        }
+
+        for (int i = 0; i < 20; i++) {
+            stopWatch.start();
+            Connection connection = sqlgGraph.tx().getConnection();
+            try (Statement statement = connection.createStatement()) {
+                ResultSet resultSet = statement.executeQuery("SELECT\n" +
+                        "\t\"public\".\"V_Finger\".\"ID\" AS \"alias1\",\n" +
+                        "\t\"public\".\"V_Finger\".\"name\" AS \"alias2\",\n" +
+                        "\t \"public\".\"V_God\".\"ID\" AS \"alias3\",\n" +
+                        "\t \"public\".\"V_God\".\"name\" AS \"alias4\",\n" +
+                        "\t \"public\".\"V_Hand\".\"ID\" AS \"alias5\",\n" +
+                        "\t \"public\".\"V_Hand\".\"name\" AS \"alias6\",\n" +
+                        "\t \"public\".\"V_Finger\".\"ID\" AS \"alias7\",\n" +
+                        "\t \"public\".\"V_Finger\".\"name\" AS \"alias8\"\n" +
+                        "FROM\n" +
+                        "\t\"public\".\"V_God\" INNER JOIN\n" +
+                        "\t\"public\".\"E_hand\" ON \"public\".\"V_God\".\"ID\" = \"public\".\"E_hand\".\"public.God__O\" INNER JOIN\n" +
+                        "\t\"public\".\"V_Hand\" ON \"public\".\"E_hand\".\"public.Hand__I\" = \"public\".\"V_Hand\".\"ID\" INNER JOIN\n" +
+                        "\t\"public\".\"E_finger\" ON \"public\".\"V_Hand\".\"ID\" = \"public\".\"E_finger\".\"public.Hand__O\" INNER JOIN\n" +
+                        "\t\"public\".\"V_Finger\" ON \"public\".\"E_finger\".\"public.Finger__I\" = \"public\".\"V_Finger\".\"ID\"");
+                ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+
+                while (resultSet.next()) {
+                    Object s1 = resultSet.getObject(1);
+                    Object s2 = resultSet.getObject(2);
+                    Object s3 = resultSet.getObject(3);
+                    Object s4 = resultSet.getObject(4);
+                    Object s5 = resultSet.getObject(5);
+                    Object s6 = resultSet.getObject(6);
+                    Object s7 = resultSet.getObject(7);
+                    Object s8 = resultSet.getObject(8);
+                }
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            stopWatch.stop();
+            System.out.println("Time for index sql 3: " + stopWatch.toString());
             stopWatch.reset();
         }
 //        Assert.assertEquals(100_000, vertexTraversal(a).out().out().count().next().intValue());
