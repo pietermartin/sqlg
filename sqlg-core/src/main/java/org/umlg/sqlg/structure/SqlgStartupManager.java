@@ -46,11 +46,13 @@ class SqlgStartupManager {
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
             if (!existSqlgSchema) {
-                //This exist separately because Hsqldb and H2 do not support "id exist" in the schema creation sql.
+                //This exist separately because Hsqldb and H2 do not support "if exist" in the schema creation sql.
                 createSqlgSchema();
             }
-            boolean existGuiSchema = existGuiSchema();
-            if (!existGuiSchema) {
+            if (!existGuiSchema()) {
+                createGuiSchema();
+            }
+            if (!existSqlgSchema) {
                 createSqlgSchemaTablesAndIndexes();
             }
             //committing here will ensure that sqlg creates the tables.
@@ -83,6 +85,7 @@ class SqlgStartupManager {
         }
 
     }
+
 
     private void cacheTopology() {
         this.sqlgGraph.getTopology().cacheTopology();
@@ -342,6 +345,15 @@ class SqlgStartupManager {
                 "name", this.sqlDialect.getPublicSchema(),
                 Topology.CREATED_ON, LocalDateTime.now()
         );
+    }
+
+    private void createGuiSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE SCHEMA \"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\";");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void createSqlgSchemaTablesAndIndexes() {

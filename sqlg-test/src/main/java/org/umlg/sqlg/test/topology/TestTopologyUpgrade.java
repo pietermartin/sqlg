@@ -587,7 +587,7 @@ public class TestTopologyUpgrade extends BaseTest {
         LocalDateTime[] localDateTimes = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now().minusMonths(2), LocalDateTime.now().minusMonths(3)};
         LocalTime[] localTimes = new LocalTime[]{LocalTime.now(), LocalTime.now().minusHours(2), LocalTime.now().minusHours(3)};
         ZonedDateTime[] zonedDateTimes = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now().minusHours(2), ZonedDateTime.now().minusHours(3)};
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A",
+        this.sqlgGraph.addVertex(T.label, "A",
                 "bytes", bytes, "bytes2", bytes2,
                 "shorts", shorts, "shorts2", shorts2,
                 "integers", integers, "integers2", integers2,
@@ -638,7 +638,7 @@ public class TestTopologyUpgrade extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Float[] floats = new Float[]{1F, 2F, 3F};
         float[] floats2 = new float[]{1F, 2F, 3F};
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A",
+        this.sqlgGraph.addVertex(T.label, "A",
                 "floats", floats, "floats2", floats2
         );
         this.sqlgGraph.tx().commit();

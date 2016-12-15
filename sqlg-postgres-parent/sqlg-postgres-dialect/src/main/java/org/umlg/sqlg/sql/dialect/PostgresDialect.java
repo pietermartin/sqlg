@@ -67,6 +67,7 @@ public class PostgresDialect extends BaseSqlDialect {
     private ScheduledFuture<?> future;
     private Semaphore listeningSemaphore;
     private ExecutorService executorService;
+    private ScheduledExecutorService scheduledExecutorService;
 
     @SuppressWarnings("unused")
     public PostgresDialect() {
@@ -2706,8 +2707,6 @@ public class PostgresDialect extends BaseSqlDialect {
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
-        result.add("CREATE SCHEMA IF NOT EXISTS \"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\";");
-
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT, \"schemaVertex\" TEXT);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" SERIAL PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" TEXT);");
@@ -2932,7 +2931,8 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public void registerListener(SqlgGraph sqlgGraph) {
         this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "Sqlg notification merge " + sqlgGraph.toString()));
-        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
+        this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(
+                r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
         try {
             this.listeningSemaphore = new Semaphore(1);
             this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph, this.listeningSemaphore), 500, MILLISECONDS);
@@ -2947,6 +2947,7 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public void unregisterListener() {
         this.future.cancel(true);
+        this.scheduledExecutorService.shutdownNow();
         this.executorService.shutdownNow();
     }
 
@@ -3021,7 +3022,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             int pid = notifications[i].getPID();
                             String notify = notifications[i].getParameter();
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-                            executorService.submit(() -> {
+                            PostgresDialect.this.executorService.submit(() -> {
                                 try {
                                     this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
                                 } catch (Exception e) {

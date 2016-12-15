@@ -10,7 +10,6 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.h2.jdbc.JdbcArray;
 import org.umlg.sqlg.sql.dialect.BaseSqlDialect;
 import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.Schema;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -553,8 +552,6 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-
-        result.add("CREATE SCHEMA \"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\";");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR);");
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP, \"name\" VARCHAR, \"schemaVertex\" VARCHAR);");
