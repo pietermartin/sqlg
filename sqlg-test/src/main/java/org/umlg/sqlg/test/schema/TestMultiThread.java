@@ -139,9 +139,9 @@ public class TestMultiThread extends BaseTest {
                                 }
                             }
                         }
-                        countDownLatch.countDown();
                         completedThreads.getAndAdd(1);
                         logger.info("shouldExecuteWithCompetingThreads " + completedThreads.get());
+                        countDownLatch.countDown();
                     } catch (Exception e) {
                         logger.error("failure", e);
                         fail(e.getMessage());
