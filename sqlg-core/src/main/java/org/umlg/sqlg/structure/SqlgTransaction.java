@@ -20,6 +20,8 @@ import java.sql.SQLException;
 public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
     public static final String BATCH_MODE_NOT_SUPPORTED = "Batch mode not supported!";
+    public static final String QUERY_LAZY = "query.lazy";
+    
     private SqlgGraph sqlgGraph;
     private BeforeCommit beforeCommitFunction;
     private AfterCommit afterCommitFunction;
@@ -56,7 +58,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());
                 }
-                this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect()))));
+                // read default setting for laziness
+                boolean lazy=this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY,true);
+                this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -271,5 +275,22 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     // only used for tests
     public PreparedStatementCache getPreparedStatementCache() {
         return threadLocalPreparedStatementTx.get();
+    }
+    
+    /**
+     * are we reading the SQL query results laszily?
+     * @return true if we are processing the results lazily, false otherwise
+     */
+    public boolean isLazyQueries(){
+    	return this.threadLocalTx.get().isLazyQueries();
+    }
+    
+    /**
+     * set the laziness on query result reading
+     * @param lazy
+     */
+    public void setLazyQueries(boolean lazy){
+    	readWrite();
+    	this.threadLocalTx.get().setLazyQueries(lazy);
     }
 }
