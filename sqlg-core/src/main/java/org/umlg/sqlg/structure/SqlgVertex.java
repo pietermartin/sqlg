@@ -228,17 +228,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInBatchMode() && this.sqlgGraph.tx().getBatchManager().vertexIsCached(this)) {
             this.sqlgGraph.tx().flush();
         }
-        //for some very bezaar reason not adding toList().iterator() return one extra element.
         switch (direction) {
             case OUT:
-                return this.sqlgGraph.traversal().V(this).outE(labels).toList().iterator();
-//                return this.sqlgGraph.traversal().V(this).outE(labels);
+                return this.sqlgGraph.traversal().V(this).outE(labels);
             case IN:
-                return this.sqlgGraph.traversal().V(this).inE(labels).toList().iterator();
-//                return this.sqlgGraph.traversal().V(this).inE(labels);
+                return this.sqlgGraph.traversal().V(this).inE(labels);
             case BOTH:
-                return this.sqlgGraph.traversal().V(this).bothE(labels).toList().iterator();
-//                return this.sqlgGraph.traversal().V(this).bothE(labels);
+                return this.sqlgGraph.traversal().V(this).bothE(labels);
         }
         return Collections.emptyIterator();
     }
