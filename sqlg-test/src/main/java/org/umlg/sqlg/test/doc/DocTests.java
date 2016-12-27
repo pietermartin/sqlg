@@ -1,16 +1,58 @@
 package org.umlg.sqlg.test.doc;
 
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.beans.PropertyVetoException;
+import java.io.IOException;
+import java.net.URL;
 
 /**
  * Date: 2016/12/26
  * Time: 9:54 PM
  */
 public class DocTests extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+        try {
+            configuration = new PropertiesConfiguration(sqlProperties);
+            Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+            configuration.setProperty("implement.foreign.keys", false);
+            if (!configuration.containsKey("jdbc.url"))
+                throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+        } catch (ConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+//    @Test
+    public void showStreamingBatchMode() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        //enable streaming mode
+        this.sqlgGraph.tx().streamingBatchModeOn();
+        for (int i = 1; i <= 10_000_000; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+        }
+        //flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+        this.sqlgGraph.tx().flush();
+        for (int i = 1; i <= 10_000_000; i++) {
+            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
 
     @Test
     public void showNormalBatchMode() {
@@ -22,7 +64,7 @@ public class DocTests extends BaseTest {
             Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
             person.addEdge("drives", car);
             //To preserve memory commit or flush every so often
-            if (i % 100_000 == 0) {
+            if (i % 1_000_000 == 0) {
                 this.sqlgGraph.tx().commit();
                 this.sqlgGraph.tx().normalBatchModeOn();
             }
@@ -31,7 +73,7 @@ public class DocTests extends BaseTest {
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
-
+//
 //    @Test
 //    public void testLimitOnVertexLabels() {
 //        for (int i = 0; i < 100; i++) {

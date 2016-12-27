@@ -10,7 +10,16 @@ import org.umlg.sqlg.test.doc.DocTests;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+//        TestLoadSchemaViaNotify.class,
         DocTests.class,
+//        TestBatch.class,
+//        TestBatchedStreaming.class,
+//        TestBatchEdgeDateTime.class,
+//        TestBatchGlobalUniqueIndexes.class,
+//        TestBatchJson.class,
+//        TestBatchModeMultipleGraphs.class,
+//        TestBatchServerSideEdgeCreation.class,
+//        TestBatchTemporaryVertex.class,
 //        TestTraversals.class,
 //        TestGremlinOptional.class
 })
