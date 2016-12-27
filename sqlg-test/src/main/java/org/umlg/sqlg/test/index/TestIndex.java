@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.index;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
@@ -12,18 +13,17 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/08/17
  * Time: 2:43 PM
  */
 public class TestIndex extends BaseTest {
+
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
@@ -39,12 +39,12 @@ public class TestIndex extends BaseTest {
         Optional<PropertyColumn> namePropertyOptional = personVertexOptional.get().getProperty("name");
         assertTrue(namePropertyOptional.isPresent());
         Optional<Index> indexOptional = personVertexOptional.get().getIndex("name");
-        assertFalse(indexOptional.isPresent());
+        Assert.assertFalse(indexOptional.isPresent());
 
         this.sqlgGraph.tx().rollback();
 
         indexOptional = personVertexOptional.get().getIndex("name");
-        assertFalse(indexOptional.isPresent());
+        Assert.assertFalse(indexOptional.isPresent());
 
         Index index = personVertexOptional.get().ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(namePropertyOptional.get()));
         this.sqlgGraph.tx().commit();
@@ -61,7 +61,7 @@ public class TestIndex extends BaseTest {
                 assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             }
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.tx().rollback();
     }
@@ -80,7 +80,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
         try {
             this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
-            fail("Unique index did not work.");
+            Assert.fail("Unique index did not work.");
         } catch (RuntimeException e) {
 
         }
@@ -107,7 +107,7 @@ public class TestIndex extends BaseTest {
                 statement.close();
             }
         } catch (SQLException e) {
-            fail(e.getMessage());
+            Assert.fail(e.getMessage());
         }
         this.sqlgGraph.tx().rollback();
     }
@@ -241,11 +241,11 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), SchemaManager.EDGE_PREFIX, Collections.singletonList("name"))).get().getIndexType());
-        assertFalse(edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("B", "test"), SchemaManager.EDGE_PREFIX, Collections.singletonList("name"))).isPresent());
+        Assert.assertFalse(edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("B", "test"), SchemaManager.EDGE_PREFIX, Collections.singletonList("name"))).isPresent());
 
         try {
             aa1.addEdge("test", bb1, "name", "ola");
-            fail("Unique constraint should prevent this from happening");
+            Assert.fail("Unique constraint should prevent this from happening");
         } catch (Exception e) {
             //swallow
         }
