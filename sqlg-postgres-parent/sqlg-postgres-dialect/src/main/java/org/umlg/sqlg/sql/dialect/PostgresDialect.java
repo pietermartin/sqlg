@@ -1278,15 +1278,27 @@ public class PostgresDialect extends BaseSqlDialect {
                     } else {
                         propertyType = PropertyType.from(value);
                     }
-                    if (JSON_ARRAY == propertyType) {
-                        throw SqlgExceptions.invalidPropertyType(propertyType);
-                    }
-                    out.write(valueToStreamBytes(propertyType, value));
+//                    switch (propertyType) {
+//                        case BYTE_ARRAY:
+//                            String valueOfArrayAsString = PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+//                            out.write(valueOfArrayAsString.getBytes());
+//                            break;
+//                        case byte_ARRAY:
+//                            valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
+//                            out.write(valueOfArrayAsString.getBytes());
+//                            break;
+//                        case JSON_ARRAY:
+//                            throw SqlgExceptions.invalidPropertyType(propertyType);
+//                        default:
+                            out.write(valueToStreamBytes(propertyType, value));
+//                    }
                 }
             }
             out.write("\n".getBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
+//        } catch (SQLException e) {
+//            throw new RuntimeException(e);
         }
     }
 
@@ -1468,8 +1480,13 @@ public class PostgresDialect extends BaseSqlDialect {
                     if (value.getClass().isArray()) {
                         if (value.getClass().getName().equals("[B")) {
                             try {
-                                String valueOfArrayAsString = PGbytea.toPGString((byte[]) value);
-                                return (valueOfArrayAsString);
+                                return PGbytea.toPGString((byte[]) value);
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else if (value.getClass().getName().equals("[Ljava.lang.Byte;")) {
+                            try {
+                                return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
                             } catch (SQLException e) {
                                 throw new RuntimeException(e);
                             }
