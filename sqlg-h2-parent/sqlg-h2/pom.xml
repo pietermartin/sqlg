@@ -19,6 +19,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>-Xmx1024m</argLine>
+                    <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                 </configuration>
             </plugin>
         </plugins>
