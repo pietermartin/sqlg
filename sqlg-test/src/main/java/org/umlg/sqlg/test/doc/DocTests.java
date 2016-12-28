@@ -13,6 +13,9 @@ import org.umlg.sqlg.test.BaseTest;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Date: 2016/12/26
@@ -35,44 +38,95 @@ public class DocTests extends BaseTest {
         }
     }
 
-//    @Test
-    public void showStreamingBatchMode() {
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        //enable streaming mode
-        this.sqlgGraph.tx().streamingBatchModeOn();
-        for (int i = 1; i <= 10_000_000; i++) {
-            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
-        }
-        //flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
-        this.sqlgGraph.tx().flush();
-        for (int i = 1; i <= 10_000_000; i++) {
-            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
-        }
-        this.sqlgGraph.tx().commit();
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
-    }
-
     @Test
-    public void showNormalBatchMode() {
+    public void showStreamingWithLockBulkEdgeCreation() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 1; i <= 10_000_000; i++) {
-            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
-            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
-            person.addEdge("drives", car);
-            //To preserve memory commit or flush every so often
-            if (i % 1_000_000 == 0) {
-                this.sqlgGraph.tx().commit();
-                this.sqlgGraph.tx().normalBatchModeOn();
+        int count = 0;
+        for (int i = 1; i <= 10; i++) {
+            List<Vertex> persons = new ArrayList<>();
+            this.sqlgGraph.tx().streamingWithLockBatchModeOn();
+            for (int j = 1; j <= 1_000_000; j++) {
+                Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + count);
+                persons.add(person);
             }
+            this.sqlgGraph.tx().flush();
+            List<Vertex> cars = new ArrayList<>();
+            for (int j = 1; j <= 1_000_000; j++) {
+                Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + count++);
+                cars.add(car);
+            }
+            this.sqlgGraph.tx().flush();
+            Iterator<Vertex> carIter = cars.iterator();
+            for (Vertex person : persons) {
+                person.addEdge("drives", carIter.next());
+            }
+            this.sqlgGraph.tx().commit();
         }
-        this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println(stopWatch.toString());
+        System.out.println("Time taken: " + stopWatch.toString());
     }
+//
+//        @Test
+//    public void showBulkEdgeCreation() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        int count = 0;
+//        for (int i = 1; i <= 10; i++) {
+//            List<Pair<String, String>> identifiers = new ArrayList<>();
+//            this.sqlgGraph.tx().streamingBatchModeOn();
+//            for (int j = 1; j <= 1_000_000; j++) {
+//                this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + count, "personUid", String.valueOf(count));
+//            }
+//            this.sqlgGraph.tx().flush();
+//            for (int j = 1; j <= 1_000_000; j++) {
+//                this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + count, "carUid", String.valueOf(count));
+//                identifiers.add(Pair.of(String.valueOf(count), String.valueOf(count++)));
+//            }
+//            this.sqlgGraph.tx().flush();
+//            this.sqlgGraph.bulkAddEdges("Person", "Car", "drives", Pair.of("personUid", "carUid"), identifiers);
+//            this.sqlgGraph.tx().commit();
+//        }
+//        stopWatch.stop();
+//        System.out.println("Time taken: " + stopWatch.toString());
+//    }
+//
+//    @Test
+//    public void showStreamingBatchMode() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        //enable streaming mode
+//        this.sqlgGraph.tx().streamingBatchModeOn();
+//        for (int i = 1; i <= 10_000_000; i++) {
+//            this.sqlgGraph.streamVertex(T.label, "Person", "name", "John" + i);
+//        }
+//        //flushing is needed before starting streaming Car. Only only one label/table can stream at a time.
+//        this.sqlgGraph.tx().flush();
+//        for (int i = 1; i <= 10_000_000; i++) {
+//            this.sqlgGraph.streamVertex(T.label, "Car", "name", "Dodge" + i);
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println(stopWatch.toString());
+//    }
+//
+//    @Test
+//    public void showNormalBatchMode() {
+//        StopWatch stopWatch = new StopWatch();
+//        stopWatch.start();
+//        this.sqlgGraph.tx().normalBatchModeOn();
+//        for (int i = 1; i <= 10_000_000; i++) {
+//            Vertex person = this.sqlgGraph.addVertex(T.label, "Person", "name", "John" + i);
+//            Vertex car = this.sqlgGraph.addVertex(T.label, "Car", "name", "Dodge" + i);
+//            person.addEdge("drives", car);
+//            if (i % 100_000 == 0) {
+//                this.sqlgGraph.tx().flush();
+//            }
+//        }
+//        this.sqlgGraph.tx().commit();
+//        stopWatch.stop();
+//        System.out.println("Time taken: " + stopWatch.toString());
+//    }
 //
 //    @Test
 //    public void testLimitOnVertexLabels() {
