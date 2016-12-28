@@ -99,7 +99,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <!--<argLine>-Xmx1024m</argLine>-->
-                    <argLine>-Xmx4096m</argLine>
+                    <argLine>-Xmx3072m</argLine>
                     <argLine>-Dbuild.dir=${project.build.directory}</argLine>
                     <includes>
                         <!--<include>**/SqlgH2StructureStandardTest.java</include>-->
