@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class TestStreamEdge extends BaseTest {
 
-    final private int NUMBER_OF_VERTICES = 10_000;
+    final private int NUMBER_OF_VERTICES = 1_000;
 
     @Before
     public void beforeTest() {

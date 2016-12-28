@@ -4,27 +4,32 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.batch.*;
-import org.umlg.sqlg.test.edges.TestDetachedEdge;
+import org.umlg.sqlg.test.edgehas.TestEdgeHas;
+import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.github.TestGithub;
 import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
+import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
+import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
+import org.umlg.sqlg.test.localdate.LocalDateTest;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
+import org.umlg.sqlg.test.remove.TestRemoveEdge;
+import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
-import org.umlg.sqlg.test.vertex.TestLoadingAdjacent;
-import org.umlg.sqlg.test.vertex.TestOtherVertex;
-import org.umlg.sqlg.test.vertex.TestVertexEdges;
+import org.umlg.sqlg.test.vertex.*;
+import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
 import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
 
 /**
@@ -54,47 +59,47 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestVertexEdgeSameName.class,
         TestVertexNavToEdges.class,
         // are these tests gone?
-//        //TestByteArray.class,
-//        //TestQuery.class,
-//        TestSchema.class,
-//        TestIndex.class,
-//        TestVertexOutWithHas.class,
-//        TestEdgeHas.class,
-//        TestBatch.class,
-//        TestNormalBatchUpdate.class,
-//        TestMultiThreadedBatch.class,
-//        TestMultiThread.class,
-//        TestMultipleThreadMultipleJvm.class,
-//
-//        TestRemoveEdge.class,
-//        TestEdgeSchemaCreation.class,
-//        TestRollback.class,
-//
-//        TestNewVertex.class,
-//        TestEdgeCache.class,
-//        TestVertexCache.class,
-//        TestTinkerpopBug.class,
-//        TestLoadSchemaViaNotify.class,
-//        TestCreateEdgeBetweenVertices.class,
-//        TestRemovedVertex.class,
-//        TestCaptureSchemaTableEdges.class,
-//        TestGremlinCompileWithHas.class,
-//        TestGremlinCompileE.class,
-//        TestEmptyGraph.class,
-//        TestOutE.class,
-//        TestForeignKeysAreOptional.class,
-//        TestGremlinCompileWithAs.class,
-//        TestGremlinCompileWithInOutV.class,
-//        TestGremlinCompileV.class,
-//        TestGremlinCompileGraphStep.class,
-//        TestGremlinCompileWhere.class,
-//        TestColumnNameTranslation.class,
-//        TestGraphStepOrderBy.class,
-//        TestAggregate.class,
-//        TestVertexStepOrderBy.class,
-//        TestPathStep.class,
-//        LocalDateTest.class,
-//        TestStreamVertex.class,
+        //TestByteArray.class,
+        //TestQuery.class,
+        TestSchema.class,
+        TestIndex.class,
+        TestVertexOutWithHas.class,
+        TestEdgeHas.class,
+        TestBatch.class,
+        TestNormalBatchUpdate.class,
+        TestMultiThreadedBatch.class,
+        TestMultiThread.class,
+        TestMultipleThreadMultipleJvm.class,
+
+        TestRemoveEdge.class,
+        TestEdgeSchemaCreation.class,
+        TestRollback.class,
+
+        TestNewVertex.class,
+        TestEdgeCache.class,
+        TestVertexCache.class,
+        TestTinkerpopBug.class,
+        TestLoadSchemaViaNotify.class,
+        TestCreateEdgeBetweenVertices.class,
+        TestRemovedVertex.class,
+        TestCaptureSchemaTableEdges.class,
+        TestGremlinCompileWithHas.class,
+        TestGremlinCompileE.class,
+        TestEmptyGraph.class,
+        TestOutE.class,
+        TestForeignKeysAreOptional.class,
+        TestGremlinCompileWithAs.class,
+        TestGremlinCompileWithInOutV.class,
+        TestGremlinCompileV.class,
+        TestGremlinCompileGraphStep.class,
+        TestGremlinCompileWhere.class,
+        TestColumnNameTranslation.class,
+        TestGraphStepOrderBy.class,
+        TestAggregate.class,
+        TestVertexStepOrderBy.class,
+        TestPathStep.class,
+        LocalDateTest.class,
+        TestStreamVertex.class,
         TestStreamEdge.class,
         JsonTest.class,
         TestSchemaManagerGetTablesFor.class,
