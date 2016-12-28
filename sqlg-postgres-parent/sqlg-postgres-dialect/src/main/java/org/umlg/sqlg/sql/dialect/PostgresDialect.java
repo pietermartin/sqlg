@@ -1459,38 +1459,35 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     sb.append("}");
                     return sb.toString();
-//                case JSON_ARRAY:
-//                    throw new IllegalStateException("arrays of json just does not wanna behave");
-//                    JsonNode[] jsons = (JsonNode[]) value;
-//                    sb = new StringBuilder();
-//                    sb.append("{");
-//                    length = java.lang.reflect.Array.getLength(value);
-//                    for (int i = 0; i < length; i++) {
-//                        JsonNode json = jsons[i];
-////                        sb.append(escapeSpecialCharacters("{" + COPY_COMMAND_QUOTE + "\"" + COPY_COMMAND_QUOTE + "username" + COPY_COMMAND_QUOTE + "\"" +
-////                                COPY_COMMAND_QUOTE + ":" + COPY_COMMAND_QUOTE + "\"" + COPY_COMMAND_QUOTE + "asd" + COPY_COMMAND_QUOTE + "\"}"));
-//                        sb.append(escapeSpecialCharacters("e'\\x01'{e'\\x01'" + getColumnEscapeKey() + "username" + getColumnEscapeKey() + ":1e'\\x01'}e'\\x01'"));
-//                        if (i < length - 1) {
-//                            sb.append(",");
-//                        }
-//                    }
-//                    sb.append("}");
-//                    return sb.toString();
+                case JSON_ARRAY:
+                        throw SqlgExceptions.invalidPropertyType(propertyType);
+                case BYTE_ARRAY:
+                    try {
+                        return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                case byte_ARRAY:
+                    try {
+                        return PGbytea.toPGString((byte[]) value);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 default:
                     if (value.getClass().isArray()) {
-                        if (value.getClass().getName().equals("[B")) {
-                            try {
-                                return PGbytea.toPGString((byte[]) value);
-                            } catch (SQLException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else if (value.getClass().getName().equals("[Ljava.lang.Byte;")) {
-                            try {
-                                return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
-                            } catch (SQLException e) {
-                                throw new RuntimeException(e);
-                            }
-                        } else {
+//                        if (value.getClass().getName().equals("[B")) {
+//                            try {
+//                                return PGbytea.toPGString((byte[]) value);
+//                            } catch (SQLException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                        } else if (value.getClass().getName().equals("[Ljava.lang.Byte;")) {
+//                            try {
+//                                return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+//                            } catch (SQLException e) {
+//                                throw new RuntimeException(e);
+//                            }
+//                        } else {
                             sb = new StringBuilder();
                             sb.append("{");
                             length = java.lang.reflect.Array.getLength(value);
@@ -1503,7 +1500,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             }
                             sb.append("}");
                             return sb.toString();
-                        }
+//                        }
                     }
                     result = escapeSpecialCharacters(value.toString());
             }
