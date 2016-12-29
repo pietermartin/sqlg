@@ -39,6 +39,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.umlg.sqlg.structure.PropertyType.*;
@@ -68,6 +69,7 @@ public class PostgresDialect extends BaseSqlDialect {
     private Semaphore listeningSemaphore;
     private ExecutorService executorService;
     private ScheduledExecutorService scheduledExecutorService;
+    private TopologyChangeListener listener;
 
     @SuppressWarnings("unused")
     public PostgresDialect() {
@@ -2935,7 +2937,8 @@ public class PostgresDialect extends BaseSqlDialect {
                 r -> new Thread(r, "Sqlg notification listener " + sqlgGraph.toString()));
         try {
             this.listeningSemaphore = new Semaphore(1);
-            this.future = scheduledExecutorService.schedule(new Listener(sqlgGraph, this.listeningSemaphore), 500, MILLISECONDS);
+            listener = new TopologyChangeListener(sqlgGraph, this.listeningSemaphore);
+            this.future = scheduledExecutorService.schedule(listener, 500, MILLISECONDS);
             //block here to only return once the listener is listening.
             this.listeningSemaphore.acquire();
             this.listeningSemaphore.tryAcquire(5, TimeUnit.MINUTES);
@@ -2946,6 +2949,10 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void unregisterListener() {
+    	if (listener!=null){
+    		listener.stop();
+    		listener=null;
+    	}
         this.future.cancel(true);
         this.scheduledExecutorService.shutdownNow();
         this.executorService.shutdownNow();
@@ -2986,22 +2993,27 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
-    private class Listener implements Runnable {
+    private class TopologyChangeListener implements Runnable {
 
         private SqlgGraph sqlgGraph;
         private Semaphore semaphore;
         private boolean canceled;
+        private AtomicBoolean run=new AtomicBoolean(true);
 
-        Listener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
+        TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
             this.sqlgGraph = sqlgGraph;
             this.semaphore = semaphore;
         }
 
+        public void stop(){
+        	run.set(false);
+        }
+        
         @Override
         public void run() {
             try {
                 Connection connection = this.sqlgGraph.tx().getConnection();
-                while (true) {
+                while (run.get()) {
                     PGConnection pgConnection = connection.unwrap(org.postgresql.PGConnection.class);
                     Statement stmt = connection.createStatement();
                     stmt.execute("LISTEN " + SQLG_NOTIFICATION_CHANNEL);
@@ -3035,14 +3047,17 @@ public class PostgresDialect extends BaseSqlDialect {
                     }
                     Thread.sleep(100);
                 }
+                this.sqlgGraph.tx().rollback();
             } catch (SQLException e) {
                 logger.error(String.format("change listener on graph %s error", this.sqlgGraph.toString()), e);
                 this.sqlgGraph.tx().rollback();
                 throw new RuntimeException(e);
             } catch (InterruptedException e) {
-                logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
-                this.sqlgGraph.tx().rollback();
-                //swallow
+            	if (run.get()){
+            		logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
+                }
+            	this.sqlgGraph.tx().rollback();
+            	//swallow
             }
         }
     }
