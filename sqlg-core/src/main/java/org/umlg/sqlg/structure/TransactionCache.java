@@ -18,18 +18,26 @@ class TransactionCache {
     private boolean cacheVertices = false;
     private Map<RecordId, SqlgVertex> vertexCache = new WeakHashMap<>();
 
-    static TransactionCache of(boolean cacheVertices, Connection connection, BatchManager batchManager) {
-        return new TransactionCache(cacheVertices, connection, batchManager);
+    /**
+     * are query result processed lazily or not?
+     */
+    private boolean lazyQueries;
+
+
+	static TransactionCache of(boolean cacheVertices, Connection connection, BatchManager batchManager,boolean lazyQueries) {
+        return new TransactionCache(cacheVertices, connection, batchManager,lazyQueries);
     }
 
     private TransactionCache(
             boolean cacheVertices,
             Connection connection,
-            BatchManager batchManager) {
+            BatchManager batchManager,
+            boolean lazyQueries) {
 
         this.cacheVertices = cacheVertices;
         this.connection = connection;
         this.batchManager = batchManager;
+        this.lazyQueries = lazyQueries;
     }
 
     Connection getConnection() {
@@ -112,5 +120,21 @@ class TransactionCache {
             this.vertexCache.put(recordId, sqlgVertex);
         }
     }
+    
+    /**
+     * are we reading the SQL query results laszily?
+     * @return true if we are processing the results lazily, false otherwise
+     */
+    public boolean isLazyQueries() {
+		return lazyQueries;
+	}
+
+    /**
+     * set the laziness on query result reading
+     * @param lazy
+     */
+	public void setLazyQueries(boolean lazyQueries) {
+		this.lazyQueries = lazyQueries;
+	}
 
 }

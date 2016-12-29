@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class TestStreamEdge extends BaseTest {
 
-    final private int NUMBER_OF_VERTICES = 10000;
+    final private int NUMBER_OF_VERTICES = 1_000;
 
     @Before
     public void beforeTest() {
@@ -151,6 +151,25 @@ public class TestStreamEdge extends BaseTest {
             person.streamEdge("person_car", car, keyValues);
         }
         this.sqlgGraph.tx().commit();
+        int mb = 1024 * 1024;
+
+        // get Runtime instance
+        Runtime instance = Runtime.getRuntime();
+
+        System.out.println("***** Heap utilization statistics [MB] *****\n");
+
+        // available memory
+        System.out.println("Total Memory: " + instance.totalMemory() / mb);
+
+        // free memory
+        System.out.println("Free Memory: " + instance.freeMemory() / mb);
+
+        // used memory
+        System.out.println("Used Memory: "
+                + (instance.totalMemory() - instance.freeMemory()) / mb);
+
+        // Maximum available memory
+        System.out.println("Max Memory: " + instance.maxMemory() / mb);
         Assert.assertEquals(NUMBER_OF_VERTICES, this.sqlgGraph.traversal().V(persons.get(0)).out("person_car").toList().size());
         stopWatch.stop();
         System.out.println("testMilCompleteEdges took " + stopWatch.toString());

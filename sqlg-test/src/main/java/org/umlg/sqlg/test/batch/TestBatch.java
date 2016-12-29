@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +20,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 /**
  * Date: 2014/09/12
@@ -221,10 +223,10 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
         assertEquals(2, this.sqlgGraph.traversal().V(v1.id()).out("Friend").count().next(), 0);
-        assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v2));
-        assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v3));
-        assertTrue(this.sqlgGraph.traversal().V(v2.id()).in("Friend").toList().contains(v1));
-        assertTrue(this.sqlgGraph.traversal().V(v3.id()).in("Friend").toList().contains(v1));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v2));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v3));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v2.id()).in("Friend").toList().contains(v1));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v3.id()).in("Friend").toList().contains(v1));
         assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("Friend").has("test", "a").count().next(), 0);
         assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("Friend").has("test", "b").count().next(), 0);
     }
@@ -275,10 +277,10 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().commit();
         assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
         assertEquals(2, this.sqlgGraph.traversal().V(v1.id()).out("Friend").count().next(), 0);
-        assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v2));
-        assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v3));
-        assertTrue(this.sqlgGraph.traversal().V(v2.id()).in("Friend").toList().contains(v1));
-        assertTrue(this.sqlgGraph.traversal().V(v3.id()).in("Friend").toList().contains(v1));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v2));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v1.id()).out("Friend").toList().contains(v3));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v2.id()).in("Friend").toList().contains(v1));
+        Assert.assertTrue(this.sqlgGraph.traversal().V(v3.id()).in("Friend").toList().contains(v1));
     }
 
     @Test
@@ -354,7 +356,7 @@ public class TestBatch extends BaseTest {
                 System.out.println("thread1 done!");
             } catch (Exception e) {
                 e.printStackTrace();
-                fail(e.getMessage());
+                Assert.fail(e.getMessage());
             } finally {
                 sqlgGraph.tx().rollback();
             }
@@ -367,7 +369,7 @@ public class TestBatch extends BaseTest {
                 firstLatch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                fail(e.getMessage());
+                Assert.fail(e.getMessage());
             }
             Vertex v1 = sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
             Vertex v2 = sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
@@ -412,10 +414,10 @@ public class TestBatch extends BaseTest {
             longList.remove(v.<Long>value("age4"));
             doubleList.remove(v.<Double>value("age6"));
         }
-        assertTrue(shortList.isEmpty());
-        assertTrue(integerList.isEmpty());
-        assertTrue(longList.isEmpty());
-        assertTrue(doubleList.isEmpty());
+        Assert.assertTrue(shortList.isEmpty());
+        Assert.assertTrue(integerList.isEmpty());
+        Assert.assertTrue(longList.isEmpty());
+        Assert.assertTrue(doubleList.isEmpty());
     }
 
     @Test
@@ -448,10 +450,10 @@ public class TestBatch extends BaseTest {
             longList.remove(e.<Long>value("age4"));
             doubleList.remove(e.<Double>value("age6"));
         }
-        assertTrue(shortList.isEmpty());
-        assertTrue(integerList.isEmpty());
-        assertTrue(longList.isEmpty());
-        assertTrue(doubleList.isEmpty());
+        Assert.assertTrue(shortList.isEmpty());
+        Assert.assertTrue(integerList.isEmpty());
+        Assert.assertTrue(longList.isEmpty());
+        Assert.assertTrue(doubleList.isEmpty());
     }
 
     @Test
@@ -523,11 +525,11 @@ public class TestBatch extends BaseTest {
         Vertex root = this.sqlgGraph.addVertex(T.label, "ROOT", "dummy", "a");
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         Edge sqlgEdge = root.addEdge("rootGod", god);
-        assertNull(sqlgEdge.id());
+        Assert.assertNull(sqlgEdge.id());
         Edge rootGodEdge = vertexTraversal(root).outE("rootGod").next();
         //Querying triggers the cache to be flushed, so the result will have an id
-        assertNotNull(rootGodEdge);
-        assertNotNull(rootGodEdge.id());
+        Assert.assertNotNull(rootGodEdge);
+        Assert.assertNotNull(rootGodEdge.id());
         this.sqlgGraph.tx().commit();
     }
 
@@ -585,8 +587,8 @@ public class TestBatch extends BaseTest {
         root.addEdge("rootGod", jah);
         root.addEdge("rootGod", jehova);
         List<Vertex> vertices = vertexTraversal(root).out("rootGod").toList();
-        assertTrue(vertices.contains(jah));
-        assertTrue(vertices.contains(jehova));
+        Assert.assertTrue(vertices.contains(jah));
+        Assert.assertTrue(vertices.contains(jehova));
         assertEquals(jah, vertexTraversal(root).out("rootGod").has("name", "Jah").next());
         assertEquals(jehova, vertexTraversal(root).out("rootGod").has("name", "Jehova").next());
         this.sqlgGraph.tx().commit();
@@ -603,8 +605,8 @@ public class TestBatch extends BaseTest {
         root.addEdge("rootGod", jehova);
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = vertexTraversal(root).out("rootGod").toList();
-        assertTrue(vertices.contains(jah));
-        assertTrue(vertices.contains(jehova));
+        Assert.assertTrue(vertices.contains(jah));
+        Assert.assertTrue(vertices.contains(jehova));
         assertEquals(jah, vertexTraversal(root).out("rootGod").has("name", "Jah").next());
         assertEquals(jehova, vertexTraversal(root).out("rootGod").has("name", "Jehova").next());
     }
@@ -650,13 +652,13 @@ public class TestBatch extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         person1 = this.sqlgGraph.traversal().V(person1.id()).next();
-        assertTrue(vertexTraversal(person1).out("Friend").hasNext());
+        Assert.assertTrue(vertexTraversal(person1).out("Friend").hasNext());
         assertEquals(Long.valueOf(10000), vertexTraversal(person1).out("Friend").count().next());
         List<Vertex> friends = vertexTraversal(person1).out("Friend").toList();
         List<String> names = friends.stream().map(v -> v.<String>value("name")).collect(Collectors.toList());
         assertEquals(10000, names.size(), 0);
         for (int i = 0; i < 10000; i++) {
-            assertTrue(names.contains("person" + i));
+            Assert.assertTrue(names.contains("person" + i));
         }
     }
 
@@ -1120,7 +1122,7 @@ public class TestBatch extends BaseTest {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex person1 = this.sqlgGraph.addVertex(T.label, "Empty", "empty", "");
         this.sqlgGraph.tx().commit();
-        assertNotNull(person1.id());
+        Assert.assertNotNull(person1.id());
         Object o = this.sqlgGraph.traversal().V().hasLabel("Empty").values("empty").next();
         assertEquals("", o);
     }

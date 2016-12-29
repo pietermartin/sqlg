@@ -41,6 +41,15 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     private List<Emit<SqlgElement>> elements = null;
 
+    /**
+     * collect all results if we're not in lazy mode
+     */
+    private Iterator<List<Emit<SqlgElement>>> allElements = null;
+    /**
+     * are we reading the query results lazily?
+     */
+    private boolean lazy = true;
+    
     private boolean first = true;
     private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
     private QUERY queryState = QUERY.REGULAR;
@@ -60,10 +69,31 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         this.sqlgGraph = sqlgGraph;
         this.rootSchemaTableTrees = rootSchemaTableTrees;
         this.rootSchemaTableTreeIterator = rootSchemaTableTrees.iterator();
+        this.lazy = sqlgGraph.tx().isLazyQueries();
     }
 
     @Override
     public boolean hasNext() {
+    	if (lazy){
+    		return hasNextLazy();
+    	}
+    	// eager mode: just read everything about this step and collect it
+    	if (allElements==null){
+    		List<List<Emit<SqlgElement>>> allList=new LinkedList<>();
+    		while (hasNextLazy()){
+    			allList.add( this.elements);
+    	        this.elements = null;
+    	    }
+    		allElements=allList.iterator();
+    	}
+    	return allElements.hasNext();
+    }
+    
+    /**
+     * lazy evaluation of next results
+     * @return
+     */
+    public boolean hasNextLazy() {
         try {
             while (true) {
                 switch (this.queryState) {
@@ -185,7 +215,18 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     }
 
     @Override
-    public E next() {
+    public E next(){
+    	if (lazy){
+    		return nextLazy();
+    	}
+    	return (E)allElements.next();
+    }
+    
+    /**
+     * return the next lazy results
+     * @return
+     */
+    public E nextLazy() {
         //noinspection unchecked
         List<Emit<SqlgElement>> result = this.elements;
         this.elements = null;

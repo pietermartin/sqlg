@@ -143,11 +143,9 @@ public class BatchManager {
             Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = this.edgeCache.get(metaEdge);
             if (triples == null) {
                 triples = Pair.of(new TreeSet<>(keyValueMap.keySet()), new LinkedHashMap<>());
-//                sqlgEdge.faskHashCodeId = (triples.getRight().size() + 1) * outSchemaTable.hashCode();
                 triples.getRight().put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
                 this.edgeCache.put(metaEdge, triples);
             } else {
-//                sqlgEdge.faskHashCodeId = (triples.getRight().size() + 1) * outSchemaTable.hashCode();
                 triples.getLeft().addAll(keyValueMap.keySet());
                 triples.getRight().put(sqlgEdge, Triple.of(outVertex, inVertex, keyValueMap));
             }

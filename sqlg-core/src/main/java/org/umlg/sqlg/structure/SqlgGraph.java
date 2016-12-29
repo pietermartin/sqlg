@@ -1121,11 +1121,13 @@ public class SqlgGraph implements Graph {
 
     private SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {
         for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class)) {
+            logger.info("found plugin for SqlgPlugin.class");
             if (p.canWorkWith(metadata)) {
                 return p;
+            } else {
+                logger.info("can not work with SqlgPlugin.class");
             }
         }
-
         return null;
     }
 

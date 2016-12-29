@@ -19,7 +19,6 @@ public class TestGlobalUniqueIndex extends BaseTest {
 
     @Test
     public void testGlobalUniqueIndexAccrossMultipleVerticesAndEdges() {
-
         Map<String, PropertyType> properties = new HashMap<>();
         properties.put("name1", PropertyType.STRING);
         properties.put("name2", PropertyType.STRING);

@@ -9,3 +9,5 @@ Currently [HSQLDB](http://hsqldb.org/) and [Postgresql](http://www.postgresql.or
 
 Documentation [here](http://umlg.org/sqlg.html).
 
+The revised current documentation is [here](https://pietermartin.github.io).
+

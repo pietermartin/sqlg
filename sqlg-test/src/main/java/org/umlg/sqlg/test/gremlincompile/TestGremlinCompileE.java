@@ -89,6 +89,7 @@ public class TestGremlinCompileE extends BaseTest {
         v1.addEdge("pets", v2);
         v1.addEdge("walks", v2, "location", "arroyo");
         v2.addEdge("knows", v1, "since", 2010);
+        this.sqlgGraph.tx().setLazyQueries(false);
         assertEquals(4, vertexTraversal(v1).bothE().count().next().intValue());
         assertEquals(4, vertexTraversal(v2).bothE().count().next().intValue());
         v1.edges(Direction.BOTH).forEachRemaining(edge -> {
