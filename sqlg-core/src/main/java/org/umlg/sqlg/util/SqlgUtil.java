@@ -232,7 +232,7 @@ public class SqlgUtil {
 
     public static int setKeyValuesAsParameterUsingPropertyColumn(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<Pair<PropertyColumn, Object>> typeAndValues) throws SQLException {
         for (Pair<PropertyColumn, Object> pair : typeAndValues) {
-            parameterStartIndex = setKayValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, ImmutablePair.of(pair.getLeft().getPropertyType(), pair.getRight()));
+            parameterStartIndex = setKeyValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, ImmutablePair.of(pair.getLeft().getPropertyType(), pair.getRight()));
         }
         return parameterStartIndex;
     }
@@ -246,12 +246,12 @@ public class SqlgUtil {
 
     public static int setKeyValuesAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, Collection<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
         for (ImmutablePair<PropertyType, Object> pair : typeAndValues) {
-            parameterStartIndex = setKayValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, pair);
+            parameterStartIndex = setKeyValueAsParameter(sqlgGraph, mod, parameterStartIndex, preparedStatement, pair);
         }
         return parameterStartIndex;
     }
 
-    private static int setKayValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyType, Object> pair) throws SQLException {
+    private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, boolean mod, int parameterStartIndex, PreparedStatement preparedStatement, ImmutablePair<PropertyType, Object> pair) throws SQLException {
         switch (pair.left) {
             case BOOLEAN:
                 preparedStatement.setBoolean(parameterStartIndex++, (Boolean) pair.right);
@@ -301,7 +301,7 @@ public class SqlgUtil {
                     preparedStatement.setString(parameterStartIndex++, ((ZonedDateTime) pair.right).getZone().getId());
                 break;
             case LOCALTIME:
-                //looses nano seconds
+                //loses nano seconds
                 preparedStatement.setTime(parameterStartIndex++, Time.valueOf((LocalTime) pair.right));
                 break;
             case PERIOD:

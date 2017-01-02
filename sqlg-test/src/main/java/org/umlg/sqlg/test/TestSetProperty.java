@@ -1,5 +1,13 @@
 package org.umlg.sqlg.test;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -18,7 +26,187 @@ public class TestSetProperty extends BaseTest {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         marko.property("byte", new Byte((byte)1));
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((byte)1, marko.property("byte").value());
+        assertProperty(marko,"byte",(byte)1);
+    }
+    
+    @Test
+    public void testSetBooleanArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("bools", new Boolean[]{true,false});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Boolean[]{true,false}, (Boolean[]) marko.property("bools").value());
+    }
+    
+    
+    @Test
+    public void testSetByteArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("bytes", new Byte[]{(byte)1,(byte)2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Byte[]{(byte)1,(byte)2}, (Byte[]) marko.property("bytes").value());
+    }
+    
+    @Test
+    public void testSetDoubleArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("doubles", new Double[]{1.0,2.2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Double[]{1.0,2.2}, (Double[]) marko.property("doubles").value());
+    }
+    
+    @Test
+    public void testSetFloatArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("floats", new Float[]{1.0f,2.2f});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Float[]{1.0f,2.2f}, (Float[]) marko.property("floats").value());
+    }
+    
+    @Test
+    public void testSetIntegerArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("integers", new Integer[]{1,2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Integer[]{1,2}, (Integer[]) marko.property("integers").value());
+    }
+    
+    @Test
+    public void testSetLongArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("longs", new Long[]{1L,2L});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Long[]{1L,2L}, (Long[]) marko.property("longs").value());
+    }
+    
+    @Test
+    public void testSetShortArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("shorts", new Short[]{1,2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new Short[]{1,2}, (Short[]) marko.property("shorts").value());
+    }
+    
+    @Test
+    public void testSetBooleanPrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBooleanArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("bools", new boolean[]{true,false});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new boolean[]{true,false}, (boolean[]) marko.property("bools").value());
+    }
+    
+    @Test
+    public void testSetBytePrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsByteArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("bytes", new byte[]{(byte)1,(byte)2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new byte[]{(byte)1,(byte)2}, (byte[]) marko.property("bytes").value());
+    }
+    
+    @Test
+    public void testSetDoublePrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsDoubleArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("doubles", new double[]{1.0,2.2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new double[]{1.0,2.2}, (double[]) marko.property("doubles").value(),0.00001);
+    }
+    
+    @Test
+    public void testSetFloatPrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("floats", new float[]{1.0f,2.2f});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new float[]{1.0f,2.2f}, (float[]) marko.property("floats").value(),0.00001f);
+    }
+    
+    @Test
+    public void testSetIntegerPrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsIntegerArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("integers", new int[]{1,2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new int[]{1,2}, (int[]) marko.property("integers").value());
+    }
+    
+    @Test
+    public void testSetLongPrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsLongArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("longs", new long[]{1L,2L});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new long[]{1L,2L}, (long[]) marko.property("longs").value());
+    }
+    
+    @Test
+    public void testSetShortPrimitiveArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsShortArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("shorts", new short[]{1,2});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new short[]{1,2}, (short[]) marko.property("shorts").value());
+    }
+    
+    
+    @Test
+    public void testSetStringArrayProperty() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsStringArrayValues());
+        Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        marko.property("strings", new String[]{"a","b"});
+        this.sqlgGraph.tx().commit();
+        Assert.assertArrayEquals(new String[]{"a","b"}, (String[]) marko.property("strings").value());
+    }
+    
+    
+    @Test
+    public void testSetPrimitiveProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        v.property( "age2", (short)1);
+        v.property( "age3", 1);
+        v.property( "age4", 1L);
+        v.property( "age5", 1f);
+        v.property( "age6", 1d);
+        v.property( "ok", true);
+        
+        this.sqlgGraph.tx().commit();
+        assertProperty(v,"age2",(short)1);
+        assertProperty(v,"age3",1);
+        assertProperty(v,"age4",1L);
+        assertProperty(v,"age5",1f);
+        assertProperty(v,"age6",1d);
+        assertProperty(v, "ok", true);
+        
+    }
+    
+    @Test
+    public void testSetObjectProperties() {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
+        Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+        v.property( "age2", new Short((short)1));
+        v.property( "age3", new Integer(1));
+        v.property( "age4", new Long(1L));
+        v.property( "age5", new Float(1f));
+        v.property( "age6", new Double(1d));
+        v.property( "ok", Boolean.TRUE);
+        
+        this.sqlgGraph.tx().commit();
+        assertProperty(v,"age2",new Short((short)1));
+        assertProperty(v,"age3",new Integer(1));
+        assertProperty(v,"age4",new Long(1L));
+        assertProperty(v,"age5",new Float(1f));
+        assertProperty(v,"age6",new Double(1d));
+        assertProperty(v,"ok",Boolean.TRUE);
+       
     }
 
     @Test
@@ -26,13 +214,23 @@ public class TestSetProperty extends BaseTest {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         marko.property("surname", "xxxx");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals("xxxx", marko.property("surname").value());
+        assertProperty(marko,"surname","xxxx");
     }
 
     @Test
     public void testPropertyManyTimes() {
-        Vertex v = this.sqlgGraph.addVertex("age", 1, "name", "marko", "name", "john");
+    	Vertex v = this.sqlgGraph.addVertex("age", 1, "name", "marko", "name", "john");
         this.sqlgGraph.tx().commit();
+        assertProperty(v,"name","john");
+    }
+    
+    @Test
+    public void testSetPropertyManyTimes() {
+    	Vertex v = this.sqlgGraph.addVertex("age", 1, "name", "marko");
+    	v.property("name","tony");
+    	v.property("name","john");
+        this.sqlgGraph.tx().commit();
+        assertProperty(v,"name","john");
     }
 
     @Test
@@ -40,7 +238,7 @@ public class TestSetProperty extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "age", 1f);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1f, v.property("age").value());
+        assertProperty(v,"age",1f);
     }
 
     @Test
@@ -51,15 +249,17 @@ public class TestSetProperty extends BaseTest {
                 "age3", 1,
                 "age4", 1L,
                 "age5", 1f,
-                "age6", 1d
+                "age6", 1d,
+                "ok", true
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((short)1, v.property("age2").value());
-        Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1L, v.property("age4").value());
-        Assert.assertEquals(1f, v.property("age5").value());
-        Assert.assertEquals(1d, v.property("age6").value());
-    }
+        assertProperty(v,"age2",(short)1);
+        assertProperty(v,"age3",1);
+        assertProperty(v,"age4",1L);
+        assertProperty(v,"age5",1f);
+        assertProperty(v,"age6",1d);
+        assertProperty(v, "ok", true);
+     }
 
     @Test
     public void testPrimitivePropertiesNoFloat() {
@@ -67,13 +267,15 @@ public class TestSetProperty extends BaseTest {
                 "age2", (short)1,
                 "age3", 1,
                 "age4", 1L,
-                "age6", 1d
+                "age6", 1d,
+                "ok", true
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((short)1, v.property("age2").value());
-        Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1L, v.property("age4").value());
-        Assert.assertEquals(1d, v.property("age6").value());
+        assertProperty(v,"age2",(short)1);
+        assertProperty(v,"age3",1);
+        assertProperty(v,"age4",1L);
+        assertProperty(v,"age6",1d);
+        assertProperty(v,"ok",true);
     }
 
     @Test
@@ -84,14 +286,16 @@ public class TestSetProperty extends BaseTest {
                 "age3", new Integer(1),
                 "age4", new Long(1L),
                 "age5", new Float(1f),
-                "age6", new Double(1d)
+                "age6", new Double(1d),
+                "ok", Boolean.TRUE
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(new Short((short)1), v.property("age2").value());
-        Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1L), v.property("age4").value());
-        Assert.assertEquals(new Float(1f), v.property("age5").value());
-        Assert.assertEquals(new Double(1d), v.property("age6").value());
+        assertProperty(v,"age2",new Short((short)1));
+        assertProperty(v,"age3",new Integer(1));
+        assertProperty(v,"age4",new Long(1L));
+        assertProperty(v,"age5",new Float(1f));
+        assertProperty(v,"age6",new Double(1d));
+        assertProperty(v,"ok",Boolean.TRUE);
     }
 
     @Test
@@ -100,13 +304,81 @@ public class TestSetProperty extends BaseTest {
                 "age2", new Short((short)1),
                 "age3", new Integer(1),
                 "age4", new Long(1L),
-                "age6", new Double(1d)
+                "age6", new Double(1d),
+                "ok", Boolean.TRUE
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(new Short((short)1), v.property("age2").value());
-        Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1L), v.property("age4").value());
-        Assert.assertEquals(new Double(1d), v.property("age6").value());
+        assertProperty(v,"age2",new Short((short)1));
+        assertProperty(v,"age3",new Integer(1));
+        assertProperty(v,"age4",new Long(1L));
+        assertProperty(v, "age6",new Double(1d));
+        assertProperty(v,"ok",Boolean.TRUE);
+    }
+    
+    @Test
+    public void testDateTimeProperties(){
+    	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+    	LocalDateTime ldt=LocalDateTime.now();
+    	v.property("ldt",ldt);
+    	v.property("ld",ldt.toLocalDate());
+    	LocalTime lt=ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    	v.property("lt",lt);
+    	
+    	ZonedDateTime zdt=ZonedDateTime.now();
+    	v.property("zdt",zdt);
+    	    	
+    	Period p=Period.ofDays(3);
+    	v.property("p", p);
+    	
+    	Duration d=Duration.ofHours(12);
+    	v.property("d", d);
+    	
+    	this.sqlgGraph.tx().commit();
+    	assertProperty(v, "ldt", ldt);
+    	assertProperty(v, "ld", ldt.toLocalDate());
+    	assertProperty(v, "lt", lt);
+    	assertProperty(v, "zdt", zdt);
+    	assertProperty(v, "p", p);
+    	assertProperty(v, "d", d);
     }
 
+
+    @Test
+    public void testDateTimeArrayProperties(){
+    	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+    	LocalDateTime ldt=LocalDateTime.now();
+    	v.property("ldt",new LocalDateTime[]{ldt});
+    	v.property("ld",new LocalDate[]{ldt.toLocalDate()});
+    	LocalTime lt=ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    	v.property("lt",new LocalTime[]{lt});
+    	
+    	ZonedDateTime zdt=ZonedDateTime.now();
+    	v.property("zdt",new ZonedDateTime[]{zdt});
+    	    	
+    	Period p=Period.ofDays(3);
+    	v.property("p", new Period[]{p});
+    	
+    	Duration d=Duration.ofHours(12);
+    	v.property("d", new Duration[]{d});
+    	
+    	this.sqlgGraph.tx().commit();
+    	assertObjectArrayProperty(v, "ldt", ldt);
+    	assertObjectArrayProperty(v, "ld", ldt.toLocalDate());
+    	assertObjectArrayProperty(v, "lt", lt);
+    	assertObjectArrayProperty(v, "zdt", zdt);
+    	assertObjectArrayProperty(v, "p", p);
+    	assertObjectArrayProperty(v, "d", d);
+    }
+
+    
+    private <TP> void assertProperty(Vertex v,String property,TP expected){
+    	Assert.assertEquals(expected, v.property(property).value());
+        Assert.assertEquals(expected, this.sqlgGraph.traversal().V(v).values(property).next());
+    }
+    
+
+    private void assertObjectArrayProperty(Vertex v,String property,Object... expected){
+    	Assert.assertArrayEquals(expected,(Object[]) v.property(property).value());
+        Assert.assertArrayEquals(expected,(Object[]) this.sqlgGraph.traversal().V(v).values(property).next());
+    }
 }
