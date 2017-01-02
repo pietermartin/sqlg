@@ -71,7 +71,6 @@ public class PostgresDialect extends BaseSqlDialect {
     private ScheduledExecutorService scheduledExecutorService;
     private TopologyChangeListener listener;
 
-    @SuppressWarnings("unused")
     public PostgresDialect() {
         super();
     }
@@ -990,6 +989,9 @@ public class PostgresDialect extends BaseSqlDialect {
             case DOUBLE_ARRAY:
                 sql.append("::double precision[]");
                 break;
+            default:
+            	// noop
+            	break;
         }
     }
 
@@ -3139,11 +3141,17 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
+    /**
+     * Listens to topology changes notifications from the database and loads the changes into our own version of the schema
+     */
     private class TopologyChangeListener implements Runnable {
 
         private SqlgGraph sqlgGraph;
         private Semaphore semaphore;
         private boolean canceled;
+        /**
+         * should we keep running?
+         */
         private AtomicBoolean run=new AtomicBoolean(true);
 
         TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
