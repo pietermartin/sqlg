@@ -1,5 +1,13 @@
 package org.umlg.sqlg.test;
 
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -18,7 +26,7 @@ public class TestSetProperty extends BaseTest {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         marko.property("byte", new Byte((byte)1));
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((byte)1, marko.property("byte").value());
+        assertProperty(marko,"byte",(byte)1);
     }
     
     @Test
@@ -171,12 +179,12 @@ public class TestSetProperty extends BaseTest {
         v.property( "ok", true);
         
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((short)1, v.property("age2").value());
-        Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1L, v.property("age4").value());
-        Assert.assertEquals(1f, v.property("age5").value());
-        Assert.assertEquals(1d, v.property("age6").value());
-        Assert.assertEquals(true, v.property("ok").value());
+        assertProperty(v,"age2",(short)1);
+        assertProperty(v,"age3",1);
+        assertProperty(v,"age4",1L);
+        assertProperty(v,"age5",1f);
+        assertProperty(v,"age6",1d);
+        assertProperty(v, "ok", true);
         
     }
     
@@ -192,12 +200,12 @@ public class TestSetProperty extends BaseTest {
         v.property( "ok", Boolean.TRUE);
         
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(new Short((short)1), v.property("age2").value());
-        Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1L), v.property("age4").value());
-        Assert.assertEquals(new Float(1f), v.property("age5").value());
-        Assert.assertEquals(new Double(1d), v.property("age6").value());
-        Assert.assertEquals(Boolean.TRUE, v.property("ok").value());
+        assertProperty(v,"age2",new Short((short)1));
+        assertProperty(v,"age3",new Integer(1));
+        assertProperty(v,"age4",new Long(1L));
+        assertProperty(v,"age5",new Float(1f));
+        assertProperty(v,"age6",new Double(1d));
+        assertProperty(v,"ok",Boolean.TRUE);
        
     }
 
@@ -206,14 +214,14 @@ public class TestSetProperty extends BaseTest {
         Vertex marko = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
         marko.property("surname", "xxxx");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals("xxxx", marko.property("surname").value());
+        assertProperty(marko,"surname","xxxx");
     }
 
     @Test
     public void testPropertyManyTimes() {
     	Vertex v = this.sqlgGraph.addVertex("age", 1, "name", "marko", "name", "john");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals("john", v.property("name").value());
+        assertProperty(v,"name","john");
     }
     
     @Test
@@ -222,7 +230,7 @@ public class TestSetProperty extends BaseTest {
     	v.property("name","tony");
     	v.property("name","john");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals("john", v.property("name").value());
+        assertProperty(v,"name","john");
     }
 
     @Test
@@ -230,7 +238,7 @@ public class TestSetProperty extends BaseTest {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsFloatValues());
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "age", 1f);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1f, v.property("age").value());
+        assertProperty(v,"age",1f);
     }
 
     @Test
@@ -245,12 +253,12 @@ public class TestSetProperty extends BaseTest {
                 "ok", true
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((short)1, v.property("age2").value());
-        Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1L, v.property("age4").value());
-        Assert.assertEquals(1f, v.property("age5").value());
-        Assert.assertEquals(1d, v.property("age6").value());
-        Assert.assertEquals(true, v.property("ok").value());
+        assertProperty(v,"age2",(short)1);
+        assertProperty(v,"age3",1);
+        assertProperty(v,"age4",1L);
+        assertProperty(v,"age5",1f);
+        assertProperty(v,"age6",1d);
+        assertProperty(v, "ok", true);
      }
 
     @Test
@@ -263,11 +271,11 @@ public class TestSetProperty extends BaseTest {
                 "ok", true
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals((short)1, v.property("age2").value());
-        Assert.assertEquals(1, v.property("age3").value());
-        Assert.assertEquals(1L, v.property("age4").value());
-        Assert.assertEquals(1d, v.property("age6").value());
-        Assert.assertEquals(true, v.property("ok").value());
+        assertProperty(v,"age2",(short)1);
+        assertProperty(v,"age3",1);
+        assertProperty(v,"age4",1L);
+        assertProperty(v,"age6",1d);
+        assertProperty(v,"ok",true);
     }
 
     @Test
@@ -282,12 +290,12 @@ public class TestSetProperty extends BaseTest {
                 "ok", Boolean.TRUE
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(new Short((short)1), v.property("age2").value());
-        Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1L), v.property("age4").value());
-        Assert.assertEquals(new Float(1f), v.property("age5").value());
-        Assert.assertEquals(new Double(1d), v.property("age6").value());
-        Assert.assertEquals(Boolean.TRUE, v.property("ok").value());
+        assertProperty(v,"age2",new Short((short)1));
+        assertProperty(v,"age3",new Integer(1));
+        assertProperty(v,"age4",new Long(1L));
+        assertProperty(v,"age5",new Float(1f));
+        assertProperty(v,"age6",new Double(1d));
+        assertProperty(v,"ok",Boolean.TRUE);
     }
 
     @Test
@@ -300,11 +308,77 @@ public class TestSetProperty extends BaseTest {
                 "ok", Boolean.TRUE
         );
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(new Short((short)1), v.property("age2").value());
-        Assert.assertEquals(new Integer(1), v.property("age3").value());
-        Assert.assertEquals(new Long(1L), v.property("age4").value());
-        Assert.assertEquals(new Double(1d), v.property("age6").value());
-        Assert.assertEquals(Boolean.TRUE, v.property("ok").value());
+        assertProperty(v,"age2",new Short((short)1));
+        assertProperty(v,"age3",new Integer(1));
+        assertProperty(v,"age4",new Long(1L));
+        assertProperty(v, "age6",new Double(1d));
+        assertProperty(v,"ok",Boolean.TRUE);
+    }
+    
+    @Test
+    public void testDateTimeProperties(){
+    	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+    	LocalDateTime ldt=LocalDateTime.now();
+    	v.property("ldt",ldt);
+    	v.property("ld",ldt.toLocalDate());
+    	LocalTime lt=ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    	v.property("lt",lt);
+    	
+    	ZonedDateTime zdt=ZonedDateTime.now();
+    	v.property("zdt",zdt);
+    	    	
+    	Period p=Period.ofDays(3);
+    	v.property("p", p);
+    	
+    	Duration d=Duration.ofHours(12);
+    	v.property("d", d);
+    	
+    	this.sqlgGraph.tx().commit();
+    	assertProperty(v, "ldt", ldt);
+    	assertProperty(v, "ld", ldt.toLocalDate());
+    	assertProperty(v, "lt", lt);
+    	assertProperty(v, "zdt", zdt);
+    	assertProperty(v, "p", p);
+    	assertProperty(v, "d", d);
     }
 
+
+    @Test
+    public void testDateTimeArrayProperties(){
+    	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+    	LocalDateTime ldt=LocalDateTime.now();
+    	v.property("ldt",new LocalDateTime[]{ldt});
+    	v.property("ld",new LocalDate[]{ldt.toLocalDate()});
+    	LocalTime lt=ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    	v.property("lt",new LocalTime[]{lt});
+    	
+    	ZonedDateTime zdt=ZonedDateTime.now();
+    	v.property("zdt",new ZonedDateTime[]{zdt});
+    	    	
+    	Period p=Period.ofDays(3);
+    	v.property("p", new Period[]{p});
+    	
+    	Duration d=Duration.ofHours(12);
+    	v.property("d", new Duration[]{d});
+    	
+    	this.sqlgGraph.tx().commit();
+    	assertObjectArrayProperty(v, "ldt", ldt);
+    	assertObjectArrayProperty(v, "ld", ldt.toLocalDate());
+    	assertObjectArrayProperty(v, "lt", lt);
+    	assertObjectArrayProperty(v, "zdt", zdt);
+    	assertObjectArrayProperty(v, "p", p);
+    	assertObjectArrayProperty(v, "d", d);
+    }
+
+    
+    private <TP> void assertProperty(Vertex v,String property,TP expected){
+    	Assert.assertEquals(expected, v.property(property).value());
+        Assert.assertEquals(expected, this.sqlgGraph.traversal().V(v).values(property).next());
+    }
+    
+
+    private void assertObjectArrayProperty(Vertex v,String property,Object... expected){
+    	Assert.assertArrayEquals(expected,(Object[]) v.property(property).value());
+        Assert.assertArrayEquals(expected,(Object[]) this.sqlgGraph.traversal().V(v).values(property).next());
+    }
 }

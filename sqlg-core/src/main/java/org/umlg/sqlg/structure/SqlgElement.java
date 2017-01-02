@@ -281,6 +281,17 @@ public abstract class SqlgElement implements Element {
             sql.append(" SET ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
+            // some data types require several columns in the db, make sure to update them all
+            PropertyType pt=PropertyType.from(value);
+            String[] postfixes=this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(pt);
+            if (postfixes!=null && postfixes.length>1){
+            	for (int i=1;i<postfixes.length;i++){
+            		sql.append(",");
+            		sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key+pt.getPostFixes()[i-1]));
+                    sql.append(" = ?");
+            	}
+            }
+            
             sql.append(" WHERE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
@@ -294,8 +305,9 @@ public abstract class SqlgElement implements Element {
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                 Map<String, Object> keyValue = new HashMap<>();
                 keyValue.put(key, value);
-                setKeyValuesAsParameter(this.sqlgGraph, 1, preparedStatement, keyValue);
-                preparedStatement.setLong(2, ((RecordId) this.id()).getId());
+                // the index of the id column in the statement depend on how many columns we had to use to store that data type
+                int idx=setKeyValuesAsParameter(this.sqlgGraph, 1, preparedStatement, keyValue);
+                preparedStatement.setLong(idx, ((RecordId) this.id()).getId());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
             } catch (SQLException e) {
