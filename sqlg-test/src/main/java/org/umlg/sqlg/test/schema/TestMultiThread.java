@@ -141,15 +141,17 @@ public class TestMultiThread extends BaseTest {
                         }
                         completedThreads.getAndAdd(1);
                         logger.info("shouldExecuteWithCompetingThreads " + completedThreads.get());
-                        countDownLatch.countDown();
+                        
                     } catch (Exception e) {
                         logger.error("failure", e);
                         fail(e.getMessage());
+                    } finally {
+                    	countDownLatch.countDown();
                     }
                 }
             }.start();
         }
-        countDownLatch.await();
+        countDownLatch.await(5,TimeUnit.MINUTES);
         assertEquals(completedThreads.get(), totalThreads);
         System.out.println(vertices.get());
         assertVertexEdgeCounts(vertices.get(), edges.get());
