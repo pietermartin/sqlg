@@ -273,7 +273,7 @@ public class Schema implements TopologyInf {
     }
 
 
-    String getName() {
+    public String getName() {
         return name;
     }
 
