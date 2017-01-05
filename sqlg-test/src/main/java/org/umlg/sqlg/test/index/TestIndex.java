@@ -130,7 +130,7 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
         }
         this.sqlgGraph.tx().rollback();
@@ -154,7 +154,7 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
         }
         this.sqlgGraph.tx().rollback();
@@ -177,24 +177,69 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
     }
 
     @Test
-    public void testIndexExist() {
+    public void testIndexOnVertex1Schema() throws SQLException {
+        //This is for postgres only
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres"));
+        this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name1", "dummy", "name2", "dummy", "name3", "dummy");
+        this.sqlgGraph.tx().commit();
+        for (int i = 0; i < 5000; i++) {
+            this.sqlgGraph.addVertex(T.label, "MySchema.Person", "name1", "john" + i, "name2", "tom" + i, "name3", "piet" + i);
+        }
+        this.sqlgGraph.tx().commit();
+        assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "MySchema.Person").has("name1", "john50").count().next(), 0);
+        Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+        Statement statement = conn.createStatement();
+        if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
+            ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"MySchema\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
+            assertTrue(rs.next());
+            String result = rs.getString(1);
+            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            statement.close();
+            conn.close();
+        }
+    }
+    
+    @Test
+    public void testIndexExist() throws Exception {
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.tx().commit();
+        
+        this.sqlgGraph.close();
+        this.sqlgGraph=SqlgGraph.open(configuration);
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
+         
+        
+    }
+    
+    @Test
+    public void testIndexExistSchema() throws Exception {
+        this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
+        
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
+        this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
+        this.sqlgGraph.tx().commit();
+        
+        this.sqlgGraph.close();
+        this.sqlgGraph=SqlgGraph.open(configuration);
+        this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
+         
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    public void testIndexOnEdge() throws SQLException {
+    public void testIndexOnEdge() throws Exception {
         Map<String, PropertyType> columns = new HashMap<>();
         columns.put("name", PropertyType.STRING);
 
@@ -219,11 +264,17 @@ public class TestIndex extends BaseTest {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"E_person_address\" a WHERE a.\"name\" = 'address1001'");
             assertTrue(rs.next());
             String result = rs.getString(1);
-            System.out.println(result);
-            assertTrue(result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
+            assertTrue(result,result.contains("Index Scan") || result.contains("Bitmap Heap Scan"));
             statement.close();
             conn.close();
         }
+        
+        this.sqlgGraph.close();
+        this.sqlgGraph=SqlgGraph.open(configuration);
+        edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel(publicSchema, "person_address").get();
+        edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
+       
+        
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")

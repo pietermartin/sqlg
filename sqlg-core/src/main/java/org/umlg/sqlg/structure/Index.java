@@ -1,12 +1,7 @@
 package org.umlg.sqlg.structure;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,8 +12,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 
 /**
  * Date: 2016/11/26
@@ -35,6 +36,13 @@ public class Index implements TopologyInf {
     private IndexType uncommittedIndexType;
     private List<PropertyColumn> uncommittedProperties = new ArrayList<>();
 
+    /**
+     * create uncommitted index
+     * @param name
+     * @param indexType
+     * @param abstractLabel
+     * @param properties
+     */
     Index(String name, IndexType indexType, AbstractLabel abstractLabel, List<PropertyColumn> properties) {
         this.name = name;
         this.uncommittedIndexType = indexType;
@@ -42,6 +50,18 @@ public class Index implements TopologyInf {
         this.uncommittedProperties.addAll(properties);
     }
 
+    /**
+     * create a committed index (when loading topology from existing schema)
+     * @param name
+     * @param indexType
+     * @param abstractLabel
+     */
+    Index(String name, IndexType indexType, AbstractLabel abstractLabel) {
+        this.name = name;
+        this.indexType = indexType;
+        this.abstractLabel = abstractLabel;
+    }
+    
     public String getName() {
         return name;
     }
@@ -55,6 +75,14 @@ public class Index implements TopologyInf {
         return indexType;
     }
 
+    /**
+     * add a committed property (when loading topology from existing schema)
+     * @param property
+     */
+    void addProperty(PropertyColumn property) {
+        this.properties.add(property);
+    }
+    
     void afterCommit() {
         if (this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             this.indexType = this.uncommittedIndexType;

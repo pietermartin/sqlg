@@ -681,6 +681,76 @@ public class Schema implements TopologyInf {
                 this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
             }
         }
+        
+    }
+    
+    /**
+     * load indices for all vertices in schema
+     * @param traversalSource
+     * @param schemaVertex
+     */
+    void loadVertexIndices(GraphTraversalSource traversalSource, Vertex schemaVertex) {
+        List<Path> indices = traversalSource
+                .V(schemaVertex)
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                //a vertex does not necessarily have properties so use optional.
+                .optional(
+                        __.out(SQLG_SCHEMA_VERTEX_INDEX_EDGE).as("index")
+                                .optional(
+                                        __.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE).as("property")
+                                )
+                )
+                .path()
+                .toList();
+        for (Path vertexIndices : indices) {
+        	Vertex vertexVertex = null;
+        	Vertex vertexIndex = null;
+            Vertex propertyIndex = null;
+            List<Set<String>> labelsList = vertexIndices.labels();
+            for (Set<String> labels : labelsList) {
+                for (String label : labels) {
+                    switch (label) {
+                        case "vertex":
+                            vertexVertex = vertexIndices.get("vertex");
+                            break;
+                        case "index":
+                            vertexIndex = vertexIndices.get("index");
+                            break;    
+                        case "property":
+                            propertyIndex = vertexIndices.get("property");
+                            break;
+                        case "sqlgPathFakeLabel":
+                            break;
+                        default:
+                            throw new IllegalStateException(String.format("BUG: Only \"vertex\",\"index\" and \"property\" is expected as a label. Found %s", label));
+                    }
+                }
+            }
+            Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
+            String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
+            String tableName = vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+            VertexLabel vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + tableName);
+            if (vertexLabel == null) {
+                vertexLabel = new VertexLabel(this, tableName);
+                this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
+            }
+            if (vertexIndex != null) {
+            	String indexName=vertexIndex.value(SQLG_SCHEMA_INDEX_NAME);
+            	Optional<Index> oidx=vertexLabel.getIndex(indexName);
+            	Index idx;
+            	if (oidx.isPresent()){
+            		idx=oidx.get();
+            	} else {
+            		idx=new Index(indexName,IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)),vertexLabel);
+            		vertexLabel.addIndex(idx);
+            	}
+            	if (propertyIndex != null) {
+            		String propertyName=propertyIndex.value(SQLG_SCHEMA_PROPERTY_NAME);
+            		vertexLabel.getProperty(propertyName).ifPresent((PropertyColumn pc)->idx.addProperty(pc));
+                }
+
+            }
+        }
     }
 
     void loadInEdgeLabels(GraphTraversalSource traversalSource, Vertex schemaVertex) {
@@ -750,6 +820,89 @@ public class Schema implements TopologyInf {
                 VertexLabel inVertexLabel = vertexLabelOptional.get();
 
                 inVertexLabel.addToInEdgeLabels(outEdgeLabel);
+            }
+        }
+    }
+    
+    /**
+     * load indices for (out) edges on all vertices of schema
+     * @param traversalSource
+     * @param schemaVertex
+     */
+    void loadEdgeIndices(GraphTraversalSource traversalSource, Vertex schemaVertex) {
+        List<Path> indices = traversalSource
+                .V(schemaVertex)
+                .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("vertex")
+                //a vertex does not necessarily have properties so use optional.
+                .optional(
+                        __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
+                        .optional(
+	                        __.out(SQLG_SCHEMA_EDGE_INDEX_EDGE).as("index")
+	                                .optional(
+	                                        __.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE).as("property")
+	                                )
+                        )
+	               )
+                .path()
+                .toList();
+        for (Path vertexIndices : indices) {
+        	Vertex vertexVertex = null;
+        	Vertex vertexEdge = null;
+        	Vertex vertexIndex = null;
+            Vertex propertyIndex = null;
+            List<Set<String>> labelsList = vertexIndices.labels();
+            for (Set<String> labels : labelsList) {
+                for (String label : labels) {
+                    switch (label) {
+                        case "vertex":
+                            vertexVertex = vertexIndices.get("vertex");
+                            break;
+                        case "outEdgeVertex":
+                        	vertexEdge = vertexIndices.get("outEdgeVertex");
+                            break;     
+                        case "index":
+                            vertexIndex = vertexIndices.get("index");
+                            break;    
+                        case "property":
+                            propertyIndex = vertexIndices.get("property");
+                            break;
+                        case "sqlgPathFakeLabel":
+                            break;
+                        default:
+                            throw new IllegalStateException(String.format("BUG: Only \"vertex\",\"outEdgeVertex\",\"index\" and \"property\" is expected as a label. Found %s", label));
+                    }
+                }
+            }
+            Preconditions.checkState(vertexVertex != null, "BUG: Topology vertex not found.");
+            String schemaName = schemaVertex.value(SQLG_SCHEMA_SCHEMA_NAME);
+            String tableName = vertexVertex.value(SQLG_SCHEMA_VERTEX_LABEL_NAME);
+            VertexLabel vertexLabel = this.vertexLabels.get(schemaName + "." + VERTEX_PREFIX + tableName);
+            if (vertexLabel == null) {
+                vertexLabel = new VertexLabel(this, tableName);
+                this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
+            }
+            if (vertexEdge!=null){
+            	String edgeName = vertexEdge.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
+            	Optional<EdgeLabel> oel=vertexLabel.getOutEdgeLabel(edgeName);
+            	if (oel.isPresent()){
+            		EdgeLabel edgeLabel=oel.get();
+		            if (vertexIndex != null) {
+		            	String indexName=vertexIndex.value(SQLG_SCHEMA_INDEX_NAME);
+		            	Optional<Index> oidx=edgeLabel.getIndex(indexName);
+		            	Index idx;
+		            	if (oidx.isPresent()){
+		            		idx=oidx.get();
+		            	} else {
+		            		idx=new Index(indexName,IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)),edgeLabel);
+		            		edgeLabel.addIndex(idx);
+		            	}
+		            	if (propertyIndex != null) {
+		            		String propertyName=propertyIndex.value(SQLG_SCHEMA_PROPERTY_NAME);
+		            		edgeLabel.getProperty(propertyName).ifPresent((PropertyColumn pc)->idx.addProperty(pc));
+		                }
+		
+		            }
+            	}
             }
         }
     }
