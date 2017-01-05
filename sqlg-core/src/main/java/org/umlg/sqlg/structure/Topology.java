@@ -760,6 +760,9 @@ public class Topology {
 
             }
             schema.loadVertexOutEdgesAndProperties(traversalSource, schemaVertex);
+            // load vertex and edge indices
+            schema.loadVertexIndices(traversalSource, schemaVertex);
+            schema.loadEdgeIndices(traversalSource, schemaVertex);
         }
         //Now load the in edges
         schemaVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA).toList();
