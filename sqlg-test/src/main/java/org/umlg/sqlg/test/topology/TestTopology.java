@@ -1,16 +1,13 @@
 package org.umlg.sqlg.test.topology;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/06/27
@@ -42,12 +39,12 @@ public class TestTopology extends BaseTest {
 
     
     //This test a bug in rollback on edges.
-    @Test
-    public void testRollback() {
-        loadModern();
-        final Traversal<Vertex, Edge> traversal = this.sqlgGraph.traversal().V().aggregate("x").as("a").select("x").unfold().addE("existsWith").to("a").property("time", "now");
-        IteratorUtils.asList(traversal);
-        this.sqlgGraph.tx().rollback();
-    }
+//    @Test
+//    public void testRollback() {
+//        loadModern();
+//        final Traversal<Vertex, Edge> traversal = this.sqlgGraph.traversal().V().aggregate("x").as("a").select("x").unfold().addE("existsWith").to("a").property("time", "now");
+//        IteratorUtils.asList(traversal);
+//        this.sqlgGraph.tx().rollback();
+//    }
 
 }

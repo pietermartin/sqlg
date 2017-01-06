@@ -471,7 +471,7 @@ public class SqlgUtil {
         int i = 1;
         for (Object keyValue : keyValues) {
             if (i++ % 2 != 0) {
-                keys.add((String)keyValue);
+                keys.add((String) keyValue);
             }
         }
         return keys;
@@ -531,7 +531,7 @@ public class SqlgUtil {
                 if (value != null) {
                     resultNotNullValues.put(key, value);
                     keyPropertyTypeMap.put(key, PropertyType.from(value));
-                }  else {
+                } else {
                     keyPropertyTypeMap.put(key, PropertyType.STRING);
                 }
                 resultAllValues.put(key, value);
@@ -567,7 +567,7 @@ public class SqlgUtil {
                 if (value != null) {
                     resultNotNullValues.put(key, value);
                     keyPropertyTypeMap.put(key, PropertyType.from(value));
-                }  else {
+                } else {
                     keyPropertyTypeMap.put(key, PropertyType.STRING);
                 }
                 resultAllValues.put(key, value);
@@ -708,12 +708,13 @@ public class SqlgUtil {
 
     /**
      * return tables in their schema with their properties, matching the given hasContainers
+     *
      * @param topology
      * @param hasContainers
-     * @param withSchema do we want the schema tables too?
+     * @param withSqlgSchema    do we want the sqlg schema tables too?
      * @return
      */
-    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers,boolean withSchema) {
+    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
         HasContainer fromHasContainer = null;
         HasContainer withoutHasContainer = null;
 
@@ -734,7 +735,7 @@ public class SqlgUtil {
         } else if (withoutHasContainer != null) {
             filteredAllTables = topology.getAllTablesWithout((Set<TopologyInf>) withoutHasContainer.getPredicate().getValue());
         } else {
-            filteredAllTables = topology.getAllTables(withSchema);
+            filteredAllTables = topology.getAllTables(withSqlgSchema);
         }
         return filteredAllTables;
     }

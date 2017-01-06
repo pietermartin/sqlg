@@ -2,7 +2,6 @@ package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-
 import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
@@ -107,7 +106,7 @@ public class SchemaTableTree {
         this.comparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers,Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers, Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
     }
 
     /**
@@ -140,7 +139,7 @@ public class SchemaTableTree {
         this.emit = emit;
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers,Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers, Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         initializeAliasColumnNameMaps();
     }
 
@@ -1260,16 +1259,13 @@ public class SchemaTableTree {
 
     private static void printFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-        // TODO have error message, and figure out why it happens
-        if (propertyTypeMap!=null){
-	        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-	            String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-	            cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
-	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-	                alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-	                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
-	            }
-	        }
+        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
+            String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+            cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+                alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
+            }
         }
     }
 
@@ -1301,28 +1297,24 @@ public class SchemaTableTree {
 
     private static void printLabeledFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-        //int count = 1;
-        // TODO have error message, and figure out why it happens
-        if (propertyTypeMap!=null){
-	        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-	            String col = propertyTypeMapEntry.getKey();
-	            String alias = cols.getAlias(lastSchemaTableTree, col);
-	            if (alias == null) {
-	                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-	                cols.add(lastSchemaTableTree, col, alias);
-	            } else {
-	                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
-	            }
-	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-	                col = propertyTypeMapEntry.getKey() + postFix;
-	                alias = cols.getAlias(lastSchemaTableTree, col);
-	                // postfix do not use labeled methods
-	                if (alias == null) {
-	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-	                    cols.add(lastSchemaTableTree, col, alias);
-	                }
-	            }
-	        }
+        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
+            String col = propertyTypeMapEntry.getKey();
+            String alias = cols.getAlias(lastSchemaTableTree, col);
+            if (alias == null) {
+                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
+                cols.add(lastSchemaTableTree, col, alias);
+            } else {
+                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
+            }
+            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+                col = propertyTypeMapEntry.getKey() + postFix;
+                alias = cols.getAlias(lastSchemaTableTree, col);
+                // postfix do not use labeled methods
+                if (alias == null) {
+                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+                    cols.add(lastSchemaTableTree, col, alias);
+                }
+            }
         }
     }
 
@@ -2022,13 +2014,13 @@ public class SchemaTableTree {
 //                        ? resultSet.getArray(ix)
 //                        : resultSet.getObject(ix);
 //                if (!Objects.isNull(o)) {
-                    if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                        ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, ix);
-                    } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                        ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, ix);
-                    } else {
-                        sqlgElement.loadProperty(resultSet, propertyName, ix, getColumnNameAliasMap(), this.stepDepth, propertyType);
-                    }
+                if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                    ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, ix);
+                } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                    ((SqlgEdge) sqlgElement).loadOutVertex(resultSet, propertyName, ix);
+                } else {
+                    sqlgElement.loadProperty(resultSet, propertyName, ix, getColumnNameAliasMap(), this.stepDepth, propertyType);
+                }
 //                }
             }
         }
