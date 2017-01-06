@@ -454,7 +454,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
 
-        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.topology, this.hasContainers);
+        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.topology, this.hasContainers,false);
 
         //This list is to reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();
