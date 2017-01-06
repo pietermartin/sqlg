@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -17,7 +18,7 @@ import static org.umlg.sqlg.structure.Topology.*;
 /**
  * Created by pieter on 2015/12/09.
  */
-public class TestSqlgSchema  extends BaseTest {
+public class TestSqlgSchema extends BaseTest {
 
     @Test
     public void testSqlgSchemaExist() throws Exception {
@@ -33,14 +34,14 @@ public class TestSqlgSchema  extends BaseTest {
 
             GraphTraversalSource traversalSource = sqlgGraph1.traversal().withStrategies(
                     TopologyStrategy.build().selectFrom(
-                            sqlgGraph1.getTopology().getSqlgSchemaVertexLabels()
+                            sqlgGraph1.getTopology().getSqlgSchemaAbstractLabels()
                     ).create()
             );
             //Assert the schema
             List<Vertex> schemas = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
                     .toList();
-            Assert.assertEquals(1, schemas.size());
+            Assert.assertEquals(2, schemas.size());
             Assert.assertEquals(sqlgGraph1.getSqlDialect().getPublicSchema(), schemas.get(0).value("name"));
 
             //Assert the vertex labels
@@ -48,15 +49,15 @@ public class TestSqlgSchema  extends BaseTest {
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
                     .toList();
             Assert.assertEquals(2, vertexLabels.size());
-            Assert.assertEquals(1, vertexLabels.stream().filter(v->v.value("name").equals("Person")).count());
-            Assert.assertEquals(1, vertexLabels.stream().filter(v->v.value("name").equals("Dog")).count());
+            Assert.assertEquals(1, vertexLabels.stream().filter(v -> v.value("name").equals("Person")).count());
+            Assert.assertEquals(1, vertexLabels.stream().filter(v -> v.value("name").equals("Dog")).count());
 
             //Assert the edge labels
             List<Vertex> edgeLabels = traversalSource.V()
                     .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
                     .toList();
             Assert.assertEquals(1, edgeLabels.size());
-            Assert.assertEquals(1, edgeLabels.stream().filter(v->v.value("name").equals("pet")).count());
+            Assert.assertEquals(1, edgeLabels.stream().filter(v -> v.value("name").equals("pet")).count());
 
             //Assert the Person's properties
             List<Vertex> vertexLabelPersons = traversalSource.V()
@@ -93,6 +94,22 @@ public class TestSqlgSchema  extends BaseTest {
             Assert.assertEquals(1, petProperties.size());
             Assert.assertEquals("createdOn", petProperties.get(0).value("name"));
             Assert.assertEquals("LOCALDATETIME", petProperties.get(0).value("type"));
+
+            //assert that the topology edges are also queryable
+
+            List<Edge> edges = traversalSource.V().hasLabel("sqlg_schema.schema").outE().toList();
+            Assert.assertEquals(2, edges.size());
+            edges = traversalSource.V().hasLabel("sqlg_schema.schema").out().outE("out_edges").toList();
+            Assert.assertEquals(1, edges.size());
+            edges = traversalSource.V().hasLabel("sqlg_schema.schema").out().outE("in_edges").toList();
+            Assert.assertEquals(1, edges.size());
+            edges = traversalSource.V().hasLabel("sqlg_schema.schema").out().outE("vertex_property").toList();
+            Assert.assertEquals(2, edges.size());
+            edges = traversalSource.V().hasLabel("sqlg_schema.schema").out().out("out_edges").outE("edge_property").toList();
+            Assert.assertEquals(1, edges.size());
+
+            List<Edge> topologyEdges = traversalSource.E().toList();
+            Assert.assertEquals(7, topologyEdges.size());
         }
     }
 

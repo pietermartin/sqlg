@@ -249,7 +249,7 @@ public class TestTopologyUpgrade extends BaseTest {
         this.sqlgGraph.tx().commit();
         GraphTraversalSource traversalSource = this.sqlgGraph.traversal().withStrategies(
                 TopologyStrategy.build().selectFrom(
-                        this.sqlgGraph.getTopology().getSqlgSchemaVertexLabels()
+                        this.sqlgGraph.getTopology().getSqlgSchemaAbstractLabels()
                 ).create()
         );
         List<Vertex> schemas = traversalSource.V()

@@ -1,8 +1,11 @@
 package org.umlg.sqlg.test.topology;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -15,6 +18,28 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestTopology extends BaseTest {
 
+//    @Test
+//    public void failTest() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "MySchema.A", "name", "A");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "MySchema.B", "name", "B");
+//        a1.addEdge("ab", b1);
+//        this.sqlgGraph.tx().commit();
+//
+//        //works
+//        assertEquals(2,
+//                this.sqlgGraph.topology()
+//                        .V().hasLabel("sqlg_schema.schema").has("name", P.within("MySchema")).as("schema").values("name").as("schemaName").select("schema")
+//                        .out("schema_vertex")
+//                        .count().next().intValue());
+//
+//        //fails
+//        assertTrue(
+//                this.sqlgGraph.topology()
+//                        .V().hasLabel("sqlg_schema.schema").has("name", P.within("MySchema")).as("schema").values("name").as("schemaName").select("schema")
+//                        .out("schema_vertex")
+//                        .hasNext());
+//    }
+
     @Test
     public void testTopologyTraversal() {
         Vertex gis = this.sqlgGraph.addVertex(T.label, "Gis", "name", "HaloGis1");
@@ -26,25 +51,25 @@ public class TestTopology extends BaseTest {
         assertEquals(2, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.vertex").out("vertex_property").count().next().intValue());
         assertEquals(2, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.property").in("vertex_property").count().next().intValue());
         assertEquals(1, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.property").in("edge_property").count().next().intValue());
-  
-        Vertex v= this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").has("name","public").next();
+
+        Vertex v = this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").has("name", "public").next();
         assertTrue(v.edges(Direction.OUT, "schema_vertex").hasNext());
-        
+
         assertEquals(2, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").as("schema").select("schema").out("schema_vertex").count().next().intValue());
         assertEquals(2, this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").as("schema").values("name").as("schemaName").select("schema").out("schema_vertex").count().next().intValue());
-            
-        assertEquals("testEdge",this.sqlgGraph.topology().V().hasLabel("sqlg_schema.property").in("edge_property").values("name").next());
-        
+        assertTrue(this.sqlgGraph.topology().V().hasLabel("sqlg_schema.schema").as("schema").values("name").as("schemaName").select("schema").out("schema_vertex").hasNext());
+
+        assertEquals("testEdge", this.sqlgGraph.topology().V().hasLabel("sqlg_schema.property").in("edge_property").values("name").next());
     }
 
-    
-    //This test a bug in rollback on edges.
-//    @Test
-//    public void testRollback() {
-//        loadModern();
-//        final Traversal<Vertex, Edge> traversal = this.sqlgGraph.traversal().V().aggregate("x").as("a").select("x").unfold().addE("existsWith").to("a").property("time", "now");
-//        IteratorUtils.asList(traversal);
-//        this.sqlgGraph.tx().rollback();
-//    }
+
+    //    This test a bug in rollback on edges.
+    @Test
+    public void testRollback() {
+        loadModern();
+        final Traversal<Vertex, Edge> traversal = this.sqlgGraph.traversal().V().aggregate("x").as("a").select("x").unfold().addE("existsWith").to("a").property("time", "now");
+        IteratorUtils.asList(traversal);
+        this.sqlgGraph.tx().rollback();
+    }
 
 }

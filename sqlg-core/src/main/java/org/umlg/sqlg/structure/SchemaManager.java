@@ -8,11 +8,8 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA_TABLES;
 
 /**
  * Date: 2014/07/12
@@ -113,7 +110,7 @@ public class SchemaManager {
 
     public Map<String, Map<String, PropertyType>> getAllTables() {
 //        return getAllTablesWithout(SQLG_SCHEMA_SCHEMA_TABLES);
-        return getAllTablesWithout(this.getTopology().getSqlgSchemaVertexLabels());
+        return getAllTablesWithout(this.getTopology().getSqlgSchemaAbstractLabels());
     }
 
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {

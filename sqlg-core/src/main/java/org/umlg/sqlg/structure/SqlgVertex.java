@@ -1,42 +1,21 @@
 package org.umlg.sqlg.structure;
 
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_TABLE;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import com.google.common.base.Preconditions;
+import java.sql.*;
+import java.util.*;
+
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_TABLE;
 
 /**
  * Date: 2014/07/12
@@ -529,14 +508,18 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
+        // need topology when we're a topology vertex
+        GraphTraversalSource gts=Topology.SQLG_SCHEMA.equals(schema)?
+                this.sqlgGraph.topology()
+                :this.sqlgGraph.traversal();
         //for some very bezaar reason not adding toList().iterator() return one extra element.
         switch (direction) {
             case OUT:
-                return this.sqlgGraph.traversal().V(this).out(edgeLabels).toList().iterator();
+                return gts.V(this).out(edgeLabels).toList().iterator();
             case IN:
-                return this.sqlgGraph.traversal().V(this).in(edgeLabels).toList().iterator();
+                return gts.V(this).in(edgeLabels).toList().iterator();
             case BOTH:
-                return this.sqlgGraph.traversal().V(this).both(edgeLabels).toList().iterator();
+                return gts.V(this).both(edgeLabels).toList().iterator();
         }
         return Collections.emptyIterator();
     }
