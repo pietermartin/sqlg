@@ -147,4 +147,23 @@ public class TestGremlinCompileWithAs extends BaseTest {
         Assert.assertEquals(e1, result.get(0).get("e"));
         Assert.assertEquals(a1, result.get(0).get("v"));
     }
+    
+    @Test
+    public void testChainSelect() throws Exception {
+    	Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a2");
+        a1.addEdge("friend", a2, "weight", 5);
+        this.sqlgGraph.tx().commit();
+
+        try (GraphTraversal<Vertex, Vertex> gt = this.sqlgGraph.traversal()
+                .V().hasLabel("Person").has("name","a1").as("v1")
+                .values("name").as("name1")
+                .select("v1")
+                .out("friend");){
+        	Assert.assertTrue(gt.hasNext());
+        	Assert.assertEquals(a2, gt.next());
+        	Assert.assertFalse(gt.hasNext());
+        }
+        
+    }
 }

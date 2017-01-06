@@ -706,7 +706,14 @@ public class SqlgUtil {
         }
     }
 
-    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers) {
+    /**
+     * return tables in their schema with their properties, matching the given hasContainers
+     * @param topology
+     * @param hasContainers
+     * @param withSchema do we want the schema tables too?
+     * @return
+     */
+    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers,boolean withSchema) {
         HasContainer fromHasContainer = null;
         HasContainer withoutHasContainer = null;
 
@@ -727,7 +734,7 @@ public class SqlgUtil {
         } else if (withoutHasContainer != null) {
             filteredAllTables = topology.getAllTablesWithout((Set<TopologyInf>) withoutHasContainer.getPredicate().getValue());
         } else {
-            filteredAllTables = topology.getAllTables();
+            filteredAllTables = topology.getAllTables(withSchema);
         }
         return filteredAllTables;
     }

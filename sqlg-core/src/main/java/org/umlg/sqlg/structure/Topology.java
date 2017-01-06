@@ -1119,7 +1119,21 @@ public class Topology {
         return result;
     }
 
+    /**
+     * get all tables by schema, with their properties
+     * does not return schema tables
+     * @return
+     */
     public Map<String, Map<String, PropertyType>> getAllTables() {
+    	return getAllTables(false);
+    }
+    
+    /**
+     * get all tables by schema, with their properties
+     * @param withSchema do we want the schema tables?
+     * @return
+     */
+    public Map<String, Map<String, PropertyType>> getAllTables(boolean withSchema) {
         this.z_internalReadLock();
         try {
             //Need to make a copy so as not to corrupt the allTableCache with uncommitted schema elements
@@ -1142,8 +1156,10 @@ public class Topology {
                     }
                 }
             }
-            for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
-                result.remove(sqlgSchemaSchemaTable);
+            if (!withSchema){
+            	for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
+            		result.remove(sqlgSchemaSchemaTable);
+            	}
             }
 
             return Collections.unmodifiableMap(result);

@@ -107,7 +107,7 @@ public class SchemaTableTree {
         this.comparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers);
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers,Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
     }
 
     /**
@@ -140,7 +140,7 @@ public class SchemaTableTree {
         this.emit = emit;
         this.untilFirst = untilFirst;
         this.optionalLeftJoin = optionalLeftJoin;
-        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers);
+        this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers,Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
         initializeAliasColumnNameMaps();
     }
 
@@ -1260,13 +1260,16 @@ public class SchemaTableTree {
 
     private static void printFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
-        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-            String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
-            cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
-            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
-            }
+        // TODO have error message, and figure out why it happens
+        if (propertyTypeMap!=null){
+	        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
+	            String alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey());
+	            cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey(), alias);
+	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+	                alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	                cols.add(lastSchemaTableTree, propertyTypeMapEntry.getKey() + postFix, alias);
+	            }
+	        }
         }
     }
 
@@ -1299,24 +1302,27 @@ public class SchemaTableTree {
     private static void printLabeledFromClauseFor(SchemaTableTree lastSchemaTableTree, ColumnList cols) {
         Map<String, PropertyType> propertyTypeMap = lastSchemaTableTree.getFilteredAllTables().get(lastSchemaTableTree.getSchemaTable().toString());
         //int count = 1;
-        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
-            String col = propertyTypeMapEntry.getKey();
-            String alias = cols.getAlias(lastSchemaTableTree, col);
-            if (alias == null) {
-                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
-                cols.add(lastSchemaTableTree, col, alias);
-            } else {
-                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
-            }
-            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
-                col = propertyTypeMapEntry.getKey() + postFix;
-                alias = cols.getAlias(lastSchemaTableTree, col);
-                // postfix do not use labeled methods
-                if (alias == null) {
-                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
-                    cols.add(lastSchemaTableTree, col, alias);
-                }
-            }
+        // TODO have error message, and figure out why it happens
+        if (propertyTypeMap!=null){
+	        for (Map.Entry<String, PropertyType> propertyTypeMapEntry : propertyTypeMap.entrySet()) {
+	            String col = propertyTypeMapEntry.getKey();
+	            String alias = cols.getAlias(lastSchemaTableTree, col);
+	            if (alias == null) {
+	                alias = lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey());
+	                cols.add(lastSchemaTableTree, col, alias);
+	            } else {
+	                lastSchemaTableTree.calculateLabeledAliasPropertyName(propertyTypeMapEntry.getKey(), alias);
+	            }
+	            for (String postFix : propertyTypeMapEntry.getValue().getPostFixes()) {
+	                col = propertyTypeMapEntry.getKey() + postFix;
+	                alias = cols.getAlias(lastSchemaTableTree, col);
+	                // postfix do not use labeled methods
+	                if (alias == null) {
+	                    alias = lastSchemaTableTree.calculateAliasPropertyName(propertyTypeMapEntry.getKey() + postFix);
+	                    cols.add(lastSchemaTableTree, col, alias);
+	                }
+	            }
+	        }
         }
     }
 
