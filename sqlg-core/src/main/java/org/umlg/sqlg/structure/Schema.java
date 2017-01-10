@@ -244,7 +244,7 @@ public class Schema implements TopologyInf {
      */
     private void createSchemaOnDb() {
         StringBuilder sql = new StringBuilder();
-        sql.append("CREATE SCHEMA ");
+        sql.append(topology.getSqlgGraph().getSqlDialect().createSchemaStatement());
         sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
