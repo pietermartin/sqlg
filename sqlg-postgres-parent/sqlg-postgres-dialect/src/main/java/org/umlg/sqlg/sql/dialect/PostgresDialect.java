@@ -3148,7 +3148,6 @@ public class PostgresDialect extends BaseSqlDialect {
 
         private SqlgGraph sqlgGraph;
         private Semaphore semaphore;
-        private boolean canceled;
         /**
          * should we keep running?
          */
@@ -3192,7 +3191,10 @@ public class PostgresDialect extends BaseSqlDialect {
                                 try {
                                     this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
                                 } catch (Exception e) {
-                                    logger.error("Error in Postgresql notification", e);
+                                	// we may get InterruptedException when we shut down
+                                	if (run.get()){
+                                		logger.error("Error in Postgresql notification", e);
+                                	}
                                 } finally {
                                     this.sqlgGraph.tx().rollback();
                                 }
