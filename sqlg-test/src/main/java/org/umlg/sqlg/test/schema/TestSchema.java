@@ -1,5 +1,17 @@
 package org.umlg.sqlg.test.schema;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -8,12 +20,6 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.Topology;
 import org.umlg.sqlg.test.BaseTest;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.junit.Assert.*;
 
 /**
  * Date: 2014/08/13
@@ -192,4 +198,22 @@ public class TestSchema extends BaseTest {
     	assertTrue(mgr.getSchema("B").isPresent());
     }
 
+    @Test
+    public void testExistingSchema() throws SQLException{
+    	String schema="A";
+    	Connection c=this.sqlgGraph.tx().getConnection();
+    	try (Statement ps=c.createStatement();){
+    		ps.executeUpdate("create schema "+this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+    	}
+    	c.commit();
+    	Topology mgr=this.sqlgGraph.getTopology();
+    	
+    	assertFalse(mgr.getSchema("A").isPresent());
+    	
+    	this.sqlgGraph.addVertex(T.label, schema+".A");
+    	this.sqlgGraph.tx().commit();
+    	assertTrue(mgr.getSchema("A").isPresent());
+    	
+    	
+    }
 }
