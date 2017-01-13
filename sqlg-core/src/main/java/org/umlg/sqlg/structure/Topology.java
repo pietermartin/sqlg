@@ -1180,12 +1180,12 @@ public class Topology {
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
         this.z_internalReadLock();
         try {
-            Map<String, Map<String, PropertyType>> result = getAllTables();
+            Map<String, Map<String, PropertyType>> result = new HashMap<>(getAllTables());
             for (TopologyInf f : filter) {
                 if (f instanceof AbstractLabel) {
                     AbstractLabel abstractLabel = (AbstractLabel) f;
                     Schema schema = abstractLabel.getSchema();
-                    this.allTableCache.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel());
+                    result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel());
                 }
             }
             return Collections.unmodifiableMap(result);
