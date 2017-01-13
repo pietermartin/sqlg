@@ -1177,6 +1177,12 @@ public class Topology {
         }
     }
 
+    /**
+     * Returns the topology schema elements with the filter schema elements removed.
+     *
+     * @param filter The objects not to include in the result.
+     * @return A map without the filter elements present.
+     */
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
         this.z_internalReadLock();
         try {

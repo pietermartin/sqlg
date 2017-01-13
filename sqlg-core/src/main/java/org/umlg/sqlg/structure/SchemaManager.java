@@ -113,6 +113,12 @@ public class SchemaManager {
         return getAllTablesWithout(this.getTopology().getSqlgSchemaAbstractLabels());
     }
 
+    /**
+     * Use the {@link Topology} class directly instead.
+     * @param filter The objects not to include in the result.
+     * @return A map without the filter elements present.
+     */
+    @Deprecated
     public Map<String, Map<String, PropertyType>> getAllTablesWithout(Set<TopologyInf> filter) {
         return this.topology.getAllTablesWithout(filter);
     }
