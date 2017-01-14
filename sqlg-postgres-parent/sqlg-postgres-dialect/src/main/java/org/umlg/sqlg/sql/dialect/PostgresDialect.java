@@ -3158,7 +3158,7 @@ public class PostgresDialect extends BaseSqlDialect {
             this.semaphore = semaphore;
         }
 
-        public void stop(){
+        void stop(){
         	run.set(false);
         }
         
@@ -3201,7 +3201,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             });
                         }
                     }
-                    Thread.sleep(100);
+                    Thread.sleep(500);
                 }
                 this.sqlgGraph.tx().rollback();
             } catch (SQLException e) {

@@ -244,7 +244,7 @@ public class TestMultipleThreadMultipleJvm extends BaseTest {
             for (Future<SqlgGraph> result : results) {
                 result.get(5, TimeUnit.MINUTES);
             }
-            Thread.sleep(1000);
+            Thread.sleep(2000);
             for (SqlgGraph graph : graphs) {
                 assertEquals(this.sqlgGraph.getTopology(), graph.getTopology());
                 assertEquals(this.sqlgGraph.getTopology().toJson(), graph.getTopology().toJson());
