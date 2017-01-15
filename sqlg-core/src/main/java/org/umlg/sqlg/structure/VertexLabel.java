@@ -65,8 +65,9 @@ public class VertexLabel extends AbstractLabel {
 
     /**
      * Only called for a new label being added.
-     * @param schema The schema.
-     * @param label The vertex's label.
+     *
+     * @param schema     The schema.
+     * @param label      The vertex's label.
      * @param properties The vertex's properties.
      */
     private VertexLabel(Schema schema, String label, Map<String, PropertyType> properties) {
@@ -100,6 +101,7 @@ public class VertexLabel extends AbstractLabel {
     /**
      * Out EdgeLabels are always in the same schema as the this VertexLabel' schema.
      * So the edgeLabelName must not contain the schema prefix
+     *
      * @param edgeLabelName
      * @return
      */
@@ -189,7 +191,7 @@ public class VertexLabel extends AbstractLabel {
      *
      * @param edgeLabelName The EdgeLabel's label's name.
      * @param inVertexLabel The edge's in VertexLabel.
-     * @param properties The EdgeLabel's properties
+     * @param properties    The EdgeLabel's properties
      * @return
      */
     public EdgeLabel ensureEdgeLabelExist(final String edgeLabelName, final VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
@@ -287,28 +289,27 @@ public class VertexLabel extends AbstractLabel {
     }
 
     void afterCommit() {
+        Preconditions.checkState(this.schema.getTopology().isWriteLockHeldByCurrentThread(), "VertexLabel.afterCommit must hold the write lock");
         super.afterCommit();
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            Iterator<Map.Entry<String, EdgeLabel>> edgeLabelEntryIter = this.uncommittedOutEdgeLabels.entrySet().iterator();
-            while (edgeLabelEntryIter.hasNext()) {
-                Map.Entry<String, EdgeLabel> edgeLabelEntry = edgeLabelEntryIter.next();
-                String edgeLabelName = edgeLabelEntry.getKey();
-                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                this.outEdgeLabels.put(edgeLabelName, edgeLabel);
-                edgeLabel.afterCommit();
-                this.getSchema().addToAllEdgeCache(edgeLabel);
-                edgeLabelEntryIter.remove();
-            }
-            edgeLabelEntryIter = this.uncommittedInEdgeLabels.entrySet().iterator();
-            while (edgeLabelEntryIter.hasNext()) {
-                Map.Entry<String, EdgeLabel> edgeLabelEntry = edgeLabelEntryIter.next();
-                String edgeLabelName = edgeLabelEntry.getKey();
-                EdgeLabel edgeLabel = edgeLabelEntry.getValue();
-                this.inEdgeLabels.put(edgeLabelName, edgeLabel);
-                edgeLabel.afterCommit();
-                edgeLabelEntryIter.remove();
+        Iterator<Map.Entry<String, EdgeLabel>> edgeLabelEntryIter = this.uncommittedOutEdgeLabels.entrySet().iterator();
+        while (edgeLabelEntryIter.hasNext()) {
+            Map.Entry<String, EdgeLabel> edgeLabelEntry = edgeLabelEntryIter.next();
+            String edgeLabelName = edgeLabelEntry.getKey();
+            EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+            this.outEdgeLabels.put(edgeLabelName, edgeLabel);
+            edgeLabel.afterCommit();
+            this.getSchema().addToAllEdgeCache(edgeLabel);
+            edgeLabelEntryIter.remove();
+        }
+        edgeLabelEntryIter = this.uncommittedInEdgeLabels.entrySet().iterator();
+        while (edgeLabelEntryIter.hasNext()) {
+            Map.Entry<String, EdgeLabel> edgeLabelEntry = edgeLabelEntryIter.next();
+            String edgeLabelName = edgeLabelEntry.getKey();
+            EdgeLabel edgeLabel = edgeLabelEntry.getValue();
+            this.inEdgeLabels.put(edgeLabelName, edgeLabel);
+            edgeLabel.afterCommit();
+            edgeLabelEntryIter.remove();
 
-            }
         }
         for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
             edgeLabel.afterCommit();
@@ -319,26 +320,24 @@ public class VertexLabel extends AbstractLabel {
     }
 
     void afterRollbackForInEdges() {
+        Preconditions.checkState(this.schema.getTopology().isWriteLockHeldByCurrentThread(), "VertexLabel.afterRollback must hold the write lock");
         super.afterRollback();
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.values().iterator(); it.hasNext(); ) {
-                EdgeLabel edgeLabel = it.next();
-                edgeLabel.afterRollbackInEdges(this);
-                it.remove();
-            }
+        for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.values().iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            edgeLabel.afterRollbackInEdges(this);
+            it.remove();
         }
     }
 
     void afterRollbackForOutEdges() {
+        Preconditions.checkState(this.schema.getTopology().isWriteLockHeldByCurrentThread(), "VertexLabel.afterRollback must hold the write lock");
         super.afterRollback();
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.values().iterator(); it.hasNext(); ) {
-                EdgeLabel edgeLabel = it.next();
-                it.remove();
-                //It is important to first remove the EdgeLabel from the iterator as the EdgeLabel's outVertex is still
-                // present and its needed for the hashCode method which is invoked during the it.remove()
-                edgeLabel.afterRollbackOutEdges(this);
-            }
+        for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.values().iterator(); it.hasNext(); ) {
+            EdgeLabel edgeLabel = it.next();
+            it.remove();
+            //It is important to first remove the EdgeLabel from the iterator as the EdgeLabel's outVertex is still
+            // present and its needed for the hashCode method which is invoked during the it.remove()
+            edgeLabel.afterRollbackOutEdges(this);
         }
         //Only need to go though the outEdgeLabels. All edgeLabels will be touched
         for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {

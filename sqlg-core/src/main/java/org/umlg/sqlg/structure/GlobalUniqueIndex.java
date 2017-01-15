@@ -64,13 +64,11 @@ public class GlobalUniqueIndex implements TopologyInf {
     }
 
     void afterCommit() {
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
-            Iterator<PropertyColumn> propertyColumnIterator = this.uncommittedProperties.iterator();
-            while (propertyColumnIterator.hasNext()) {
-                PropertyColumn propertyColumn = propertyColumnIterator.next();
-                this.properties.add(propertyColumn);
-                propertyColumnIterator.remove();
-            }
+        Iterator<PropertyColumn> propertyColumnIterator = this.uncommittedProperties.iterator();
+        while (propertyColumnIterator.hasNext()) {
+            PropertyColumn propertyColumn = propertyColumnIterator.next();
+            this.properties.add(propertyColumn);
+            propertyColumnIterator.remove();
         }
         this.committed = true;
     }

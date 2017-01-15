@@ -695,16 +695,14 @@ public class Topology {
                 this.globalUniqueIndexes.add(globalUniqueIndex);
                 it.remove();
             }
-        }
-        z_internalReadLock();
-        try {
-            for (Schema schema : this.schemas.values()) {
-                schema.afterCommit();
+            z_internalReadLock();
+            try {
+                for (Schema schema : this.schemas.values()) {
+                    schema.afterCommit();
+                }
+            } finally {
+                z_internalReadUnLock();
             }
-        } finally {
-            z_internalReadUnLock();
-        }
-        if (isWriteLockHeldByCurrentThread()) {
             this.reentrantReadWriteLock.writeLock().unlock();
         }
     }
@@ -717,16 +715,14 @@ public class Topology {
                 entry.getValue().afterRollback();
                 it.remove();
             }
-        }
-        z_internalReadLock();
-        try {
-            for (Schema schema : this.schemas.values()) {
-                schema.afterRollback();
+            z_internalReadLock();
+            try {
+                for (Schema schema : this.schemas.values()) {
+                    schema.afterRollback();
+                }
+            } finally {
+                z_internalReadUnLock();
             }
-        } finally {
-            z_internalReadUnLock();
-        }
-        if (isWriteLockHeldByCurrentThread()) {
             this.reentrantReadWriteLock.writeLock().unlock();
         }
     }

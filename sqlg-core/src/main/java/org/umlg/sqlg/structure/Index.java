@@ -1,7 +1,12 @@
 package org.umlg.sqlg.structure;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -12,14 +17,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.dialect.SqlDialect;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 
 /**
  * Date: 2016/11/26
@@ -38,6 +37,7 @@ public class Index implements TopologyInf {
 
     /**
      * create uncommitted index
+     *
      * @param name
      * @param indexType
      * @param abstractLabel
@@ -52,6 +52,7 @@ public class Index implements TopologyInf {
 
     /**
      * create a committed index (when loading topology from existing schema)
+     *
      * @param name
      * @param indexType
      * @param abstractLabel
@@ -61,7 +62,7 @@ public class Index implements TopologyInf {
         this.indexType = indexType;
         this.abstractLabel = abstractLabel;
     }
-    
+
     public String getName() {
         return name;
     }
@@ -77,32 +78,29 @@ public class Index implements TopologyInf {
 
     /**
      * add a committed property (when loading topology from existing schema)
+     *
      * @param property
      */
     void addProperty(PropertyColumn property) {
         this.properties.add(property);
     }
-    
+
     void afterCommit() {
-        if (this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            this.indexType = this.uncommittedIndexType;
-            Iterator<PropertyColumn> propertyColumnIterator = this.uncommittedProperties.iterator();
-            while (propertyColumnIterator.hasNext()) {
-                PropertyColumn propertyColumn = propertyColumnIterator.next();
-                this.properties.add(propertyColumn);
-                propertyColumn.afterCommit();
-                propertyColumnIterator.remove();
-            }
-            this.uncommittedIndexType = null;
+        this.indexType = this.uncommittedIndexType;
+        Iterator<PropertyColumn> propertyColumnIterator = this.uncommittedProperties.iterator();
+        while (propertyColumnIterator.hasNext()) {
+            PropertyColumn propertyColumn = propertyColumnIterator.next();
+            this.properties.add(propertyColumn);
+            propertyColumn.afterCommit();
+            propertyColumnIterator.remove();
         }
+        this.uncommittedIndexType = null;
         this.committed = true;
     }
 
     void afterRollback() {
-        if (this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            this.uncommittedIndexType = null;
-            this.uncommittedProperties.clear();
-        }
+        this.uncommittedIndexType = null;
+        this.uncommittedProperties.clear();
     }
 
     private void addIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable, IndexType indexType, List<PropertyColumn> properties) {

@@ -2,6 +2,7 @@ package org.umlg.sqlg.structure;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -58,21 +59,18 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterCommit() {
-        if (this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            Iterator<GlobalUniqueIndex> globalUniqueIndexIter = this.uncommittedGlobalUniqueIndices.iterator();
-            while (globalUniqueIndexIter.hasNext()) {
-                GlobalUniqueIndex globalUniqueIndex = globalUniqueIndexIter.next();
-                this.globalUniqueIndices.add(globalUniqueIndex);
-                globalUniqueIndexIter.remove();
-            }
+        Iterator<GlobalUniqueIndex> globalUniqueIndexIter = this.uncommittedGlobalUniqueIndices.iterator();
+        while (globalUniqueIndexIter.hasNext()) {
+            GlobalUniqueIndex globalUniqueIndex = globalUniqueIndexIter.next();
+            this.globalUniqueIndices.add(globalUniqueIndex);
+            globalUniqueIndexIter.remove();
         }
         this.committed = true;
     }
 
     void afterRollback() {
-        if (this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            this.uncommittedGlobalUniqueIndices.clear();
-        }
+        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread(), "PropertyColumn.afterRollback must hold the write lock");
+        this.uncommittedGlobalUniqueIndices.clear();
     }
 
     /**

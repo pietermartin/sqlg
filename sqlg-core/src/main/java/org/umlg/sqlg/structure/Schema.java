@@ -512,18 +512,17 @@ public class Schema implements TopologyInf {
     }
 
     void afterCommit() {
-        if (this.getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, VertexLabel> entry = it.next();
-                this.vertexLabels.put(entry.getKey(), entry.getValue());
+        Preconditions.checkState(this.getTopology().isWriteLockHeldByCurrentThread(), "Schema.afterCommit must hold the write lock");
+        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, VertexLabel> entry = it.next();
+            this.vertexLabels.put(entry.getKey(), entry.getValue());
+            it.remove();
+        }
+        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
+                this.globalUniqueIndexes.put(entry.getKey(), entry.getValue());
                 it.remove();
-            }
-            if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
-                for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
-                    Map.Entry<String, GlobalUniqueIndex> entry = it.next();
-                    this.globalUniqueIndexes.put(entry.getKey(), entry.getValue());
-                    it.remove();
-                }
             }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
@@ -539,23 +538,22 @@ public class Schema implements TopologyInf {
     }
 
     void afterRollback() {
-        if (this.getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, VertexLabel> entry = it.next();
-                entry.getValue().afterRollbackForInEdges();
+        Preconditions.checkState(this.getTopology().isWriteLockHeldByCurrentThread(), "Schema.afterRollback must hold the write lock");
+        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, VertexLabel> entry = it.next();
+            entry.getValue().afterRollbackForInEdges();
+            it.remove();
+        }
+        for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
+            Map.Entry<String, VertexLabel> entry = it.next();
+            entry.getValue().afterRollbackForOutEdges();
+            it.remove();
+        }
+        if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
+            for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<String, GlobalUniqueIndex> entry = it.next();
+                entry.getValue().afterRollback();
                 it.remove();
-            }
-            for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
-                Map.Entry<String, VertexLabel> entry = it.next();
-                entry.getValue().afterRollbackForOutEdges();
-                it.remove();
-            }
-            if (getName().equals(GLOBAL_UNIQUE_INDEX_SCHEMA)) {
-                for (Iterator<Map.Entry<String, GlobalUniqueIndex>> it = this.uncommittedGlobalUniqueIndexes.entrySet().iterator(); it.hasNext(); ) {
-                    Map.Entry<String, GlobalUniqueIndex> entry = it.next();
-                    entry.getValue().afterRollback();
-                    it.remove();
-                }
             }
         }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
@@ -681,11 +679,12 @@ public class Schema implements TopologyInf {
                 this.outEdgeLabels.put(schemaName + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
             }
         }
-        
+
     }
-    
+
     /**
      * load indices for all vertices in schema
+     *
      * @param traversalSource
      * @param schemaVertex
      */
@@ -703,8 +702,8 @@ public class Schema implements TopologyInf {
                 .path()
                 .toList();
         for (Path vertexIndices : indices) {
-        	Vertex vertexVertex = null;
-        	Vertex vertexIndex = null;
+            Vertex vertexVertex = null;
+            Vertex vertexIndex = null;
             Vertex propertyIndex = null;
             List<Set<String>> labelsList = vertexIndices.labels();
             for (Set<String> labels : labelsList) {
@@ -715,7 +714,7 @@ public class Schema implements TopologyInf {
                             break;
                         case "index":
                             vertexIndex = vertexIndices.get("index");
-                            break;    
+                            break;
                         case "property":
                             propertyIndex = vertexIndices.get("property");
                             break;
@@ -735,18 +734,18 @@ public class Schema implements TopologyInf {
                 this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
             }
             if (vertexIndex != null) {
-            	String indexName=vertexIndex.value(SQLG_SCHEMA_INDEX_NAME);
-            	Optional<Index> oidx=vertexLabel.getIndex(indexName);
-            	Index idx;
-            	if (oidx.isPresent()){
-            		idx=oidx.get();
-            	} else {
-            		idx=new Index(indexName,IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)),vertexLabel);
-            		vertexLabel.addIndex(idx);
-            	}
-            	if (propertyIndex != null) {
-            		String propertyName=propertyIndex.value(SQLG_SCHEMA_PROPERTY_NAME);
-            		vertexLabel.getProperty(propertyName).ifPresent((PropertyColumn pc)->idx.addProperty(pc));
+                String indexName = vertexIndex.value(SQLG_SCHEMA_INDEX_NAME);
+                Optional<Index> oidx = vertexLabel.getIndex(indexName);
+                Index idx;
+                if (oidx.isPresent()) {
+                    idx = oidx.get();
+                } else {
+                    idx = new Index(indexName, IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)), vertexLabel);
+                    vertexLabel.addIndex(idx);
+                }
+                if (propertyIndex != null) {
+                    String propertyName = propertyIndex.value(SQLG_SCHEMA_PROPERTY_NAME);
+                    vertexLabel.getProperty(propertyName).ifPresent((PropertyColumn pc) -> idx.addProperty(pc));
                 }
 
             }
@@ -823,9 +822,10 @@ public class Schema implements TopologyInf {
             }
         }
     }
-    
+
     /**
      * load indices for (out) edges on all vertices of schema
+     *
      * @param traversalSource
      * @param schemaVertex
      */
@@ -836,19 +836,19 @@ public class Schema implements TopologyInf {
                 //a vertex does not necessarily have properties so use optional.
                 .optional(
                         __.out(SQLG_SCHEMA_OUT_EDGES_EDGE).as("outEdgeVertex")
-                        .optional(
-	                        __.out(SQLG_SCHEMA_EDGE_INDEX_EDGE).as("index")
-	                                .optional(
-	                                        __.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE).as("property")
-	                                )
-                        )
-	               )
+                                .optional(
+                                        __.out(SQLG_SCHEMA_EDGE_INDEX_EDGE).as("index")
+                                                .optional(
+                                                        __.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE).as("property")
+                                                )
+                                )
+                )
                 .path()
                 .toList();
         for (Path vertexIndices : indices) {
-        	Vertex vertexVertex = null;
-        	Vertex vertexEdge = null;
-        	Vertex vertexIndex = null;
+            Vertex vertexVertex = null;
+            Vertex vertexEdge = null;
+            Vertex vertexIndex = null;
             Vertex propertyIndex = null;
             List<Set<String>> labelsList = vertexIndices.labels();
             for (Set<String> labels : labelsList) {
@@ -858,11 +858,11 @@ public class Schema implements TopologyInf {
                             vertexVertex = vertexIndices.get("vertex");
                             break;
                         case "outEdgeVertex":
-                        	vertexEdge = vertexIndices.get("outEdgeVertex");
-                            break;     
+                            vertexEdge = vertexIndices.get("outEdgeVertex");
+                            break;
                         case "index":
                             vertexIndex = vertexIndices.get("index");
-                            break;    
+                            break;
                         case "property":
                             propertyIndex = vertexIndices.get("property");
                             break;
@@ -881,28 +881,28 @@ public class Schema implements TopologyInf {
                 vertexLabel = new VertexLabel(this, tableName);
                 this.vertexLabels.put(schemaName + "." + VERTEX_PREFIX + tableName, vertexLabel);
             }
-            if (vertexEdge!=null){
-            	String edgeName = vertexEdge.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
-            	Optional<EdgeLabel> oel=vertexLabel.getOutEdgeLabel(edgeName);
-            	if (oel.isPresent()){
-            		EdgeLabel edgeLabel=oel.get();
-		            if (vertexIndex != null) {
-		            	String indexName=vertexIndex.value(SQLG_SCHEMA_INDEX_NAME);
-		            	Optional<Index> oidx=edgeLabel.getIndex(indexName);
-		            	Index idx;
-		            	if (oidx.isPresent()){
-		            		idx=oidx.get();
-		            	} else {
-		            		idx=new Index(indexName,IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)),edgeLabel);
-		            		edgeLabel.addIndex(idx);
-		            	}
-		            	if (propertyIndex != null) {
-		            		String propertyName=propertyIndex.value(SQLG_SCHEMA_PROPERTY_NAME);
-		            		edgeLabel.getProperty(propertyName).ifPresent((PropertyColumn pc)->idx.addProperty(pc));
-		                }
-		
-		            }
-            	}
+            if (vertexEdge != null) {
+                String edgeName = vertexEdge.value(SQLG_SCHEMA_EDGE_LABEL_NAME);
+                Optional<EdgeLabel> oel = vertexLabel.getOutEdgeLabel(edgeName);
+                if (oel.isPresent()) {
+                    EdgeLabel edgeLabel = oel.get();
+                    if (vertexIndex != null) {
+                        String indexName = vertexIndex.value(SQLG_SCHEMA_INDEX_NAME);
+                        Optional<Index> oidx = edgeLabel.getIndex(indexName);
+                        Index idx;
+                        if (oidx.isPresent()) {
+                            idx = oidx.get();
+                        } else {
+                            idx = new Index(indexName, IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)), edgeLabel);
+                            edgeLabel.addIndex(idx);
+                        }
+                        if (propertyIndex != null) {
+                            String propertyName = propertyIndex.value(SQLG_SCHEMA_PROPERTY_NAME);
+                            edgeLabel.getProperty(propertyName).ifPresent((PropertyColumn pc) -> idx.addProperty(pc));
+                        }
+
+                    }
+                }
             }
         }
     }

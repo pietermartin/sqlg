@@ -16,7 +16,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.*;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 
 /**
@@ -188,27 +189,28 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     void afterCommit() {
+        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "EdgeLabel.afterCommit must hold the write lock");
         super.afterCommit();
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (Iterator<VertexLabel> it = this.uncommittedInVertexLabels.iterator(); it.hasNext(); ) {
-                VertexLabel vertexLabel = it.next();
-                this.inVertexLabels.add(vertexLabel);
-                it.remove();
-            }
-            for (Iterator<VertexLabel> it = this.uncommittedOutVertexLabels.iterator(); it.hasNext(); ) {
-                VertexLabel vertexLabel = it.next();
-                this.outVertexLabels.add(vertexLabel);
-                it.remove();
-            }
+        for (Iterator<VertexLabel> it = this.uncommittedInVertexLabels.iterator(); it.hasNext(); ) {
+            VertexLabel vertexLabel = it.next();
+            this.inVertexLabels.add(vertexLabel);
+            it.remove();
+        }
+        for (Iterator<VertexLabel> it = this.uncommittedOutVertexLabels.iterator(); it.hasNext(); ) {
+            VertexLabel vertexLabel = it.next();
+            this.outVertexLabels.add(vertexLabel);
+            it.remove();
         }
     }
 
     void afterRollbackInEdges(VertexLabel vertexLabel) {
+        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
         super.afterRollback();
         this.uncommittedInVertexLabels.remove(vertexLabel);
     }
 
     void afterRollbackOutEdges(VertexLabel vertexLabel) {
+        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
         super.afterRollback();
         this.uncommittedOutVertexLabels.remove(vertexLabel);
     }
