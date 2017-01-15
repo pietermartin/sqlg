@@ -16,9 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,6 +61,8 @@ public class Topology {
     //every notification will have a unique timestamp.
     //This is so because modification happen one at a time via the lock.
     private SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
+
+    private List<TopologyValidationError> validationErrors = new ArrayList<>();
 
     private static final int LOCK_TIMEOUT = 100;
 
@@ -340,6 +340,10 @@ public class Topology {
     void close() {
         if (this.distributed)
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).unregisterListener();
+    }
+
+    public List<TopologyValidationError> getValidationErrors() {
+        return validationErrors;
     }
 
     /**
@@ -833,6 +837,24 @@ public class Topology {
             if (!schema.isSqlgSchema()) {
                 this.allTableCache.putAll(schema.getAllTables());
             }
+        }
+    }
+
+    void validateTopology() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            DatabaseMetaData metadata = conn.getMetaData();
+            for (Schema schema : getSchemas()) {
+                try (ResultSet schemaRs = metadata.getSchemas(null, schema.getName())) {
+                    if (!schemaRs.next()) {
+                        this.validationErrors.add(new TopologyValidationError(schema));
+                    } else {
+                        this.validationErrors.addAll(schema.validateTopology(metadata));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -1378,5 +1400,18 @@ public class Topology {
 
     void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
         this.uncommittedGlobalUniqueIndexes.add(globalUniqueIndex);
+    }
+
+    static class TopologyValidationError {
+        private TopologyInf error;
+
+        TopologyValidationError(TopologyInf error) {
+            this.error = error;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s does not exist", error.getName());
+        }
     }
 }

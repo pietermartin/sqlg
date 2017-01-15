@@ -26,6 +26,7 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
+import org.umlg.sqlg.test.topology.TestValidateTopology;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
@@ -159,7 +160,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestGlobalUniqueIndex.class,
         TestBatchGlobalUniqueIndexes.class,
         TestVertexEdges.class,
-        TestSqlgSchema.class
+        TestSqlgSchema.class,
+        TestValidateTopology.class
 })
 public class AllTest {
 }

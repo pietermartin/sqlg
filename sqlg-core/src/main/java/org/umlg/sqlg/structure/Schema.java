@@ -14,9 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -1051,5 +1049,29 @@ public class Schema implements TopologyInf {
 
     void addToAllEdgeCache(EdgeLabel edgeLabel) {
         this.outEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel);
+    }
+
+    List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException {
+        List<Topology.TopologyValidationError> validationErrors = new ArrayList<>();
+        for (VertexLabel vertexLabel : getVertexLabels().values()) {
+            try (ResultSet tableRs = metadata.getTables(null, this.getName(), "V_" + vertexLabel.getLabel(), null)) {
+                if (!tableRs.next()) {
+                    validationErrors.add(new Topology.TopologyValidationError(vertexLabel));
+                } else {
+                    validationErrors.addAll(vertexLabel.validateTopology(metadata));
+                    //validate edges
+                    for (EdgeLabel edgeLabel : vertexLabel.getOutEdgeLabels().values()) {
+                        try (ResultSet edgeRs = metadata.getTables(null, this.getName(), "E_" + edgeLabel.getLabel(), null)) {
+                            if (!edgeRs.next()) {
+                                validationErrors.add(new Topology.TopologyValidationError(edgeLabel));
+                            } else {
+                                validationErrors.addAll(edgeLabel.validateTopology(metadata));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return validationErrors;
     }
 }

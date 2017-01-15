@@ -73,6 +73,9 @@ class SqlgStartupManager {
                 this.sqlgGraph.tx().commit();
             }
             cacheTopology();
+            if (this.sqlgGraph.configuration().getBoolean("validate.topology", false)) {
+                validateTopology();
+            }
             this.sqlgGraph.tx().commit();
         } catch (Exception e) {
             this.sqlgGraph.tx().rollback();
@@ -83,6 +86,15 @@ class SqlgStartupManager {
 
     private void cacheTopology() {
         this.sqlgGraph.getTopology().cacheTopology();
+    }
+
+    private void validateTopology() {
+        this.sqlgGraph.getTopology().validateTopology();
+        if (!this.sqlgGraph.getTopology().getValidationErrors().isEmpty()) {
+            for (Topology.TopologyValidationError topologyValidationError : this.sqlgGraph.getTopology().getValidationErrors()) {
+                logger.warn(topologyValidationError.toString());
+            }
+        }
     }
 
     @SuppressWarnings("ConstantConditions")

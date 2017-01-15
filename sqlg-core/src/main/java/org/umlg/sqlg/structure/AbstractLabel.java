@@ -9,9 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -93,6 +91,11 @@ public abstract class AbstractLabel implements TopologyInf {
     protected abstract Schema getSchema();
 
     public String getLabel() {
+        return this.label;
+    }
+
+    @Override
+    public String getName() {
         return this.label;
     }
 
@@ -339,4 +342,8 @@ public abstract class AbstractLabel implements TopologyInf {
     void addGlobalUniqueIndexToProperties(PropertyColumn propertyColumn) {
         this.globalUniqueIndexProperties.put(propertyColumn.getName(), propertyColumn);
     }
+
+    protected abstract List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException;
+
+    protected abstract String getPrefix();
 }

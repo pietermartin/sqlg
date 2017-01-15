@@ -9,9 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
@@ -544,5 +542,26 @@ public class VertexLabel extends AbstractLabel {
             }
             return true;
         }
+    }
+
+    @Override
+    public List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException {
+        List<Topology.TopologyValidationError> validationErrors = new ArrayList<>();
+        for (PropertyColumn propertyColumn : getProperties().values()) {
+            try (ResultSet propertyRs = metadata.getColumns(null, this.getSchema().getName(), "V_" + this.getLabel(), propertyColumn.getName())) {
+                if (!propertyRs.next()) {
+                    validationErrors.add(new Topology.TopologyValidationError(propertyColumn));
+                }
+            }
+        }
+        for (Index index : getIndexes().values()) {
+            validationErrors.addAll(index.validateTopology(metadata));
+        }
+        return validationErrors;
+    }
+
+    @Override
+    protected String getPrefix() {
+        return SchemaManager.VERTEX_PREFIX;
     }
 }

@@ -8,13 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
+import java.sql.*;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
@@ -22,8 +17,7 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 
 /**
  * Date: 2016/11/26
- * Time: 7:35 PM
- */
+ * Time: 7:35 PM */
 public class Index implements TopologyInf {
 
     private Logger logger = LoggerFactory.getLogger(Index.class.getName());
@@ -178,4 +172,27 @@ public class Index implements TopologyInf {
         return index;
     }
 
+    List<Topology.TopologyValidationError> validateTopology(DatabaseMetaData metadata) throws SQLException {
+        List<Topology.TopologyValidationError> validationErrors = new ArrayList<>();
+        try (ResultSet propertyRs = metadata.getIndexInfo(null, this.abstractLabel.getSchema().getName(), this.abstractLabel.getPrefix() + this.abstractLabel.getLabel(), false, false)) {
+            Map<String, List<String>> indexColumns = new HashMap<>();
+            while (propertyRs.next()) {
+                String columnName = propertyRs.getString("COLUMN_NAME");
+                String indexName = propertyRs.getString("INDEX_NAME");
+                List<String> columnNames;
+                if (!indexColumns.containsKey(indexName)) {
+                    columnNames = new ArrayList<>();
+                    indexColumns.put(indexName, columnNames);
+                } else {
+                    columnNames = indexColumns.get(indexName);
+                }
+                columnNames.add(columnName);
+            }
+            if (!indexColumns.containsKey(this.getName())) {
+                validationErrors.add(new Topology.TopologyValidationError(this));
+            }
+        }
+        return validationErrors;
+
+    }
 }

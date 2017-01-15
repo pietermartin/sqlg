@@ -11,4 +11,6 @@ public interface TopologyInf {
 
     boolean isCommitted();
 
+    String getName();
+
 }
