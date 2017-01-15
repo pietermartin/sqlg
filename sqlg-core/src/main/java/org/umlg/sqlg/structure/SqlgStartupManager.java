@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -31,7 +30,7 @@ class SqlgStartupManager {
     private SqlgGraph sqlgGraph;
     private SqlDialect sqlDialect;
 
-    SqlgStartupManager(SqlgGraph sqlgGraph, Configuration configuration) {
+    SqlgStartupManager(SqlgGraph sqlgGraph) {
         this.sqlgGraph = sqlgGraph;
         this.sqlDialect = sqlgGraph.getSqlDialect();
     }
@@ -77,13 +76,8 @@ class SqlgStartupManager {
             this.sqlgGraph.tx().commit();
         } catch (Exception e) {
             this.sqlgGraph.tx().rollback();
-            if (e instanceof RuntimeException) {
-                throw e;
-            } else {
-                throw new RuntimeException(e);
-            }
+            throw e;
         }
-
     }
 
 
@@ -91,6 +85,7 @@ class SqlgStartupManager {
         this.sqlgGraph.getTopology().cacheTopology();
     }
 
+    @SuppressWarnings("ConstantConditions")
     private void upgradePropertyIndexTypeToExist() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
@@ -109,6 +104,7 @@ class SqlgStartupManager {
 
     }
 
+    @SuppressWarnings("ConstantConditions")
     private void loadSqlgSchemaFromInformationSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
@@ -151,6 +147,7 @@ class SqlgStartupManager {
                     ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                     //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
                     List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
+                    //noinspection Duplicates
                     while (columnsRs.next()) {
                         String columnName = columnsRs.getString(4);
                         int columnType = columnsRs.getInt(5);
@@ -264,6 +261,7 @@ class SqlgStartupManager {
                     ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
                     //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
                     List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
+                    //noinspection Duplicates
                     while (columnsRs.next()) {
                         String columnName = columnsRs.getString(4);
                         int columnType = columnsRs.getInt(5);

@@ -780,6 +780,54 @@ public class Topology {
             schema.loadInEdgeLabels(traversalSource, schemaVertex);
         }
 
+        //Load the globalUniqueIndexes.
+        List<Vertex> globalUniqueIndexVertices = traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX).toList();
+        for (Vertex globalUniqueIndexVertex : globalUniqueIndexVertices) {
+            String globalUniqueIndexName = globalUniqueIndexVertex.value("name");
+            GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(this, globalUniqueIndexName);
+            this.globalUniqueIndexes.add(globalUniqueIndex);
+
+            Set<Vertex> globalUniqueIndexProperties = traversalSource.V(globalUniqueIndexVertex).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).toSet();
+            Set<PropertyColumn> guiPropertyColumns = new HashSet<>();
+            for (Vertex globalUniqueIndexPropertyVertex : globalUniqueIndexProperties) {
+                //get the path to the vertex
+                boolean isForVertex = true;
+                List<Map<String, Vertex>> vertexSchema = traversalSource
+                        .V(globalUniqueIndexPropertyVertex)
+                        .in(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE).as("vertex")
+                        .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("schema")
+                        .<Vertex>select("vertex", "schema")
+                        .toList();
+                if (!vertexSchema.isEmpty()) {
+                    Preconditions.checkState(vertexSchema.size() == 1, "BUG: GlobalUniqueIndex %s property %s has more than one path to the schema.");
+                    Vertex schemaVertex = vertexSchema.get(0).get("schema");
+                    Vertex vertexVertex = vertexSchema.get(0).get("vertex");
+                    Schema guiPropertySchema = getSchema(schemaVertex.<String>property("name").value()).get();
+                    VertexLabel guiPropertyVertexLabel = guiPropertySchema.getVertexLabel(vertexVertex.<String>property("name").value()).get();
+                    PropertyColumn propertyColumn = guiPropertyVertexLabel.getProperty(globalUniqueIndexPropertyVertex.<String>property("name").value()).get();
+                    guiPropertyColumns.add(propertyColumn);
+                } else {
+                    vertexSchema = traversalSource
+                            .V(globalUniqueIndexPropertyVertex)
+                            .in(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).as("edge")
+                            .in(SQLG_SCHEMA_OUT_EDGES_EDGE).as("vertex")
+                            .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).as("schema")
+                            .<Vertex>select("edge", "vertex", "schema")
+                            .toList();
+                    Preconditions.checkState(vertexSchema.size() == 1, "BUG: GlobalUniqueIndex %s property %s has more than one path to the schema.");
+                    Vertex schemaVertex = vertexSchema.get(0).get("schema");
+                    Vertex vertexVertex = vertexSchema.get(0).get("vertex");
+                    Vertex edgeVertex = vertexSchema.get(0).get("edge");
+                    Schema guiPropertySchema = getSchema(schemaVertex.<String>property("name").value()).get();
+                    VertexLabel guiPropertyVertexLabel = guiPropertySchema.getVertexLabel(vertexVertex.<String>property("name").value()).get();
+                    EdgeLabel guiPropertyEdgeLabel = guiPropertyVertexLabel.getOutEdgeLabel(edgeVertex.<String>property("name").value()).get();
+                    PropertyColumn propertyColumn = guiPropertyEdgeLabel.getProperty(globalUniqueIndexPropertyVertex.<String>property("name").value()).get();
+                    guiPropertyColumns.add(propertyColumn);
+                }
+            }
+            globalUniqueIndex.addGlobalUniqueProperties(guiPropertyColumns);
+        }
+
         //populate the allTablesCache
         for (Schema schema : this.schemas.values()) {
             if (!schema.isSqlgSchema()) {
@@ -1127,14 +1175,16 @@ public class Topology {
     /**
      * get all tables by schema, with their properties
      * does not return schema tables
+     *
      * @return
      */
     public Map<String, Map<String, PropertyType>> getAllTables() {
-    	return getAllTables(false);
+        return getAllTables(false);
     }
-    
+
     /**
      * get all tables by schema, with their properties
+     *
      * @param withSqlgSchema do we want the sqlg_schema tables?
      * @return
      */
@@ -1161,10 +1211,10 @@ public class Topology {
                     }
                 }
             }
-            if (!withSqlgSchema){
-            	for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
-            		result.remove(sqlgSchemaSchemaTable);
-            	}
+            if (!withSqlgSchema) {
+                for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
+                    result.remove(sqlgSchemaSchemaTable);
+                }
             }
 
             return Collections.unmodifiableMap(result);

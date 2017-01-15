@@ -224,7 +224,7 @@ public class SqlgGraph implements Graph {
             throw new IllegalArgumentException(String.format("SqlgGraph configuration requires that the %s be set", JDBC_URL));
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration);
-        SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph, configuration);
+        SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
         sqlgStartupManager.loadSchema();
         return (G) sqlgGraph;
     }

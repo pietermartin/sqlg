@@ -32,14 +32,17 @@ public class GlobalUniqueIndex implements TopologyInf {
         }
     }
 
+    public Set<PropertyColumn> getProperties() {
+        return properties;
+    }
+
     private GlobalUniqueIndex(Topology topology, String name) {
         this.topology = topology;
         this.name = name;
     }
 
     static GlobalUniqueIndex instantiateGlobalUniqueIndex(Topology topology, String name) {
-        GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, name);
-        return globalUniqueIndex;
+        return new GlobalUniqueIndex(topology, name);
     }
 
     public String getName() {
