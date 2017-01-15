@@ -450,11 +450,20 @@ public class SqlgVertex extends SqlgElement implements Vertex {
                 throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
             }
 
-            StringBuilder sql = new StringBuilder("SELECT * FROM ");
+            //Generate the columns to prevent 'ERROR: cached plan must not change result type" error'
+            //This happens when the schema changes after the statement is prepared.
+            @SuppressWarnings("OptionalGetWithoutIsPresent")
+            VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getVertexLabel(this.table).get();
+            StringBuilder sql = new StringBuilder("SELECT\n\t\"ID\"");
+            for (PropertyColumn propertyColumn : vertexLabel.properties.values()) {
+                sql.append(", ");
+                sql.append(propertyColumn.getName());
+            }
+            sql.append("\nFROM\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + this.table));
-            sql.append(WHERE);
+            sql.append("\nWHERE\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
