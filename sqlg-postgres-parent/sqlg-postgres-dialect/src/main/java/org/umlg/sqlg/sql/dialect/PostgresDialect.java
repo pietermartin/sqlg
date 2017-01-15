@@ -786,22 +786,14 @@ public class PostgresDialect extends BaseSqlDialect {
                 sql.append("}'");
                 break;
             case byte_ARRAY:
-                try {
-                    sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) value));
-                    sql.append("'");
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+                sql.append("'");
+                sql.append(PGbytea.toPGString((byte[]) value));
+                sql.append("'");
                 break;
             case BYTE_ARRAY:
-                try {
-                    sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)));
-                    sql.append("'");
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+                sql.append("'");
+                sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)));
+                sql.append("'");
                 break;
             case short_ARRAY:
                 sql.append("'{");
@@ -990,8 +982,8 @@ public class PostgresDialect extends BaseSqlDialect {
                 sql.append("::double precision[]");
                 break;
             default:
-            	// noop
-            	break;
+                // noop
+                break;
         }
     }
 
@@ -1294,7 +1286,7 @@ public class PostgresDialect extends BaseSqlDialect {
 //                        case JSON_ARRAY:
 //                            throw SqlgExceptions.invalidPropertyType(propertyType);
 //                        default:
-                            out.write(valueToStreamBytes(propertyType, value));
+                    out.write(valueToStreamBytes(propertyType, value));
 //                    }
                 }
             }
@@ -1464,19 +1456,11 @@ public class PostgresDialect extends BaseSqlDialect {
                     sb.append("}");
                     return sb.toString();
                 case JSON_ARRAY:
-                        throw SqlgExceptions.invalidPropertyType(propertyType);
+                    throw SqlgExceptions.invalidPropertyType(propertyType);
                 case BYTE_ARRAY:
-                    try {
-                        return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
                 case byte_ARRAY:
-                    try {
-                        return PGbytea.toPGString((byte[]) value);
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return PGbytea.toPGString((byte[]) value);
                 default:
                     if (value.getClass().isArray()) {
 //                        if (value.getClass().getName().equals("[B")) {
@@ -1492,18 +1476,18 @@ public class PostgresDialect extends BaseSqlDialect {
 //                                throw new RuntimeException(e);
 //                            }
 //                        } else {
-                            sb = new StringBuilder();
-                            sb.append("{");
-                            length = java.lang.reflect.Array.getLength(value);
-                            for (int i = 0; i < length; i++) {
-                                String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
-                                sb.append(escapeSpecialCharacters(valueOfArray));
-                                if (i < length - 1) {
-                                    sb.append(",");
-                                }
+                        sb = new StringBuilder();
+                        sb.append("{");
+                        length = java.lang.reflect.Array.getLength(value);
+                        for (int i = 0; i < length; i++) {
+                            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                            sb.append(escapeSpecialCharacters(valueOfArray));
+                            if (i < length - 1) {
+                                sb.append(",");
                             }
-                            sb.append("}");
-                            return sb.toString();
+                        }
+                        sb.append("}");
+                        return sb.toString();
 //                        }
                     }
                     result = escapeSpecialCharacters(value.toString());
@@ -3097,10 +3081,10 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void unregisterListener() {
-    	if (listener!=null){
-    		listener.stop();
-    		listener=null;
-    	}
+        if (listener != null) {
+            listener.stop();
+            listener = null;
+        }
         this.future.cancel(true);
         this.scheduledExecutorService.shutdownNow();
         this.executorService.shutdownNow();
@@ -3151,17 +3135,17 @@ public class PostgresDialect extends BaseSqlDialect {
         /**
          * should we keep running?
          */
-        private AtomicBoolean run=new AtomicBoolean(true);
+        private AtomicBoolean run = new AtomicBoolean(true);
 
         TopologyChangeListener(SqlgGraph sqlgGraph, Semaphore semaphore) throws SQLException {
             this.sqlgGraph = sqlgGraph;
             this.semaphore = semaphore;
         }
 
-        void stop(){
-        	run.set(false);
+        void stop() {
+            run.set(false);
         }
-        
+
         @Override
         public void run() {
             try {
@@ -3191,10 +3175,10 @@ public class PostgresDialect extends BaseSqlDialect {
                                 try {
                                     this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
                                 } catch (Exception e) {
-                                	// we may get InterruptedException when we shut down
-                                	if (run.get()){
-                                		logger.error("Error in Postgresql notification", e);
-                                	}
+                                    // we may get InterruptedException when we shut down
+                                    if (run.get()) {
+                                        logger.error("Error in Postgresql notification", e);
+                                    }
                                 } finally {
                                     this.sqlgGraph.tx().rollback();
                                 }
@@ -3209,11 +3193,11 @@ public class PostgresDialect extends BaseSqlDialect {
                 this.sqlgGraph.tx().rollback();
                 throw new RuntimeException(e);
             } catch (InterruptedException e) {
-            	if (run.get()){
-            		logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
+                if (run.get()) {
+                    logger.warn(String.format("change listener on graph %s interrupted.", this.sqlgGraph.toString()));
                 }
-            	this.sqlgGraph.tx().rollback();
-            	//swallow
+                this.sqlgGraph.tx().rollback();
+                //swallow
             }
         }
     }
