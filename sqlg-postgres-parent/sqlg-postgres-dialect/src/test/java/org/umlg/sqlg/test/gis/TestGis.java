@@ -35,6 +35,10 @@ public class TestGis extends BaseTest {
         Assert.assertEquals(pretoriaPoint, this.sqlgGraph.traversal().V(pretoria.id()).next().value("point"));
         Gis gis = this.sqlgGraph.gis();
         System.out.println(gis.distanceBetween(johannesburgPoint, pretoriaPoint));
+        johannesburgPoint = new Point(26.2055, 28.0477);
+        johannesburg.property("point", johannesburgPoint);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(johannesburgPoint, this.sqlgGraph.traversal().V(johannesburg.id()).next().value("point"));
     }
 
     @Test
@@ -43,6 +47,13 @@ public class TestGis extends BaseTest {
         Point pretoriaPoint = new Point(25.7461, 28.1881);
         LineString lineString = new LineString(new Point[] {johannesburgPoint, pretoriaPoint});
         Vertex pretoria = this.sqlgGraph.addVertex(T.label, "Gis", "lineString", lineString);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(lineString, this.sqlgGraph.traversal().V(pretoria.id()).next().value("lineString"));
+
+        johannesburgPoint = new Point(26.55, 30.0456);
+        pretoriaPoint = new Point(26.7461, 29.1881);
+        lineString = new LineString(new Point[] {johannesburgPoint, pretoriaPoint});
+        pretoria.property("lineString",lineString);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(lineString, this.sqlgGraph.traversal().V(pretoria.id()).next().value("lineString"));
     }
@@ -60,6 +71,13 @@ public class TestGis extends BaseTest {
         Assert.assertEquals(geographyPointPretoria, geographyPoint);
         Gis gis = this.sqlgGraph.gis();
         System.out.println(gis.distanceBetween(geographyPointJohannesburg, geographyPointPretoria));
+
+        geographyPointPretoria = new GeographyPoint(25.7461, 28.1881);
+        pretoria.property("geographyPoint", geographyPointPretoria);
+
+        this.sqlgGraph.tx().commit();
+        geographyPoint = this.sqlgGraph.traversal().V(pretoria.id()).next().value("geographyPoint");
+        Assert.assertEquals(geographyPointPretoria, geographyPoint);
     }
 
     @Test
@@ -70,6 +88,13 @@ public class TestGis extends BaseTest {
         this.sqlgGraph.tx().commit();
         Polygon polygon = this.sqlgGraph.traversal().V(johannesburg.id()).next().value("polygon");
         Assert.assertEquals(polygon1, polygon);
+
+        linearRing = new LinearRing("0 0, 1 2, 2 2, 1 3, 0 0");
+        polygon1 = new Polygon(new LinearRing[]{linearRing});
+        johannesburg.property("polygon", polygon1);
+        this.sqlgGraph.tx().commit();
+        polygon = this.sqlgGraph.traversal().V(johannesburg.id()).next().value("polygon");
+        Assert.assertEquals(polygon1, polygon);
     }
 
     @Test
@@ -79,6 +104,13 @@ public class TestGis extends BaseTest {
         Vertex johannesburg = this.sqlgGraph.addVertex(T.label, "Gis", "polygon", polygon1);
         this.sqlgGraph.tx().commit();
         GeographyPolygon geographyPolygon = this.sqlgGraph.traversal().V(johannesburg.id()).next().value("polygon");
+        Assert.assertEquals(polygon1, geographyPolygon);
+
+        linearRing = new LinearRing("0 1, 2 3, 1 3, 1 3, 0 1");
+        polygon1 = new GeographyPolygon(new LinearRing[]{linearRing});
+        johannesburg.property("polygon", polygon1);
+        this.sqlgGraph.tx().commit();
+        geographyPolygon = this.sqlgGraph.traversal().V(johannesburg.id()).next().value("polygon");
         Assert.assertEquals(polygon1, geographyPolygon);
     }
 
@@ -127,8 +159,6 @@ public class TestGis extends BaseTest {
             Assert.assertEquals(geographyPointJohannesburg, sqlgGraph1.traversal().V(johannesburgGeographyPoint.id()).next().value("geographyPoint"));
             Assert.assertEquals(polygon1, sqlgGraph1.traversal().V(johannesburgPolygon.id()).next().value("polygon"));
             Assert.assertEquals(geographyPolygon, sqlgGraph1.traversal().V(johannesburgGeographyPolygon.id()).next().value("geographyPolygon"));
-
-
         }
     }
 }
