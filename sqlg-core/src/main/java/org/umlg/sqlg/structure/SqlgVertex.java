@@ -454,10 +454,11 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             //This happens when the schema changes after the statement is prepared.
             @SuppressWarnings("OptionalGetWithoutIsPresent")
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getVertexLabel(this.table).get();
-            StringBuilder sql = new StringBuilder("SELECT\n\t\"ID\"");
+            StringBuilder sql = new StringBuilder("SELECT\n\t");
+            sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             for (PropertyColumn propertyColumn : vertexLabel.properties.values()) {
                 sql.append(", ");
-                sql.append(propertyColumn.getName());
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
             }
             sql.append("\nFROM\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestValidateTopology;
+import org.umlg.sqlg.test.mod.TestRemoveProperty;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.topology.TestValidateTopology;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestValidateTopology.class
+        TestRemoveProperty.class
 })
 public class AnyTest {
 }
