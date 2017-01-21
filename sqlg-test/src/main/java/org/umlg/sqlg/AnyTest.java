@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.mod.TestRemoveProperty;
+import org.umlg.sqlg.test.vertex.TestVertexEdges;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.mod.TestRemoveProperty;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRemoveProperty.class
+        TestVertexEdges.class
 })
 public class AnyTest {
 }

@@ -39,6 +39,7 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -181,7 +182,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         pathCount++;
                     }
                     if (replacedStep.getLabels().isEmpty()) {
-                        boolean precedesPathStep = precedesPathOrTreeStep(traversal, steps, stepIterator.nextIndex());
+                        boolean precedesPathStep = precedesPathOrTreeStep(traversal);
                         if (precedesPathStep) {
                             replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + BaseSqlgStrategy.SQLG_PATH_FAKE_LABEL);
                         }
@@ -299,21 +300,20 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                         s.getClass().equals(SackStep.class));
     }
 
-    private boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal, List<Step> steps, int index) {
+    private boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
         if (traversal.getParent() != null && traversal.getParent() instanceof LocalStep) {
             LocalStep localStep = (LocalStep) traversal.getParent();
-            if (precedesPathOrTreeStep(localStep.getTraversal(), localStep.getTraversal().getSteps(), 0)) {
+            if (precedesPathOrTreeStep(localStep.getTraversal())) {
                 return true;
             }
         }
-        List<Step> toCome = steps.subList(index, steps.size());
-        return toCome.stream().anyMatch(s ->
-                (s.getClass().equals(PathStep.class) ||
+        Predicate p = s -> s.getClass().equals(PathStep.class) ||
                         s.getClass().equals(TreeStep.class) ||
                         s.getClass().equals(TreeSideEffectStep.class) ||
                         s.getClass().equals(CyclicPathStep.class) ||
                         s.getClass().equals(SimplePathStep.class) ||
-                        s.getClass().equals(EdgeOtherVertexStep.class)));
+                        s.getClass().equals(EdgeOtherVertexStep.class);
+        return TraversalHelper.anyStepRecursively(p, traversal);
     }
 
     private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
