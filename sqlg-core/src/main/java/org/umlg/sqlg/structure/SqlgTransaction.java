@@ -278,7 +278,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     }
     
     /**
-     * are we reading the SQL query results laszily?
+     * are we reading the SQL query results lazily?
      * @return true if we are processing the results lazily, false otherwise
      */
     public boolean isLazyQueries(){
