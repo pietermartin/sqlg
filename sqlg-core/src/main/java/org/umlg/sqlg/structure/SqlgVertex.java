@@ -150,12 +150,12 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValueMapPair);
     }
 
-    @Override
-    protected <V> Map<String, VertexProperty<V>> internalGetAllProperties(final String... propertyKeys) {
-        this.sqlgGraph.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetAllProperties(propertyKeys);
-        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
-    }
+//    @Override
+//    protected <V> Map<String, VertexProperty<V>> internalGetAllProperties(final String... propertyKeys) {
+//        this.sqlgGraph.tx().readWrite();
+//        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetAllProperties(propertyKeys);
+//        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
+//    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -165,13 +165,13 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    protected <V> Map<String, VertexProperty<V>> internalGetHiddens(final String... propertyKeys) {
-        this.sqlgGraph.tx().readWrite();
-        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetHiddens(propertyKeys);
-        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
-    }
+//    @SuppressWarnings("unchecked")
+//    @Override
+//    protected <V> Map<String, VertexProperty<V>> internalGetHiddens(final String... propertyKeys) {
+//        this.sqlgGraph.tx().readWrite();
+//        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetHiddens(propertyKeys);
+//        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
+//    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -537,7 +537,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
     @Override
     public <V> Iterator<VertexProperty<V>> properties(final String... propertyKeys) {
         SqlgVertex.this.sqlgGraph.tx().readWrite();
-        return SqlgVertex.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
+        return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
     SchemaTable getSchemaTablePrefixed() {

@@ -173,13 +173,14 @@ public abstract class SqlgElement implements Element {
         } else {
             Property property = internalGetProperties().get(key);
             if (property == null) {
-                //try hiddens
-                property = internalGetHiddens().get(key);
-                if (property == null) {
-                    return emptyProperty();
-                } else {
-                    return property;
-                }
+                return emptyProperty();
+//                //try hiddens
+//                property = internalGetHiddens().get(key);
+//                if (property == null) {
+//                    return emptyProperty();
+//                } else {
+//                    return property;
+//                }
             } else {
                 return property;
             }
@@ -390,17 +391,17 @@ public abstract class SqlgElement implements Element {
         return SqlgUtil.setKeyValuesAsParameter(sqlgGraph, true, parameterStartIndex++, preparedStatement, typeAndValues);
     }
 
-    protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
-        this.sqlgGraph.tx().readWrite();
-        load();
-        Map<String, SqlgProperty<V>> properties = new HashMap<>();
-        this.properties.entrySet().stream()
-                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-                .filter(entry -> !entry.getKey().equals("ID"))
-                .filter(entry -> entry.getValue() != null)
-                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
-        return properties;
-    }
+//    protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
+//        this.sqlgGraph.tx().readWrite();
+//        load();
+//        Map<String, SqlgProperty<V>> properties = new HashMap<>();
+//        this.properties.entrySet().stream()
+//                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
+//                .filter(entry -> !entry.getKey().equals("ID"))
+//                .filter(entry -> entry.getValue() != null)
+//                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
+//        return properties;
+//    }
 
     protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
@@ -411,20 +412,6 @@ public abstract class SqlgElement implements Element {
                 .filter(entry -> !entry.getKey().equals("ID"))
                 .filter(entry -> entry.getValue() != null)
                 .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
-        return properties;
-    }
-
-    protected <V> Map<String, ? extends Property<V>> internalGetHiddens(final String... propertyKeys) {
-        this.sqlgGraph.tx().readWrite();
-        load();
-        Map<String, SqlgProperty<V>> properties = new HashMap<>();
-
-        this.properties.entrySet().stream()
-                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-                .filter(entry -> !entry.getKey().equals("ID"))
-                .filter(entry -> entry.getValue() != null)
-                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
-
         return properties;
     }
 
@@ -526,7 +513,7 @@ public abstract class SqlgElement implements Element {
     @Override
     public <V> Iterator<? extends Property<V>> properties(final String... propertyKeys) {
         SqlgElement.this.sqlgGraph.tx().readWrite();
-        return SqlgElement.this.<V>internalGetAllProperties(propertyKeys).values().iterator();
+        return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
     public void loadProperty(ResultSet resultSet, String propertyName, int columnIndex, Map<String, String> columnNameAliasMap, int stepDepth, PropertyType propertyType) throws SQLException {
