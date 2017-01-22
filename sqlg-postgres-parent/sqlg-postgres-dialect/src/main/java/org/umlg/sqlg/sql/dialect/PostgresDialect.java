@@ -1554,7 +1554,6 @@ public class PostgresDialect extends BaseSqlDialect {
             tmpColumns.put("recordId", PropertyType.STRING);
             tmpColumns.put("property", PropertyType.STRING);
 
-
             //split the list of vertices, postgres existVertexLabel a 2 byte limit in the in clause
             for (Map.Entry<SchemaTable, List<SqlgVertex>> schemaVertices : removeVertexCache.entrySet()) {
 
