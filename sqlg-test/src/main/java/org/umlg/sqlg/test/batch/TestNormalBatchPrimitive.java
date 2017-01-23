@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.lang.reflect.Array;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -517,5 +518,48 @@ public class TestNormalBatchPrimitive extends BaseTest {
         assertArrayEquals(edgeNameArray, edgeNameArrayToTest, 0D);
     }
 
+    @Test
+    public void testEmptyString() {
+        this.sqlgGraph.tx().normalBatchModeOn();
 
+        this.sqlgGraph.addVertex("A", Collections.singletonMap("emptyProperty", ""));
+        this.sqlgGraph.tx().commit();
+
+        Vertex a = this.sqlgGraph.traversal().V().hasLabel("A").next();
+        assertEquals("", a.property("emptyProperty").value());
+    }
+
+    @Test
+    public void testEmptyStringEdge() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+
+        Vertex a = this.sqlgGraph.addVertex("A");
+        Vertex b = this.sqlgGraph.addVertex("B");
+        a.addEdge("E", b, "emptyProperty", "");
+        this.sqlgGraph.tx().commit();
+
+        Edge e = this.sqlgGraph.traversal().V().hasLabel("A").outE("E").next();
+        assertEquals("", e.property("emptyProperty").value());
+    }
+
+    @Test
+    public void testEmptyStringWithMultipleProps() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+
+        this.sqlgGraph.addVertex(T.label, "A", "emptyProperty", "", "nonEmptyProp", "test");
+        this.sqlgGraph.tx().commit();
+
+        Vertex a = this.sqlgGraph.traversal().V().hasLabel("A").next();
+        assertEquals("", a.property("emptyProperty").value());
+        assertEquals("test", a.property("nonEmptyProp").value());
+    }
+
+    @Test
+    public void testEmptyStringInNonBatch() {
+        this.sqlgGraph.addVertex("A", Collections.singletonMap("emptyProperty", ""));
+        this.sqlgGraph.tx().commit();
+
+        Vertex a = this.sqlgGraph.traversal().V().hasLabel("A").next();
+        assertEquals("", a.property("emptyProperty").value());
+    }
 }
