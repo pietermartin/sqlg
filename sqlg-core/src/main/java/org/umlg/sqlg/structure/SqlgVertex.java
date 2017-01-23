@@ -150,13 +150,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return new SqlgEdge(this.sqlgGraph, complete, this.schema, label, (SqlgVertex) inVertex, this, keyValueMapPair);
     }
 
-//    @Override
-//    protected <V> Map<String, VertexProperty<V>> internalGetAllProperties(final String... propertyKeys) {
-//        this.sqlgGraph.tx().readWrite();
-//        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetAllProperties(propertyKeys);
-//        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
-//    }
-
     @SuppressWarnings("unchecked")
     @Override
     protected <V> Map<String, VertexProperty<V>> internalGetProperties(final String... propertyKeys) {
@@ -164,14 +157,6 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetProperties(propertyKeys);
         return (Map<String, VertexProperty<V>>) metaPropertiesMap;
     }
-
-//    @SuppressWarnings("unchecked")
-//    @Override
-//    protected <V> Map<String, VertexProperty<V>> internalGetHiddens(final String... propertyKeys) {
-//        this.sqlgGraph.tx().readWrite();
-//        Map<String, ? extends Property<V>> metaPropertiesMap = super.<V>internalGetHiddens(propertyKeys);
-//        return (Map<String, VertexProperty<V>>) metaPropertiesMap;
-//    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -455,6 +440,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             @SuppressWarnings("OptionalGetWithoutIsPresent")
             VertexLabel vertexLabel = this.sqlgGraph.getTopology().getSchema(this.schema).get().getVertexLabel(this.table).get();
             StringBuilder sql = new StringBuilder("SELECT\n\t");
+//            StringBuilder sql = new StringBuilder("SELECT * ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             for (PropertyColumn propertyColumn : vertexLabel.properties.values()) {
                 sql.append(", ");

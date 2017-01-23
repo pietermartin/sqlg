@@ -93,6 +93,7 @@ public class EdgeLabel extends AbstractLabel {
                         PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
+                        this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
                     }
                 }
             }
@@ -294,9 +295,7 @@ public class EdgeLabel extends AbstractLabel {
         if (direction == Direction.OUT) {
             Preconditions.checkState(vertexLabel.getSchema().equals(getSchema()), "For Direction.OUT the VertexLabel must be in the same schema as the edge. Found %s and %s", vertexLabel.getSchema().getName(), getSchema().getName());
         }
-//        Set<String> allEdgeForeignKeys = getAllEdgeForeignKeys();
         SchemaTable foreignKey = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel() + (direction == Direction.IN ? SchemaManager.IN_VERTEX_COLUMN_END : SchemaManager.OUT_VERTEX_COLUMN_END));
-
         if (!foreignKeysContains(direction, vertexLabel)) {
             //Make sure the current thread/transaction owns the lock
             Schema schema = this.getSchema();
@@ -312,28 +311,9 @@ public class EdgeLabel extends AbstractLabel {
                 }
                 SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
                 addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
+                this.getSchema().getTopology().fire(this, vertexSchemaTable.toString(), TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE);
             }
-
         }
-
-//        if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
-//            //Make sure the current thread/transaction owns the lock
-//            Schema schema = this.getSchema();
-//            schema.getTopology().lock();
-//            allEdgeForeignKeys = getAllEdgeForeignKeys();
-//            if (!allEdgeForeignKeys.contains(foreignKey.getSchema() + "." + foreignKey.getTable())) {
-//                TopologyManager.addLabelToEdge(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), direction == Direction.IN, foreignKey);
-//                if (direction == Direction.IN) {
-//                    this.uncommittedInVertexLabels.add(vertexLabel);
-//                    vertexLabel.addToUncommittedInEdgeLabels(schema, this);
-//                } else {
-//                    this.uncommittedOutVertexLabels.add(vertexLabel);
-//                    vertexLabel.addToUncommittedOutEdgeLabels(schema, this);
-//                }
-//                SchemaTable vertexSchemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), vertexLabel.getLabel());
-//                addEdgeForeignKey(schema.getName(), EDGE_PREFIX + getLabel(), foreignKey, vertexSchemaTable);
-//            }
-//        }
     }
 
     private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
@@ -442,9 +422,15 @@ public class EdgeLabel extends AbstractLabel {
             return false;
         }
         EdgeLabel otherEdgeLabel = (EdgeLabel) other;
-        VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
-        VertexLabel otherVertexLabel = otherEdgeLabel.outVertexLabels.iterator().next();
-        return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
+            VertexLabel otherVertexLabel = otherEdgeLabel.uncommittedOutVertexLabels.iterator().next();
+            return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
+        } else {
+            VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
+            VertexLabel otherVertexLabel = otherEdgeLabel.outVertexLabels.iterator().next();
+            return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
+        }
     }
 
     boolean deepEquals(EdgeLabel otherEdgeLabel) {

@@ -419,11 +419,14 @@ public interface SqlDialect {
     /**
      * range condition
      *
-     * @param low
-     * @param high
      * @return
      */
     default String getRangeClause(Range<Long> r) {
         return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
     }
+
+    default boolean requiredPreparedStatementDeallocate() {
+        return false;
+    }
+
 }

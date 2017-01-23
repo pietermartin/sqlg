@@ -39,4 +39,21 @@ public class TestPostgresPreparedStatement extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.traversal().E(e1).next();
     }
+
+    //Some postgresql magic here, only fails on the last addVertex
+    @Test
+    public void testAddVertex() {
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "surname", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "namezzz", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "nameyyy", "asdasd");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "asdasd");
+    }
 }

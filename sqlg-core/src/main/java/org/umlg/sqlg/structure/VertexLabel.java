@@ -229,6 +229,7 @@ public class VertexLabel extends AbstractLabel {
                         PropertyColumn propertyColumn = new PropertyColumn(this, column.getKey(), column.getValue());
                         propertyColumn.setCommitted(false);
                         this.uncommittedProperties.put(column.getKey(), propertyColumn);
+                        this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
                     }
                 }
             }

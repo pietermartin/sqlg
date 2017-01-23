@@ -63,6 +63,7 @@ public class Topology {
     private SortedSet<LocalDateTime> notificationTimestamps = new TreeSet<>();
 
     private List<TopologyValidationError> validationErrors = new ArrayList<>();
+    private List<TopologyListener> topologyListeners = new ArrayList<>();
 
     private static final int LOCK_TIMEOUT = 100;
 
@@ -331,6 +332,10 @@ public class Topology {
                 afterCommit();
             }
         });
+
+        if (this.sqlgGraph.getSqlDialect().requiredPreparedStatementDeallocate()) {
+            registerListener((TopologyInf, String, TopologyChangeAction) -> deallocateAll());
+        }
     }
 
     SqlgGraph getSqlgGraph() {
@@ -429,6 +434,7 @@ public class Topology {
                 //create the schema and the vertex label.
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
+                fire(schema, "", TopologyChangeAction.CREATE);
                 return schema;
             } else {
                 return schemaOptional.get();
@@ -437,6 +443,7 @@ public class Topology {
             return schemaOptional.get();
         }
     }
+
 
     /**
      * Ensures that the vertex table exist in the db. The default schema is assumed. @See {@link SqlDialect#getPublicSchema()}
@@ -731,6 +738,14 @@ public class Topology {
         }
     }
 
+    public void deallocateAll() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DEALLOCATE ALL");
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     void cacheTopology() {
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
@@ -1400,6 +1415,16 @@ public class Topology {
 
     void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
         this.uncommittedGlobalUniqueIndexes.add(globalUniqueIndex);
+    }
+
+    public void registerListener(TopologyListener topologyListener) {
+        this.topologyListeners.add(topologyListener);
+    }
+
+    void fire(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
+        for (TopologyListener topologyListener : this.topologyListeners) {
+            topologyListener.change(topologyInf, oldValue, action);
+        }
     }
 
     static class TopologyValidationError {

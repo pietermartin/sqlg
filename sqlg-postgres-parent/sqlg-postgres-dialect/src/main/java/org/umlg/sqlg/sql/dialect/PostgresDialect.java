@@ -3188,4 +3188,9 @@ public class PostgresDialect extends BaseSqlDialect {
         t.setSeconds(m + offset);
         return t;
     }
+
+    @Override
+    public boolean requiredPreparedStatementDeallocate() {
+        return true;
+    }
 }
