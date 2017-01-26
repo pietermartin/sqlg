@@ -14,7 +14,7 @@ import java.util.List;
  * Date: 2017/01/26
  * Time: 12:22 PM
  */
-public class TestBatchUpdateDateTimeArrays extends BaseTest {
+public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
 
     @Test
     public void testUpdateLocalDateTimeArray() {

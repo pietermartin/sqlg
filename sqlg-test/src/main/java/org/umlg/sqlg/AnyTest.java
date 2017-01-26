@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchUpdateDateTimeArrays;
+import org.umlg.sqlg.test.batch.TestBatchNormalUpdateDateTimeArrays;
 
 /**
  * Date: 2014/07/16
@@ -24,7 +24,7 @@ import org.umlg.sqlg.test.batch.TestBatchUpdateDateTimeArrays;
 //        TestBatchNormalUpdateDateTime.class,
 //        TestBatchNormalUpdatePrimitiveArrays.class
 //        TestBatchJson.class,
-        TestBatchUpdateDateTimeArrays.class
+        TestBatchNormalUpdateDateTimeArrays.class
 })
 public class AnyTest {
 }

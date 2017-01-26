@@ -162,7 +162,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestVertexEdges.class,
         TestSqlgSchema.class,
         TestValidateTopology.class,
-        TestBatchUpdateDateTimeArrays.class
+        TestBatchNormalUpdateDateTimeArrays.class
 })
 public class AllTest {
 }
