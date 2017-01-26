@@ -20,7 +20,7 @@ import static org.junit.Assert.*;
  * Date: 2016/05/22
  * Time: 9:13 AM
  */
-public class TestNormalBatchPrimitive extends BaseTest {
+public class TestBatchNormalPrimitive extends BaseTest {
 
     @Before
     public void beforeTest() {

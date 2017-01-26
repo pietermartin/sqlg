@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -80,6 +81,41 @@ public class TestBatchJson extends BaseTest {
         assertEquals(10, vertices.size());
         value = vertices.get(0).value("doc");
         assertEquals(json, value);
+    }
+
+    @Test
+    public void batchUpdateJsonWithNulls() {
+        ObjectMapper objectMapper =  new ObjectMapper();
+        ObjectNode json = new ObjectNode(objectMapper.getNodeFactory());
+        json.put("username", "john");
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "doc1", json);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "Person", "doc2", json);
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "Person", "doc3", json);
+        this.sqlgGraph.tx().commit();
+
+        ObjectNode jsonAgain = new ObjectNode(objectMapper.getNodeFactory());
+        jsonAgain.put("surname", "zzz");
+        this.sqlgGraph.tx().normalBatchModeOn();
+        a1.property("doc1", jsonAgain);
+        a2.property("doc2", jsonAgain);
+        a3.property("doc3", jsonAgain);
+        this.sqlgGraph.tx().commit();
+
+        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
+        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
+        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        Assert.assertEquals(jsonAgain, a1.value("doc1"));
+        Assert.assertFalse(a1.property("doc2").isPresent());
+        Assert.assertFalse(a1.property("doc3").isPresent());
+
+        Assert.assertFalse(a2.property("doc1").isPresent());
+        Assert.assertEquals(jsonAgain, a2.value("doc2"));
+        Assert.assertFalse(a2.property("doc3").isPresent());
+
+        Assert.assertFalse(a3.property("doc1").isPresent());
+        Assert.assertFalse(a3.property("doc2").isPresent());
+        Assert.assertEquals(jsonAgain, a3.value("doc3"));
     }
 
     @Test

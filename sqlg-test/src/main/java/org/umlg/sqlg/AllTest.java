@@ -67,7 +67,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestVertexOutWithHas.class,
         TestEdgeHas.class,
         TestBatch.class,
-        TestNormalBatchUpdate.class,
+        TestBatchNormalUpdate.class,
         TestMultiThreadedBatch.class,
         TestMultiThread.class,
         TestMultipleThreadMultipleJvm.class,
@@ -130,16 +130,16 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestLocalVertexStepRepeatStep.class,
         TestLocalEdgeVertexStep.class,
         TestLocalEdgeOtherVertexStep.class,
-        TestNormalBatchDateTime.class,
+        TestBatchNormalDateTime.class,
         TestBatchEdgeDateTime.class,
         TestBatchJson.class,
         TestMemoryUsage.class,
         TestBatchTemporaryVertex.class,
-        TestNormalBatchPrimitiveArrays.class,
-        TestNormalBatchPrimitive.class,
-        TestNormalBatchUpdatePrimitiveArrays.class,
+        TestBatchNormalPrimitiveArrays.class,
+        TestBatchNormalPrimitive.class,
+        TestBatchNormalUpdatePrimitiveArrays.class,
         TestJsonUpdate.class,
-        TestNormalBatchUpdateDateTime.class,
+        TestBatchNormalUpdateDateTime.class,
         TestOptionalWithOrder.class,
         TestMultipleLabels.class,
         TestColumnNamePropertyNameMapScope.class,
@@ -161,7 +161,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestBatchGlobalUniqueIndexes.class,
         TestVertexEdges.class,
         TestSqlgSchema.class,
-        TestValidateTopology.class
+        TestValidateTopology.class,
+        TestBatchUpdateDateTimeArrays.class
 })
 public class AllTest {
 }

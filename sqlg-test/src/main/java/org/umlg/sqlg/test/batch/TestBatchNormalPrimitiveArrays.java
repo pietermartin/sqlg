@@ -14,7 +14,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Date: 2016/05/22
  * Time: 9:09 AM
  */
-public class TestNormalBatchPrimitiveArrays extends BaseTest {
+public class TestBatchNormalPrimitiveArrays extends BaseTest {
 
     @Before
     public void beforeTest() {

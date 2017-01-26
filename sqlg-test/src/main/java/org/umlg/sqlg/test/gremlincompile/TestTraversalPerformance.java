@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
@@ -100,7 +101,7 @@ public class TestTraversalPerformance extends BaseTest {
                 a.addEdge("hand", b);
                 for (int k = 0; k < 5; k++) {
                     Vertex c = this.sqlgGraph.addVertex(T.label, "Finger", "name", "name_" + k);
-                    b.addEdge("finger", c);
+                    Edge e = b.addEdge("finger", c);
                 }
             }
 //            if (i % 500_000 == 0) {

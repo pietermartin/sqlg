@@ -14,11 +14,80 @@ import org.umlg.sqlg.test.BaseTest;
  * Date: 2015/12/14
  * Time: 8:56 PM
  */
-public class TestNormalBatchUpdate extends BaseTest {
+public class TestBatchNormalUpdate extends BaseTest {
 
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
+    }
+
+    @Test
+    public void testUpdateWithNullStringValuesAlreadyPresent() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a1", "name2", "a11", "name3", "a111");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a2", "name2", "a22", "name3", "a222");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a3", "name2", "a33", "name3", "a333");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        a1.property("name1", "aa1");
+        a2.property("name2", "aa2");
+        a3.property("name3", "aa3");
+        this.sqlgGraph.tx().commit();
+        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
+        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
+        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+
+        Assert.assertEquals("aa1", a1.value("name1"));
+        Assert.assertEquals("a11", a1.value("name2"));
+        Assert.assertEquals("a111", a1.value("name3"));
+
+        Assert.assertEquals("a2", a2.value("name1"));
+        Assert.assertEquals("aa2", a2.value("name2"));
+        Assert.assertEquals("a222", a2.value("name3"));
+
+        Assert.assertEquals("a3", a3.value("name1"));
+        Assert.assertEquals("a33", a3.value("name2"));
+        Assert.assertEquals("aa3", a3.value("name3"));
+    }
+
+    @Test
+    public void testUpdateWithNullStringValuesNotAlreadyPresent() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name2", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name3", "a3");
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        a1.property("name1", "aa1");
+        a2.property("name2", "aa2");
+        a3.property("name3", "aa3");
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name2").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name3").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name1").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name3").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name1").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name2").isPresent());
+    }
+
+    @Test
+    public void testUpdateWithNullInteger() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", 1);
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name2", 2);
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name3", 3);
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.tx().normalBatchModeOn();
+        a1.property("name1", 11);
+        a2.property("name2", 22);
+        a3.property("name3", 33);
+        this.sqlgGraph.tx().commit();
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name2").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name3").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name1").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name3").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name1").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name2").isPresent());
     }
 
     @Test

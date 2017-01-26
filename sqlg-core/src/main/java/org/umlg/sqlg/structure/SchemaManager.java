@@ -100,6 +100,7 @@ public class SchemaManager {
         return this.topology.getTableLabels();
     }
 
+    @Deprecated
     public Pair<Set<SchemaTable>, Set<SchemaTable>> getTableLabels(SchemaTable schemaTable) {
         return this.topology.getTableLabels(schemaTable);
     }

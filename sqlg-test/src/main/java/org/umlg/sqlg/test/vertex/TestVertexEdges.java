@@ -78,9 +78,7 @@ public class TestVertexEdges extends BaseTest {
         
         
     }
-    
 
-    
     @Test
     public void testBothEOnEdgeToSelf() {
         final Vertex v1 = this.sqlgGraph.addVertex("name", "marko");

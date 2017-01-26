@@ -640,7 +640,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             if (sqlgElement.property(propertyColumn.getName()).isPresent()) {
                                 value = sqlgElement.value(propertyColumn.getName());
                             } else {
-                                value = "null";
+                                value = null;
                             }
                         }
                         PropertyType propertyType = propertyColumn.getPropertyType();
@@ -683,252 +683,540 @@ public class PostgresDialect extends BaseSqlDialect {
     private void appendSqlValue(StringBuilder sql, Object value, PropertyType propertyType) {
         switch (propertyType) {
             case BOOLEAN:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case BYTE:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case SHORT:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case INTEGER:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case LONG:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case FLOAT:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case DOUBLE:
-                sql.append(value);
+                if (value != null) {
+                    sql.append(value);
+                } else {
+                    sql.append("null");
+                }
                 break;
             case STRING:
                 //Postgres supports custom quoted strings using the 'with token' clause
-                sql.append("$token$");
-                sql.append(value);
-                sql.append("$token$");
+                if (value != null) {
+                    sql.append("$token$");
+                    sql.append(value);
+                    sql.append("$token$");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case LOCALDATETIME:
-                sql.append("'");
-                sql.append(value.toString());
-                sql.append("'::TIMESTAMP");
+                if (value != null) {
+                    sql.append("'");
+                    sql.append(value.toString());
+                    sql.append("'::TIMESTAMP");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case LOCALDATE:
-                sql.append("'");
-                sql.append(value.toString());
-                sql.append("'::DATE");
+                if (value != null) {
+                    sql.append("'");
+                    sql.append(value.toString());
+                    sql.append("'::DATE");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case LOCALTIME:
-                sql.append("'");
-                sql.append(shiftDST((LocalTime) value).toString());
-                sql.append("'::TIME");
+                if (value != null) {
+                    sql.append("'");
+                    sql.append(shiftDST((LocalTime) value).toString());
+                    sql.append("'::TIME");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case ZONEDDATETIME:
-                ZonedDateTime zonedDateTime = (ZonedDateTime) value;
-                LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-                TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
-                sql.append("'");
-                sql.append(localDateTime.toString());
-                sql.append("'::TIMESTAMP");
-                sql.append(",'");
-                sql.append(timeZone.getID());
-                sql.append("'");
+                if (value != null) {
+                    ZonedDateTime zonedDateTime = (ZonedDateTime) value;
+                    LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                    sql.append("'");
+                    sql.append(localDateTime.toString());
+                    sql.append("'::TIMESTAMP");
+                    sql.append(",'");
+                    sql.append(timeZone.getID());
+                    sql.append("'");
+                } else {
+                    sql.append("null,null");
+                }
                 break;
             case DURATION:
-                Duration duration = (Duration) value;
-                sql.append("'");
-                sql.append(duration.getSeconds());
-                sql.append("'::BIGINT");
-                sql.append(",'");
-                sql.append(duration.getNano());
-                sql.append("'::INTEGER");
+                if (value != null) {
+                    Duration duration = (Duration) value;
+                    sql.append("'");
+                    sql.append(duration.getSeconds());
+                    sql.append("'::BIGINT");
+                    sql.append(",'");
+                    sql.append(duration.getNano());
+                    sql.append("'::INTEGER");
+                } else {
+                    sql.append("null,null");
+                }
                 break;
             case PERIOD:
-                Period period = (Period) value;
-                sql.append("'");
-                sql.append(period.getYears());
-                sql.append("'::INTEGER");
-                sql.append(",'");
-                sql.append(period.getMonths());
-                sql.append("'::INTEGER");
-                sql.append(",'");
-                sql.append(period.getDays());
-                sql.append("'::INTEGER");
+                if (value != null) {
+                    Period period = (Period) value;
+                    sql.append("'");
+                    sql.append(period.getYears());
+                    sql.append("'::INTEGER");
+                    sql.append(",'");
+                    sql.append(period.getMonths());
+                    sql.append("'::INTEGER");
+                    sql.append(",'");
+                    sql.append(period.getDays());
+                    sql.append("'::INTEGER");
+                } else {
+                    sql.append("null,null,null");
+                }
                 break;
             case JSON:
-                sql.append("'");
-                sql.append(value.toString());
-                sql.append("'::JSONB");
+                if (value != null) {
+                    sql.append("'");
+                    sql.append(value.toString());
+                    sql.append("'::JSONB");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case boolean_ARRAY:
-                sql.append("'{");
-                boolean[] booleanArray = (boolean[]) value;
-                int countBooleanArray = 1;
-                for (Boolean b : booleanArray) {
-                    sql.append(b);
-                    if (countBooleanArray++ < booleanArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    boolean[] booleanArray = (boolean[]) value;
+                    int countBooleanArray = 1;
+                    for (Boolean b : booleanArray) {
+                        sql.append(b);
+                        if (countBooleanArray++ < booleanArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case BOOLEAN_ARRAY:
-                sql.append("'{");
-                Boolean[] BooleanArray = (Boolean[]) value;
-                int countBOOLEANArray = 1;
-                for (Boolean b : BooleanArray) {
-                    sql.append(b);
-                    if (countBOOLEANArray++ < BooleanArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    Boolean[] BooleanArray = (Boolean[]) value;
+                    int countBOOLEANArray = 1;
+                    for (Boolean b : BooleanArray) {
+                        sql.append(b);
+                        if (countBOOLEANArray++ < BooleanArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case byte_ARRAY:
-                sql.append("'");
-                sql.append(PGbytea.toPGString((byte[]) value));
-                sql.append("'");
+                if (value != null) {
+                    sql.append("'");
+                    sql.append(PGbytea.toPGString((byte[]) value));
+                    sql.append("'");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case BYTE_ARRAY:
-                sql.append("'");
-                sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)));
-                sql.append("'");
+                if (value != null) {
+                    sql.append("'");
+                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)));
+                    sql.append("'");
+                } else {
+                    sql.append("null");
+                }
                 break;
             case short_ARRAY:
-                sql.append("'{");
-                short[] sortArray = (short[]) value;
-                int countShortArray = 1;
-                for (Short s : sortArray) {
-                    sql.append(s);
-                    if (countShortArray++ < sortArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    short[] sortArray = (short[]) value;
+                    int countShortArray = 1;
+                    for (Short s : sortArray) {
+                        sql.append(s);
+                        if (countShortArray++ < sortArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case SHORT_ARRAY:
-                sql.append("'{");
-                Short[] shortObjectArray = (Short[]) value;
-                for (int i = 0; i < shortObjectArray.length; i++) {
-                    Short s = shortObjectArray[i];
-                    sql.append(s);
-                    if (i < shortObjectArray.length - 1) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    Short[] shortObjectArray = (Short[]) value;
+                    for (int i = 0; i < shortObjectArray.length; i++) {
+                        Short s = shortObjectArray[i];
+                        sql.append(s);
+                        if (i < shortObjectArray.length - 1) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case int_ARRAY:
-                sql.append("'{");
-                int[] intArray = (int[]) value;
-                int countIntArray = 1;
-                for (Integer i : intArray) {
-                    sql.append(i);
-                    if (countIntArray++ < intArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    int[] intArray = (int[]) value;
+                    int countIntArray = 1;
+                    for (Integer i : intArray) {
+                        sql.append(i);
+                        if (countIntArray++ < intArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case INTEGER_ARRAY:
-                sql.append("'{");
-                Integer[] integerArray = (Integer[]) value;
-                int countIntegerArray = 1;
-                for (Integer i : integerArray) {
-                    sql.append(i);
-                    if (countIntegerArray++ < integerArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    Integer[] integerArray = (Integer[]) value;
+                    int countIntegerArray = 1;
+                    for (Integer i : integerArray) {
+                        sql.append(i);
+                        if (countIntegerArray++ < integerArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case LONG_ARRAY:
-                sql.append("'{");
-                Long[] longArray = (Long[]) value;
-                int countLongArray = 1;
-                for (Long l : longArray) {
-                    sql.append(l);
-                    if (countLongArray++ < longArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    Long[] longArray = (Long[]) value;
+                    int countLongArray = 1;
+                    for (Long l : longArray) {
+                        sql.append(l);
+                        if (countLongArray++ < longArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case long_ARRAY:
-                sql.append("'{");
-                long[] longPrimitiveArray = (long[]) value;
-                int countLongPrimitiveArray = 1;
-                for (Long l : longPrimitiveArray) {
-                    sql.append(l);
-                    if (countLongPrimitiveArray++ < longPrimitiveArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    long[] longPrimitiveArray = (long[]) value;
+                    int countLongPrimitiveArray = 1;
+                    for (Long l : longPrimitiveArray) {
+                        sql.append(l);
+                        if (countLongPrimitiveArray++ < longPrimitiveArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case FLOAT_ARRAY:
-                sql.append("'{");
-                Float[] floatArray = (Float[]) value;
-                int countFloatArray = 1;
-                for (Float f : floatArray) {
-                    sql.append(f);
-                    if (countFloatArray++ < floatArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    Float[] floatArray = (Float[]) value;
+                    int countFloatArray = 1;
+                    for (Float f : floatArray) {
+                        sql.append(f);
+                        if (countFloatArray++ < floatArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case float_ARRAY:
-                sql.append("'{");
-                float[] floatPrimitiveArray = (float[]) value;
-                int countFloatPrimitiveArray = 1;
-                for (Float f : floatPrimitiveArray) {
-                    sql.append(f);
-                    if (countFloatPrimitiveArray++ < floatPrimitiveArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    float[] floatPrimitiveArray = (float[]) value;
+                    int countFloatPrimitiveArray = 1;
+                    for (Float f : floatPrimitiveArray) {
+                        sql.append(f);
+                        if (countFloatPrimitiveArray++ < floatPrimitiveArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case DOUBLE_ARRAY:
-                sql.append("'{");
-                Double[] doubleArray = (Double[]) value;
-                int countDoubleArray = 1;
-                for (Double d : doubleArray) {
-                    sql.append(d);
-                    if (countDoubleArray++ < doubleArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    Double[] doubleArray = (Double[]) value;
+                    int countDoubleArray = 1;
+                    for (Double d : doubleArray) {
+                        sql.append(d);
+                        if (countDoubleArray++ < doubleArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case double_ARRAY:
-                sql.append("'{");
-                double[] doublePrimitiveArray = (double[]) value;
-                int countDoublePrimitiveArray = 1;
-                for (Double d : doublePrimitiveArray) {
-                    sql.append(d);
-                    if (countDoublePrimitiveArray++ < doublePrimitiveArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    double[] doublePrimitiveArray = (double[]) value;
+                    int countDoublePrimitiveArray = 1;
+                    for (Double d : doublePrimitiveArray) {
+                        sql.append(d);
+                        if (countDoublePrimitiveArray++ < doublePrimitiveArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
             case STRING_ARRAY:
-                sql.append("'{");
-                String[] stringArray = (String[]) value;
-                int countStringArray = 1;
-                for (String s : stringArray) {
-                    sql.append("\"");
-                    sql.append(s);
-                    sql.append("\"");
-                    if (countStringArray++ < stringArray.length) {
-                        sql.append(",");
+                if (value != null) {
+                    sql.append("'{");
+                    String[] stringArray = (String[]) value;
+                    int countStringArray = 1;
+                    for (String s : stringArray) {
+                        sql.append("\"");
+                        sql.append(s);
+                        sql.append("\"");
+                        if (countStringArray++ < stringArray.length) {
+                            sql.append(",");
+                        }
                     }
+                    sql.append("}'");
+                } else {
+                    sql.append("null");
                 }
-                sql.append("}'");
                 break;
+            case LOCALDATETIME_ARRAY:
+                if (value != null) {
+                    sql.append("ARRAY[");
+                    LocalDateTime[] localDateTimeArray = (LocalDateTime[]) value;
+                    int countStringArray = 1;
+                    for (LocalDateTime s : localDateTimeArray) {
+                        sql.append("'");
+                        sql.append(s.toString());
+                        sql.append("'::TIMESTAMP");
+                        if (countStringArray++ < localDateTimeArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("]");
+                } else {
+                    sql.append("null");
+                }
+                break;
+            case LOCALDATE_ARRAY:
+                if (value != null) {
+                    sql.append("ARRAY[");
+                    LocalDate[] localDateArray = (LocalDate[]) value;
+                    int countStringArray = 1;
+                    for (LocalDate s : localDateArray) {
+                        sql.append("'");
+                        sql.append(s.toString());
+                        sql.append("'::DATE");
+                        if (countStringArray++ < localDateArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("]");
+                } else {
+                    sql.append("null");
+                }
+                break;
+            case LOCALTIME_ARRAY:
+                if (value != null) {
+                    sql.append("ARRAY[");
+                    LocalTime[] localTimeArray = (LocalTime[]) value;
+                    int countStringArray = 1;
+                    for (LocalTime s : localTimeArray) {
+                        sql.append("'");
+                        sql.append(s.toString());
+                        sql.append("'::TIME");
+                        if (countStringArray++ < localTimeArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("]");
+                } else {
+                    sql.append("null");
+                }
+                break;
+            case ZONEDDATETIME_ARRAY:
+                if (value != null) {
+                    sql.append("ARRAY[");
+                    ZonedDateTime[] localZonedDateTimeArray = (ZonedDateTime[]) value;
+                    int countStringArray = 1;
+                    for (ZonedDateTime zonedDateTime : localZonedDateTimeArray) {
+                        LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                        TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                        sql.append("'");
+                        sql.append(localDateTime.toString());
+                        sql.append("'::TIMESTAMP");
+                        if (countStringArray++ < localZonedDateTimeArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("],");
+                    sql.append("ARRAY[");
+                    countStringArray = 1;
+                    for (ZonedDateTime zonedDateTime : localZonedDateTimeArray) {
+                        LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                        TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                        sql.append("'");
+                        sql.append(timeZone.getID());
+                        sql.append("'");
+                        if (countStringArray++ < localZonedDateTimeArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("]");
+                } else {
+                    sql.append("null,null");
+                }
+                break;
+            case DURATION_ARRAY:
+                if (value != null) {
+                    sql.append("ARRAY[");
+                    Duration[] durationArray = (Duration[]) value;
+                    int countStringArray = 1;
+                    for (Duration duration : durationArray) {
+                        sql.append("'");
+                        sql.append(duration.getSeconds());
+                        sql.append("'::BIGINT");
+                        if (countStringArray++ < durationArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("],");
+                    sql.append("ARRAY[");
+                    countStringArray = 1;
+                    for (Duration duration : durationArray) {
+                        sql.append("'");
+                        sql.append(duration.getNano());
+                        sql.append("'::INTEGER");
+                        if (countStringArray++ < durationArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("]");
+                } else {
+                    sql.append("null,null");
+                }
+                break;
+            case PERIOD_ARRAY:
+                if (value != null) {
+                    sql.append("ARRAY[");
+                    Period[] periodArray = (Period[]) value;
+                    int countStringArray = 1;
+                    for (Period period : periodArray) {
+                        sql.append("'");
+                        sql.append(period.getYears());
+                        sql.append("'::INTEGER");
+                        if (countStringArray++ < periodArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("],");
+                    sql.append("ARRAY[");
+                    countStringArray = 1;
+                    for (Period period : periodArray) {
+                        sql.append("'");
+                        sql.append(period.getMonths());
+                        sql.append("'::INTEGER");
+                        if (countStringArray++ < periodArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("],");
+                    sql.append("ARRAY[");
+                    countStringArray = 1;
+                    for (Period period : periodArray) {
+                        sql.append("'");
+                        sql.append(period.getDays());
+                        sql.append("'::INTEGER");
+                        if (countStringArray++ < periodArray.length) {
+                            sql.append(",");
+                        }
+                    }
+                    sql.append("]");
+                } else {
+                    sql.append("null,null,null");
+                }
+                break;
+            case POINT:
+                throw new IllegalStateException("JSON Arrays are not supported.");
+            case LINESTRING:
+                throw new IllegalStateException("JSON Arrays are not supported.");
+            case POLYGON:
+                throw new IllegalStateException("JSON Arrays are not supported.");
+            case GEOGRAPHY_POINT:
+                throw new IllegalStateException("JSON Arrays are not supported.");
+            case GEOGRAPHY_POLYGON:
+                throw new IllegalStateException("JSON Arrays are not supported.");
+            case JSON_ARRAY:
+                throw new IllegalStateException("JSON Arrays are not supported.");
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -1038,7 +1326,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         if (sqlgElement.property(key).isPresent()) {
                             value = sqlgElement.value(key);
                         } else {
-                            value = "null";
+                            value = null;
                         }
                     }
                     PropertyType propertyType = keyPropertyTypeMap.get(key);

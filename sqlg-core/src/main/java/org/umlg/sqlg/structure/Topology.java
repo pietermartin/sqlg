@@ -37,6 +37,9 @@ public class Topology {
     private boolean distributed;
     private ReentrantReadWriteLock reentrantReadWriteLock;
     private Map<String, Map<String, PropertyType>> allTableCache = new HashMap<>();
+    //This cache is needed as to much time is taken building it on the fly.
+    //The cache is invalidated on every topology change
+    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> tableLabelCache;
 
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
@@ -66,6 +69,7 @@ public class Topology {
     private List<TopologyListener> topologyListeners = new ArrayList<>();
 
     private static final int LOCK_TIMEOUT = 100;
+
 
 
     @SuppressWarnings("WeakerAccess")

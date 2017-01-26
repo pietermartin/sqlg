@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.batch;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,18 +12,17 @@ import org.umlg.sqlg.test.BaseTest;
 import java.time.*;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Date: 2016/05/09
  * Time: 8:03 PM
  */
-public class TestNormalBatchDateTime extends BaseTest {
+public class TestBatchNormalDateTime extends BaseTest {
 
     @Before
     public void beforeTest() {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
     }
+
 
     @Test
     public void testLocalDateTime() {
@@ -30,7 +30,7 @@ public class TestNormalBatchDateTime extends BaseTest {
         LocalDateTime localDateTime = LocalDateTime.now();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTime", localDateTime);
         this.sqlgGraph.tx().commit();
-        assertEquals(localDateTime, this.sqlgGraph.traversal().V(a1).values("localDateTime").next());
+        Assert.assertEquals(localDateTime, this.sqlgGraph.traversal().V(a1).values("localDateTime").next());
     }
 
     @Test
@@ -39,7 +39,7 @@ public class TestNormalBatchDateTime extends BaseTest {
         LocalDate localDate = LocalDate.now();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDate", localDate);
         this.sqlgGraph.tx().commit();
-        assertEquals(localDate, this.sqlgGraph.traversal().V(a1).values("localDate").next());
+        Assert.assertEquals(localDate, this.sqlgGraph.traversal().V(a1).values("localDate").next());
     }
 
     @Test
@@ -48,7 +48,7 @@ public class TestNormalBatchDateTime extends BaseTest {
         LocalTime localTime = LocalTime.now();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localTime", localTime);
         this.sqlgGraph.tx().commit();
-        assertEquals(localTime.toSecondOfDay(), this.sqlgGraph.traversal().V(a1).<LocalTime>values("localTime").next().toSecondOfDay());
+        Assert.assertEquals(localTime.toSecondOfDay(), this.sqlgGraph.traversal().V(a1).<LocalTime>values("localTime").next().toSecondOfDay());
     }
 
     @Test
@@ -57,7 +57,7 @@ public class TestNormalBatchDateTime extends BaseTest {
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTime", zonedDateTime);
         this.sqlgGraph.tx().commit();
-        assertEquals(zonedDateTime, this.sqlgGraph.traversal().V(a1).values("zonedDateTime").next());
+        Assert.assertEquals(zonedDateTime, this.sqlgGraph.traversal().V(a1).values("zonedDateTime").next());
     }
 
     @Test
@@ -66,7 +66,7 @@ public class TestNormalBatchDateTime extends BaseTest {
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "duration", duration);
         this.sqlgGraph.tx().commit();
-        assertEquals(duration, this.sqlgGraph.traversal().V(a1).values("duration").next());
+        Assert.assertEquals(duration, this.sqlgGraph.traversal().V(a1).values("duration").next());
     }
 
     @Test
@@ -75,7 +75,7 @@ public class TestNormalBatchDateTime extends BaseTest {
         this.sqlgGraph.tx().batchMode(BatchManager.BatchModeType.NORMAL);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "period", period);
         this.sqlgGraph.tx().commit();
-        assertEquals(period, this.sqlgGraph.traversal().V(a1).values("period").next());
+        Assert.assertEquals(period, this.sqlgGraph.traversal().V(a1).values("period").next());
     }
 
     @Test
@@ -87,8 +87,8 @@ public class TestNormalBatchDateTime extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(now, vertices.get(0).value("createOn"));
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
     }
 
     @Test
@@ -100,8 +100,8 @@ public class TestNormalBatchDateTime extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(now, vertices.get(0).value("createOn"));
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now, vertices.get(0).value("createOn"));
     }
 
     @Test
@@ -113,8 +113,8 @@ public class TestNormalBatchDateTime extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(10, vertices.size());
-        assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
+        Assert.assertEquals(10, vertices.size());
+        Assert.assertEquals(now.toSecondOfDay(), vertices.get(0).<LocalTime>value("createOn").toSecondOfDay());
     }
 
     @Test
@@ -130,11 +130,11 @@ public class TestNormalBatchDateTime extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "duration", duration3);
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(4, vertices.size());
-        assertEquals(duration0, vertices.get(0).<Duration>value("duration"));
-        assertEquals(duration1, vertices.get(1).<Duration>value("duration"));
-        assertEquals(duration2, vertices.get(2).<Duration>value("duration"));
-        assertEquals(duration3, vertices.get(3).<Duration>value("duration"));
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertEquals(duration0, vertices.get(0).<Duration>value("duration"));
+        Assert.assertEquals(duration1, vertices.get(1).<Duration>value("duration"));
+        Assert.assertEquals(duration2, vertices.get(2).<Duration>value("duration"));
+        Assert.assertEquals(duration3, vertices.get(3).<Duration>value("duration"));
     }
 
     @Test
@@ -150,11 +150,11 @@ public class TestNormalBatchDateTime extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "Person", "period", period3);
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("Person").toList();
-        assertEquals(4, vertices.size());
-        assertEquals(period0, vertices.get(0).<Period>value("period"));
-        assertEquals(period1, vertices.get(1).<Period>value("period"));
-        assertEquals(period2, vertices.get(2).<Period>value("period"));
-        assertEquals(period3, vertices.get(3).<Period>value("period"));
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertEquals(period0, vertices.get(0).<Period>value("period"));
+        Assert.assertEquals(period1, vertices.get(1).<Period>value("period"));
+        Assert.assertEquals(period2, vertices.get(2).<Period>value("period"));
+        Assert.assertEquals(period3, vertices.get(3).<Period>value("period"));
     }
 
 
