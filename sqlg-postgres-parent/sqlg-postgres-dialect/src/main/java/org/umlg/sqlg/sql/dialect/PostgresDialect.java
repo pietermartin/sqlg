@@ -1562,7 +1562,8 @@ public class PostgresDialect extends BaseSqlDialect {
                     } else {
                         propertyType = PropertyType.from(value);
                     }
-                    out.write(valueToStreamBytes(propertyType, value));
+//                    out.write(valueToStreamBytes(propertyType, value));
+                    valueToStreamBytes(out, propertyType, value);
                 }
             }
             out.write("\n".getBytes());
@@ -1590,7 +1591,8 @@ public class PostgresDialect extends BaseSqlDialect {
                 if (JSON_ARRAY == propertyType) {
                     throw SqlgExceptions.invalidPropertyType(propertyType);
                 }
-                out.write(valueToStreamBytes(propertyType, value));
+//                out.write(valueToStreamBytes(propertyType, value));
+                valueToStreamBytes(out, propertyType, value);
             }
             out.write("\n".getBytes(encoding));
         } catch (Exception e) {
@@ -1598,9 +1600,22 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
-    private byte[] valueToStreamBytes(PropertyType propertyType, Object value) throws UnsupportedEncodingException {
+    private void valueToStreamBytes(OutputStream outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
         String encoding = "UTF-8";
-        return valueToStreamString(propertyType, value).getBytes(encoding);
+        String s = valueToStreamString(propertyType, value);
+        try (StringReader stringReader = new StringReader(s)) {
+            int data;
+            try {
+                data = stringReader.read();
+                while (data != -1) {
+                    //do something with data...
+                    outputStream.write(data);
+                    data = stringReader.read();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private String valueToStreamString(PropertyType propertyType, Object value) {
@@ -2861,9 +2876,11 @@ public class PostgresDialect extends BaseSqlDialect {
             }
             OutputStream out = streamSql(sqlgGraph, sql.toString());
             for (Pair<L, R> uid : uids) {
-                out.write(valueToStreamBytes(inPropertyType, uid.getLeft()));
+//                out.write(valueToStreamBytes(inPropertyType, uid.getLeft()));
+                valueToStreamBytes(out, inPropertyType, uid.getLeft());
                 out.write(COPY_COMMAND_DELIMITER.getBytes());
-                out.write(valueToStreamBytes(outPropertyType, uid.getRight()));
+//                out.write(valueToStreamBytes(outPropertyType, uid.getRight()));
+                valueToStreamBytes(out, outPropertyType, uid.getRight());
                 out.write("\n".getBytes());
             }
             out.close();
