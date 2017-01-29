@@ -350,6 +350,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, AbstractLabel> getUncommittedLabels() {
+        Preconditions.checkState(getTopology().isWriteLockHeldByCurrentThread(), "Schema.getUncommittedAllTables must be called with the lock held");
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -358,15 +359,33 @@ public class Schema implements TopologyInf {
                 result.put(vertexQualifiedName, vertexLabelEntry.getValue());
             }
         }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
-            for (Map.Entry<String, VertexLabel> stringVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
-                String vertexQualifiedLabel = stringVertexLabelEntry.getKey();
-                VertexLabel vertexLabel = stringVertexLabelEntry.getValue();
-                result.put(vertexQualifiedLabel, vertexLabel);
-            }
+        for (Map.Entry<String, VertexLabel> stringVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+            String vertexQualifiedLabel = stringVertexLabelEntry.getKey();
+            VertexLabel vertexLabel = stringVertexLabelEntry.getValue();
+            result.put(vertexQualifiedLabel, vertexLabel);
         }
         for (EdgeLabel edgeLabel : this.getUncommittedOutEdgeLabels().values()) {
             result.put(this.name + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel);
+        }
+        return result;
+    }
+
+    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
+        Preconditions.checkState(getTopology().isWriteLockHeldByCurrentThread(), "Schema.getUncommittedSchemaTableForeignKeys must be called with the lock held");
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
+            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
+            SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
+            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = vertexLabelEntry.getValue().getUncommittedSchemaTableForeignKeys();
+            if (!uncommittedSchemaTableForeignKeys.getLeft().isEmpty() || !uncommittedSchemaTableForeignKeys.getRight().isEmpty()) {
+                result.put(schemaTable, uncommittedSchemaTableForeignKeys);
+            }
+        }
+        for (Map.Entry<String, VertexLabel> uncommittedVertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
+            String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + uncommittedVertexLabelEntry.getValue().getLabel();
+            SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, vertexQualifiedName);
+            Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedSchemaTableForeignKeys = uncommittedVertexLabelEntry.getValue().getUncommittedSchemaTableForeignKeys();
+            result.put(schemaTable, uncommittedSchemaTableForeignKeys);
         }
         return result;
     }
@@ -960,6 +979,8 @@ public class Schema implements TopologyInf {
                         vertexLabel = new VertexLabel(this, vertexLabelName);
                         this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
                     }
+                    //The order of the next two statements matter.
+                    //fromNotifyJsonOutEdge needs to happen first to ensure the properties are on the VertexLabel
                     vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson);
                     this.getTopology().addToAllTables(this.getName() + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel.getPropertyTypeMap());
                 }

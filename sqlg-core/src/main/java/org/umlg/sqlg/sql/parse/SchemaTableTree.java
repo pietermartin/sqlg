@@ -1738,7 +1738,7 @@ public class SchemaTableTree {
             if (hasContainer.getKey().equals(label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
                 SchemaTable hasContainerLabelSchemaTable;
                 // we may have been given a type in a schema
-                SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString());
                 //Check if we are on a vertex or edge
                 if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
                     hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + predicateSchemaTable.getTable());
@@ -1765,7 +1765,7 @@ public class SchemaTableTree {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
                     SchemaTable hasContainerLabelSchemaTable;
                     // we may have been given a type in a schema
-                    SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString(), this.sqlgGraph.getSqlDialect().getPublicSchema());
+                    SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString());
                     //Check if we are on a vertex or edge
                     if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
                         hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + predicateSchemaTable.getTable());

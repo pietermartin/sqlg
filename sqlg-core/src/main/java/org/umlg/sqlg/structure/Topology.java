@@ -39,7 +39,7 @@ public class Topology {
     private Map<String, Map<String, PropertyType>> allTableCache = new HashMap<>();
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
-    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> tableLabelCache;
+    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
 
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
@@ -69,7 +69,6 @@ public class Topology {
     private List<TopologyListener> topologyListeners = new ArrayList<>();
 
     private static final int LOCK_TIMEOUT = 100;
-
 
 
     @SuppressWarnings("WeakerAccess")
@@ -321,6 +320,13 @@ public class Topology {
         //populate the allTablesCache
         sqlgSchema.getVertexLabels().values().forEach((v) -> this.allTableCache.put(v.getSchema().getName() + "." + VERTEX_PREFIX + v.getLabel(), v.getPropertyTypeMap()));
         sqlgSchema.getEdgeLabels().values().forEach((e) -> this.allTableCache.put(e.getSchema().getName() + "." + EDGE_PREFIX + e.getLabel(), e.getPropertyTypeMap()));
+
+        sqlgSchema.getVertexLabels().values().forEach((v) -> {
+            SchemaTable vertexLabelSchemaTable = SchemaTable.of(v.getSchema().getName(), VERTEX_PREFIX + v.getLabel());
+            this.schemaTableForeignKeyCache.put(vertexLabelSchemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
+            v.getInEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel())));
+            v.getOutEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getRight().add(SchemaTable.of(v.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel())));
+        });
 
         if (this.distributed) {
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
@@ -697,14 +703,26 @@ public class Topology {
             Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
             for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
                 String uncommittedSchemaTable = stringMapEntry.getKey();
-                AbstractLabel uncommittedProperties = stringMapEntry.getValue();
+                AbstractLabel abstractLabel = stringMapEntry.getValue();
                 Map<String, PropertyType> committedProperties = this.allTableCache.get(uncommittedSchemaTable);
                 if (committedProperties != null) {
-                    committedProperties.putAll(uncommittedProperties.getPropertyTypeMap());
+                    committedProperties.putAll(abstractLabel.getPropertyTypeMap());
                 } else {
-                    this.allTableCache.put(uncommittedSchemaTable, uncommittedProperties.getPropertyTypeMap());
+                    this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
                 }
             }
+
+            Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
+            for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : uncommittedSchemaTableForeignKeys.entrySet()) {
+                Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTablePairEntry.getKey());
+                if (foreignKeys != null) {
+                    foreignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
+                    foreignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
+                } else {
+                    this.schemaTableForeignKeyCache.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+                }
+            }
+
             for (Iterator<GlobalUniqueIndex> it = this.uncommittedGlobalUniqueIndexes.iterator(); it.hasNext(); ) {
                 GlobalUniqueIndex globalUniqueIndex = it.next();
                 this.globalUniqueIndexes.add(globalUniqueIndex);
@@ -857,6 +875,8 @@ public class Topology {
                 this.allTableCache.putAll(schema.getAllTables());
             }
         }
+        //populate the schemaTableForeignKeyCache
+        this.schemaTableForeignKeyCache.putAll(loadTableLabels());
     }
 
     void validateTopology() {
@@ -1213,6 +1233,20 @@ public class Topology {
         return result;
     }
 
+    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
+        Preconditions.checkState(isWriteLockHeldByCurrentThread(), "getUncommittedSchemaTableForeignKeys must be called with the lock held");
+        Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+        }
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedSchemaTableForeignKeys());
+        }
+        return result;
+    }
+
     /**
      * get all tables by schema, with their properties
      * does not return schema tables
@@ -1359,21 +1393,45 @@ public class Topology {
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
         z_internalReadLock();
         try {
+            if (this.isWriteLockHeldByCurrentThread()) {
+                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();
+                for (Map.Entry<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTablePairEntry : this.schemaTableForeignKeyCache.entrySet()) {
+                    Pair<Set<SchemaTable>, Set<SchemaTable>> uncommittedForeignKeys = uncommittedSchemaTableForeignKeys.get(schemaTablePairEntry.getKey());
+                    if (uncommittedForeignKeys != null) {
+                        uncommittedForeignKeys.getLeft().addAll(schemaTablePairEntry.getValue().getLeft());
+                        uncommittedForeignKeys.getRight().addAll(schemaTablePairEntry.getValue().getRight());
+                    } else {
+                        uncommittedSchemaTableForeignKeys.put(schemaTablePairEntry.getKey(), schemaTablePairEntry.getValue());
+                    }
+                }
+                return Collections.unmodifiableMap(uncommittedSchemaTableForeignKeys);
+            } else {
+                return Collections.unmodifiableMap(this.schemaTableForeignKeyCache);
+            }
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+//    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
+    private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> loadTableLabels() {
+        z_internalReadLock();
+        try {
             Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> map = new HashMap<>();
             for (Map.Entry<String, Schema> schemaEntry : this.schemas.entrySet()) {
                 Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
                 map.putAll(result);
             }
-            if (this.isWriteLockHeldByCurrentThread()) {
-                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-                    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-                    map.putAll(result);
-                }
-            }
-            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-                map.putAll(result);
-            }
+//            if (this.isWriteLockHeldByCurrentThread()) {
+//                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
+//                    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+//                    map.putAll(result);
+//                }
+//            }
+//            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
+//                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
+//                map.putAll(result);
+//            }
             return map;
         } finally {
             z_internalReadUnLock();
@@ -1415,6 +1473,33 @@ public class Topology {
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
         this.allTableCache.put(tableName, propertyTypeMap);
+        SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, tableName);
+        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX) && !this.schemaTableForeignKeyCache.containsKey(schemaTable)) {
+            //This happens for VertexLabel that have no edges,
+            //else the addOutForeignKeysToVertexLabel or addInForeignKeysToVertexLabel would have already added it to the cache.
+            this.schemaTableForeignKeyCache.put(schemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
+        }
+    }
+
+    void addOutForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
+        if (foreignKeys == null) {
+            foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
+            this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
+
+        }
+        foreignKeys.getRight().add(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+    }
+
+    void addInForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
+        if (foreignKeys == null) {
+            foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
+            this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
+        }
+        foreignKeys.getLeft().add(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
     void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {

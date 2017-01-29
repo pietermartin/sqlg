@@ -351,7 +351,7 @@ public class SqlgGraph implements Graph {
             final Pair<Map<String, Object>, Map<String, Object>> keyValueMapPair = Pair.of(keyValueMapTriple.getMiddle(), keyValueMapTriple.getRight());
             final Map<String, PropertyType> columns = keyValueMapTriple.getLeft();
             final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-            SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+            SchemaTable schemaTablePair = SchemaTable.from(this, label);
             this.tx().readWrite();
             this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
             return new SqlgVertex(this, false, schemaTablePair.getSchema(), schemaTablePair.getTable(), keyValueMapPair);
@@ -398,7 +398,7 @@ public class SqlgGraph implements Graph {
 
     private SqlgVertex internalStreamTemporaryVertex(Object... keyValues) {
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SchemaTable.from(this, label);
 
         SchemaTable streamingBatchModeVertexSchemaTable = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
         if (streamingBatchModeVertexSchemaTable != null && !streamingBatchModeVertexSchemaTable.toString().equals(schemaTablePair.toString())) {
@@ -415,7 +415,7 @@ public class SqlgGraph implements Graph {
 
     private SqlgVertex internalStreamVertex(Object... keyValues) {
         final String label = ElementHelper.getLabelValue(keyValues).orElse(Vertex.DEFAULT_LABEL);
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SchemaTable.from(this, label);
 
         SchemaTable streamingBatchModeVertexSchemaTable = this.tx().getBatchManager().getStreamingBatchModeVertexSchemaTable();
         if (streamingBatchModeVertexSchemaTable != null && !streamingBatchModeVertexSchemaTable.toString().equals(schemaTablePair.toString())) {
@@ -439,8 +439,8 @@ public class SqlgGraph implements Graph {
             throw SqlgExceptions.invalidMode(TRANSACTION_MUST_BE_IN + BatchManager.BatchModeType.STREAMING + " or " + BatchManager.BatchModeType.STREAMING_WITH_LOCK + " mode for bulkAddEdges");
         }
         if (!uids.isEmpty()) {
-            SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel, this.sqlDialect.getPublicSchema());
-            SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel, this.sqlDialect.getPublicSchema());
+            SchemaTable outSchemaTable = SchemaTable.from(this, outVertexLabel);
+            SchemaTable inSchemaTable = SchemaTable.from(this, inVertexLabel);
             sqlBulkDialect.bulkAddEdges(this, outSchemaTable, inSchemaTable, edgeLabel, idFields, uids);
         }
     }
@@ -1065,7 +1065,7 @@ public class SqlgGraph implements Graph {
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {
         Map<String, PropertyType> columns = SqlgUtil.transformToColumnDefinitionMap(dummykeyValues);
-        SchemaTable schemaTablePair = SchemaTable.from(this, label, this.getSqlDialect().getPublicSchema());
+        SchemaTable schemaTablePair = SchemaTable.from(this, label);
         VertexLabel vertexLabel = this.getTopology().ensureVertexLabelExist(schemaTablePair.getSchema(), schemaTablePair.getTable(), columns);
         List<PropertyColumn> properties = new ArrayList<>();
         List<String> keys = SqlgUtil.transformToKeyList(dummykeyValues);
@@ -1089,7 +1089,7 @@ public class SqlgGraph implements Graph {
         long count = 0;
         Set<String> tables = this.getTopology().getAllTables().keySet();
         for (String table : tables) {
-            SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
+            SchemaTable schemaTable = SchemaTable.from(this, table);
             if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
                 StringBuilder sql = new StringBuilder("SELECT COUNT(1) FROM ");
                 sql.append("\"");
@@ -1202,7 +1202,7 @@ public class SqlgGraph implements Graph {
             //TODO use a union query
             Set<String> tables = this.getTopology().getAllTables().keySet();
             for (String table : tables) {
-                SchemaTable schemaTable = SchemaTable.from(this, table, this.getSqlDialect().getPublicSchema());
+                SchemaTable schemaTable = SchemaTable.from(this, table);
                 if (returnVertices ? schemaTable.isVertexTable() : !schemaTable.isVertexTable()) {
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
                     sql.append("\"");

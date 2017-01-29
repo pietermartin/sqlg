@@ -523,7 +523,7 @@ public class ReplacedStep<S, E> {
                 if ((graphStep.getReturnClass().isAssignableFrom(Vertex.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
                         (graphStep.getReturnClass().isAssignableFrom(Edge.class) && t.substring(t.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
 
-                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, t, sqlgGraph.getSqlDialect().getPublicSchema());
+                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, t);
                     SchemaTableTree schemaTableTree = new SchemaTableTree(
                             sqlgGraph,
                             schemaTable,
@@ -551,7 +551,7 @@ public class ReplacedStep<S, E> {
                 boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
                 SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, tbl);
                 String table = (isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
-                SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table, sqlgGraph.getSqlDialect().getPublicSchema());
+                SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table);
                 // all potential tables
                 Set<SchemaTable> potentialsTables = new HashSet<>();
                 potentialsTables.add(schemaTableWithPrefix);
@@ -559,7 +559,7 @@ public class ReplacedStep<S, E> {
                 if (!isVertex && !tbl.contains(".")) {
                     for (String key : filteredAllTables.keySet()) {
                         if (key.endsWith("." + table)) {
-                            potentialsTables.add(SchemaTable.from(sqlgGraph, key, sqlgGraph.getSqlDialect().getPublicSchema()));
+                            potentialsTables.add(SchemaTable.from(sqlgGraph, key));
                         }
                     }
                 }

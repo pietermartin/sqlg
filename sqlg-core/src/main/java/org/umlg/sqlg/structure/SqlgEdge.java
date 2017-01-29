@@ -261,7 +261,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     public void loadInVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
-        SchemaTable inVertexColumnName = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        SchemaTable inVertexColumnName = SchemaTable.from(this.sqlgGraph, label);
         Long inId = resultSet.getLong(columnIdx);
         if (!resultSet.wasNull()) {
             this.inVertex = SqlgVertex.of(this.sqlgGraph, inId, inVertexColumnName.getSchema(), SqlgUtil.removeTrailingInId(inVertexColumnName.getTable()));
@@ -269,7 +269,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     public void loadOutVertex(ResultSet resultSet, String label, int columnIdx) throws SQLException {
-        SchemaTable outVertexColumnName = SchemaTable.from(this.sqlgGraph, label, this.sqlgGraph.getSqlDialect().getPublicSchema());
+        SchemaTable outVertexColumnName = SchemaTable.from(this.sqlgGraph, label);
         Long outId = resultSet.getLong(columnIdx);
         if (!resultSet.wasNull()) {
             this.outVertex = SqlgVertex.of(this.sqlgGraph, outId, outVertexColumnName.getSchema(), SqlgUtil.removeTrailingOutId(outVertexColumnName.getTable()));
@@ -292,10 +292,10 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 loadProperty(resultSet, columnName, i);
             }
             if (columnName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                inVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                inVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName);
                 inVertexColumnIndex = i;
             } else if (columnName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                outVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName, this.sqlgGraph.getSqlDialect().getPublicSchema());
+                outVertexColumnName = SchemaTable.from(this.sqlgGraph, columnName);
                 outVertexColumnIndex = i;
             }
         }

@@ -45,13 +45,13 @@ public class SchemaTable implements Serializable, Comparable {
         return new SchemaTable(schema, table);
     }
 
-    public static SchemaTable from(SqlgGraph sqlgGraph, final String label, String defaultSchema) {
+    public static SchemaTable from(SqlgGraph sqlgGraph, final String label) {
         Objects.requireNonNull(label, "label may not be null!");
         int indexOfPeriod = label.indexOf(".");
         final String schema;
         final String table;
         if (indexOfPeriod == -1) {
-            schema = defaultSchema;
+            schema = sqlgGraph.getSqlDialect().getPublicSchema();
             table = label;
         } else {
             schema = label.substring(0, indexOfPeriod);

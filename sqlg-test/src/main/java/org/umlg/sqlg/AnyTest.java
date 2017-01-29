@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.batch.TestBatchNormalUpdateDateTimeArrays;
+import org.umlg.sqlg.test.schema.TestLoadSchemaViaNotify;
 
 /**
  * Date: 2014/07/16
@@ -10,21 +10,7 @@ import org.umlg.sqlg.test.batch.TestBatchNormalUpdateDateTimeArrays;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestBatch.class,
-//        TestBatchEdgeDateTime.class,
-//        TestBatchServerSideEdgeCreation.class,
-//        TestBatchedStreaming.class,
-//        TestBatchJson.class,
-//        TestBatchGlobalUniqueIndexes.class,
-//        TestBatchTemporaryVertex.class,
-//        TestBatchNormalUpdate.class,
-//        TestBatchNormalPrimitive.class,
-//        TestBatchNormalDateTime.class,
-//        TestBatchNormalPrimitiveArrays.class,
-//        TestBatchNormalUpdateDateTime.class,
-//        TestBatchNormalUpdatePrimitiveArrays.class
-//        TestBatchJson.class,
-        TestBatchNormalUpdateDateTimeArrays.class
+        TestLoadSchemaViaNotify.class,
 })
 public class AnyTest {
 }
