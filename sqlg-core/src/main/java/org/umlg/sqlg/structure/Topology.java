@@ -1413,7 +1413,6 @@ public class Topology {
         }
     }
 
-//    public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> loadTableLabels() {
         z_internalReadLock();
         try {
@@ -1422,16 +1421,6 @@ public class Topology {
                 Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
                 map.putAll(result);
             }
-//            if (this.isWriteLockHeldByCurrentThread()) {
-//                for (Map.Entry<String, Schema> schemaEntry : this.uncommittedSchemas.entrySet()) {
-//                    Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-//                    map.putAll(result);
-//                }
-//            }
-//            for (Map.Entry<String, Schema> schemaEntry : this.metaSchemas.entrySet()) {
-//                Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = schemaEntry.getValue().getTableLabels();
-//                map.putAll(result);
-//            }
             return map;
         } finally {
             z_internalReadUnLock();
