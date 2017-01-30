@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SqlgVertex;
@@ -53,15 +54,15 @@ public class TestTraversalPerformance extends BaseTest {
         for (int i = 0; i < 100; i++) {
             columnValues.put("property_" + i, "asdasdasd");
         }
-        for (int i = 0; i < 100; i++) {
-            SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex("Person_100", columnValues);
-            SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex("Dog_100", columnValues);
-            person.addEdgeWithMap("pet_100", dog, columnValues);
+        for (int i = 0; i < 1_000; i++) {
+            SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex("Person_" + i, columnValues);
+            SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex("Dog_1" + i, columnValues);
+            person.addEdgeWithMap("pet_" + i, dog, columnValues);
         }
         this.sqlgGraph.tx().commit();
 
-        for (int i = 0; i < 10_000; i++) {
-            this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList();
+        for (int i = 0; i < 100_000; i++) {
+            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList().size());
             stopWatch.stop();
             System.out.println("query time " + stopWatch.toString());
             stopWatch.reset();
