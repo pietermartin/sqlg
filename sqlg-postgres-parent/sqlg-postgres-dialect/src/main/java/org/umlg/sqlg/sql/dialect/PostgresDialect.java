@@ -211,14 +211,14 @@ public class PostgresDialect extends BaseSqlDialect {
             Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(VERTEX_PREFIX));
             String sql = internalConstructCompleteCopyCommandSqlVertex(sqlgGraph, false, schemaTable.getSchema(), schemaTable.getTable(), vertices.getLeft());
             int numberInserted = 0;
-            try (OutputStream out = streamSql(sqlgGraph, sql)) {
+            try (Writer writer = streamSql(sqlgGraph, sql)) {
                 for (Map<String, Object> keyValueMap : vertices.getRight().values()) {
                     //The map must contain all the keys, so make a copy with it all.
                     LinkedHashMap<String, Object> values = new LinkedHashMap<>();
                     for (String key : vertices.getLeft()) {
                         values.put(key, keyValueMap.get(key));
                     }
-                    writeStreamingVertex(out, values);
+                    writeStreamingVertex(writer, values);
                     numberInserted++;
                 }
             } catch (IOException e) {
@@ -244,85 +244,6 @@ public class PostgresDialect extends BaseSqlDialect {
 
         }
         return verticesRanges;
-
-
-//        Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
-//        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
-//        try {
-//            Method m = BaseConnection.class.getMethod("getCopyAPI", new Class[]{});
-//            Object[] arg = new Object[]{};
-//            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
-//            for (SchemaTable schemaTable : vertexCache.keySet()) {
-//                Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
-//                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(schemaTable.withPrefix(VERTEX_PREFIX));
-//                //insert the labeled vertices
-//                long endHigh;
-//                long numberInserted;
-//                try (InputStream is = mapVertexToInputStream(propertyTypeMap, vertices)) {
-//                    StringBuilder sql = new StringBuilder();
-//                    sql.append("COPY ");
-//                    sql.append(maybeWrapInQoutes(schemaTable.getSchema()));
-//                    sql.append(".");
-//                    sql.append(maybeWrapInQoutes(VERTEX_PREFIX + schemaTable.getTable()));
-//                    sql.append(" (");
-//                    if (vertices.getLeft().isEmpty()) {
-//                        //copy command needs at least one field.
-//                        //check if the dummy field exist, if not createVertexLabel it
-//                        Map<String, PropertyType> columns = new HashMap<>();
-//                        columns.put(COPY_DUMMY, PropertyType.from(0));
-//                        sqlgGraph.getTopology().ensureVertexLabelPropertiesExist(
-//                                schemaTable.getSchema(),
-//                                schemaTable.getTable(),
-//                                columns
-//                        );
-//                        sql.append(maybeWrapInQoutes(COPY_DUMMY));
-//                    } else {
-//                        int count = 1;
-//                        for (String key : vertices.getLeft()) {
-//                            if (count > 1 && count <= vertices.getLeft().size()) {
-//                                sql.append(", ");
-//                            }
-//                            count++;
-//                            appendKeyForStream(propertyTypeMap.get(key), sql, key);
-//                        }
-//                    }
-//                    sql.append(")");
-//
-//                    sql.append(" FROM stdin CSV DELIMITER '");
-//                    sql.append(COPY_COMMAND_DELIMITER);
-//                    sql.append("' ");
-//                    sql.append("QUOTE ");
-//                    sql.append(COPY_COMMAND_QUOTE);
-//                    sql.append(" ESCAPE '");
-//                    sql.append(ESCAPE);
-//                    sql.append("'");
-//                    sql.append(" NULL '");
-//                    sql.append(BATCH_NULL);
-//                    sql.append("';");
-//                    if (logger.isDebugEnabled()) {
-//                        logger.debug(sql.toString());
-//                    }
-//                    numberInserted = copyManager.copyIn(sql.toString(), is);
-//                    if (numberInserted > 0) {
-//                        try (PreparedStatement preparedStatement = con.prepareStatement("SELECT CURRVAL('\"" + schemaTable.getSchema() + "\".\"" + VERTEX_PREFIX + schemaTable.getTable() + "_ID_seq\"');")) {
-//                            ResultSet resultSet = preparedStatement.executeQuery();
-//                            resultSet.next();
-//                            endHigh = resultSet.getLong(1);
-//                            resultSet.close();
-//                        }
-//                        //set the id on the vertex
-//                        long id = endHigh - numberInserted + 1;
-//                        for (SqlgVertex sqlgVertex : vertices.getRight().keySet()) {
-//                            sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, id++));
-//                        }
-//                        verticesRanges.put(schemaTable, Pair.of(endHigh - numberInserted + 1, endHigh));
-//                    }
-//                }
-//            }
-//            return verticesRanges;
-//        } catch (Exception e) {
-//            throw new RuntimeException(e);
-//        }
     }
 
     @Override
@@ -343,7 +264,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             globalUniqueIndex.getName(),
                             new HashSet<>(Arrays.asList(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME))
                     );
-                    try (OutputStream out = streamSql(sqlgGraph, sql)) {
+                    try (Writer writer = streamSql(sqlgGraph, sql)) {
                         for (Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleEntry : edgeMap.entrySet()) {
                             SqlgEdge sqlgEdge = sqlgEdgeTripleEntry.getKey();
                             Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple = sqlgEdgeTripleEntry.getValue();
@@ -354,7 +275,7 @@ public class PostgresDialect extends BaseSqlDialect {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgEdge.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(out, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues);
                             }
                         }
                     } catch (IOException e) {
@@ -382,7 +303,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             globalUniqueIndex.getName(),
                             new HashSet<>(Arrays.asList(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME))
                     );
-                    try (OutputStream out = streamSql(sqlgGraph, sql)) {
+                    try (Writer writer = streamSql(sqlgGraph, sql)) {
                         Map<SqlgVertex, Map<String, Object>> a = vertices.getRight();
                         for (Map.Entry<SqlgVertex, Map<String, Object>> sqlgVertexMapEntry : a.entrySet()) {
                             SqlgVertex sqlgVertex = sqlgVertexMapEntry.getKey();
@@ -393,12 +314,12 @@ public class PostgresDialect extends BaseSqlDialect {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgVertex.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(out, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues);
                             } else {
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE, value);
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID, sqlgVertex.id().toString());
                                 globalUniqueIndexValues.put(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_PROPERTY_NAME, propertyColumn.getName());
-                                writeStreamingVertex(out, globalUniqueIndexValues);
+                                writeStreamingVertex(writer, globalUniqueIndexValues);
                             }
                         }
                     } catch (IOException e) {
@@ -455,7 +376,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     logger.debug(sql.toString());
                 }
                 long numberInserted = 0;
-                try (OutputStream out = streamSql(sqlgGraph, sql.toString())) {
+                try (Writer writer = streamSql(sqlgGraph, sql.toString())) {
                     for (Map.Entry<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>> sqlgEdgeTripleEntry : triples.getRight().entrySet()) {
                         SqlgEdge sqlgEdge = sqlgEdgeTripleEntry.getKey();
                         Triple<SqlgVertex, SqlgVertex, Map<String, Object>> outInVertexKeyValueMap = sqlgEdgeTripleEntry.getValue();
@@ -463,7 +384,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         for (String key : triples.getLeft()) {
                             values.put(key, outInVertexKeyValueMap.getRight().get(key));
                         }
-                        writeStreamingEdge(out, sqlgEdge, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
+                        writeStreamingEdge(writer, sqlgEdge, outInVertexKeyValueMap.getLeft(), outInVertexKeyValueMap.getMiddle(), values);
                         numberInserted++;
                     }
                 }
@@ -1544,15 +1465,15 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
+    public void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap) {
         try {
             int countKeys = 1;
             if (keyValueMap.isEmpty()) {
-                out.write(Integer.toString(1).getBytes());
+                writer.write(Integer.toString(1));
             } else {
                 for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
                     if (countKeys > 1 && countKeys <= keyValueMap.size()) {
-                        out.write(COPY_COMMAND_DELIMITER.getBytes());
+                        writer.write(COPY_COMMAND_DELIMITER);
                     }
                     countKeys++;
                     Object value = entry.getValue();
@@ -1562,25 +1483,24 @@ public class PostgresDialect extends BaseSqlDialect {
                     } else {
                         propertyType = PropertyType.from(value);
                     }
-//                    out.write(valueToStreamBytes(propertyType, value));
-                    valueToStreamBytes(out, propertyType, value);
+                    valueToStreamBytes(writer, propertyType, value);
                 }
             }
-            out.write("\n".getBytes());
+            writer.write("\n");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Override
-    public void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
+    public void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) {
         try {
             String encoding = "UTF-8";
-            out.write(((RecordId) outVertex.id()).getId().toString().getBytes(encoding));
-            out.write(COPY_COMMAND_DELIMITER.getBytes(encoding));
-            out.write(((RecordId) inVertex.id()).getId().toString().getBytes(encoding));
+            writer.write(((RecordId) outVertex.id()).getId().toString());
+            writer.write(COPY_COMMAND_DELIMITER);
+            writer.write(((RecordId) inVertex.id()).getId().toString());
             for (Map.Entry<String, Object> entry : keyValueMap.entrySet()) {
-                out.write(COPY_COMMAND_DELIMITER.getBytes(encoding));
+                writer.write(COPY_COMMAND_DELIMITER);
                 Object value = entry.getValue();
                 PropertyType propertyType;
                 if (value == null) {
@@ -1591,32 +1511,40 @@ public class PostgresDialect extends BaseSqlDialect {
                 if (JSON_ARRAY == propertyType) {
                     throw SqlgExceptions.invalidPropertyType(propertyType);
                 }
-//                out.write(valueToStreamBytes(propertyType, value));
-                valueToStreamBytes(out, propertyType, value);
+                valueToStreamBytes(writer, propertyType, value);
             }
-            out.write("\n".getBytes(encoding));
+            writer.write("\n");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void valueToStreamBytes(OutputStream outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
-        String encoding = "UTF-8";
+    private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
         String s = valueToStreamString(propertyType, value);
-        try (StringReader stringReader = new StringReader(s)) {
-            int data;
-            try {
-                data = stringReader.read();
-                while (data != -1) {
-                    //do something with data...
-                    outputStream.write(data);
-                    data = stringReader.read();
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            outputStream.write(s);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
+
+//    private void valueToStreamBytes(OutputStream outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
+//        String encoding = "UTF-8";
+//        String s = valueToStreamString(propertyType, value);
+//        try (StringReader stringReader = new StringReader(s)) {
+//            int data;
+//            try {
+//                data = stringReader.read();
+//                while (data != -1) {
+//                    //do something with data...
+//                    outputStream.write(data);
+//                    data = stringReader.read();
+//                }
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
 
     private String valueToStreamString(PropertyType propertyType, Object value) {
         String result;
@@ -1890,15 +1818,15 @@ public class PostgresDialect extends BaseSqlDialect {
                                         .temporaryTableCopyCommandSqlVertex(
                                                 sqlgGraph,
                                                 SchemaTable.of("public", tmpTableIdentified), tmpColumns.keySet());
-                                OutputStream out = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(sqlgGraph, copySql);
+                                Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(sqlgGraph, copySql);
                                 for (SqlgVertex sqlgVertex : subVertices) {
                                     Map<String, Object> tmpMap = new HashMap<>();
                                     tmpMap.put("recordId", sqlgVertex.id().toString());
                                     tmpMap.put("property", propertyColumn.getName());
-                                    ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(out, tmpMap);
+                                    ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, tmpMap);
                                 }
                                 try {
-                                    out.close();
+                                    writer.close();
                                 } catch (IOException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -2830,13 +2758,14 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
+    public Writer streamSql(SqlgGraph sqlgGraph, String sql) {
         C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
-            return new PGCopyOutputStream(pgConnection, sql);
-        } catch (SQLException e) {
+            OutputStream out = new PGCopyOutputStream(pgConnection, sql);
+            return new OutputStreamWriter(out, "UTF-8");
+        } catch (SQLException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
     }
@@ -2874,16 +2803,14 @@ public class PostgresDialect extends BaseSqlDialect {
             if (logger.isDebugEnabled()) {
                 logger.debug(sql.toString());
             }
-            OutputStream out = streamSql(sqlgGraph, sql.toString());
+            Writer writer = streamSql(sqlgGraph, sql.toString());
             for (Pair<L, R> uid : uids) {
-//                out.write(valueToStreamBytes(inPropertyType, uid.getLeft()));
-                valueToStreamBytes(out, inPropertyType, uid.getLeft());
-                out.write(COPY_COMMAND_DELIMITER.getBytes());
-//                out.write(valueToStreamBytes(outPropertyType, uid.getRight()));
-                valueToStreamBytes(out, outPropertyType, uid.getRight());
-                out.write("\n".getBytes());
+                valueToStreamBytes(writer, inPropertyType, uid.getLeft());
+                writer.write(COPY_COMMAND_DELIMITER);
+                valueToStreamBytes(writer, outPropertyType, uid.getRight());
+                writer.write("\n");
             }
-            out.close();
+            writer.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

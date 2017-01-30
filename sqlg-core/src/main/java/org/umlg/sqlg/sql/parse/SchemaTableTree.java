@@ -20,7 +20,7 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -773,7 +773,7 @@ public class SchemaTableTree {
                 withInOutMap.put(WITHOUT, "unused");
             }
             String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(SchemaManager.VERTEX_PREFIX.length())), withInOutMap.keySet());
-            OutputStream out = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(this.sqlgGraph, copySql);
+            Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(this.sqlgGraph, copySql);
 
             for (Object withInOutValue : withInOuts) {
                 if (withInOutValue instanceof RecordId) {
@@ -785,10 +785,10 @@ public class SchemaTableTree {
                 } else {
                     withInOutMap.put(WITHOUT, withInOutValue);
                 }
-                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(out, withInOutMap);
+                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, withInOutMap);
             }
             try {
-                out.close();
+                writer.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

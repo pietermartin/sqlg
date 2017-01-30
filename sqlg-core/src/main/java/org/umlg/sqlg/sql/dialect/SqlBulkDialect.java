@@ -6,7 +6,7 @@ import org.umlg.sqlg.structure.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.*;
 
 import static javax.swing.JOptionPane.ERROR_MESSAGE;
@@ -85,11 +85,11 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingVertex(OutputStream out, Map<String, Object> keyValueMap) {
+    default void writeStreamingVertex(Writer writer, Map<String, Object> keyValueMap) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default void writeStreamingEdge(OutputStream out, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
+    default void writeStreamingEdge(Writer writer, SqlgEdge sqlgEdge, SqlgVertex outVertex, SqlgVertex inVertex, Map<String, Object> keyValueMap) throws IOException {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
@@ -101,7 +101,7 @@ public interface SqlBulkDialect extends SqlDialect {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 
-    default OutputStream streamSql(SqlgGraph sqlgGraph, String sql) {
+    default Writer streamSql(SqlgGraph sqlgGraph, String sql) {
         throw SqlgExceptions.batchModeNotSupported(dialectName());
     }
 

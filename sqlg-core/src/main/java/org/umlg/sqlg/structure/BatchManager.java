@@ -6,7 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.*;
 
 /**
@@ -33,8 +33,8 @@ public class BatchManager {
     //map per label's edges to delete
     private Map<SchemaTable, List<SqlgEdge>> removeEdgeCache = new LinkedHashMap<>();
 
-    private Map<SchemaTable, OutputStream> streamingVertexOutputStreamCache = new LinkedHashMap<>();
-    private Map<SchemaTable, OutputStream> streamingEdgeOutputStreamCache = new LinkedHashMap<>();
+    private Map<SchemaTable, Writer> streamingVertexOutputStreamCache = new LinkedHashMap<>();
+    private Map<SchemaTable, Writer> streamingEdgeOutputStreamCache = new LinkedHashMap<>();
 
     //indicates what is being streamed
     private SchemaTable streamingBatchModeVertexSchemaTable;
@@ -83,13 +83,13 @@ public class BatchManager {
 
     void addTemporaryVertex(SqlgVertex sqlgVertex, Map<String, Object> keyValueMap) {
         SchemaTable schemaTable = SchemaTable.of(sqlgVertex.getSchema(), sqlgVertex.getTable());
-        OutputStream out = this.streamingVertexOutputStreamCache.get(schemaTable);
-        if (out == null) {
+        Writer writer = this.streamingVertexOutputStreamCache.get(schemaTable);
+        if (writer == null) {
             String sql = this.sqlDialect.constructCompleteCopyCommandTemporarySqlVertex(sqlgGraph, sqlgVertex, keyValueMap);
-            out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
-            this.streamingVertexOutputStreamCache.put(schemaTable, out);
+            writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
+            this.streamingVertexOutputStreamCache.put(schemaTable, writer);
         }
-        this.sqlDialect.writeStreamingVertex(out, keyValueMap);
+        this.sqlDialect.writeStreamingVertex(writer, keyValueMap);
 
     }
 
@@ -123,13 +123,13 @@ public class BatchManager {
             if (this.isInStreamingModeWithLock()) {
                 sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
             }
-            OutputStream out = this.streamingVertexOutputStreamCache.get(schemaTable);
-            if (out == null) {
+            Writer writer = this.streamingVertexOutputStreamCache.get(schemaTable);
+            if (writer == null) {
                 String sql = this.sqlDialect.constructCompleteCopyCommandSqlVertex(sqlgGraph, sqlgVertex, keyValueMap);
-                out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
-                this.streamingVertexOutputStreamCache.put(schemaTable, out);
+                writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
+                this.streamingVertexOutputStreamCache.put(schemaTable, writer);
             }
-            this.sqlDialect.writeStreamingVertex(out, keyValueMap);
+            this.sqlDialect.writeStreamingVertex(writer, keyValueMap);
             if (this.isInStreamingModeWithLock()) {
                 this.batchCount++;
             }
@@ -167,14 +167,14 @@ public class BatchManager {
             if (this.isInStreamingModeWithLock()) {
                 sqlgEdge.setInternalPrimaryKey(RecordId.from(outSchemaTable, ++this.batchIndex));
             }
-            OutputStream out = this.streamingEdgeOutputStreamCache.get(outSchemaTable);
-            if (out == null) {
+            Writer writer = this.streamingEdgeOutputStreamCache.get(outSchemaTable);
+            if (writer == null) {
                 String sql = this.sqlDialect.constructCompleteCopyCommandSqlEdge(sqlgGraph, sqlgEdge, outVertex, inVertex, keyValueMap);
-                out = this.sqlDialect.streamSql(this.sqlgGraph, sql);
-                this.streamingEdgeOutputStreamCache.put(outSchemaTable, out);
+                writer = this.sqlDialect.streamSql(this.sqlgGraph, sql);
+                this.streamingEdgeOutputStreamCache.put(outSchemaTable, writer);
             }
             try {
-                this.sqlDialect.writeStreamingEdge(out, sqlgEdge, outVertex, inVertex, keyValueMap);
+                this.sqlDialect.writeStreamingEdge(writer, sqlgEdge, outVertex, inVertex, keyValueMap);
                 if (this.isInStreamingModeWithLock()) {
                     this.batchCount++;
                 }
