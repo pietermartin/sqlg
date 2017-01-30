@@ -3272,6 +3272,33 @@ public class PostgresDialect extends BaseSqlDialect {
         statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
 
+    @Override
+    public void prepareDB(Connection conn) {
+        //get the database name
+        String dbName;
+        try (Statement st = conn.createStatement();
+                ResultSet rs = st.executeQuery("SELECT current_database();")) {
+            
+            if (!rs.next()) {
+                throw new IllegalStateException("Could not obtain the name of the current database.");
+            }
+
+            dbName = rs.getString(1);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to find the name of the current database.", e);
+        }
+
+        try (Statement st = conn.createStatement()) {
+            //prepared statement for "ALTER DATABASE ?" doesn't seem to work, but the below should be enough to prevent
+            //disasters with funny database names containing quotes...
+            dbName = dbName.replace("\"", "\"\"");
+            //configure the DB to use the standard conforming strings otherwise the escape sequences cause errors
+            st.executeUpdate("ALTER DATABASE \"" + dbName + "\" SET standard_conforming_strings TO ON;");
+        } catch (SQLException e) {
+            throw new IllegalStateException("Failed to modify the database configuration.");
+        }
+    }
+
     private PropertyType getPostGisGeometryType(SqlgGraph sqlgGraph, String schema, String table, String column) {
         Connection connection = sqlgGraph.tx().getConnection();
         try (PreparedStatement statement = connection.prepareStatement("SELECT type FROM geometry_columns WHERE f_table_schema = ? and f_table_name = ? and f_geometry_column = ?")) {
