@@ -390,6 +390,17 @@ public class Schema implements TopologyInf {
         return result;
     }
 
+    Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
+        Map<String, Set<String>> result = new HashMap<>();
+        for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
+            result.put(this.getName() + "." + SchemaManager.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+        }
+        for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
+            result.put(this.getName() + "." + SchemaManager.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+        }
+        return result;
+    }
+
     Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
         Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
@@ -1081,4 +1092,5 @@ public class Schema implements TopologyInf {
         }
         return validationErrors;
     }
+
 }

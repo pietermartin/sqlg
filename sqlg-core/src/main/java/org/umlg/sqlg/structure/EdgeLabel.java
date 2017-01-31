@@ -261,6 +261,21 @@ public class EdgeLabel extends AbstractLabel {
         for (VertexLabel vertexLabel : this.outVertexLabels) {
             result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
         }
+        //noinspection Duplicates
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
+                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+            }
+            for (VertexLabel vertexLabel : this.uncommittedOutVertexLabels) {
+                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            }
+        }
+        return result;
+    }
+
+    Set<String> getUncommittedEdgeForeignKeys() {
+        Set<String> result = new HashSet<>();
+        //noinspection Duplicates
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
                 result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);

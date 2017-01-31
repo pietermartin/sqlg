@@ -40,6 +40,7 @@ public class Topology {
     //This cache is needed as to much time is taken building it on the fly.
     //The cache is invalidated on every topology change
     private Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> schemaTableForeignKeyCache = new HashMap<>();
+    private Map<String, Set<String>> edgeForeignKeyCache = new HashMap<>();
 
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
     //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
@@ -327,6 +328,8 @@ public class Topology {
             v.getInEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel())));
             v.getOutEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getRight().add(SchemaTable.of(v.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel())));
         });
+
+        this.edgeForeignKeyCache = sqlgSchema.getAllEdgeForeignKeys();
 
         if (this.distributed) {
             ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).registerListener(sqlgGraph);
@@ -723,6 +726,16 @@ public class Topology {
                 }
             }
 
+            Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+            for (Map.Entry<String, Set<String>> entry : uncommittedEdgeForeignKeys.entrySet()) {
+                Set<String> foreignKeys = this.edgeForeignKeyCache.get(entry.getKey());
+                if (foreignKeys == null) {
+                    this.edgeForeignKeyCache.put(entry.getKey(), entry.getValue());
+                } else {
+                    foreignKeys.addAll(entry.getValue());
+                }
+            }
+
             for (Iterator<GlobalUniqueIndex> it = this.uncommittedGlobalUniqueIndexes.iterator(); it.hasNext(); ) {
                 GlobalUniqueIndex globalUniqueIndex = it.next();
                 this.globalUniqueIndexes.add(globalUniqueIndex);
@@ -877,6 +890,8 @@ public class Topology {
         }
         //populate the schemaTableForeignKeyCache
         this.schemaTableForeignKeyCache.putAll(loadTableLabels());
+        //populate the edgeForeignKey cache
+        this.edgeForeignKeyCache.putAll(loadAllEdgeForeignKeys());
     }
 
     void validateTopology() {
@@ -1247,6 +1262,20 @@ public class Topology {
         return result;
     }
 
+    private Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
+        Preconditions.checkState(isWriteLockHeldByCurrentThread(), "getUncommittedEdgeForeignKeys must be called with the lock held");
+        Map<String, Set<String>> result = new HashMap<>();
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.schemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedEdgeForeignKeys());
+        }
+        for (Map.Entry<String, Schema> stringSchemaEntry : this.uncommittedSchemas.entrySet()) {
+            Schema schema = stringSchemaEntry.getValue();
+            result.putAll(schema.getUncommittedEdgeForeignKeys());
+        }
+        return result;
+    }
+
     /**
      * get all tables by schema, with their properties
      * does not return schema tables
@@ -1444,19 +1473,49 @@ public class Topology {
     public Map<String, Set<String>> getAllEdgeForeignKeys() {
         z_internalReadLock();
         try {
+            if (this.isWriteLockHeldByCurrentThread()) {
+                Map<String, Set<String>> committed = new HashMap<>(this.edgeForeignKeyCache);
+                Map<String, Set<String>> uncommittedEdgeForeignKeys = getUncommittedEdgeForeignKeys();
+                for (Map.Entry<String, Set<String>> uncommittedEntry : uncommittedEdgeForeignKeys.entrySet()) {
+                    Set<String> committedForeignKeys = committed.get(uncommittedEntry.getKey());
+                    if (committedForeignKeys != null) {
+                        Set<String> originalPlusUncommittedForeignKeys = new HashSet<>(committedForeignKeys);
+                        originalPlusUncommittedForeignKeys.addAll(uncommittedEntry.getValue());
+                        committed.put(uncommittedEntry.getKey(), originalPlusUncommittedForeignKeys);
+                    } else {
+                        committed.put(uncommittedEntry.getKey(), uncommittedEntry.getValue());
+                    }
+                }
+                return Collections.unmodifiableMap(committed);
+            } else {
+                return Collections.unmodifiableMap(this.edgeForeignKeyCache);
+            }
+        } finally {
+            z_internalReadUnLock();
+        }
+    }
+
+    private Map<String, Set<String>> loadAllEdgeForeignKeys() {
+        z_internalReadLock();
+        try {
             Map<String, Set<String>> result = new HashMap<>();
             for (Schema schema : this.schemas.values()) {
-                result.putAll(schema.getAllEdgeForeignKeys());
-            }
-            for (Schema schema : this.uncommittedSchemas.values()) {
-                result.putAll(schema.getAllEdgeForeignKeys());
-            }
-            for (Schema schema : this.metaSchemas.values()) {
                 result.putAll(schema.getAllEdgeForeignKeys());
             }
             return result;
         } finally {
             z_internalReadUnLock();
+        }
+    }
+
+    void addToEdgeForeignKeyCache(String name, String foreignKey) {
+        Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        if (foreignKeys == null) {
+            foreignKeys = new HashSet<>();
+            foreignKeys.add(foreignKey);
+            this.edgeForeignKeyCache.put(name, foreignKeys);
+        } else {
+            foreignKeys.add(foreignKey);
         }
     }
 
@@ -1504,6 +1563,7 @@ public class Topology {
             topologyListener.change(topologyInf, oldValue, action);
         }
     }
+
 
     static class TopologyValidationError {
         private TopologyInf error;

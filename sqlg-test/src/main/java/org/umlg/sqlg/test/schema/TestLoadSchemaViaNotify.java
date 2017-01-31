@@ -5,6 +5,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -16,7 +17,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2014/11/03
@@ -82,7 +83,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
             assertEquals(1, sqlgGraph1.traversal().V().has(T.label, "Person").has("name", "a").count().next().intValue());
             Vertex v11 = sqlgGraph1.traversal().V().has(T.label, "Person").<Vertex>has("name", "a").next();
-            assertFalse(v11.property("surname").isPresent());
+            Assert.assertFalse(v11.property("surname").isPresent());
             //the next alter will lock if this transaction is still active
             sqlgGraph1.tx().rollback();
 
@@ -245,7 +246,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
                                     SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"),
                                     SchemaManager.VERTEX_PREFIX,
                                     Collections.singletonList("name")));
-            assertTrue(index.isPresent());
+            Assert.assertTrue(index.isPresent());
 
             //allow time for notification to happen
             Thread.sleep(1_000);
@@ -256,7 +257,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
                                     SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "A"),
                                     SchemaManager.VERTEX_PREFIX,
                                     Collections.singletonList("name")));
-            assertTrue(index.isPresent());
+            Assert.assertTrue(index.isPresent());
         }
     }
 
@@ -291,7 +292,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             sqlgGraph1.tx().commit();
             try {
                 sqlgGraph.addVertex(T.label, "A", "name1", "123");
-                fail("GlobalUniqueIndex should prevent this from happening");
+                Assert.fail("GlobalUniqueIndex should prevent this from happening");
             } catch (Exception e) {
                 //swallow
             }
@@ -308,27 +309,27 @@ public class TestLoadSchemaViaNotify extends BaseTest {
                     .ifPresent(v->v.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(v.getProperty("name").get())));
 
             Schema aSchema = this.sqlgGraph.getTopology().getSchema("A").get();
-            assertTrue(aSchema.isUncommitted());
+            Assert.assertTrue(aSchema.isUncommitted());
             VertexLabel vertexLabel = aSchema.getVertexLabel("A").get();
-            assertTrue(vertexLabel.isUncommitted());
+            Assert.assertTrue(vertexLabel.isUncommitted());
             PropertyColumn namePropertyColumn = vertexLabel.getProperty("name").get();
-            assertTrue(namePropertyColumn.isUncommitted());
+            Assert.assertTrue(namePropertyColumn.isUncommitted());
             String indexName = this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "A"), SchemaManager.VERTEX_PREFIX, Collections.singletonList("name"));
             Index index = vertexLabel.getIndex(indexName).get();
-            assertTrue(index.isUncommitted());
+            Assert.assertTrue(index.isUncommitted());
 
             this.sqlgGraph.tx().commit();
             //allow time for notification to happen
             Thread.sleep(1_000);
             aSchema = sqlgGraph1.getTopology().getSchema("A").get();
-            assertTrue(aSchema.isCommitted());
+            Assert.assertTrue(aSchema.isCommitted());
             vertexLabel = aSchema.getVertexLabel("A").get();
-            assertTrue(vertexLabel.isCommitted());
+            Assert.assertTrue(vertexLabel.isCommitted());
             namePropertyColumn = vertexLabel.getProperty("name").get();
-            assertTrue(namePropertyColumn.isCommitted());
+            Assert.assertTrue(namePropertyColumn.isCommitted());
             indexName = sqlgGraph1.getSqlDialect().indexName(SchemaTable.of("A", "A"), SchemaManager.VERTEX_PREFIX, Collections.singletonList("name"));
             index = vertexLabel.getIndex(indexName).get();
-            assertTrue(index.isCommitted());
+            Assert.assertTrue(index.isCommitted());
         }
     }
 

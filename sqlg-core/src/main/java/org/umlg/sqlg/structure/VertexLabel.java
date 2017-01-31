@@ -478,6 +478,9 @@ public class VertexLabel extends AbstractLabel {
                     this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyTypeMap());
                     this.getSchema().addToAllEdgeCache(edgeLabel);
                     this.getSchema().getTopology().addOutForeignKeysToVertexLabel(this, edgeLabel);
+                    this.getSchema().getTopology().addToEdgeForeignKeyCache(
+                            this.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
+                            this.getSchema().getName() + "." + this.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
                 }
             }
         }
@@ -501,6 +504,9 @@ public class VertexLabel extends AbstractLabel {
                     this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
                     edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel);
                     this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
+                    this.getSchema().getTopology().addToEdgeForeignKeyCache(
+                            edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
+                            this.getSchema().getName() + "." + this.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
                 }
             }
         }
@@ -569,7 +575,7 @@ public class VertexLabel extends AbstractLabel {
     Pair<Set<SchemaTable>, Set<SchemaTable>> getUncommittedSchemaTableForeignKeys() {
         Pair<Set<SchemaTable>, Set<SchemaTable>> result = Pair.of(new HashSet<>(), new HashSet<>());
         for (Map.Entry<String, EdgeLabel> uncommittedEdgeLabelEntry : this.uncommittedOutEdgeLabels.entrySet()) {
-           result.getRight().add(SchemaTable.of(this.getSchema().getName(), SchemaManager.EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
+            result.getRight().add(SchemaTable.of(this.getSchema().getName(), SchemaManager.EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
         }
         for (Map.Entry<String, EdgeLabel> uncommittedEdgeLabelEntry : this.uncommittedInEdgeLabels.entrySet()) {
             result.getLeft().add(SchemaTable.of(uncommittedEdgeLabelEntry.getValue().getSchema().getName(), SchemaManager.EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
