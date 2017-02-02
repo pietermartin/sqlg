@@ -769,6 +769,7 @@ public class Topology {
             } finally {
                 z_internalReadUnLock();
             }
+            this.uncommittedGlobalUniqueIndexes.clear();
             this.reentrantReadWriteLock.writeLock().unlock();
         }
     }
@@ -1069,10 +1070,12 @@ public class Topology {
             for (JsonNode jsonGlobalUniqueIndex : globalUniqueIndexes) {
                 String globalUniqueIndexName = jsonGlobalUniqueIndex.get("name").asText();
                 Optional<GlobalUniqueIndex> globalUniqueIndexOptional = getGlobalUniqueIndexes(globalUniqueIndexName);
-                Preconditions.checkState(!globalUniqueIndexOptional.isPresent(), "GlobalUniqueIndex may not be present in fromNotifyJson");
-
-                GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(this, globalUniqueIndexName);
-
+                GlobalUniqueIndex globalUniqueIndex;
+                if (!globalUniqueIndexOptional.isPresent()) {
+                    globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(this, globalUniqueIndexName);
+                } else {
+                    globalUniqueIndex = globalUniqueIndexOptional.get();
+                }
                 Set<PropertyColumn> properties = new HashSet<>();
                 ArrayNode jsonProperties = (ArrayNode) jsonGlobalUniqueIndex.get("uncommittedProperties");
                 for (JsonNode jsonProperty : jsonProperties) {
