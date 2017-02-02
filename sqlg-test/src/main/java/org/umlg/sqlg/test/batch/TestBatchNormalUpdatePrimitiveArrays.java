@@ -6,7 +6,10 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
+
+import static java.lang.Thread.*;
 
 /**
  * Date: 2016/05/22
@@ -20,7 +23,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
     }
 
     @Test
-    public void testStringArrayUpdateNull() {
+    public void testStringArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         String[] stringArray = new String[]{"a", "b"};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "stringArray1", stringArray);
@@ -35,9 +38,17 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("stringArray3", localDateTimeAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testStringArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, localDateTimeAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testStringArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, localDateTimeAgain);
+        }
+    }
+
+    private void testStringArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, String[] localDateTimeAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(localDateTimeAgain, a1.value("stringArray1"));
         Assert.assertFalse(a1.property("stringArray2").isPresent());
         Assert.assertFalse(a1.property("stringArray3").isPresent());
@@ -52,7 +63,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
     }
 
     @Test
-    public void testshortArrayUpdateNull() {
+    public void testshortArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         short[] shortArray = new short[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "shortArray1", shortArray);
@@ -67,9 +78,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("shortArray3", shortArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testshortArrayUpdateNull_Assert(this.sqlgGraph, a1, a2, a3, shortArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testshortArrayUpdateNull_Assert(this.sqlgGraph1, a1, a2, a3, shortArrayAgain);
+        }
+
+    }
+
+    private void testshortArrayUpdateNull_Assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, short[] shortArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(shortArrayAgain, a1.value("shortArray1"));
         Assert.assertFalse(a1.property("shortArray2").isPresent());
         Assert.assertFalse(a1.property("shortArray3").isPresent());
@@ -81,11 +101,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("shortArray1").isPresent());
         Assert.assertFalse(a3.property("shortArray2").isPresent());
         Assert.assertArrayEquals(shortArrayAgain, a3.value("shortArray3"));
-
     }
 
     @Test
-    public void testShortArrayUpdateNull() {
+    public void testShortArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Short[] shortArray = new Short[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "shortArray1", shortArray);
@@ -100,9 +119,17 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("shortArray3", shortArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testShortArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, shortArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testShortArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, shortArrayAgain);
+        }
+    }
+
+    private void testShortArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Short[] shortArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(shortArrayAgain, a1.value("shortArray1"));
         Assert.assertFalse(a1.property("shortArray2").isPresent());
         Assert.assertFalse(a1.property("shortArray3").isPresent());
@@ -117,7 +144,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
     }
 
     @Test
-    public void testintArrayUpdateNull() {
+    public void testintArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         int[] intArray = new int[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "intArray1", intArray);
@@ -132,9 +159,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("intArray3", intArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testintArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, intArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testintArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, intArrayAgain);
+        }
+
+    }
+
+    private void testintArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, int[] intArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(intArrayAgain, a1.value("intArray1"));
         Assert.assertFalse(a1.property("intArray2").isPresent());
         Assert.assertFalse(a1.property("intArray3").isPresent());
@@ -146,11 +182,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("intArray1").isPresent());
         Assert.assertFalse(a3.property("intArray2").isPresent());
         Assert.assertArrayEquals(intArrayAgain, a3.value("intArray3"));
-
     }
 
     @Test
-    public void testIntegerArrayUpdateNull() {
+    public void testIntegerArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Integer[] integerArray = new Integer[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "integerArray1", integerArray);
@@ -165,9 +200,17 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("integerArray3", integerArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testIntegerArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, integerArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testIntegerArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, integerArrayAgain);
+        }
+    }
+
+    private void testIntegerArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Integer[] integerArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(integerArrayAgain, a1.value("integerArray1"));
         Assert.assertFalse(a1.property("integerArray2").isPresent());
         Assert.assertFalse(a1.property("integerArray3").isPresent());
@@ -182,7 +225,7 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
     }
 
     @Test
-    public void testbooleanArrayUpdateNull() {
+    public void testbooleanArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         boolean[] booleanArray = new boolean[]{true, true};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "booleanArray1", booleanArray);
@@ -197,9 +240,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("booleanArray3", booleanArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testbooleanArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, booleanArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testbooleanArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, booleanArrayAgain);
+        }
+
+    }
+
+    private void testbooleanArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, boolean[] booleanArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(booleanArrayAgain, a1.value("booleanArray1"));
         Assert.assertFalse(a1.property("booleanArray2").isPresent());
         Assert.assertFalse(a1.property("booleanArray3").isPresent());
@@ -211,11 +263,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("booleanArray1").isPresent());
         Assert.assertFalse(a3.property("booleanArray2").isPresent());
         Assert.assertArrayEquals(booleanArrayAgain, a3.value("booleanArray3"));
-
     }
 
     @Test
-    public void testBooleanArrayUpdateNull() {
+    public void testBooleanArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Boolean[] booleanArray = new Boolean[]{true, true};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "booleanArray1", booleanArray);
@@ -230,9 +281,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("booleanArray3", booleanArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testBooleanArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, booleanArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testBooleanArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, booleanArrayAgain);
+        }
+
+    }
+
+    private void testBooleanArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Boolean[] booleanArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(booleanArrayAgain, a1.value("booleanArray1"));
         Assert.assertFalse(a1.property("booleanArray2").isPresent());
         Assert.assertFalse(a1.property("booleanArray3").isPresent());
@@ -244,11 +304,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("booleanArray1").isPresent());
         Assert.assertFalse(a3.property("booleanArray2").isPresent());
         Assert.assertArrayEquals(booleanArrayAgain, a3.value("booleanArray3"));
-
     }
 
     @Test
-    public void testbyteArrayUpdateNull() {
+    public void testbyteArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         byte[] byteArray = new byte[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "byteArray1", byteArray);
@@ -263,9 +322,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("byteArray3", byteArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testbyteArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, byteArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testbyteArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, byteArrayAgain);
+        }
+
+    }
+
+    private void testbyteArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, byte[] byteArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(byteArrayAgain, a1.value("byteArray1"));
         Assert.assertFalse(a1.property("byteArray2").isPresent());
         Assert.assertFalse(a1.property("byteArray3").isPresent());
@@ -277,11 +345,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("byteArray1").isPresent());
         Assert.assertFalse(a3.property("byteArray2").isPresent());
         Assert.assertArrayEquals(byteArrayAgain, a3.value("byteArray3"));
-
     }
 
     @Test
-    public void testByteArrayUpdateNull() {
+    public void testByteArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Byte[] byteArray = new Byte[]{1, 2};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "byteArray1", byteArray);
@@ -296,9 +363,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("byteArray3", byteArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testByteArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, byteArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testByteArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, byteArrayAgain);
+        }
+
+    }
+
+    private void testByteArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Byte[] byteArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(byteArrayAgain, a1.value("byteArray1"));
         Assert.assertFalse(a1.property("byteArray2").isPresent());
         Assert.assertFalse(a1.property("byteArray3").isPresent());
@@ -310,11 +386,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("byteArray1").isPresent());
         Assert.assertFalse(a3.property("byteArray2").isPresent());
         Assert.assertArrayEquals(byteArrayAgain, a3.value("byteArray3"));
-
     }
 
     @Test
-    public void testlongArrayUpdateNull() {
+    public void testlongArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         long[] longArray = new long[]{1L, 2L};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "longArray1", longArray);
@@ -329,9 +404,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("longArray3", longArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testlongArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, longArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testlongArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, longArrayAgain);
+        }
+
+    }
+
+    private void testlongArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, long[] longArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(longArrayAgain, a1.value("longArray1"));
         Assert.assertFalse(a1.property("longArray2").isPresent());
         Assert.assertFalse(a1.property("longArray3").isPresent());
@@ -343,11 +427,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("longArray1").isPresent());
         Assert.assertFalse(a3.property("longArray2").isPresent());
         Assert.assertArrayEquals(longArrayAgain, a3.value("longArray3"));
-
     }
 
     @Test
-    public void testLongArrayUpdateNull() {
+    public void testLongArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Long[] longArray = new Long[]{1L, 2L};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "longArray1", longArray);
@@ -362,9 +445,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("longArray3", longArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testLongArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, longArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testLongArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, longArrayAgain);
+        }
+
+    }
+
+    private void testLongArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Long[] longArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(longArrayAgain, a1.value("longArray1"));
         Assert.assertFalse(a1.property("longArray2").isPresent());
         Assert.assertFalse(a1.property("longArray3").isPresent());
@@ -376,11 +468,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("longArray1").isPresent());
         Assert.assertFalse(a3.property("longArray2").isPresent());
         Assert.assertArrayEquals(longArrayAgain, a3.value("longArray3"));
-
     }
 
     @Test
-    public void testfloatArrayUpdateNull() {
+    public void testfloatArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         float[] floatArray = new float[]{1F, 2F};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "floatArray1", floatArray);
@@ -395,9 +486,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("floatArray3", floatArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testfloatArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, floatArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testfloatArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, floatArrayAgain);
+        }
+
+    }
+
+    private void testfloatArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, float[] floatArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(floatArrayAgain, a1.value("floatArray1"), 0F);
         Assert.assertFalse(a1.property("floatArray2").isPresent());
         Assert.assertFalse(a1.property("floatArray3").isPresent());
@@ -409,11 +509,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("floatArray1").isPresent());
         Assert.assertFalse(a3.property("floatArray2").isPresent());
         Assert.assertArrayEquals(floatArrayAgain, a3.value("floatArray3"), 0F);
-
     }
 
     @Test
-    public void testFloatArrayUpdateNull() {
+    public void testFloatArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Float[] floatArray = new Float[]{1F, 2F};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "floatArray1", floatArray);
@@ -428,9 +527,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("floatArray3", floatArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testFloatArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, floatArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testFloatArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, floatArrayAgain);
+        }
+
+    }
+
+    private void testFloatArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Float[] floatArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(floatArrayAgain, a1.value("floatArray1"));
         Assert.assertFalse(a1.property("floatArray2").isPresent());
         Assert.assertFalse(a1.property("floatArray3").isPresent());
@@ -442,11 +550,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("floatArray1").isPresent());
         Assert.assertFalse(a3.property("floatArray2").isPresent());
         Assert.assertArrayEquals(floatArrayAgain, a3.value("floatArray3"));
-
     }
 
     @Test
-    public void testdoubleArrayUpdateNull() {
+    public void testdoubleArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         double[] doubleArray = new double[]{1D, 2D};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "doubleArray1", doubleArray);
@@ -461,9 +568,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("doubleArray3", doubleArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testdoubleArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, doubleArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testdoubleArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, doubleArrayAgain);
+        }
+
+    }
+
+    private void testdoubleArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, double[] doubleArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(doubleArrayAgain, a1.value("doubleArray1"), 0D);
         Assert.assertFalse(a1.property("doubleArray2").isPresent());
         Assert.assertFalse(a1.property("doubleArray3").isPresent());
@@ -475,11 +591,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("doubleArray1").isPresent());
         Assert.assertFalse(a3.property("doubleArray2").isPresent());
         Assert.assertArrayEquals(doubleArrayAgain, a3.value("doubleArray3"), 0D);
-
     }
 
     @Test
-    public void testDoubleArrayUpdateNull() {
+    public void testDoubleArrayUpdateNull() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Double[] doubleArray = new Double[]{1D, 2D};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "doubleArray1", doubleArray);
@@ -494,9 +609,18 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         a3.property("doubleArray3", doubleArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testDoubleArrayUpdateNull_assert(this.sqlgGraph, a1, a2, a3, doubleArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testDoubleArrayUpdateNull_assert(this.sqlgGraph1, a1, a2, a3, doubleArrayAgain);
+        }
+
+    }
+
+    private void testDoubleArrayUpdateNull_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Double[] doubleArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(doubleArrayAgain, a1.value("doubleArray1"));
         Assert.assertFalse(a1.property("doubleArray2").isPresent());
         Assert.assertFalse(a1.property("doubleArray3").isPresent());
@@ -508,11 +632,10 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         Assert.assertFalse(a3.property("doubleArray1").isPresent());
         Assert.assertFalse(a3.property("doubleArray2").isPresent());
         Assert.assertArrayEquals(doubleArrayAgain, a3.value("doubleArray3"));
-
     }
 
     @Test
-    public void testBatchUpdateArrayString() {
+    public void testBatchUpdateArrayString() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new String[]{"a", "b"});
         this.sqlgGraph.tx().commit();
@@ -520,13 +643,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new String[]{"c", "d"});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayString_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testBatchUpdateArrayString_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayString_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         String[] array = god.value("array");
         Assert.assertArrayEquals(array, new String[]{"c", "d"});
     }
 
     @Test
-    public void testBatchUpdateArrayshort() {
+    public void testBatchUpdateArrayshort() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new short[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -534,13 +665,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new short[]{4, 5});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayshort_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null){
+            sleep(SLEEP_TIME);
+            testBatchUpdateArrayshort_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayshort_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         short[] array = god.value("array");
         Assert.assertArrayEquals(new short[]{4, 5}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayShort() {
+    public void testBatchUpdateArrayShort() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Short[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -548,13 +687,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Short[]{4, 5});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayShort_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayShort_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayShort_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Short[] array = god.value("array");
-        Assert.assertArrayEquals(new Short[]{4,5}, array);
+        Assert.assertArrayEquals(new Short[]{4, 5}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayInt() {
+    public void testBatchUpdateArrayInt() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new int[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -562,13 +709,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new int[]{1, 2});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayInt_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayInt_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayInt_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         int[] array = god.value("array");
         Assert.assertArrayEquals(new int[]{1, 2}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayInteger() {
+    public void testBatchUpdateArrayInteger() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Integer[]{2, 1});
         this.sqlgGraph.tx().commit();
@@ -576,13 +731,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Integer[]{1, 2});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayInteger_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayInteger_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayInteger_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Integer[] array = god.value("array");
         Assert.assertArrayEquals(new Integer[]{1, 2}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayboolean() {
+    public void testBatchUpdateArrayboolean() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new boolean[]{true, false});
         this.sqlgGraph.tx().commit();
@@ -590,13 +753,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new boolean[]{false, true});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayboolean_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayboolean_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayboolean_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         boolean[] array = god.value("array");
         Assert.assertArrayEquals(new boolean[]{false, true}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayBoolean() {
+    public void testBatchUpdateArrayBoolean() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Boolean[]{true, false});
         this.sqlgGraph.tx().commit();
@@ -604,13 +775,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Boolean[]{false, true});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayBoolean_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayBoolean_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayBoolean_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Boolean[] array = god.value("array");
         Assert.assertArrayEquals(new Boolean[]{false, true}, array);
     }
 
     @Test
-    public void testBatchUpdateArraybyte() {
+    public void testBatchUpdateArraybyte() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new byte[]{1, 3});
         this.sqlgGraph.tx().commit();
@@ -618,13 +797,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new byte[]{5, 6});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArraybyte_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArraybyte_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArraybyte_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         byte[] array = god.value("array");
         Assert.assertArrayEquals(new byte[]{5, 6}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayByte() {
+    public void testBatchUpdateArrayByte() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Byte[] bytes = {1, 3};
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", bytes);
@@ -633,13 +820,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Byte[]{6, 7});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayByte_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayByte_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayByte_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Byte[] array = god.value("array");
         Assert.assertArrayEquals(new Byte[]{6, 7}, array);
     }
 
     @Test
-    public void testBatchUpdateArraylong() {
+    public void testBatchUpdateArraylong() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new long[]{1L, 3L});
         this.sqlgGraph.tx().commit();
@@ -647,13 +842,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new long[]{5L, 6L});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArraylong_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArraylong_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArraylong_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         long[] array = god.value("array");
         Assert.assertArrayEquals(new long[]{5L, 6L}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayLong() {
+    public void testBatchUpdateArrayLong() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Long[] longs = {1L, 3L};
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", longs);
@@ -662,13 +865,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Long[]{6L, 7L});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayLong_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayLong_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayLong_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Long[] array = god.value("array");
         Assert.assertArrayEquals(new Long[]{6L, 7L}, array);
     }
 
     @Test
-    public void testBatchUpdateArrayfloat() {
+    public void testBatchUpdateArrayfloat() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new float[]{1.1f, 3.3f});
         this.sqlgGraph.tx().commit();
@@ -676,13 +887,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new float[]{5.5f, 6.6f});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayfloat_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayfloat_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayfloat_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         float[] array = god.value("array");
         Assert.assertArrayEquals(new float[]{5.5f, 6.6f}, array, 0f);
     }
 
     @Test
-    public void testBatchUpdateArrayFloat() {
+    public void testBatchUpdateArrayFloat() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Float[]{1.1f, 2.2f});
         this.sqlgGraph.tx().commit();
@@ -690,13 +909,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Float[]{6.6f, 7.7f});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayFloat_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayFloat_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayFloat_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Float[] array = god.value("array");
         Assert.assertArrayEquals(new Float[]{6.6f, 7.7f}, array);
     }
 
     @Test
-    public void testBatchUpdateArraydouble() {
+    public void testBatchUpdateArraydouble() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new double[]{1.1d, 3.3d});
         this.sqlgGraph.tx().commit();
@@ -704,13 +931,21 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new double[]{5.5d, 6.6d});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArraydouble_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArraydouble_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArraydouble_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         double[] array = god.value("array");
         Assert.assertArrayEquals(new double[]{5.5d, 6.6d}, array, 0d);
     }
 
     @Test
-    public void testBatchUpdateArrayDouble() {
+    public void testBatchUpdateArrayDouble() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new Double[]{1.1d, 2.2d});
         this.sqlgGraph.tx().commit();
@@ -718,7 +953,15 @@ public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
         god = this.sqlgGraph.traversal().V(god.id()).next();
         god.property("array", new Double[]{6.6d, 7.7d});
         this.sqlgGraph.tx().commit();
-        god = this.sqlgGraph.traversal().V(god.id()).next();
+        testBatchUpdateArrayDouble_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchUpdateArrayDouble_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchUpdateArrayDouble_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
         Double[] array = god.value("array");
         Assert.assertArrayEquals(new Double[]{6.6d, 7.7d}, array);
     }

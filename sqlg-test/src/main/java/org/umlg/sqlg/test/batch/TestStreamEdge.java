@@ -9,6 +9,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -56,7 +57,7 @@ public class TestStreamEdge extends BaseTest {
     }
 
     @Test
-    public void testEdgeFlushAndCloseStream() {
+    public void testEdgeFlushAndCloseStream() throws InterruptedException {
         SqlgVertex v1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         SqlgVertex v2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
@@ -66,8 +67,16 @@ public class TestStreamEdge extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         v1.streamEdge("b", v2);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("a").count().next(), 1);
-        Assert.assertEquals(1, this.sqlgGraph.traversal().E().hasLabel("b").count().next(), 1);
+        testEdgeFlushCloseStream_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testEdgeFlushCloseStream_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testEdgeFlushCloseStream_assert(SqlgGraph sqlgGraph) {
+        Assert.assertEquals(1, sqlgGraph.traversal().E().hasLabel("a").count().next(), 1);
+        Assert.assertEquals(1, sqlgGraph.traversal().E().hasLabel("b").count().next(), 1);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -104,7 +113,7 @@ public class TestStreamEdge extends BaseTest {
 
 
     @Test
-    public void testStreamingVerticesAndEdges() {
+    public void testStreamingVerticesAndEdges() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -129,9 +138,17 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        testStreamingVerticesAndEdges_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamingVerticesAndEdges_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testStreamingVerticesAndEdges_assert(SqlgGraph sqlgGraph) {
+        Assert.assertEquals(1000, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(1000, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(1000, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
     }
 
     @Test
@@ -176,7 +193,7 @@ public class TestStreamEdge extends BaseTest {
     }
 
     @Test
-    public void testEdgeWithProperties() {
+    public void testEdgeWithProperties() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -202,17 +219,25 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("married").values("name").count().next(), 1);
-        Assert.assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("married").values("surname").count().next(), 1);
-        Assert.assertEquals("halo", this.sqlgGraph.traversal().E().hasLabel("married").values("name").next());
-        Assert.assertEquals("halo", this.sqlgGraph.traversal().E().hasLabel("married").values("surname").next());
+        testEdgeWithProperties_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testEdgeWithProperties_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testEdgeWithProperties_assert(SqlgGraph sqlgGraph) {
+        Assert.assertEquals(1000, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(1000, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(1000, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(1000, sqlgGraph.traversal().E().hasLabel("married").values("name").count().next(), 1);
+        Assert.assertEquals(1000, sqlgGraph.traversal().E().hasLabel("married").values("surname").count().next(), 1);
+        Assert.assertEquals("halo", sqlgGraph.traversal().E().hasLabel("married").values("name").next());
+        Assert.assertEquals("halo", sqlgGraph.traversal().E().hasLabel("married").values("surname").next());
     }
 
     @Test
-    public void testStreamLocalDateTime() {
+    public void testStreamLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -238,15 +263,23 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("localDateTime").count().next(), 1);
-        Assert.assertEquals(now, this.sqlgGraph.traversal().E().hasLabel("married").values("localDateTime").next());
+        testStreamLocalDateTime_assert(this.sqlgGraph, now);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamLocalDateTime_assert(this.sqlgGraph1, now);
+        }
+    }
+
+    private void testStreamLocalDateTime_assert(SqlgGraph sqlgGraph, LocalDateTime now) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("localDateTime").count().next(), 1);
+        Assert.assertEquals(now, sqlgGraph.traversal().E().hasLabel("married").values("localDateTime").next());
     }
 
     @Test
-    public void testStreamLocalDate() {
+    public void testStreamLocalDate() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -272,15 +305,23 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("localDate").count().next(), 1);
-        Assert.assertEquals(localDate, this.sqlgGraph.traversal().E().hasLabel("married").values("localDate").next());
+        testStreamLocalDate_assert(this.sqlgGraph, localDate);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamLocalDate_assert(this.sqlgGraph1, localDate);
+        }
+    }
+
+    private void testStreamLocalDate_assert(SqlgGraph sqlgGraph, LocalDate localDate) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("localDate").count().next(), 1);
+        Assert.assertEquals(localDate, sqlgGraph.traversal().E().hasLabel("married").values("localDate").next());
     }
 
     @Test
-    public void testStreamLocalTime() {
+    public void testStreamLocalTime() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -306,15 +347,23 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("localTime").count().next(), 1);
-        Assert.assertEquals(localTime.toSecondOfDay(), this.sqlgGraph.traversal().E().hasLabel("married").<LocalTime>values("localTime").next().toSecondOfDay());
+        testStreamLocalTime_assert(this.sqlgGraph, localTime);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamLocalTime_assert(this.sqlgGraph1, localTime);
+        }
+    }
+
+    private void testStreamLocalTime_assert(SqlgGraph sqlgGraph, LocalTime localTime) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("localTime").count().next(), 1);
+        Assert.assertEquals(localTime.toSecondOfDay(), sqlgGraph.traversal().E().hasLabel("married").<LocalTime>values("localTime").next().toSecondOfDay());
     }
 
     @Test
-    public void testStreamZonedDateTime() {
+    public void testStreamZonedDateTime() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -340,15 +389,23 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("zonedDateTime").count().next(), 1);
-        Assert.assertEquals(zonedDateTime, this.sqlgGraph.traversal().E().hasLabel("married").values("zonedDateTime").next());
+        testStreamZonedDateTime_assert(this.sqlgGraph, zonedDateTime);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamZonedDateTime_assert(this.sqlgGraph1, zonedDateTime);
+        }
+    }
+
+    private void testStreamZonedDateTime_assert(SqlgGraph sqlgGraph, ZonedDateTime zonedDateTime) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("zonedDateTime").count().next(), 1);
+        Assert.assertEquals(zonedDateTime, sqlgGraph.traversal().E().hasLabel("married").values("zonedDateTime").next());
     }
 
     @Test
-    public void testStreamPeriod() {
+    public void testStreamPeriod() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -374,15 +431,23 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("period").count().next(), 1);
-        Assert.assertEquals(period, this.sqlgGraph.traversal().E().hasLabel("married").values("period").next());
+        testStreamPeriod_assert(this.sqlgGraph, period);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamPeriod_assert(this.sqlgGraph1, period);
+        }
+    }
+
+    private void testStreamPeriod_assert(SqlgGraph sqlgGraph, Period period) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("period").count().next(), 1);
+        Assert.assertEquals(period, sqlgGraph.traversal().E().hasLabel("married").values("period").next());
     }
 
     @Test
-    public void testStreamDuration() {
+    public void testStreamDuration() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -408,15 +473,23 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("duration").count().next(), 1);
-        Assert.assertEquals(duration, this.sqlgGraph.traversal().E().hasLabel("married").values("duration").next());
+        testStreamDuration_assert(this.sqlgGraph, duration);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamDuration_assert(this.sqlgGraph1, duration);
+        }
+    }
+
+    private void testStreamDuration_assert(SqlgGraph sqlgGraph, Duration duration) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("duration").count().next(), 1);
+        Assert.assertEquals(duration, sqlgGraph.traversal().E().hasLabel("married").values("duration").next());
     }
 
     @Test
-    public void testStreamJson() {
+    public void testStreamJson() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         LinkedHashMap<String, Object> keyValues = new LinkedHashMap<>();
         keyValues.put("name", "halo");
@@ -446,11 +519,19 @@ public class TestStreamEdge extends BaseTest {
             ((SqlgVertex)man).streamEdge("married", female, edgeKeyValues);
         }
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
-        Assert.assertEquals(10, this.sqlgGraph.traversal().E().hasLabel("married").values("doc").count().next(), 1);
-        Assert.assertEquals(json, this.sqlgGraph.traversal().E().hasLabel("married").values("doc").next());
+        testStreamJson_assert(this.sqlgGraph, json);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testStreamJson_assert(this.sqlgGraph1, json);
+        }
+    }
+
+    private void testStreamJson_assert(SqlgGraph sqlgGraph, ObjectNode json) {
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Man").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().V().hasLabel("Female").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").count().next(), 1);
+        Assert.assertEquals(10, sqlgGraph.traversal().E().hasLabel("married").values("doc").count().next(), 1);
+        Assert.assertEquals(json, sqlgGraph.traversal().E().hasLabel("married").values("doc").next());
     }
 
     private ArrayList<SqlgVertex> createMilPersonVertex() {

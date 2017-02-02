@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -26,26 +27,34 @@ public class TestBatchedStreaming extends BaseTest {
     }
 
     @Test
-    public void testNullProperties() {
+    public void testNullProperties() throws InterruptedException {
         this.sqlgGraph.tx().streamingBatchModeOn();
         //surname is null, that bad-ass means null
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John1", "surname", null, "age", 1);
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John2", "surname", "Smith", "age", null);
         this.sqlgGraph.streamVertex(T.label, "Person", "name", "John3", "surname", "", "age", 1);
         this.sqlgGraph.tx().commit();
-        Vertex john1 = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "John1").next();
+        testNullProperties_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testNullProperties_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testNullProperties_assert(SqlgGraph sqlgGraph) {
+        Vertex john1 = sqlgGraph.traversal().V().hasLabel("Person").has("name", "John1").next();
         assertFalse(john1.property("surname").isPresent());
         assertTrue(john1.property("age").isPresent());
-        Vertex john2 = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "John2").next();
+        Vertex john2 = sqlgGraph.traversal().V().hasLabel("Person").has("name", "John2").next();
         assertTrue(john2.property("surname").isPresent());
         assertFalse(john2.property("age").isPresent());
-        Vertex john3 = this.sqlgGraph.traversal().V().hasLabel("Person").has("name", "John3").next();
+        Vertex john3 = sqlgGraph.traversal().V().hasLabel("Person").has("name", "John3").next();
         assertTrue(john3.property("surname").isPresent());
         assertEquals("", john3.value("surname"));
     }
 
     @Test
-    public void testStreamingWithBatchSize() {
+    public void testStreamingWithBatchSize() throws InterruptedException {
         int BATCH_SIZE = 100;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -81,26 +90,33 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
 
-        assertEquals(2000, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0);
-        assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("friend").count().next(), 0);
+        testStreamingWithBatchSize(this.sqlgGraph, uuidCache1, uuidCache2);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testStreamingWithBatchSize(this.sqlgGraph1, uuidCache1, uuidCache2);
+        }
+    }
 
-        GraphTraversal<Vertex, Vertex> has = this.sqlgGraph.traversal().V().hasLabel("Person").has("id", uuidCache1);
+    private void testStreamingWithBatchSize(SqlgGraph sqlgGraph, String uuidCache1, String uuidCache2) {
+
+        assertEquals(2000, sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0);
+        assertEquals(1000, sqlgGraph.traversal().E().hasLabel("friend").count().next(), 0);
+
+        GraphTraversal<Vertex, Vertex> has = sqlgGraph.traversal().V().hasLabel("Person").has("id", uuidCache1);
         assertTrue(has.hasNext());
         Vertex person50 = has.next();
 
-        GraphTraversal<Vertex, Vertex> has1 = this.sqlgGraph.traversal().V().hasLabel("Person").has("id", uuidCache2);
+        GraphTraversal<Vertex, Vertex> has1 = sqlgGraph.traversal().V().hasLabel("Person").has("id", uuidCache2);
         assertTrue(has1.hasNext());
         Vertex person250 = has1.next();
-        assertTrue(this.sqlgGraph.traversal().V(person50.id()).out().hasNext());
-        Vertex person250Please = this.sqlgGraph.traversal().V(person50.id()).out().next();
+        assertTrue(sqlgGraph.traversal().V(person50.id()).out().hasNext());
+        Vertex person250Please = sqlgGraph.traversal().V(person50.id()).out().next();
         assertEquals(person250, person250Please);
     }
 
     @Test
-    public void testStreamingWithBatchSizeNonDefaultSchema() {
+    public void testStreamingWithBatchSizeNonDefaultSchema() throws InterruptedException {
         final int BATCH_SIZE = 1000;
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
@@ -134,26 +150,32 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
         System.out.println(stopWatch.toString());
-        stopWatch.reset();
-        stopWatch.start();
 
-        assertEquals(2000, this.sqlgGraph.traversal().V().hasLabel("A.Person").count().next(), 0);
-        assertEquals(1000, this.sqlgGraph.traversal().E().hasLabel("A.friend").count().next(), 0);
+        testStreamingWithBatchSizeNonDefaultSchema_assert(this.sqlgGraph, uuidCache1, uuidCache2);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testStreamingWithBatchSizeNonDefaultSchema_assert(this.sqlgGraph1, uuidCache1, uuidCache2);
+        }
+    }
 
-        GraphTraversal<Vertex, Vertex> has = this.sqlgGraph.traversal().V().hasLabel("A.Person").has("id", uuidCache1);
+    private void testStreamingWithBatchSizeNonDefaultSchema_assert(SqlgGraph sqlgGraph, String uuidCache1, String uuidCache2) {
+        assertEquals(2000, sqlgGraph.traversal().V().hasLabel("A.Person").count().next(), 0);
+        assertEquals(1000, sqlgGraph.traversal().E().hasLabel("A.friend").count().next(), 0);
+
+        GraphTraversal<Vertex, Vertex> has = sqlgGraph.traversal().V().hasLabel("A.Person").has("id", uuidCache1);
         assertTrue(has.hasNext());
         Vertex person50 = has.next();
 
-        GraphTraversal<Vertex, Vertex> has1 = this.sqlgGraph.traversal().V().hasLabel("A.Person").has("id", uuidCache2);
+        GraphTraversal<Vertex, Vertex> has1 = sqlgGraph.traversal().V().hasLabel("A.Person").has("id", uuidCache2);
         assertTrue(has1.hasNext());
         Vertex person250 = has1.next();
-        assertTrue(this.sqlgGraph.traversal().V(person50.id()).out().hasNext());
-        Vertex person250Please = this.sqlgGraph.traversal().V(person50.id()).out().next();
+        assertTrue(sqlgGraph.traversal().V(person50.id()).out().hasNext());
+        Vertex person250Please = sqlgGraph.traversal().V(person50.id()).out().next();
         assertEquals(person250, person250Please);
     }
 
     @Test
-    public void testStreamingWithBatchSizeWithCallBack() {
+    public void testStreamingWithBatchSizeWithCallBack() throws InterruptedException {
         LinkedHashMap properties = new LinkedHashMap();
         List<Vertex> persons = new ArrayList<>();
         this.sqlgGraph.tx().streamingWithLockBatchModeOn();
@@ -172,22 +194,37 @@ public class TestBatchedStreaming extends BaseTest {
             }
         }
         this.sqlgGraph.tx().commit();
-        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0);
-        assertEquals(9, this.sqlgGraph.traversal().E().hasLabel("friend").count().next(), 0);
+        testStreamingWithBatchSizeWithCallBack_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testStreamingWithBatchSizeWithCallBack_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testStreamingWithBatchSizeWithCallBack_assert(SqlgGraph sqlgGraph) {
+        assertEquals(10, sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0);
+        assertEquals(9, sqlgGraph.traversal().E().hasLabel("friend").count().next(), 0);
     }
 
     @Test
-    public void streamJava8StyleWithSchema() {
+    public void streamJava8StyleWithSchema() throws InterruptedException {
         List<String> uids = Arrays.asList("1", "2", "3", "4", "5");
         this.sqlgGraph.tx().streamingBatchModeOn();
         uids.stream().forEach(u -> this.sqlgGraph.streamVertex(T.label, "R_HG.Person", "name", u));
         this.sqlgGraph.tx().commit();
-        assertEquals(5, this.sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0L);
+        streamJava8StyleWithSchema_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            streamJava8StyleWithSchema_assert(this.sqlgGraph1);
+        }
     }
 
+    private void streamJava8StyleWithSchema_assert(SqlgGraph sqlgGraph) {
+        assertEquals(5, sqlgGraph.traversal().V().hasLabel("R_HG.Person").count().next(), 0L);
+    }
 
     @Test
-    public void testBatchContinuations() {
+    public void testBatchContinuations() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Dog");
@@ -201,8 +238,16 @@ public class TestBatchedStreaming extends BaseTest {
         this.sqlgGraph.tx().streamingBatchModeOn();
         this.sqlgGraph.streamVertex("Person", new LinkedHashMap<>());
         this.sqlgGraph.tx().commit();
-        assertEquals(102, this.sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
-        assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Dog").count().next(), 0L);
+        testBatchContinuations_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testBatchContinuations_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testBatchContinuations_assert(SqlgGraph sqlgGraph) {
+        assertEquals(102, sqlgGraph.traversal().V().hasLabel("Person").count().next(), 0L);
+        assertEquals(1, sqlgGraph.traversal().V().hasLabel("Dog").count().next(), 0L);
     }
 
     @Test

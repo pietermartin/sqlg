@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.UUID;
@@ -24,7 +25,7 @@ public class TestEdgeWithMultipleOutLabels extends BaseTest {
     }
 
     @Test
-    public void testBatchModeEdgeMultipleOutLabels() {
+    public void testBatchModeEdgeMultipleOutLabels() throws InterruptedException {
         sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 5; i++) {
             Vertex a1 = this.sqlgGraph.addVertex(T.label, "A1");
@@ -48,14 +49,22 @@ public class TestEdgeWithMultipleOutLabels extends BaseTest {
             a2.addEdge("address", b);
         }
         this.sqlgGraph.tx().commit();
-        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A1").count().next().intValue());
-        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A2").count().next().intValue());
-        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A1").out("address").count().next().intValue());
-        assertEquals(10, this.sqlgGraph.traversal().V().hasLabel("A2").out("address").count().next().intValue());
+        testBatchModeEdgeMulitpleOutLabels_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchModeEdgeMulitpleOutLabels_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testBatchModeEdgeMulitpleOutLabels_assert(SqlgGraph sqlgGraph) {
+        assertEquals(10, sqlgGraph.traversal().V().hasLabel("A1").count().next().intValue());
+        assertEquals(10, sqlgGraph.traversal().V().hasLabel("A2").count().next().intValue());
+        assertEquals(10, sqlgGraph.traversal().V().hasLabel("A1").out("address").count().next().intValue());
+        assertEquals(10, sqlgGraph.traversal().V().hasLabel("A2").out("address").count().next().intValue());
     }
 
     @Test
-    public void issue57() {
+    public void issue57() throws InterruptedException {
         sqlgGraph.tx().normalBatchModeOn();
         String key = "AbstractTinkerPopFhirGraph.Prop.ID";
         int indexCount = 100;
@@ -80,28 +89,36 @@ public class TestEdgeWithMultipleOutLabels extends BaseTest {
         }
         sqlgGraph.tx().commit();
 
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("Patient").count().next().intValue());
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("HumanNameDt").count().next().intValue());
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("Patient").out("name").count().next().intValue());
-        this.sqlgGraph.traversal().V().hasLabel("Patient").out("name").forEachRemaining(v -> assertTrue(v.label().equals("HumanNameDt")));
+        testIssue57_assert(this.sqlgGraph, indexCount);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testIssue57_assert(this.sqlgGraph1, indexCount);
+        }
 
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("Condition").count().next().intValue());
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("CodeableConceptDt").count().next().intValue());
-        assertEquals(indexCount * 2, this.sqlgGraph.traversal().V().hasLabel("CodingDt").count().next().intValue());
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("Condition").out("code").count().next().intValue());
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("CodeableConceptDt").out("coding").count().next().intValue());
+    }
 
-        this.sqlgGraph.traversal().V().hasLabel("Condition").out("code").forEachRemaining(v -> assertTrue(v.label().equals("CodeableConceptDt")));
-        this.sqlgGraph.traversal().V().hasLabel("Condition").out("coding").forEachRemaining(v -> assertTrue(v.label().equals("CodingDt")));
-        this.sqlgGraph.traversal().V().hasLabel("Condition").out("patient").forEachRemaining(v -> assertTrue(v.label().equals("Patient")));
+    private void testIssue57_assert(SqlgGraph sqlgGraph, int indexCount) {
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Patient").count().next().intValue());
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("HumanNameDt").count().next().intValue());
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Patient").out("name").count().next().intValue());
+        sqlgGraph.traversal().V().hasLabel("Patient").out("name").forEachRemaining(v -> assertTrue(v.label().equals("HumanNameDt")));
 
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("CodeableConcept").count().next().intValue());
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("Condition").out("category").count().next().intValue());
-        this.sqlgGraph.traversal().V().hasLabel("Condition").out("category").forEachRemaining(v -> assertTrue(v.label().equals("CodeableConcept")));
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Condition").count().next().intValue());
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConceptDt").count().next().intValue());
+        assertEquals(indexCount * 2, sqlgGraph.traversal().V().hasLabel("CodingDt").count().next().intValue());
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Condition").out("code").count().next().intValue());
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConceptDt").out("coding").count().next().intValue());
 
-        assertEquals(indexCount, this.sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").count().next().intValue());
-        this.sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").forEachRemaining(v -> assertTrue(v.label().equals("CodingDt")));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("code").forEachRemaining(v -> assertTrue(v.label().equals("CodeableConceptDt")));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("coding").forEachRemaining(v -> assertTrue(v.label().equals("CodingDt")));
+        sqlgGraph.traversal().V().hasLabel("Condition").out("patient").forEachRemaining(v -> assertTrue(v.label().equals("Patient")));
 
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConcept").count().next().intValue());
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("Condition").out("category").count().next().intValue());
+        sqlgGraph.traversal().V().hasLabel("Condition").out("category").forEachRemaining(v -> assertTrue(v.label().equals("CodeableConcept")));
+
+        assertEquals(indexCount, sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").count().next().intValue());
+        sqlgGraph.traversal().V().hasLabel("CodeableConcept").out("coding").forEachRemaining(v -> assertTrue(v.label().equals("CodingDt")));
     }
 
 

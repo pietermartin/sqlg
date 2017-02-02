@@ -18,7 +18,7 @@ import java.util.*;
 public class TestBatchGlobalUniqueIndexes extends BaseTest {
 
     @Test
-    public void testVertexUniqueConstraintDeleteBatchMode() {
+    public void testVertexUniqueConstraintDeleteBatchMode() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<String, PropertyType>() {{
@@ -52,11 +52,19 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "namea", "a1");
         //this time it passes.
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(3000, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
+        testVertexUniqueConstraintDeleteBatchMode_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testVertexUniqueConstraintDeleteBatchMode_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testVertexUniqueConstraintDeleteBatchMode_assert(SqlgGraph sqlgGraph) {
+        Assert.assertEquals(3000, sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
     }
 
     @Test
-    public void testVertexUniqueConstraintUpdateNormalBatchMode() {
+    public void testVertexUniqueConstraintUpdateNormalBatchMode() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 
         VertexLabel vertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", new HashMap<String, PropertyType>() {{
@@ -84,10 +92,18 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         } catch (Exception e) {
             Assert.fail("GlobalUniqueIndex should not fire");
         }
-        this.sqlgGraph.tx().normalBatchModeOn();
+        testVertexUniqueConstraintUpdateNormalBatchMode_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testVertexUniqueConstraintUpdateNormalBatchMode_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testVertexUniqueConstraintUpdateNormalBatchMode_assert(SqlgGraph sqlgGraph) {
+        sqlgGraph.tx().normalBatchModeOn();
         try {
-            this.sqlgGraph.addVertex(T.label, "A", "nameb", "aa");
-            this.sqlgGraph.tx().commit();
+            sqlgGraph.addVertex(T.label, "A", "nameb", "aa");
+            sqlgGraph.tx().commit();
             Assert.fail("GlobalUniqueIndex should prevent this from executing");
         } catch (Exception e) {
             //swallow
@@ -96,7 +112,7 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    public void testGlobalUniqueIndexOnEdgeNormalBatchMode() {
+    public void testGlobalUniqueIndexOnEdgeNormalBatchMode() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 
         Map<String, PropertyType> properties = new HashMap<>();
@@ -144,19 +160,27 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         this.sqlgGraph.tx().normalBatchModeOn();
         this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
         this.sqlgGraph.tx().commit();
+        testGlobalUniqueIndexOnEdgeNormalBatchMode_assert(this.sqlgGraph, globalUniqueIndex, edge);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testGlobalUniqueIndexOnEdgeNormalBatchMode_assert(this.sqlgGraph1, globalUniqueIndex, edge);
+        }
+    }
 
-        List<Vertex> globalUniqueIndexVertexes = this.sqlgGraph.globalUniqueIndexes().V().toList();
+    private void testGlobalUniqueIndexOnEdgeNormalBatchMode_assert(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Edge edge) {
+        List<Vertex> globalUniqueIndexVertexes = sqlgGraph.globalUniqueIndexes().V().toList();
         Assert.assertEquals(3, globalUniqueIndexVertexes.size());
         Assert.assertTrue(globalUniqueIndexVertexes.stream().allMatch(g -> g.label().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName())));
         Assert.assertEquals(1, globalUniqueIndexVertexes.stream().filter(g -> g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).equals("a")).count());
         Assert.assertEquals(1, globalUniqueIndexVertexes.stream().filter(g -> g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).equals("b")).count());
         Assert.assertEquals(1, globalUniqueIndexVertexes.stream().filter(g -> g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).equals("c")).count());
         Assert.assertTrue(globalUniqueIndexVertexes.stream().allMatch(g -> g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_RECORD_ID).equals(edge.id().toString())));
+
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     @Test
-    public void testGlobalUniqueIndexOnVertexNormalBatchMode() {
+    public void testGlobalUniqueIndexOnVertexNormalBatchMode() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 
         Map<String, PropertyType> properties = new HashMap<>();
@@ -196,8 +220,15 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         this.sqlgGraph.tx().normalBatchModeOn();
         this.sqlgGraph.addVertex(T.label, "A", "namea", "aa");
         this.sqlgGraph.tx().commit();
+        testGlobalUniqueIndexOnVertexNormalBatchMode_assert(this.sqlgGraph, globalUniqueIndex, a);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testGlobalUniqueIndexOnVertexNormalBatchMode_assert(this.sqlgGraph1, globalUniqueIndex, a);
+        }
+    }
 
-        List<Vertex> globalUniqueIndexVertexes = this.sqlgGraph.globalUniqueIndexes().V().toList();
+    private void testGlobalUniqueIndexOnVertexNormalBatchMode_assert(SqlgGraph sqlgGraph, GlobalUniqueIndex globalUniqueIndex, Vertex a) {
+        List<Vertex> globalUniqueIndexVertexes = sqlgGraph.globalUniqueIndexes().V().toList();
         Assert.assertEquals(6, globalUniqueIndexVertexes.size());
         Assert.assertTrue(globalUniqueIndexVertexes.stream().allMatch(g -> g.label().equals(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + globalUniqueIndex.getName())));
         Assert.assertEquals(1, globalUniqueIndexVertexes.stream().filter(g -> g.property(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).isPresent() && g.<String>value(GlobalUniqueIndex.GLOBAL_UNIQUE_INDEX_VALUE).equals("a")).count());
@@ -205,7 +236,7 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
     }
 
     @Test
-    public void testBatchModeGlobalUniqueIndexOnPropertyThatDoesNotYetExists() {
+    public void testBatchModeGlobalUniqueIndexOnPropertyThatDoesNotYetExists() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
@@ -231,10 +262,22 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         } catch (Exception e) {
             //swallow
         }
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            try {
+                this.sqlgGraph1.tx().normalBatchModeOn();
+                a2 = this.sqlgGraph1.traversal().V(a2).next();
+                a2.property("name", "123");
+                this.sqlgGraph1.tx().commit();
+                Assert.fail("GlobalUniqueIndex should prevent this from happening");
+            } catch (Exception e) {
+                //swallow
+            }
+        }
     }
 
     @Test
-    public void testBatchModeGlobalUniqueIndexOnPropertyThatDoesNotYetExists2() {
+    public void testBatchModeGlobalUniqueIndexOnPropertyThatDoesNotYetExists2() throws InterruptedException {
         Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsBatchMode());
 
         Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
@@ -253,13 +296,25 @@ public class TestBatchGlobalUniqueIndexes extends BaseTest {
         Assert.assertEquals(1, this.sqlgGraph.globalUniqueIndexes().V().count().next().intValue());
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
         try {
+            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
             a2.property("name", "123");
             this.sqlgGraph.tx().commit();
             Assert.fail("GlobalUniqueIndex should prevent this from happening");
         } catch (Exception e) {
             //swallow
+        }
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            try {
+                Vertex a2 = this.sqlgGraph1.addVertex(T.label, "A");
+                a2.property("name", "123");
+                this.sqlgGraph1.tx().commit();
+                Assert.fail("GlobalUniqueIndex should prevent this from happening");
+            } catch (Exception e) {
+                //swallow
+            }
+
         }
     }
 }

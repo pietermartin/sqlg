@@ -8,7 +8,10 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
+
+import static java.lang.Thread.*;
 
 /**
  * Date: 2015/12/14
@@ -22,7 +25,7 @@ public class TestBatchNormalUpdate extends BaseTest {
     }
 
     @Test
-    public void testUpdateWithNullStringValuesAlreadyPresent() {
+    public void testUpdateWithNullStringValuesAlreadyPresent() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a1", "name2", "a11", "name3", "a111");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a2", "name2", "a22", "name3", "a222");
@@ -33,9 +36,17 @@ public class TestBatchNormalUpdate extends BaseTest {
         a2.property("name2", "aa2");
         a3.property("name3", "aa3");
         this.sqlgGraph.tx().commit();
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdateWithNullStringValuesAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testUpdateWithNullStringValuesAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
+        }
+    }
+
+    private void testUpdateWithNullStringValuesAlreadyPresent_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertEquals("aa1", a1.value("name1"));
         Assert.assertEquals("a11", a1.value("name2"));
@@ -51,7 +62,7 @@ public class TestBatchNormalUpdate extends BaseTest {
     }
 
     @Test
-    public void testUpdateWithNullStringValuesNotAlreadyPresent() {
+    public void testUpdateWithNullStringValuesNotAlreadyPresent() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name2", "a2");
@@ -62,16 +73,24 @@ public class TestBatchNormalUpdate extends BaseTest {
         a2.property("name2", "aa2");
         a3.property("name3", "aa3");
         this.sqlgGraph.tx().commit();
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name2").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name3").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name1").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name3").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name1").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name2").isPresent());
+        testUpdateWithNullStringValuesNotAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testUpdateWithNullStringValuesNotAlreadyPresent_assert(this.sqlgGraph1, a1, a2, a3);
+        }
+    }
+
+    private void testUpdateWithNullStringValuesNotAlreadyPresent_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3) {
+        Assert.assertFalse(sqlgGraph.traversal().V(a1.id()).next().property("name2").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a1.id()).next().property("name3").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a2.id()).next().property("name1").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a2.id()).next().property("name3").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a3.id()).next().property("name1").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a3.id()).next().property("name2").isPresent());
     }
 
     @Test
-    public void testUpdateWithNullInteger() {
+    public void testUpdateWithNullInteger() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", 1);
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name2", 2);
@@ -82,16 +101,24 @@ public class TestBatchNormalUpdate extends BaseTest {
         a2.property("name2", 22);
         a3.property("name3", 33);
         this.sqlgGraph.tx().commit();
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name2").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a1.id()).next().property("name3").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name1").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a2.id()).next().property("name3").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name1").isPresent());
-        Assert.assertFalse(this.sqlgGraph.traversal().V(a3.id()).next().property("name2").isPresent());
+        testUpdateWithNullInteger_assert(this.sqlgGraph, a1, a2, a3);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testUpdateWithNullInteger_assert(this.sqlgGraph1, a1, a2, a3);
+        }
+    }
+
+    private void testUpdateWithNullInteger_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3) {
+        Assert.assertFalse(sqlgGraph.traversal().V(a1.id()).next().property("name2").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a1.id()).next().property("name3").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a2.id()).next().property("name1").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a2.id()).next().property("name3").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a3.id()).next().property("name1").isPresent());
+        Assert.assertFalse(sqlgGraph.traversal().V(a3.id()).next().property("name2").isPresent());
     }
 
     @Test
-    public void testUpdateWithoutDots() {
+    public void testUpdateWithoutDots() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 4; i++) {
             this.sqlgGraph.addVertex(T.label, "GTRX", "test1", "a1", "test2", "a2", "cm_uid", "cm_uid_" + i);
@@ -112,6 +139,15 @@ public class TestBatchNormalUpdate extends BaseTest {
         cmUid3.property("test2", "b1");
         this.sqlgGraph.tx().commit();
 
+        testUpdateWithoutDots_assert(gts);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            gts = this.sqlgGraph1.traversal();
+            testUpdateWithoutDots_assert(gts);
+        }
+    }
+
+    private void testUpdateWithoutDots_assert(GraphTraversalSource gts) {
         Assert.assertEquals("b1", gts.V().hasLabel("GTRX").has("cm_uid", "cm_uid_0").next().value("test1"));
         Assert.assertEquals("a2", gts.V().hasLabel("GTRX").has("cm_uid", "cm_uid_0").next().value("test2"));
 
@@ -126,7 +162,7 @@ public class TestBatchNormalUpdate extends BaseTest {
     }
 
     @Test
-    public void testUpdateWithDots() {
+    public void testUpdateWithDots() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 4; i++) {
             this.sqlgGraph.addVertex(T.label, "GTRX", "test1", "a1", "test.2", "a2", "cm_uid", "cm_uid_" + i);
@@ -147,6 +183,15 @@ public class TestBatchNormalUpdate extends BaseTest {
         cmUid3.property("test.2", "b1");
         this.sqlgGraph.tx().commit();
 
+        testUpdateWithDots_assert(gts);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            gts = this.sqlgGraph1.traversal();
+            testUpdateWithDots_assert(gts);
+        }
+    }
+
+    private void testUpdateWithDots_assert(GraphTraversalSource gts) {
         Assert.assertEquals("b1", gts.V().hasLabel("GTRX").has("cm_uid", "cm_uid_0").next().value("test1"));
         Assert.assertEquals("a2", gts.V().hasLabel("GTRX").has("cm_uid", "cm_uid_0").next().value("test.2"));
 
@@ -161,7 +206,7 @@ public class TestBatchNormalUpdate extends BaseTest {
     }
 
     @Test
-    public void testUpdateArrays() {
+    public void testUpdateArrays() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v = this.sqlgGraph.addVertex(T.label, "Person",
                 "names", new String[]{"A", "B"},
@@ -188,18 +233,26 @@ public class TestBatchNormalUpdate extends BaseTest {
         v.property("shorts", new short[]{3, 4});
         v.property("bytes", new byte[]{3, 4});
         this.sqlgGraph.tx().commit();
-        Assert.assertArrayEquals(new String[]{"C", "D"}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<String[]>value("names"));
-        Assert.assertArrayEquals(new int[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<int[]>value("integers"));
-        Assert.assertArrayEquals(new boolean[]{false, false}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<boolean[]>value("booleans"));
-        Assert.assertArrayEquals(new double[]{3D, 4D}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<double[]>value("doubles"), 0d);
-        Assert.assertArrayEquals(new long[]{3L, 4L}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<long[]>value("longs"));
-        Assert.assertArrayEquals(new float[]{3F, 4F}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<float[]>value("floats"), 0f);
-        Assert.assertArrayEquals(new short[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<short[]>value("shorts"));
-        Assert.assertArrayEquals(new byte[]{3, 4}, this.sqlgGraph.traversal().V().hasLabel("Person").next().<byte[]>value("bytes"));
+        testUpdateArrays_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testUpdateArrays_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testUpdateArrays_assert(SqlgGraph sqlgGraph) {
+        Assert.assertArrayEquals(new String[]{"C", "D"}, sqlgGraph.traversal().V().hasLabel("Person").next().<String[]>value("names"));
+        Assert.assertArrayEquals(new int[]{3, 4}, sqlgGraph.traversal().V().hasLabel("Person").next().<int[]>value("integers"));
+        Assert.assertArrayEquals(new boolean[]{false, false}, sqlgGraph.traversal().V().hasLabel("Person").next().<boolean[]>value("booleans"));
+        Assert.assertArrayEquals(new double[]{3D, 4D}, sqlgGraph.traversal().V().hasLabel("Person").next().<double[]>value("doubles"), 0d);
+        Assert.assertArrayEquals(new long[]{3L, 4L}, sqlgGraph.traversal().V().hasLabel("Person").next().<long[]>value("longs"));
+        Assert.assertArrayEquals(new float[]{3F, 4F}, sqlgGraph.traversal().V().hasLabel("Person").next().<float[]>value("floats"), 0f);
+        Assert.assertArrayEquals(new short[]{3, 4}, sqlgGraph.traversal().V().hasLabel("Person").next().<short[]>value("shorts"));
+        Assert.assertArrayEquals(new byte[]{3, 4}, sqlgGraph.traversal().V().hasLabel("Person").next().<byte[]>value("bytes"));
     }
 
     @Test
-    public void testStringUpdate() {
+    public void testStringUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", "halo");
         this.sqlgGraph.tx().commit();
@@ -207,12 +260,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", "halo3");
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testStringUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testStringUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testStringUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals("halo3", v1.value("name"));
     }
 
     @Test
-    public void testStringUpdateEdge() {
+    public void testStringUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -222,12 +283,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", "halo3");
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testStringUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testStringUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testStringUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals("halo3", e1.value("name"));
     }
 
     @Test
-    public void testBooleanUpdate() {
+    public void testBooleanUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", Boolean.valueOf(true));
         this.sqlgGraph.tx().commit();
@@ -235,12 +304,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", Boolean.valueOf(false));
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testBooleanUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testBooleanUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testBooleanUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals(Boolean.valueOf(false), v1.value("name"));
     }
 
     @Test
-    public void testBooleanUpdateEdge() {
+    public void testBooleanUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -250,13 +327,21 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", Boolean.valueOf(false));
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testBooleanUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testBooleanUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testBooleanUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals(Boolean.valueOf(false), e1.value("name"));
         Assert.assertTrue(e1.value("name").getClass().equals(Boolean.class));
     }
 
     @Test
-    public void testShortUpdate() {
+    public void testShortUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", Short.valueOf("1"));
         this.sqlgGraph.tx().commit();
@@ -264,12 +349,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", Short.valueOf("2"));
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testShortUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testShortUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testShortUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals(Short.valueOf("2"), v1.value("name"));
     }
 
     @Test
-    public void testShortUpdateEdge() {
+    public void testShortUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -279,12 +372,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", Short.valueOf("2"));
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testShortUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testShortUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testShortUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals(Short.valueOf("2"), e1.value("name"));
     }
 
     @Test
-    public void testIntegerUpdate() {
+    public void testIntegerUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", Integer.valueOf("1"));
         this.sqlgGraph.tx().commit();
@@ -292,12 +393,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", Integer.valueOf("2"));
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testIntegerUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testIntegerUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testIntegerUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals(Integer.valueOf("2"), v1.value("name"));
     }
 
     @Test
-    public void testIntegerUpdateEdge() {
+    public void testIntegerUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -307,12 +416,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", Integer.valueOf("2"));
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testIntegerUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testIntegerUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testIntegerUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals(Integer.valueOf("2"), e1.value("name"));
     }
 
     @Test
-    public void testLongUpdate() {
+    public void testLongUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", Long.valueOf("1"));
         this.sqlgGraph.tx().commit();
@@ -320,12 +437,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", Long.valueOf("2"));
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testLongUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testLongUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testLongUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals(Long.valueOf("2"), v1.value("name"));
     }
 
     @Test
-    public void testLongUpdateEdge() {
+    public void testLongUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -335,12 +460,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", Long.valueOf("2"));
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testLongUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testLongUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testLongUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals(Long.valueOf("2"), e1.value("name"));
     }
 
     @Test
-    public void testFloatUpdate() {
+    public void testFloatUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", Float.valueOf("1.1"));
         this.sqlgGraph.tx().commit();
@@ -348,12 +481,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", Float.valueOf("2.2"));
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testFloatUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testFloatUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testFloatUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals(Float.valueOf("2.2"), v1.value("name"));
     }
 
     @Test
-    public void testFloatUpdateEdge() {
+    public void testFloatUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -363,12 +504,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", Float.valueOf("2.2"));
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testFloatUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 != null) {
+            sleep(SLEEP_TIME);
+            testFloatUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testFloatUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals(Float.valueOf("2.2"), e1.value("name"));
     }
 
     @Test
-    public void testDoubleUpdate() {
+    public void testDoubleUpdate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A", "name", Double.valueOf("1.1"));
         this.sqlgGraph.tx().commit();
@@ -376,12 +525,20 @@ public class TestBatchNormalUpdate extends BaseTest {
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
         v1.property("name", Double.valueOf("2.2"));
         this.sqlgGraph.tx().commit();
-        v1 = this.sqlgGraph.traversal().V(v1.id()).next();
+        testDoubleUpdate_assert(this.sqlgGraph, v1);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testDoubleUpdate_assert(this.sqlgGraph1, v1);
+        }
+    }
+
+    private void testDoubleUpdate_assert(SqlgGraph sqlgGraph, Vertex v1) {
+        v1 = sqlgGraph.traversal().V(v1.id()).next();
         Assert.assertEquals(Double.valueOf("2.2"), v1.value("name"));
     }
 
     @Test
-    public void testDoubleUpdateEdge() {
+    public void testDoubleUpdateEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -391,7 +548,15 @@ public class TestBatchNormalUpdate extends BaseTest {
         e1 = this.sqlgGraph.traversal().E(e1.id()).next();
         e1.property("name", Double.valueOf("2.2"));
         this.sqlgGraph.tx().commit();
-        e1 = this.sqlgGraph.traversal().E(e1.id()).next();
+        testDoubleUpdateEdge_assert(this.sqlgGraph, e1);
+        if (this.sqlgGraph1 !=  null) {
+            Thread.sleep(SLEEP_TIME);
+            testDoubleUpdateEdge_assert(this.sqlgGraph1, e1);
+        }
+    }
+
+    private void testDoubleUpdateEdge_assert(SqlgGraph sqlgGraph, Edge e1) {
+        e1 = sqlgGraph.traversal().E(e1.id()).next();
         Assert.assertEquals(Double.valueOf("2.2"), e1.value("name"));
     }
 

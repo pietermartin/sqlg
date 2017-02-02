@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
@@ -13,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -27,18 +27,23 @@ import java.util.Map;
 public class TestAggregate extends BaseTest {
 
     @Test
-    public void testAggregate() throws IOException {
-        Graph graph = this.sqlgGraph;
+    public void testAggregate() throws IOException, InterruptedException {
         final GraphReader reader = GryoReader.build()
-                .mapper(graph.io(GryoIo.build()).mapper().create())
+                .mapper(this.sqlgGraph.io(GryoIo.build()).mapper().create())
                 .create();
         try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, graph);
+            reader.readGraph(stream, this.sqlgGraph);
         }
-        assertModernGraph(graph, true, false);
+        testAggregate_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testAggregate_assert(this.sqlgGraph1);
+        }
+    }
 
-
-        GraphTraversalSource g = graph.traversal();
+    private void testAggregate_assert(SqlgGraph sqlgGraph) {
+        assertModernGraph(sqlgGraph, true, false);
+        GraphTraversalSource g = sqlgGraph.traversal();
         Traversal<Vertex, Path> traversal = g.V().out().aggregate("a").path();
         printTraversalForm(traversal);
         int count = 0;
@@ -61,5 +66,6 @@ public class TestAggregate extends BaseTest {
         Assert.assertTrue(firstStepCounts.values().contains(1L));
         Assert.assertTrue(secondStepCounts.values().contains(3L));
         Assert.assertTrue(secondStepCounts.values().contains(1L));
+
     }
 }

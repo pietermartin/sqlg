@@ -49,9 +49,11 @@ public abstract class BaseTest {
 
     private static Logger logger = LoggerFactory.getLogger(BaseTest.class.getName());
     protected SqlgGraph sqlgGraph;
+    protected SqlgGraph sqlgGraph1;
     protected GraphTraversalSource gt;
     protected static Configuration configuration;
     private long start;
+    protected static final int SLEEP_TIME = 1000;
 
     @Rule
     public TestRule watcher = new TestWatcher() {
@@ -92,8 +94,14 @@ public abstract class BaseTest {
         SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
         this.sqlgGraph = SqlgGraph.open(configuration);
         this.gt = this.sqlgGraph.traversal();
+        if (configuration.getBoolean("distributed", false)) {
+            this.sqlgGraph1 = SqlgGraph.open(configuration);
+        }
         stopWatch.stop();
         logger.info("Startup time for test = " + stopWatch.toString());
     }
@@ -102,6 +110,10 @@ public abstract class BaseTest {
     public void after() throws Exception {
         this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         this.sqlgGraph.close();
+        if (this.sqlgGraph1 != null) {
+            this.sqlgGraph1.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+            this.sqlgGraph1.close();
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -55,10 +56,18 @@ public class TestMultiThreadedBatch extends BaseTest {
         executorService.shutdown();
         executorService.awaitTermination(60000, TimeUnit.SECONDS);
         Assert.assertEquals(50, tables.size());
+        testNultiThreadAddVertex_assert(this.sqlgGraph, tables);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testNultiThreadAddVertex_assert(this.sqlgGraph1, tables);
+        }
+    }
+
+    private void testNultiThreadAddVertex_assert(SqlgGraph sqlgGraph, Set<Integer> tables) {
         for (Integer i : tables) {
-            Assert.assertTrue(this.sqlgGraph.getTopology().getVertexLabel(this.sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
-            Assert.assertEquals(2000, this.sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
-            List<Vertex> persons = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
+            Assert.assertTrue(sqlgGraph.getTopology().getVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema(), "Person" + String.valueOf(i)).isPresent());
+            Assert.assertEquals(2000, sqlgGraph.traversal().V().has(T.label, "Person" + String.valueOf(i)).has("name", i).count().next().intValue());
+            List<Vertex> persons = sqlgGraph.traversal().V().<Vertex>has(T.label, "Person" + String.valueOf(i)).toList();
             for (Vertex v : persons) {
                 Assert.assertEquals(i, v.value("name"));
             }

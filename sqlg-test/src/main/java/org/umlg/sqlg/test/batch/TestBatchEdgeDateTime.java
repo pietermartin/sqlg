@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
@@ -24,69 +25,117 @@ public class TestBatchEdgeDateTime extends BaseTest {
     }
 
     @Test
-    public void testLocalDateTime() {
+    public void testLocalDateTime() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         LocalDateTime localDateTime = LocalDateTime.now();
         Edge e = personA.addEdge("loves", personB, "localDateTime", localDateTime);
         this.sqlgGraph.tx().commit();
-        assertEquals(localDateTime, this.sqlgGraph.traversal().E(e).next().value("localDateTime"));
+        testLocalDate_assert(this.sqlgGraph, localDateTime, e);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testLocalDate_assert(this.sqlgGraph1, localDateTime, e);
+        }
+    }
+
+    private void testLocalDate_assert(SqlgGraph sqlgGraph, LocalDateTime localDateTime, Edge e) {
+        assertEquals(localDateTime, sqlgGraph.traversal().E(e).next().value("localDateTime"));
     }
 
     @Test
-    public void testLocalTime() {
+    public void testLocalTime() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         LocalTime localTime = LocalTime.now();
         Edge e = personA.addEdge("loves", personB, "localTime", localTime);
         this.sqlgGraph.tx().commit();
-        assertEquals(localTime.toSecondOfDay(), this.sqlgGraph.traversal().E(e).next().<LocalTime>value("localTime").toSecondOfDay());
+        testLocalTime_assert(this.sqlgGraph, localTime, e);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testLocalTime_assert(this.sqlgGraph1, localTime, e);
+        }
+    }
+
+    private void testLocalTime_assert(SqlgGraph sqlgGraph, LocalTime localTime, Edge e) {
+        assertEquals(localTime.toSecondOfDay(), sqlgGraph.traversal().E(e).next().<LocalTime>value("localTime").toSecondOfDay());
     }
 
     @Test
-    public void testLocalDate() {
+    public void testLocalDate() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         LocalDate localDate = LocalDate.now();
         Edge e = personA.addEdge("loves", personB, "localDate", localDate);
         this.sqlgGraph.tx().commit();
-        assertEquals(localDate, this.sqlgGraph.traversal().E(e).next().value("localDate"));
+        testLocalDate_assert(this.sqlgGraph, localDate, e);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testLocalDate_assert(this.sqlgGraph1, localDate, e);
+        }
+    }
+
+    private void testLocalDate_assert(SqlgGraph sqlgGraph, LocalDate localDate, Edge e) {
+        assertEquals(localDate, sqlgGraph.traversal().E(e).next().value("localDate"));
     }
 
     @Test
-    public void testZonedDateTime() {
+    public void testZonedDateTime() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         ZonedDateTime zonedDateTime = ZonedDateTime.now();
         Edge e = personA.addEdge("loves", personB, "zonedDateTime", zonedDateTime);
         this.sqlgGraph.tx().commit();
-        assertEquals(zonedDateTime, this.sqlgGraph.traversal().E(e).next().value("zonedDateTime"));
+        testZonedDateTime_assert(this.sqlgGraph, zonedDateTime, e);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testZonedDateTime_assert(this.sqlgGraph1, zonedDateTime, e);
+        }
+    }
+
+    private void testZonedDateTime_assert(SqlgGraph sqlgGraph, ZonedDateTime zonedDateTime, Edge e) {
+        assertEquals(zonedDateTime, sqlgGraph.traversal().E(e).next().value("zonedDateTime"));
     }
 
     @Test
-    public void testDuration() {
+    public void testDuration() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         Duration duration = Duration.ofHours(5);
         Edge e = personA.addEdge("loves", personB, "duration", duration);
         this.sqlgGraph.tx().commit();
-        assertEquals(duration, this.sqlgGraph.traversal().E(e).next().value("duration"));
+        testDuration_assert(this.sqlgGraph, duration, e);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testDuration_assert(this.sqlgGraph1, duration, e);
+        }
+    }
+
+    private void testDuration_assert(SqlgGraph sqlgGraph, Duration duration, Edge e) {
+        assertEquals(duration, sqlgGraph.traversal().E(e).next().value("duration"));
     }
 
     @Test
-    public void testPeriod() {
+    public void testPeriod() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex personA = this.sqlgGraph.addVertex(T.label, "Person", "name", "A");
         Vertex personB = this.sqlgGraph.addVertex(T.label, "Person", "name", "B");
         Period period = Period.of(5, 5, 5);
         Edge e = personA.addEdge("loves", personB, "period", period);
         this.sqlgGraph.tx().commit();
-        assertEquals(period, this.sqlgGraph.traversal().E(e).next().value("period"));
+        testPeriod_assert(this.sqlgGraph, period, e);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(1000);
+            testPeriod_assert(this.sqlgGraph1, period, e);
+        }
+    }
+
+    private void testPeriod_assert(SqlgGraph sqlgGraph, Period period, Edge e) {
+        assertEquals(period, sqlgGraph.traversal().E(e).next().value("period"));
     }
 
 }

@@ -6,6 +6,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.time.*;
@@ -24,7 +25,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
     }
 
     @Test
-    public void testUpdateLocalDateTimeArray() {
+    public void testUpdateLocalDateTimeArray() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDateTime[] localDateTimeArray = new LocalDateTime[]{LocalDateTime.now(), LocalDateTime.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateTimeArray1", localDateTimeArray);
@@ -39,9 +40,18 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3.property("localDateTimeArray3", localDateTimeArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdateLocalDateTimeArray_assert(this.sqlgGraph, a1, a2, a3, localDateTimeArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testUpdateLocalDateTimeArray_assert(this.sqlgGraph1, a1, a2, a3, localDateTimeArrayAgain);
+        }
+
+    }
+
+    private void testUpdateLocalDateTimeArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, LocalDateTime[] localDateTimeArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(localDateTimeArrayAgain, a1.value("localDateTimeArray1"));
         Assert.assertFalse(a1.property("localDateTimeArray2").isPresent());
         Assert.assertFalse(a1.property("localDateTimeArray3").isPresent());
@@ -53,11 +63,10 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         Assert.assertFalse(a3.property("localDateTimeArray1").isPresent());
         Assert.assertFalse(a3.property("localDateTimeArray2").isPresent());
         Assert.assertArrayEquals(localDateTimeArrayAgain, a3.value("localDateTimeArray3"));
-
     }
 
     @Test
-    public void testUpdateLocalDateArray() {
+    public void testUpdateLocalDateArray() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         LocalDate[] localDateArray = new LocalDate[]{LocalDate.now(), LocalDate.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "localDateArray1", localDateArray);
@@ -72,9 +81,18 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3.property("localDateArray3", localDateArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdateLocalDateArray_assert(this.sqlgGraph, a1, a2, a3, localDateArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testUpdateLocalDateArray_assert(this.sqlgGraph1, a1, a2, a3, localDateArrayAgain);
+        }
+
+    }
+
+    private void testUpdateLocalDateArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, LocalDate[] localDateArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
         Assert.assertArrayEquals(localDateArrayAgain, a1.value("localDateArray1"));
         Assert.assertFalse(a1.property("localDateArray2").isPresent());
         Assert.assertFalse(a1.property("localDateArray3").isPresent());
@@ -86,7 +104,6 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         Assert.assertFalse(a3.property("localDateArray1").isPresent());
         Assert.assertFalse(a3.property("localDateArray2").isPresent());
         Assert.assertArrayEquals(localDateArrayAgain, a3.value("localDateArray3"));
-
     }
 
     @Test
@@ -105,9 +122,14 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3.property("localTimeArray3", localTimeArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdateLocalTimeArray_assert(this.sqlgGraph, a1, a2, a3, localTimeArrayAgain);
+
+    }
+
+    private void testUpdateLocalTimeArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, LocalTime[] localTimeArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         List<LocalTime> localTimes1 = new ArrayList<>();
         for (LocalTime localTime : localTimeArrayAgain) {
@@ -124,11 +146,10 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         Assert.assertFalse(a3.property("localTimeArray1").isPresent());
         Assert.assertFalse(a3.property("localTimeArray2").isPresent());
         Assert.assertArrayEquals(localTimes1.toArray(), a3.value("localTimeArray3"));
-
     }
 
     @Test
-    public void testUpdateZonedDateTimeArray() {
+    public void testUpdateZonedDateTimeArray() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         ZonedDateTime[] zonedDateTimeArray = new ZonedDateTime[]{ZonedDateTime.now(), ZonedDateTime.now()};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "zonedDateTimeArray1", zonedDateTimeArray);
@@ -143,9 +164,17 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3.property("zonedDateTimeArray3", zonedDateTimeArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdateZonedDateTimeArray_assert(this.sqlgGraph, a1, a2, a3, zonedDateTimeArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testUpdateZonedDateTimeArray_assert(this.sqlgGraph1, a1, a2, a3, zonedDateTimeArrayAgain);
+        }
+    }
+
+    private void testUpdateZonedDateTimeArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, ZonedDateTime[] zonedDateTimeArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertArrayEquals(zonedDateTimeArrayAgain, a1.value("zonedDateTimeArray1"));
         Assert.assertFalse(a1.property("zonedDateTimeArray2").isPresent());
@@ -161,7 +190,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
     }
 
     @Test
-    public void testUpdateDurationArray() {
+    public void testUpdateDurationArray() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Duration[] durationArray = new Duration[]{Duration.ofDays(1), Duration.ofDays(1)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "durationArray1", durationArray);
@@ -176,9 +205,17 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3.property("durationArray3", durationArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdateDurationArray_assert(this.sqlgGraph, a1, a2, a3, durationArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testUpdateDurationArray_assert(this.sqlgGraph1, a1, a2, a3, durationArrayAgain);
+        }
+    }
+
+    private void testUpdateDurationArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Duration[] durationArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertArrayEquals(durationArrayAgain, a1.value("durationArray1"));
         Assert.assertFalse(a1.property("durationArray2").isPresent());
@@ -194,7 +231,7 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
     }
 
     @Test
-    public void testUpdatePeriodArray() {
+    public void testUpdatePeriodArray() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Period[] periodArray = new Period[]{Period.of(1, 1, 1), Period.of(1, 1, 1)};
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "periodArray1", periodArray);
@@ -209,9 +246,17 @@ public class TestBatchNormalUpdateDateTimeArrays extends BaseTest {
         a3.property("periodArray3", periodArrayAgain);
         this.sqlgGraph.tx().commit();
 
-        a1 = this.sqlgGraph.traversal().V(a1.id()).next();
-        a2 = this.sqlgGraph.traversal().V(a2.id()).next();
-        a3 = this.sqlgGraph.traversal().V(a3.id()).next();
+        testUpdatePeriodArray_assert(this.sqlgGraph, a1, a2, a3, periodArrayAgain);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testUpdatePeriodArray_assert(this.sqlgGraph1, a1, a2, a3, periodArrayAgain);
+        }
+    }
+
+    private void testUpdatePeriodArray_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Period[] periodArrayAgain) {
+        a1 = sqlgGraph.traversal().V(a1.id()).next();
+        a2 = sqlgGraph.traversal().V(a2.id()).next();
+        a3 = sqlgGraph.traversal().V(a3.id()).next();
 
         Assert.assertArrayEquals(periodArrayAgain, a1.value("periodArray1"));
         Assert.assertFalse(a1.property("periodArray2").isPresent());
