@@ -81,6 +81,7 @@ public abstract class AbstractLabel implements TopologyInf {
     private Index createIndex(String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = Index.createIndex(this.sqlgGraph, this, indexName, indexType, properties);
         this.uncommittedIndexes.put(indexName, index);
+        this.getSchema().getTopology().fire(index, "", TopologyChangeAction.CREATE);
         return index;
     }
 
