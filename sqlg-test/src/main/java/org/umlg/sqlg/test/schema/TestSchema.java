@@ -77,17 +77,17 @@ public class TestSchema extends BaseTest {
         john.addEdge("pet", ape);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(3, this.sqlgGraph.traversal().V().count().next(), 0);
-        Assert.assertEquals(1, vertexTraversal(john).out("friend").count().next(), 0);
-        Assert.assertEquals(tom, vertexTraversal(john).out("friend").next());
-        Assert.assertEquals(john, vertexTraversal(tom).in("friend").next());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, john).out("friend").count().next(), 0);
+        Assert.assertEquals(tom, vertexTraversal(this.sqlgGraph, john).out("friend").next());
+        Assert.assertEquals(john, vertexTraversal(this.sqlgGraph, tom).in("friend").next());
         Assert.assertEquals(2, this.sqlgGraph.traversal().E().count().next(), 0);
         this.sqlgGraph.traversal().E().<Edge>has(T.label, "friend").forEachRemaining(
                 a -> {
-                    Assert.assertEquals(john, edgeTraversal(a).outV().next());
-                    Assert.assertEquals(tom, edgeTraversal(a).inV().next());
+                    Assert.assertEquals(john, edgeTraversal(this.sqlgGraph, a).outV().next());
+                    Assert.assertEquals(tom, edgeTraversal(this.sqlgGraph, a).inV().next());
                 }
         );
-        Assert.assertEquals(1, vertexTraversal(john).out("friend").has("name", "Tom").count().next(), 0);
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, john).out("friend").has("name", "Tom").count().next(), 0);
         Assert.assertEquals(0, this.sqlgGraph.traversal().V().has(T.label, "Person").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA1.Person").count().next(), 0);
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "TEST_SCHEMA2.Person").count().next(), 0);

@@ -1,11 +1,10 @@
 package org.umlg.sqlg.test.batch;
 
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -17,6 +16,14 @@ import java.util.LinkedHashMap;
  * Time: 9:14 AM
  */
 public class TestBatchTemporaryVertex extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
 
     @Before
     public void beforeTest() {

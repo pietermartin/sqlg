@@ -94,9 +94,6 @@ public abstract class BaseTest {
         SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
-        if (configuration.getString("jdbc.url").contains("postgresql")) {
-            configuration.addProperty("distributed", true);
-        }
         this.sqlgGraph = SqlgGraph.open(configuration);
         this.gt = this.sqlgGraph.traversal();
         if (configuration.getBoolean("distributed", false)) {
@@ -131,12 +128,12 @@ public abstract class BaseTest {
         return conf;
     }
 
-    protected GraphTraversal<Vertex, Vertex> vertexTraversal(Vertex v) {
-        return v.graph().traversal().V(v);
+    protected GraphTraversal<Vertex, Vertex> vertexTraversal(SqlgGraph sqlgGraph, Vertex v) {
+        return sqlgGraph.traversal().V(v);
     }
 
-    protected GraphTraversal<Edge, Edge> edgeTraversal(Edge e) {
-        return e.graph().traversal().E(e.id());
+    protected GraphTraversal<Edge, Edge> edgeTraversal(SqlgGraph sqlgGraph, Edge e) {
+        return sqlgGraph.traversal().E(e.id());
     }
 
     protected void assertDb(String table, int numberOfRows) {

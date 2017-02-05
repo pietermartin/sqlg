@@ -34,10 +34,10 @@ public class TestRemoveElement extends BaseTest {
         Edge edge2 =marko.addEdge("friend", peter);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0);
-        Assert.assertEquals(2L, vertexTraversal(marko).out("friend").count().next(), 0);
+        Assert.assertEquals(2L, vertexTraversal(this.sqlgGraph, marko).out("friend").count().next(), 0);
         edge1.remove();
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0);
-        Assert.assertEquals(1L, vertexTraversal(marko).out("friend").count().next(), 0);
+        Assert.assertEquals(1L, vertexTraversal(this.sqlgGraph, marko).out("friend").count().next(), 0);
     }
 }

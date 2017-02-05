@@ -5,10 +5,13 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.time.*;
 
 import static org.junit.Assert.assertEquals;
@@ -18,6 +21,14 @@ import static org.junit.Assert.assertEquals;
  * Time: 8:53 PM
  */
 public class TestBatchEdgeDateTime extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
 
     @Before
     public void beforeTest() {

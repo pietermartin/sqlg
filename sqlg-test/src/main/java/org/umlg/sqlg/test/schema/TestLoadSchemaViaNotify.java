@@ -120,7 +120,7 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             v11.addEdge("friend", v12);
             sqlgGraph1.tx().commit();
 
-            assertEquals(1, vertexTraversal(v11).out("friend").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph1, v11).out("friend").count().next().intValue());
             sqlgGraph1.tx().rollback();
         }
     }

@@ -70,7 +70,7 @@ public class TestVertexEdges extends BaseTest {
         a1.edges(Direction.BOTH).forEachRemaining(e->count.incrementAndGet());
         Assert.assertEquals(2, count.get());
         count.set(0);
-        vertexTraversal(a1).bothE().forEachRemaining(edge -> {
+        vertexTraversal(this.sqlgGraph, a1).bothE().forEachRemaining(edge -> {
             a1.addEdge("ab", b1);
             count.getAndIncrement();
         });
@@ -87,8 +87,8 @@ public class TestVertexEdges extends BaseTest {
         v1.addEdge("pets", v2);
         v1.addEdge("walks", v2, "location", "arroyo");
         v2.addEdge("knows", v1, "since", 2010);
-        Assert.assertEquals(4, vertexTraversal(v1).bothE().count().next().intValue());
-        Assert.assertEquals(4, vertexTraversal(v2).bothE().count().next().intValue());
+        Assert.assertEquals(4, vertexTraversal(this.sqlgGraph, v1).bothE().count().next().intValue());
+        Assert.assertEquals(4, vertexTraversal(this.sqlgGraph, v2).bothE().count().next().intValue());
         this.sqlgGraph.tx().setLazyQueries(false);
         v1.edges(Direction.BOTH).forEachRemaining(edge -> {
             v1.addEdge("livesWith", v2);
@@ -98,15 +98,15 @@ public class TestVertexEdges extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        List<Edge> edgeList = vertexTraversal(v1).outE().toList();
+        List<Edge> edgeList = vertexTraversal(this.sqlgGraph, v1).outE().toList();
         for (Edge edge : edgeList) {
             System.out.println(edge);
         }
 
-        Assert.assertEquals(8, vertexTraversal(v1).outE().count().next().intValue());
-        Assert.assertEquals(0, vertexTraversal(v2).outE().count().next().intValue());
+        Assert.assertEquals(8, vertexTraversal(this.sqlgGraph, v1).outE().count().next().intValue());
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v2).outE().count().next().intValue());
         v1.edges(Direction.BOTH).forEachRemaining(Edge::remove);
-        Assert.assertEquals(0, vertexTraversal(v1).bothE().count().next().intValue());
-        Assert.assertEquals(0, vertexTraversal(v2).bothE().count().next().intValue());
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v1).bothE().count().next().intValue());
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v2).bothE().count().next().intValue());
     }
 }

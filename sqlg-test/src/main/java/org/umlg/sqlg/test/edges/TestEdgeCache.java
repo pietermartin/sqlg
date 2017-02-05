@@ -36,7 +36,7 @@ public class TestEdgeCache extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         v1.addEdge("friend", v2);
-        assertEquals(1, vertexTraversal(v1).out("friend").count().next().intValue());
+        assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("friend").count().next().intValue());
         this.sqlgGraph.tx().commit();
     }
 

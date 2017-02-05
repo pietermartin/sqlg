@@ -28,18 +28,18 @@ public class TestVertexOutWithHas extends BaseTest {
         marko.addEdge("drives", ktm2);
         marko.addEdge("drives", ktm3);
         this.sqlgGraph.tx().commit();
-        List<Vertex> drivesBmw = vertexTraversal(marko).out("drives").<Vertex>has("name", "bmw").toList();
+        List<Vertex> drivesBmw = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("name", "bmw").toList();
         Assert.assertEquals(2L, drivesBmw.size(), 0);
-        List<Vertex> drivesKtm = vertexTraversal(marko).out("drives").<Vertex>has("name", "ktm").toList();
+        List<Vertex> drivesKtm = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("name", "ktm").toList();
         Assert.assertEquals(3L, drivesKtm.size(), 0);
 
-        List<Vertex> cc600 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 600).toList();
+        List<Vertex> cc600 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 600).toList();
         Assert.assertEquals(1L, cc600.size(), 0);
-        List<Vertex> cc800 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 800).toList();
+        List<Vertex> cc800 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 800).toList();
         Assert.assertEquals(1L, cc800.size(), 0);
-        List<Vertex> cc200 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 200).toList();
+        List<Vertex> cc200 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 200).toList();
         Assert.assertEquals(2L, cc200.size(), 0);
-        List<Vertex> cc400 = vertexTraversal(marko).out("drives").<Vertex>has("cc", 400).toList();
+        List<Vertex> cc400 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 400).toList();
         Assert.assertEquals(1L, cc400.size(), 0);
     }
 
@@ -58,26 +58,26 @@ public class TestVertexOutWithHas extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> inFriendMarko2 = vertexTraversal(marko1).in("friend").<Vertex>has("name", "marko2").toList();
+        List<Vertex> inFriendMarko2 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("name", "marko2").toList();
         Assert.assertEquals(1, inFriendMarko2.size(), 0);
-        List<Vertex> inFriendMarko3 = vertexTraversal(marko1).in("friend").<Vertex>has("name", "marko3").toList();
+        List<Vertex> inFriendMarko3 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("name", "marko3").toList();
         Assert.assertEquals(1, inFriendMarko3.size(), 0);
-        List<Vertex> inFriendMarko4 = vertexTraversal(marko1).in("friend").<Vertex>has("name", "marko4").toList();
+        List<Vertex> inFriendMarko4 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("name", "marko4").toList();
         Assert.assertEquals(1, inFriendMarko4.size(), 0);
-        List<Vertex> inFriendMarko5 = vertexTraversal(marko1).in("friend").<Vertex>has("name", "marko5").toList();
+        List<Vertex> inFriendMarko5 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("name", "marko5").toList();
         Assert.assertEquals(1, inFriendMarko5.size(), 0);
 
-        List<Vertex> inFriendAge20 = vertexTraversal(marko1).in("friend").<Vertex>has("age", 20).toList();
+        List<Vertex> inFriendAge20 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("age", 20).toList();
         Assert.assertEquals(2, inFriendAge20.size(), 0);
-        List<Vertex> inFriendAge30 = vertexTraversal(marko1).in("friend").<Vertex>has("age", 30).toList();
+        List<Vertex> inFriendAge30 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("age", 30).toList();
         Assert.assertEquals(1, inFriendAge30.size(), 0);
-        List<Vertex> inFriendAge40 = vertexTraversal(marko1).in("friend").<Vertex>has("age", 40).toList();
+        List<Vertex> inFriendAge40 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("age", 40).toList();
         Assert.assertEquals(1, inFriendAge40.size(), 0);
 
-        List<Vertex> inFriendNameMarko3Age20 = vertexTraversal(marko1).in("friend").<Vertex>has("age", 20).<Vertex>has("name", "marko3").toList();
+        List<Vertex> inFriendNameMarko3Age20 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("age", 20).<Vertex>has("name", "marko3").toList();
         Assert.assertEquals(1, inFriendNameMarko3Age20.size(), 0);
 
-        List<Vertex> inFriendNameMarko4Age20 = vertexTraversal(marko1).in("friend").<Vertex>has("age", 20).<Vertex>has("name", "marko4").toList();
+        List<Vertex> inFriendNameMarko4Age20 = vertexTraversal(this.sqlgGraph, marko1).in("friend").<Vertex>has("age", 20).<Vertex>has("name", "marko4").toList();
         Assert.assertEquals(0, inFriendNameMarko4Age20.size(), 0);
 
     }
@@ -90,8 +90,8 @@ public class TestVertexOutWithHas extends BaseTest {
         marko.addEdge("drives", bmw);
         marko.addEdge("drives", vw);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1,vertexTraversal(marko).out("drives").has(T.label, "Car").has("name", "bmw").count().next(), 0);
-        Assert.assertEquals(0, vertexTraversal(marko).out("drives").has(T.label, "Person").has("name", "vw").count().next(), 0);
+        Assert.assertEquals(1,vertexTraversal(this.sqlgGraph, marko).out("drives").has(T.label, "Car").has("name", "bmw").count().next(), 0);
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, marko).out("drives").has(T.label, "Person").has("name", "vw").count().next(), 0);
     }
     
     /**
@@ -105,8 +105,8 @@ public class TestVertexOutWithHas extends BaseTest {
         marko.addEdge("drives", bmw);
         marko.addEdge("drives", vw);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1,vertexTraversal(marko).out("drives").has(T.label, "TestSchema.Car").has("name", "bmw").count().next(), 0);
-        Assert.assertEquals(0, vertexTraversal(marko).out("drives").has(T.label, "TestSchema.Person").has("name", "vw").count().next(), 0);
+        Assert.assertEquals(1,vertexTraversal(this.sqlgGraph, marko).out("drives").has(T.label, "TestSchema.Car").has("name", "bmw").count().next(), 0);
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, marko).out("drives").has(T.label, "TestSchema.Person").has("name", "vw").count().next(), 0);
     }
 
     @Test

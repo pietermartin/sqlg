@@ -2,20 +2,28 @@ package org.umlg.sqlg.test.batch;
 
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
-import static java.lang.Thread.*;
+import java.beans.PropertyVetoException;
+import java.io.IOException;
+
+import static java.lang.Thread.sleep;
 
 /**
  * Date: 2016/05/22
  * Time: 9:16 AM
  */
 public class TestBatchNormalUpdatePrimitiveArrays extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
 
     @Before
     public void beforeTest() {

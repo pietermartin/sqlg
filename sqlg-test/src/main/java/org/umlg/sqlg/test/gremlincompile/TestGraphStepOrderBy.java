@@ -4,9 +4,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +21,16 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select
  */
 public class TestGraphStepOrderBy extends BaseTest {
 
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
+
     @Test
-    public void testOrderBy() {
+    public void testOrderBy() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "c");
@@ -27,11 +39,18 @@ public class TestGraphStepOrderBy extends BaseTest {
         Vertex b3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b", "surname", "c");
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> result = this.sqlgGraph.traversal().V().hasLabel("A")
+        testOrderBy_assert(this.sqlgGraph, a1, a2, a3, b1, b2, b3);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testOrderBy_assert(this.sqlgGraph1, a1, a2, a3, b1, b2, b3);
+        }
+    }
+
+    private void testOrderBy_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Vertex b1, Vertex b2, Vertex b3) {
+        List<Vertex> result = sqlgGraph.traversal().V().hasLabel("A")
                 .order()
                 .by("name", Order.incr).by("surname", Order.decr)
                 .toList();
-
         Assert.assertEquals(6, result.size());
         Assert.assertEquals(a3, result.get(0));
         Assert.assertEquals(a2, result.get(1));
@@ -42,7 +61,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderBy2() {
+    public void testOrderBy2() throws InterruptedException {
         Vertex group = this.sqlgGraph.addVertex(T.label, "Group", "name", "MTN");
         Vertex network = this.sqlgGraph.addVertex(T.label, "Network", "name", "SouthAfrica");
         Vertex networkSoftwareVersion = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "SouthAfricaHuawei");
@@ -70,7 +89,15 @@ public class TestGraphStepOrderBy extends BaseTest {
         networkNodeGroupRnc.addEdge("networkNodeGroupNetworkNode", rnc4);
         this.sqlgGraph.tx().commit();
 
-        List<Map<String, Vertex>> result = this.sqlgGraph.traversal().V()
+        testOrderBy2_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testOrderBy2_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testOrderBy2_assert(SqlgGraph sqlgGraph) {
+        List<Map<String, Vertex>> result = sqlgGraph.traversal().V()
                 .hasLabel("Group").as("g")
                 .out("groupNetwork").as("network")
                 .out("networkNetworkSoftwareVersion").as("nsv")
@@ -84,15 +111,6 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .by(select("nng").by("name"), Order.incr)
                 .by(select("nn").by("name"), Order.decr)
                 .toList();
-
-        for (Map<String, Vertex> stringVertexMap : result) {
-            System.out.println(stringVertexMap.get("g").<String>value("name") + " " +
-                    stringVertexMap.get("network").<String>value("name") + " " +
-                            stringVertexMap.get("nsv").<String>value("name") + " " +
-                            stringVertexMap.get("nng").<String>value("name") + " " +
-                            stringVertexMap.get("nn").<String>value("name")
-            );
-        }
 
         Assert.assertEquals(8, result.size());
         Map<String,Vertex> row1 = result.get(0);
@@ -122,7 +140,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderby3() {
+    public void testOrderby3() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "ab");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "ba");
@@ -135,7 +153,15 @@ public class TestGraphStepOrderBy extends BaseTest {
         a2.addEdge("ab", b4);
         this.sqlgGraph.tx().commit();
 
-        List<Map<String, Vertex>> result = this.sqlgGraph.traversal().V()
+        testOrderBy3_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testOrderBy3_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testOrderBy3_assert(SqlgGraph sqlgGraph) {
+        List<Map<String, Vertex>> result = sqlgGraph.traversal().V()
                 .hasLabel("A").as("a")
                 .out("ab").as("b")
                 .<Vertex>select("a", "b")

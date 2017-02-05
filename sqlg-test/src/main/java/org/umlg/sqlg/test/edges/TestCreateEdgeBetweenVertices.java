@@ -23,8 +23,8 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         person2 = this.sqlgGraph.traversal().V(person2.id()).next();
         person1.addEdge("friend", person2);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, vertexTraversal(person1).out("friend").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(person2).in("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, person1).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, person2).in("friend").count().next().intValue());
     }
 
     @Test
@@ -39,8 +39,8 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         Assert.assertEquals("peter", person2.value("name"));
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").toList();
-        Assert.assertEquals(1, vertexTraversal(vertices.get(0)).out("friend").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(vertices.get(1)).in("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, vertices.get(0)).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, vertices.get(1)).in("friend").count().next().intValue());
         Assert.assertEquals(2, vertices.size());
     }
 
@@ -56,10 +56,10 @@ public class TestCreateEdgeBetweenVertices extends BaseTest {
         Assert.assertEquals("peter", person2.value("name"));
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").<Vertex>has("name", "john").toList();
-        Assert.assertEquals(1, vertexTraversal(vertices.get(0)).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, vertices.get(0)).out("friend").count().next().intValue());
         Assert.assertEquals(1, vertices.size());
         vertices = this.sqlgGraph.traversal().V().<Vertex>has(T.label, "Person").<Vertex>has("name", "peter").toList();
-        Assert.assertEquals(1, vertexTraversal(vertices.get(0)).in("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, vertices.get(0)).in("friend").count().next().intValue());
         Assert.assertEquals(1, vertices.size());
     }
 

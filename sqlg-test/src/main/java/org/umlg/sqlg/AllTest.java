@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
+import org.umlg.sqlg.test.aggregate.TestAggregate;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
@@ -96,12 +97,11 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestGremlinCompileWhere.class,
         TestColumnNameTranslation.class,
         TestGraphStepOrderBy.class,
-        TestAggregate.class,
         TestVertexStepOrderBy.class,
         TestPathStep.class,
         LocalDateTest.class,
-        TestStreamVertex.class,
-        TestStreamEdge.class,
+        TestBatchStreamVertex.class,
+        TestBatchStreamEdge.class,
         JsonTest.class,
         TestSchemaManagerGetTablesFor.class,
         TestBatchServerSideEdgeCreation.class,

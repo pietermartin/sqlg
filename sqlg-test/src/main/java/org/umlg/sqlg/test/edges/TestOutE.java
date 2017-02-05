@@ -20,7 +20,7 @@ public class TestOutE extends BaseTest {
         v1.addEdge("aaa", v2);
         v1.addEdge("bbb", v3);
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(1, vertexTraversal(v1).outE("aaa").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).outE("aaa").count().next().intValue());
         Assert.assertEquals(1, this.sqlgGraph.traversal().V().has("name", "p").outE("aaa").count().next().intValue());
     }
 

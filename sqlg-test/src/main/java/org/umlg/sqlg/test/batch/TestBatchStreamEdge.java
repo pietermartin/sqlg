@@ -5,14 +5,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -23,9 +22,17 @@ import java.util.Map;
  * Date: 2015/07/18
  * Time: 4:18 PM
  */
-public class TestStreamEdge extends BaseTest {
+public class TestBatchStreamEdge extends BaseTest {
 
     final private int NUMBER_OF_VERTICES = 1_000;
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
 
     @Before
     public void beforeTest() {

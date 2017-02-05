@@ -4,9 +4,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -15,20 +19,36 @@ import java.util.List;
  */
 public class TestGremlinCompileGraphV extends BaseTest {
 
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
+
     @Test
-    public void testGraphStepWithAs() {
+    public void testGraphStepWithAs() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
         a1.addEdge("ab", b1);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        List<Path> result = this.sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path().toList();
+        testGraphStepWithAs_aasert(this.sqlgGraph, a1);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testGraphStepWithAs_aasert(this.sqlgGraph1, a1);
+        }
+    }
+
+    private void testGraphStepWithAs_aasert(SqlgGraph sqlgGraph, Vertex a1) {
+        List<Path> result = sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path().toList();
         Assert.assertEquals(1, result.size());
     }
 
     @Test
-    public void testGraphVHas() {
+    public void testGraphVHas() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
 
@@ -49,7 +69,15 @@ public class TestGremlinCompileGraphV extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> bs = this.sqlgGraph.traversal().V().has(T.label, "A").out("b").toList();
+        testGraphVHas_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testGraphVHas_assert(this.sqlgGraph1);
+        }
+    }
+
+    private void testGraphVHas_assert(SqlgGraph sqlgGraph) {
+        List<Vertex> bs = sqlgGraph.traversal().V().has(T.label, "A").out("b").toList();
         Assert.assertEquals(8, bs.size());
     }
 }

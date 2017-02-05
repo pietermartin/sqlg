@@ -210,7 +210,7 @@ public class TestLoadSchema extends BaseTest {
             assertEquals(2D, v2.property("bDouble").value());
             assertEquals("bbbbbbbbbbbbb", v2.property("bString").value());
 
-            Iterator<Edge> edgeIter = vertexTraversal(v1).outE("edgeTest");
+            Iterator<Edge> edgeIter = vertexTraversal(sqlgGraph, v1).outE("edgeTest");
             Assert.assertTrue(edgeIter.hasNext());
             Edge e = edgeIter.next();
             assertEquals(true, e.property("cBoolean").value());
@@ -270,9 +270,9 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            assertEquals(2, vertexTraversal(sqlgGraph.traversal().V(realBsc.id()).next()).out("workspaceElement").count().next().intValue());
-            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(realBscWE.id()).next()).in("workspaceElement").count().next().intValue());
-            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(planBsc.id()).next()).in("workspaceElement").count().next().intValue());
+            assertEquals(2, vertexTraversal(sqlgGraph,  sqlgGraph.traversal().V(realBsc.id()).next()).out("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph, sqlgGraph.traversal().V(realBscWE.id()).next()).in("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph, sqlgGraph.traversal().V(planBsc.id()).next()).in("workspaceElement").count().next().intValue());
         }
     }
 
@@ -288,8 +288,8 @@ public class TestLoadSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         try (SqlgGraph sqlgGraph = SqlgGraph.open(configuration)) {
-            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(realBscWE.id()).next()).out("workspaceElement").count().next().intValue());
-            assertEquals(1, vertexTraversal(sqlgGraph.traversal().V(planBscWE.id()).next()).out("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph, sqlgGraph.traversal().V(realBscWE.id()).next()).out("workspaceElement").count().next().intValue());
+            assertEquals(1, vertexTraversal(sqlgGraph, sqlgGraph.traversal().V(planBscWE.id()).next()).out("workspaceElement").count().next().intValue());
         }
     }
 

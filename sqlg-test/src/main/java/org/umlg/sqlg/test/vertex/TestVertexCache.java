@@ -41,12 +41,12 @@ public class TestVertexCache extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
         v1.addEdge("friend", v2);
-        Assert.assertEquals(1, vertexTraversal(v1).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("friend").count().next().intValue());
         Vertex tmpV1 = this.sqlgGraph.traversal().V(v1.id()).next();
         tmpV1.addEdge("foe", v3);
         //this should fail as v1's out edges will not be updated
-        Assert.assertEquals(1, vertexTraversal(tmpV1).out("foe").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(v1).out("foe").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, tmpV1).out("foe").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("foe").count().next().intValue());
         this.sqlgGraph.tx().rollback();
     }
 
@@ -56,13 +56,13 @@ public class TestVertexCache extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
         Edge e1 = v1.addEdge("friend", v2);
-        Assert.assertEquals(1, vertexTraversal(v1).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("friend").count().next().intValue());
 
-        Vertex tmpV1 = edgeTraversal(this.sqlgGraph.traversal().E(e1.id()).next()).outV().next();
+        Vertex tmpV1 = edgeTraversal(this.sqlgGraph, this.sqlgGraph.traversal().E(e1.id()).next()).outV().next();
         tmpV1.addEdge("foe", v3);
         //this should fail as v1's out edges will not be updated
-        Assert.assertEquals(1, vertexTraversal(tmpV1).out("foe").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(v1).out("foe").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, tmpV1).out("foe").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("foe").count().next().intValue());
         this.sqlgGraph.tx().rollback();
     }
 
@@ -72,13 +72,13 @@ public class TestVertexCache extends BaseTest {
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person");
         Vertex v3 = this.sqlgGraph.addVertex(T.label, "Person");
         Edge e1 = v1.addEdge("friend", v2);
-        Assert.assertEquals(1, vertexTraversal(v1).out("friend").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("friend").count().next().intValue());
 
-        Vertex tmpV1 = vertexTraversal(v1).outE("friend").outV().next();
+        Vertex tmpV1 = vertexTraversal(this.sqlgGraph, v1).outE("friend").outV().next();
         tmpV1.addEdge("foe", v3);
         //this should fail as v1's out edges will not be updated
-        Assert.assertEquals(1, vertexTraversal(tmpV1).out("foe").count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(v1).out("foe").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, tmpV1).out("foe").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("foe").count().next().intValue());
         this.sqlgGraph.tx().rollback();
     }
 
@@ -125,7 +125,7 @@ public class TestVertexCache extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         v1 = this.sqlgGraph.traversal().V(v1.id()).next();
-        List<Vertex> cars = vertexTraversal(v1).out("car").toList();
+        List<Vertex> cars = vertexTraversal(this.sqlgGraph, v1).out("car").toList();
         Assert.assertEquals(3, cars.size());
 
     }

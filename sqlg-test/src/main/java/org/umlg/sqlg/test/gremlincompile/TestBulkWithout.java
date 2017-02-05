@@ -5,9 +5,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -18,8 +22,16 @@ import java.util.UUID;
  */
 public class TestBulkWithout extends BaseTest {
 
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
+
     @Test
-    public void testBulkWithout() {
+    public void testBulkWithout() throws InterruptedException {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
@@ -38,16 +50,24 @@ public class TestBulkWithout extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Vertex> persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.subList(0, 2).toArray())).toList();
-        Assert.assertEquals(98, persons.size());
-        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.toArray())).toList();
-        Assert.assertEquals(0, persons.size());
+        testBulkWithout_assert(this.sqlgGraph, uuids);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBulkWithout_assert(this.sqlgGraph1, uuids);
+        }
         stopWatch.stop();
         System.out.println(stopWatch.toString());
     }
 
+    private void testBulkWithout_assert(SqlgGraph sqlgGraph, List<String> uuids) {
+        List<Vertex> persons = sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.subList(0, 2).toArray())).toList();
+        Assert.assertEquals(98, persons.size());
+        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.toArray())).toList();
+        Assert.assertEquals(0, persons.size());
+    }
+
     @Test
-    public void testBulkWithinMultipleHasContainers() {
+    public void testBulkWithinMultipleHasContainers() throws InterruptedException {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         Vertex god = this.sqlgGraph.addVertex(T.label, "God");
@@ -77,19 +97,27 @@ public class TestBulkWithout extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Vertex> persons = this.sqlgGraph.traversal().V()
+        testBulkWithinMultipleHasContainers_assert(this.sqlgGraph);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBulkWithinMultipleHasContainers_assert(this.sqlgGraph1);
+        }
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+    }
+
+    private void testBulkWithinMultipleHasContainers_assert(SqlgGraph sqlgGraph) {
+        List<Vertex> persons = sqlgGraph.traversal().V()
                 .hasLabel("God")
                 .out()
                 .has("name", "pete")
                 .has("idNumber", P.without(1,2,3))
                 .toList();
         Assert.assertEquals(7, persons.size());
-        stopWatch.stop();
-        System.out.println(stopWatch.toString());
     }
 
     @Test
-    public void testBulkWithinVertexCompileStep() {
+    public void testBulkWithinVertexCompileStep() throws InterruptedException {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         if (this.sqlgGraph.getSqlDialect().supportsBatchMode()) {
@@ -108,12 +136,20 @@ public class TestBulkWithout extends BaseTest {
         System.out.println(stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
-        List<Vertex> persons = this.sqlgGraph.traversal().V(god).out().has("idNumber", P.without(uuids.subList(0, 2).toArray())).toList();
-        Assert.assertEquals(98, persons.size());
-        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.toArray())).toList();
-        Assert.assertEquals(0, persons.size());
+        testBulkWithinVertexCompileStep_assert(this.sqlgGraph, god, uuids);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBulkWithinVertexCompileStep_assert(this.sqlgGraph1, god, uuids);
+        }
         stopWatch.stop();
         System.out.println(stopWatch.toString());
 
+    }
+
+    private void testBulkWithinVertexCompileStep_assert(SqlgGraph sqlgGraph, Vertex god, List<String> uuids) {
+        List<Vertex> persons = sqlgGraph.traversal().V(god.id()).out().has("idNumber", P.without(uuids.subList(0, 2).toArray())).toList();
+        Assert.assertEquals(98, persons.size());
+        persons = this.sqlgGraph.traversal().V().hasLabel("God").out().has("idNumber", P.without(uuids.toArray())).toList();
+        Assert.assertEquals(0, persons.size());
     }
 }

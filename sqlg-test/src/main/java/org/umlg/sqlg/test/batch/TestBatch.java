@@ -6,15 +6,14 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
@@ -26,6 +25,14 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings({"UnnecessaryBoxing", "JavaDoc"})
 public class TestBatch extends BaseTest {
+
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
 
     @Before
     public void beforeTest() {
@@ -558,7 +565,7 @@ public class TestBatch extends BaseTest {
         Vertex god = this.sqlgGraph.addVertex(T.label, "God", "dummy", "a");
         Edge sqlgEdge = root.addEdge("rootGod", god);
         Assert.assertNull(sqlgEdge.id());
-        Edge rootGodEdge = vertexTraversal(root).outE("rootGod").next();
+        Edge rootGodEdge = vertexTraversal(this.sqlgGraph, root).outE("rootGod").next();
         //Querying triggers the cache to be flushed, so the result will have an id
         Assert.assertNotNull(rootGodEdge);
         Assert.assertNotNull(rootGodEdge.id());
@@ -574,8 +581,8 @@ public class TestBatch extends BaseTest {
         root.addEdge("rootGod", god);
         root.addEdge("rootHuman", human);
         god.addEdge("rootROOT", root);
-        Assert.assertEquals(god, vertexTraversal(root).out("rootGod").next());
-        Assert.assertEquals(human, vertexTraversal(root).out("rootHuman").next());
+        Assert.assertEquals(god, vertexTraversal(this.sqlgGraph, root).out("rootGod").next());
+        Assert.assertEquals(human, vertexTraversal(this.sqlgGraph, root).out("rootHuman").next());
         this.sqlgGraph.tx().commit();
     }
 
@@ -626,11 +633,11 @@ public class TestBatch extends BaseTest {
         Vertex jehova = this.sqlgGraph.addVertex(T.label, "God", "name", "Jehova");
         root.addEdge("rootGod", jah);
         root.addEdge("rootGod", jehova);
-        List<Vertex> vertices = vertexTraversal(root).out("rootGod").toList();
+        List<Vertex> vertices = vertexTraversal(this.sqlgGraph, root).out("rootGod").toList();
         Assert.assertTrue(vertices.contains(jah));
         Assert.assertTrue(vertices.contains(jehova));
-        Assert.assertEquals(jah, vertexTraversal(root).out("rootGod").has("name", "Jah").next());
-        Assert.assertEquals(jehova, vertexTraversal(root).out("rootGod").has("name", "Jehova").next());
+        Assert.assertEquals(jah, vertexTraversal(this.sqlgGraph, root).out("rootGod").has("name", "Jah").next());
+        Assert.assertEquals(jehova, vertexTraversal(this.sqlgGraph, root).out("rootGod").has("name", "Jehova").next());
         this.sqlgGraph.tx().commit();
     }
 
@@ -652,11 +659,11 @@ public class TestBatch extends BaseTest {
     }
 
     private void testVertexLabelCache_assert(SqlgGraph sqlgGraph, Vertex root, Vertex jah, Vertex jehova) {
-        List<Vertex> vertices = vertexTraversal(root).out("rootGod").toList();
+        List<Vertex> vertices = vertexTraversal(sqlgGraph, root).out("rootGod").toList();
         Assert.assertTrue(vertices.contains(jah));
         Assert.assertTrue(vertices.contains(jehova));
-        Assert.assertEquals(jah, vertexTraversal(root).out("rootGod").has("name", "Jah").next());
-        Assert.assertEquals(jehova, vertexTraversal(root).out("rootGod").has("name", "Jehova").next());
+        Assert.assertEquals(jah, vertexTraversal(sqlgGraph, root).out("rootGod").has("name", "Jah").next());
+        Assert.assertEquals(jehova, vertexTraversal(sqlgGraph, root).out("rootGod").has("name", "Jehova").next());
     }
 
     @Test
@@ -724,9 +731,9 @@ public class TestBatch extends BaseTest {
 
     private void testCacheAndUpdateVERTICESLabels_assert(SqlgGraph sqlgGraph, Vertex person1) {
         person1 = sqlgGraph.traversal().V(person1.id()).next();
-        Assert.assertTrue(vertexTraversal(person1).out("Friend").hasNext());
-        Assert.assertEquals(Long.valueOf(10000), vertexTraversal(person1).out("Friend").count().next());
-        List<Vertex> friends = vertexTraversal(person1).out("Friend").toList();
+        Assert.assertTrue(vertexTraversal(sqlgGraph, person1).out("Friend").hasNext());
+        Assert.assertEquals(Long.valueOf(10000), vertexTraversal(sqlgGraph, person1).out("Friend").count().next());
+        List<Vertex> friends = vertexTraversal(sqlgGraph, person1).out("Friend").toList();
         List<String> names = friends.stream().map(v -> v.<String>value("name")).collect(Collectors.toList());
         Assert.assertEquals(10000, names.size(), 0);
         for (int i = 0; i < 10000; i++) {
@@ -769,7 +776,7 @@ public class TestBatch extends BaseTest {
         vendorTechnology.addEdge("vendorTechnology_softwareVersion", softwareVersion);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).in("vendorTechnology_softwareVersion").next().value("name"));
+        Assert.assertEquals("Huawei_Gsm", vertexTraversal(this.sqlgGraph, softwareVersion).in("vendorTechnology_softwareVersion").next().value("name"));
 
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -786,7 +793,7 @@ public class TestBatch extends BaseTest {
 
     private void testVerticesOutLabelsForPersistentVertices_assert(SqlgGraph sqlgGraph, Vertex softwareVersion) {
         softwareVersion = sqlgGraph.traversal().V(softwareVersion.id()).next();
-        Assert.assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).in("vendorTechnology_softwareVersion").next().value("name"));
+        Assert.assertEquals("Huawei_Gsm", vertexTraversal(sqlgGraph, softwareVersion).in("vendorTechnology_softwareVersion").next().value("name"));
     }
 
     @Test
@@ -797,7 +804,7 @@ public class TestBatch extends BaseTest {
         softwareVersion.addEdge("softwareVersion_vendorTechnology", vendorTechnology);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).out("softwareVersion_vendorTechnology").next().value("name"));
+        Assert.assertEquals("Huawei_Gsm", vertexTraversal(this.sqlgGraph, softwareVersion).out("softwareVersion_vendorTechnology").next().value("name"));
 
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().normalBatchModeOn();
@@ -814,7 +821,7 @@ public class TestBatch extends BaseTest {
 
     private void testVerticesInLabelsForPersistentVertices_assert(SqlgGraph sqlgGraph, Vertex softwareVersion) {
         softwareVersion = sqlgGraph.traversal().V(softwareVersion.id()).next();
-        Assert.assertEquals("Huawei_Gsm", vertexTraversal(softwareVersion).out("softwareVersion_vendorTechnology").next().value("name"));
+        Assert.assertEquals("Huawei_Gsm", vertexTraversal(sqlgGraph, softwareVersion).out("softwareVersion_vendorTechnology").next().value("name"));
     }
 
     @Test
@@ -1116,7 +1123,7 @@ public class TestBatch extends BaseTest {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
             v1.addEdge("car", v2, "bought", 1);
         }
-        List<Vertex> cars = vertexTraversal(v1).out("car").toList();
+        List<Vertex> cars = vertexTraversal(this.sqlgGraph, v1).out("car").toList();
         for (int i = 0; i < 50; i++) {
             cars.get(i).remove();
         }
@@ -1141,7 +1148,7 @@ public class TestBatch extends BaseTest {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "test2.Car", "model", "vw");
             v1.addEdge("car", v2, "bought", 1);
         }
-        List<Edge> cars = vertexTraversal(v1).outE("car").toList();
+        List<Edge> cars = vertexTraversal(this.sqlgGraph, v1).outE("car").toList();
         for (int i = 0; i < 50; i++) {
             cars.get(i).remove();
         }
@@ -1162,10 +1169,10 @@ public class TestBatch extends BaseTest {
     public void testNullEdge() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Person", "dummy", "a");
-        Assert.assertEquals(0, vertexTraversal(v1).out("cars").count().next().intValue());
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, v1).out("cars").count().next().intValue());
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Car", "dummy", "a");
         v1.addEdge("cars", v2);
-        Assert.assertEquals(1, vertexTraversal(v1).out("cars").count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v1).out("cars").count().next().intValue());
         this.sqlgGraph.tx().commit();
         testNullEdge_assert(this.sqlgGraph, v1);
         if (this.sqlgGraph1 != null) {
@@ -1285,7 +1292,7 @@ public class TestBatch extends BaseTest {
         Assert.assertEquals(100000, this.sqlgGraph.traversal().E().count().next().intValue());
         this.sqlgGraph.tx().rollback();
         this.sqlgGraph.tx().normalBatchModeOn();
-        vertexTraversal(v1).outE("test").forEachRemaining(Edge::remove);
+        vertexTraversal(this.sqlgGraph, v1).outE("test").forEachRemaining(Edge::remove);
         this.sqlgGraph.tx().commit();
         testBatchRemoveManyEdgesTestPostgresLimit_assert(this.sqlgGraph);
         if (this.sqlgGraph1 != null) {

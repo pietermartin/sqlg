@@ -5,9 +5,13 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.beans.PropertyVetoException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -21,8 +25,16 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestColumnNameTranslation extends BaseTest {
 
+    @BeforeClass
+    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException {
+        BaseTest.beforeClass();
+        if (configuration.getString("jdbc.url").contains("postgresql")) {
+            configuration.addProperty("distributed", true);
+        }
+    }
+
     @Test
-    public void testInOutInOut2() {
+    public void testInOutInOut2() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
@@ -34,11 +46,15 @@ public class TestColumnNameTranslation extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
-        assertEquals(9, vertexTraversal(a1).out().in().out().count().next().intValue());
+        assertEquals(9, vertexTraversal(this.sqlgGraph, a1).out().in().out().count().next().intValue());
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            assertEquals(9, vertexTraversal(this.sqlgGraph1, a1).out().in().out().count().next().intValue());
+        }
     }
 
     @Test
-    public void testNameWithMultipleSameLabel() {
+    public void testNameWithMultipleSameLabel() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
@@ -50,7 +66,16 @@ public class TestColumnNameTranslation extends BaseTest {
         a3.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        List<Map<String, Object>> result = this.sqlgGraph.traversal()
+        testNameWithMultipleSameLabel_assert(this.sqlgGraph, a1, b1);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testNameWithMultipleSameLabel_assert(this.sqlgGraph1, a1, b1);
+        }
+
+    }
+
+    private void testNameWithMultipleSameLabel_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1) {
+        List<Map<String, Object>> result = sqlgGraph.traversal()
                 .V().as("a")
                 .out().as("a")
                 .in().as("a")
@@ -66,7 +91,6 @@ public class TestColumnNameTranslation extends BaseTest {
         assertEquals("b1", ass.get(1).value("name"));
         assertEquals(a1, ass.get(2));
         assertEquals("a1", ass.get(2).value("name"));
-
     }
 
     @Test
@@ -94,6 +118,10 @@ public class TestColumnNameTranslation extends BaseTest {
 
         this.sqlgGraph.tx().commit();
 
+        testShortName_assert(g, a1, b1, e1, c1, c2, c3, bc1, bc2, bc3, d1, d2, d3, bd1, bd2, bd3);
+    }
+
+    private void testShortName_assert(Graph g, Vertex a1, Vertex b1, Edge e1, Vertex c1, Vertex c2, Vertex c3, Edge bc1, Edge bc2, Edge bc3, Vertex d1, Vertex d2, Vertex d3, Edge bd1, Edge bd2, Edge bd3) {
         List<Map<String, Object>> result = g.traversal().V(a1)
                 .outE("a_b").as("ab")
                 .inV().as("B")

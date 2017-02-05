@@ -16,6 +16,6 @@ public class TestEmptyGraph extends BaseTest {
     public void testQueryEmptyGraph() {
         Vertex root = this.sqlgGraph.addVertex(T.label, "Root");
         this.sqlgGraph.tx().commit();
-        Assert.assertEquals(0, vertexTraversal(root).outE("lala").count().next().intValue());
+        Assert.assertEquals(0, vertexTraversal(this.sqlgGraph, root).outE("lala").count().next().intValue());
     }
 }

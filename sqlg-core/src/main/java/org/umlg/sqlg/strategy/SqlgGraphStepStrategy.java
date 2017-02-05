@@ -53,9 +53,12 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         }
 
         if (originalGraphStep.getIds().length > 0) {
-            Class clazz = originalGraphStep.getIds()[0].getClass();
-            if (!Stream.of(originalGraphStep.getIds()).allMatch(id -> clazz.isAssignableFrom(id.getClass())))
-                throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+            Object id = originalGraphStep.getIds()[0];
+            if (id != null) {
+                Class clazz = id.getClass();
+                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> clazz.isAssignableFrom(i.getClass())))
+                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+            }
         }
         final List<Step> steps = new ArrayList<>(traversal.asAdmin().getSteps());
         final ListIterator<Step> stepIterator = steps.listIterator();
