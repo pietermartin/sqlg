@@ -43,6 +43,7 @@ public class Schema implements TopologyInf {
     public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
     private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
     private Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
+    private static final String MARKER = "~gremlin.incidentToAdjacent";
 
     /**
      * Creates the SqlgSchema. The sqlg_schema always exist and is created via sql in {@link SqlDialect#sqlgTopologyCreationScripts()}
@@ -615,6 +616,8 @@ public class Schema implements TopologyInf {
                             break;
                         case "sqlgPathFakeLabel":
                             break;
+                        case MARKER:
+                            break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\" and \"property\" is expected as a label. Found %s", label));
                     }
@@ -664,6 +667,8 @@ public class Schema implements TopologyInf {
                             edgePropertyVertex = outEdgePath.get("property");
                             break;
                         case "sqlgPathFakeLabel":
+                            break;
+                        case MARKER:
                             break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\", \"outEdgeVertex\" and \"property\" is expected as a label. Found \"%s\"", label));
@@ -804,6 +809,8 @@ public class Schema implements TopologyInf {
                             break;
                         case "sqlgPathFakeLabel":
                             break;
+                        case MARKER:
+                            break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\", \"outEdgeVertex\" and \"inVertex\" are expected as a label. Found %s", label));
                     }
@@ -882,6 +889,8 @@ public class Schema implements TopologyInf {
                             propertyIndex = vertexIndices.get("property");
                             break;
                         case "sqlgPathFakeLabel":
+                            break;
+                        case MARKER:
                             break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\",\"outEdgeVertex\",\"index\" and \"property\" is expected as a label. Found %s", label));
