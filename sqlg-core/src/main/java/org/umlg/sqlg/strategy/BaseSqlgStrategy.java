@@ -96,6 +96,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                 }
             } else if (step instanceof ChooseStep) {
                 try {
+                    //Only optimize ChooseSteps where the predicate is the same as the true traversal
                     chooseStepAdded = flattenChooseStep(steps, stepIterator, (ChooseStep) step, traversal);
                 } catch (UnoptimizableException e) {
                     //swallow as it is used for process flow only.
@@ -218,7 +219,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         ChooseStep chooseStep = (ChooseStep) step;
 
         List<Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
-        Preconditions.checkState(traversalAdmins.size() == 2);
+        if (traversalAdmins.size() != 2) {
+            return true;
+        }
 
         Traversal.Admin<?, ?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
         List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
