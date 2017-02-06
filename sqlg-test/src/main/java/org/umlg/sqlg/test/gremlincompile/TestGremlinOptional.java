@@ -8,6 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.io.GraphReader;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -20,7 +21,6 @@ import java.util.function.Predicate;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/04/14
@@ -44,10 +44,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -71,10 +71,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -106,10 +106,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -131,10 +131,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.sqlgGraph.traversal().V().hasLabel("A").optional(out().optional(out())).path().toList();
         assertEquals(3, paths.size());
@@ -145,10 +145,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -176,10 +176,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -211,10 +211,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -231,10 +231,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.sqlgGraph.traversal().V(a1).optional(out("bb")).path().toList();
         assertEquals(1, paths.size());
@@ -243,10 +243,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -272,10 +272,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.sqlgGraph.traversal().V(a1).optional(out("ab").optional(out("bc"))).out().path().toList();
         assertEquals(2, paths.size());
@@ -285,10 +285,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -323,10 +323,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         List<Vertex> vertices = g.traversal().V(vadasVertex).optional(out("knows")).toList();
         assertEquals(1, vertices.size());
@@ -351,10 +351,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -380,10 +380,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -407,10 +407,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -442,10 +442,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -475,10 +475,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     //this query is used in UMLG
@@ -527,10 +527,10 @@ public class TestGremlinOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
 }

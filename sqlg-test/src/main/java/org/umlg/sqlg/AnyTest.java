@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileChoose;
+import org.umlg.sqlg.test.gremlincompile.TestGremlinOptional;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +11,8 @@ import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTopologyChangeListener.class,
+        TestGremlinOptional.class,
+        TestGremlinCompileChoose.class,
 })
 public class AnyTest {
 }
