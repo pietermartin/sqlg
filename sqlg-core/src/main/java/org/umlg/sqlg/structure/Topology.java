@@ -1033,6 +1033,7 @@ public class Topology {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private void fromNotifyJson(LocalDateTime timestamp, ObjectNode log) {
+        //First do all the out edges. The in edge logic assumes the out edges are present.
         for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
             ArrayNode schemas = (ArrayNode) log.get(s);
             if (schemas != null) {
@@ -1055,6 +1056,11 @@ public class Topology {
                     Schema schema = schemaOptional.get();
                     schema.fromNotifyJsonOutEdges(jsonSchema);
                 }
+            }
+        }
+        for (String s : Arrays.asList("uncommittedSchemas", "schemas")) {
+            ArrayNode schemas = (ArrayNode) log.get(s);
+            if (schemas != null) {
                 for (JsonNode jsonSchema : schemas) {
                     String schemaName = jsonSchema.get("name").asText();
                     Optional<Schema> schemaOptional = getSchema(schemaName);
@@ -1065,6 +1071,7 @@ public class Topology {
                 }
             }
         }
+
         ArrayNode globalUniqueIndexes = (ArrayNode) log.get("uncommittedGlobalUniqueIndexes");
         if (globalUniqueIndexes != null) {
             for (JsonNode jsonGlobalUniqueIndex : globalUniqueIndexes) {
@@ -1550,7 +1557,7 @@ public class Topology {
             foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
             this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
         }
-        foreignKeys.getLeft().add(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+        foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
     void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {

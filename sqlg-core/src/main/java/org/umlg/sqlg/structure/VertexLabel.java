@@ -497,7 +497,7 @@ public class VertexLabel extends AbstractLabel {
                     Preconditions.checkState(schemaOptional.isPresent(), "Schema %s must be present", schemaName);
                     @SuppressWarnings("OptionalGetWithoutIsPresent")
                     Optional<EdgeLabel> edgeLabelOptional = schemaOptional.get().getEdgeLabel(edgeLabelName);
-                    Preconditions.checkState(edgeLabelOptional.isPresent(), "edge label must be present as the in can not be there without the out");
+                    Preconditions.checkState(edgeLabelOptional.isPresent(), "edge label must be present as the in can not be there without the out. EdgeLabel: %s", edgeLabelName);
                     @SuppressWarnings("OptionalGetWithoutIsPresent")
                     EdgeLabel edgeLabel = edgeLabelOptional.get();
                     edgeLabel.addToInVertexLabel(this);
