@@ -70,7 +70,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     @Override
-    protected Schema getSchema() {
+    public Schema getSchema() {
         if (!this.outVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
             return vertexLabel.getSchema();

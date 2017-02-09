@@ -25,6 +25,7 @@ import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
+import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 import org.umlg.sqlg.test.topology.TestValidateTopology;
@@ -162,7 +163,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestVertexEdges.class,
         TestSqlgSchema.class,
         TestValidateTopology.class,
-        TestBatchNormalUpdateDateTimeArrays.class
+        TestBatchNormalUpdateDateTimeArrays.class,
+        TestTopologyChangeListener.class
 })
 public class AllTest {
 }

@@ -89,7 +89,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.indexes.put(i.getName(), i);
     }
 
-    protected abstract Schema getSchema();
+    public abstract Schema getSchema();
 
     public String getLabel() {
         return this.label;
@@ -304,12 +304,20 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
 
-    void fromPropertyNotifyJson(JsonNode vertexLabelJson) {
+    /**
+     * 
+     * @param vertexLabelJson
+     * @param fire should we fire topology events
+     */
+    void fromPropertyNotifyJson(JsonNode vertexLabelJson,boolean fire) {
         ArrayNode propertiesNode = (ArrayNode) vertexLabelJson.get("uncommittedProperties");
         if (propertiesNode != null) {
             for (JsonNode propertyNode : propertiesNode) {
-                PropertyColumn property = PropertyColumn.fromNotifyJson(this, propertyNode);
-                this.properties.put(property.getName(), property);
+                PropertyColumn propertyColumn = PropertyColumn.fromNotifyJson(this, propertyNode);
+                PropertyColumn old=this.properties.put(propertyColumn.getName(), propertyColumn);
+                if (fire && old==null){
+                	this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.CREATE);
+                }
             }
         }
         ArrayNode indexNodes = (ArrayNode) vertexLabelJson.get("uncommittedIndexes");
@@ -317,6 +325,7 @@ public abstract class AbstractLabel implements TopologyInf {
             for (JsonNode indexNode : indexNodes) {
                 Index index = Index.fromNotifyJson(this, indexNode);
                 this.indexes.put(index.getName(), index);
+                this.getSchema().getTopology().fire(index, "", TopologyChangeAction.CREATE);
             }
         }
     }
