@@ -48,6 +48,23 @@ public class GlobalUniqueIndex implements TopologyInf {
     public String getName() {
         return name;
     }
+    
+    @Override
+    public int hashCode() {
+        return this.getName().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this==other) {
+            return true;
+        }
+        if (!(other instanceof GlobalUniqueIndex)) {
+            return false;
+        }
+        GlobalUniqueIndex otherIndex = (GlobalUniqueIndex) other;
+        return this.name.equals(otherIndex.name);
+    }
 
     @Override
     public boolean isCommitted() {

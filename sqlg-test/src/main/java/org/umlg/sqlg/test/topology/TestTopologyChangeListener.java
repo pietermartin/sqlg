@@ -32,7 +32,7 @@ public class TestTopologyChangeListener extends BaseTest {
 
     @Test
     public void testAddSchemaAndVertexAndEdge() {
-        TopologyListenerTest topologyListenerTest = new TopologyListenerTest();
+        TopologyListenerTest topologyListenerTest = new TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asda");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asdasd");
@@ -95,11 +95,17 @@ public class TestTopologyChangeListener extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
-    public class TopologyListenerTest implements TopologyListener {
+    public static  class TopologyListenerTest implements TopologyListener {
+    	private List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
-        @Override
+        public TopologyListenerTest(List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple) {
+			super();
+			this.topologyListenerTriple = topologyListenerTriple;
+		}
+
+		@Override
         public void change(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
-            TestTopologyChangeListener.this.topologyListenerTriple.add(
+            topologyListenerTriple.add(
                     Triple.of(topologyInf, oldValue, action)
             );
         }

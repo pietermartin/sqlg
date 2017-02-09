@@ -3,6 +3,7 @@ package org.umlg.sqlg.test.schema;
 import org.apache.commons.collections4.IteratorUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -13,6 +14,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
+import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
+import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTest;
+
+import static org.junit.Assert.assertEquals;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -365,4 +370,61 @@ public class TestLoadSchemaViaNotify extends BaseTest {
         }
     }
 
+    @Test
+    public void testDistributedTopologyListener() throws Exception {
+    	try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+    		List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
+
+	    	 TopologyListenerTest topologyListenerTest = new TestTopologyChangeListener.TopologyListenerTest(topologyListenerTriple);
+	         sqlgGraph1.getTopology().registerListener(topologyListenerTest);
+	         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asda");
+	         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asdasd");
+	         Edge e1 = a1.addEdge("aa", a2);
+	         a1.property("surname", "asdasd");
+	         e1.property("special", "");
+	         Vertex b1 = this.sqlgGraph.addVertex(T.label, "A.B", "name", "asdasd");
+	         Edge e2 = a1.addEdge("aa", b1);
+	         
+	         Schema schema = this.sqlgGraph.getTopology().getSchema("A").get();
+	         VertexLabel aVertexLabel = schema.getVertexLabel("A").get();
+	         EdgeLabel edgeLabel = aVertexLabel.getOutEdgeLabel("aa").get();
+	         VertexLabel bVertexLabel = schema.getVertexLabel("B").get();
+	         Index index = aVertexLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(aVertexLabel.getProperties().values()));
+
+	         //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
+	         GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
+
+	         
+	         this.sqlgGraph.tx().commit();
+	         //allow time for notification to happen
+	         Thread.sleep(1_000);
+	         
+	         // we're not getting property notification since we get vertex label notification, these include all properties committed
+	         assertEquals(9, topologyListenerTriple.size());
+	         
+	         assertEquals(schema, topologyListenerTriple.get(0).getLeft());
+	         assertEquals("", topologyListenerTriple.get(0).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(0).getRight());
+
+	         assertEquals(aVertexLabel, topologyListenerTriple.get(1).getLeft());
+	         assertEquals("", topologyListenerTriple.get(1).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(1).getRight());
+
+	         assertEquals(index, topologyListenerTriple.get(2).getLeft());
+	         assertEquals("", topologyListenerTriple.get(2).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());
+	         
+	         assertEquals(edgeLabel, topologyListenerTriple.get(3).getLeft());
+	         assertEquals("", topologyListenerTriple.get(3).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
+
+	         assertEquals(bVertexLabel, topologyListenerTriple.get(4).getLeft());
+	         assertEquals("", topologyListenerTriple.get(4).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
+    
+	         assertEquals(globalUniqueIndex, topologyListenerTriple.get(8).getLeft());
+	         assertEquals("", topologyListenerTriple.get(8).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(8).getRight());
+    	}
+    }
 }

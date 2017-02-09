@@ -60,6 +60,29 @@ public class Index implements TopologyInf {
     public String getName() {
         return name;
     }
+    
+    @Override
+    public String toString() {
+    	return getName();
+    }
+    
+
+    @Override
+    public int hashCode() {
+        return (this.abstractLabel.getName() + this.getName()).hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this==other) {
+            return true;
+        }
+        if (!(other instanceof Index)) {
+            return false;
+        }
+        Index otherIndex = (Index) other;
+        return this.abstractLabel.equals(otherIndex.abstractLabel) && this.name.equals(otherIndex.name);
+    }
 
     @Override
     public boolean isCommitted() {
