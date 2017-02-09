@@ -496,7 +496,7 @@ public class Schema implements TopologyInf {
         Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
         if (!globalIndexOptional.isPresent()) {
             //take any property
-            properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
+            properties.iterator().next().getParentLabel().getSchema().getTopology().lock();
             globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
             if (!globalIndexOptional.isPresent()) {
                 GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(this.sqlgGraph, this.topology, globalUniqueIndexName, properties);

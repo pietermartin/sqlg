@@ -195,4 +195,8 @@ public class Index implements TopologyInf {
         return validationErrors;
 
     }
+    
+    public AbstractLabel getParentLabel() {
+		return abstractLabel;
+	}
 }

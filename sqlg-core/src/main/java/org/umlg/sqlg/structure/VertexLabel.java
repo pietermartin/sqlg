@@ -74,7 +74,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     @Override
-    protected Schema getSchema() {
+    public Schema getSchema() {
         return this.schema;
     }
 

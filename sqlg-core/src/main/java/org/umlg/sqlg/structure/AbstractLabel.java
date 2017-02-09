@@ -89,7 +89,7 @@ public abstract class AbstractLabel implements TopologyInf {
         this.indexes.put(i.getName(), i);
     }
 
-    protected abstract Schema getSchema();
+    public abstract Schema getSchema();
 
     public String getLabel() {
         return this.label;

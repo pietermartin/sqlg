@@ -41,7 +41,7 @@ public class PropertyColumn implements TopologyInf {
         return propertyType;
     }
 
-    AbstractLabel getAbstractLabel() {
+    public AbstractLabel getParentLabel() {
         return abstractLabel;
     }
 
@@ -69,7 +69,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getAbstractLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread(), "PropertyColumn.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread(), "PropertyColumn.afterRollback must hold the write lock");
         this.uncommittedGlobalUniqueIndices.clear();
     }
 

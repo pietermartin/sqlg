@@ -105,7 +105,7 @@ public class GlobalUniqueIndex implements TopologyInf {
     static String globalUniqueIndexName(Topology topology, Set<PropertyColumn> properties) {
         List<PropertyColumn> propertyColumns = new ArrayList<>(properties);
         propertyColumns.sort(Comparator.comparing(PropertyColumn::getName));
-        String name = propertyColumns.stream().map(p -> p.getAbstractLabel().getLabel() + "_" + p.getName()).reduce((a, b) -> a + "_" + b).get();
+        String name = propertyColumns.stream().map(p -> p.getParentLabel().getLabel() + "_" + p.getName()).reduce((a, b) -> a + "_" + b).get();
         if (("gui_schema_V_A" + name).length() > 50) {
             name = "globalUniqueIndex_" + topology.getGlobalUniqueIndexes().size();
         }
@@ -118,8 +118,8 @@ public class GlobalUniqueIndex implements TopologyInf {
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.uncommittedProperties) {
             ObjectNode objectNode = property.toNotifyJson();
-            objectNode.put("schemaName", property.getAbstractLabel().getSchema().getName());
-            objectNode.put("abstractLabelLabel", property.getAbstractLabel().getLabel());
+            objectNode.put("schemaName", property.getParentLabel().getSchema().getName());
+            objectNode.put("abstractLabelLabel", property.getParentLabel().getLabel());
             propertyArrayNode.add(objectNode);
         }
         result.put("name", getName());
