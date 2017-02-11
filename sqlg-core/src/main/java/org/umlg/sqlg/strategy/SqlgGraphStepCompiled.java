@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
+public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
 
@@ -43,21 +43,20 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
     /**
      * should we keep the result in a list?
      */
-    private boolean emitToList=true;
+    private boolean emitToList = true;
     /**
      * list of previous result
      */
-    private List<Emit<E>> emitted=null;
-    
+    private List<Emit<E>> emitted = null;
+
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
         this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this::elements);
-        this.emitToList=!isStart;
+        this.emitToList = !isStart;
     }
 
 
-    
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
@@ -65,8 +64,8 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                 Traverser.Admin<E> traverser = null;
                 Emit<E> emit = this.iterator.next();
                 // keep in list
-                if (emitToList && emitted!=null){
-                	emitted.add(emit);
+                if (emitToList && emitted != null) {
+                    emitted.add(emit);
                 }
                 boolean first = true;
                 Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
@@ -74,8 +73,8 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                     E e = (E) o;
                     Set<String> labels = labelIter.next();
                     this.labels = labels;
-                    if (!isStart && previousHead!=null && traverser==null){
-                    	traverser=previousHead.split(e, this);
+                    if (!isStart && previousHead != null && traverser == null) {
+                        traverser = previousHead.split(e, this);
                     } else if (first) {
                         first = false;
                         traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
@@ -85,7 +84,7 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                 }
                 return traverser;
             } else {
-            	if (this.isStart) {
+                if (this.isStart) {
                     if (this.done)
                         throw FastNoSuchElementException.instance();
                     else {
@@ -95,28 +94,28 @@ class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extend
                 } else {
                     this.previousHead = this.starts.next();
                     // we have emitted into a list, we iterate again on the list
-                    if (emitted!=null){
-                    	emitToList=false;
-                    	this.iterator=emitted.iterator();
+                    if (emitted != null) {
+                        emitToList = false;
+                        this.iterator = emitted.iterator();
                     } else {
-                    	this.iterator = null== this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
-                    	// emit in this list
-                    	this.emitted=new LinkedList<>();
+                        this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
+                        // emit in this list
+                        this.emitted = new LinkedList<>();
                     }
                 }
             }
         }
     }
-    
+
     @Override
     public void reset() {
-    	super.reset();
-    	previousHead=null;
-    	emitToList=!isStart;
-    	emitted=null;
-    	this.iterator = EmptyIterator.instance();
+        super.reset();
+        previousHead = null;
+        emitToList = !isStart;
+        emitted = null;
+        this.iterator = EmptyIterator.instance();
     }
-    
+
     @Override
     public Set<TraverserRequirement> getRequirements() {
         return this.getSelfAndChildRequirements(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);

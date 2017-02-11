@@ -133,7 +133,7 @@ public abstract class BaseTest {
     }
 
     protected GraphTraversal<Edge, Edge> edgeTraversal(SqlgGraph sqlgGraph, Edge e) {
-        return sqlgGraph.traversal().E(e.id());
+        return sqlgGraph.traversal().E(e);
     }
 
     protected void assertDb(String table, int numberOfRows) {

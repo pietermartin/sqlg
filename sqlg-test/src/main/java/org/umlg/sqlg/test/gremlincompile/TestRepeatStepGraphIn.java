@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -26,7 +27,11 @@ public class TestRepeatStepGraphIn extends BaseTest {
         b1.addEdge("bc", c1);
         c1.addEdge("cd", d1);
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").emit().repeat(__.out()).times(3).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A").emit().repeat(__.out()).times(3);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(4, vertices.size());
     }
 
@@ -41,7 +46,11 @@ public class TestRepeatStepGraphIn extends BaseTest {
         c1.addEdge("cd", d1);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("D").repeat(__.in()).emit().times(3).path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("D").repeat(__.in()).emit().times(3).path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(3, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(d1) && p.get(1).equals(c1)));
         paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(d1) && p.get(1).equals(c1)).findAny().get());
@@ -51,7 +60,11 @@ public class TestRepeatStepGraphIn extends BaseTest {
         paths.remove(paths.stream().filter(p -> p.size() == 4 && p.get(0).equals(d1) && p.get(1).equals(c1) && p.get(2).equals(b1) && p.get(3).equals(a1)).findAny().get());
         Assert.assertTrue(paths.isEmpty());
 
-        paths = this.sqlgGraph.traversal().V().hasLabel("D").repeat(__.in()).emit().times(2).path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal1 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("D").repeat(__.in()).emit().times(2).path();
+        Assert.assertEquals(4, traversal1.getSteps().size());
+        paths = traversal1.toList();
+        Assert.assertEquals(2, traversal1.getSteps().size());
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(d1) && p.get(1).equals(c1)));
         paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(d1) && p.get(1).equals(c1)).findAny().get());
@@ -59,7 +72,11 @@ public class TestRepeatStepGraphIn extends BaseTest {
         paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(d1) && p.get(1).equals(c1) && p.get(2).equals(b1)).findAny().get());
         Assert.assertTrue(paths.isEmpty());
 
-        paths = this.sqlgGraph.traversal().V().hasLabel("D").times(1).repeat(__.in()).emit().path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal2 = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("D").times(1).repeat(__.in()).emit().path();
+        Assert.assertEquals(4, traversal2.getSteps().size());
+        paths = traversal2.toList();
+        Assert.assertEquals(2, traversal2.getSteps().size());
         Assert.assertEquals(2, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(d1) && p.get(1).equals(c1)));
         paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(d1) && p.get(1).equals(c1)).findAny().get());
@@ -84,7 +101,11 @@ public class TestRepeatStepGraphIn extends BaseTest {
         b2.addEdge("ab", a1);
         b3.addEdge("ab", a1);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").emit().times(3).repeat(__.in()).path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("A").emit().times(3).repeat(__.in()).path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(7, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1)));
         paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().get());
@@ -105,7 +126,6 @@ public class TestRepeatStepGraphIn extends BaseTest {
 
     @Test
     public void testEmitTimesRepeatInDuplicatePathQuery() {
-
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
@@ -121,7 +141,11 @@ public class TestRepeatStepGraphIn extends BaseTest {
         b3.addEdge("ba", a1);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").emit().times(3).repeat(__.in()).path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("A").emit().times(3).repeat(__.in()).path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(10, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a1)));
         paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a1)).findAny().get());

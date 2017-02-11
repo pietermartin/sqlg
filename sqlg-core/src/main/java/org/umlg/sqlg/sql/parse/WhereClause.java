@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.Text;
@@ -58,6 +59,20 @@ public class WhereClause {
         } else if (sqlgGraph.getSqlDialect().supportsBulkWithinOut() && p.getBiPredicate() instanceof Contains) {
             result += " tmp" + (schemaTableTree.rootSchemaTableTree().getTmpTableAliasCounter() - 1);
             result += " .without IS NULL";
+            return result;
+        } else if (p instanceof AndP) {
+            AndP<?> andP = (AndP) p;
+            Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
+            P p1 = andP.getPredicates().get(0);
+            String key;
+            if (hasContainer.getKey().equals(T.id.getAccessor())) {
+                key = result + "\"ID\"";
+            } else {
+                key = result + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
+            }
+            result += prefix + key + compareToSql((Compare) p1.getBiPredicate());
+            P p2 = andP.getPredicates().get(1);
+            result += " and " + prefix + key + compareToSql((Compare) p2.getBiPredicate());
             return result;
         } else if (p instanceof OrP) {
             OrP<?> orP = (OrP) p;
@@ -189,6 +204,13 @@ public class WhereClause {
             Preconditions.checkState(orP.getPredicates().size() == 2, "Only handling OrP with 2 predicates!");
             P p1 = orP.getPredicates().get(0);
             P p2 = orP.getPredicates().get(1);
+            keyValueMap.put(hasContainer.getKey(), p1.getValue());
+            keyValueMap.put(hasContainer.getKey(), p2.getValue());
+        } else if (p instanceof AndP) {
+            AndP<?> andP = (AndP) p;
+            Preconditions.checkState(andP.getPredicates().size() == 2, "Only handling AndP with 2 predicates!");
+            P p1 = andP.getPredicates().get(0);
+            P p2 = andP.getPredicates().get(1);
             keyValueMap.put(hasContainer.getKey(), p1.getValue());
             keyValueMap.put(hasContainer.getKey(), p2.getValue());
         } else if (p.getBiPredicate() == Contains.within || p.getBiPredicate() == Contains.without) {

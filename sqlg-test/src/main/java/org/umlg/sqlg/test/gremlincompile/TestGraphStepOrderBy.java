@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -13,8 +15,6 @@ import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.select;
 
 /**
  * Created by pieter on 2015/08/22.
@@ -47,10 +47,12 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Vertex b1, Vertex b2, Vertex b3) {
-        List<Vertex> result = sqlgGraph.traversal().V().hasLabel("A")
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("A")
                 .order()
-                .by("name", Order.incr).by("surname", Order.decr)
-                .toList();
+                .by("name", Order.incr).by("surname", Order.decr);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> result = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(6, result.size());
         Assert.assertEquals(a3, result.get(0));
         Assert.assertEquals(a2, result.get(1));
@@ -97,7 +99,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy2_assert(SqlgGraph sqlgGraph) {
-        List<Map<String, Vertex>> result = sqlgGraph.traversal().V()
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) sqlgGraph.traversal().V()
                 .hasLabel("Group").as("g")
                 .out("groupNetwork").as("network")
                 .out("networkNetworkSoftwareVersion").as("nsv")
@@ -105,12 +107,14 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .out("networkNodeGroupNetworkNode").as("nn")
                 .<Vertex>select("g", "network", "nsv", "nng", "nn")
                 .order()
-                .by(select("g").by("name"), Order.incr)
-                .by(select("network").by("name"), Order.incr)
-                .by(select("nsv").by("name"), Order.incr)
-                .by(select("nng").by("name"), Order.incr)
-                .by(select("nn").by("name"), Order.decr)
-                .toList();
+                .by(__.select("g").by("name"), Order.incr)
+                .by(__.select("network").by("name"), Order.incr)
+                .by(__.select("nsv").by("name"), Order.incr)
+                .by(__.select("nng").by("name"), Order.incr)
+                .by(__.select("nn").by("name"), Order.decr);
+        Assert.assertEquals(8, traversal.getSteps().size());
+        List<Map<String, Vertex>> result = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         Assert.assertEquals(8, result.size());
         Map<String,Vertex> row1 = result.get(0);
@@ -161,14 +165,16 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy3_assert(SqlgGraph sqlgGraph) {
-        List<Map<String, Vertex>> result = sqlgGraph.traversal().V()
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) sqlgGraph.traversal().V()
                 .hasLabel("A").as("a")
                 .out("ab").as("b")
                 .<Vertex>select("a", "b")
                 .order()
-                .by(select("a").by("name"), Order.incr)
-                .by(select("b").by("name"), Order.decr)
-                .toList();
+                .by(__.select("a").by("name"), Order.incr)
+                .by(__.select("b").by("name"), Order.decr);
+        Assert.assertEquals(5, traversal.getSteps().size());
+        List<Map<String, Vertex>> result = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         Assert.assertEquals(4, result.size());
         Map<String, Vertex> map1 = result.get(0);

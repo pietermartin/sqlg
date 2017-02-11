@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -42,7 +43,11 @@ public class TestGremlinCompileVertexStep extends BaseTest {
     }
 
     private void testVertexStep_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1) {
-        List<Map<String, Object>> t = sqlgGraph.traversal().V(a1).as("a").local(__.out().as("b")).select("a", "b").toList();
+        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal)sqlgGraph.traversal()
+                .V(a1).as("a").local(__.out().as("b")).select("a", "b");
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Map<String, Object>> t = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, t.size());
         Assert.assertTrue(t.get(0).containsKey("a"));
         Assert.assertTrue(t.get(0).containsKey("b"));

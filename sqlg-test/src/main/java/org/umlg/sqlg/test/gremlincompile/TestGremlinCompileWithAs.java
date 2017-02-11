@@ -1,6 +1,6 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -46,8 +46,10 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testSchemaTableTreeNextSchemaTableTreeIsEdgeVertex_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1, Vertex c1) {
-        GraphTraversal<Vertex, Map<String, Vertex>> gt = sqlgGraph.traversal().V(a1).out().as("b").out().as("c").select("b", "c");
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> gt = (DefaultGraphTraversal)sqlgGraph.traversal().V(a1).out().as("b").out().as("c").select("b", "c");
+        Assert.assertEquals(4, gt.getSteps().size());
         List<Map<String, Vertex>> list = gt.toList();
+        Assert.assertEquals(2, gt.getSteps().size());
         Assert.assertEquals(1, list.size());
         Assert.assertEquals(b1, list.get(0).get("b"));
         Assert.assertEquals(c1, list.get(0).get("c"));
@@ -74,13 +76,15 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testHasLabelOutWithAs_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b1, Vertex b2, Vertex b3, Vertex b4, Edge e1, Edge e2, Edge e3, Edge e4) {
-        GraphTraversal<Vertex, Map<String, Element>> traversal = sqlgGraph.traversal().V(a1)
+        DefaultGraphTraversal<Vertex, Map<String, Element>> traversal = (DefaultGraphTraversal)sqlgGraph.traversal().V(a1)
                 .outE("outB")
                 .as("e")
                 .inV()
                 .as("B")
                 .select("e", "B");
+        Assert.assertEquals(4, traversal.getSteps().size());
         List<Map<String, Element>> result = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Collections.sort(result, Comparator.comparing(o -> o.get("e").<String>value("edgeName")));
         Assert.assertEquals(4, result.size());
 
@@ -114,7 +118,10 @@ public class TestGremlinCompileWithAs extends BaseTest {
         Assert.assertEquals(b4, queryB4);
         Assert.assertEquals("b4", queryB4.value("name"));
 
-        final List<Edge> a1Edges = sqlgGraph.traversal().V(a1.id()).bothE().toList();
+        DefaultGraphTraversal<Vertex, Edge> traversal1 = (DefaultGraphTraversal<Vertex, Edge>) sqlgGraph.traversal().V(a1.id()).bothE();
+        Assert.assertEquals(2, traversal1.getSteps().size());
+        final List<Edge> a1Edges = traversal1.toList();
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(4, a1Edges.size());
         List<String> names = new ArrayList<>(Arrays.asList("b1", "b2", "b3", "b4"));
         for (Edge a1Edge : a1Edges) {
@@ -150,12 +157,14 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testHasLabelOutWithAsNotFromStart_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex c1, Vertex c2) {
-        GraphTraversal<Vertex, Vertex> traversal = sqlgGraph.traversal().V(a1)
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) sqlgGraph.traversal().V(a1)
                 .out("outB")
                 .out("outC")
                 .as("x")
                 .select("x");
+        Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Collections.sort(result, Comparator.comparing(o -> o.<String>value("name")));
         Assert.assertEquals(2, result.size());
 
@@ -178,14 +187,16 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testAsWithDuplicatePaths_assert(SqlgGraph sqlgGraph, Vertex a1, Edge e1) {
-        GraphTraversal<Vertex, Map<String, Element>> gt = sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Element>> gt = (DefaultGraphTraversal) sqlgGraph.traversal()
                 .V(a1)
                 .outE().as("e")
                 .inV()
                 .in().as("v")
                 .select("e", "v");
+        Assert.assertEquals(5, gt.getSteps().size());
 
         List<Map<String, Element>> result = gt.toList();
+        Assert.assertEquals(2, gt.getSteps().size());
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(e1, result.get(0).get("e"));
         Assert.assertEquals(a1, result.get(0).get("v"));
@@ -193,7 +204,7 @@ public class TestGremlinCompileWithAs extends BaseTest {
 
     @Test
     public void testChainSelect() throws Exception {
-    	Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "a2");
         a1.addEdge("friend", a2, "weight", 5);
         this.sqlgGraph.tx().commit();
@@ -207,14 +218,16 @@ public class TestGremlinCompileWithAs extends BaseTest {
     }
 
     private void testChainSelect_assert(SqlgGraph sqlgGraph, Vertex a2) throws Exception {
-        try (GraphTraversal<Vertex, Vertex> gt = sqlgGraph.traversal()
-                .V().hasLabel("Person").has("name","a1").as("v1")
+        try (DefaultGraphTraversal<Vertex, Vertex> gt = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("Person").has("name", "a1").as("v1")
                 .values("name").as("name1")
                 .select("v1")
-                .out("friend");){
-        	Assert.assertTrue(gt.hasNext());
-        	Assert.assertEquals(a2, gt.next());
-        	Assert.assertFalse(gt.hasNext());
+                .out("friend")) {
+            Assert.assertEquals(5, gt.getSteps().size());
+            Assert.assertTrue(gt.hasNext());
+            Assert.assertEquals(5, gt.getSteps().size());
+            Assert.assertEquals(a2, gt.next());
+            Assert.assertFalse(gt.hasNext());
         }
     }
 }

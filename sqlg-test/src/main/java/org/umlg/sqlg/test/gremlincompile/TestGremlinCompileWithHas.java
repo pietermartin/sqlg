@@ -3,13 +3,10 @@ package org.umlg.sqlg.test.gremlincompile;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.StartStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -22,9 +19,10 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.RecordId;
+import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.SqlgVertex;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.beans.PropertyVetoException;
@@ -48,6 +46,38 @@ public class TestGremlinCompileWithHas extends BaseTest {
     }
 
     @Test
+    public void testHasCompareEq() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        this.sqlgGraph.addVertex(T.label, "A", "name", "b");
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").has("name", "a");
+        Assert.assertEquals(2, graphTraversal.getSteps().size());
+        List<Vertex> vertices = graphTraversal.toList();
+        Assert.assertEquals(1, graphTraversal.getSteps().size());
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(a1, vertices.get(0));
+    }
+
+    @Test
+    public void testHasCompareBetween() throws InterruptedException {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", 1);
+        this.sqlgGraph.addVertex(T.label, "A", "name", 2);
+        this.sqlgGraph.tx().commit();
+        testCompareBetween_assert(this.sqlgGraph, a1);
+        Thread.sleep(1000);
+        testCompareBetween_assert(this.sqlgGraph1, a1);
+    }
+
+    private void testCompareBetween_assert(SqlgGraph sqlgGraph, Vertex a1) {
+        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("A").has("name", P.between(1, 2));
+        Assert.assertEquals(2, graphTraversal.getSteps().size());
+        List<Vertex> vertices = graphTraversal.toList();
+        Assert.assertEquals(1, graphTraversal.getSteps().size());
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(a1, vertices.get(0));
+    }
+
+    @Test
     public void testHasIdRecompilation() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -62,12 +92,18 @@ public class TestGremlinCompileWithHas extends BaseTest {
     }
 
     private void testHasIdRecompilation_assert(SqlgGraph sqlgGraph, Vertex a1) {
-        GraphTraversal gt1 = sqlgGraph.traversal().V(a1.id());
-        GraphTraversal gt2 = sqlgGraph.traversal().V().hasId(a1.id());
+        DefaultGraphTraversal gt1 = (DefaultGraphTraversal) sqlgGraph.traversal().V(a1.id());
+        Assert.assertEquals(1, gt1.getSteps().size());
+        DefaultGraphTraversal gt2 = (DefaultGraphTraversal) sqlgGraph.traversal().V().hasId(a1.id());
+        Assert.assertEquals(2, gt2.getSteps().size());
+
         List<Vertex> vertices1 = gt1.toList();
+        Assert.assertEquals(1, gt1.getSteps().size());
         Assert.assertEquals(1, vertices1.size());
         Assert.assertEquals(a1, vertices1.get(0));
+
         List<Vertex> vertices2 = gt2.toList();
+        Assert.assertEquals(1, gt2.getSteps().size());
         Assert.assertEquals(1, vertices2.size());
         Assert.assertEquals(a1, vertices2.get(0));
         Assert.assertEquals(gt1, gt2);
@@ -119,37 +155,82 @@ public class TestGremlinCompileWithHas extends BaseTest {
         RecordId recordIdc3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
         RecordId recordIdc4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
-        List<Vertex> vertices = sqlgGraph.traversal().V(recordIda1).hasLabel("A").toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).hasLabel("A");
+        Assert.assertEquals(2, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(1, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1)).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1));
+        Assert.assertEquals(2, traversal1.getSteps().size());
+        vertices = traversal1.toList();
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(3, vertices.size());
 
-        vertices = sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1)).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1));
+        Assert.assertEquals(2, traversal2.getSteps().size());
+        vertices = traversal2.toList();
+        Assert.assertEquals(1, traversal2.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1);
+        Assert.assertEquals(1, traversal3.getSteps().size());
+        vertices = traversal3.toList();
+        Assert.assertEquals(1, traversal3.getSteps().size());
         Assert.assertEquals(4, vertices.size());
-        vertices = sqlgGraph.traversal().V().has(T.id, P.within(recordIda1)).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1));
+        Assert.assertEquals(2, traversal4.getSteps().size());
+        vertices = traversal4.toList();
+        Assert.assertEquals(1, traversal4.getSteps().size());
         Assert.assertEquals(1, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1);
+        Assert.assertEquals(3, traversal5.getSteps().size());
+        vertices = traversal5.toList();
+        Assert.assertEquals(1, traversal5.getSteps().size());
         Assert.assertEquals(1, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).in().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal6 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).in().hasId(recordIdb1, recordIdb2, recordIdb3);
+        Assert.assertEquals(3, traversal6.getSteps().size());
+        vertices = traversal6.toList();
+        Assert.assertEquals(1, traversal6.getSteps().size());
         Assert.assertEquals(3, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIda1).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal7 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIda1);
+        Assert.assertEquals(3, traversal7.getSteps().size());
+        vertices = traversal7.toList();
+        Assert.assertEquals(1, traversal7.getSteps().size());
         Assert.assertEquals(0, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal8 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1);
+        Assert.assertEquals(3, traversal8.getSteps().size());
+        vertices = traversal8.toList();
+        Assert.assertEquals(1, traversal8.getSteps().size());
         Assert.assertEquals(1, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1, recordIdb2).toList();
-        Assert.assertEquals(2, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString()).toList();
-        Assert.assertEquals(1, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdb2.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal9 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1, recordIdb2);
+        Assert.assertEquals(3, traversal9.getSteps().size());
+        vertices = traversal9.toList();
+        Assert.assertEquals(1, traversal9.getSteps().size());
         Assert.assertEquals(2, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdc2.toString()).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal10 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString());
+        Assert.assertEquals(3, traversal10.getSteps().size());
+        vertices = traversal10.toList();
+        Assert.assertEquals(1, traversal10.getSteps().size());
+        Assert.assertEquals(1, vertices.size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal11 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdb2.toString());
+        Assert.assertEquals(3, traversal11.getSteps().size());
+        vertices = traversal11.toList();
+        Assert.assertEquals(1, traversal11.getSteps().size());
+        Assert.assertEquals(2, vertices.size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal12 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).in().hasId(recordIdb1.toString(), recordIdc2.toString());
+        Assert.assertEquals(3, traversal12.getSteps().size());
+        vertices = traversal12.toList();
+        Assert.assertEquals(1, traversal12.getSteps().size());
         Assert.assertEquals(2, vertices.size());
     }
 
@@ -186,7 +267,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         testHasIdInJoin_assert(this.sqlgGraph, a1, a2, a3, a4);
-        if (this.sqlgGraph1 != null){
+        if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
             testHasIdInJoin_assert(this.sqlgGraph, a1, a2, a3, a4);
         }
@@ -207,16 +288,31 @@ public class TestGremlinCompileWithHas extends BaseTest {
         RecordId recordIdc3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
         RecordId recordIdc4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
-        List<Vertex> vertices = sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).in().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).in().hasId(recordIdb1, recordIdb2, recordIdb3);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).in()
-                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).in()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());
+        Assert.assertEquals(3, traversal1.getSteps().size());
+        vertices = traversal1.toList();
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(a1, a2, a3, a4).in()
-                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(a1, a2, a3, a4).in()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());
+        Assert.assertEquals(3, traversal2.getSteps().size());
+        vertices = traversal2.toList();
+        Assert.assertEquals(1, traversal2.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(a1, a2, a3, a4).in()
-                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(a1, a2, a3, a4).in()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());
+        Assert.assertEquals(3, traversal3.getSteps().size());
+        vertices = traversal3.toList();
+        Assert.assertEquals(1, traversal3.getSteps().size());
         Assert.assertEquals(3, vertices.size());
     }
 
@@ -274,16 +370,31 @@ public class TestGremlinCompileWithHas extends BaseTest {
         RecordId recordIdc3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
         RecordId recordIdc4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
-        List<Vertex> vertices = sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).out().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIda4).out().hasId(recordIdb1, recordIdb2, recordIdb3);
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).out()
-                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1.toString(), recordIda2.toString(), recordIda3.toString(), recordIda4.toString()).out()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());
+        Assert.assertEquals(3, traversal1.getSteps().size());
+        vertices = traversal1.toList();
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(a1, a2, a3, a4).out()
-                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(a1, a2, a3, a4).out()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());
+        Assert.assertEquals(3, traversal2.getSteps().size());
+        vertices = traversal2.toList();
+        Assert.assertEquals(1, traversal2.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(a1, a2, a3, a4).out()
-                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(a1, a2, a3, a4).out()
+                .hasId(recordIdb1.toString(), recordIdb2.toString(), recordIdb3.toString());
+        Assert.assertEquals(3, traversal3.getSteps().size());
+        vertices = traversal3.toList();
+        Assert.assertEquals(1, traversal3.getSteps().size());
         Assert.assertEquals(3, vertices.size());
     }
 
@@ -334,37 +445,82 @@ public class TestGremlinCompileWithHas extends BaseTest {
         RecordId recordIdc3 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 2L);
         RecordId recordIdc4 = RecordId.from(SchemaTable.of(sqlgGraph.getSqlDialect().getPublicSchema(), "C"), start + 3L);
 
-        List<Vertex> vertices = sqlgGraph.traversal().V(recordIda1).hasLabel("A").toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).hasLabel("A");
+        Assert.assertEquals(2, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(1, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1)).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).has(T.id, P.within(recordIda2, recordIdb1));
+        Assert.assertEquals(2, traversal1.getSteps().size());
+        vertices = traversal1.toList();
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(3, vertices.size());
 
-        vertices = sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1)).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1));
+        Assert.assertEquals(2, traversal2.getSteps().size());
+        vertices = traversal2.toList();
+        Assert.assertEquals(1, traversal2.getSteps().size());
         Assert.assertEquals(3, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3, recordIdb1);
+        Assert.assertEquals(1, traversal3.getSteps().size());
+        vertices = traversal3.toList();
+        Assert.assertEquals(1, traversal3.getSteps().size());
         Assert.assertEquals(4, vertices.size());
-        vertices = sqlgGraph.traversal().V().has(T.id, P.within(recordIda1)).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1));
+        Assert.assertEquals(2, traversal4.getSteps().size());
+        vertices = traversal4.toList();
+        Assert.assertEquals(1, traversal4.getSteps().size());
         Assert.assertEquals(1, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1);
+        Assert.assertEquals(3, traversal5.getSteps().size());
+        vertices = traversal5.toList();
+        Assert.assertEquals(1, traversal5.getSteps().size());
         Assert.assertEquals(1, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).out().hasId(recordIdb1, recordIdb2, recordIdb3).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal6 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1, recordIda2, recordIda3).out().hasId(recordIdb1, recordIdb2, recordIdb3);
+        Assert.assertEquals(3, traversal6.getSteps().size());
+        vertices = traversal6.toList();
+        Assert.assertEquals(1, traversal6.getSteps().size());
         Assert.assertEquals(3, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIda1).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal7 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIda1);
+        Assert.assertEquals(3, traversal7.getSteps().size());
+        vertices = traversal7.toList();
+        Assert.assertEquals(1, traversal7.getSteps().size());
         Assert.assertEquals(0, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal8 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1);
+        Assert.assertEquals(3, traversal8.getSteps().size());
+        vertices = traversal8.toList();
+        Assert.assertEquals(1, traversal8.getSteps().size());
         Assert.assertEquals(1, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1, recordIdb2).toList();
-        Assert.assertEquals(2, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString()).toList();
-        Assert.assertEquals(1, vertices.size());
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdb2.toString()).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal9 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1, recordIdb2);
+        Assert.assertEquals(3, traversal9.getSteps().size());
+        vertices = traversal9.toList();
+        Assert.assertEquals(1, traversal9.getSteps().size());
         Assert.assertEquals(2, vertices.size());
 
-        vertices = sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdc2.toString()).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal10 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString());
+        Assert.assertEquals(3, traversal10.getSteps().size());
+        vertices = traversal10.toList();
+        Assert.assertEquals(1, traversal10.getSteps().size());
+        Assert.assertEquals(1, vertices.size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal11 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdb2.toString());
+        Assert.assertEquals(3, traversal11.getSteps().size());
+        vertices = traversal11.toList();
+        Assert.assertEquals(1, traversal11.getSteps().size());
+        Assert.assertEquals(2, vertices.size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal12 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V(recordIda1).out().hasId(recordIdb1.toString(), recordIdc2.toString());
+        Assert.assertEquals(3, traversal12.getSteps().size());
+        vertices = traversal12.toList();
+        Assert.assertEquals(1, traversal12.getSteps().size());
         Assert.assertEquals(2, vertices.size());
     }
 
@@ -378,8 +534,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        GraphTraversal traversal = g.traversal().V().as("a").out().aggregate("x").as("b").<String>select("a", "b").by("name");
+        DefaultGraphTraversal traversal = (DefaultGraphTraversal) g.traversal().V().as("a").out().aggregate("x").as("b").<String>select("a", "b").by("name");
+        Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
         final List<Map<String, String>> expected = makeMapList(2,
                 "a", "marko", "b", "lop",
                 "a", "marko", "b", "vadas",
@@ -389,6 +547,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
                 "a", "peter", "b", "lop");
         checkResults(expected, traversal);
     }
+
 
     @Test
     public void g_VX1AsStringX_out_hasXid_2AsStringX() throws IOException {
@@ -400,8 +559,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(convertToVertexId("marko")).out().hasId(convertToVertexId("vadas"));
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V(convertToVertexId("marko")).out().hasId(convertToVertexId("vadas"));
+        Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertThat(traversal.hasNext(), CoreMatchers.is(true));
         Assert.assertEquals(convertToVertexId("vadas"), traversal.next().id());
         Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
@@ -418,11 +579,13 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
         assertModernGraph(g, true, false);
         Object vertexId = convertToVertexId("josh");
-        final Traversal<Vertex, String> traversal = g.traversal().V(vertexId)
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal().V(vertexId)
                 .out().as("here")
                 .has("lang", "java")
                 .select("here").values("name");
+        Assert.assertEquals(5, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(4, traversal.getSteps().size());
         int counter = 0;
         final Set<String> names = new HashSet<>();
         while (traversal.hasNext()) {
@@ -445,20 +608,22 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        Traversal<Vertex, Map<String, Object>> traversal = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Object>> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("created").as("b")
                 .in("created").as("c")
                 .both("knows")
                 .both("knows").as("d")
                 .where("c", P.not(P.eq("a").or(P.eq("d")))).select("a", "b", "c", "d");
+        Assert.assertEquals(7, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
         checkResults(makeMapList(4,
                 "a", convertToVertex(this.sqlgGraph, "marko"), "b", convertToVertex(this.sqlgGraph, "lop"), "c", convertToVertex(this.sqlgGraph, "josh"), "d", convertToVertex(this.sqlgGraph, "vadas"),
                 "a", convertToVertex(this.sqlgGraph, "peter"), "b", convertToVertex(this.sqlgGraph, "lop"), "c", convertToVertex(this.sqlgGraph, "josh"), "d", convertToVertex(this.sqlgGraph, "vadas")), traversal);
     }
 
-    public static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+    protected static <T> void checkResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
         final List<T> results = traversal.toList();
         Assert.assertFalse(traversal.hasNext());
         if (expectedResults.size() != results.size()) {
@@ -483,7 +648,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertFalse(traversal.hasNext());
     }
 
-    public static <A, B> boolean checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
+    private static <A, B> boolean checkMap(final Map<A, B> expectedMap, final Map<A, B> actualMap) {
         final List<Map.Entry<A, B>> actualList = actualMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
         final List<Map.Entry<A, B>> expectedList = expectedMap.entrySet().stream().sorted((a, b) -> a.getKey().toString().compareTo(b.getKey().toString())).collect(Collectors.toList());
 
@@ -504,18 +669,6 @@ public class TestGremlinCompileWithHas extends BaseTest {
         return true;
     }
 
-    public <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
-        final List<Map<A, B>> mapList = new ArrayList<>();
-        for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
-            final Map<A, B> map = new HashMap<>();
-            for (int j = 0; j < (2 * size); j = j + 2) {
-                map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
-            }
-            mapList.add(map);
-        }
-        return mapList;
-    }
-
     @Test
     public void g_V_asXaX_out_asXaX_out_asXaX_selectXaX_byXunfold_valuesXnameX_foldX_rangeXlocal_1_2X() throws IOException {
         Graph g = this.sqlgGraph;
@@ -526,13 +679,14 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        final Traversal<Vertex, String> traversal = g.traversal()
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal()
                 .V().as("a")
                 .out().as("a")
                 .out().as("a")
                 .<List<String>>select("a")
                 .by(__.unfold().values("name").fold())
                 .range(Scope.local, 1, 2);
+        Assert.assertEquals(5, traversal.getSteps().size());
         int counter = 0;
         while (traversal.hasNext()) {
             final String s = traversal.next();
@@ -540,6 +694,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
             counter++;
         }
         Assert.assertEquals(2, counter);
+        Assert.assertEquals(3, traversal.getSteps().size());
     }
 
     @Test
@@ -552,12 +707,14 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        final Traversal<Vertex, List<Vertex>> traversal = g.traversal()
+        DefaultGraphTraversal<Vertex, List<Vertex>> traversal = (DefaultGraphTraversal) g.traversal()
                 .V().as("a")
                 .out().as("a")
                 .out().as("a")
                 .select("a");
+        Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
         int counter = 0;
         while (traversal.hasNext()) {
             final List<Vertex> s = traversal.next();
@@ -578,7 +735,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        final Traversal<Vertex, String> traversal = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
                 .V()
                 .where(
                         __.in("created")
@@ -588,7 +745,9 @@ public class TestGremlinCompileWithHas extends BaseTest {
                                 )
                 )
                 .values("name");
+        Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.hasNext());
         Assert.assertEquals("lop", traversal.next());
         Assert.assertFalse(traversal.hasNext());
@@ -606,8 +765,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
         Object marko = convertToVertexId("marko");
         Object vadas = convertToVertexId("vadas");
-        final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(marko).out().hasId(vadas);
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().V(marko).out().hasId(vadas);
+        Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertThat(traversal.hasNext(), CoreMatchers.is(true));
         Assert.assertEquals(convertToVertexId("vadas"), traversal.next().id());
         Assert.assertThat(traversal.hasNext(), CoreMatchers.is(false));
@@ -619,8 +780,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         a1.addEdge("outB", b1);
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().both().has(T.label, "B");
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().V().both().has(T.label, "B");
+        Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
         List<Vertex> softwares = traversal.toList();
         Assert.assertEquals(1, softwares.size());
         for (Vertex software : softwares) {
@@ -654,42 +817,6 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(3, vertexTraversal(this.sqlgGraph, c1).in().in().has(T.label, "A").count().next().intValue());
     }
 
-    //    @Test
-    public void testHasOnProperty() {
-        SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
-        SqlgVertex b1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        SqlgVertex b2 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-        SqlgVertex b3 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-        a1.addEdge("outB", b1);
-        a1.addEdge("outB", b2);
-        a1.addEdge("outB", b3);
-        this.sqlgGraph.tx().commit();
-
-        GraphTraversal<Vertex, Vertex> gt = vertexTraversal(this.sqlgGraph, a1).out().has("name", P.eq("b2"));
-        gt.asAdmin().applyStrategies();
-        final List<Step> temp = new ArrayList<>();
-        Step currentStep = gt.asAdmin().getStartStep();
-        while (!(currentStep instanceof EmptyStep)) {
-            temp.add(currentStep);
-            currentStep = currentStep.getNextStep();
-        }
-        Assert.assertTrue(temp.get(0) instanceof StartStep);
-        Assert.assertTrue(temp.get(1) instanceof SqlgVertexStepCompiled);
-        SqlgVertexStepCompiled sqlgVertexStepCompiler = (SqlgVertexStepCompiled) temp.get(1);
-        Assert.assertEquals(2, temp.size());
-
-        SchemaTable schemaTable = SchemaTable.of(a1.getSchema(), SchemaManager.VERTEX_PREFIX + a1.getTable());
-        SchemaTableTree schemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, sqlgVertexStepCompiler.getReplacedSteps());
-
-        Assert.assertEquals(2, schemaTableTree.depth());
-        Assert.assertEquals(3, schemaTableTree.numberOfNodes());
-        Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_A"), schemaTableTree.schemaTableAtDepth(0, 0).getSchemaTable());
-        Assert.assertEquals(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_B"), schemaTableTree.schemaTableAtDepth(1, 1).getSchemaTable());
-        Assert.assertEquals(1, schemaTableTree.schemaTableAtDepth(1, 1).getHasContainers().size());
-
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().has("name", P.eq("b2")).count().next().intValue());
-    }
-
     @Test
     public void testOutHasOutHas() {
         SqlgVertex a1 = (SqlgVertex) this.sqlgGraph.addVertex(T.label, "A");
@@ -719,10 +846,29 @@ public class TestGremlinCompileWithHas extends BaseTest {
         b3.addEdge("outC", c9);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b1").out().has("name", "c1").count().next().intValue());
-        Assert.assertEquals(c1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b1").out().has("name", "c1").next());
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b2").out().has("name", "c5").count().next().intValue());
-        Assert.assertEquals(c5, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b2").out().has("name", "c5").next());
+        DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b1").out().has("name", "c1").count();
+        Assert.assertEquals(6, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.next().intValue());
+        Assert.assertEquals(2, traversal.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b1").out().has("name", "c1");
+        Assert.assertEquals(5, traversal1.getSteps().size());
+        Assert.assertEquals(c1, traversal1.next());
+        Assert.assertEquals(1, traversal1.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Long> traversal2 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b2").out().has("name", "c5").count();
+        Assert.assertEquals(6, traversal2.getSteps().size());
+        Assert.assertEquals(1, traversal2.next().intValue());
+        Assert.assertEquals(2, traversal2.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b2").out().has("name", "c5");
+        Assert.assertEquals(5, traversal3.getSteps().size());
+        Assert.assertEquals(c5, traversal3.next());
+        Assert.assertEquals(1, traversal3.getSteps().size());
     }
 
     @Test
@@ -754,11 +900,35 @@ public class TestGremlinCompileWithHas extends BaseTest {
         b3.addEdge("outC", c9);
         this.sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b1").out().has("name", "c1").count().next().intValue());
-        Assert.assertEquals(c1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b1").out().has("name", "c1").next());
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b2").out().has("name", "c5").count().next().intValue());
-        Assert.assertEquals(2, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b2").has("name", "b2").out().has("name", P.within(Arrays.asList("c5", "c6"))).count().next().intValue());
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().has("name", "b2").has("name", "b2").out().has("name", P.eq("c5")).count().next().intValue());
+        DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b1").out().has("name", "c1").count();
+        Assert.assertEquals(6, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.next().intValue());
+        Assert.assertEquals(2, traversal.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b1").out().has("name", "c1");
+        Assert.assertEquals(5, traversal1.getSteps().size());
+        Assert.assertEquals(c1, traversal1.next());
+        Assert.assertEquals(1, traversal1.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Long> traversal2 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b2").out().has("name", "c5").count();
+        Assert.assertEquals(6, traversal2.getSteps().size());
+        Assert.assertEquals(1, traversal2.next().intValue());
+        Assert.assertEquals(2, traversal2.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Long> traversal3 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b2").has("name", "b2").out().has("name", P.within(Arrays.asList("c5", "c6"))).count();
+        Assert.assertEquals(6, traversal3.getSteps().size());
+        Assert.assertEquals(2, traversal3.next().intValue());
+        Assert.assertEquals(2, traversal3.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Long> traversal4 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1)
+                .out().has("name", "b2").has("name", "b2").out().has("name", P.eq("c5")).count();
+        Assert.assertEquals(6, traversal4.getSteps().size());
+        Assert.assertEquals(1, traversal4.next().intValue());
+        Assert.assertEquals(2, traversal4.getSteps().size());
     }
 
     @Test
@@ -773,14 +943,45 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Edge e3 = v3.addEdge("label3", v4);
         sqlgGraph.tx().commit();
 
-        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, v2).inE().count().next(), 1);
-        Assert.assertEquals(e1, vertexTraversal(this.sqlgGraph, v2).inE().next());
-        Assert.assertEquals(1L, edgeTraversal(this.sqlgGraph, e1).inV().count().next(), 0);
-        Assert.assertEquals(v2, edgeTraversal(this.sqlgGraph, e1).inV().next());
-        Assert.assertEquals(1L, edgeTraversal(this.sqlgGraph, e1).outV().count().next(), 0);
-        Assert.assertEquals(0L, edgeTraversal(this.sqlgGraph, e1).outV().inE().count().next(), 0);
-        Assert.assertEquals(1L, edgeTraversal(this.sqlgGraph, e2).inV().count().next(), 0);
-        Assert.assertEquals(v3, edgeTraversal(this.sqlgGraph, e2).inV().next());
+        DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, v2).inE().count();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.next(), 1);
+        Assert.assertEquals(2, traversal.getSteps().size());
+
+        DefaultGraphTraversal<Vertex, Edge> traversal1 = (DefaultGraphTraversal<Vertex, Edge>) vertexTraversal(this.sqlgGraph, v2).inE();
+        Assert.assertEquals(2, traversal1.getSteps().size());
+        Assert.assertEquals(e1, traversal1.next());
+        Assert.assertEquals(1, traversal1.getSteps().size());
+
+        DefaultGraphTraversal<Edge, Long> traversal2 = (DefaultGraphTraversal<Edge, Long>) edgeTraversal(this.sqlgGraph, e1).inV().count();
+        Assert.assertEquals(3, traversal2.getSteps().size());
+        Assert.assertEquals(1L, traversal2.next(), 0);
+        Assert.assertEquals(2, traversal2.getSteps().size());
+
+        DefaultGraphTraversal<Edge, Vertex> traversal3 = (DefaultGraphTraversal<Edge, Vertex>) edgeTraversal(this.sqlgGraph, e1).inV();
+        Assert.assertEquals(2, traversal3.getSteps().size());
+        Assert.assertEquals(v2, traversal3.next());
+        Assert.assertEquals(1, traversal3.getSteps().size());
+
+        DefaultGraphTraversal<Edge, Long> traversal4 = (DefaultGraphTraversal<Edge, Long>) edgeTraversal(this.sqlgGraph, e1).outV().count();
+        Assert.assertEquals(3, traversal4.getSteps().size());
+        Assert.assertEquals(1L, traversal4.next(), 0);
+        Assert.assertEquals(2, traversal4.getSteps().size());
+
+        DefaultGraphTraversal<Edge, Long> traversal5 = (DefaultGraphTraversal<Edge, Long>) edgeTraversal(this.sqlgGraph, e1).outV().inE().count();
+        Assert.assertEquals(4, traversal5.getSteps().size());
+        Assert.assertEquals(0L, traversal5.next(), 0);
+        Assert.assertEquals(2, traversal5.getSteps().size());
+
+        DefaultGraphTraversal<Edge, Long> traversal6 = (DefaultGraphTraversal<Edge, Long>) edgeTraversal(this.sqlgGraph, e2).inV().count();
+        Assert.assertEquals(3, traversal6.getSteps().size());
+        Assert.assertEquals(1L, traversal6.next(), 0);
+        Assert.assertEquals(2, traversal6.getSteps().size());
+
+        DefaultGraphTraversal<Edge, Vertex> traversal7 = (DefaultGraphTraversal<Edge, Vertex>) edgeTraversal(this.sqlgGraph, e2).inV();
+        Assert.assertEquals(2, traversal7.getSteps().size());
+        Assert.assertEquals(v3, traversal7.next());
+        Assert.assertEquals(1, traversal7.getSteps().size());
     }
 
     @Test
@@ -797,18 +998,47 @@ public class TestGremlinCompileWithHas extends BaseTest {
         marko.addEdge("drives", ktm2);
         marko.addEdge("drives", ktm3);
         this.sqlgGraph.tx().commit();
-        List<Vertex> drivesBmw = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("name", "bmw").toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, marko)
+                .out("drives").<Vertex>has("name", "bmw");
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> drivesBmw = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(2L, drivesBmw.size(), 0);
-        List<Vertex> drivesKtm = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("name", "ktm").toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, marko)
+                .out("drives").<Vertex>has("name", "ktm");
+        Assert.assertEquals(3, traversal1.getSteps().size());
+        List<Vertex> drivesKtm = traversal1.toList();
+        Assert.assertEquals(1, traversal1.getSteps().size());
         Assert.assertEquals(3L, drivesKtm.size(), 0);
 
-        List<Vertex> cc600 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 600).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, marko)
+                .out("drives").<Vertex>has("cc", 600);
+        Assert.assertEquals(3, traversal2.getSteps().size());
+        List<Vertex> cc600 = traversal2.toList();
+        Assert.assertEquals(1, traversal2.getSteps().size());
         Assert.assertEquals(1L, cc600.size(), 0);
-        List<Vertex> cc800 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 800).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal3 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, marko)
+                .out("drives").<Vertex>has("cc", 800);
+        Assert.assertEquals(3, traversal3.getSteps().size());
+        List<Vertex> cc800 = traversal3.toList();
+        Assert.assertEquals(1, traversal3.getSteps().size());
         Assert.assertEquals(1L, cc800.size(), 0);
-        List<Vertex> cc200 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 200).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal4 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, marko)
+                .out("drives").<Vertex>has("cc", 200);
+        Assert.assertEquals(3, traversal4.getSteps().size());
+        List<Vertex> cc200 = traversal4.toList();
+        Assert.assertEquals(1, traversal4.getSteps().size());
         Assert.assertEquals(2L, cc200.size(), 0);
-        List<Vertex> cc400 = vertexTraversal(this.sqlgGraph, marko).out("drives").<Vertex>has("cc", 400).toList();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal5 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(this.sqlgGraph, marko)
+                .out("drives").<Vertex>has("cc", 400);
+        Assert.assertEquals(3, traversal5.getSteps().size());
+        List<Vertex> cc400 = traversal5.toList();
+        Assert.assertEquals(1, traversal5.getSteps().size());
         Assert.assertEquals(1L, cc400.size(), 0);
     }
 
@@ -824,8 +1054,11 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
         final Object edgeId11 = convertToEdgeId(this.sqlgGraph, "josh", "created", "lop");
         final Object edgeId10 = convertToEdgeId(this.sqlgGraph, "josh", "created", "ripple");
-        final Traversal<Edge, Edge> traversal = g.traversal().E(edgeId11.toString()).outV().outE().has(T.id, edgeId10.toString());
+        DefaultGraphTraversal<Edge, Edge> traversal = (DefaultGraphTraversal<Edge, Edge>) g.traversal().E(edgeId11.toString())
+                .outV().outE().has(T.id, edgeId10.toString());
+        Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertTrue(traversal.hasNext());
         final Edge e = traversal.next();
         Assert.assertEquals(edgeId10.toString(), e.id().toString());
@@ -844,8 +1077,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
 
         Object id = convertToVertexId(g, "marko");
-        Traversal<Vertex, String> traversal = g.traversal().V(id).out().outE().inV().inE().inV().both().values("name");
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal().V(id).out().outE().inV().inE().inV().both().values("name");
+        Assert.assertEquals(8, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
         int counter = 0;
         final Map<String, Integer> counts = new HashMap<>();
         while (traversal.hasNext()) {
@@ -875,8 +1110,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
         String marko = convertToVertexId("marko").toString();
         String vadas = convertToVertexId("vadas").toString();
-        final Traversal<Vertex, Vertex> traversal = g.traversal().V(marko).out().hasId(vadas);
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) g.traversal().V(marko).out().hasId(vadas);
+        Assert.assertEquals(3, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertTrue(traversal.hasNext());
         Assert.assertEquals(convertToVertexId("vadas"), traversal.next().id());
     }
@@ -893,8 +1130,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
         final Object id2 = convertToVertexId("vadas");
         final Object id3 = convertToVertexId("lop");
-        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId("marko"), id2.toString(), id3.toString());
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId("marko"), id2.toString(), id3.toString());
+        Assert.assertEquals(3, traversal.getSteps().size());
         assert_g_VX1X_out_hasXid_2_3X(id2, id3, traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
     }
 
     @Test
@@ -909,8 +1148,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         assertModernGraph(g, true, false);
         final Object id2 = convertToVertexId("vadas");
         final Object id3 = convertToVertexId("lop");
-        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId("marko"), id2.toString(), id3.toString());
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) get_g_VX1X_out_hasIdX2_3X(g.traversal(), convertToVertexId("marko"), id2.toString(), id3.toString());
+        Assert.assertEquals(3, traversal.getSteps().size());
         assert_g_VX1X_out_hasXid_2_3X(id2, id3, traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
     }
 
     @Test
@@ -924,13 +1165,11 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
         assertModernGraph(g, true, false);
         final Object marko = convertToVertexId("marko");
-//        final Traversal<Vertex, Vertex> traversal =  g.traversal().V(marko).outE("knows").existVertexLabel("weight", 1.0d).as("here").inV().existVertexLabel("name", "josh").select("here");
-
-        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").has("weight", 1.0d).as("here").inV().has("name", "josh").select("here");
-//        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").as("here").existVertexLabel("weight", 1.0d).inV().existVertexLabel("name", "josh").<Edge>select("here");
-//        final Traversal<Vertex, Edge> traversal = g.traversal().V(marko).outE("knows").as("here").existVertexLabel("weight", 1.0d).as("fake").inV().existVertexLabel("name", "josh").<Edge>select("here");
-
+        DefaultGraphTraversal<Vertex, Edge> traversal = (DefaultGraphTraversal) g.traversal().V(marko)
+                .outE("knows").has("weight", 1.0d).as("here").inV().has("name", "josh").select("here");
+        Assert.assertEquals(6, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.hasNext());
         Assert.assertTrue(traversal.hasNext());
         final Edge edge = traversal.next();
@@ -950,8 +1189,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
             reader.readGraph(stream, g);
         }
         assertModernGraph(g, true, false);
-        final Traversal<Vertex, Vertex> traversal = get_g_VX1X_outE_hasXweight_inside_0_06X_inV(g.traversal(), convertToVertexId("marko"));
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) get_g_VX1X_outE_hasXweight_inside_0_06X_inV(g.traversal(), convertToVertexId("marko"));
+        Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.getSteps().size());
         while (traversal.hasNext()) {
             Vertex vertex = traversal.next();
             Assert.assertTrue(vertex.value("name").equals("vadas") || vertex.value("name").equals("lop"));
@@ -970,8 +1211,10 @@ public class TestGremlinCompileWithHas extends BaseTest {
         }
         assertModernGraph(g, true, false);
         Object marko = convertToVertexId(g, "marko");
-        final Traversal<Vertex, String> traversal = g.traversal().V(marko).outE("knows").bothV().values("name");
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal) g.traversal().V(marko).outE("knows").bothV().values("name");
+        Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
         final List<String> names = traversal.toList();
         Assert.assertEquals(4, names.size());
         Assert.assertTrue(names.contains("marko"));
@@ -1006,5 +1249,17 @@ public class TestGremlinCompileWithHas extends BaseTest {
 
     public Object convertToEdgeId(final Graph graph, final String outVertexName, String edgeLabel, final String inVertexName) {
         return graph.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).<Edge>select("e").next().id();
+    }
+
+    private <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
+        final List<Map<A, B>> mapList = new ArrayList<>();
+        for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
+            final Map<A, B> map = new HashMap<>();
+            for (int j = 0; j < (2 * size); j = j + 2) {
+                map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
+            }
+            mapList.add(map);
+        }
+        return mapList;
     }
 }

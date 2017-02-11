@@ -38,14 +38,8 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
  * Date: 2014/07/12
  * Time: 5:38 AM
  */
-@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
-@Graph.OptIn(Graph.OptIn.SUITE_PROCESS_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_PROCESS_STANDARD)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
-@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
@@ -212,9 +206,7 @@ public class SqlgGraph implements Graph {
     //This has some static suckness
     static {
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
-                .addStrategies(new SqlgVertexStepStrategy())
-                .addStrategies(new SqlgGraphStepStrategy())
-                .addStrategies(TopologyStrategy.build().create()));
+                .addStrategies(new SqlgGraphStepStrategy(), new SqlgVertexStepStrategy(), TopologyStrategy.build().create()));
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {

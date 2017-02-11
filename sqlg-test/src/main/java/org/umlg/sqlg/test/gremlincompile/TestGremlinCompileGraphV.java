@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -43,7 +44,10 @@ public class TestGremlinCompileGraphV extends BaseTest {
     }
 
     private void testGraphStepWithAs_aasert(SqlgGraph sqlgGraph, Vertex a1) {
-        List<Path> result = sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal().V(a1).as("a").out().as("b").out().path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> result = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(1, result.size());
     }
 
@@ -51,7 +55,6 @@ public class TestGremlinCompileGraphV extends BaseTest {
     public void testGraphVHas() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
         Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
@@ -77,7 +80,10 @@ public class TestGremlinCompileGraphV extends BaseTest {
     }
 
     private void testGraphVHas_assert(SqlgGraph sqlgGraph) {
-        List<Vertex> bs = sqlgGraph.traversal().V().has(T.label, "A").out("b").toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.label, "A").out("b");
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> bs = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(8, bs.size());
     }
 }

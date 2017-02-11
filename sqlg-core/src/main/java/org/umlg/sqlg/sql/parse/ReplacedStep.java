@@ -676,6 +676,13 @@ public class ReplacedStep<S, E> {
         this.hasContainers.addAll(hasContainers);
     }
 
+    /**
+     * @param hasContainer A hasContainer for this step. Copied from the original step.
+     */
+    public void addHasContainer(HasContainer hasContainer) {
+        this.hasContainers.add(hasContainer);
+    }
+
     public Range<Long> getRange() {
         return range;
     }
