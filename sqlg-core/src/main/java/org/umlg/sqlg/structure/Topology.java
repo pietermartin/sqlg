@@ -1046,6 +1046,7 @@ public class Topology {
                         //add to map
                         schema = Schema.instantiateSchema(this, schemaName);
                         this.schemas.put(schemaName, schema);
+                        fire(schema, "", TopologyChangeAction.CREATE);
                     }
                 }
                 for (JsonNode jsonSchema : schemas) {
@@ -1080,6 +1081,7 @@ public class Topology {
                 GlobalUniqueIndex globalUniqueIndex;
                 if (!globalUniqueIndexOptional.isPresent()) {
                     globalUniqueIndex = GlobalUniqueIndex.instantiateGlobalUniqueIndex(this, globalUniqueIndexName);
+                    fire(globalUniqueIndex, "", TopologyChangeAction.CREATE);
                 } else {
                     globalUniqueIndex = globalUniqueIndexOptional.get();
                 }

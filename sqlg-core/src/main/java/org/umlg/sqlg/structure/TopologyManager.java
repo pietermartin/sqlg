@@ -383,9 +383,9 @@ public class TopologyManager {
                     CREATED_ON, LocalDateTime.now()
             );
             for (PropertyColumn property : properties) {
-                String elementLabel = property.getAbstractLabel().getLabel();
+                String elementLabel = property.getParentLabel().getLabel();
                 List<Vertex> uniquePropertyConstraintProperty;
-                if (property.getAbstractLabel() instanceof VertexLabel) {
+                if (property.getParentLabel() instanceof VertexLabel) {
                     uniquePropertyConstraintProperty = traversalSource.V()
                             .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_VERTEX_LABEL)
                             .has("name", elementLabel)
@@ -399,14 +399,14 @@ public class TopologyManager {
                             .as("a")
                             .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
                             .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                            .has("name", property.getAbstractLabel().getSchema().getName())
+                            .has("name", property.getParentLabel().getSchema().getName())
                             .<Vertex>select("a")
                             .toSet();
                     if (edges.size() == 0) {
-                        throw new IllegalStateException(String.format("Found no edge for %s.%s", property.getAbstractLabel().getSchema().getName(), elementLabel));
+                        throw new IllegalStateException(String.format("Found no edge for %s.%s", property.getParentLabel().getSchema().getName(), elementLabel));
                     }
                     if (edges.size() > 1) {
-                        throw new IllegalStateException(String.format("Found more than one edge for %s.%s", property.getAbstractLabel().getSchema().getName(), elementLabel));
+                        throw new IllegalStateException(String.format("Found more than one edge for %s.%s", property.getParentLabel().getSchema().getName(), elementLabel));
                     }
                     Vertex edge = edges.iterator().next();
                     uniquePropertyConstraintProperty = traversalSource.V(edge)
@@ -415,7 +415,7 @@ public class TopologyManager {
                             .toList();
                 }
                 if (uniquePropertyConstraintProperty.size() == 0) {
-                    throw new IllegalStateException(String.format("Found no Property for %s.%s.%s", property.getAbstractLabel().getSchema().getName(), property.getAbstractLabel().getLabel(), property.getName()));
+                    throw new IllegalStateException(String.format("Found no Property for %s.%s.%s", property.getParentLabel().getSchema().getName(), property.getParentLabel().getLabel(), property.getName()));
                 }
                 Vertex propertyVertex = uniquePropertyConstraintProperty.get(0);
                 globalUniquePropertyConstraint.addEdge(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE, propertyVertex);

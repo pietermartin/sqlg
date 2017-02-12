@@ -74,7 +74,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     @Override
-    protected Schema getSchema() {
+    public Schema getSchema() {
         return this.schema;
     }
 
@@ -455,8 +455,13 @@ public class VertexLabel extends AbstractLabel {
         return Optional.of(vertexLabelNode);
     }
 
-    void fromNotifyJsonOutEdge(JsonNode vertexLabelJson) {
-        super.fromPropertyNotifyJson(vertexLabelJson);
+    /**
+     * 
+     * @param vertexLabelJson
+     * @param fire should we fire topology events
+     */
+    void fromNotifyJsonOutEdge(JsonNode vertexLabelJson,boolean fire) {
+        super.fromPropertyNotifyJson(vertexLabelJson,fire);
         for (String s : Arrays.asList("uncommittedOutEdgeLabels", "outEdgeLabels")) {
             ArrayNode uncommittedOutEdgeLabels = (ArrayNode) vertexLabelJson.get(s);
             if (uncommittedOutEdgeLabels != null) {
@@ -466,14 +471,16 @@ public class VertexLabel extends AbstractLabel {
                     String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
                     Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
                     EdgeLabel edgeLabel;
-                    if (!edgeLabelOptional.isPresent()) {
+                     if (!edgeLabelOptional.isPresent()) {
                         edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
+                        this.getSchema().getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
                     } else {
                         edgeLabel = edgeLabelOptional.get();
                     }
                     edgeLabel.addToOutVertexLabel(this);
                     this.outEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
-                    edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel);
+                    // fire if we didn't create the edge label
+                    edgeLabel.fromPropertyNotifyJson(uncommittedOutEdgeLabel,edgeLabelOptional.isPresent());
                     //Babysit the cache
                     this.getSchema().getTopology().addToAllTables(getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(), edgeLabel.getPropertyTypeMap());
                     this.getSchema().addToAllEdgeCache(edgeLabel);
@@ -502,7 +509,7 @@ public class VertexLabel extends AbstractLabel {
                     EdgeLabel edgeLabel = edgeLabelOptional.get();
                     edgeLabel.addToInVertexLabel(this);
                     this.inEdgeLabels.put(schemaName + "." + edgeLabel.getLabel(), edgeLabel);
-                    edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel);
+                    edgeLabel.fromPropertyNotifyJson(uncommittedInEdgeLabel,false);
                     this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
                             edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),

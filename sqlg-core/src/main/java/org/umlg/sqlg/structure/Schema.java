@@ -67,7 +67,7 @@ public class Schema implements TopologyInf {
     }
 
     /**
-     * Creates the 'gui_schema'. A schema in which to store the GlbalUniqueIndexes. The 'gui_schema' always already exist and is pre-loaded in {@link Topology()} @see {@link Topology#cacheTopology()}
+     * Creates the 'gui_schema'. A schema in which to store the GlobalUniqueIndexes. The 'gui_schema' always already exist and is pre-loaded in {@link Topology()} @see {@link Topology#cacheTopology()}
      *
      * @param topology The {@link Topology} that contains the public schema.
      * @return The Schema that represents 'public'
@@ -497,7 +497,7 @@ public class Schema implements TopologyInf {
         Optional<GlobalUniqueIndex> globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
         if (!globalIndexOptional.isPresent()) {
             //take any property
-            properties.iterator().next().getAbstractLabel().getSchema().getTopology().lock();
+            properties.iterator().next().getParentLabel().getSchema().getTopology().lock();
             globalIndexOptional = this.getGlobalUniqueIndex(globalUniqueIndexName);
             if (!globalIndexOptional.isPresent()) {
                 GlobalUniqueIndex globalUniqueIndex = GlobalUniqueIndex.createGlobalUniqueIndex(this.sqlgGraph, this.topology, globalUniqueIndexName, properties);
@@ -985,7 +985,7 @@ public class Schema implements TopologyInf {
             return Optional.empty();
         }
     }
-
+    
     void fromNotifyJsonOutEdges(JsonNode jsonSchema) {
         for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
             JsonNode vertexLabels = jsonSchema.get(s);
@@ -999,10 +999,12 @@ public class Schema implements TopologyInf {
                     } else {
                         vertexLabel = new VertexLabel(this, vertexLabelName);
                         this.vertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
+                        this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
                     }
                     //The order of the next two statements matter.
                     //fromNotifyJsonOutEdge needs to happen first to ensure the properties are on the VertexLabel
-                    vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson);
+                    // fire only if we didn't create the vertex label
+                    vertexLabel.fromNotifyJsonOutEdge(vertexLabelJson,vertexLabelOptional.isPresent());
                     this.getTopology().addToAllTables(this.getName() + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel.getPropertyTypeMap());
                 }
             }

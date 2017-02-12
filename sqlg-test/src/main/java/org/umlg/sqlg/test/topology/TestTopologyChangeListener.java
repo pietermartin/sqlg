@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +32,7 @@ public class TestTopologyChangeListener extends BaseTest {
 
     @Test
     public void testAddSchemaAndVertexAndEdge() {
-        TopologyListenerTest topologyListenerTest = new TopologyListenerTest();
+        TopologyListenerTest topologyListenerTest = new TopologyListenerTest(topologyListenerTriple);
         this.sqlgGraph.getTopology().registerListener(topologyListenerTest);
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asda");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A.A", "name", "asdasd");
@@ -52,52 +54,58 @@ public class TestTopologyChangeListener extends BaseTest {
         //This adds a schema and 2 indexes and the globalUniqueIndex, so 4 elements in all
         GlobalUniqueIndex globalUniqueIndex = schema.ensureGlobalUniqueIndexExist(new HashSet<>(aVertexLabel.getProperties().values()));
 
-        Assert.assertEquals(12, this.topologyListenerTriple.size());
+        assertEquals(12, this.topologyListenerTriple.size());
 
-        Assert.assertEquals(schema, this.topologyListenerTriple.get(0).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(0).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(0).getRight());
+        assertEquals(schema, this.topologyListenerTriple.get(0).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(0).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(0).getRight());
 
-        Assert.assertEquals(aVertexLabel, this.topologyListenerTriple.get(1).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(1).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(1).getRight());
+        assertEquals(aVertexLabel, this.topologyListenerTriple.get(1).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(1).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(1).getRight());
 
-        Assert.assertEquals(edgeLabel, this.topologyListenerTriple.get(2).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(2).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(2).getRight());
+        assertEquals(edgeLabel, this.topologyListenerTriple.get(2).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(2).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(2).getRight());
 
-        Assert.assertEquals(vertexPropertyColumn, this.topologyListenerTriple.get(3).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(3).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(3).getRight());
+        assertEquals(vertexPropertyColumn, this.topologyListenerTriple.get(3).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(3).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(3).getRight());
 
-        Assert.assertEquals(edgePropertyColumn, this.topologyListenerTriple.get(4).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(4).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(4).getRight());
+        assertEquals(edgePropertyColumn, this.topologyListenerTriple.get(4).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(4).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(4).getRight());
 
-        Assert.assertEquals(bVertexLabel, this.topologyListenerTriple.get(5).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(5).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(5).getRight());
+        assertEquals(bVertexLabel, this.topologyListenerTriple.get(5).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(5).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(5).getRight());
 
-        Assert.assertEquals(edgeLabel, this.topologyListenerTriple.get(6).getLeft());
-        Assert.assertEquals("A.B", this.topologyListenerTriple.get(6).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE, this.topologyListenerTriple.get(6).getRight());
+        assertEquals(edgeLabel, this.topologyListenerTriple.get(6).getLeft());
+        assertEquals("A.B", this.topologyListenerTriple.get(6).getMiddle());
+        assertEquals(TopologyChangeAction.ADD_IN_VERTEX_LABELTO_EDGE, this.topologyListenerTriple.get(6).getRight());
 
-        Assert.assertEquals(index, this.topologyListenerTriple.get(7).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(7).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(7).getRight());
+        assertEquals(index, this.topologyListenerTriple.get(7).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(7).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(7).getRight());
 
-        Assert.assertEquals(globalUniqueIndex, this.topologyListenerTriple.get(11).getLeft());
-        Assert.assertEquals("", this.topologyListenerTriple.get(11).getMiddle());
-        Assert.assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(11).getRight());
+        assertEquals(globalUniqueIndex, this.topologyListenerTriple.get(11).getLeft());
+        assertEquals("", this.topologyListenerTriple.get(11).getMiddle());
+        assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(11).getRight());
 
         this.sqlgGraph.tx().commit();
     }
 
-    public class TopologyListenerTest implements TopologyListener {
+    public static  class TopologyListenerTest implements TopologyListener {
+    	private List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple = new ArrayList<>();
 
-        @Override
+        public TopologyListenerTest(List<Triple<TopologyInf, String, TopologyChangeAction>> topologyListenerTriple) {
+			super();
+			this.topologyListenerTriple = topologyListenerTriple;
+		}
+
+		@Override
         public void change(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
-            TestTopologyChangeListener.this.topologyListenerTriple.add(
+            topologyListenerTriple.add(
                     Triple.of(topologyInf, oldValue, action)
             );
         }
