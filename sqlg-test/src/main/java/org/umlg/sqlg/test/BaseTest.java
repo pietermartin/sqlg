@@ -105,11 +105,19 @@ public abstract class BaseTest {
 
     @After
     public void after() throws Exception {
-        this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
-        this.sqlgGraph.close();
-        if (this.sqlgGraph1 != null) {
-            this.sqlgGraph1.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
-            this.sqlgGraph1.close();
+        try {
+            this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+            this.sqlgGraph.close();
+        } catch (Exception e){
+            logger.error(e.getMessage(), e);
+        }
+        try {
+            if (this.sqlgGraph1 != null) {
+                this.sqlgGraph1.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+                this.sqlgGraph1.close();
+            }
+        } catch (Exception e){
+            logger.error(e.getMessage(), e);
         }
     }
 
