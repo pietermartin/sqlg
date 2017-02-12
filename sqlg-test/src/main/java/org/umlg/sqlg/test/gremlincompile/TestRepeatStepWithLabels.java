@@ -1,8 +1,10 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -11,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/10/26
@@ -29,20 +29,28 @@ public class TestRepeatStepWithLabels extends BaseTest {
         a1.addEdge("ab", b1);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        List<Vertex> result = this.sqlgGraph.traversal().V(a1).repeat(out()).times(2).emit().as("bc").<Vertex>select("bc").toList();
-        assertEquals(2, result.size());
-        assertTrue(result.contains(b1));
-        assertTrue(result.contains(c1));
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V(a1).repeat(out()).times(2).emit().as("bc").<Vertex>select("bc");
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Vertex> result = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(2, result.size());
+        Assert.assertTrue(result.contains(b1));
+        Assert.assertTrue(result.contains(c1));
     }
 
     @Test
     public void testRepeatEmitLabel1() {
         loadModern();
-        List<Map<String, Vertex>> labelVertexMaps = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) this.sqlgGraph.traversal()
                 .V().as("a")
                 .repeat(out()).times(1).emit().as("b")
-                .<Vertex>select("a", "b")
+                .<Vertex>select("a", "b");
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Map<String, Vertex>> labelVertexMaps = traversal
                 .toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
         List<Pair<Vertex, Vertex>> testPairs = new ArrayList<>();
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "marko"), convertToVertex(this.sqlgGraph, "lop")));
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "marko"), convertToVertex(this.sqlgGraph, "vadas")));
@@ -50,22 +58,25 @@ public class TestRepeatStepWithLabels extends BaseTest {
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "josh"), convertToVertex(this.sqlgGraph, "ripple")));
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "josh"), convertToVertex(this.sqlgGraph, "lop")));
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "peter"), convertToVertex(this.sqlgGraph, "lop")));
-        assertEquals(6, labelVertexMaps.size());
+        Assert.assertEquals(6, labelVertexMaps.size());
         for (Map<String, Vertex> labelVertexMap : labelVertexMaps) {
-            Pair<Vertex, Vertex> pair =  Pair.of(labelVertexMap.get("a"), labelVertexMap.get("b"));
-            assertTrue(testPairs.remove(pair));
+            Pair<Vertex, Vertex> pair = Pair.of(labelVertexMap.get("a"), labelVertexMap.get("b"));
+            Assert.assertTrue(testPairs.remove(pair));
         }
-        assertTrue(testPairs.isEmpty());
+        Assert.assertTrue(testPairs.isEmpty());
     }
 
     @Test
     public void testRepeatEmitLabel2() {
         loadModern();
-        List<Map<String, Vertex>> labelVertexMaps = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> traversal = (DefaultGraphTraversal<Vertex, Map<String, Vertex>>) this.sqlgGraph.traversal()
                 .V().as("a")
                 .repeat(out()).times(2).emit().as("b")
-                .<Vertex>select("a", "b")
+                .<Vertex>select("a", "b");
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Map<String, Vertex>> labelVertexMaps = traversal
                 .toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
 
         List<Pair<Vertex, Vertex>> testPairs = new ArrayList<>();
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "marko"), convertToVertex(this.sqlgGraph, "lop")));
@@ -77,13 +88,13 @@ public class TestRepeatStepWithLabels extends BaseTest {
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "josh"), convertToVertex(this.sqlgGraph, "lop")));
         testPairs.add(Pair.of(convertToVertex(this.sqlgGraph, "peter"), convertToVertex(this.sqlgGraph, "lop")));
 
-        assertEquals(8, labelVertexMaps.size());
+        Assert.assertEquals(8, labelVertexMaps.size());
         for (Map<String, Vertex> labelVertexMap : labelVertexMaps) {
             System.out.println(labelVertexMap);
-            Pair<Vertex, Vertex> pair =  Pair.of(labelVertexMap.get("a"), labelVertexMap.get("b"));
-            assertTrue(testPairs.remove(pair));
+            Pair<Vertex, Vertex> pair = Pair.of(labelVertexMap.get("a"), labelVertexMap.get("b"));
+            Assert.assertTrue(testPairs.remove(pair));
         }
-        assertTrue(testPairs.isEmpty());
+        Assert.assertTrue(testPairs.isEmpty());
     }
 
 }

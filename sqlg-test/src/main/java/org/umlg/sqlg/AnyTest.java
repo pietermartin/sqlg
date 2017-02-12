@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphOut;
+import org.umlg.sqlg.test.gremlincompile.TestVertexStepOrderBy;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphOut;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestRepeatStepGraphOut.class
+        TestVertexStepOrderBy.class
 })
 public class AnyTest {
 }

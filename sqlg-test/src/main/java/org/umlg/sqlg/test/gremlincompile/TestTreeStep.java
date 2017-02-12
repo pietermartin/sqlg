@@ -1,7 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -43,8 +43,11 @@ public class TestTreeStep extends BaseTest {
         b1.addEdge("bc", c2);
         b1.addEdge("bc", c3);
         this.sqlgGraph.tx().commit();
-        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().next();
-        System.out.println(tree);
+
+        DefaultGraphTraversal<Vertex, Tree> traversal = (DefaultGraphTraversal<Vertex, Tree>) this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree();
+        Assert.assertEquals(5, traversal.getSteps().size());
+        Tree tree = traversal.next();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(1, tree.size());
         Assert.assertTrue(tree.containsKey(a1));
         Tree tree2  = (Tree) tree.get(a1);
@@ -77,7 +80,12 @@ public class TestTreeStep extends BaseTest {
         b1.addEdge("bc", c1);
         b1.addEdge("bc", c2);
         b1.addEdge("bc", c3);
-        Tree tree = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree().by("name").next();
+
+        DefaultGraphTraversal<Vertex, Tree> traversal = (DefaultGraphTraversal<Vertex, Tree>) this.sqlgGraph.traversal()
+                .V().hasLabel("A").out().out().tree().by("name");
+        Assert.assertEquals(5, traversal.getSteps().size());
+        Tree tree = traversal.next();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(1, tree.size());
         Assert.assertTrue(tree.containsKey("a1"));
         Tree tree2  = (Tree) tree.get("a1");
@@ -105,7 +113,12 @@ public class TestTreeStep extends BaseTest {
         b1.addEdge("bc", c1);
         b1.addEdge("bc", c2);
         b1.addEdge("bc", c3);
-        Vertex v = this.sqlgGraph.traversal().V().hasLabel("A").out().out().tree("a").next();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A").out().out().tree("a");
+        Assert.assertEquals(5, traversal.getSteps().size());
+        Vertex v = traversal.next();
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(Matchers.isOneOf(c1, c2, c3).matches(v));
     }
 
@@ -120,9 +133,9 @@ public class TestTreeStep extends BaseTest {
         }
         assertModernGraph(graph, true, false);
         GraphTraversalSource g = this.sqlgGraph.traversal();
-        final List<Traversal<Vertex, Tree>> traversals = Arrays.asList(
-                g.V(convertToVertexId("marko")).out().out().tree().by("name"),
-                g.V(convertToVertexId("marko")).out().out().tree("a").by("name").both().both().cap("a")
+        final List<DefaultGraphTraversal<Vertex, Tree>> traversals = Arrays.asList(
+                (DefaultGraphTraversal)g.V(convertToVertexId("marko")).out().out().tree().by("name"),
+                (DefaultGraphTraversal)g.V(convertToVertexId("marko")).out().out().tree("a").by("name").both().both().cap("a")
         );
         traversals.forEach(traversal -> {
             printTraversalForm(traversal);
