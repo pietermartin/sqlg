@@ -740,6 +740,8 @@ public class Schema implements TopologyInf {
                             break;
                         case "sqlgPathFakeLabel":
                             break;
+                        case Schema.MARKER:
+                            break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\",\"index\" and \"property\" is expected as a label. Found %s", label));
                     }
