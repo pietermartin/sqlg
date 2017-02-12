@@ -68,14 +68,6 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
             this.logger.debug("gremlin not optimized due to path or tree step. " + traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
         }
-
-//        List<OrderGlobalStep> orderGlobalSteps = TraversalHelper.getStepsOfAssignableClassRecursively(OrderGlobalStep.class, traversal);
-//        for (OrderGlobalStep orderGlobalStep : orderGlobalSteps) {
-//            if (orderGlobalStep.getNextStep() != null) {
-//                return;
-//            }
-//        }
-
         combineSteps(traversal, steps, stepIterator);
     }
 

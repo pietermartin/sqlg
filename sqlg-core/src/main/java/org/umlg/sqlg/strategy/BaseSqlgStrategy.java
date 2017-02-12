@@ -222,6 +222,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         Preconditions.checkState(step instanceof ChooseStep, "Expected ChooseStep, found " + step.getClass().getSimpleName() + " instead. BUG!");
         ChooseStep chooseStep = (ChooseStep) step;
 
+
         List<Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
         if (traversalAdmins.size() != 2) {
             return true;
@@ -229,6 +230,11 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
         Traversal.Admin<?, ?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
         List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
+
+        if (predicateSteps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
+            return true;
+        }
+
         predicateSteps.remove(predicate.getSteps().size() - 1);
 
         Traversal.Admin<?, ?> globalChildOne = (Traversal.Admin<?, ?>) chooseStep.getGlobalChildren().get(0);
@@ -348,7 +354,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     toRemoveHasContainers.addAll(optimizeOutside(replacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeTextContains(replacedStep, hasContainers));
                     if (toRemoveHasContainers.size() == hasContainers.size()) {
+//                        System.out.println("remove step");
                         if (!currentStep.getLabels().isEmpty()) {
+//                            System.out.println("adding Identity");
                             final IdentityStep identityStep = new IdentityStep<>(traversal);
                             currentStep.getLabels().forEach(l -> replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l));
                             TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);

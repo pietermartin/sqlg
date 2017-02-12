@@ -17,18 +17,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TestVertexEdges extends BaseTest {
 
-	
+
     @Test
     public void testVertexEdgesEager() {
-    	testVertexEdges(false);
+        testVertexEdges(false);
     }
-    
+
     @Test
     public void testVertexEdgesLazy() {
-    	testVertexEdges(true);
+        testVertexEdges(true);
     }
-    
-    private void testVertexEdges(boolean lazy){
+
+    private void testVertexEdges(boolean lazy) {
         final Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         final Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         final Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
@@ -37,27 +37,27 @@ public class TestVertexEdges extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().setLazyQueries(lazy);
         AtomicInteger count = new AtomicInteger(0);
-        a1.edges(Direction.BOTH).forEachRemaining(e->count.incrementAndGet());
+        a1.edges(Direction.BOTH).forEachRemaining(e -> count.incrementAndGet());
         Assert.assertEquals(2, count.get());
         count.set(0);
         a1.edges(Direction.BOTH).forEachRemaining(edge -> {
             a1.addEdge("ab", b1);
             count.getAndIncrement();
         });
-        Assert.assertEquals(lazy?3:2, count.get());
-        
+        Assert.assertEquals(lazy ? 3 : 2, count.get());
+
     }
-    
+
     @Test
     public void testVertexEdgesTraversalEager() {
-    	testVertexEdgesTraversal(false);
+        testVertexEdgesTraversal(false);
     }
-    
+
     @Test
     public void testVertexEdgesTraversalLazy() {
-    	testVertexEdgesTraversal(true);
+        testVertexEdgesTraversal(true);
     }
-    
+
     private void testVertexEdgesTraversal(boolean lazy) {
         final Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         final Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
@@ -67,16 +67,16 @@ public class TestVertexEdges extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().setLazyQueries(lazy);
         AtomicInteger count = new AtomicInteger(0);
-        a1.edges(Direction.BOTH).forEachRemaining(e->count.incrementAndGet());
+        a1.edges(Direction.BOTH).forEachRemaining(e -> count.incrementAndGet());
         Assert.assertEquals(2, count.get());
         count.set(0);
         vertexTraversal(this.sqlgGraph, a1).bothE().forEachRemaining(edge -> {
             a1.addEdge("ab", b1);
             count.getAndIncrement();
         });
-        Assert.assertEquals(lazy?3:2, count.get());
-        
-        
+        Assert.assertEquals(lazy ? 3 : 2, count.get());
+
+
     }
 
     @Test

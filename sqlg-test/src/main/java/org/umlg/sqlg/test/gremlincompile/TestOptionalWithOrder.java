@@ -22,7 +22,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class TestOptionalWithOrder extends BaseTest {
 
-    //unoptimized
+    //Nested order can not be optimized.
+    //This one is last so its optimized.
     @Test
     public void testOptionalWithOrder() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
@@ -34,10 +35,12 @@ public class TestOptionalWithOrder extends BaseTest {
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
-                .V(a1.id()).as("a").optional(outE().as("e").otherV().as("v")).order().by("order");
+                .V(a1.id()).as("a").optional(
+                        outE().as("e").otherV().as("v")
+                ).order().by("order");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices =  traversal.toList();
-        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         assertEquals(3, vertices.size());
     }
 
