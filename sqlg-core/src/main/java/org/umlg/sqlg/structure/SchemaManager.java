@@ -9,6 +9,7 @@ import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -130,7 +131,8 @@ public class SchemaManager {
 
     public boolean tableExist(String schema, String table) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
-        return !getTableFor(schemaTable).isEmpty();
+        Optional<Schema> schemaOptional = this.topology.getSchema(schemaTable.getSchema());
+        return schemaOptional.isPresent() && schemaOptional.get().getVertexLabel(schemaTable.withOutPrefix().getTable()).isPresent();
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
