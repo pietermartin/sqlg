@@ -354,9 +354,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     toRemoveHasContainers.addAll(optimizeOutside(replacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeTextContains(replacedStep, hasContainers));
                     if (toRemoveHasContainers.size() == hasContainers.size()) {
-//                        System.out.println("remove step");
                         if (!currentStep.getLabels().isEmpty()) {
-//                            System.out.println("adding Identity");
                             final IdentityStep identityStep = new IdentityStep<>(traversal);
                             currentStep.getLabels().forEach(l -> replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l));
                             TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
@@ -445,15 +443,16 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     }
 
     private List<HasContainer> optimizeWithInOut(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+        List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
             if (!hasContainer.getKey().equals(T.label.getAccessor()) &&
                     (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
 
                 replacedStep.addHasContainer(hasContainer);
-                return Collections.singletonList(hasContainer);
+                result.add(hasContainer);
             }
         }
-        return Collections.emptyList();
+        return result;
     }
 
     private List<HasContainer> optimizeHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
