@@ -46,6 +46,19 @@ public class TestGremlinCompileWithHas extends BaseTest {
     }
 
     @Test
+    public void testConsecutiveHasLabels() {
+
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("A").hasLabel("A").toList().size());
+
+    }
+
+    @Test
     public void testHasCompareEq() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
         this.sqlgGraph.addVertex(T.label, "A", "name", "b");

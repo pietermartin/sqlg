@@ -517,6 +517,9 @@ public class ReplacedStep<S, E> {
         List<HasContainer> hasContainersWithoutLabel = this.hasContainers.stream().filter(h -> !h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
         List<HasContainer> hasContainersWithLabel = this.hasContainers.stream().filter(h -> h.getKey().equals(T.label.getAccessor())).collect(Collectors.toList());
 
+        Set<Integer> hashCodes = hasContainersWithLabel.stream().map(HasContainer::hashCode).collect(Collectors.toSet());
+        hasContainersWithLabel = hasContainersWithLabel.stream().filter(h -> hashCodes.remove(h.hashCode())).collect(Collectors.toList());
+
         if (hasContainersWithLabel.isEmpty()) {
             //this means all vertices or edges except for as filtered by the TopologyStrategy
             filteredAllTables.forEach((t, p) -> {
