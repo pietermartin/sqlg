@@ -790,7 +790,7 @@ public class Topology {
         //loaded as the notification might not have been received yet.
         List<Vertex> logs = traversalSource.V()
                 .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                .order().by(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG_TIMESTAMP, Order.decr)
+                .order().by(SQLG_SCHEMA_LOG_TIMESTAMP, Order.decr)
                 .limit(1)
                 .toList();
         Preconditions.checkState(logs.size() <= 1, "must load one or zero logs in cacheTopology");
