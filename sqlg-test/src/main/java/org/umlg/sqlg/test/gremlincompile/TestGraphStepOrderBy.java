@@ -30,6 +30,18 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
+    public void testOrderByInSchemas() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A.A", "name", "a");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "A.A", "name", "b");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "A.A", "name", "c");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A.A").order().by("name", Order.decr).toList();
+        Assert.assertEquals(c, vertices.get(0));
+        Assert.assertEquals(b, vertices.get(1));
+        Assert.assertEquals(a, vertices.get(2));
+    }
+
+    @Test
     public void testOrderBy() throws InterruptedException {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "a");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a", "surname", "b");
