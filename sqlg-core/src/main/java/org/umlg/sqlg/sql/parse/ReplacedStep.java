@@ -602,8 +602,6 @@ public class ReplacedStep<S, E> {
             }
         }
         this.hasContainers.removeAll(toRemove);
-        SqlgUtil.removeTopologyStrategyHasContainer(this.hasContainers);
-
         return result;
     }
 
