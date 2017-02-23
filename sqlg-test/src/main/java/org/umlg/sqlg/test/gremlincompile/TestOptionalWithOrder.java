@@ -13,19 +13,44 @@ import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
-import static org.junit.Assert.assertEquals;
-
 /**
  * Date: 2016/05/31
  * Time: 7:32 PM
  */
 public class TestOptionalWithOrder extends BaseTest {
 
+    @Test
+    public void testOptionalWithOrder() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
+        Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
+        Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("abb", bb1);
+        a1.addEdge("abb", bb2);
+        a1.addEdge("abb", bb3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1).optional(
+                __.out().order().by("name")
+//                __.out().path()
+        ).path();
+        printTraversalForm(traversal);
+        while (traversal.hasNext()) {
+            Path next = traversal.next();
+            System.out.println(next);
+        }
+    }
+
     //Nested order can not be optimized.
     //This one is last so its optimized.
     @Test
-    public void testOptionalWithOrder() {
+    public void testOptionalWithOrder2() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "order", 3);
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "order", 2);
@@ -36,12 +61,12 @@ public class TestOptionalWithOrder extends BaseTest {
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V(a1.id()).as("a").optional(
-                        outE().as("e").otherV().as("v")
+                        __.outE().as("e").otherV().as("v")
                 ).order().by("order");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices =  traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        assertEquals(3, vertices.size());
+        Assert.assertEquals(3, vertices.size());
     }
 
     //TODO unoptimized, this is needed for UMLG, optimize!!!
