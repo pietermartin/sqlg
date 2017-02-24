@@ -18,6 +18,7 @@ import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -409,12 +410,19 @@ public class TestLoadSchemaViaNotify extends BaseTest {
 	         assertEquals(aVertexLabel, topologyListenerTriple.get(1).getLeft());
 	         assertEquals("", topologyListenerTriple.get(1).getMiddle());
 	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(1).getRight());
-
+	         Map<String,PropertyColumn> props=((VertexLabel)topologyListenerTriple.get(1).getLeft()).getProperties();
+	         assertTrue(props.containsKey("name"));
+	         assertTrue(props.containsKey("surname"));
+	         
 	         assertEquals(index, topologyListenerTriple.get(2).getLeft());
 	         assertEquals("", topologyListenerTriple.get(2).getMiddle());
 	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(2).getRight());
 	         
 	         assertEquals(edgeLabel, topologyListenerTriple.get(3).getLeft());
+	         String s=topologyListenerTriple.get(3).getLeft().toString();
+	         assertTrue(s.contains(edgeLabel.getSchema().getName()));
+	         props=((EdgeLabel)topologyListenerTriple.get(3).getLeft()).getProperties();
+	         assertTrue(props.containsKey("special"));     
 	         assertEquals("", topologyListenerTriple.get(3).getMiddle());
 	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(3).getRight());
 
