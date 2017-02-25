@@ -276,7 +276,7 @@ public class TestMultiThread extends BaseTest {
             });
         }
         executorService.shutdown();
-        executorService.awaitTermination(20, TimeUnit.SECONDS);
+        executorService.awaitTermination(200, TimeUnit.SECONDS);
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             Assert.assertEquals(200, sqlgGraph1.traversal().V().hasLabel("Person_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Person").count().next().longValue());
             Assert.assertEquals(200, sqlgGraph1.traversal().V().hasLabel("Address_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Address").count().next().longValue());
