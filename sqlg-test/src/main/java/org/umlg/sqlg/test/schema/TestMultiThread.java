@@ -1,26 +1,36 @@
 package org.umlg.sqlg.test.schema;
 
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.test.BaseTest;
-
-import java.util.HashSet;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import java.net.URL;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assume;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.test.BaseTest;
 
 /**
  * Date: 2014/09/24
@@ -233,4 +243,50 @@ public class TestMultiThread extends BaseTest {
         assertEquals(schemas.size() + 2, this.sqlgGraph.getTopology().getSchemas().size());
     }
 
+    /**
+     * test when each graph is created in its own thread, in distributed mode
+     * @throws Exception
+     */
+    @Test
+    public void testMultipleGraphs() throws Exception {
+    	 URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
+         try {
+             configuration = new PropertiesConfiguration(sqlProperties);
+             Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+             configuration.addProperty("distributed", true);
+             if (!configuration.containsKey("jdbc.url"))
+                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
+
+         } catch (ConfigurationException e) {
+             throw new RuntimeException(e);
+         }
+         // ensure for now that the topology already exists
+         // modifying the topology quickly between threads fails in weird and wonderful ways
+         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        	 sqlgGraph1.addVertex(T.label, "Person", "name", "initial");
+        	 sqlgGraph1.tx().commit();
+         }
+    	 ExecutorService executorService = newFixedThreadPool(200);
+    	 //configuration.getInt("maxPoolSize", 100)-1
+    	 int loop=10;
+    	 for (int i = 0; i < loop; i++) {
+        	 String n="person"+i;
+             executorService.submit(() -> {
+            	 try {
+            		 try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            			 sqlgGraph1.addVertex(T.label, "Person", "name", n);
+	                     sqlgGraph1.tx().commit();
+	            	 }
+            	 } catch (Exception e){
+            		 e.printStackTrace();
+            		 fail(e.getMessage());
+            	 }
+             });
+         }
+         executorService.shutdown();
+         executorService.awaitTermination(5, TimeUnit.SECONDS);
+         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+        	 assertEquals(loop+1,sqlgGraph1.traversal().V().hasLabel("Person").count().next().longValue());
+         }
+    }
 }
