@@ -276,7 +276,7 @@ public class TestMultiThread extends BaseTest {
                         sqlgGraph1.tx().commit();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error(e.getMessage(), e);
                     fail(e.getMessage());
                 }
             });
@@ -328,7 +328,7 @@ public class TestMultiThread extends BaseTest {
             });
         }
         executorService.shutdown();
-        executorService.awaitTermination(5, TimeUnit.SECONDS);
+        executorService.awaitTermination(10, TimeUnit.SECONDS);
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
             for (int i = 0; i < loop; i++) {
                 String n = "person" + i;
