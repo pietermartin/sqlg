@@ -3222,7 +3222,11 @@ public class PostgresDialect extends BaseSqlDialect {
             //configure the DB to use the standard conforming strings otherwise the escape sequences cause errors
             st.executeUpdate("ALTER DATABASE \"" + dbName + "\" SET standard_conforming_strings TO ON;");
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to modify the database configuration.");
+        	// ignore concurrency error, probably only works if PostgreSQL uses english
+        	// but the error code is always 0, and the SQLState is "internal error" which is not really helpful
+        	if (!e.getMessage().toLowerCase().contains("tuple concurrently updated")){
+        		throw new IllegalStateException("Failed to modify the database configuration.",e);
+        	}
         }
     }
 

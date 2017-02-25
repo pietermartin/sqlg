@@ -11,10 +11,13 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Date: 2017/01/22
@@ -61,10 +64,18 @@ public class TestTopologyChangeListener extends BaseTest {
         assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(0).getRight());
 
         assertEquals(aVertexLabel, this.topologyListenerTriple.get(1).getLeft());
+        Map<String,PropertyColumn> props=((VertexLabel)this.topologyListenerTriple.get(1).getLeft()).getProperties();
+        assertTrue(props.containsKey("name"));
+        assertTrue(props.containsKey("surname"));
+
         assertEquals("", this.topologyListenerTriple.get(1).getMiddle());
         assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(1).getRight());
 
         assertEquals(edgeLabel, this.topologyListenerTriple.get(2).getLeft());
+        String s=this.topologyListenerTriple.get(2).getLeft().toString();
+        assertTrue(s.contains(edgeLabel.getSchema().getName()));
+        props=((EdgeLabel)this.topologyListenerTriple.get(2).getLeft()).getProperties();
+        assertTrue(props.containsKey("special"));        
         assertEquals("", this.topologyListenerTriple.get(2).getMiddle());
         assertEquals(TopologyChangeAction.CREATE, this.topologyListenerTriple.get(2).getRight());
 
@@ -105,6 +116,9 @@ public class TestTopologyChangeListener extends BaseTest {
 
 		@Override
         public void change(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
+			String s=topologyInf.toString();
+			assertNotNull(s);
+			assertTrue(s+"does not contain "+ topologyInf.getName(),s.contains(topologyInf.getName()));
             topologyListenerTriple.add(
                     Triple.of(topologyInf, oldValue, action)
             );
