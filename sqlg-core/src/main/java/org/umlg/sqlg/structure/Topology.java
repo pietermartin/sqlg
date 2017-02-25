@@ -380,14 +380,16 @@ public class Topology {
                     ((SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect()).lock(this.sqlgGraph);
                     //load the log to see if the schema has not already been created.
                     //the last loaded log
-                    LocalDateTime timestamp = this.notificationTimestamps.last();
-                    List<Vertex> logs = this.sqlgGraph.topology().V()
-                            .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
-                            .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
-                            .toList();
-                    for (Vertex logVertex : logs) {
-                        ObjectNode log = logVertex.value("log");
-                        fromNotifyJson(timestamp, log);
+                    if (!this.notificationTimestamps.isEmpty()) {
+                        LocalDateTime timestamp = this.notificationTimestamps.last();
+                        List<Vertex> logs = this.sqlgGraph.topology().V()
+                                .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
+                                .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
+                                .toList();
+                        for (Vertex logVertex : logs) {
+                            ObjectNode log = logVertex.value("log");
+                            fromNotifyJson(timestamp, log);
+                        }
                     }
                 }
             } catch (InterruptedException e) {
@@ -784,6 +786,7 @@ public class Topology {
     }
 
     void cacheTopology() {
+        this.lock();
         GraphTraversalSource traversalSource = this.sqlgGraph.topology();
         //load the last log
         //the last timestamp is needed when just after obtaining the lock the log table is queried again to ensure that the last log is indeed
