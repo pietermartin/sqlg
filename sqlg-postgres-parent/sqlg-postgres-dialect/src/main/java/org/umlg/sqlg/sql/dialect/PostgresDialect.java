@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
+import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -3460,5 +3461,11 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public boolean requiredPreparedStatementDeallocate() {
         return true;
+    }
+    
+    @Override
+    public String getFullTextQueryText(FullText fullText, String column) {
+    	String toQuery=fullText.isPlain()?"plainto_tsquery":"to_tsquery";
+    	return "to_tsvector('"+fullText.getConfiguration()+"', "+column+") @@ "+toQuery+"(?)";
     }
 }
