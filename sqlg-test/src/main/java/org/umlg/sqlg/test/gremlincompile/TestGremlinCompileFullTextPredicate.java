@@ -33,10 +33,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
             configuration.addProperty("distributed", true);
         }
     }
-	
-	public TestGremlinCompileFullTextPredicate() {
-		
-	}
+
 	
 	@Test
 	public void testDefaultImplementation(){
