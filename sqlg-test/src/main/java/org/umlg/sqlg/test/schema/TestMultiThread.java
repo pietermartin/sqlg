@@ -243,7 +243,6 @@ public class TestMultiThread extends BaseTest {
             configuration = new PropertiesConfiguration(sqlProperties);
             Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
             configuration.addProperty("distributed", true);
-            configuration.getInt("maxPoolSize", 10);
             if (!configuration.containsKey("jdbc.url"))
                 throw new IllegalArgumentException(String.format("SqlGraph configuration requires that the %s be set", "jdbc.url"));
 
@@ -251,13 +250,12 @@ public class TestMultiThread extends BaseTest {
             throw new RuntimeException(e);
         }
         ExecutorService executorService = newFixedThreadPool(200);
-        int loop = 200;
+        int loop = 400;
         for (int i = 0; i < loop; i++) {
             String n = "person" + i;
             executorService.submit(() -> {
                 try {
                     try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-                        logger.info(n);
                         final Random random = new Random();
                         if (random.nextBoolean()) {
                             Vertex person = sqlgGraph1.addVertex(T.label, "Person_True", "name", n);
@@ -277,11 +275,11 @@ public class TestMultiThread extends BaseTest {
             });
         }
         executorService.shutdown();
-        executorService.awaitTermination(2000, TimeUnit.SECONDS);
+        executorService.awaitTermination(100, TimeUnit.SECONDS);
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            Assert.assertEquals(200, sqlgGraph1.traversal().V().hasLabel("Person_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Person").count().next().longValue());
-            Assert.assertEquals(200, sqlgGraph1.traversal().V().hasLabel("Address_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Address").count().next().longValue());
-            Assert.assertEquals(200, sqlgGraph1.traversal().E().hasLabel("address_True").count().next().longValue() + sqlgGraph1.traversal().E().hasLabel("address").count().next().longValue());
+            Assert.assertEquals(400, sqlgGraph1.traversal().V().hasLabel("Person_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Person").count().next().longValue());
+            Assert.assertEquals(400, sqlgGraph1.traversal().V().hasLabel("Address_True").count().next().longValue() + sqlgGraph1.traversal().V().hasLabel("Address").count().next().longValue());
+            Assert.assertEquals(400, sqlgGraph1.traversal().E().hasLabel("address_True").count().next().longValue() + sqlgGraph1.traversal().E().hasLabel("address").count().next().longValue());
         }
     }
 
