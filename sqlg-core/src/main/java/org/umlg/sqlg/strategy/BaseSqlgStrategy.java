@@ -32,6 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -520,14 +521,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     private List<HasContainer> optimizeTextContains(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getBiPredicate() == Text.contains ||
-                    hasContainer.getBiPredicate() == Text.ncontains ||
-                    hasContainer.getBiPredicate() == Text.containsCIS ||
-                    hasContainer.getBiPredicate() == Text.ncontainsCIS ||
-                    hasContainer.getBiPredicate() == Text.startsWith ||
-                    hasContainer.getBiPredicate() == Text.nstartsWith ||
-                    hasContainer.getBiPredicate() == Text.endsWith ||
-                    hasContainer.getBiPredicate() == Text.nendsWith
+            if (hasContainer.getBiPredicate() instanceof Text ||
+                    hasContainer.getBiPredicate() instanceof FullText
                     ) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
@@ -539,14 +534,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
     private boolean isTextContains(List<HasContainer> hasContainers) {
         return (hasContainers.size() == 1 && !hasContainers.get(0).getKey().equals(T.label.getAccessor()) &&
                 !hasContainers.get(0).getKey().equals(T.id.getAccessor()) &&
-                (hasContainers.get(0).getBiPredicate() == Text.contains ||
-                        hasContainers.get(0).getBiPredicate() == Text.ncontains ||
-                        hasContainers.get(0).getBiPredicate() == Text.containsCIS ||
-                        hasContainers.get(0).getBiPredicate() == Text.ncontainsCIS ||
-                        hasContainers.get(0).getBiPredicate() == Text.startsWith ||
-                        hasContainers.get(0).getBiPredicate() == Text.nstartsWith ||
-                        hasContainers.get(0).getBiPredicate() == Text.endsWith ||
-                        hasContainers.get(0).getBiPredicate() == Text.nendsWith
+                (hasContainers.get(0).getBiPredicate() instanceof Text ||
+                        hasContainers.get(0).getBiPredicate() instanceof FullText
                 ));
     }
 
