@@ -3407,7 +3407,12 @@ public class PostgresDialect extends BaseSqlDialect {
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                             PostgresDialect.this.executorService.submit(() -> {
                                 try {
-                                    this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
+                                    Topology topology = this.sqlgGraph.getTopology();
+                                    //It is possible for the topology to be null when a notification is received just
+                                    // after the connection pool is setup but before the topology is created.
+                                    if (topology != null) {
+                                        topology.fromNotifyJson(pid, timestamp);
+                                    }
                                 } catch (Exception e) {
                                     // we may get InterruptedException when we shut down
                                     if (run.get()) {
