@@ -87,7 +87,7 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
             json.append("]");
             return json.toString();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("Json generation failed", e);
         }
     }
 
