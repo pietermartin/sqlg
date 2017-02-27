@@ -1,6 +1,7 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
@@ -106,6 +107,30 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     //swallow as it is used for process flow only.
                     return;
                 }
+            } else if (step instanceof OrderGlobalStep) {
+
+                //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
+                if (traversal.getSteps().contains(step)) {
+                    traversal.removeStep(step);
+                }
+                lastReplacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
+
+            } else if (step instanceof RangeGlobalStep) {
+
+                //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
+                if (traversal.getSteps().contains(step)) {
+                    traversal.removeStep(step);
+                }
+                RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) step;
+                long high = rgs.getHighRange();
+                lastReplacedStep.setRange(Range.between(rgs.getLowRange(), high));
+
+            } else if (step instanceof EmptyStep) {
+
+//                SqlgBatchBarrierStep<?> insertStep = new SqlgBatchBarrierStep<>(step, traversal);
+//                TraversalHelper.insertAfterStep(insertStep, sqlgStep, traversal);
+//                break;
+
             } else {
 
                 if (isReplaceableStep(step.getClass(), alreadyReplacedGraphStep)) {
@@ -127,7 +152,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     pathCount++;
 
                     @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    ReplacedStep replacedStep = ReplacedStep.from(((SqlgGraph) traversal.getGraph().get()).getTopology(), (AbstractStep) step, pathCount);
+                    ReplacedStep replacedStep = ReplacedStep.from(lastReplacedStep, ((SqlgGraph) traversal.getGraph().get()).getTopology(), (AbstractStep) step, pathCount);
                     if (sqlgStep == null || step instanceof GraphStep) {
                         sqlgStep = constructSqlgStep(traversal, step);
                         if (previous != null) {
@@ -205,7 +230,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     chooseStepAdded = false;
                 } else {
                     if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep || s instanceof RangeGlobalStep)) {
-                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
+//                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
                     }
                     break;
                 }
@@ -231,9 +256,9 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         Traversal.Admin<?, ?> predicate = (Traversal.Admin<?, ?>) chooseStep.getLocalChildren().get(0);
         List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
 
-        if (predicateSteps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
-            return true;
-        }
+//        if (predicateSteps.stream().anyMatch(s -> s instanceof OrderGlobalStep)) {
+//            return true;
+//        }
 
         predicateSteps.remove(predicate.getSteps().size() - 1);
 
@@ -722,6 +747,41 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
         HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(recordsIds.toArray()));
         replacedStep.addHasContainers(Collections.singletonList(idHasContainer));
         sqlgGraphStepCompiled.clearIds();
+    }
+
+    /**
+     * collect a range global step
+     *
+     * @param step         the current step to collect
+     * @param iterator     the step iterator
+     * @param traversal    the traversal of all steps
+     * @param replacedStep the current replaced step collecting the info
+     * @param multiple     are we in a multiple label query?
+     * @return true if we impacted the iterator by removing the current step, false otherwise
+     */
+    static boolean collectRangeGlobalStep(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, boolean multiple) {
+        if (step instanceof RangeGlobalStep<?>) {
+            RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) step;
+            if (!multiple || rgs.getLowRange() == 0) {
+                long high = rgs.getHighRange();
+                // when we have multiple labels, we are going to apply the range on the first label first
+                // if we retrieve more than the given range, we don't bother looking at the other labels
+                // so we always ask for one more row here: better to retrieve an extra row and see there's no point
+                // hitting another table
+                if (multiple) {
+                    high += 1;
+                }
+                replacedStep.setRange(Range.between(rgs.getLowRange(), high));
+                if (!multiple) {
+                    iterator.remove();
+                    traversal.removeStep(step);
+                    return true;
+                }
+
+            }
+        }
+        return false;
+
     }
 
     private class UnoptimizableException extends RuntimeException {

@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Date: 2016/05/31
@@ -21,29 +22,226 @@ public class TestOptionalWithOrder extends BaseTest {
 
     @Test
     public void testOptionalWithOrder() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
+
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
         Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
         Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
         Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
         Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
+
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "j");
+        Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "k");
+        Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "l");
+        Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "m");
+
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         a1.addEdge("ab", b3);
         a1.addEdge("abb", bb1);
         a1.addEdge("abb", bb2);
         a1.addEdge("abb", bb3);
+
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        b2.addEdge("bcc", cc1);
+        b2.addEdge("bcc", cc2);
+        b2.addEdge("bcc", cc3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V(a1).optional(
-                __.out().order().by("name")
-//                __.out().path()
-        ).path();
-        printTraversalForm(traversal);
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .optional(
+                        __.out().order().by("name").optional(
+                                __.out().order().by("name", Order.decr)
+                        )
+                )
+                .path();
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        for (Path next : paths) {
+            for (Object o : next) {
+                Vertex v = (Vertex) o;
+                System.out.print("[");
+                System.out.print(v.<String>value("name"));
+                System.out.print("], ");
+            }
+            System.out.print("\n");
+        }
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(12, paths.size());
+
+        //assert the order
+        //all the paths of length 2 and 3 must be sorted
+        List<Path> pathsOfLength3 = paths.stream().filter(p -> p.size() == 3).collect(Collectors.toList());
+        Vertex v = (Vertex) pathsOfLength3.get(5).objects().get(2);
+        Assert.assertEquals("h", v.value("name"));
+        v = (Vertex) pathsOfLength3.get(4).objects().get(2);
+        Assert.assertEquals("i", v.value("name"));
+        v = (Vertex) pathsOfLength3.get(3).objects().get(2);
+        Assert.assertEquals("j", v.value("name"));
+        v = (Vertex) pathsOfLength3.get(2).objects().get(2);
+        Assert.assertEquals("k", v.value("name"));
+        v = (Vertex) pathsOfLength3.get(1).objects().get(2);
+        Assert.assertEquals("l", v.value("name"));
+        v = (Vertex) pathsOfLength3.get(0).objects().get(2);
+        Assert.assertEquals("m", v.value("name"));
+
+        List<Path> pathsOfLength2 = paths.stream().filter(p -> p.size() == 2).collect(Collectors.toList());
+        v = (Vertex) pathsOfLength2.get(0).objects().get(1);
+        Assert.assertEquals("b", v.value("name"));
+        v = (Vertex) pathsOfLength2.get(1).objects().get(1);
+        Assert.assertEquals("e", v.value("name"));
+        v = (Vertex) pathsOfLength2.get(2).objects().get(1);
+        Assert.assertEquals("f", v.value("name"));
+        v = (Vertex) pathsOfLength2.get(3).objects().get(1);
+        Assert.assertEquals("g", v.value("name"));
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c3)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b2) && p.get(2).equals(cc3)).findAny().get());
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb1)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb1)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(bb3)).findAny().get());
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b3)).findAny().get());
+
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a2)));
+        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a2)).findAny().get());
+        Assert.assertTrue(paths.stream().anyMatch(p -> p.size() == 1 && p.get(0).equals(a3)));
+        paths.remove(paths.stream().filter(p -> p.size() == 1 && p.get(0).equals(a3)).findAny().get());
+
+        Assert.assertTrue(paths.isEmpty());
+
+    }
+
+    @Test
+    public void testOptionalWithOrderAndRange() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
+
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
+        Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
+        Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
+
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "j");
+        Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "k");
+        Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "l");
+        Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "m");
+
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("abb", bb1);
+        a1.addEdge("abb", bb2);
+        a1.addEdge("abb", bb3);
+
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        b2.addEdge("bcc", cc1);
+        b2.addEdge("bcc", cc2);
+        b2.addEdge("bcc", cc3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .optional(
+                        __.out().order().by("name").optional(
+                                __.out().order().by("name", Order.decr).range(2, 3)
+                        )
+                )
+                .path();
         while (traversal.hasNext()) {
             Path next = traversal.next();
-            System.out.println(next);
+            for (Object o : next) {
+                Vertex v = (Vertex) o;
+                System.out.print("[");
+                System.out.print(v.<String>value("name"));
+                System.out.print("], ");
+            }
+            System.out.print("\n");
+        }
+    }
+
+    @Test
+    public void testOptionalWithOrderAndRange2() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
+
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
+        Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
+        Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
+
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "j");
+        Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "k");
+        Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "l");
+        Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "m");
+
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("abb", bb1);
+        a1.addEdge("abb", bb2);
+        a1.addEdge("abb", bb3);
+
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        b2.addEdge("bcc", cc1);
+        b2.addEdge("bcc", cc2);
+        b2.addEdge("bcc", cc3);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .optional(
+                        __.out().order().by("name").range(1, 2).optional(
+                                __.out().order().by("name", Order.decr).range(2, 3)
+                        )
+                )
+                .path();
+        while (traversal.hasNext()) {
+            Path next = traversal.next();
+            for (Object o : next) {
+                Vertex v = (Vertex) o;
+                System.out.print("[");
+                System.out.print(v.<String>value("name"));
+                System.out.print("], ");
+            }
+            System.out.print("\n");
         }
     }
 
@@ -105,7 +303,7 @@ public class TestOptionalWithOrder extends BaseTest {
                 .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
-        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertEquals(2, traversal.getSteps().size());
 
         Assert.assertEquals(7, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(

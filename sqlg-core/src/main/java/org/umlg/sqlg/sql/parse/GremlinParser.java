@@ -1,6 +1,8 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -23,9 +25,7 @@ public class GremlinParser<S extends Element, E extends Element> {
     }
 
     public Set<SchemaTableTree> parseForStrategy(List<ReplacedStep<S, E>> replacedSteps) {
-        ReplacedStep startReplacedStep = replacedSteps.get(0);
         Set<SchemaTableTree> result = parse(replacedSteps);
-        replacedSteps.add(0, startReplacedStep);
         return result;
     }
 
@@ -33,8 +33,8 @@ public class GremlinParser<S extends Element, E extends Element> {
      * This is for the GraphStep
      * The first replacedStep existVertexLabel the starting SchemaTable.
      *
-     * @param replacedSteps
-     * @return
+     * @param replacedSteps The list of steps that were replaced by the strategy.
+     * @return The root {@link SchemaTableTree}s
      */
     public Set<SchemaTableTree> parse(List<ReplacedStep<S, E>> replacedSteps) {
         ReplacedStep startReplacedStep = replacedSteps.remove(0);
@@ -46,8 +46,10 @@ public class GremlinParser<S extends Element, E extends Element> {
             Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
             schemaTableTrees.add(rootSchemaTableTree);
             for (ReplacedStep<S, E> replacedStep : replacedSteps) {
-                //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
-                schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+                if (!(replacedStep.getStep() instanceof OrderGlobalStep) && !(replacedStep.getStep() instanceof RangeGlobalStep)) {
+                    //This schemaTableTree represents the tree nodes as build up to this depth. Each replacedStep goes a level further
+                    schemaTableTrees = replacedStep.calculatePathForStep(schemaTableTrees);
+                }
             }
             boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
             if (remove) {
@@ -56,6 +58,7 @@ public class GremlinParser<S extends Element, E extends Element> {
             rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedSteps.size());
         }
         rootSchemaTableTrees.removeAll(toRemove);
+        replacedSteps.add(0, startReplacedStep);
         return rootSchemaTableTrees;
 
     }

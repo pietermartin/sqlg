@@ -49,7 +49,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
      * are we reading the query results lazily?
      */
     private boolean lazy = true;
-    
+
     private boolean first = true;
     private Map<String, Integer> lastElementIdCountMap = new HashMap<>();
     private QUERY queryState = QUERY.REGULAR;
@@ -74,26 +74,27 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
 
     @Override
     public boolean hasNext() {
-    	if (lazy){
-    		return hasNextLazy();
-    	}
-    	// eager mode: just read everything about this step and collect it
-    	if (allElements==null){
-    		List<List<Emit<SqlgElement>>> allList=new LinkedList<>();
-    		while (hasNextLazy()){
-    			allList.add( this.elements);
-    	        this.elements = null;
-    	    }
-    		allElements=allList.iterator();
-    	}
-    	return allElements.hasNext();
+        if (lazy) {
+            return hasNextLazy();
+        }
+        // eager mode: just read everything about this step and collect it
+        if (allElements == null) {
+            List<List<Emit<SqlgElement>>> allList = new LinkedList<>();
+            while (hasNextLazy()) {
+                allList.add(this.elements);
+                this.elements = null;
+            }
+            allElements = allList.iterator();
+        }
+        return allElements.hasNext();
     }
-    
+
     /**
      * lazy evaluation of next results
+     *
      * @return
      */
-    public boolean hasNextLazy() {
+    private boolean hasNextLazy() {
         try {
             while (true) {
                 switch (this.queryState) {
@@ -215,15 +216,16 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
     }
 
     @Override
-    public E next(){
-    	if (lazy){
-    		return nextLazy();
-    	}
-    	return (E)allElements.next();
+    public E next() {
+        if (lazy) {
+            return nextLazy();
+        }
+        return (E) allElements.next();
     }
-    
+
     /**
      * return the next lazy results
+     *
      * @return
      */
     public E nextLazy() {

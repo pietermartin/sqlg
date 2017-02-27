@@ -1,7 +1,6 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimization.MessagePassingReductionStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
@@ -31,6 +30,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
 
     private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
             VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class
+            ,OrderGlobalStep.class, RangeGlobalStep.class
     );
     private Logger logger = LoggerFactory.getLogger(SqlgVertexStepStrategy.class.getName());
 
@@ -105,39 +105,6 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         }
     }
     
-    /**
-     * collect a range global step
-     * @param step the current step to collect
-     * @param iterator the step iterator
-     * @param traversal the traversal of all steps
-     * @param replacedStep the current replaced step collecting the info
-     * @param multiple are we in a multiple label query?
-     * @return true if we impacted the iterator by removing the current step, false otherwise
-     */
-    private static boolean collectRangeGlobalStep(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep,boolean multiple){
-    	if (step instanceof RangeGlobalStep<?>){
-        	RangeGlobalStep<?> rgs=(RangeGlobalStep<?>)step;
-        	if (!multiple || rgs.getLowRange()==0){
-        		long high=rgs.getHighRange();
-        		// when we have multiple labels, we are going to apply the range on the first label first
-        		// if we retrieve more than the given range, we don't bother looking at the other labels
-        		// so we always ask for one more row here: better to retrieve an extra row and see there's no point
-        		// hitting another table
-        		if (multiple){
-        			high+=1;
-        		}
-        		replacedStep.setRange(Range.between(rgs.getLowRange(),high ));
-        		if (!multiple){
-        			iterator.remove();
-        			traversal.removeStep(step);
-        			return true;
-        		}
-	            
-        	}
-    	} 
-    	return false;
-   
-    }
 
     private static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
         //Collect the OrderGlobalSteps

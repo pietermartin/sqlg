@@ -36,12 +36,15 @@ public class ReplacedStep<S, E> {
     private Topology topology;
     private AbstractStep<S, E> step;
     private Set<String> labels;
+    private ReplacedStep<?, ?> previous;
+    private ReplacedStep<?, ?> next;
     private List<HasContainer> hasContainers;
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
     /**
      * range limitation if any
      */
     private Range<Long> range;
+    private Long rangeCount = 1L;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
     private boolean emit;
@@ -71,8 +74,12 @@ public class ReplacedStep<S, E> {
         return replacedStep;
     }
 
-    public static <S, E> ReplacedStep from(Topology topology, AbstractStep<S, E> step, int pathCount) {
+    public static <S, E> ReplacedStep from(ReplacedStep previous, Topology topology, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
+        replacedStep.previous = previous;
+        if (previous != null) {
+            previous.next = replacedStep;
+        }
         replacedStep.step = step;
         replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
         replacedStep.hasContainers = new ArrayList<>();
@@ -82,7 +89,7 @@ public class ReplacedStep<S, E> {
         return replacedStep;
     }
 
-    public boolean isFake() {
+    boolean isFake() {
         return fake;
     }
 
@@ -685,10 +692,31 @@ public class ReplacedStep<S, E> {
     }
 
     public Range<Long> getRange() {
-        return range;
+        return this.range;
     }
 
     public void setRange(Range<Long> range) {
         this.range = range;
+    }
+
+    public boolean hasRange() {
+        return this.getRange() != null;
+    }
+
+    public boolean containsRange() {
+        if (!this.<Long>getRange().isAfter(this.rangeCount - 1) && !this.<Long>getRange().isBefore(this.rangeCount)) {
+            this.incrementRangeCount();
+            return true;
+        } else {
+            this.incrementRangeCount();
+            return false;
+        }
+    }
+
+    private void incrementRangeCount() {
+        this.rangeCount++;
+        if (this.previous != null) {
+            this.previous.incrementRangeCount();
+        }
     }
 }

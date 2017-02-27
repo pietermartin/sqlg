@@ -912,6 +912,8 @@ public class SchemaTableTree {
                 ElementValueTraversal elementValueTraversal = (ElementValueTraversal) comparator.getValue0();
                 String prefix = String.valueOf(this.stepDepth);
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
+                prefix += this.reducedLabels();
+                prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.getSchemaTable().getSchema();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += this.getSchemaTable().getTable();
@@ -982,9 +984,9 @@ public class SchemaTableTree {
     }
 
     private String toRangeClause(SqlgGraph sqlgGraph) {
-        if (range != null) {
-            return " " + sqlgGraph.getSqlDialect().getRangeClause(range);
-        }
+//        if (range != null) {
+//            return " " + sqlgGraph.getSqlDialect().getRangeClause(range);
+//        }
         return "";
     }
 
@@ -1847,7 +1849,7 @@ public class SchemaTableTree {
         return hasContainers;
     }
 
-    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
+    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
         return this.comparators;
     }
 
@@ -2055,5 +2057,6 @@ public class SchemaTableTree {
     public void setFakeEmit(boolean fakeEmit) {
         this.fakeEmit = fakeEmit;
     }
+
 
 }

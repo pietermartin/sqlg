@@ -22,7 +22,6 @@ import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.*;
-import java.util.function.Supplier;
 
 /**
  * Date: 2015/02/20
@@ -36,7 +35,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     private SqlgGraph sqlgGraph;
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
-    private transient Supplier<Iterator<Emit<E>>> iteratorSupplier;
+    private transient SqlgRawIteratorToEmitIterator iteratorSupplier;
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
     private Traverser.Admin<E> previousHead;
 
@@ -52,7 +51,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
-        this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this::elements);
+        this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this.replacedSteps, this::elements);
         this.emitToList = !isStart;
     }
 
