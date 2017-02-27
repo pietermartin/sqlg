@@ -20,10 +20,6 @@ public class C3p0DataSourceFactory implements SqlgDataSourceFactory {
 
     private static Logger logger = LoggerFactory.getLogger(C3p0DataSourceFactory.class.getName());
 
-    public C3p0DataSourceFactory() {
-        //EMPTY
-    }
-
     @Override
     public SqlgDataSource setup(String driver, Configuration configuration) throws Exception {
         Preconditions.checkState(configuration.containsKey(SqlgGraph.JDBC_URL));
