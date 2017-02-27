@@ -7,6 +7,7 @@ import org.umlg.sqlg.structure.SqlgDataSourceFactory;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Date: 2014/07/12
@@ -18,6 +19,7 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
 
     private final ComboPooledDataSource dss;
     private final String jdbcUrl;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
 
     C3P0DataSource(String jdbcUrl, ComboPooledDataSource dss) {
         this.dss = dss;
@@ -31,18 +33,19 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
 
     @Override
     public void close() {
+        if (! closed.compareAndSet(false, true)) {
+            return;
+        }
+
         try {
-            if (dss != null) {
-                int numBusyConnections = dss.getNumBusyConnections();
-                if (numBusyConnections > 0) {
-                    logger.debug("Open connection on calling close. " + numBusyConnections);
-                }
+            int numBusyConnections = dss.getNumBusyConnections();
+            if (numBusyConnections > 0) {
+                logger.debug("Open connection on calling close. " + numBusyConnections);
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Could not close connection " +jdbcUrl, e);
         } finally {
-            if (dss != null)
-                dss.close();
+            dss.close();
         }
     }
 
