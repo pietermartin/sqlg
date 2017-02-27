@@ -27,7 +27,8 @@ import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
-import org.umlg.sqlg.structure.c3p0.C3p0DataSourceFactory;
+import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
+import org.umlg.sqlg.structure.ds.JNDIDataSource;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -189,7 +190,6 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 public class SqlgGraph implements Graph {
 
     public static final String JDBC_URL = "jdbc.url";
-    public static final String JNDI_PREFIX = "jndi:";
     public static final String DISTRIBUTED = "distributed";
     public static final String MODE_FOR_STREAM_VERTEX = " mode for streamVertex";
     public static final String TRANSACTION_MUST_BE_IN = "Transaction must be in ";
@@ -255,11 +255,10 @@ public class SqlgGraph implements Graph {
         try {
             this.jdbcUrl = this.configuration.getString(JDBC_URL);
 
-            if (jdbcUrl.startsWith(JNDI_PREFIX)) {
-                this.sqlgDataSource = dataSourceFactory
-                        .setupFromJndi(jdbcUrl.substring(JNDI_PREFIX.length()),
-                                this.configuration);
-                try (Connection conn = this.sqlgDataSource.get(jdbcUrl).getConnection()) {
+            if (JNDIDataSource.isJNDIUrl(this.jdbcUrl)) {
+                this.sqlgDataSource = JNDIDataSource.create(configuration);
+
+                try (Connection conn = this.getConnection()) {
                     SqlgPlugin p = findSqlgPlugin(conn.getMetaData());
                     if (p == null) {
                         throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
@@ -273,12 +272,11 @@ public class SqlgGraph implements Graph {
                 }
 
                 this.sqlDialect = p.instantiateDialect();
-                this.sqlgDataSource = dataSourceFactory.setup(p.getDriverFor(jdbcUrl),
-                        this.configuration);
+                this.sqlgDataSource = dataSourceFactory.setup(p.getDriverFor(jdbcUrl), this.configuration);
             }
 
-            logger.debug(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.configuration.getString(JDBC_URL), configuration.getInt("maxPoolSize", 100)));
-            try (Connection conn = this.sqlgDataSource.get(configuration.getString(JDBC_URL)).getConnection()) {
+            logger.debug(String.format("Opening graph. Connection url = %s, maxPoolSize = %d", this.getJdbcUrl(), configuration.getInt("maxPoolSize", 100)));
+            try (Connection conn = this.getConnection()) {
                 //This is used by Hsqldb to set the transaction semantics. MVCC and cache
                 this.sqlDialect.prepareDB(conn);
             }
@@ -520,7 +518,7 @@ public class SqlgGraph implements Graph {
         if (this.tx().isOpen())
             this.tx().close();
         this.topology.close();
-        this.sqlgDataSource.close(this.getJdbcUrl());
+        this.sqlgDataSource.close();
     }
 
     @Override
@@ -1245,6 +1243,10 @@ public class SqlgGraph implements Graph {
             }
         }
         return sqlgElements;
+    }
+
+    public Connection getConnection() throws SQLException {
+        return this.sqlgDataSource.getDatasource().getConnection();
     }
 
     public SqlgDataSource getSqlgDataSource() {

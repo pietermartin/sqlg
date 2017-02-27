@@ -49,7 +49,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
         try {
 
             sqlgDataSource = SqlgGraph.createDataSourceFactory(configuration).setup(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
-            try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
+            try (Connection conn = sqlgDataSource.getDatasource().getConnection()) {
                 DatabaseMetaData metadata = conn.getMetaData();
                 if (sqlDialect.supportsCascade()) {
                     String tableNamePattern = "%";
@@ -96,7 +96,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         } finally {
             if (sqlgDataSource != null) {
-                sqlgDataSource.close(configuration.getString("jdbc.url"));
+                sqlgDataSource.close();
             }
         }
     }

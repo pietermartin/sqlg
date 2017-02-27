@@ -9,11 +9,10 @@ import javax.sql.DataSource;
 public interface SqlgDataSourceFactory {
 
     SqlgDataSource setup(String driver, final Configuration configuration) throws Exception;
-    SqlgDataSource setupFromJndi(String jndiName, Configuration configuration) throws Exception;
 
     interface SqlgDataSource {
-        DataSource get(String jdbcUrl);
-        void close(String jdbcUrl);
+        DataSource getDatasource();
+        void close();
         String getPoolStatsAsJson();
     }
 

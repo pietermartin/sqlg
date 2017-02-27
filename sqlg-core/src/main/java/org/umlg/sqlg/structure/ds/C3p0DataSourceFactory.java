@@ -1,4 +1,4 @@
-package org.umlg.sqlg.structure.c3p0;
+package org.umlg.sqlg.structure.ds;
 
 import com.google.common.base.Preconditions;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
@@ -9,9 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import javax.naming.InitialContext;
-import javax.sql.DataSource;
-import java.util.HashMap;
 
 /**
  * Created by petercipov on 27/02/2017.
@@ -47,22 +44,6 @@ public class C3p0DataSourceFactory implements SqlgDataSourceFactory {
             comboPooledDataSource.setPassword(password);
         }
 
-        HashMap<String, DataSource> dss = new HashMap<>();
-        dss.put(connectURI, comboPooledDataSource);
-        C3P0DataSource ds = new C3P0DataSource(dss);
-        return ds;
-    }
-
-    @Override
-    public SqlgDataSource setupFromJndi(String jndiName, Configuration configuration) throws Exception {
-
-        InitialContext ctx = new InitialContext();
-        DataSource ds = (DataSource) ctx.lookup(jndiName);
-        String uri = configuration.getString(SqlgGraph.JDBC_URL);
-
-        HashMap<String, DataSource> dss = new HashMap<>();
-        dss.put(uri, ds);
-        C3P0DataSource gds = new C3P0DataSource(dss);
-        return gds;
+        return new C3P0DataSource(connectURI, comboPooledDataSource);
     }
 }
