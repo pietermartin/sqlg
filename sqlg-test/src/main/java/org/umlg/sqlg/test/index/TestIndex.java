@@ -171,7 +171,7 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "Person").has("name1", "john50").count().next(), 0);
-        Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+        Connection conn = this.sqlgGraph.getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
@@ -194,7 +194,7 @@ public class TestIndex extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         assertEquals(1, this.sqlgGraph.traversal().V().has(T.label, "MySchema.Person").has("name1", "john50").count().next(), 0);
-        Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+        Connection conn = this.sqlgGraph.getConnection();
         Statement statement = conn.createStatement();
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"MySchema\".\"V_Person\" a WHERE a.\"name1\" = 'john50'");
@@ -259,7 +259,7 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         if (this.sqlgGraph.getSqlDialect().getClass().getSimpleName().contains("Postgres")) {
-            Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+            Connection conn = this.sqlgGraph.getConnection();
             Statement statement = conn.createStatement();
             ResultSet rs = statement.executeQuery("explain analyze SELECT * FROM \"public\".\"E_person_address\" a WHERE a.\"name\" = 'address1001'");
             assertTrue(rs.next());

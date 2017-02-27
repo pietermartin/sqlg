@@ -148,7 +148,7 @@ public abstract class BaseTest {
         Connection conn = null;
         Statement stmt = null;
         try {
-            conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+            conn = this.sqlgGraph.getConnection();
             stmt = conn.createStatement();
             StringBuilder sql = new StringBuilder("SELECT * FROM ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
