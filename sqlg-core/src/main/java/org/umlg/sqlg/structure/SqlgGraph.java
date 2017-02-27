@@ -244,7 +244,7 @@ public class SqlgGraph implements Graph {
         try {
             return (SqlgDataSourceFactory) Class.forName(configuration.getString("jdbc.factory", C3p0DataSourceFactory.class.getCanonicalName())).newInstance();
         } catch (Exception ex) {
-            throw new RuntimeException("Could not create sqlg factory", ex);
+            throw new IllegalStateException("Could not create sqlg factory", ex);
         }
     }
 

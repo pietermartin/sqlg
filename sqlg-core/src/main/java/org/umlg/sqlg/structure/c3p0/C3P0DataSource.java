@@ -43,7 +43,7 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException("Could not close connection " +jdbcUrl, e);
         } finally {
             if (managed != null)
                 managed.close();
