@@ -94,34 +94,34 @@ public enum Text implements BiPredicate<String, String> {
     };
 
     public static P<String> contains(final String value) {
-        return new P(Text.contains, value);
+        return new P<>(Text.contains, value);
     }
 
     public static P<String> ncontains(final String value) {
-        return new P(Text.ncontains, value);
+        return new P<>(Text.ncontains, value);
     }
 
     public static P<String> containsCIS(final String value) {
-        return new P(Text.containsCIS, value);
+        return new P<>(Text.containsCIS, value);
     }
 
     public static P<String> ncontainsCIS(final String value) {
-        return new P(Text.ncontainsCIS, value);
+        return new P<>(Text.ncontainsCIS, value);
     }
 
     public static P<String> startsWith(final String value) {
-        return new P(Text.startsWith, value);
+        return new P<>(Text.startsWith, value);
     }
 
     public static P<String> nstartsWith(final String value) {
-        return new P(Text.nstartsWith, value);
+        return new P<>(Text.nstartsWith, value);
     }
 
     public static P<String> endsWith(final String value) {
-        return new P(Text.endsWith, value);
+        return new P<>(Text.endsWith, value);
     }
 
     public static P<String> nendsWith(final String value) {
-        return new P(Text.nendsWith, value);
+        return new P<>(Text.nendsWith, value);
     }
 }

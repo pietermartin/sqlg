@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.gis.GeographyPoint;
 import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
+import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.SqlgUtil;
@@ -3222,7 +3223,11 @@ public class PostgresDialect extends BaseSqlDialect {
             //configure the DB to use the standard conforming strings otherwise the escape sequences cause errors
             st.executeUpdate("ALTER DATABASE \"" + dbName + "\" SET standard_conforming_strings TO ON;");
         } catch (SQLException e) {
-            throw new IllegalStateException("Failed to modify the database configuration.");
+        	// ignore concurrency error, probably only works if PostgreSQL uses english
+        	// but the error code is always 0, and the SQLState is "internal error" which is not really helpful
+        	if (!e.getMessage().toLowerCase().contains("tuple concurrently updated")){
+        		throw new IllegalStateException("Failed to modify the database configuration.",e);
+        	}
         }
     }
 
@@ -3403,7 +3408,12 @@ public class PostgresDialect extends BaseSqlDialect {
                             LocalDateTime timestamp = LocalDateTime.parse(notify, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
                             PostgresDialect.this.executorService.submit(() -> {
                                 try {
-                                    this.sqlgGraph.getTopology().fromNotifyJson(pid, timestamp);
+                                    Topology topology = this.sqlgGraph.getTopology();
+                                    //It is possible for the topology to be null when a notification is received just
+                                    // after the connection pool is setup but before the topology is created.
+                                    if (topology != null) {
+                                        topology.fromNotifyJson(pid, timestamp);
+                                    }
                                 } catch (Exception e) {
                                     // we may get InterruptedException when we shut down
                                     if (run.get()) {
@@ -3451,5 +3461,11 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public boolean requiredPreparedStatementDeallocate() {
         return true;
+    }
+    
+    @Override
+    public String getFullTextQueryText(FullText fullText, String column) {
+    	String toQuery=fullText.isPlain()?"plainto_tsquery":"to_tsquery";
+    	return "to_tsvector('"+fullText.getConfiguration()+"', "+column+") @@ "+toQuery+"(?)";
     }
 }

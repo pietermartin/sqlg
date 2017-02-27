@@ -471,9 +471,8 @@ public class VertexLabel extends AbstractLabel {
                     String edgeLabelName = uncommittedOutEdgeLabel.get("label").asText();
                     Optional<EdgeLabel> edgeLabelOptional = this.schema.getEdgeLabel(edgeLabelName);
                     EdgeLabel edgeLabel;
-                     if (!edgeLabelOptional.isPresent()) {
+                    if (!edgeLabelOptional.isPresent()) {
                         edgeLabel = new EdgeLabel(this.getSchema().getTopology(), edgeLabelName);
-                        this.getSchema().getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
                     } else {
                         edgeLabel = edgeLabelOptional.get();
                     }
@@ -488,6 +487,10 @@ public class VertexLabel extends AbstractLabel {
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
                             this.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
                             this.getSchema().getName() + "." + this.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+                    // fire only applies to top level, fire for new edges
+                    if (!edgeLabelOptional.isPresent()){
+                    	this.getSchema().getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
+                    }
                 }
             }
         }

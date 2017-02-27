@@ -144,5 +144,26 @@ public class GlobalUniqueIndex implements TopologyInf {
         return Optional.of(result);
     }
 
-
+    /**
+     * JSON representation of committed state
+     * @return
+     */
+    protected JsonNode toJson(){
+    	ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+        for (PropertyColumn property : this.properties) {
+            ObjectNode objectNode = property.toNotifyJson();
+            objectNode.put("schemaName", property.getParentLabel().getSchema().getName());
+            objectNode.put("abstractLabelLabel", property.getParentLabel().getLabel());
+            propertyArrayNode.add(objectNode);
+        }
+        result.put("name", getName());
+        result.set("properties", propertyArrayNode);
+        return result;
+    }
+    
+    @Override
+    public String toString() {
+        return toJson().toString();
+    }
 }

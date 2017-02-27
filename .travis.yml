@@ -1,8 +1,9 @@
 dist: trusty
 sudo: required
 before_install:
-  - sudo sed -i -e 's/#max_locks_per_transaction.*/max_locks_per_transaction = 256/' /etc/postgresql/9.5/main/postgresql.conf
-  - sudo sed -i -e 's/#shared_buffers.*/shared_buffers = 1024MB/' /etc/postgresql/9.5/main/postgresql.conf
+  - sudo sed -i -e 's/max_connections.*/max_connections = 1000/' /etc/postgresql/9.6/main/postgresql.conf
+  - sudo sed -i -e 's/#max_locks_per_transaction.*/max_locks_per_transaction = 256/' /etc/postgresql/9.6/main/postgresql.conf
+  - sudo sed -i -e 's/#shared_buffers.*/shared_buffers = 1024MB/' /etc/postgresql/9.6/main/postgresql.conf
   - sudo /etc/init.d/postgresql restart
 language: java
 jdk:
@@ -15,7 +16,7 @@ script:
   - export MAVEN_OPTS="-Xmx5012m"
   - mvn -e test
 addons:
-  postgresql: "9.5"
+  postgresql: "9.6"
 before_script:
   - psql -c 'create database "sqlgraphdb";' -U postgres
   - psql -c 'create database "g1";' -U postgres

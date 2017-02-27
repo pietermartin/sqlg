@@ -1,5 +1,7 @@
 ##1.3.3
 
+. codeship test 2
+
 * Replace `ResultSet.getObject(index)` with `ResultSet.getString/Int...` as its faster.
 * Added support for global  unique indexes. This means that a unique index can be placed on multiple properties from any Vertex or Edge.
 * Rewrite of the topology/schema management. `SchemaManager` is replaced with `Topology`.

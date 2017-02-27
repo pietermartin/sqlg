@@ -111,7 +111,7 @@ class SqlgStartupManager {
                 statement.execute(sql);
             }
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+//            throw new RuntimeException(e);
         }
 
     }
