@@ -1,7 +1,6 @@
 package org.umlg.sqlg.test;
 
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -12,16 +11,15 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
 
 import javax.naming.Context;
-import javax.naming.NamingException;
 import javax.naming.spi.InitialContextFactory;
 import javax.naming.spi.NamingManager;
 import javax.sql.DataSource;
-import java.beans.PropertyVetoException;
-import java.io.IOException;
 import java.net.URL;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -49,7 +47,7 @@ public class TestJNDIInitialization {
     };
 
     @BeforeClass
-    public static void beforeClass() throws ClassNotFoundException, IOException, PropertyVetoException, NamingException, ConfigurationException {
+    public static void beforeClass() throws Exception {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         configuration = new PropertiesConfiguration(sqlProperties);
         if (!configuration.containsKey("jdbc.url")) {
@@ -59,9 +57,7 @@ public class TestJNDIInitialization {
         String url = configuration.getString("jdbc.url");
 
         //obtain the connection that we will later supply from JNDI
-        SqlgGraph g = SqlgGraph.open(configuration);
-        ds = g.getSqlgDataSource().get(url);
-//        g.getTopology().close();
+        ds = new C3p0DataSourceFactory().setup(url, configuration).getDatasource();
 
         //change the connection url to be a JNDI one
         configuration.setProperty("jdbc.url", "jndi:testConnection");
@@ -82,6 +78,7 @@ public class TestJNDIInitialization {
     public void testLoadingDatasourceFromJndi() throws Exception {
         SqlgGraph g = SqlgGraph.open(configuration);
         assertNotNull(g.getSqlDialect());
-        assertNotNull(g.getSqlgDataSource().get(configuration.getString("jdbc.url")));
+        assertEquals(configuration.getString("jdbc.url"), g.getJdbcUrl());
+        assertNotNull(g.getConnection());
     }
 }

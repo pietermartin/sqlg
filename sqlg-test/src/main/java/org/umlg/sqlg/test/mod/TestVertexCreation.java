@@ -24,7 +24,7 @@ public class TestVertexCreation extends BaseTest {
     public void testCreateEmptyVertex() throws SQLException {
         sqlgGraph.addVertex();
         sqlgGraph.tx().commit();
-        try (Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection()) {
+        try (Connection conn = this.sqlgGraph.getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
@@ -67,7 +67,7 @@ public class TestVertexCreation extends BaseTest {
         );
         sqlgGraph.tx().commit();
 
-        try (Connection conn = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection()) {
+        try (Connection conn = this.sqlgGraph.getConnection()) {
             try (Statement stmt = conn.createStatement()) {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));

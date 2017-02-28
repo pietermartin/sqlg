@@ -53,7 +53,7 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
             throw Transaction.Exceptions.transactionAlreadyOpen();
         else {
             try {
-                Connection connection = this.sqlgGraph.getSqlgDataSource().get(this.sqlgGraph.getJdbcUrl()).getConnection();
+                Connection connection = this.sqlgGraph.getConnection();
                 connection.setAutoCommit(false);
                 if (this.sqlgGraph.getSqlDialect().supportsClientInfo()) {
                     connection.setClientInfo("ApplicationName", Thread.currentThread().getName());

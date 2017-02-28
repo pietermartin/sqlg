@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
 
 import java.beans.PropertyVetoException;
 import java.sql.*;
@@ -46,8 +47,9 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
         SqlgPlugin plugin = getSqlgPlugin();
         SqlDialect sqlDialect = plugin.instantiateDialect();
         try {
-            sqlgDataSource = SqlgDataSource.setupDataSource(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
-            try (Connection conn = sqlgDataSource.get(configuration.getString("jdbc.url")).getConnection()) {
+
+            sqlgDataSource = SqlgGraph.createDataSourceFactory(configuration).setup(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
+            try (Connection conn = sqlgDataSource.getDatasource().getConnection()) {
                 DatabaseMetaData metadata = conn.getMetaData();
                 if (sqlDialect.supportsCascade()) {
                     String tableNamePattern = "%";
@@ -94,7 +96,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
             throw new RuntimeException(e);
         } finally {
             if (sqlgDataSource != null) {
-                sqlgDataSource.close(configuration.getString("jdbc.url"));
+                sqlgDataSource.close();
             }
         }
     }
