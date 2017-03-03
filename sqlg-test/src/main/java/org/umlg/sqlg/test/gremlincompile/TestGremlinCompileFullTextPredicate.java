@@ -37,7 +37,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 	
 	@Test
 	public void testDefaultImplementation(){
-		FullText ft=new FullText("",true);
+		FullText ft=new FullText("",null,true);
 		assertTrue(ft.test("a fat cat sat on a mat and ate a fat rat", "cat"));
 		assertTrue(ft.test("a fat cat sat on a mat and ate a fat rat", "cat rat"));
 		assertFalse(ft.test("a fat cat sat on a mat and ate a fat rat", "cat cow"));
@@ -84,4 +84,57 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 		 assertTrue(vts.contains(v2));
 	}
 
+	@Test
+	public void testDocExamplesWhere() throws SQLException {
+		 assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+		 Vertex v0=this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
+		 Vertex v1=this.sqlgGraph.addVertex(T.label, "Sentence", "name", "fatal error");
+		 Vertex v2=this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
+		 
+		 
+		 this.sqlgGraph.tx().commit();
+		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
+			 String create="CREATE INDEX sentence_idx ON \""+SchemaManager.VERTEX_PREFIX+"Sentence\" USING GIN (to_tsvector('english', name))";
+			 s.execute(create);
+		 }
+		 this.sqlgGraph.tx().commit();
+		 
+		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,"name", "fat & rat")).toList();
+		 assertEquals(1,vts.size());
+		 assertTrue(vts.contains(v0));
+		 vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,"name", "fat & cow")).toList();
+		 assertEquals(0,vts.size());
+		 
+		 vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,"name", "fatal <-> error")).toList();
+		 assertEquals(1,vts.size());
+		 assertTrue(vts.contains(v1));
+		 
+		 vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,"name", "fatal & error")).toList();
+		 assertEquals(2,vts.size());
+		 assertTrue(vts.contains(v1));
+		 assertTrue(vts.contains(v2));
+		 
+		 vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").as("a").where("a",FullText.fullTextMatch("english",true,"name", "fatal error")).toList();
+		 assertEquals(2,vts.size());
+		 assertTrue(vts.contains(v1));
+		 assertTrue(vts.contains(v2));
+		 
+		 vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").as("a").where("a",FullText.fullTextMatch("english",false,"name", "!cat")).toList();
+		 assertEquals(2,vts.size());
+		 assertTrue(vts.contains(v1));
+		 assertTrue(vts.contains(v2));
+		 /*vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").or(
+				 __.where(FullText.fullTextMatch("english",false,"name", "fat & rat")),
+				 __.where(FullText.fullTextMatch("english",false,"name", "fatal <-> error"))
+				 ).toList();
+		 assertEquals(2,vts.size());
+		 assertTrue(vts.contains(v0));
+		 assertTrue(vts.contains(v1));*/
+		 
+		 v2.addEdge("testEdge", v0);
+		 this.sqlgGraph.tx().commit();
+		 vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").has("name","error is not fatal").out("testEdge").where(FullText.fullTextMatch("english",false,"name", "fat & rat")).toList();
+		 assertEquals(1,vts.size());
+		 assertTrue(vts.contains(v0));
+	}
 }

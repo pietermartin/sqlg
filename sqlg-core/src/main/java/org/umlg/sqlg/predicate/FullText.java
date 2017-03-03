@@ -30,16 +30,23 @@ public class FullText implements BiPredicate<String, String> {
 	 */
 	private boolean plain = false;
 	
+	private String query;
+	
 	public static P<String> fullTextMatch(String configuration,final String value){
 		return fullTextMatch(configuration,false, value);
 	}
 	
 	public static P<String> fullTextMatch(String configuration, boolean plain, final String value){
-		return new P<>(new FullText(configuration,plain),value);
+		return new P<>(new FullText(configuration,null,plain),value);
 	}
 	
-	public FullText(String configuration,boolean plain) {
+	public static P<String> fullTextMatch(String configuration, boolean plain, final String query, final String value){
+		return new P<>(new FullText(configuration,query,plain),value);
+	}
+	
+	public FullText(String configuration,String query,boolean plain) {
 		this.configuration = configuration;
+		this.query = query;
 		this.plain = plain;
 	}
 	
@@ -49,6 +56,10 @@ public class FullText implements BiPredicate<String, String> {
 	
 	public boolean isPlain() {
 		return plain;
+	}
+	
+	public String getQuery() {
+		return query;
 	}
 	
 	@Override

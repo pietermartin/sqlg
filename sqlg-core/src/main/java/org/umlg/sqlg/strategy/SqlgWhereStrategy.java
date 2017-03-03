@@ -1,0 +1,108 @@
+package org.umlg.sqlg.strategy;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.WherePredicateStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
+import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.structure.SqlgGraph;
+
+/**
+ * When a Where step uses a FullText predicate, we attach it to the step itself as a special hasContainer
+ * @author jpmoresmau
+ *
+ */
+public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5608856947238999912L;
+
+	public SqlgWhereStrategy() {
+		
+	}
+	
+	@SuppressWarnings("resource")
+	@Override
+	public void apply(Admin<?, ?> traversal) {
+		if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
+            return;
+        }
+        SqlgGraph sqlgGraph = (SqlgGraph) traversal.getGraph().get();
+        //This is because in normal BatchMode the new vertices are cached with it edges.
+        //The query will read from the cache if this is for a cached vertex
+        if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
+            sqlgGraph.tx().flush();
+        }
+        List<Step<?,?>> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        ListIterator<Step<?,?>> stepIterator = steps.listIterator();
+        // get all steps per label
+        Map<String, Object> stepsByLabel=new HashMap<>();
+        stepIterator = steps.listIterator();
+        Step<?,?> previous=null;
+        int idx=0;
+        while (stepIterator.hasNext()) {
+            Step<?,?> step = stepIterator.next();
+            captureLabels(step, stepsByLabel);
+            if (step instanceof WherePredicateStep<?> ){
+            	WherePredicateStep<?> wps=(WherePredicateStep<?>)step;
+            
+	        	if (wps.getPredicate().isPresent()
+	        		&& wps.getPredicate().get().getBiPredicate() instanceof FullText){
+	        		Object referTo=previous;
+	        		if (wps.getStartKey().isPresent()){
+	        			referTo=stepsByLabel.get(wps.getStartKey().get());
+	        		}
+	        		if (referTo instanceof SqlgGraphStepCompiled<?, ?>){
+	        			SqlgGraphStepCompiled<?, ?> sgs=(SqlgGraphStepCompiled<?, ?>)referTo;
+	        			if (sgs.getReplacedSteps().size()>0){
+	        				referTo=sgs.getReplacedSteps().get(sgs.getReplacedSteps().size()-1);
+	        			}
+	        		}
+	        		if (referTo instanceof ReplacedStep<?, ?>){
+	        			ReplacedStep<?,?> rs=(ReplacedStep<?,?>)referTo;
+	        			rs.addHasContainer(new HasContainer("__dummy__", wps.getPredicate().get()));
+	        			traversal.removeStep(idx);
+	        		}
+	        	}
+            	
+            }
+            previous=step;
+            idx++;
+        }
+	}
+
+	/**
+	 * add all labels for the step in the given map
+	 * @param step
+	 * @param stepsByLabel the map to fill up
+	 */
+	private void captureLabels(Step<?,?> step,Map<String,Object> stepsByLabel){
+		for (String s:step.getLabels()){
+        	stepsByLabel.put(s, step);
+        }
+        // labels on replaced steps are not bubbled up to the graphstep
+        if (step instanceof SqlgGraphStepCompiled<?, ?>){
+        	SqlgGraphStepCompiled<?, ?> sgs=(SqlgGraphStepCompiled<?, ?>)step;
+        	for (ReplacedStep<?,?> rs:sgs.getReplacedSteps()){
+        		for (String label:rs.getLabels()){
+        			 if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
+        				 stepsByLabel.put(label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length()),rs);
+                     } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
+                    	 stepsByLabel.put(label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length()),rs);
+                     }
+        		}
+        	}
+        }
+	}
+}
