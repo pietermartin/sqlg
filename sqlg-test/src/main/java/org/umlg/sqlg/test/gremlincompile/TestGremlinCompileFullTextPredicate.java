@@ -8,7 +8,8 @@ import static org.junit.Assume.assumeTrue;
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -17,7 +18,8 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.IndexType;
+import org.umlg.sqlg.structure.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
@@ -52,11 +54,13 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 		 Vertex v2=this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
 		 
 		 
-		 this.sqlgGraph.tx().commit();
+		 /*this.sqlgGraph.tx().commit();
 		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
 			 String create="CREATE INDEX sentence_idx ON \""+SchemaManager.VERTEX_PREFIX+"Sentence\" USING GIN (to_tsvector('english', \"public\".\"V_Sentence\".\"name\"))";
 			 s.execute(create);
-		 }
+		 }*/
+		 VertexLabel vl=this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+		 vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").get()));
 		 this.sqlgGraph.tx().commit();
 		 
 		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").has("name",FullText.fullTextMatch("english", "fat & rat")).toList();
@@ -93,11 +97,9 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 		 Vertex v2=this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
 		 
 		 
-		 this.sqlgGraph.tx().commit();
-		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
-			 String create="CREATE INDEX sentence_idx ON \""+SchemaManager.VERTEX_PREFIX+"Sentence\" USING GIN (to_tsvector('english', name))";
-			 s.execute(create);
-		 }
+		 VertexLabel vl=this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+		 vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").get()));
+		
 		 this.sqlgGraph.tx().commit();
 		 
 		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,"name", "fat & rat")).toList();
@@ -147,22 +149,19 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 		 this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "fatal error");
 		 this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "error is not fatal");
 		 
-		 
+		 VertexLabel vl=this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+		 vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Arrays.asList(vl.getProperty("name1").get(),vl.getProperty("name2").get()));
+		
 		 this.sqlgGraph.tx().commit();
-		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
-			 String create="CREATE INDEX sentence_idx ON \""+SchemaManager.VERTEX_PREFIX+"Sentence\" USING GIN (to_tsvector('english', name1 || ' ' || name2))";
-			 s.execute(create);
-		 }
-		 this.sqlgGraph.tx().commit();
-		 
-		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,"name1 || ' ' || name2", "fat & rat")).toList();
+		  
+		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,Arrays.asList("name1","name2"), "fat & rat")).toList();
 		 assertEquals(1,vts.size());
 		 assertTrue(vts.contains(v0));
 	}
 	
 	@Test
 	@Ignore("check manually index is used")
-	public void testPerf() throws SQLException {
+	public void testPerfOneColumn() throws SQLException {
 		assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
 		 Vertex v0=this.sqlgGraph.addVertex(T.label, "Sentence", "name", "a fat cat sat on a mat and ate a fat rat");
 		 
@@ -171,15 +170,37 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
 			 this.sqlgGraph.addVertex(T.label, "Sentence", "name", "loop"+a);
 			 
 		 }
-		 
-		 this.sqlgGraph.tx().commit();
-		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
-			 String create="CREATE INDEX sentence_idx ON \""+SchemaManager.VERTEX_PREFIX+"Sentence\" USING GIN (to_tsvector('english',name))";
-			 s.execute(create);
-		 }
+		 VertexLabel vl=this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+		 vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Collections.singletonList(vl.getProperty("name").get()));
+		
 		 this.sqlgGraph.tx().commit();
 		 long t0=System.currentTimeMillis();
 		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").has("name",FullText.fullTextMatch("english", "fat & rat")).toList();
+		 assertEquals(1,vts.size());
+		 assertTrue(vts.contains(v0));
+		 long t1=System.currentTimeMillis();
+		 long delta=t1-t0;
+		 System.out.println("query time:"+delta+"ms");
+		 
+	}
+	
+	@Test
+	@Ignore("check manually index is used")
+	public void testPerfTwoColumns() throws SQLException {
+		assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+		 Vertex v0=this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "a fat cat sat on a mat","name2","and ate a fat rat");
+		 
+		 int LOOPS=10000;
+		 for (int a=0;a<LOOPS;a++){
+			 this.sqlgGraph.addVertex(T.label, "Sentence", "name1", "loop1"+a,"name2","loop2"+a);
+			 
+		 }
+		 VertexLabel vl=this.sqlgGraph.getTopology().getVertexLabel("public", "Sentence").get();
+		 vl.ensureIndexExists(IndexType.getFullTextGIN("english"), Arrays.asList(vl.getProperty("name1").get(),vl.getProperty("name2").get()));
+			
+		 this.sqlgGraph.tx().commit();
+		 long t0=System.currentTimeMillis();
+		 List<Vertex> vts=this.sqlgGraph.traversal().V().hasLabel("Sentence").where(FullText.fullTextMatch("english",false,Arrays.asList("name1","name2"), "fat & rat")).toList();
 		 assertEquals(1,vts.size());
 		 assertTrue(vts.contains(v0));
 		 long t1=System.currentTimeMillis();
