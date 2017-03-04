@@ -3466,6 +3466,12 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public String getFullTextQueryText(FullText fullText, String column) {
     	String toQuery=fullText.isPlain()?"plainto_tsquery":"to_tsquery";
-    	return "to_tsvector('"+fullText.getConfiguration()+"', "+column+") @@ "+toQuery+"(?)";
+    	// either we provided the query expression...
+    	String leftHand=fullText.getQuery();
+    	// or we use the column
+    	if (leftHand==null){
+    		leftHand=column;
+    	}
+    	return "to_tsvector('"+fullText.getConfiguration()+"', "+leftHand+") @@ "+toQuery+"('"+fullText.getConfiguration()+"',?)";
     }
 }

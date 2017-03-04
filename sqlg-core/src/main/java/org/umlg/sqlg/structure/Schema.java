@@ -762,7 +762,7 @@ public class Schema implements TopologyInf {
                 if (oidx.isPresent()) {
                     idx = oidx.get();
                 } else {
-                    idx = new Index(indexName, IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)), vertexLabel);
+                    idx = new Index(indexName, IndexType.fromString(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)), vertexLabel);
                     vertexLabel.addIndex(idx);
                 }
                 if (propertyIndex != null) {
@@ -919,7 +919,7 @@ public class Schema implements TopologyInf {
                         if (oidx.isPresent()) {
                             idx = oidx.get();
                         } else {
-                            idx = new Index(indexName, IndexType.valueOf(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)), edgeLabel);
+                            idx = new Index(indexName, IndexType.fromString(vertexIndex.value(SQLG_SCHEMA_INDEX_INDEX_TYPE)), edgeLabel);
                             edgeLabel.addIndex(idx);
                         }
                         if (propertyIndex != null) {

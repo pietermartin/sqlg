@@ -57,6 +57,30 @@ public class SqlgSqlExecutor {
             if (logger.isDebugEnabled()) {
                 logger.debug(sql);
             }
+            // explain plan can be useful for performance issues
+            // uncomment if needed, don't think we need this in production
+//            if (logger.isTraceEnabled()){
+//            	String expl="EXPLAIN "+sql;
+//            	try {
+//	            	try (PreparedStatement stmt=conn.prepareStatement(expl)){
+//	                    int parameterCount = 1;
+//	                    if (recordId != null) {
+//	                        stmt.setLong(parameterCount++, recordId.getId());
+//	                    }
+//	                    SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, conn, stmt, parameterCount);
+//	            		try(ResultSet rs=stmt.executeQuery()){
+//	            			while(rs.next()){
+//	            				System.out.println(rs.getString(1));
+//	            			}
+//	            		}
+//	            		
+//	            		
+//	            	}
+//            	} catch (SQLException sqle){
+//            		logger.warn(expl);
+//            		logger.warn(sqle.getMessage());
+//            	}
+//            }
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
