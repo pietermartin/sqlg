@@ -1,11 +1,5 @@
 package org.umlg.sqlg.strategy;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
@@ -15,6 +9,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+
+import java.util.*;
 
 /**
  * When a Where step uses a FullText predicate, we attach it to the step itself as a special hasContainer
@@ -44,7 +40,7 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
         if (sqlgGraph.features().supportsBatchMode() && sqlgGraph.tx().isInNormalBatchMode()) {
             sqlgGraph.tx().flush();
         }
-        List<Step<?,?>> steps = new ArrayList<>(traversal.asAdmin().getSteps());
+        List<Step<?,?>> steps = new ArrayList(traversal.asAdmin().getSteps());
         ListIterator<Step<?,?>> stepIterator = steps.listIterator();
         // get all steps per label
         Map<String, Object> stepsByLabel=new HashMap<>();
