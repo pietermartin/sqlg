@@ -16,7 +16,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
-import org.umlg.sqlg.strategy.BaseSqlgStrategy;
+import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
@@ -37,9 +37,9 @@ public class ReplacedStep<S, E> {
     private AbstractStep<S, E> step;
     private Set<String> labels;
     private ReplacedStep<?, ?> previous;
-    private ReplacedStep<?, ?> next;
     private List<HasContainer> hasContainers;
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
+    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators;
     /**
      * range limitation if any
      */
@@ -52,6 +52,8 @@ public class ReplacedStep<S, E> {
     //indicate left join, coming from optional step optimization
     private boolean leftJoin;
     private boolean fake;
+    private ReplacedStepTree.TreeNode treeNodeNode;
+    private boolean joinToLeftJoin;
 
     private ReplacedStep() {
 
@@ -69,6 +71,7 @@ public class ReplacedStep<S, E> {
         replacedStep.labels = new HashSet<>();
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
+        replacedStep.dbComparators = new ArrayList<>();
         replacedStep.topology = topology;
         replacedStep.fake = true;
         return replacedStep;
@@ -77,13 +80,11 @@ public class ReplacedStep<S, E> {
     public static <S, E> ReplacedStep from(ReplacedStep previous, Topology topology, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
         replacedStep.previous = previous;
-        if (previous != null) {
-            previous.next = replacedStep;
-        }
         replacedStep.step = step;
-        replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
+        replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
         replacedStep.hasContainers = new ArrayList<>();
         replacedStep.comparators = new ArrayList<>();
+        replacedStep.dbComparators = new ArrayList<>();
         replacedStep.topology = topology;
         replacedStep.fake = false;
         return replacedStep;
@@ -99,6 +100,10 @@ public class ReplacedStep<S, E> {
 
     public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
         return this.comparators;
+    }
+
+    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getDbComparators() {
+        return this.dbComparators;
     }
 
     public void addLabel(String label) {
@@ -431,9 +436,9 @@ public class ReplacedStep<S, E> {
     @Override
     public String toString() {
         if (this.step != null) {
-            return this.step.toString() + " :: " + this.hasContainers.toString();
+            return this.step.toString() + " :: " + this.hasContainers.toString() + " :: leftJoin = " + this.leftJoin + " :: joinToLeftJoin = " + this.joinToLeftJoin;
         } else {
-            return "fakeStep :: " + this.hasContainers.toString();
+            return "fakeStep :: " + this.hasContainers.toString() + " :: leftJoin = " + this.leftJoin + " :: joinToLeftJoin = " + this.joinToLeftJoin;
         }
     }
 
@@ -461,7 +466,7 @@ public class ReplacedStep<S, E> {
         Preconditions.checkState(this.isGraphStep(), "ReplacedStep must be for a GraphStep!");
         GraphStep graphStep = (GraphStep) this.step;
 
-        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.topology, this.hasContainers,false);
+        Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterHasContainers(this.topology, this.hasContainers, false);
 
         //This list is to reset the hasContainer back to its original state afterwards
         List<HasContainer> toRemove = new ArrayList<>();
@@ -540,6 +545,7 @@ public class ReplacedStep<S, E> {
                             0,
                             hasContainersWithoutLabel,
                             this.comparators,
+                            this.dbComparators,
                             this.range,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
@@ -594,6 +600,7 @@ public class ReplacedStep<S, E> {
                                 0,
                                 hasContainers,
                                 this.comparators,
+                                this.dbComparators,
                                 this.range,
                                 SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                                 ReplacedStep.this.emit,
@@ -665,6 +672,10 @@ public class ReplacedStep<S, E> {
         return leftJoin;
     }
 
+    public boolean isJoinToLeftJoin() {
+        return joinToLeftJoin;
+    }
+
     public boolean isUntilFirst() {
         return untilFirst;
     }
@@ -718,5 +729,17 @@ public class ReplacedStep<S, E> {
         if (this.previous != null) {
             this.previous.incrementRangeCount();
         }
+    }
+
+    public void setTreeNodeNode(ReplacedStepTree.TreeNode treeNodeNode) {
+        this.treeNodeNode = treeNodeNode;
+    }
+
+    public ReplacedStepTree.TreeNode getTreeNodeNode() {
+        return treeNodeNode;
+    }
+
+    public void markAsJoinToLeftJoin() {
+        this.joinToLeftJoin = true;
     }
 }

@@ -176,7 +176,7 @@ public class TestTraversalPerformance extends BaseTest {
                 }
             }
 //            if (i % 500_000 == 0) {
-//                this.sqlgGraph.tx().flush();
+//                this.graph.tx().flush();
 //                stopWatch.split();
 //                System.out.println(stopWatch.toString());
 //                stopWatch.unsplit();

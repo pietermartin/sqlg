@@ -43,8 +43,8 @@ public abstract class SqlgElement implements Element {
         this.schema = schema;
         this.table = table;
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        if (!this.graph.tx().isInStreamingBatchMode() && !this.graph.tx().isInStreamingWithLockBatchMode()) {
+//            graph.tx().addElementPropertyRollback(this.elementPropertyRollback);
 //        }
     }
 
@@ -57,8 +57,8 @@ public abstract class SqlgElement implements Element {
         this.table = table;
         this.recordId = RecordId.from(SchemaTable.of(this.schema, this.table), id);
         this.elementPropertyRollback = new SqlgElementElementPropertyRollback();
-//        if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
-//            sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
+//        if (!this.graph.tx().isInStreamingBatchMode() && !this.graph.tx().isInStreamingWithLockBatchMode()) {
+//            graph.tx().addElementPropertyRollback(this.elementPropertyRollback);
 //        }
     }
 
@@ -329,7 +329,7 @@ public abstract class SqlgElement implements Element {
      * @return The result of the query.
      * //
      */
-    public <S, E extends SqlgElement> Iterator<List<Emit<E>>> elements(List<ReplacedStep<S, E>> replacedSteps) {
+    public <E extends SqlgElement> Iterator<List<Emit<E>>> elements(List<ReplacedStep<?, ?>> replacedSteps) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -344,7 +344,7 @@ public abstract class SqlgElement implements Element {
      * @param replacedSteps
      * @return The results of the query
      */
-    private <S, E extends SqlgElement> Iterator<List<Emit<E>>> internalGetElements(List<ReplacedStep<S, E>> replacedSteps) {
+    private <S, E extends SqlgElement> Iterator<List<Emit<E>>> internalGetElements(List<ReplacedStep<?, ?>> replacedSteps) {
         SchemaTable schemaTable = getSchemaTablePrefixed();
         SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
@@ -392,7 +392,7 @@ public abstract class SqlgElement implements Element {
     }
 
 //    protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
-//        this.sqlgGraph.tx().readWrite();
+//        this.graph.tx().readWrite();
 //        load();
 //        Map<String, SqlgProperty<V>> properties = new HashMap<>();
 //        this.properties.entrySet().stream()

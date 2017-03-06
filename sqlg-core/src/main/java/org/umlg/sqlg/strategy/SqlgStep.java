@@ -2,15 +2,15 @@ package org.umlg.sqlg.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.structure.SqlgElement;
+import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 
 import java.util.List;
 
-interface SqlgStep<S extends SqlgElement, E extends SqlgElement> extends Step {
+interface SqlgStep extends Step {
 
-    List<ReplacedStep<S, E>> getReplacedSteps();
+    List<ReplacedStep<?, ?>> getReplacedSteps();
 
-    void addReplacedStep(ReplacedStep<S, E> replacedStep);
+    ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep<?, ?> replacedStep);
 
     void parseForStrategy();
 

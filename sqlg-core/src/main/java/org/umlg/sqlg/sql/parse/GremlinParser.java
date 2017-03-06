@@ -3,8 +3,8 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SchemaTable;
+import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -16,7 +16,7 @@ import java.util.Set;
  * Date: 2015/01/03
  * Time: 1:06 PM
  */
-public class GremlinParser<S extends Element, E extends Element> {
+public class GremlinParser<S extends SqlgElement, E extends SqlgElement> {
 
     private SqlgGraph sqlgGraph;
 
@@ -27,6 +27,28 @@ public class GremlinParser<S extends Element, E extends Element> {
     public Set<SchemaTableTree> parseForStrategy(List<ReplacedStep<S, E>> replacedSteps) {
         Set<SchemaTableTree> result = parse(replacedSteps);
         return result;
+    }
+
+    public Set<SchemaTableTree> parse(ReplacedStepTree replacedStepTree) {
+        ReplacedStep startReplacedStep = replacedStepTree.root().getReplacedStep();
+        Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
+        Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth() - 1);
+        Set<SchemaTableTree> toRemove = new HashSet<>();
+        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            SqlgUtil.removeTopologyStrategyHasContainer(rootSchemaTableTree.getHasContainers());
+            Set<SchemaTableTree> schemaTableTrees = new HashSet<>();
+            schemaTableTrees.add(rootSchemaTableTree);
+            replacedStepTree.walkReplacedSteps(schemaTableTrees);
+            boolean remove = rootSchemaTableTree.removeNodesInvalidatedByHas();
+            if (remove) {
+                toRemove.add(rootSchemaTableTree);
+            }
+            rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth() - 1);
+        }
+        rootSchemaTableTrees.removeAll(toRemove);
+//        replacedSteps.add(0, startReplacedStep);
+        return rootSchemaTableTrees;
+
     }
 
     /**

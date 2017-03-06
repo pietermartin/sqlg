@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.process.SqlgRawIteratorToEmitIterator;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
@@ -27,17 +28,19 @@ import java.util.*;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
+public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
 
-    private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
+    private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
+    private ReplacedStepTree replacedStepTree;
+
     private SqlgGraph sqlgGraph;
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
     private transient SqlgRawIteratorToEmitIterator iteratorSupplier;
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
-    private Traverser.Admin<E> previousHead;
+    private Traverser.Admin<S> previousHead;
 
     /**
      * should we keep the result in a list?
@@ -76,7 +79,7 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
                         traverser = previousHead.split(e, this);
                     } else if (first) {
                         first = false;
-                        traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
+                        traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate((S) e, this, 1L);
                     } else {
                         traverser = ((B_LP_O_P_S_SE_SL_Traverser) traverser).split(e, this);
                     }
@@ -129,7 +132,10 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedSteps);
+
+
+//        System.out.println(this.replacedStepTree.toString());
+        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
         SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
         stopWatch.stop();
         if (logger.isDebugEnabled()) {
@@ -139,10 +145,24 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
     }
 
     @Override
-    public void addReplacedStep(ReplacedStep replacedStep) {
+    public List<ReplacedStep<?, ?>> getReplacedSteps() {
+        return this.replacedSteps;
+    }
+
+    @Override
+    public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep<?, ?> replacedStep) {
         //depth is + 1 because there is always a root node who's depth is 0
         replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
+
+        //New way of interpreting steps
+        if (this.replacedStepTree == null) {
+            //the first root node
+            this.replacedStepTree = new ReplacedStepTree(replacedStep);
+        } else {
+            this.replacedStepTree.addReplacedStep(replacedStep);
+        }
+        return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
     @Override
@@ -169,9 +189,6 @@ public class SqlgGraphStepCompiled<S extends SqlgElement, E extends SqlgElement>
         return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
     }
 
-    public List<ReplacedStep<S, E>> getReplacedSteps() {
-        return replacedSteps;
-    }
 
     @Override
     public int hashCode() {

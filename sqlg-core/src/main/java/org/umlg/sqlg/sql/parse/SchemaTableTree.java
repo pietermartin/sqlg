@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
-import org.umlg.sqlg.strategy.BaseSqlgStrategy;
+import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
@@ -53,6 +53,7 @@ public class SchemaTableTree {
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators = new ArrayList<>();
+    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators = new ArrayList<>();
     //labels are immutable
     private Set<String> labels;
     private Set<String> realLabels;
@@ -104,6 +105,7 @@ public class SchemaTableTree {
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
         this.comparators = new ArrayList<>();
+        this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
         this.filteredAllTables = SqlgUtil.filterHasContainers(sqlgGraph.getTopology(), this.hasContainers, Topology.SQLG_SCHEMA.equals(schemaTable.getSchema()));
@@ -119,6 +121,7 @@ public class SchemaTableTree {
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
                     List<HasContainer> hasContainers,
                     List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
+                    List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators,
                     Range<Long> range,
                     STEP_TYPE stepType,
                     boolean emit,
@@ -133,6 +136,7 @@ public class SchemaTableTree {
         this.replacedStepDepth = replacedStepDepth;
         this.hasContainers = hasContainers;
         this.comparators = comparators;
+        this.dbComparators = dbComparators;
         this.range = range;
         this.labels = Collections.unmodifiableSet(labels);
         this.stepType = stepType;
@@ -156,6 +160,7 @@ public class SchemaTableTree {
                 elementClass,
                 replacedStep.getHasContainers(),
                 replacedStep.getComparators(),
+                replacedStep.getDbComparators(),
                 replacedStep.getRange(),
                 replacedStep.getDepth(),
                 isEdgeVertexStep,
@@ -189,6 +194,7 @@ public class SchemaTableTree {
                 elementClass,
                 replacedStep.getHasContainers(),
                 replacedStep.getComparators(),
+                replacedStep.getDbComparators(),
                 replacedStep.getRange(),
                 replacedStep.getDepth(),
                 false,
@@ -204,6 +210,7 @@ public class SchemaTableTree {
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
             List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
+            List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators,
             Range<Long> range,
             int stepDepth,
             boolean isEdgeVertexStep,
@@ -217,6 +224,7 @@ public class SchemaTableTree {
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
             schemaTableTree.comparators = new ArrayList<>(comparators);
+            schemaTableTree.dbComparators = new ArrayList<>(dbComparators);
             schemaTableTree.range = range;
         }
         schemaTableTree.parent = this;
@@ -254,7 +262,7 @@ public class SchemaTableTree {
                 String columnName = entry.getValue();
                 //only load the labelled columns
                 if (!columnName.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID) &&
-                        (columnName.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX) || columnName.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX))) {
+                        (columnName.contains(BaseStrategy.PATH_LABEL_SUFFIX) || columnName.contains(BaseStrategy.EMIT_LABEL_SUFFIX))) {
 
                     if (containsLabelledColumn(columnName)) {
                         String propertyName = propertyNameFromLabeledAlias(columnName);
@@ -877,7 +885,7 @@ public class SchemaTableTree {
 
     private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy, int counter) {
         String result = "";
-        for (org.javatuples.Pair<Traversal.Admin, Comparator> comparator : this.getComparators()) {
+        for (org.javatuples.Pair<Traversal.Admin, Comparator> comparator : this.getDbComparators()) {
             if (!printedOrderBy.booleanValue()) {
                 printedOrderBy.setTrue();
                 result += "\nORDER BY\n\t";
@@ -895,6 +903,9 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    if (alias.equals("null")) {
+                        System.out.println(this.getColumnNameAliasMap());
+                    }
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -923,6 +934,10 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    if (alias.equals("null")) {
+                        System.out.println("2");
+                        System.out.println(this.getColumnNameAliasMap());
+                    }
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -967,6 +982,9 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    System.out.println("3");
+                    System.out.println(prefix);
+                    System.out.println(this.getColumnNameAliasMap());
                 } else {
                     alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -991,7 +1009,7 @@ public class SchemaTableTree {
     }
 
     private SchemaTableTree findSelectSchemaTable(String select) {
-        return this.walkUp((t) -> t.stream().filter(a -> a.endsWith(BaseSqlgStrategy.PATH_LABEL_SUFFIX + select)).findAny().isPresent());
+        return this.walkUp((t) -> t.stream().filter(a -> a.endsWith(BaseStrategy.PATH_LABEL_SUFFIX + select)).findAny().isPresent());
     }
 
     private SchemaTableTree walkUp(Predicate<Set<String>> predicate) {
@@ -1853,6 +1871,10 @@ public class SchemaTableTree {
         return this.comparators;
     }
 
+    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getDbComparators() {
+        return dbComparators;
+    }
+
     public int getStepDepth() {
         return stepDepth;
     }
@@ -1960,12 +1982,12 @@ public class SchemaTableTree {
         if (this.realLabels == null) {
             this.realLabels = new HashSet<>();
             for (String label : this.labels) {
-                if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
-                    this.realLabels.add(label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length()));
-                } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                    this.realLabels.add(label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length()));
+                if (label.contains(BaseStrategy.PATH_LABEL_SUFFIX)) {
+                    this.realLabels.add(label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length()));
+                } else if (label.contains(BaseStrategy.EMIT_LABEL_SUFFIX)) {
+                    this.realLabels.add(label.substring(label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX) + BaseStrategy.EMIT_LABEL_SUFFIX.length()));
                 } else {
-                    throw new IllegalStateException("label must contain " + BaseSqlgStrategy.PATH_LABEL_SUFFIX + " or " + BaseSqlgStrategy.EMIT_LABEL_SUFFIX);
+                    throw new IllegalStateException("label must contain " + BaseStrategy.PATH_LABEL_SUFFIX + " or " + BaseStrategy.EMIT_LABEL_SUFFIX);
                 }
             }
         }
@@ -2028,10 +2050,13 @@ public class SchemaTableTree {
         }
     }
 
-    public void clearColumnNamePropertNameMap() {
+    public void clearColumnNamePropertyNameMap() {
         if (this.columnNamePropertyName != null) {
             this.columnNamePropertyName.clear();
             this.columnNamePropertyName = null;
+            if (this.columnNamePropertyName != null) {
+                System.out.println("asdasd");
+            }
         }
     }
 

@@ -1415,7 +1415,10 @@ public class TestRepeatStepGraphOut extends BaseTest {
         c1.addEdge("cd", d1);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V().hasLabel("A").times(3).repeat(__.out()).path();
+                .V().hasLabel("A")
+                .times(3).repeat(__.out())
+                .path();
+
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());

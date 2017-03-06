@@ -261,14 +261,14 @@ public class SqlgGraph implements Graph {
                 try (Connection conn = this.getConnection()) {
                     SqlgPlugin p = findSqlgPlugin(conn.getMetaData());
                     if (p == null) {
-                        throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
+                        throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + this.jdbcUrl);
                     }
                     this.sqlDialect = p.instantiateDialect();
                 }
             } else {
-                SqlgPlugin p = findSqlgPlugin(jdbcUrl);
+                SqlgPlugin p = findSqlgPlugin(this.jdbcUrl);
                 if (p == null) {
-                    throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + jdbcUrl);
+                    throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + this.jdbcUrl);
                 }
 
                 this.sqlDialect = p.instantiateDialect();

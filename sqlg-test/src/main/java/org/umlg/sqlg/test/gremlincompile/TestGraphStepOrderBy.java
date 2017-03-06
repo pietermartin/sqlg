@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -27,6 +28,134 @@ public class TestGraphStepOrderBy extends BaseTest {
         if (configuration.getString("jdbc.url").contains("postgresql")) {
             configuration.addProperty("distributed", true);
         }
+    }
+
+    @Test
+    public void testOrderByCount() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.incr).toList();
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertEquals(a1, vertices.get(3));
+        vertices = this.sqlgGraph.traversal().V().order().by(__.outE().count(), Order.decr).toList();
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertEquals(a1, vertices.get(0));
+    }
+
+    @Test
+    public void testOrderByWithLamdaComparator() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "aabb");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aacc");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbcc");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbdd");
+        this.sqlgGraph.tx().commit();
+        List<String> names = this.sqlgGraph.traversal().V().order()
+                .<String>by("name", (a, b) -> a.substring(1, 2).compareTo(b.substring(1, 2)))
+                .<String>by("name", (a, b) -> b.substring(2, 3).compareTo(a.substring(2, 3)))
+                .<String>values("name").toList();
+        Assert.assertEquals(4, names.size());
+        Assert.assertEquals("aacc", names.get(0));
+        Assert.assertEquals("aabb", names.get(1));
+        Assert.assertEquals("bbdd", names.get(2));
+        Assert.assertEquals("bbcc", names.get(3));
+    }
+
+    @Test
+    public void testOrderByWithShuffleComparator() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        this.sqlgGraph.tx().commit();
+
+        List<Map<String, Object>> result =  this.sqlgGraph.traversal().V().as("a")
+                .out("ab").as("b")
+                .order().by(Order.shuffle)
+                .select("a", "b")
+                .toList();
+        Assert.assertEquals(3, result.size());
+        for (Map<String, Object> stringObjectMap : result) {
+            System.out.println(stringObjectMap);
+        }
+    }
+
+    @Test
+    public void testOrderByWith2ShuffleComparator() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
+        Vertex b5 = this.sqlgGraph.addVertex(T.label, "B", "name", "b5");
+        Vertex b6 = this.sqlgGraph.addVertex(T.label, "B", "name", "b6");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a2.addEdge("ab", b4);
+        a2.addEdge("ab", b5);
+        a2.addEdge("ab", b6);
+        this.sqlgGraph.tx().commit();
+
+        List<Map<String, Object>> result =  this.sqlgGraph.traversal().V().as("a")
+                .order().by("name", Order.decr)
+                .out("ab").as("b")
+                .order().by(Order.shuffle)
+                .select("a", "b")
+                .toList();
+        Assert.assertEquals(6, result.size());
+        for (Map<String, Object> stringObjectMap : result) {
+            System.out.println(stringObjectMap);
+        }
+    }
+
+    @Test
+    public void g_V_asXaX_outXcreatedX_asXbX_order_byXshuffleX_selectXa_bX() {
+        loadModern();
+
+        final Traversal<Vertex, Map<String, Vertex>> traversal =  this.sqlgGraph.traversal()
+                .V().as("a")
+                .out("created").as("b")
+                .order().by(Order.shuffle)
+                .select("a", "b");
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultGraphTraversal)traversal;
+        System.out.println(defaultGraphTraversal.getStrategies());
+        printTraversalForm(traversal);
+        int counter = 0;
+        int markoCounter = 0;
+        int joshCounter = 0;
+        int peterCounter = 0;
+        while (traversal.hasNext()) {
+            counter++;
+            Map<String, Vertex> bindings = traversal.next();
+            Assert.assertEquals(2, bindings.size());
+            if (bindings.get("a").id().equals(convertToVertexId("marko"))) {
+                Assert.assertEquals(convertToVertexId("lop"), bindings.get("b").id());
+                markoCounter++;
+            } else if (bindings.get("a").id().equals(convertToVertexId("josh"))) {
+                Assert.assertTrue((bindings.get("b")).id().equals(convertToVertexId("lop")) || bindings.get("b").id().equals(convertToVertexId("ripple")));
+                joshCounter++;
+            } else if (bindings.get("a").id().equals(convertToVertexId("peter"))) {
+                Assert.assertEquals(convertToVertexId("lop"), bindings.get("b").id());
+                peterCounter++;
+            } else {
+                Assert.fail("This state should not have been reachable");
+            }
+        }
+        Assert.assertEquals(4, markoCounter + joshCounter + peterCounter);
+        Assert.assertEquals(1, markoCounter);
+        Assert.assertEquals(1, peterCounter);
+        Assert.assertEquals(2, joshCounter);
+        Assert.assertEquals(4, counter);
     }
 
     @Test

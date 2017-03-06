@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.umlg.sqlg.process.SqlgRawIteratorToEmitIterator;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SchemaTable;
@@ -24,12 +25,13 @@ import java.util.*;
  * Date: 2014/08/15
  * Time: 8:10 PM
  */
-public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement> extends FlatMapStep implements SqlgStep {
+public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep implements SqlgStep {
 
     private Traverser.Admin<E> head = null;
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
-    private List<ReplacedStep<S, E>> replacedSteps = new ArrayList<>();
+    private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
+    private ReplacedStepTree replacedStepTree;
 
     public SqlgVertexStepCompiled(final Traversal.Admin traversal) {
         super(traversal);
@@ -105,15 +107,23 @@ public class SqlgVertexStepCompiled<S extends SqlgElement, E extends SqlgElement
     }
 
     @Override
-    public void addReplacedStep(ReplacedStep replacedStep) {
+    public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep replacedStep) {
         replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
+        //New way of interpreting steps
+        if (this.replacedStepTree == null) {
+            //the first root node
+            this.replacedStepTree = new ReplacedStepTree(replacedStep);
+        } else {
+            this.replacedStepTree.addReplacedStep(replacedStep);
+        }
+        return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
 
     //This is only used in tests, think about, delete?
-    public List<ReplacedStep<S, E>> getReplacedSteps() {
-        return replacedSteps;
+    public List<ReplacedStep<?, ?>> getReplacedSteps() {
+        return this.replacedSteps;
     }
 
     @Override

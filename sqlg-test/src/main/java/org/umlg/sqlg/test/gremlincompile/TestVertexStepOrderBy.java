@@ -126,7 +126,7 @@ public class TestVertexStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderbyDuplicatePathLabaled() {
+    public void testOrderByDuplicatePathLabelled() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "a");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
@@ -178,7 +178,7 @@ public class TestVertexStepOrderBy extends BaseTest {
                 .by("name", Order.incr);
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> result = traversal.toList();
-        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
         Assert.assertEquals(3, result.size());
         Assert.assertEquals(c1, result.get(2));
         Assert.assertEquals(a3, result.get(1));

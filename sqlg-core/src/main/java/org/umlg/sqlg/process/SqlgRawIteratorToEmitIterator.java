@@ -1,15 +1,14 @@
 package org.umlg.sqlg.process;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MutablePath;
+import org.javatuples.Pair;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.structure.SqlgElement;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -20,13 +19,13 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
 
     private Supplier<Iterator<List<Emit<E>>>> supplier;
     private Iterator<List<Emit<E>>> iterator;
-    private List<ReplacedStep<S, E>> replacedSteps;
+    private List<ReplacedStep<?, ?>> replacedSteps;
     private boolean hasStarted;
     private Emit<E> toEmit = null;
     private boolean eagerLoading = false;
     private List<Emit<E>> eagerLoadedResults;
 
-    public SqlgRawIteratorToEmitIterator(List<ReplacedStep<S, E>> replacedSteps, Supplier<Iterator<List<Emit<E>>>> supplier) {
+    public SqlgRawIteratorToEmitIterator(List<ReplacedStep<?, ?>> replacedSteps, Supplier<Iterator<List<Emit<E>>>> supplier) {
         this.supplier = supplier;
         this.replacedSteps = replacedSteps;
     }
@@ -52,7 +51,7 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
                 this.eagerLoading = true;
                 this.eagerLoadedResults = new ArrayList<>();
                 eagerLoad();
-                Collections.sort(this.eagerLoadedResults, new EmitComparator<>(this.replacedSteps));
+                Collections.sort(this.eagerLoadedResults, new EmitComparator(this.replacedSteps));
                 return eagerLoadHasNext();
             } else {
                 return flattenRawIterator();
@@ -130,15 +129,18 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
     private boolean flattenRawIterator() {
         if (this.iterator.hasNext()) {
             List<Emit<E>> emits = this.iterator.next();
+            List<List<Pair<Traversal.Admin, Comparator>>> emitComparators = new ArrayList<>();
             Path currentPath = MutablePath.make();
             for (Emit<E> emit : emits) {
                 this.toEmit = emit;
                 if (!emit.isFake()) {
                     currentPath = currentPath.extend(emit.getElement(), emit.getLabels());
+                    emitComparators.add(this.toEmit.getComparators());
                 }
             }
             if (this.toEmit != null) {
                 this.toEmit.setPath(currentPath);
+                this.toEmit.setPathComparators(emitComparators);
             }
         }
         return this.toEmit != null;
