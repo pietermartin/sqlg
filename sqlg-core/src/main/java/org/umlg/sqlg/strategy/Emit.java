@@ -1,11 +1,8 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.javatuples.Pair;
 import org.umlg.sqlg.structure.SqlgElement;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -23,17 +20,20 @@ public class Emit<E extends SqlgElement> {
     //This is set to true for local optional step where the query has no labels, i.e. for a single SchemaTableTree only.
     //In this case the element will already be on the traverser i.e. the incoming element.
     private boolean incomingOnlyLocalOptionalStep;
-    private List<Pair<Traversal.Admin, Comparator>> comparators;
-    private List<List<Pair<Traversal.Admin, Comparator>>> pathComparators;
+//        private List<Pair<Traversal.Admin, Comparator>> comparators;
+//    private List<List<Pair<Traversal.Admin<?, ?>, Comparator<?>>>> pathComparators;
+    private SqlgComparatorHolder sqlgComparatorHolder;
+    private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
     public Emit() {
         this.fake = true;
     }
 
-    public Emit(E element, Set<String> labels, List<Pair<Traversal.Admin, Comparator>> comparators) {
+    //    public Emit(E element, Set<String> labels, List<Pair<Traversal.Admin, Comparator>> comparators) {
+    public Emit(E element, Set<String> labels, SqlgComparatorHolder sqlgComparatorHolder) {
         this.element = element;
         this.labels = labels;
-        this.comparators = comparators;
+        this.sqlgComparatorHolder = sqlgComparatorHolder;
     }
 
     public Path getPath() {
@@ -52,17 +52,33 @@ public class Emit<E extends SqlgElement> {
         return labels;
     }
 
-    public List<Pair<Traversal.Admin, Comparator>> getComparators() {
-        return this.comparators;
+//    public List<Pair<Traversal.Admin, Comparator>> getComparators() {
+//        return this.comparators;
+//    }
+
+    public SqlgComparatorHolder getSqlgComparatorHolder() {
+        return sqlgComparatorHolder;
     }
 
-    public List<List<Pair<Traversal.Admin, Comparator>>> getPathComparators() {
-        return this.pathComparators;
+    public void setSqlgComparatorHolder(SqlgComparatorHolder sqlgComparatorHolder) {
+        this.sqlgComparatorHolder = sqlgComparatorHolder;
     }
 
-    public void setPathComparators(List<List<Pair<Traversal.Admin, Comparator>>> pathComparators) {
-        this.pathComparators = pathComparators;
+    public List<SqlgComparatorHolder> getSqlgComparatorHolders() {
+        return sqlgComparatorHolders;
     }
+
+    public void setSqlgComparatorHolders(List<SqlgComparatorHolder> sqlgComparatorHolders) {
+        this.sqlgComparatorHolders = sqlgComparatorHolders;
+    }
+
+    //    public List<List<Pair<Traversal.Admin<?, ?>, Comparator<?>>>> getPathComparators() {
+//        return this.pathComparators;
+//    }
+//
+//    public void setPathComparators(List<List<Pair<Traversal.Admin<?, ?>, Comparator<?>>>> pathComparators) {
+//        this.pathComparators = pathComparators;
+//    }
 
     public boolean isRepeat() {
         return repeat;

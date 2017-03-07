@@ -31,7 +31,68 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderByCount() {
+    public void test() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1, "weight", 3);
+        a1.addEdge("ab", b2, "weight", 2);
+        a1.addEdge("ab", b3, "weight", 1);
+        this.sqlgGraph.tx().commit();
+        List<String> names =  this.sqlgGraph.traversal()
+                .V()
+                .outE().as("e")
+                .inV().as("v")
+                .select("e")
+                .order().by("weight", Order.incr)
+                .select("v")
+                .<String>values("name")
+                .dedup()
+                .toList();
+        System.out.println(names);
+    }
+
+    @Test
+    public void testOrderByWithLambdaTraversal() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "age", 1, "name", "name1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "age", 5, "name", "name2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "age", 10, "name", "name3");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "age", 15, "name", "name4");
+        this.sqlgGraph.tx().commit();
+
+        List<String> names = this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .order()
+                .<Vertex>by(v -> v.value("age"), Order.decr)
+                .<String>values("name")
+                .toList();
+        Assert.assertEquals(4, names.size());
+        Assert.assertEquals("name4", names.get(0));
+        Assert.assertEquals("name1", names.get(3));
+    }
+
+    @Test
+    public void testOrderByWithLambdaComparator() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "aabb");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aacc");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbcc");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbdd");
+        this.sqlgGraph.tx().commit();
+        List<String> names = this.sqlgGraph.traversal().V().order()
+                .<String>by("name", (a, b) -> a.substring(1, 2).compareTo(b.substring(1, 2)))
+                .<String>by("name", (a, b) -> b.substring(2, 3).compareTo(a.substring(2, 3)))
+                .<String>values("name").toList();
+        Assert.assertEquals(4, names.size());
+        Assert.assertEquals("aacc", names.get(0));
+        Assert.assertEquals("aabb", names.get(1));
+        Assert.assertEquals("bbdd", names.get(2));
+        Assert.assertEquals("bbcc", names.get(3));
+    }
+
+
+    @Test
+    public void testOrderByWithByTraversalCount() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
@@ -49,24 +110,6 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderByWithLamdaComparator() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "aabb");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aacc");
-        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbcc");
-        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "bbdd");
-        this.sqlgGraph.tx().commit();
-        List<String> names = this.sqlgGraph.traversal().V().order()
-                .<String>by("name", (a, b) -> a.substring(1, 2).compareTo(b.substring(1, 2)))
-                .<String>by("name", (a, b) -> b.substring(2, 3).compareTo(a.substring(2, 3)))
-                .<String>values("name").toList();
-        Assert.assertEquals(4, names.size());
-        Assert.assertEquals("aacc", names.get(0));
-        Assert.assertEquals("aabb", names.get(1));
-        Assert.assertEquals("bbdd", names.get(2));
-        Assert.assertEquals("bbcc", names.get(3));
-    }
-
-    @Test
     public void testOrderByWithShuffleComparator() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -77,7 +120,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a1.addEdge("ab", b3);
         this.sqlgGraph.tx().commit();
 
-        List<Map<String, Object>> result =  this.sqlgGraph.traversal().V().as("a")
+        List<Map<String, Object>> result = this.sqlgGraph.traversal().V().as("a")
                 .out("ab").as("b")
                 .order().by(Order.shuffle)
                 .select("a", "b")
@@ -106,7 +149,7 @@ public class TestGraphStepOrderBy extends BaseTest {
         a2.addEdge("ab", b6);
         this.sqlgGraph.tx().commit();
 
-        List<Map<String, Object>> result =  this.sqlgGraph.traversal().V().as("a")
+        List<Map<String, Object>> result = this.sqlgGraph.traversal().V().as("a")
                 .order().by("name", Order.decr)
                 .out("ab").as("b")
                 .order().by(Order.shuffle)
@@ -122,12 +165,12 @@ public class TestGraphStepOrderBy extends BaseTest {
     public void g_V_asXaX_outXcreatedX_asXbX_order_byXshuffleX_selectXa_bX() {
         loadModern();
 
-        final Traversal<Vertex, Map<String, Vertex>> traversal =  this.sqlgGraph.traversal()
+        final Traversal<Vertex, Map<String, Vertex>> traversal = this.sqlgGraph.traversal()
                 .V().as("a")
                 .out("created").as("b")
                 .order().by(Order.shuffle)
                 .select("a", "b");
-        DefaultGraphTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultGraphTraversal)traversal;
+        DefaultGraphTraversal<Vertex, Map<String, Vertex>> defaultGraphTraversal = (DefaultGraphTraversal) traversal;
         System.out.println(defaultGraphTraversal.getStrategies());
         printTraversalForm(traversal);
         int counter = 0;
@@ -258,28 +301,28 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(3, traversal.getSteps().size());
 
         Assert.assertEquals(8, result.size());
-        Map<String,Vertex> row1 = result.get(0);
+        Map<String, Vertex> row1 = result.get(0);
         Assert.assertEquals("BSC", row1.get("nng").value("name"));
         Assert.assertEquals("BSCD", row1.get("nn").value("name"));
-        Map<String,Vertex> row2 = result.get(1);
+        Map<String, Vertex> row2 = result.get(1);
         Assert.assertEquals("BSC", row2.get("nng").value("name"));
         Assert.assertEquals("BSCC", row2.get("nn").value("name"));
-        Map<String,Vertex> row3 = result.get(2);
+        Map<String, Vertex> row3 = result.get(2);
         Assert.assertEquals("BSC", row3.get("nng").value("name"));
         Assert.assertEquals("BSCB", row3.get("nn").value("name"));
-        Map<String,Vertex> row4 = result.get(3);
+        Map<String, Vertex> row4 = result.get(3);
         Assert.assertEquals("BSC", row4.get("nng").value("name"));
         Assert.assertEquals("BSCA", row4.get("nn").value("name"));
-        Map<String,Vertex> row5 = result.get(4);
+        Map<String, Vertex> row5 = result.get(4);
         Assert.assertEquals("RNC", row5.get("nng").value("name"));
         Assert.assertEquals("RNCD", row5.get("nn").value("name"));
-        Map<String,Vertex> row6 = result.get(5);
+        Map<String, Vertex> row6 = result.get(5);
         Assert.assertEquals("RNC", row6.get("nng").value("name"));
         Assert.assertEquals("RNCC", row6.get("nn").value("name"));
-        Map<String,Vertex> row7 = result.get(6);
+        Map<String, Vertex> row7 = result.get(6);
         Assert.assertEquals("RNC", row7.get("nng").value("name"));
         Assert.assertEquals("RNCB", row7.get("nn").value("name"));
-        Map<String,Vertex> row8 = result.get(7);
+        Map<String, Vertex> row8 = result.get(7);
         Assert.assertEquals("RNC", row8.get("nng").value("name"));
         Assert.assertEquals("RNCA", row8.get("nn").value("name"));
     }

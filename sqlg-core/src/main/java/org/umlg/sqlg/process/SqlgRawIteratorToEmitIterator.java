@@ -1,14 +1,16 @@
 package org.umlg.sqlg.process;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MutablePath;
-import org.javatuples.Pair;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SqlgElement;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -47,7 +49,7 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
             }
             this.hasStarted = true;
             //For now order() means eager load the whole query and then sort it.
-            if (this.replacedSteps != null && this.replacedSteps.stream().anyMatch(r -> !r.getComparators().isEmpty())) {
+            if (this.replacedSteps != null && this.replacedSteps.stream().anyMatch(r -> r.getSqlgComparatorHolder().hasComparators() || r.hasRange())) {
                 this.eagerLoading = true;
                 this.eagerLoadedResults = new ArrayList<>();
                 eagerLoad();
@@ -68,7 +70,7 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
     private boolean eagerLoadHasNext() {
         if (!this.eagerLoadedResults.isEmpty()) {
             this.toEmit = this.eagerLoadedResults.remove(0);
-            ReplacedStep replacedStep = this.replacedSteps.get(toEmit.getPath().size() - 1);
+            ReplacedStep replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
             if (replacedStep.hasRange()) {
                 if (replacedStep.containsRange()) {
                     return true;
@@ -77,7 +79,7 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
                     while (true) {
                         if (!this.eagerLoadedResults.isEmpty()) {
                             this.toEmit = this.eagerLoadedResults.remove(0);
-                            replacedStep = this.replacedSteps.get(toEmit.getPath().size() - 1);
+                            replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                             if (replacedStep.hasRange()) {
                                 if (replacedStep.containsRange()) {
                                     return true;
@@ -129,18 +131,18 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
     private boolean flattenRawIterator() {
         if (this.iterator.hasNext()) {
             List<Emit<E>> emits = this.iterator.next();
-            List<List<Pair<Traversal.Admin, Comparator>>> emitComparators = new ArrayList<>();
+            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
             Path currentPath = MutablePath.make();
             for (Emit<E> emit : emits) {
                 this.toEmit = emit;
                 if (!emit.isFake()) {
                     currentPath = currentPath.extend(emit.getElement(), emit.getLabels());
-                    emitComparators.add(this.toEmit.getComparators());
+                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
                 }
             }
             if (this.toEmit != null) {
                 this.toEmit.setPath(currentPath);
-                this.toEmit.setPathComparators(emitComparators);
+                this.toEmit.setSqlgComparatorHolders(emitComparators);
             }
         }
         return this.toEmit != null;

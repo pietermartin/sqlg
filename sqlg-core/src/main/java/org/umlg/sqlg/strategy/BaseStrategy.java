@@ -86,6 +86,9 @@ public abstract class BaseStrategy {
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
                 collectOrderGlobalSteps(stepIterator);
                 collectRangeGlobalSteps(stepIterator);
+                if (stepIterator.hasNext() && stepIterator.next() instanceof SelectOneStep) {
+                    break;
+                }
             } else {
                 //If a step can not be replaced then its the end of optimizationinging.
                 break;
@@ -131,6 +134,9 @@ public abstract class BaseStrategy {
             } else if (step instanceof OrderGlobalStep) {
                 stepIterator.previous();
                 collectOrderGlobalSteps(stepIterator);
+                collectRangeGlobalSteps(stepIterator);
+            } else if (step instanceof RangeGlobalStep) {
+                collectRangeGlobalSteps(stepIterator);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
@@ -140,7 +146,7 @@ public abstract class BaseStrategy {
     private SqlgStep handleGraphStep(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
         SqlgStep sqlgStep;
         this.currentReplacedStep = ReplacedStep.from(
-                null,
+                this.currentReplacedStep,
                 this.sqlgGraph.getTopology(),
                 (AbstractStep<?, ?>) step,
                 pathCount.getValue()
@@ -166,7 +172,7 @@ public abstract class BaseStrategy {
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
         this.currentReplacedStep = ReplacedStep.from(
-                null,
+                this.currentReplacedStep,
                 this.sqlgGraph.getTopology(),
                 step,
                 pathCount.getValue()
@@ -334,22 +340,26 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
             if (step instanceof OrderGlobalStep) {
-                List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
-                for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : comparators) {
-                    Traversal.Admin<?, ?> defaultGraphTraversal = comparator.getValue0();
-                    List<CountGlobalStep> countGlobalSteps = TraversalHelper.getStepsOfAssignableClassRecursively(CountGlobalStep.class, defaultGraphTraversal);
-                    if (!countGlobalSteps.isEmpty()) {
-                        //break on the first step that is not a OrderGlobalStep
-                        return;
+                if (optimizable((OrderGlobalStep) step)) {
+                    //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
+                    if (this.traversal.getSteps().contains(step)) {
+                        this.traversal.removeStep(step);
                     }
-                }
-                //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
-                if (this.traversal.getSteps().contains(step)) {
-                    this.traversal.removeStep(step);
-                }
-                this.currentReplacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
-                if (isDbComparators(((OrderGlobalStep) step).getComparators())) {
-                    this.currentReplacedStep.getDbComparators().addAll(((OrderGlobalStep) step).getComparators());
+                    iterator.previous();
+                    Step previousStep = iterator.previous();
+                    if (previousStep instanceof SelectOneStep) {
+                        SelectOneStep selectOneStep = (SelectOneStep) previousStep;
+                        String key = (String) selectOneStep.getScopeKeys().iterator().next();
+                        this.currentReplacedStep.getSqlgComparatorHolder().setPrecedingSelectOneLabel(key);
+                    }
+                    iterator.next();
+                    iterator.next();
+                    this.currentReplacedStep.getSqlgComparatorHolder().setComparators(((OrderGlobalStep) step).getComparators());
+                    if (isDbComparators(((OrderGlobalStep) step).getComparators())) {
+                        this.currentReplacedStep.getDbComparators().addAll(((OrderGlobalStep) step).getComparators());
+                    }
+                } else {
+                    return;
                 }
             } else {
                 //break on the first step that is not a OrderGlobalStep
@@ -357,6 +367,22 @@ public abstract class BaseStrategy {
                 break;
             }
         }
+    }
+
+    private boolean optimizable(OrderGlobalStep step) {
+        List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = step.getComparators();
+        for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : comparators) {
+            Traversal.Admin<?, ?> defaultGraphTraversal = comparator.getValue0();
+            List<CountGlobalStep> countGlobalSteps = TraversalHelper.getStepsOfAssignableClassRecursively(CountGlobalStep.class, defaultGraphTraversal);
+            if (!countGlobalSteps.isEmpty()) {
+                return false;
+            }
+            List<LambdaMapStep> lambdaMapSteps = TraversalHelper.getStepsOfAssignableClassRecursively(LambdaMapStep.class, defaultGraphTraversal);
+            if (!lambdaMapSteps.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean isDbComparators(List comparators) {

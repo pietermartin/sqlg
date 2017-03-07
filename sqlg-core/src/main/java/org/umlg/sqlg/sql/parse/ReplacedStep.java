@@ -17,6 +17,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseStrategy;
+import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
@@ -38,7 +39,8 @@ public class ReplacedStep<S, E> {
     private Set<String> labels;
     private ReplacedStep<?, ?> previous;
     private List<HasContainer> hasContainers;
-    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
+//    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
+    private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators;
     /**
      * range limitation if any
@@ -70,7 +72,7 @@ public class ReplacedStep<S, E> {
         replacedStep.step = null;
         replacedStep.labels = new HashSet<>();
         replacedStep.hasContainers = new ArrayList<>();
-        replacedStep.comparators = new ArrayList<>();
+//        replacedStep.comparators = new ArrayList<>();
         replacedStep.dbComparators = new ArrayList<>();
         replacedStep.topology = topology;
         replacedStep.fake = true;
@@ -83,7 +85,7 @@ public class ReplacedStep<S, E> {
         replacedStep.step = step;
         replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
         replacedStep.hasContainers = new ArrayList<>();
-        replacedStep.comparators = new ArrayList<>();
+//        replacedStep.comparators = new ArrayList<>();
         replacedStep.dbComparators = new ArrayList<>();
         replacedStep.topology = topology;
         replacedStep.fake = false;
@@ -98,8 +100,13 @@ public class ReplacedStep<S, E> {
         return this.hasContainers;
     }
 
-    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
-        return this.comparators;
+//    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
+//        return this.comparators;
+//    }
+
+
+    public SqlgComparatorHolder getSqlgComparatorHolder() {
+        return sqlgComparatorHolder;
     }
 
     public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getDbComparators() {
@@ -544,7 +551,8 @@ public class ReplacedStep<S, E> {
                             schemaTable,
                             0,
                             hasContainersWithoutLabel,
-                            this.comparators,
+//                            this.comparators,
+                            this.sqlgComparatorHolder,
                             this.dbComparators,
                             this.range,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
@@ -599,7 +607,8 @@ public class ReplacedStep<S, E> {
                                 schemaTableForLabel,
                                 0,
                                 hasContainers,
-                                this.comparators,
+//                                this.comparators,
+                                this.sqlgComparatorHolder,
                                 this.dbComparators,
                                 this.range,
                                 SchemaTableTree.STEP_TYPE.GRAPH_STEP,

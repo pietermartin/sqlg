@@ -88,7 +88,8 @@ public class SqlgUtil {
                         SqlgElement e = SqlgUtil.loadElement(
                                 sqlgGraph, lastElementIdCountMap, resultSet, lastSchemaTableTree
                         );
-                        Emit<SqlgElement> emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getComparators());
+//                        Emit<SqlgElement> emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getComparators());
+                        Emit<SqlgElement> emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getSqlgComparatorHolder());
                         if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
                             emit.setIncomingOnlyLocalOptionalStep(true);
                         }
@@ -163,11 +164,14 @@ public class SqlgUtil {
                     //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
-                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getComparators()));
+//                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getComparators()));
+                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getSqlgComparatorHolder()));
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
-                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getComparators()));
+//                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getComparators()));
+                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getSqlgComparatorHolder()));
                     } else {
-                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getComparators()));
+//                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getComparators()));
+                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getSqlgComparatorHolder()));
                     }
                 }
             }
