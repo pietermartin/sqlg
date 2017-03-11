@@ -8,7 +8,6 @@ import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
@@ -53,7 +52,8 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
                 this.eagerLoading = true;
                 this.eagerLoadedResults = new ArrayList<>();
                 eagerLoad();
-                Collections.sort(this.eagerLoadedResults, new EmitComparator(this.replacedSteps));
+                EmitOrderAndRangeHelper emitOrderAndRangeHelper =new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
+                emitOrderAndRangeHelper.sortAndApplyRange();
                 return eagerLoadHasNext();
             } else {
                 return flattenRawIterator();
@@ -70,31 +70,32 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
     private boolean eagerLoadHasNext() {
         if (!this.eagerLoadedResults.isEmpty()) {
             this.toEmit = this.eagerLoadedResults.remove(0);
-            ReplacedStep replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
-            if (replacedStep.hasRange()) {
-                if (replacedStep.containsRange()) {
-                    return true;
-                } else {
-                    //iterate till there is something to emit
-                    while (true) {
-                        if (!this.eagerLoadedResults.isEmpty()) {
-                            this.toEmit = this.eagerLoadedResults.remove(0);
-                            replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
-                            if (replacedStep.hasRange()) {
-                                if (replacedStep.containsRange()) {
-                                    return true;
-                                }
-                            } else {
-                                return true;
-                            }
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-            } else {
-                return true;
-            }
+            return true;
+//            ReplacedStep replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
+//            if (replacedStep.hasRange()) {
+//                if (replacedStep.containsRange()) {
+//                    return true;
+//                } else {
+//                    //iterate till there is something to emit
+//                    while (true) {
+//                        if (!this.eagerLoadedResults.isEmpty()) {
+//                            this.toEmit = this.eagerLoadedResults.remove(0);
+//                            replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
+//                            if (replacedStep.hasRange()) {
+//                                if (replacedStep.containsRange()) {
+//                                    return true;
+//                                }
+//                            } else {
+//                                return true;
+//                            }
+//                        } else {
+//                            return false;
+//                        }
+//                    }
+//                }
+//            } else {
+//                return true;
+//            }
         } else {
             return false;
         }

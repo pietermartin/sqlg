@@ -32,7 +32,7 @@ public class GremlinParser<S extends SqlgElement, E extends SqlgElement> {
     public Set<SchemaTableTree> parse(ReplacedStepTree replacedStepTree) {
         ReplacedStep startReplacedStep = replacedStepTree.root().getReplacedStep();
         Preconditions.checkState(startReplacedStep.isGraphStep(), "Step must be a GraphStep");
-        Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth() - 1);
+        Set<SchemaTableTree> rootSchemaTableTrees = startReplacedStep.getRootSchemaTableTrees(this.sqlgGraph, replacedStepTree.getDepth());
         Set<SchemaTableTree> toRemove = new HashSet<>();
         for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
             SqlgUtil.removeTopologyStrategyHasContainer(rootSchemaTableTree.getHasContainers());
@@ -43,7 +43,7 @@ public class GremlinParser<S extends SqlgElement, E extends SqlgElement> {
             if (remove) {
                 toRemove.add(rootSchemaTableTree);
             }
-            rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth() - 1);
+            rootSchemaTableTree.removeAllButDeepestAndAddCacheLeafNodes(replacedStepTree.getDepth());
         }
         rootSchemaTableTrees.removeAll(toRemove);
 //        replacedSteps.add(0, startReplacedStep);

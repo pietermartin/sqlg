@@ -21,8 +21,8 @@ public class ReplacedStepTree {
 
     public ReplacedStepTree(ReplacedStep replacedStep) {
         this.currentTreeNodeNode = new TreeNode(replacedStep);
-        this.currentTreeNodeNode.depth = 1;
-        this.depth = 1;
+        this.currentTreeNodeNode.depth = 0;
+        this.depth = 0;
     }
 
     public void addReplacedStep(ReplacedStep replacedStep) {
@@ -103,7 +103,7 @@ public class ReplacedStepTree {
         private ReplacedStep replacedStep;
         private TreeNode parent;
         private List<TreeNode> children = new ArrayList<>();
-        private int depth;
+        private int depth = 0;
 
         TreeNode(ReplacedStep replacedStep) {
             this.replacedStep = replacedStep;

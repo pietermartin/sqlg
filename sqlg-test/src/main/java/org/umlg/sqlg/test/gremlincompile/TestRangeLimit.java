@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test;
+package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
@@ -8,13 +8,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalSte
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -53,6 +56,32 @@ public class TestRangeLimit extends BaseTest {
     }
 
     @Test
+    public void testStepsAfterRangeNotOptimized() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "d");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "c");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "b");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "surname", "b");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "surname", "b");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "surname", "b");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "surname", "b");
+        a1.addEdge("ab", b1);
+        a2.addEdge("ab", b2);
+        a3.addEdge("ab", b3);
+        a4.addEdge("ab", b4);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V().hasLabel("A").order().by("name").limit(2)
+                .out("ab").toList();
+
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(b3));
+        Assert.assertTrue(vertices.contains(b4));
+    }
+
+    @Test
     public void testVWithLimit() {
         for (int i = 0; i < 100; i++) {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
@@ -61,7 +90,7 @@ public class TestRangeLimit extends BaseTest {
         this.sqlgGraph.tx().commit();
         GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().range(1, 2);
         ensureRangeGlobal(g);
-        assertEquals(1, g.toList().size());
+        Assert.assertEquals(1, g.toList().size());
         g = this.sqlgGraph.traversal().V().range(1, 2);
         ensureRangeGlobal(g);
         assertTrue(g.hasNext());
@@ -89,8 +118,8 @@ public class TestRangeLimit extends BaseTest {
             cnt++;
         }
         ensureNoRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
         assertTrue(names.toString(), names.contains("a1"));
         assertTrue(names.toString(), names.contains("a10"));
         assertTrue(names.toString(), names.contains("a11"));
@@ -118,8 +147,8 @@ public class TestRangeLimit extends BaseTest {
             cnt++;
         }
         ensureNoRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
         assertTrue(names.toString(), names.contains("a1"));
         assertTrue(names.toString(), names.contains("a10"));
         assertTrue(names.toString(), names.contains("a11"));
@@ -142,8 +171,8 @@ public class TestRangeLimit extends BaseTest {
             cnt++;
         }
         ensureNoRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
 
     }
 
@@ -168,8 +197,8 @@ public class TestRangeLimit extends BaseTest {
             cnt++;
         }
         ensureNoRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
         assertTrue(names.toString(), names.contains("a1"));
         assertTrue(names.toString(), names.contains("a10"));
         assertTrue(names.toString(), names.contains("a0"));
@@ -199,8 +228,8 @@ public class TestRangeLimit extends BaseTest {
             cnt++;
         }
         ensureNoRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
         assertTrue(names.toString(), names.contains("e1"));
         assertTrue(names.toString(), names.contains("e10"));
         assertTrue(names.toString(), names.contains("e11"));
@@ -231,8 +260,8 @@ public class TestRangeLimit extends BaseTest {
         }
         // order by on multiple labels is not done in SQL, so the range isn't
 //        ensureRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
         assertTrue(names.toString(), names.contains("a1"));
         assertTrue(names.toString(), names.contains("a10"));
         assertTrue(names.toString(), names.contains("a11"));
@@ -258,8 +287,8 @@ public class TestRangeLimit extends BaseTest {
         }
         // cannot have offset on different labels
 //        ensureRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
 
     }
 
@@ -282,8 +311,8 @@ public class TestRangeLimit extends BaseTest {
         }
         // we still have to cut the union result
 //        ensureRangeGlobal(g);
-        assertEquals(4, cnt);
-        assertEquals(names.toString(), 4, names.size());
+        Assert.assertEquals(4, cnt);
+        Assert.assertEquals(names.toString(), 4, names.size());
 
     }
 
@@ -311,8 +340,8 @@ public class TestRangeLimit extends BaseTest {
             cnt++;
         }
         ensureNoRangeGlobal(g);
-        assertEquals(3, cnt);
-        assertEquals(names.toString(), 3, names.size());
+        Assert.assertEquals(3, cnt);
+        Assert.assertEquals(names.toString(), 3, names.size());
         assertTrue(names.toString(), names.contains("b1"));
         assertTrue(names.toString(), names.contains("b10"));
         assertTrue(names.toString(), names.contains("b11"));
@@ -333,9 +362,9 @@ public class TestRangeLimit extends BaseTest {
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
         ensureNoRangeGlobal(g);
-        assertEquals(10, vertexList.size());
+        Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
-            assertEquals("C", v.label());
+            Assert.assertEquals("C", v.label());
             int i = (Integer) v.property("age").value();
             assertTrue(i >= 10 && i < 20);
         }
@@ -355,9 +384,9 @@ public class TestRangeLimit extends BaseTest {
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
         ensureNoRangeGlobal(g);
-        assertEquals(10, vertexList.size());
+        Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
-            assertEquals("C", v.label());
+            Assert.assertEquals("C", v.label());
             int i = (Integer) v.property("age").value();
             assertTrue(i >= 10 && i < 20);
         }
@@ -378,10 +407,11 @@ public class TestRangeLimit extends BaseTest {
         List<Vertex> vertexList = g.toList();
         // cannot be done in SQL
 //        ensureRangeGlobal(g);
-        assertEquals(10, vertexList.size());
+        Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
             assertTrue(v.label().equals("A") || v.label().equals("C"));
             int i = (Integer) v.property("age").value();
+            System.out.println(i);
             assertTrue(String.valueOf(i), i >= 5 && i < 10);
         }
     }

@@ -84,8 +84,8 @@ public abstract class BaseStrategy {
                 stepIterator.previous();
                 handleStep(stepIterator, pathCount);
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
-                collectOrderGlobalSteps(stepIterator);
-                collectRangeGlobalSteps(stepIterator);
+                collectOrderGlobalSteps(stepIterator, pathCount);
+                collectRangeGlobalSteps(stepIterator, pathCount);
                 if (stepIterator.hasNext() && stepIterator.next() instanceof SelectOneStep) {
                     break;
                 }
@@ -133,10 +133,10 @@ public abstract class BaseStrategy {
                 }
             } else if (step instanceof OrderGlobalStep) {
                 stepIterator.previous();
-                collectOrderGlobalSteps(stepIterator);
-                collectRangeGlobalSteps(stepIterator);
+                collectOrderGlobalSteps(stepIterator, pathCount);
+                collectRangeGlobalSteps(stepIterator, pathCount);
             } else if (step instanceof RangeGlobalStep) {
-                collectRangeGlobalSteps(stepIterator);
+                collectRangeGlobalSteps(stepIterator, pathCount);
             } else {
                 throw new IllegalStateException("Unhandled step " + step.getClass().getName());
             }
@@ -152,8 +152,8 @@ public abstract class BaseStrategy {
                 pathCount.getValue()
         );
         collectHasSteps(stepIterator, pathCount.getValue());
-        collectOrderGlobalSteps(stepIterator);
-        collectRangeGlobalSteps(stepIterator);
+        collectOrderGlobalSteps(stepIterator, pathCount);
+        collectRangeGlobalSteps(stepIterator, pathCount);
         sqlgStep = constructSqlgStep(step);
         this.currentTreeNodeNode = sqlgStep.addReplacedStep(this.currentReplacedStep);
         replaceStepInTraversal(step, sqlgStep);
@@ -178,8 +178,8 @@ public abstract class BaseStrategy {
                 pathCount.getValue()
         );
         collectHasSteps(stepIterator, pathCount.getValue());
-        collectOrderGlobalSteps(stepIterator);
-        collectRangeGlobalSteps(stepIterator);
+        collectOrderGlobalSteps(stepIterator, pathCount);
+        collectRangeGlobalSteps(stepIterator, pathCount);
         ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         //if called from ChooseStep then the VertexStep is nested inside the ChooseStep and not one of the traversal's direct steps.
         int index = TraversalHelper.stepIndex(step, this.traversal);
@@ -196,8 +196,7 @@ public abstract class BaseStrategy {
         this.currentTreeNodeNode = treeNodeNode;
     }
 
-    private boolean handleRepeatStep(RepeatStep<?> repeatStep, MutableInt pathCount) {
-        boolean repeatStepAdded = false;
+    private void handleRepeatStep(RepeatStep<?> repeatStep, MutableInt pathCount) {
         List<? extends Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
         Traversal.Admin admin = repeatTraversals.get(0);
         List<Step<?, ?>> repeatStepInternalVertexSteps = admin.getSteps();
@@ -212,38 +211,46 @@ public abstract class BaseStrategy {
                 if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
                     break;
                 } else if (internalRepeatStep instanceof VertexStep || internalRepeatStep instanceof EdgeVertexStep || internalRepeatStep instanceof EdgeOtherVertexStep) {
-                    ReplacedStep<?, ?> replacedStepToEmit = null;
+                    ReplacedStep<?, ?> replacedStepToEmit;
                     //this means the ReplacedStep before the RepeatStep need to be emitted.
-                    //i.e. its the currentReplacedStep.
+                    //i.e. the currentReplacedStep before running handleVertexStep needs to be emitted.
                     if (repeatStep.emitFirst) {
                         replacedStepToEmit = this.currentReplacedStep;
                         pathCount.decrement();
-                    }
-                    handleVertexStep(repeatStepIterator, (AbstractStep<?, ?>) internalRepeatStep, pathCount);
-                    if (!repeatStep.emitFirst) {
-                        replacedStepToEmit = this.currentReplacedStep;
-                    }
-                    //noinspection ConstantConditions
-                    replacedStepToEmit.setEmit(repeatStep.getEmitTraversal() != null);
-                    replacedStepToEmit.setUntilFirst(repeatStep.untilFirst);
-                    if (repeatStep.getLabels().isEmpty()) {
-                        replacedStepToEmit.addLabel(pathCount + BaseStrategy.EMIT_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
-                    } else {
-                        for (String label : repeatStep.getLabels()) {
-                            replacedStepToEmit.addLabel(pathCount + BaseStrategy.EMIT_LABEL_SUFFIX + label);
+                        //noinspection ConstantConditions
+                        replacedStepToEmit.setEmit(repeatStep.getEmitTraversal() != null);
+                        replacedStepToEmit.setUntilFirst(repeatStep.untilFirst);
+                        if (repeatStep.getLabels().isEmpty()) {
+                            replacedStepToEmit.addLabel(pathCount + BaseStrategy.EMIT_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+                        } else {
+                            for (String label : repeatStep.getLabels()) {
+                                replacedStepToEmit.addLabel(pathCount + BaseStrategy.EMIT_LABEL_SUFFIX + label);
+                            }
                         }
-                    }
-                    if (repeatStep.emitFirst) {
                         pathCount.increment();
                     }
+                    handleVertexStep(repeatStepIterator, (AbstractStep<?, ?>) internalRepeatStep, pathCount);
+                    pathCount.decrement();
+                    if (!repeatStep.emitFirst) {
+                        replacedStepToEmit = this.currentReplacedStep;
+                        //noinspection ConstantConditions
+                        replacedStepToEmit.setEmit(repeatStep.getEmitTraversal() != null);
+                        replacedStepToEmit.setUntilFirst(repeatStep.untilFirst);
+                        if (repeatStep.getLabels().isEmpty()) {
+                            replacedStepToEmit.addLabel(pathCount + BaseStrategy.EMIT_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+                        } else {
+                            for (String label : repeatStep.getLabels()) {
+                                replacedStepToEmit.addLabel(pathCount + BaseStrategy.EMIT_LABEL_SUFFIX + label);
+                            }
+                        }
+                    }
+                    pathCount.increment();
                 } else {
                     throw new IllegalStateException("Unhandled step nested in RepeatStep " + internalRepeatStep.getClass().getName());
                 }
             }
         }
         this.traversal.removeStep(repeatStep);
-        return repeatStepAdded;
-
     }
 
     private void handleChooseStep(int chooseStepNestedCount, ChooseStep<?, ?, ?> chooseStep, Traversal.Admin<?, ?> traversal, MutableInt pathCount) {
@@ -335,7 +342,7 @@ public abstract class BaseStrategy {
         }
     }
 
-    private void collectOrderGlobalSteps(ListIterator<Step<?, ?>> iterator) {
+    private void collectOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
@@ -357,6 +364,10 @@ public abstract class BaseStrategy {
                     this.currentReplacedStep.getSqlgComparatorHolder().setComparators(((OrderGlobalStep) step).getComparators());
                     if (isDbComparators(((OrderGlobalStep) step).getComparators())) {
                         this.currentReplacedStep.getDbComparators().addAll(((OrderGlobalStep) step).getComparators());
+                    }
+                    //add a label if the step does not yet have one and is not a leaf node
+                    if (this.currentReplacedStep.getLabels().isEmpty()) {
+                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
                     }
                 } else {
                     return;
@@ -389,7 +400,7 @@ public abstract class BaseStrategy {
         return false;
     }
 
-    private void collectRangeGlobalSteps(ListIterator<Step<?, ?>> iterator) {
+    private void collectRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
@@ -401,6 +412,10 @@ public abstract class BaseStrategy {
                 RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) step;
                 long high = rgs.getHighRange();
                 this.currentReplacedStep.setRange(Range.between(rgs.getLowRange(), high));
+                //add a label if the step does not yet have one and is not a leaf node
+                if (this.currentReplacedStep.getLabels().isEmpty()) {
+                    this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+                }
             } else {
                 //break on the first step that is not a RangeGlobalStep
                 iterator.previous();

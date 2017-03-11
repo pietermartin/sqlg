@@ -35,9 +35,9 @@ public class EmitComparator implements Comparator<Emit> {
      */
     @Override
     public int compare(Emit emit1, Emit emit2) {
+        //Each comparator represents a order by clause in the gremlin
         //Only the last comparator in the 2 list matters.
         //It overrides the previous ones.
-
         List<SqlgComparatorHolder> sqlgComparatorHolders1 = emit1.getSqlgComparatorHolders();
         List<SqlgComparatorHolder> sqlgComparatorHolders2 = emit2.getSqlgComparatorHolders();
 
@@ -48,12 +48,13 @@ public class EmitComparator implements Comparator<Emit> {
 
         int comparatorCount = 0;
         for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparatorPair1 : pathComparator1) {
-            if (sqlgComparatorHolders2.size() <= comparatorCount) {
+            if ((pathComparator2.size() - 1) < comparatorCount) {
                 return -1;
             }
-            Pair<Traversal.Admin<?, ?>, Comparator<?>> comparatorPair2 = pathComparator2.get(comparatorCount);
             Traversal.Admin traversal1 = comparatorPair1.getValue0();
             Comparator comparator1 = comparatorPair1.getValue1();
+
+            Pair<Traversal.Admin<?, ?>, Comparator<?>> comparatorPair2 = pathComparator2.get(comparatorCount);
             Traversal.Admin traversal2 = comparatorPair2.getValue0();
             Comparator comparator2 = comparatorPair2.getValue1();
 
@@ -79,6 +80,8 @@ public class EmitComparator implements Comparator<Emit> {
                     int compare = comparator1.compare(sqlgElement1.value(elementValueTraversal.getPropertyKey()), sqlgElement2.value(elementValueTraversal.getPropertyKey()));
                     if (compare != 0) {
                         return compare;
+//                    } else {
+//                        System.out.println(compare);
                     }
                 }
             } else if (traversal1.getSteps().size() == 1 && traversal1.getSteps().get(0) instanceof SelectOneStep) {

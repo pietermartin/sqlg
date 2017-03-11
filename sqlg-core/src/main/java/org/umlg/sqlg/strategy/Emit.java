@@ -20,9 +20,14 @@ public class Emit<E extends SqlgElement> {
     //This is set to true for local optional step where the query has no labels, i.e. for a single SchemaTableTree only.
     //In this case the element will already be on the traverser i.e. the incoming element.
     private boolean incomingOnlyLocalOptionalStep;
-//        private List<Pair<Traversal.Admin, Comparator>> comparators;
-//    private List<List<Pair<Traversal.Admin<?, ?>, Comparator<?>>>> pathComparators;
+    /**
+     * This is the SqlgComparatorHolder for the SqlgElement that is being emitted.
+     * It represents the {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep} for the SqlgElement that is being emitted.
+     */
     private SqlgComparatorHolder sqlgComparatorHolder;
+    /**
+     * This represents all the {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep}s, one for each element along the path.
+     */
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
     public Emit() {
@@ -52,16 +57,8 @@ public class Emit<E extends SqlgElement> {
         return labels;
     }
 
-//    public List<Pair<Traversal.Admin, Comparator>> getComparators() {
-//        return this.comparators;
-//    }
-
     public SqlgComparatorHolder getSqlgComparatorHolder() {
         return sqlgComparatorHolder;
-    }
-
-    public void setSqlgComparatorHolder(SqlgComparatorHolder sqlgComparatorHolder) {
-        this.sqlgComparatorHolder = sqlgComparatorHolder;
     }
 
     public List<SqlgComparatorHolder> getSqlgComparatorHolders() {
@@ -71,14 +68,6 @@ public class Emit<E extends SqlgElement> {
     public void setSqlgComparatorHolders(List<SqlgComparatorHolder> sqlgComparatorHolders) {
         this.sqlgComparatorHolders = sqlgComparatorHolders;
     }
-
-    //    public List<List<Pair<Traversal.Admin<?, ?>, Comparator<?>>>> getPathComparators() {
-//        return this.pathComparators;
-//    }
-//
-//    public void setPathComparators(List<List<Pair<Traversal.Admin<?, ?>, Comparator<?>>>> pathComparators) {
-//        this.pathComparators = pathComparators;
-//    }
 
     public boolean isRepeat() {
         return repeat;

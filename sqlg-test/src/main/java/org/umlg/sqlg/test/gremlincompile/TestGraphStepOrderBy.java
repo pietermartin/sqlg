@@ -31,7 +31,19 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void test() {
+    public void testOrderByByAndRange() {
+        loadGratefulDead();
+        List<String> names = this.sqlgGraph.traversal()
+                .V().hasLabel("song").order().by("performances", Order.decr).by("name")
+                .range(110, 120)
+                .<String>values("name").toList();
+        for (String name : names) {
+            System.out.println(name);
+        }
+    }
+
+    @Test
+    public void testSelectBeforeOrder() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
@@ -231,7 +243,8 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     private void testOrderBy_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2, Vertex a3, Vertex b1, Vertex b2, Vertex b3) {
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("A")
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal()
+                .V().hasLabel("A")
                 .order()
                 .by("name", Order.incr).by("surname", Order.decr);
         Assert.assertEquals(3, traversal.getSteps().size());
@@ -247,7 +260,7 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderBy2() throws InterruptedException {
+    public void testOrderBySelectOneSteps() throws InterruptedException {
         Vertex group = this.sqlgGraph.addVertex(T.label, "Group", "name", "MTN");
         Vertex network = this.sqlgGraph.addVertex(T.label, "Network", "name", "SouthAfrica");
         Vertex networkSoftwareVersion = this.sqlgGraph.addVertex(T.label, "NetworkSoftwareVersion", "name", "SouthAfricaHuawei");
