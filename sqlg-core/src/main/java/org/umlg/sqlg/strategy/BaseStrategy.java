@@ -52,6 +52,7 @@ public abstract class BaseStrategy {
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
+    public static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
 
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
@@ -65,6 +66,7 @@ public abstract class BaseStrategy {
     private Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
     private ReplacedStepTree.TreeNode currentTreeNodeNode;
     private ReplacedStep<?, ?> currentReplacedStep;
+    private boolean continueOptimization = true;
 
     public BaseStrategy(Traversal.Admin<?, ?> traversal) {
         this.traversal = traversal;
@@ -80,7 +82,7 @@ public abstract class BaseStrategy {
         MutableInt pathCount = new MutableInt(0);
         while (stepIterator.hasNext()) {
             Step<?, ?> step = stepIterator.next();
-            if (isReplaceableStep(step.getClass(), false)) {
+            if (this.continueOptimization && isReplaceableStep(step.getClass(), false)) {
                 stepIterator.previous();
                 handleStep(stepIterator, pathCount);
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
@@ -102,6 +104,7 @@ public abstract class BaseStrategy {
 
     /**
      * sqlgStep is either a {@link SqlgGraphStepCompiled} or {@link SqlgVertexStepCompiled}.
+     * @return false if optimization must be terminated.
      */
     private void handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
         Step<?, ?> step = stepIterator.next();
@@ -177,10 +180,12 @@ public abstract class BaseStrategy {
                 step,
                 pathCount.getValue()
         );
+        //Important to add the replacedStep before collecting the additional steps.
+        //In particular the orderGlobalStep needs to the currentStepDepth setted.
+        ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         collectHasSteps(stepIterator, pathCount.getValue());
         collectOrderGlobalSteps(stepIterator, pathCount);
         collectRangeGlobalSteps(stepIterator, pathCount);
-        ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         //if called from ChooseStep then the VertexStep is nested inside the ChooseStep and not one of the traversal's direct steps.
         int index = TraversalHelper.stepIndex(step, this.traversal);
         if (index != -1) {
@@ -362,12 +367,13 @@ public abstract class BaseStrategy {
                     iterator.next();
                     iterator.next();
                     this.currentReplacedStep.getSqlgComparatorHolder().setComparators(((OrderGlobalStep) step).getComparators());
+                    this.currentReplacedStep.getSqlgComparatorHolder().setReplacedStepDepth(this.currentReplacedStep.getDepth());
                     if (isDbComparators(((OrderGlobalStep) step).getComparators())) {
                         this.currentReplacedStep.getDbComparators().addAll(((OrderGlobalStep) step).getComparators());
                     }
                     //add a label if the step does not yet have one and is not a leaf node
                     if (this.currentReplacedStep.getLabels().isEmpty()) {
-                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                     }
                 } else {
                     return;
@@ -414,8 +420,9 @@ public abstract class BaseStrategy {
                 this.currentReplacedStep.setRange(Range.between(rgs.getLowRange(), high));
                 //add a label if the step does not yet have one and is not a leaf node
                 if (this.currentReplacedStep.getLabels().isEmpty()) {
-                    this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+                    this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                 }
+                this.continueOptimization = false;
             } else {
                 //break on the first step that is not a RangeGlobalStep
                 iterator.previous();

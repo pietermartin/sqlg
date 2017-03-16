@@ -14,7 +14,8 @@ import org.umlg.sqlg.test.gremlincompile.*;
 //        TestRangeLimit.class,
 //        TestGraphStepOrderBy.class,
 //        TestRepeatStepGraphOut.class,
-//        TestOptionalWithOrder.class
+//        TestOptionalWithOrder.class,
+//        TestGremlinOptional.class
 })
 public class AnyTest {
 }

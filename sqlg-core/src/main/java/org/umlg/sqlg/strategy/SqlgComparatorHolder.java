@@ -14,7 +14,11 @@ import java.util.List;
 public class SqlgComparatorHolder {
 
     private String precedingSelectOneLabel;
+    private int replacedStepDepth;
     private List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = new ArrayList<>();
+
+    public SqlgComparatorHolder() {
+    }
 
     public String getPrecedingSelectOneLabel() {
         return precedingSelectOneLabel;
@@ -34,5 +38,13 @@ public class SqlgComparatorHolder {
 
     public boolean hasComparators() {
         return !this.comparators.isEmpty();
+    }
+
+    public int getReplacedStepDepth() {
+        return replacedStepDepth;
+    }
+
+    public void setReplacedStepDepth(int replacedStepDepth) {
+        this.replacedStepDepth = replacedStepDepth;
     }
 }

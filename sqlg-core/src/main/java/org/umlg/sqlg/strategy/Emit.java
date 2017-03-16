@@ -30,14 +30,20 @@ public class Emit<E extends SqlgElement> {
      */
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
+    /**
+     * The {@link org.umlg.sqlg.sql.parse.ReplacedStep}'s depth
+     */
+    private int replacedStepDepth;
+
     public Emit() {
         this.fake = true;
     }
 
     //    public Emit(E element, Set<String> labels, List<Pair<Traversal.Admin, Comparator>> comparators) {
-    public Emit(E element, Set<String> labels, SqlgComparatorHolder sqlgComparatorHolder) {
+    public Emit(E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
         this.element = element;
         this.labels = labels;
+        this.replacedStepDepth = replacedStepDepth;
         this.sqlgComparatorHolder = sqlgComparatorHolder;
     }
 
@@ -67,6 +73,10 @@ public class Emit<E extends SqlgElement> {
 
     public void setSqlgComparatorHolders(List<SqlgComparatorHolder> sqlgComparatorHolders) {
         this.sqlgComparatorHolders = sqlgComparatorHolders;
+    }
+
+    public int getReplacedStepDepth() {
+        return replacedStepDepth;
     }
 
     public boolean isRepeat() {

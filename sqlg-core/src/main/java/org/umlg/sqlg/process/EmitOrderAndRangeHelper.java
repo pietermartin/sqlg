@@ -37,7 +37,7 @@ public class EmitOrderAndRangeHelper<E extends SqlgElement> {
                 if (count < this.replacedSteps.size()) {
                     if (replacedStep.getSqlgComparatorHolder().hasComparators()) {
                         //First order the whole result set then limit
-                        this.eagerLoadedResults.sort(new ReplacedStepEmitComparator<>());
+                        this.eagerLoadedResults.sort(new EmitComparator<>(replacedStep));
                     }
                     applyRange(replacedStep);
                 }
@@ -46,9 +46,11 @@ public class EmitOrderAndRangeHelper<E extends SqlgElement> {
             count++;
         }
         //Now sort the whole lot.
-        this.eagerLoadedResults.sort(new ReplacedStepEmitComparator<>());
-        if (lastReplacedStep.hasRange()) {
-            applyRange(lastReplacedStep);
+        if (lastReplacedStep != null) {
+            this.eagerLoadedResults.sort(new EmitComparator<>(lastReplacedStep));
+            if (lastReplacedStep.hasRange()) {
+                applyRange(lastReplacedStep);
+            }
         }
     }
 
@@ -61,7 +63,8 @@ public class EmitOrderAndRangeHelper<E extends SqlgElement> {
                 for (Set<String> labels : emit.getPath().labels()) {
                     for (String label : labels) {
                         if (replacedStep.getLabels().contains(replacedStep.getDepth() + BaseStrategy.PATH_LABEL_SUFFIX + label) ||
-                                replacedStep.getLabels().contains(replacedStep.getDepth() + BaseStrategy.EMIT_LABEL_SUFFIX + label)) {
+                                replacedStep.getLabels().contains(replacedStep.getDepth() + BaseStrategy.EMIT_LABEL_SUFFIX + label) ||
+                                replacedStep.getLabels().contains(replacedStep.getDepth() + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL + label)) {
                             foundLabel = true;
                             break;
                         }

@@ -71,31 +71,6 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
         if (!this.eagerLoadedResults.isEmpty()) {
             this.toEmit = this.eagerLoadedResults.remove(0);
             return true;
-//            ReplacedStep replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
-//            if (replacedStep.hasRange()) {
-//                if (replacedStep.containsRange()) {
-//                    return true;
-//                } else {
-//                    //iterate till there is something to emit
-//                    while (true) {
-//                        if (!this.eagerLoadedResults.isEmpty()) {
-//                            this.toEmit = this.eagerLoadedResults.remove(0);
-//                            replacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
-//                            if (replacedStep.hasRange()) {
-//                                if (replacedStep.containsRange()) {
-//                                    return true;
-//                                }
-//                            } else {
-//                                return true;
-//                            }
-//                        } else {
-//                            return false;
-//                        }
-//                    }
-//                }
-//            } else {
-//                return true;
-//            }
         } else {
             return false;
         }

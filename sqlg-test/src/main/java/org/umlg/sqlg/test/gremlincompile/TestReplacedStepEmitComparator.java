@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.process.EmitComparator;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -18,12 +19,58 @@ import java.util.stream.Collectors;
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/03/11
  *         <p>
- *         This test puts together all edge cases for {@link org.umlg.sqlg.process.ReplacedStepEmitComparator}
+ *         This test puts together all edge cases for {@link EmitComparator}
  */
 public class TestReplacedStepEmitComparator extends BaseTest {
 
     @Test
-    public void testRangeGetFakePathToLimitOn() {
+    public void testOrderRangeOrderAgain() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "a");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
+
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "a");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "b");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "d");
+        Vertex c5 = this.sqlgGraph.addVertex(T.label, "C", "name", "e");
+        Vertex c6 = this.sqlgGraph.addVertex(T.label, "C", "name", "f");
+        Vertex c7 = this.sqlgGraph.addVertex(T.label, "C", "name", "g");
+        Vertex c8 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
+        Vertex c9 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
+
+        b1.addEdge("bc", c1);
+        b1.addEdge("bc", c2);
+        b1.addEdge("bc", c3);
+        b2.addEdge("bc", c4);
+        b2.addEdge("bc", c5);
+        b2.addEdge("bc", c6);
+        b3.addEdge("bc", c7);
+        b3.addEdge("bc", c8);
+        b3.addEdge("bc", c9);
+
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .out("ab").order().by("name", Order.decr).limit(1)
+                .out("bc").order().by("name", Order.decr)
+                .toList();
+
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(c9, vertices.get(0));
+        Assert.assertEquals(c8, vertices.get(1));
+        Assert.assertEquals(c7, vertices.get(2));
+
+    }
+
+    @Test
+    public void testVertexStepAfterRange() {
         loadModern();
         Object v1Id = convertToVertexId("marko");
         final Traversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V(v1Id).out("created").inE("created").range(1, 3).outV();
