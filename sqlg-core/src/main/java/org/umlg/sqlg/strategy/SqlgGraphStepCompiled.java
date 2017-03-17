@@ -3,18 +3,19 @@ package org.umlg.sqlg.strategy;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
-import org.apache.tinkerpop.gremlin.util.iterator.EmptyIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.SqlgRawIteratorToEmitIterator;
+import org.umlg.sqlg.process.EmitOrderAndRangeHelper;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -38,23 +39,23 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private SqlgGraph sqlgGraph;
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
-    private transient SqlgRawIteratorToEmitIterator iteratorSupplier;
-    private Iterator<Emit<E>> iterator = EmptyIterator.instance();
+    private Emit<E> toEmit = null;
+    private Iterator<List<Emit<E>>> elementIter;
+    private List<Emit<E>> eagerLoadedResults = new ArrayList<>();
+    private Iterator<Emit<E>> eagerLoadedResultsIter;
     private Traverser.Admin<S> previousHead;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
-        this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this.replacedSteps, this::elements);
     }
-
 
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
-            if (this.iterator.hasNext()) {
+            if (this.eagerLoadedResultsIter != null && this.eagerLoadedResultsIter.hasNext()) {
                 Traverser.Admin<E> traverser = null;
-                Emit<E> emit = this.iterator.next();
+                Emit<E> emit = this.eagerLoadedResultsIter.next();
                 boolean first = true;
                 Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
                 for (Object o : emit.getPath().objects()) {
@@ -72,26 +73,60 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
                 return traverser;
             } else {
-                if (this.isStart) {
-                    if (this.done)
-                        throw FastNoSuchElementException.instance();
-                    else {
-                        this.done = true;
-                        this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
-                    }
-                } else {
+                if (!this.isStart) {
                     this.previousHead = this.starts.next();
-                    this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
+                } else {
+                    if (this.done) {
+                        throw FastNoSuchElementException.instance();
+                    }
+                    this.done = true;
+                }
+                this.elementIter = elements();
+                eagerLoad();
+                EmitOrderAndRangeHelper emitOrderAndRangeHelper = new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
+                emitOrderAndRangeHelper.sortAndApplyRange();
+                this.eagerLoadedResultsIter = this.eagerLoadedResults.iterator();
+            }
+        }
+    }
+
+    private boolean flattenRawIterator() {
+        if (this.elementIter.hasNext()) {
+            List<Emit<E>> emits = this.elementIter.next();
+            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
+            Path currentPath = MutablePath.make();
+            for (Emit<E> emit : emits) {
+                this.toEmit = emit;
+                if (!emit.isFake()) {
+                    currentPath = currentPath.extend(emit.getElement(), emit.getLabels());
+                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
                 }
             }
+            if (this.toEmit != null) {
+                this.toEmit.setPath(currentPath);
+                this.toEmit.setSqlgComparatorHolders(emitComparators);
+            }
+        }
+        return this.toEmit != null;
+    }
+
+    private void eagerLoad() {
+        this.eagerLoadedResults.clear();
+        while (flattenRawIterator()) {
+            this.eagerLoadedResults.add(this.toEmit);
+            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+                this.toEmit.setRepeated(true);
+                this.eagerLoadedResults.add(this.toEmit);
+            }
+            this.toEmit = null;
         }
     }
 
     @Override
     public void reset() {
         super.reset();
-        previousHead = null;
-        this.iterator = EmptyIterator.instance();
+        this.previousHead = null;
+        this.eagerLoadedResults.clear();
     }
 
     @Override
