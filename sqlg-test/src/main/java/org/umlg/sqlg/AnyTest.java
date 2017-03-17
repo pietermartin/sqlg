@@ -2,8 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.*;
-import org.umlg.sqlg.test.index.TestIndex;
+import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
 
 /**
  * Date: 2014/07/16
@@ -11,14 +10,7 @@ import org.umlg.sqlg.test.index.TestIndex;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestTraversalPerformance.class,
-//        TestReplacedStepEmitComparator.class,
-//        TestRangeLimit.class,
-//        TestGraphStepOrderBy.class,
-//        TestRepeatStepGraphOut.class,
-//        TestOptionalWithOrder.class,
-//        TestGremlinOptional.class
-        TestIndex.class
+        TestTraversalPerformance.class
 })
 public class AnyTest {
 }

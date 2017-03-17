@@ -92,10 +92,10 @@ public class SqlgWhereStrategy extends AbstractTraversalStrategy<TraversalStrate
         	SqlgGraphStepCompiled<?, ?> sgs=(SqlgGraphStepCompiled<?, ?>)step;
         	for (ReplacedStep<?,?> rs:sgs.getReplacedSteps()){
         		for (String label:rs.getLabels()){
-        			 if (label.contains(BaseSqlgStrategy.PATH_LABEL_SUFFIX)) {
-        				 stepsByLabel.put(label.substring(label.indexOf(BaseSqlgStrategy.PATH_LABEL_SUFFIX) + BaseSqlgStrategy.PATH_LABEL_SUFFIX.length()),rs);
-                     } else if (label.contains(BaseSqlgStrategy.EMIT_LABEL_SUFFIX)) {
-                    	 stepsByLabel.put(label.substring(label.indexOf(BaseSqlgStrategy.EMIT_LABEL_SUFFIX) + BaseSqlgStrategy.EMIT_LABEL_SUFFIX.length()),rs);
+        			 if (label.contains(BaseStrategy.PATH_LABEL_SUFFIX)) {
+        				 stepsByLabel.put(label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length()),rs);
+                     } else if (label.contains(BaseStrategy.EMIT_LABEL_SUFFIX)) {
+                    	 stepsByLabel.put(label.substring(label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX) + BaseStrategy.EMIT_LABEL_SUFFIX.length()),rs);
                      }
         		}
         	}
