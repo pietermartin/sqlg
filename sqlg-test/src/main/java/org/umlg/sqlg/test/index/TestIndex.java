@@ -13,7 +13,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -205,7 +208,7 @@ public class TestIndex extends BaseTest {
             conn.close();
         }
     }
-    
+
     @Test
     public void testIndexExist() throws Exception {
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
@@ -213,28 +216,28 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
         this.sqlgGraph.tx().commit();
-        
+
         this.sqlgGraph.close();
         this.sqlgGraph=SqlgGraph.open(configuration);
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
-         
-        
+
+
     }
-    
+
     @Test
     public void testIndexExistSchema() throws Exception {
         this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
         this.sqlgGraph.createVertexLabeledIndex("Person", "name", "a");
-        
+
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
         this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
         this.sqlgGraph.tx().commit();
-        
+
         this.sqlgGraph.close();
         this.sqlgGraph=SqlgGraph.open(configuration);
         this.sqlgGraph.createVertexLabeledIndex("MySchema.Person", "name", "a");
-         
+
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -268,13 +271,13 @@ public class TestIndex extends BaseTest {
             statement.close();
             conn.close();
         }
-        
+
         this.sqlgGraph.close();
-        this.sqlgGraph=SqlgGraph.open(configuration);
+        this.sqlgGraph= SqlgGraph.open(configuration);
         edgeLabel = this.sqlgGraph.getTopology().getEdgeLabel(publicSchema, "person_address").get();
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
-       
-        
+
+
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")

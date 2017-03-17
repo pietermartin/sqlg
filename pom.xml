@@ -109,7 +109,7 @@
                         <!--<include>**/HsqldbAllTest.java</include>-->
 
                         <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgGraphPostgresProcessStandardTest.java</include>
+                        <include>**/SqlgPostgresProcessStandardTest.java</include>
                         <include>**/PostgresAllTest.java</include>
                     </includes>
                 </configuration>

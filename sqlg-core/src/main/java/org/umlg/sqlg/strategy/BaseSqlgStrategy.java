@@ -205,9 +205,20 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                     lastReplacedStep = replacedStep;
                     chooseStepAdded = false;
                 } else {
-                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep || s instanceof RangeGlobalStep)) {
-                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
+                    if (lastReplacedStep != null) {
+                        boolean doLastEntry = step instanceof OrderGlobalStep || step instanceof RangeGlobalStep;
+                        if (!doLastEntry && (step instanceof SelectStep || step instanceof SelectOneStep || step instanceof EmptyStep) && stepIterator.hasNext()) {
+                            Step<?, ?> nextStep = stepIterator.next();
+                            doLastEntry = nextStep instanceof OrderGlobalStep || nextStep instanceof RangeGlobalStep;
+                            stepIterator.previous();
+                        }
+                        if (doLastEntry) {
+                            doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
+                        }
                     }
+//                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep || s instanceof RangeGlobalStep)) {
+//                        doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
+//                    }
                     break;
                 }
             }

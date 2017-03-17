@@ -12,5 +12,5 @@ import org.umlg.sqlg.test.tp3.SqlgPostgresProvider;
  */
 @RunWith(ProcessStandardSuite.class)
 @GraphProviderClass(provider = SqlgPostgresProvider.class, graph = SqlgGraph.class)
-public class SqlgGraphPostgresProcessStandardTest {
+public class SqlgPostgresProcessStandardTest {
 }

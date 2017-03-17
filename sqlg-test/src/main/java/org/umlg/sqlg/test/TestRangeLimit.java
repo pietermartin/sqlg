@@ -3,6 +3,7 @@ package org.umlg.sqlg.test;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -13,7 +14,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.junit.Assert.*;
 
 
@@ -50,6 +50,30 @@ public class TestRangeLimit extends BaseTest {
         for (Step<?, ?> s : dgt.getSteps()) {
             assertFalse(s instanceof RangeGlobalStep<?>);
         }
+    }
+
+    @Test
+    public void testLimitAfterNonOptimizedStep() {
+        for (int i = 0; i < 100; i++) {
+            Vertex column = this.sqlgGraph.addVertex(T.label, "BigData.Column");
+            Vertex tag = this.sqlgGraph.addVertex(T.label, "BigData.Tag", "name", "NonAnonymized");
+            tag.addEdge("tag", column);
+        }
+        for (int i = 0; i < 100; i++) {
+            Vertex column = this.sqlgGraph.addVertex(T.label, "BigData.Column");
+            Vertex tag = this.sqlgGraph.addVertex(T.label, "BigData.Tag", "name", "Anonymized");
+            tag.addEdge("tag", column);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V().hasLabel("BigData.Column")
+                .where(
+                        __.in("tag").hasLabel("BigData.Tag").has("name", "Anonymized")
+                )
+                .limit(3)
+                .toList();
+
+        assertEquals(3, vertices.size());
     }
 
     @Test
@@ -342,7 +366,6 @@ public class TestRangeLimit extends BaseTest {
         }
     }
 
-
     @Test
     public void testRangeRepeatOut() {
         for (int i = 0; i < 100; i++) {
@@ -353,7 +376,7 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().hasLabel("A").repeat(out()).times(2).order().by("age").range(10, 20);
+        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().hasLabel("A").repeat(__.out()).times(2).order().by("age").range(10, 20);
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
         ensureNoRangeGlobal(g);
