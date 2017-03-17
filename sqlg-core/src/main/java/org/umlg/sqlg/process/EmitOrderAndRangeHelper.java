@@ -5,7 +5,9 @@ import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.structure.SqlgElement;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -22,35 +24,10 @@ public class EmitOrderAndRangeHelper<E extends SqlgElement> {
     }
 
     public void sortAndApplyRange() {
-        //Check for presort
-        //If there is a range that is not the leaf step the first apply the range.
-        //If the range follows an order then first order up to that step.
-
-
-        //This first loop is to check if there are any steps before the last step that has a range.
-        //If so first apply the range.
-        int count = 1;
-        ReplacedStep<?,?> lastReplacedStep = null;
-        for (ReplacedStep<?, ?> replacedStep : this.replacedSteps) {
-            if (replacedStep.hasRange()) {
-                //only for replacedSteps before the last one check
-                if (count < this.replacedSteps.size()) {
-                    if (replacedStep.getSqlgComparatorHolder().hasComparators()) {
-                        //First order the whole result set then limit
-                        this.eagerLoadedResults.sort(new EmitComparator<>(replacedStep));
-                    }
-                    applyRange(replacedStep);
-                }
-            }
-            lastReplacedStep = replacedStep;
-            count++;
-        }
-        //Now sort the whole lot.
-        if (lastReplacedStep != null) {
-            this.eagerLoadedResults.sort(new EmitComparator<>(lastReplacedStep));
-            if (lastReplacedStep.hasRange()) {
-                applyRange(lastReplacedStep);
-            }
+        this.eagerLoadedResults.sort(new EmitComparator<>());
+        ReplacedStep<?, ?> lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
+        if (lastReplacedStep.hasRange()) {
+            applyRange(lastReplacedStep);
         }
     }
 

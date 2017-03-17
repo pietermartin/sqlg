@@ -52,7 +52,7 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
                 this.eagerLoading = true;
                 this.eagerLoadedResults = new ArrayList<>();
                 eagerLoad();
-                EmitOrderAndRangeHelper emitOrderAndRangeHelper =new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
+                EmitOrderAndRangeHelper emitOrderAndRangeHelper = new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
                 emitOrderAndRangeHelper.sortAndApplyRange();
                 return eagerLoadHasNext();
             } else {
@@ -78,14 +78,12 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
 
     private void eagerLoad() {
         while (flattenRawIterator()) {
-            if (this.toEmit != null) {
+            this.eagerLoadedResults.add(this.toEmit);
+            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+                this.toEmit.setRepeated(true);
                 this.eagerLoadedResults.add(this.toEmit);
-                if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
-                    this.toEmit.setRepeated(true);
-                    this.eagerLoadedResults.add(this.toEmit);
-                }
-                this.toEmit = null;
             }
+            this.toEmit = null;
         }
     }
 

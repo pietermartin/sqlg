@@ -42,20 +42,10 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private Iterator<Emit<E>> iterator = EmptyIterator.instance();
     private Traverser.Admin<S> previousHead;
 
-    /**
-     * should we keep the result in a list?
-     */
-    private boolean emitToList = true;
-    /**
-     * list of previous result
-     */
-    private List<Emit<E>> emitted = null;
-
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
         this.iteratorSupplier = new SqlgRawIteratorToEmitIterator<>(this.replacedSteps, this::elements);
-        this.emitToList = !isStart;
     }
 
 
@@ -65,10 +55,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
             if (this.iterator.hasNext()) {
                 Traverser.Admin<E> traverser = null;
                 Emit<E> emit = this.iterator.next();
-                // keep in list
-                if (emitToList && emitted != null) {
-                    emitted.add(emit);
-                }
                 boolean first = true;
                 Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
                 for (Object o : emit.getPath().objects()) {
@@ -95,15 +81,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                     }
                 } else {
                     this.previousHead = this.starts.next();
-                    // we have emitted into a list, we iterate again on the list
-                    if (emitted != null) {
-                        emitToList = false;
-                        this.iterator = emitted.iterator();
-                    } else {
-                        this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
-                        // emit in this list
-                        this.emitted = new LinkedList<>();
-                    }
+                    this.iterator = null == this.iteratorSupplier ? EmptyIterator.instance() : this.iteratorSupplier.get();
                 }
             }
         }
@@ -113,8 +91,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     public void reset() {
         super.reset();
         previousHead = null;
-        emitToList = !isStart;
-        emitted = null;
         this.iterator = EmptyIterator.instance();
     }
 
@@ -132,9 +108,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-
-
-//        System.out.println(this.replacedStepTree.toString());
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
         SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
         stopWatch.stop();

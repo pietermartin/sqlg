@@ -10,7 +10,8 @@ import org.umlg.sqlg.test.gremlincompile.*;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestReplacedStepEmitComparator.class,
+        TestTraversalPerformance.class,
+//        TestReplacedStepEmitComparator.class,
 //        TestRangeLimit.class,
 //        TestGraphStepOrderBy.class,
 //        TestRepeatStepGraphOut.class,
