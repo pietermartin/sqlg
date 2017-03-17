@@ -25,6 +25,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.GremlinParser;
 import org.umlg.sqlg.strategy.SqlgGraphStepStrategy;
 import org.umlg.sqlg.strategy.SqlgVertexStepStrategy;
+import org.umlg.sqlg.strategy.SqlgWhereStrategy;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
 import org.umlg.sqlg.structure.ds.C3p0DataSourceFactory;
@@ -209,7 +210,7 @@ public class SqlgGraph implements Graph {
     //This has some static suckness
     static {
         TraversalStrategies.GlobalCache.registerStrategies(Graph.class, TraversalStrategies.GlobalCache.getStrategies(Graph.class)
-                .addStrategies(new SqlgGraphStepStrategy(), new SqlgVertexStepStrategy(), TopologyStrategy.build().create()));
+                .addStrategies(new SqlgGraphStepStrategy(), new SqlgVertexStepStrategy(), new SqlgWhereStrategy(),TopologyStrategy.build().create()));
     }
 
     public static <G extends Graph> G open(final Configuration configuration) {

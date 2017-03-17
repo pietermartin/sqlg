@@ -123,24 +123,47 @@ public class Index implements TopologyInf {
     private void addIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable, IndexType indexType, List<PropertyColumn> properties) {
         String prefix = this.abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
         StringBuilder sql = new StringBuilder("CREATE ");
-        if (indexType == IndexType.UNIQUE) {
+        if (IndexType.UNIQUE.equals(indexType)) {
             sql.append("UNIQUE ");
         }
-        sql.append("INDEX");
+        sql.append("INDEX ");
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
         sql.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()))));
         sql.append(" ON ");
         sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
         sql.append(sqlDialect.maybeWrapInQoutes(prefix + schemaTable.getTable()));
-        sql.append(" (");
-        int count = 1;
-        for (PropertyColumn property : properties) {
-            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
-            if (count++ < properties.size()) {
-                sql.append(",");
-            }
+        
+        if (indexType.isGIN()){
+        	sql.append(" USING GIN");
         }
+        
+        sql.append(" (");
+        if(IndexType.GIN_FULLTEXT.equals(indexType.getName())){
+        	sql.append("to_tsvector(");
+        	String conf=indexType.getProperties().get(IndexType.GIN_CONFIGURATION);
+        	if (conf!=null){
+        		sql.append("'"+conf+"'"); // need single quotes, no double
+        		sql.append(",");
+        	}
+        	int count = 1;
+	        for (PropertyColumn property : properties) {
+	            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
+	            if (count++ < properties.size()) {
+	                sql.append(" || ' ' || ");
+	            }
+	        }
+	        sql.append(")");
+        } else {
+	        int count = 1;
+	        for (PropertyColumn property : properties) {
+	            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
+	            if (count++ < properties.size()) {
+	                sql.append(",");
+	            }
+	        }
+        }
+        
         sql.append(")");
         if (sqlDialect.needsSemicolon()) {
             sql.append(";");
@@ -160,7 +183,7 @@ public class Index implements TopologyInf {
         Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         result.put("name", this.name);
-        result.put("indexType", this.uncommittedIndexType.name());
+        result.set("indexType", this.uncommittedIndexType.toNotifyJson());
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.uncommittedProperties) {
             propertyArrayNode.add(property.toNotifyJson());
@@ -170,7 +193,7 @@ public class Index implements TopologyInf {
     }
 
     public static Index fromNotifyJson(AbstractLabel abstractLabel, JsonNode indexNode) {
-        IndexType indexType = IndexType.valueOf(indexNode.get("indexType").asText());
+        IndexType indexType = IndexType.fromNotifyJson(indexNode.get("indexType"));
         String name = indexNode.get("name").asText();
         ArrayNode propertiesNode = (ArrayNode) indexNode.get("uncommittedProperties");
         List<PropertyColumn> properties = new ArrayList<>();

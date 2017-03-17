@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -79,6 +80,30 @@ public class TestRangeLimit extends BaseTest {
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(b3));
         Assert.assertTrue(vertices.contains(b4));
+    }
+
+    @Test
+    public void testLimitAfterNonOptimizedStep() {
+        for (int i = 0; i < 100; i++) {
+            Vertex column = this.sqlgGraph.addVertex(T.label, "BigData.Column");
+            Vertex tag = this.sqlgGraph.addVertex(T.label, "BigData.Tag", "name", "NonAnonymized");
+            tag.addEdge("tag", column);
+        }
+        for (int i = 0; i < 100; i++) {
+            Vertex column = this.sqlgGraph.addVertex(T.label, "BigData.Column");
+            Vertex tag = this.sqlgGraph.addVertex(T.label, "BigData.Tag", "name", "Anonymized");
+            tag.addEdge("tag", column);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V().hasLabel("BigData.Column")
+                .where(
+                        __.in("tag").hasLabel("BigData.Tag").has("name", "Anonymized")
+                )
+                .limit(3)
+                .toList();
+
+        assertEquals(3, vertices.size());
     }
 
     @Test

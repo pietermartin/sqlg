@@ -3,6 +3,7 @@ package org.umlg.sqlg;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.gremlincompile.*;
+import org.umlg.sqlg.test.index.TestIndex;
 
 /**
  * Date: 2014/07/16
@@ -17,6 +18,7 @@ import org.umlg.sqlg.test.gremlincompile.*;
 //        TestRepeatStepGraphOut.class,
 //        TestOptionalWithOrder.class,
 //        TestGremlinOptional.class
+        TestIndex.class
 })
 public class AnyTest {
 }

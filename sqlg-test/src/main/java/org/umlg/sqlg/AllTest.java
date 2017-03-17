@@ -97,6 +97,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestGremlinCompileGraphStep.class,
         TestGremlinCompileWhere.class,
         TestGremlinCompileTextPredicate.class,
+        TestGremlinCompileFullTextPredicate.class,
         TestGremlinCompileChoose.class,
         TestColumnNameTranslation.class,
         TestGraphStepOrderBy.class,

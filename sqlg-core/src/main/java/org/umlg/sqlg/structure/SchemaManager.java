@@ -132,7 +132,11 @@ public class SchemaManager {
     public boolean tableExist(String schema, String table) {
         SchemaTable schemaTable = SchemaTable.of(schema, table);
         Optional<Schema> schemaOptional = this.topology.getSchema(schemaTable.getSchema());
-        return schemaOptional.isPresent() && schemaOptional.get().getVertexLabel(schemaTable.withOutPrefix().getTable()).isPresent();
+        if (schemaTable.isVertexTable()) {
+            return schemaOptional.isPresent() && schemaOptional.get().getVertexLabel(schemaTable.withOutPrefix().getTable()).isPresent();
+        } else {
+            return schemaOptional.isPresent() && schemaOptional.get().getEdgeLabel(schemaTable.withOutPrefix().getTable()).isPresent();
+        }
     }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {

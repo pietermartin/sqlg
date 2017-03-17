@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
@@ -1804,6 +1805,9 @@ public class SchemaTableTree {
                         return true;
                     }
                 } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
+                	if (hasContainer.getBiPredicate() instanceof FullText && ((FullText)hasContainer.getBiPredicate()).getQuery()!=null){
+                		return false;
+                	}
                     //check if the hasContainer is for a property that exists, if not remove this node from the query tree
                     if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                         return true;

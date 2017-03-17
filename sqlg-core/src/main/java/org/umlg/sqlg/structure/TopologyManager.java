@@ -261,7 +261,7 @@ public class TopologyManager {
             Vertex indexVertex = sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_INDEX,
                     SQLG_SCHEMA_INDEX_NAME, index.getName(),
-                    SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.name(),
+                    SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.toString(),
                     CREATED_ON, LocalDateTime.now()
             );
 
@@ -320,7 +320,7 @@ public class TopologyManager {
                 throw new IllegalStateException("Found more than one vertex for " + schema + "." + prefixedTable);
             }
             Vertex propertyVertex = propertyVertices.get(0);
-            propertyVertex.property("index_type", indexType.name());
+            propertyVertex.property("index_type", indexType.toString());
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
