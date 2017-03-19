@@ -39,7 +39,6 @@ public class ReplacedStep<S, E> {
     private Set<String> labels;
     private ReplacedStep<?, ?> previous;
     private List<HasContainer> hasContainers;
-//    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators;
     /**
@@ -100,13 +99,8 @@ public class ReplacedStep<S, E> {
         return this.hasContainers;
     }
 
-//    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
-//        return this.comparators;
-//    }
-
-
     public SqlgComparatorHolder getSqlgComparatorHolder() {
-        return sqlgComparatorHolder;
+        return this.sqlgComparatorHolder;
     }
 
     public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getDbComparators() {

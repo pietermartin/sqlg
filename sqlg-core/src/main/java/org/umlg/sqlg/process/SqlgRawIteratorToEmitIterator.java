@@ -52,8 +52,6 @@ public class SqlgRawIteratorToEmitIterator<S extends SqlgElement, E extends Sqlg
                 this.eagerLoading = true;
                 this.eagerLoadedResults = new ArrayList<>();
                 eagerLoad();
-//                EmitOrderAndRangeHelper emitOrderAndRangeHelper = new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
-//                emitOrderAndRangeHelper.sortAndApplyRange();
                 return eagerLoadHasNext();
             } else {
                 return flattenRawIterator();

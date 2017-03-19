@@ -27,8 +27,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -48,7 +46,6 @@ import java.util.function.Predicate;
  */
 public abstract class BaseStrategy {
 
-    private Logger logger = LoggerFactory.getLogger(this.getClass());
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
@@ -56,9 +53,6 @@ public abstract class BaseStrategy {
 
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
-
-    private static List<Class> UNOPTIMIZABLE_STEPS = Arrays.asList(
-            Order.class, LambdaCollectingBarrierStep.class, SackValueStep.class, SackStep.class);
 
     protected Traversal.Admin<?, ?> traversal;
     protected SqlgGraph sqlgGraph;
@@ -68,7 +62,7 @@ public abstract class BaseStrategy {
     private ReplacedStep<?, ?> currentReplacedStep;
     private boolean continueOptimization = true;
 
-    public BaseStrategy(Traversal.Admin<?, ?> traversal) {
+    BaseStrategy(Traversal.Admin<?, ?> traversal) {
         this.traversal = traversal;
         Optional<Graph> graph = traversal.getGraph();
         Preconditions.checkState(graph.isPresent(), "BUG: SqlgGraph must be present on the traversal.");

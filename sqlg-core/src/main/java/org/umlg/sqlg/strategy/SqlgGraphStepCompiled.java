@@ -3,12 +3,10 @@ package org.umlg.sqlg.strategy;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.MutablePath;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -30,24 +28,24 @@ import java.util.*;
 public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
     private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
+    private SqlgGraph sqlgGraph;
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
 
-    private SqlgGraph sqlgGraph;
     private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
 
     private Emit<E> toEmit = null;
     private Iterator<List<Emit<E>>> elementIter;
-//    private List<List<Emit<E>>> eagerLoadedResults = new ArrayList<>();
 
     private List<Emit<E>> traversers = new ArrayList<>();
-    private ListIterator<Emit<E>> traversersIter;
+    private ListIterator<Emit<E>> traversersLstIter;
 
     private Traverser.Admin<S> previousHead;
 
-    private ReplacedStep<?,?> lastReplacedStep;
+    private ReplacedStep<?, ?> lastReplacedStep;
     private long rangeCount = 0;
+    private boolean eagerLoad = true;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
@@ -57,19 +55,26 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
-            if (this.traversersIter != null && this.traversersIter.hasNext()) {
-                if (this.lastReplacedStep.hasRange())  {
+            if (!this.eagerLoad && (this.traversersLstIter == null || !this.traversersLstIter.hasNext())) {
+                if (this.elementIter.hasNext()) {
+                    this.traversers.clear();
+                    internalLoad();
+                    this.traversersLstIter = this.traversers.listIterator();
+                }
+            }
+            if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
+                if (this.lastReplacedStep.hasRange()) {
                     if (this.lastReplacedStep.getRange().isBefore(this.rangeCount + 1)) {
                         throw FastNoSuchElementException.instance();
                     }
                     if (this.lastReplacedStep.getRange().isAfter(this.rangeCount)) {
                         this.rangeCount++;
-                        this.traversersIter.next();
+                        this.traversersLstIter.next();
                         continue;
                     }
                     this.rangeCount++;
                 }
-                Emit<E> emit = this.traversersIter.next();
+                Emit<E> emit = this.traversersLstIter.next();
                 this.labels = emit.getLabels();
                 return emit.getTraverser();
             } else {
@@ -82,10 +87,13 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                     this.done = true;
                 }
                 this.elementIter = elements();
-                eagerLoad();
-                Collections.sort(this.traversers);
-                this.traversersIter = this.traversers.listIterator();
-                this.lastReplacedStep =  this.replacedSteps.get(this.replacedSteps.size() - 1);
+                this.eagerLoad = this.replacedSteps.stream().anyMatch(r -> r.getSqlgComparatorHolder().hasComparators());
+                if (this.eagerLoad) {
+                    eagerLoad();
+                    Collections.sort(this.traversers);
+                    this.traversersLstIter = this.traversers.listIterator();
+                }
+                this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
             }
         }
     }
@@ -94,57 +102,40 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private void eagerLoad() {
         this.traversers.clear();
         while (this.elementIter.hasNext()) {
-            List<Emit<E>> emits = this.elementIter.next();
-            Traverser.Admin<E> traverser = null;
-            boolean first = true;
-            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
-            for (Emit<E> emit : emits) {
-                if (!emit.isFake()) {
-                    this.toEmit = emit;
-                    E e = emit.getElement();
-                    this.labels = emit.getLabels();
-                    if (!isStart && previousHead != null && traverser == null) {
-                        traverser = previousHead.split(e, this);
-                    } else if (first) {
-                        first = false;
-                        traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
-                    } else {
-                        traverser = traverser.split(e, this);
-                    }
-                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
-                }
-            }
-            this.toEmit.setSqlgComparatorHolders(emitComparators);
-            this.toEmit.setTraverser(traverser);
-            this.toEmit.evaluateElementValueTraversal();
-            this.traversers.add(this.toEmit);
-            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
-                this.toEmit.setRepeated(true);
-                this.traversers.add(this.toEmit);
-            }
+            internalLoad();
         }
     }
 
-    private boolean flattenRawIterator() {
-        if (this.elementIter.hasNext()) {
-            List<Emit<E>> emits = this.elementIter.next();
-            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
-            Path currentPath = MutablePath.make();
-            for (Emit<E> emit : emits) {
+    private void internalLoad() {
+        List<Emit<E>> emits = this.elementIter.next();
+        Traverser.Admin<E> traverser = null;
+        boolean first = true;
+        List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
+        for (Emit<E> emit : emits) {
+            if (!emit.isFake()) {
                 this.toEmit = emit;
-                if (!emit.isFake()) {
-                    currentPath = currentPath.extend(emit.getElement(), emit.getLabels());
-                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
+                E e = emit.getElement();
+                this.labels = emit.getLabels();
+                if (!isStart && previousHead != null && traverser == null) {
+                    traverser = previousHead.split(e, this);
+                } else if (first) {
+                    first = false;
+                    traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
+                } else {
+                    traverser = traverser.split(e, this);
                 }
-            }
-            if (this.toEmit != null) {
-                this.toEmit.setPath(currentPath);
-                this.toEmit.setSqlgComparatorHolders(emitComparators);
+                emitComparators.add(this.toEmit.getSqlgComparatorHolder());
             }
         }
-        return this.toEmit != null;
+        this.toEmit.setSqlgComparatorHolders(emitComparators);
+        this.toEmit.setTraverser(traverser);
+        this.toEmit.evaluateElementValueTraversal();
+        this.traversers.add(this.toEmit);
+        if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+            this.toEmit.setRepeated(true);
+            this.traversers.add(this.toEmit);
+        }
     }
-
 
     @Override
     public void reset() {

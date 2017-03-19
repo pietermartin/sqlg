@@ -9,7 +9,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.process.EmitComparator;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -18,8 +17,6 @@ import java.util.stream.Collectors;
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/03/11
- *         <p>
- *         This test puts together all edge cases for {@link EmitComparator}
  */
 public class TestReplacedStepEmitComparator extends BaseTest {
 
