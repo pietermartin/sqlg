@@ -1,6 +1,7 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.List;
@@ -29,6 +30,9 @@ public class Emit<E extends SqlgElement> {
      * This represents all the {@link org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep}s, one for each element along the path.
      */
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
+
+    private Traverser.Admin<E> traverser;
+    private Object comparatorValue;
 
     /**
      * The {@link org.umlg.sqlg.sql.parse.ReplacedStep}'s depth

@@ -9,13 +9,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MutablePath;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.process.EmitOrderAndRangeHelper;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -41,8 +39,9 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
 
     private Emit<E> toEmit = null;
     private Iterator<List<Emit<E>>> elementIter;
-    private List<Emit<E>> eagerLoadedResults = new ArrayList<>();
-    private Iterator<Emit<E>> eagerLoadedResultsIter;
+    private List<List<Emit<E>>> eagerLoadedResults = new ArrayList<>();
+    private List<Pair<Set<String>, Traverser.Admin<E>>> traversers = new ArrayList<>();
+    private Iterator<Pair<Set<String>, Traverser.Admin<E>>> traversersIter;
     private Traverser.Admin<S> previousHead;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
@@ -53,25 +52,10 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
-            if (this.eagerLoadedResultsIter != null && this.eagerLoadedResultsIter.hasNext()) {
-                Traverser.Admin<E> traverser = null;
-                Emit<E> emit = this.eagerLoadedResultsIter.next();
-                boolean first = true;
-                Iterator<Set<String>> labelIter = emit.getPath().labels().iterator();
-                for (Object o : emit.getPath().objects()) {
-                    E e = (E) o;
-                    Set<String> labels = labelIter.next();
-                    this.labels = labels;
-                    if (!isStart && previousHead != null && traverser == null) {
-                        traverser = previousHead.split(e, this);
-                    } else if (first) {
-                        first = false;
-                        traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate((S) e, this, 1L);
-                    } else {
-                        traverser = ((B_LP_O_P_S_SE_SL_Traverser) traverser).split(e, this);
-                    }
-                }
-                return traverser;
+            if (this.traversersIter != null && this.traversersIter.hasNext()) {
+                Pair<Set<String>, Traverser.Admin<E>> traverser = this.traversersIter.next();
+                this.labels = traverser.getLeft();
+                return traverser.getRight();
             } else {
                 if (!this.isStart) {
                     this.previousHead = this.starts.next();
@@ -83,11 +67,43 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
                 this.elementIter = elements();
                 eagerLoad();
-                EmitOrderAndRangeHelper emitOrderAndRangeHelper = new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
-                emitOrderAndRangeHelper.sortAndApplyRange();
-                this.eagerLoadedResultsIter = this.eagerLoadedResults.iterator();
+//                EmitOrderAndRangeHelper emitOrderAndRangeHelper = new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
+//                emitOrderAndRangeHelper.sortAndApplyRange();
+//                this.eagerLoadedResultsIter = this.eagerLoadedResults.iterator();
             }
         }
+    }
+
+    //B_LP_O_P_S_SE_SL_Traverser
+    private void eagerLoad() {
+        this.traversers.clear();
+        while (this.elementIter.hasNext()) {
+            List<Emit<E>> emits = this.elementIter.next();
+            Traverser.Admin<E> traverser = null;
+            boolean first = true;
+            for (Emit<E> emit : emits) {
+                if (!emit.isFake()) {
+                    this.toEmit = emit;
+                    E e = emit.getElement();
+                    this.labels = emit.getLabels();
+                    if (!isStart && previousHead != null && traverser == null) {
+                        traverser = previousHead.split(e, this);
+                    } else if (first) {
+                        first = false;
+                        traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
+                    } else {
+                        traverser = traverser.split(e, this);
+                    }
+                }
+            }
+            Pair<Set<String>, Traverser.Admin<E>> of = Pair.<Set<String>, Traverser.Admin<E>>of(this.labels, traverser);
+            this.traversers.add(of);
+            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+                this.toEmit.setRepeated(true);
+                this.traversers.add(of);
+            }
+        }
+        this.traversersIter = this.traversers.iterator();
     }
 
     private boolean flattenRawIterator() {
@@ -110,17 +126,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         return this.toEmit != null;
     }
 
-    private void eagerLoad() {
-        this.eagerLoadedResults.clear();
-        while (flattenRawIterator()) {
-            this.eagerLoadedResults.add(this.toEmit);
-            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
-                this.toEmit.setRepeated(true);
-                this.eagerLoadedResults.add(this.toEmit);
-            }
-            this.toEmit = null;
-        }
-    }
 
     @Override
     public void reset() {
