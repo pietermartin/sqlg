@@ -24,6 +24,42 @@ import java.util.stream.Collectors;
 public class TestReplacedStepEmitComparator extends BaseTest {
 
     @Test
+    public void testOrderFollowedByVertexStep() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a2.addEdge("ab", b1);
+        a2.addEdge("ab", b2);
+        a2.addEdge("ab", b3);
+        a3.addEdge("ab", b1);
+        a3.addEdge("ab", b2);
+        a3.addEdge("ab", b3);
+        this.sqlgGraph.tx().commit();
+
+        List<Path> paths = this.sqlgGraph.traversal()
+                .V().hasLabel("A").order().by("name", Order.decr)
+                .out("ab")
+                .path()
+                .toList();
+        Assert.assertEquals(9, paths.size());
+        Assert.assertEquals(a3, paths.get(0).objects().get(0));
+        Assert.assertEquals(a3, paths.get(1).objects().get(0));
+        Assert.assertEquals(a3, paths.get(2).objects().get(0));
+        Assert.assertEquals(a2, paths.get(3).objects().get(0));
+        Assert.assertEquals(a2, paths.get(4).objects().get(0));
+        Assert.assertEquals(a2, paths.get(5).objects().get(0));
+        Assert.assertEquals(a1, paths.get(6).objects().get(0));
+        Assert.assertEquals(a1, paths.get(7).objects().get(0));
+        Assert.assertEquals(a1, paths.get(8).objects().get(0));
+    }
+
+    @Test
     public void testOrderRangeOrderAgain() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "a");
@@ -267,6 +303,9 @@ public class TestReplacedStepEmitComparator extends BaseTest {
                 .<String>values("name")
                 .dedup()
                 .toList();
-        System.out.println(names);
+        Assert.assertEquals(3, names.size());
+        Assert.assertEquals("b3", names.get(0));
+        Assert.assertEquals("b2", names.get(1));
+        Assert.assertEquals("b1", names.get(2));
     }
 }

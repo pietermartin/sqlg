@@ -28,6 +28,10 @@ public class SqlgComparatorHolder {
         this.precedingSelectOneLabel = precedingSelectOneLabel;
     }
 
+    public boolean hasPrecedingSelectOneLabel() {
+        return this.precedingSelectOneLabel != null;
+    }
+
     public void setComparators(List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators) {
         this.comparators = comparators;
     }

@@ -1,16 +1,21 @@
 package org.umlg.sqlg.strategy;
 
+import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
+import org.javatuples.Pair;
 import org.umlg.sqlg.structure.SqlgElement;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by pieter on 2015/10/26.
  */
-public class Emit<E extends SqlgElement> {
+public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     private Path path;
     private E element;
@@ -32,7 +37,7 @@ public class Emit<E extends SqlgElement> {
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
     private Traverser.Admin<E> traverser;
-    private Object comparatorValue;
+    private List<Pair<Object, Comparator>> comparatorValues;
 
     /**
      * The {@link org.umlg.sqlg.sql.parse.ReplacedStep}'s depth
@@ -43,7 +48,6 @@ public class Emit<E extends SqlgElement> {
         this.fake = true;
     }
 
-    //    public Emit(E element, Set<String> labels, List<Pair<Traversal.Admin, Comparator>> comparators) {
     public Emit(E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
         this.element = element;
         this.labels = labels;
@@ -111,6 +115,18 @@ public class Emit<E extends SqlgElement> {
         this.incomingOnlyLocalOptionalStep = incomingOnlyLocalOptionalStep;
     }
 
+    public Traverser.Admin<E> getTraverser() {
+        return traverser;
+    }
+
+    public void setTraverser(Traverser.Admin<E> traverser) {
+        this.traverser = traverser;
+    }
+
+    public List<Pair<Object, Comparator>> getComparatorValues() {
+        return this.comparatorValues;
+    }
+
     @Override
     public String toString() {
         String result = "";
@@ -126,4 +142,62 @@ public class Emit<E extends SqlgElement> {
         return result;
     }
 
+    public void evaluateElementValueTraversal() {
+        for (int i = this.sqlgComparatorHolders.size()  - 1; i >= 0 ; i--) {
+            if (this.comparatorValues == null) {
+                this.comparatorValues = new ArrayList<>();
+            }
+            SqlgElement sqlgElement;
+            SqlgComparatorHolder comparatorHolder = sqlgComparatorHolders.get(i);
+            if (comparatorHolder.hasPrecedingSelectOneLabel()) {
+                String precedingLabel = comparatorHolder.getPrecedingSelectOneLabel();
+                sqlgElement = this.traverser.path().get(precedingLabel);
+            } else {
+                sqlgElement = (SqlgElement) this.traverser.path().objects().get(i);
+            }
+            for (Pair<Traversal.Admin<?, ?>, Comparator<?>> traversalComparator : comparatorHolder.getComparators()) {
+                Traversal.Admin<?, ?> traversal = traversalComparator.getValue0();
+                Comparator comparator = traversalComparator.getValue1();
+                ElementValueTraversal elementValueTraversal;
+                if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
+                    //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
+                    SelectOneStep selectOneStep = (SelectOneStep) traversal.getSteps().get(0);
+                    Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
+                    Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
+                    Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+                    String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
+                    sqlgElement = this.traverser.path().get(selectKey);
+                    elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
+                    this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                } else if (traversal instanceof IdentityTraversal) {
+                    //This is for Order.shuffle
+                    this.comparatorValues.add(Pair.with(new Random().nextInt(), comparator));
+                } else {
+                    elementValueTraversal = (ElementValueTraversal) traversal;
+                    this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                }
+            }
+        }
+    }
+
+    @Override
+    public int compareTo(Emit<E> emit) {
+        if (this.replacedStepDepth != emit.replacedStepDepth)  {
+            return Integer.valueOf(this.replacedStepDepth).compareTo(Integer.valueOf(emit.replacedStepDepth));
+        }
+        for (int i = 0; i < this.comparatorValues.size(); i++) {
+            Pair<Object, Comparator> comparatorPair1 = this.comparatorValues.get(i);
+            Pair<Object, Comparator> comparatorPair2 = emit.comparatorValues.get(i);
+            Object value1 = comparatorPair1.getValue0();
+            Comparator comparator1 = comparatorPair1.getValue1();
+            Object value2 = comparatorPair2.getValue0();
+            Comparator comparator2 = comparatorPair2.getValue1();
+            Preconditions.checkState(comparator1.equals(comparator2));
+            int compare = comparator1.compare(value1, value2);
+            if (compare != 0) {
+                return compare;
+            }
+        }
+        return 0;
+    }
 }

@@ -1,11 +1,9 @@
 package org.umlg.sqlg.test.gremlincompile;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.Path;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -18,55 +16,77 @@ import java.util.List;
 public class TestTraversalPerformance extends BaseTest {
 
     @Test
-    public void testOptionalWithOrder() {
-
+    public void testEagerLoadOrderPerf() {
         this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 2_000; i++) {
-            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
-            Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
-
-            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
-            Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
-            Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
-            Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
-            Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
-            Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
-
-            Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
-            Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
-            Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "j");
-            Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "k");
-            Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "l");
-            Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "m");
-
-            a1.addEdge("ab", b1);
-            a1.addEdge("ab", b2);
-            a1.addEdge("ab", b3);
-            a1.addEdge("abb", bb1);
-            a1.addEdge("abb", bb2);
-            a1.addEdge("abb", bb3);
-
-            b1.addEdge("bc", c1);
-            b1.addEdge("bc", c2);
-            b1.addEdge("bc", c3);
-            b2.addEdge("bcc", cc1);
-            b2.addEdge("bcc", cc2);
-            b2.addEdge("bcc", cc3);
+        for (int i = 0; i < 100_000; i++) {
+            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + i);
+            a.addEdge("ab", b);
+            b.addEdge("bc", c);
         }
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V().hasLabel("A")
-                .optional(
-                        __.out().order().by("name").optional(
-                                __.out().order().by("name", Order.decr)
-                        )
-                )
-                .path();
-        List<Path> paths = traversal.toList();
-        System.out.println(paths.size());
+        for (int i = 0; i < 100; i++) {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").both().order().by("name").toList();
+            Assert.assertEquals(200_000, vertices.size());
+            stopWatch.stop();
+            System.out.println(stopWatch.toString());
+        }
     }
+
+//    @Test
+//    public void testOptionalWithOrder() {
+//
+//        this.sqlgGraph.tx().normalBatchModeOn();
+//        for (int i = 0; i < 2_000; i++) {
+//            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+//            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
+//            Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
+//
+//            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
+//            Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
+//            Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
+//            Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
+//            Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
+//            Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
+//
+//            Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
+//            Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
+//            Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "j");
+//            Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "k");
+//            Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "l");
+//            Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "m");
+//
+//            a1.addEdge("ab", b1);
+//            a1.addEdge("ab", b2);
+//            a1.addEdge("ab", b3);
+//            a1.addEdge("abb", bb1);
+//            a1.addEdge("abb", bb2);
+//            a1.addEdge("abb", bb3);
+//
+//            b1.addEdge("bc", c1);
+//            b1.addEdge("bc", c2);
+//            b1.addEdge("bc", c3);
+//            b2.addEdge("bcc", cc1);
+//            b2.addEdge("bcc", cc2);
+//            b2.addEdge("bcc", cc3);
+//        }
+//        this.sqlgGraph.tx().commit();
+//
+//        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+//                .V().hasLabel("A")
+//                .optional(
+//                        __.out().order().by("name").optional(
+//                                __.out().order().by("name", Order.decr)
+//                        )
+//                )
+//                .path();
+//        List<Path> paths = traversal.toList();
+//        System.out.println(paths.size());
+//    }
 
 //    @Test
 //    public void testEagerLoadOrderPerf() {

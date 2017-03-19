@@ -39,10 +39,15 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
 
     private Emit<E> toEmit = null;
     private Iterator<List<Emit<E>>> elementIter;
-    private List<List<Emit<E>>> eagerLoadedResults = new ArrayList<>();
-    private List<Pair<Set<String>, Traverser.Admin<E>>> traversers = new ArrayList<>();
-    private Iterator<Pair<Set<String>, Traverser.Admin<E>>> traversersIter;
+//    private List<List<Emit<E>>> eagerLoadedResults = new ArrayList<>();
+
+    private List<Emit<E>> traversers = new ArrayList<>();
+    private ListIterator<Emit<E>> traversersIter;
+
     private Traverser.Admin<S> previousHead;
+
+    private ReplacedStep<?,?> lastReplacedStep;
+    private long rangeCount = 0;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
@@ -53,9 +58,20 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
             if (this.traversersIter != null && this.traversersIter.hasNext()) {
-                Pair<Set<String>, Traverser.Admin<E>> traverser = this.traversersIter.next();
-                this.labels = traverser.getLeft();
-                return traverser.getRight();
+                if (this.lastReplacedStep.hasRange())  {
+                    if (this.lastReplacedStep.getRange().isBefore(this.rangeCount + 1)) {
+                        throw FastNoSuchElementException.instance();
+                    }
+                    if (this.lastReplacedStep.getRange().isAfter(this.rangeCount)) {
+                        this.rangeCount++;
+                        this.traversersIter.next();
+                        continue;
+                    }
+                    this.rangeCount++;
+                }
+                Emit<E> emit = this.traversersIter.next();
+                this.labels = emit.getLabels();
+                return emit.getTraverser();
             } else {
                 if (!this.isStart) {
                     this.previousHead = this.starts.next();
@@ -67,9 +83,9 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
                 this.elementIter = elements();
                 eagerLoad();
-//                EmitOrderAndRangeHelper emitOrderAndRangeHelper = new EmitOrderAndRangeHelper<>(this.eagerLoadedResults, this.replacedSteps);
-//                emitOrderAndRangeHelper.sortAndApplyRange();
-//                this.eagerLoadedResultsIter = this.eagerLoadedResults.iterator();
+                Collections.sort(this.traversers);
+                this.traversersIter = this.traversers.listIterator();
+                this.lastReplacedStep =  this.replacedSteps.get(this.replacedSteps.size() - 1);
             }
         }
     }
@@ -81,6 +97,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
             List<Emit<E>> emits = this.elementIter.next();
             Traverser.Admin<E> traverser = null;
             boolean first = true;
+            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
             for (Emit<E> emit : emits) {
                 if (!emit.isFake()) {
                     this.toEmit = emit;
@@ -94,16 +111,18 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                     } else {
                         traverser = traverser.split(e, this);
                     }
+                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
                 }
             }
-            Pair<Set<String>, Traverser.Admin<E>> of = Pair.<Set<String>, Traverser.Admin<E>>of(this.labels, traverser);
-            this.traversers.add(of);
+            this.toEmit.setSqlgComparatorHolders(emitComparators);
+            this.toEmit.setTraverser(traverser);
+            this.toEmit.evaluateElementValueTraversal();
+            this.traversers.add(this.toEmit);
             if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
                 this.toEmit.setRepeated(true);
-                this.traversers.add(of);
+                this.traversers.add(this.toEmit);
             }
         }
-        this.traversersIter = this.traversers.iterator();
     }
 
     private boolean flattenRawIterator() {
@@ -131,7 +150,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     public void reset() {
         super.reset();
         this.previousHead = null;
-        this.eagerLoadedResults.clear();
     }
 
     @Override

@@ -1,18 +1,9 @@
 package org.umlg.sqlg.process;
 
-import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
-import org.javatuples.Pair;
 import org.umlg.sqlg.strategy.Emit;
-import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.Comparator;
-import java.util.Set;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -23,6 +14,11 @@ public class EmitComparator<E extends SqlgElement> implements Comparator<Emit<E>
     EmitComparator() {
     }
 
+    @Override
+    public int compare(Emit<E> emit1, Emit<E> emit2) {
+        return emit1.compareTo(emit2);
+    }
+/*
     @Override
     public int compare(Emit<E> emit1, Emit<E> emit2) {
         SqlgElement sqlgElement1 = null;
@@ -99,5 +95,6 @@ public class EmitComparator<E extends SqlgElement> implements Comparator<Emit<E>
         }
         return 0;
     }
+    */
 
 }
