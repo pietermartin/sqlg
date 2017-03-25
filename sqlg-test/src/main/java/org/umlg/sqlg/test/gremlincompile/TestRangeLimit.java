@@ -74,7 +74,8 @@ public class TestRangeLimit extends BaseTest {
 
         List<Vertex> vertices = this.sqlgGraph.traversal()
                 .V().hasLabel("A").order().by("name").limit(2)
-                .out("ab").toList();
+                .out("ab")
+                .toList();
 
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(b3));
@@ -426,7 +427,9 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().hasLabel("B").both().order().by("age").range(10, 20);
+        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal()
+                .V().hasLabel("B")
+                .both().order().by("age").range(10, 20);
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
         // cannot be done in SQL

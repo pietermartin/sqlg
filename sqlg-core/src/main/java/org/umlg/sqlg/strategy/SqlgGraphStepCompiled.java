@@ -45,7 +45,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
 
     private ReplacedStep<?, ?> lastReplacedStep;
     private long rangeCount = 0;
-    private boolean eagerLoad = true;
+    private boolean eagerLoad = false;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
@@ -55,7 +55,23 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     @Override
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
-            if (!this.eagerLoad && (this.traversersLstIter == null || !this.traversersLstIter.hasNext())) {
+            if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
+                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
+                        throw FastNoSuchElementException.instance();
+                    }
+                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
+                        this.rangeCount++;
+                        this.traversersLstIter.next();
+                        continue;
+                    }
+                    this.rangeCount++;
+                }
+                Emit<E> emit = this.traversersLstIter.next();
+                this.labels = emit.getLabels();
+                return emit.getTraverser();
+            }
+            if (!this.eagerLoad && (this.elementIter != null)) {
                 if (this.elementIter.hasNext()) {
                     this.traversers.clear();
                     internalLoad();
@@ -63,11 +79,11 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.lastReplacedStep.hasRange()) {
-                    if (this.lastReplacedStep.getRange().isBefore(this.rangeCount + 1)) {
+                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
                         throw FastNoSuchElementException.instance();
                     }
-                    if (this.lastReplacedStep.getRange().isAfter(this.rangeCount)) {
+                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
                         this.rangeCount++;
                         this.traversersLstIter.next();
                         continue;
@@ -87,7 +103,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                     this.done = true;
                 }
                 this.elementIter = elements();
-                this.eagerLoad = this.replacedSteps.stream().anyMatch(r -> r.getSqlgComparatorHolder().hasComparators());
                 if (this.eagerLoad) {
                     eagerLoad();
                     Collections.sort(this.traversers);
@@ -96,6 +111,14 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
             }
         }
+    }
+
+    public void setEagerLoad(boolean eager) {
+        this.eagerLoad = eager;
+    }
+
+    public boolean isEargerLoad() {
+        return this.eagerLoad;
     }
 
     //B_LP_O_P_S_SE_SL_Traverser

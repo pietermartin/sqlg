@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphOut;
+import org.umlg.sqlg.test.gremlincompile.TestRangeLimit;
 
 /**
  * Date: 2014/07/16
@@ -10,10 +10,8 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepGraphOut;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestGraphStepOrderBy.class,
-//        TestGremlinCompileGraphStep.class,
-//        TestGremlinOptional.class
-        TestRepeatStepGraphOut.class
+        TestRangeLimit.class
+//        TestGraphStepOrderBy.class
 })
 public class AnyTest {
 }

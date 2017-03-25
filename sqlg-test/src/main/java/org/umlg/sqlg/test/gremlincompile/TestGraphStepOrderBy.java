@@ -62,7 +62,10 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .<String>values("name")
                 .dedup()
                 .toList();
-        System.out.println(names);
+        Assert.assertEquals(3, names.size());
+        Assert.assertEquals("b3", names.get(0));
+        Assert.assertEquals("b2", names.get(1));
+        Assert.assertEquals("b1", names.get(2));
     }
 
     @Test
@@ -101,7 +104,6 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals("bbdd", names.get(2));
         Assert.assertEquals("bbcc", names.get(3));
     }
-
 
     @Test
     public void testOrderByWithByTraversalCount() {
@@ -224,7 +226,6 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals(b, vertices.get(1));
         Assert.assertEquals(a, vertices.get(2));
     }
-
 
     @Test
     public void testOrderBy() throws InterruptedException {

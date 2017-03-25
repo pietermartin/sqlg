@@ -3,7 +3,6 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
-import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
@@ -18,6 +17,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
+import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
@@ -37,15 +37,13 @@ public class ReplacedStep<S, E> {
     private Topology topology;
     private AbstractStep<S, E> step;
     private Set<String> labels;
-    private ReplacedStep<?, ?> previous;
     private List<HasContainer> hasContainers;
     private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
-    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators;
+    private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators;
     /**
      * range limitation if any
      */
-    private Range<Long> range;
-    private Long rangeCount = 1L;
+    private SqlgRangeHolder sqlgRangeHolder;
     //This indicates the distanced of the replaced steps from the starting step. i.e. g.V(1).out().out().out() will be 0,1,2 for the 3 outs
     private int depth;
     private boolean emit;
@@ -53,7 +51,6 @@ public class ReplacedStep<S, E> {
     //indicate left join, coming from optional step optimization
     private boolean leftJoin;
     private boolean fake;
-    private ReplacedStepTree.TreeNode treeNodeNode;
     private boolean joinToLeftJoin;
 
     private ReplacedStep() {
@@ -71,7 +68,6 @@ public class ReplacedStep<S, E> {
         replacedStep.step = null;
         replacedStep.labels = new HashSet<>();
         replacedStep.hasContainers = new ArrayList<>();
-//        replacedStep.comparators = new ArrayList<>();
         replacedStep.dbComparators = new ArrayList<>();
         replacedStep.topology = topology;
         replacedStep.fake = true;
@@ -80,11 +76,9 @@ public class ReplacedStep<S, E> {
 
     public static <S, E> ReplacedStep from(ReplacedStep previous, Topology topology, AbstractStep<S, E> step, int pathCount) {
         ReplacedStep replacedStep = new ReplacedStep<>();
-        replacedStep.previous = previous;
         replacedStep.step = step;
         replacedStep.labels = step.getLabels().stream().map(l -> pathCount + BaseStrategy.PATH_LABEL_SUFFIX + l).collect(Collectors.toSet());
         replacedStep.hasContainers = new ArrayList<>();
-//        replacedStep.comparators = new ArrayList<>();
         replacedStep.dbComparators = new ArrayList<>();
         replacedStep.topology = topology;
         replacedStep.fake = false;
@@ -103,7 +97,7 @@ public class ReplacedStep<S, E> {
         return this.sqlgComparatorHolder;
     }
 
-    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getDbComparators() {
+    public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
         return this.dbComparators;
     }
 
@@ -545,10 +539,9 @@ public class ReplacedStep<S, E> {
                             schemaTable,
                             0,
                             hasContainersWithoutLabel,
-//                            this.comparators,
                             this.sqlgComparatorHolder,
                             this.dbComparators,
-                            this.range,
+                            this.sqlgRangeHolder,
                             SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                             ReplacedStep.this.emit,
                             ReplacedStep.this.untilFirst,
@@ -601,10 +594,9 @@ public class ReplacedStep<S, E> {
                                 schemaTableForLabel,
                                 0,
                                 hasContainers,
-//                                this.comparators,
                                 this.sqlgComparatorHolder,
                                 this.dbComparators,
-                                this.range,
+                                this.sqlgRangeHolder,
                                 SchemaTableTree.STEP_TYPE.GRAPH_STEP,
                                 ReplacedStep.this.emit,
                                 ReplacedStep.this.untilFirst,
@@ -705,41 +697,16 @@ public class ReplacedStep<S, E> {
         this.hasContainers.add(hasContainer);
     }
 
-    public Range<Long> getRange() {
-        return this.range;
+    public SqlgRangeHolder getSqlgRangeHolder() {
+        return sqlgRangeHolder;
     }
 
-    public void setRange(Range<Long> range) {
-        this.range = range;
+    public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
+        this.sqlgRangeHolder = sqlgRangeHolder;
     }
 
     public boolean hasRange() {
-        return this.getRange() != null;
-    }
-
-    public boolean containsRange() {
-        if (!this.<Long>getRange().isAfter(this.rangeCount - 1) && !this.<Long>getRange().isBefore(this.rangeCount)) {
-            this.incrementRangeCount();
-            return true;
-        } else {
-            this.incrementRangeCount();
-            return false;
-        }
-    }
-
-    private void incrementRangeCount() {
-        this.rangeCount++;
-        if (this.previous != null) {
-            this.previous.incrementRangeCount();
-        }
-    }
-
-    public void setTreeNodeNode(ReplacedStepTree.TreeNode treeNodeNode) {
-        this.treeNodeNode = treeNodeNode;
-    }
-
-    public ReplacedStepTree.TreeNode getTreeNodeNode() {
-        return treeNodeNode;
+        return this.getSqlgRangeHolder() != null;
     }
 
     public void markAsJoinToLeftJoin() {

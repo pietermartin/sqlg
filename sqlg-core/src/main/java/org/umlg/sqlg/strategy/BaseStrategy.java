@@ -92,12 +92,32 @@ public abstract class BaseStrategy {
         }
         if (this.currentTreeNodeNode != null) {
             this.currentTreeNodeNode.getReplacedStepTree().maybeAddLabelToLeafNodes();
+            //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
+            if (this.currentTreeNodeNode.getReplacedStepTree().hasOrderBy()) {
+                this.sqlgStep.parseForStrategy();
+                if (!this.sqlgStep.isForMultipleQueries() && this.currentTreeNodeNode.getReplacedStepTree().orderByIsOrder()) {
+                    this.currentTreeNodeNode.getReplacedStepTree().applyComparatorsOnDb();
+                } else {
+                    this.sqlgStep.setEagerLoad(true);
+                }
+            }
+            //If a range follows an order that needs to be done in memory then do not apply the range on the db.
+            if (this.currentTreeNodeNode.getReplacedStepTree().hasRange()) {
+                this.sqlgStep.parseForStrategy();
+                if (!this.sqlgStep.isForMultipleQueries() && this.currentTreeNodeNode.getReplacedStepTree().orderByIsOrder()) {
+                } else {
+                    this.currentTreeNodeNode.getReplacedStepTree().doNotApplyRangeOnDb();
+                    this.sqlgStep.setEagerLoad(true);
+                }
+
+            }
         }
     }
 
 
     /**
      * sqlgStep is either a {@link SqlgGraphStepCompiled} or {@link SqlgVertexStepCompiled}.
+     *
      * @return false if optimization must be terminated.
      */
     private void handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
@@ -360,11 +380,9 @@ public abstract class BaseStrategy {
                     }
                     iterator.next();
                     iterator.next();
-                    this.currentReplacedStep.getSqlgComparatorHolder().setComparators(((OrderGlobalStep) step).getComparators());
+                    List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
+                    this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
                     this.currentReplacedStep.getSqlgComparatorHolder().setReplacedStepDepth(this.currentReplacedStep.getDepth());
-                    if (isDbComparators(((OrderGlobalStep) step).getComparators())) {
-                        this.currentReplacedStep.getDbComparators().addAll(((OrderGlobalStep) step).getComparators());
-                    }
                     //add a label if the step does not yet have one and is not a leaf node
                     if (this.currentReplacedStep.getLabels().isEmpty()) {
                         this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
@@ -396,10 +414,6 @@ public abstract class BaseStrategy {
         return true;
     }
 
-    private boolean isDbComparators(List comparators) {
-        return false;
-    }
-
     private void collectRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
@@ -411,7 +425,7 @@ public abstract class BaseStrategy {
                 }
                 RangeGlobalStep<?> rgs = (RangeGlobalStep<?>) step;
                 long high = rgs.getHighRange();
-                this.currentReplacedStep.setRange(Range.between(rgs.getLowRange(), high));
+                this.currentReplacedStep.setSqlgRangeHolder(SqlgRangeHolder.from(Range.between(rgs.getLowRange(), high)));
                 //add a label if the step does not yet have one and is not a leaf node
                 if (this.currentReplacedStep.getLabels().isEmpty()) {
                     this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);

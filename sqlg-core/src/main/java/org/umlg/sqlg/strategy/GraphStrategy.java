@@ -46,10 +46,6 @@ public class GraphStrategy extends BaseStrategy {
     void apply() {
         final Step<?, ?> startStep = traversal.getStartStep();
 
-        //Only optimize graph step.
-//        if (!(startStep instanceof GraphStep) || !(this.graph instanceof SqlgGraph)) {
-//            return;
-//        }
         if (!(startStep instanceof GraphStep)) {
             return;
         }

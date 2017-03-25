@@ -15,4 +15,8 @@ interface SqlgStep extends Step {
     void parseForStrategy();
 
     boolean isForMultipleQueries();
+
+    void setEagerLoad(boolean eager);
+
+    boolean isEargerLoad();
 }

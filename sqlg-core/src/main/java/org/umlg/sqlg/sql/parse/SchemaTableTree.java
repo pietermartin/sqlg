@@ -16,6 +16,7 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
+import org.umlg.sqlg.strategy.SqlgRangeHolder;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
@@ -55,8 +56,7 @@ public class SchemaTableTree {
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
     private SqlgComparatorHolder sqlgComparatorHolder;
-//    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators = new ArrayList<>();
-    private List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators = new ArrayList<>();
+    private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
     //labels are immutable
     private Set<String> labels;
     private Set<String> realLabels;
@@ -94,7 +94,7 @@ public class SchemaTableTree {
     /**
      * range limitation, if any
      */
-    private Range<Long> range;
+    private SqlgRangeHolder sqlgRangeHolder;
 
     enum STEP_TYPE {
         GRAPH_STEP,
@@ -107,7 +107,6 @@ public class SchemaTableTree {
         this.schemaTable = schemaTable;
         this.stepDepth = stepDepth;
         this.hasContainers = new ArrayList<>();
-//        this.comparators = new ArrayList<>();
         this.dbComparators = new ArrayList<>();
         this.labels = Collections.emptySet();
         this.replacedStepDepth = replacedStepDepth;
@@ -123,10 +122,9 @@ public class SchemaTableTree {
      */
     SchemaTableTree(SqlgGraph sqlgGraph, SchemaTable schemaTable, int stepDepth,
                     List<HasContainer> hasContainers,
-//                    List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
                     SqlgComparatorHolder sqlgComparatorHolder,
-                    List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators,
-                    Range<Long> range,
+                    List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
+                    SqlgRangeHolder sqlgRangeHolder,
                     STEP_TYPE stepType,
                     boolean emit,
                     boolean untilFirst,
@@ -139,10 +137,9 @@ public class SchemaTableTree {
         this.stepDepth = stepDepth;
         this.replacedStepDepth = replacedStepDepth;
         this.hasContainers = hasContainers;
-//        this.comparators = comparators;
         this.sqlgComparatorHolder = sqlgComparatorHolder;
         this.dbComparators = dbComparators;
-        this.range = range;
+        this.sqlgRangeHolder = sqlgRangeHolder;
         this.labels = Collections.unmodifiableSet(labels);
         this.stepType = stepType;
         this.emit = emit;
@@ -164,10 +161,9 @@ public class SchemaTableTree {
                 direction,
                 elementClass,
                 replacedStep.getHasContainers(),
-//                replacedStep.getComparators(),
                 replacedStep.getSqlgComparatorHolder(),
                 replacedStep.getDbComparators(),
-                replacedStep.getRange(),
+                replacedStep.getSqlgRangeHolder(),
                 replacedStep.getDepth(),
                 isEdgeVertexStep,
                 replacedStep.isEmit(),
@@ -199,10 +195,9 @@ public class SchemaTableTree {
                 direction,
                 elementClass,
                 replacedStep.getHasContainers(),
-//                replacedStep.getComparators(),
                 replacedStep.getSqlgComparatorHolder(),
                 replacedStep.getDbComparators(),
-                replacedStep.getRange(),
+                replacedStep.getSqlgRangeHolder(),
                 replacedStep.getDepth(),
                 false,
                 emit,
@@ -216,10 +211,9 @@ public class SchemaTableTree {
             Direction direction,
             Class<? extends Element> elementClass,
             List<HasContainer> hasContainers,
-//            List<org.javatuples.Pair<Traversal.Admin, Comparator>> comparators,
             SqlgComparatorHolder sqlgComparatorHolder,
-            List<org.javatuples.Pair<Traversal.Admin, Comparator>> dbComparators,
-            Range<Long> range,
+            List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators,
+            SqlgRangeHolder sqlgRangeHolder,
             int stepDepth,
             boolean isEdgeVertexStep,
             boolean emit,
@@ -231,10 +225,9 @@ public class SchemaTableTree {
         if ((elementClass.isAssignableFrom(Edge.class) && schemaTable.getTable().startsWith(SchemaManager.EDGE_PREFIX)) ||
                 (elementClass.isAssignableFrom(Vertex.class) && schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX))) {
             schemaTableTree.hasContainers = new ArrayList<>(hasContainers);
-//            schemaTableTree.comparators = new ArrayList<>(comparators);
             schemaTableTree.sqlgComparatorHolder = sqlgComparatorHolder;
             schemaTableTree.dbComparators = new ArrayList<>(dbComparators);
-            schemaTableTree.range = range;
+            schemaTableTree.sqlgRangeHolder = sqlgRangeHolder;
         }
         schemaTableTree.parent = this;
         schemaTableTree.direction = direction;
@@ -894,7 +887,7 @@ public class SchemaTableTree {
 
     private String toOrderByClause(SqlgGraph sqlgGraph, MutableBoolean printedOrderBy, int counter) {
         String result = "";
-        for (org.javatuples.Pair<Traversal.Admin, Comparator> comparator : this.getDbComparators()) {
+        for (org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>> comparator : this.getDbComparators()) {
             if (!printedOrderBy.booleanValue()) {
                 printedOrderBy.setTrue();
                 result += "\nORDER BY\n\t";
@@ -991,9 +984,6 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
-                    System.out.println("3");
-                    System.out.println(prefix);
-                    System.out.println(this.getColumnNameAliasMap());
                 } else {
                     alias = "a" + selectSchemaTableTree.stepDepth + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -1011,9 +1001,9 @@ public class SchemaTableTree {
     }
 
     private String toRangeClause(SqlgGraph sqlgGraph) {
-//        if (range != null) {
-//            return " " + sqlgGraph.getSqlDialect().getRangeClause(range);
-//        }
+        if (this.sqlgRangeHolder != null && this.sqlgRangeHolder.hasRange() && this.sqlgRangeHolder.isApplyOnDb()) {
+            return "\n" + sqlgGraph.getSqlDialect().getRangeClause(this.sqlgRangeHolder.getRange());
+        }
         return "";
     }
 
@@ -1805,9 +1795,9 @@ public class SchemaTableTree {
                         return true;
                     }
                 } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
-                	if (hasContainer.getBiPredicate() instanceof FullText && ((FullText)hasContainer.getBiPredicate()).getQuery()!=null){
-                		return false;
-                	}
+                    if (hasContainer.getBiPredicate() instanceof FullText && ((FullText) hasContainer.getBiPredicate()).getQuery() != null) {
+                        return false;
+                    }
                     //check if the hasContainer is for a property that exists, if not remove this node from the query tree
                     if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                         return true;
@@ -1858,7 +1848,7 @@ public class SchemaTableTree {
 //                .append(this.comparators.toString()).append(" ")
                 .append(this.sqlgComparatorHolder.toString()).append(" ")
                 .append("Range = ")
-                .append(String.valueOf(range)).append(" ")
+                .append(String.valueOf(this.sqlgRangeHolder.getRange())).append(" ")
                 .append(this.direction != null ? this.direction.toString() : "").append(" ")
                 .append("isVertexStep = ").append(this.isEdgeVertexStep())
                 .append(" isUntilFirst = ").append(this.isUntilFirst())
@@ -1880,16 +1870,11 @@ public class SchemaTableTree {
         return hasContainers;
     }
 
-//    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getComparators() {
-//        return this.comparators;
-//    }
-
-
     public SqlgComparatorHolder getSqlgComparatorHolder() {
         return sqlgComparatorHolder;
     }
 
-    public List<org.javatuples.Pair<Traversal.Admin, Comparator>> getDbComparators() {
+    public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
         return dbComparators;
     }
 

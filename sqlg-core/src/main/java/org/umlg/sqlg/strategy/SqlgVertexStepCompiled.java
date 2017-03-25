@@ -163,4 +163,14 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
     }
 
+    @Override
+    public void setEagerLoad(boolean eager) {
+
+    }
+
+    @Override
+    public boolean isEargerLoad() {
+        return false;
+    }
+
 }

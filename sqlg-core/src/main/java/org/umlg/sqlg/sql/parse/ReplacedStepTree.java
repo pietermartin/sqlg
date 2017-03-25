@@ -1,12 +1,16 @@
 package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.javatuples.Pair;
 import org.umlg.sqlg.strategy.BaseStrategy;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -59,7 +63,7 @@ public class ReplacedStepTree {
         }
     }
 
-    public void walkReplacedSteps(Set<SchemaTableTree> schemaTableTrees) {
+    void walkReplacedSteps(Set<SchemaTableTree> schemaTableTrees) {
         //The tree only has one linear path from root to the deepest leaf node.
         //This represents the regular path where each ReplacedStep goes one step deeper down the graph.
         //First build the SchemaTableTrees for this path.
@@ -85,7 +89,7 @@ public class ReplacedStepTree {
         return result;
     }
 
-    public List<TreeNode> leafNodes() {
+    private List<TreeNode> leafNodes() {
         return root().leafNodes();
     }
 
@@ -97,6 +101,47 @@ public class ReplacedStepTree {
                 replacedStep.addLabel((leafNode.depth) + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
             }
         }
+    }
+
+    public boolean hasRange() {
+        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        return replacedStep.hasRange();
+    }
+
+    public boolean hasOrderBy() {
+        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+            if (replacedStep.getSqlgComparatorHolder().hasComparators()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean orderByIsOrder() {
+        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+            for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
+                if (!(objects.getValue1() instanceof Order)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    public void applyComparatorsOnDb() {
+        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+            for (Pair<Traversal.Admin<?, ?>, Comparator<?>> comparatorPair : replacedStep.getSqlgComparatorHolder().getComparators()) {
+                replacedStep.getDbComparators().add(comparatorPair);
+            }
+        }
+    }
+
+    public void doNotApplyRangeOnDb() {
+        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        Preconditions.checkState(replacedStep.hasRange());
+        replacedStep.getSqlgRangeHolder().doNotApplyOnDb();
     }
 
     public class TreeNode {
