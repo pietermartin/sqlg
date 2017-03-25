@@ -622,7 +622,7 @@ public class SqlgUtil {
                 continue;
             }
             // we transform id in ID
-            if (key.equals(T.id.getAccessor()) || key.equals("ID")) {
+            if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
             	if (value instanceof Long){
             		 result.add(ImmutablePair.of(PropertyType.LONG, (Long)value));
             	} else {
