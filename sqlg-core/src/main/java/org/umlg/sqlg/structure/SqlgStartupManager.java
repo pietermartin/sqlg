@@ -5,6 +5,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -178,7 +179,10 @@ class SqlgStartupManager {
                             extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                         }
                     }
-                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, table.substring(SchemaManager.VERTEX_PREFIX.length()), columns);
+                    String label=table.substring(SchemaManager.VERTEX_PREFIX.length());
+                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
+                    
+                    extractIndices(metadata,catalog,schema,table,label,true);
                 }
             }
             //load the edges without their properties
@@ -293,13 +297,59 @@ class SqlgStartupManager {
                         }
                     }
                     TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
+                    String label=table.substring(SchemaManager.EDGE_PREFIX.length());
+                    extractIndices(metadata,catalog,schema,table,label,false);
                 }
             }
+            
+            
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private void extractIndices(DatabaseMetaData metadata,String catalog,String schema
+    		,String table,String label,boolean isVertex) throws SQLException{
+    	try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, false)){
+        	String lastIndexName=null;
+        	IndexType lastIndexType=null;
+        	List<String> lastColumns=new LinkedList<>();
+        	while (indexRs.next()){
+        		String indexName=indexRs.getString("INDEX_NAME");
+        		System.out.println(indexName);
+        		boolean nonUnique=indexRs.getBoolean("NON_UNIQUE");
+        		
+        		if (lastIndexName==null){
+        			lastIndexName=indexName;
+        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
+        		} else if (!lastIndexName.equals(indexName)){
+        			if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
+        				if (Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
+        					//System.out.println(lastColumns);
+        					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+        				} else {
+        					TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName,lastIndexType, lastColumns);
+        				}
+        			}
+        			lastColumns.clear();
+        			lastIndexName=indexName;
+        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
+        		}
+        		
+        		lastColumns.add(indexRs.getString("COLUMN_NAME"));
+        		
+        	}
+        	if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
+        		if (Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
+					//System.out.println(lastColumns);
+					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+				} else {
+					TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName,lastIndexType, lastColumns);
+				}
+        	}
+    	}
+    }
+    
     private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) throws SQLException {
         //check for ZONEDDATETIME, PERIOD, DURATION as they use more than one field to represent the type
         PropertyType propertyType = null;
