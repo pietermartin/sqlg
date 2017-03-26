@@ -43,7 +43,7 @@ public class WhereClause {
 
         if (p.getBiPredicate() instanceof Compare) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                result += prefix + ".\"ID\"";
+                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
             } else {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
@@ -51,7 +51,7 @@ public class WhereClause {
             return result;
         } else if ((!sqlgGraph.getSqlDialect().supportsBulkWithinOut() || (!SqlgUtil.isBulkWithinAndOut(sqlgGraph, hasContainer))) && p.getBiPredicate() instanceof Contains) {
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                result += prefix + ".\"ID\"";
+                result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
             } else {
                 result += prefix + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
@@ -67,7 +67,7 @@ public class WhereClause {
             P<?> p1 = andP.getPredicates().get(0);
             String key;
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                key = result + "\"ID\"";
+                key = result + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
             } else {
                 key = result + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }
@@ -81,7 +81,7 @@ public class WhereClause {
             P<?> p1 = orP.getPredicates().get(0);
             String key;
             if (hasContainer.getKey().equals(T.id.getAccessor())) {
-                key = result + "\"ID\"";
+                key = result + sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID");
             } else {
                 key = result + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(hasContainer.getKey());
             }

@@ -1127,7 +1127,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {
-        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class)) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, this.getClass().getClassLoader())) {
             logger.info("found plugin for SqlgPlugin.class");
             if (p.canWorkWith(metadata)) {
                 return p;
@@ -1139,7 +1139,7 @@ public class SqlgGraph implements Graph {
     }
 
     private SqlgPlugin findSqlgPlugin(String connectionUri) {
-        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class)) {
+        for (SqlgPlugin p : ServiceLoader.load(SqlgPlugin.class, this.getClass().getClassLoader())) {
             if (p.getDriverFor(connectionUri) != null) {
                 return p;
             }
