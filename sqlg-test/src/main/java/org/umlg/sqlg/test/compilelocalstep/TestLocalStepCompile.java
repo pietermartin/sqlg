@@ -1,8 +1,12 @@
 package org.umlg.sqlg.test.compilelocalstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -26,9 +30,23 @@ public class TestLocalStepCompile extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = gt.V(a1).local(out().out()).path().toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal)gt.V(a1).local(out().out()).path();
+
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        LocalStep<?,?> localStep = (LocalStep)traversal.getSteps().get(1);
+        Assert.assertEquals(1, localStep.getLocalChildren().size());
+        Traversal.Admin<?, ?> traversal1 = localStep.getLocalChildren().get(0);
+        Assert.assertEquals(2, traversal1.getSteps().size());
+
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(1, paths.size());
+
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        localStep = (LocalStep)traversal.getSteps().get(1);
+        Assert.assertEquals(1, localStep.getLocalChildren().size());
+        traversal1 = localStep.getLocalChildren().get(0);
+        Assert.assertEquals(1, traversal1.getSteps().size());
     }
 }
