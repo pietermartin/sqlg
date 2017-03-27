@@ -88,17 +88,17 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
+    protected void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep,int pathCount) {
         Preconditions.checkArgument(lastReplacedStep != null);
         //TODO optimize this, to not parse if there are no OrderGlobalSteps
         sqlgStep.parseForStrategy();
         if (!sqlgStep.isForMultipleQueries()) {
-            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
+            collectOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep, pathCount);
         } else {
         	// check if next step isn't a range
             if (stepIterator.hasNext()){
             	step=stepIterator.next();
-            	if (!collectRangeGlobalStep(step, stepIterator, traversal, lastReplacedStep,true)){
+            	if (!collectRangeGlobalStep(step, stepIterator, traversal, lastReplacedStep,true,pathCount)){
             		stepIterator.previous();
             	}
             }
@@ -114,7 +114,7 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
      * @param multiple are we in a multiple label query?
      * @return true if we impacted the iterator by removing the current step, false otherwise
      */
-    private static boolean collectRangeGlobalStep(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep,boolean multiple){
+    private static boolean collectRangeGlobalStep(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep,boolean multiple,int pathCount){
     	if (step instanceof RangeGlobalStep<?>){
         	RangeGlobalStep<?> rgs=(RangeGlobalStep<?>)step;
         	if (!multiple || rgs.getLowRange()==0){
@@ -127,6 +127,9 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
         			high+=1;
         		}
         		replacedStep.setRange(Range.between(rgs.getLowRange(),high ));
+        		for (Object l:step.getLabels()){
+                	replacedStep.addLabel(pathCount+BaseSqlgStrategy.PATH_LABEL_SUFFIX + l);
+                }
         		if (!multiple){
         			iterator.remove();
         			traversal.removeStep(step);
@@ -139,27 +142,31 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
    
     }
 
-    private static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+    private static void collectOrderGlobalSteps(Step step, ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep,int pathCount) {
         //Collect the OrderGlobalSteps
         if (step instanceof OrderGlobalStep && isElementValueComparator((OrderGlobalStep) step)) {
             iterator.remove();
             traversal.removeStep(step);
             replacedStep.getComparators().addAll(((OrderGlobalStep) step).getComparators());
+            
+            for (Object l:step.getLabels()){
+            	replacedStep.addLabel(pathCount+BaseSqlgStrategy.PATH_LABEL_SUFFIX + l);
+            }
             // check if next step isn't a range
             if (iterator.hasNext()){
             	step=iterator.next();
-            	if (!collectRangeGlobalStep(step, iterator, traversal, replacedStep,false)){
+            	if (!collectRangeGlobalStep(step, iterator, traversal, replacedStep,false,pathCount)){
                 	iterator.previous();
             	}
             }
-        } else if (collectRangeGlobalStep(step, iterator, traversal, replacedStep,false)){
+        } else if (collectRangeGlobalStep(step, iterator, traversal, replacedStep,false,pathCount)){
         	// noop
         } else {
-            collectSelectOrderGlobalSteps(iterator, traversal, replacedStep);
+            collectSelectOrderGlobalSteps(iterator, traversal, replacedStep,pathCount);
         }
     }
 
-    private static void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep) {
+    private static void collectSelectOrderGlobalSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep,int pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
@@ -167,9 +174,12 @@ public class SqlgGraphStepStrategy extends BaseSqlgStrategy {
                 iterator.remove();
                 traversal.removeStep(currentStep);
                 replacedStep.getComparators().addAll(((OrderGlobalStep) currentStep).getComparators());
+                for (Object l:currentStep.getLabels()){
+                	replacedStep.addLabel(pathCount+BaseSqlgStrategy.PATH_LABEL_SUFFIX + l);
+                }
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
-            } else if (collectRangeGlobalStep(currentStep, iterator, traversal, replacedStep,false)){
+            } else if (collectRangeGlobalStep(currentStep, iterator, traversal, replacedStep,false,pathCount)){
             	// noop
             } else {
                 iterator.previous();

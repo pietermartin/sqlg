@@ -64,7 +64,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep, Traversal.Admin<?, ?> traversal);
 
-    protected abstract void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep);
+    protected abstract void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep, int pathCount);
 
     protected abstract boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep);
 
@@ -213,7 +213,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             stepIterator.previous();
                         }
                         if (doLastEntry) {
-                            doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep);
+                            doLastEntry(step, stepIterator, traversal, lastReplacedStep, sqlgStep,pathCount);
                         }
                     }
 //                    if (lastReplacedStep != null && steps.stream().anyMatch(s -> s instanceof OrderGlobalStep || s instanceof RangeGlobalStep)) {
