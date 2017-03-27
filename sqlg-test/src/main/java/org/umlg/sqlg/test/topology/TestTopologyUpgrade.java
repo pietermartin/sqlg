@@ -734,6 +734,7 @@ public class TestTopologyUpgrade extends BaseTest {
         		.has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"since")
         		.count().next().longValue());
         
+        // not supported yet
         /*assertEquals(1,sqlgGraph.topology().V()
         		.hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX).count().next().longValue());
     
@@ -784,7 +785,7 @@ public class TestTopologyUpgrade extends BaseTest {
         		eproperties);
         eLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(eLabel.getProperties().values()));
         
-        
+        // not supported yet
         /*this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
             add(personVertexLabel.getProperty("firstName").get());
             add(dogVertexLabel.getProperty("name").get());
