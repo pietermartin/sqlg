@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -10,8 +11,10 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by pieter on 2015/08/30.
@@ -265,6 +268,56 @@ public class TestVertexStepOrderBy extends BaseTest {
         Assert.assertEquals(3, traversal.getSteps().size());
 
         Assert.assertEquals(1, result.size());
+    }
+    
+    @Test
+    public void testOrderRangeAs(){
+    	Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+        Vertex fantasy1 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan1");
+        Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
+        Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
+        Vertex fantasy4 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan4");
+        Edge e1 = god.addEdge("godDream", fantasy1, "sequence", 1);
+        Edge e2 = god.addEdge("godDream", fantasy2, "sequence", 2);
+        Edge e3 = god.addEdge("godDream", fantasy3, "sequence", 3);
+        Edge e4 = god.addEdge("godDream", fantasy4, "sequence", 4);
+        
+        this.sqlgGraph.tx().commit();
+        Traversal<Vertex, Map<String, Object>> traversal = this.sqlgGraph.traversal().V()
+        		.hasLabel("Fantasy")
+        		.order().by("name")
+        		.as("f")
+                .in("godDream").as("g").select("f","g");
+        List<Map<String, Object>> l=traversal.toList();
+        Assert.assertEquals(4, l.size());
+        Set<Vertex> vs=new HashSet<>();
+        for (Map<String,Object> m:l){
+        	Assert.assertEquals(god, m.get("g"));
+        	vs.add((Vertex)m.get("f"));
+        }
+        Assert.assertEquals(4, vs.size());
+        Assert.assertTrue(vs.contains(fantasy1));
+        Assert.assertTrue(vs.contains(fantasy2));
+        Assert.assertTrue(vs.contains(fantasy3));
+        Assert.assertTrue(vs.contains(fantasy4));
+        
+        traversal = this.sqlgGraph.traversal().V()
+        		.hasLabel("Fantasy")
+        		.order().by("name").range(0, 2)
+        		.as("f")
+                .in("godDream").as("g").select("f","g");
+        l=traversal.toList();
+        Assert.assertEquals(2, l.size());
+        vs=new HashSet<>();
+        for (Map<String,Object> m:l){
+        	Assert.assertEquals(god, m.get("g"));
+        	vs.add((Vertex)m.get("f"));
+        }
+        Assert.assertEquals(2, vs.size());
+        Assert.assertTrue(vs.contains(fantasy1));
+        Assert.assertTrue(vs.contains(fantasy2));
+        Assert.assertFalse(vs.contains(fantasy3));
+        Assert.assertFalse(vs.contains(fantasy4));
     }
 
 }

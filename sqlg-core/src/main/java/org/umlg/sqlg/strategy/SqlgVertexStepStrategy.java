@@ -77,7 +77,7 @@ public class SqlgVertexStepStrategy extends BaseSqlgStrategy {
     }
 
     @Override
-    protected void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep) {
+    protected void doLastEntry(Step step, ListIterator<Step> stepIterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> lastReplacedStep, SqlgStep sqlgStep, int pathCount) {
         Preconditions.checkArgument(lastReplacedStep != null);
         replaceOrderGlobalSteps(step, stepIterator, traversal, lastReplacedStep);
     }
