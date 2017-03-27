@@ -284,6 +284,69 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
+    
+    /**
+     * add an index from information schema
+     * @param sqlgGraph the graph
+     * @param schema the schema name
+     * @param label the label name
+     * @param vertex is it a vertex or an edge label?
+     * @param index the index name
+     * @param indexType index type
+     * @param properties the column names
+     */
+    public static void addIndex(SqlgGraph sqlgGraph, String schema, String label, boolean vertex, String index, IndexType indexType, List<String> properties) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            //get the abstractLabel's vertex
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> abstractLabelVertexes;
+            if (vertex) {
+                abstractLabelVertexes = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", label)
+                        .toList();
+            } else {
+                abstractLabelVertexes = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has(SQLG_SCHEMA_SCHEMA_NAME, schema)
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .has("name", label)
+                        .toList();
+            }
+            Preconditions.checkState(!abstractLabelVertexes.isEmpty(), "AbstractLabel %s.%s does not exists", schema, label);
+            Preconditions.checkState(abstractLabelVertexes.size() == 1, "BUG: multiple AbstractLabels found for %s.%s", schema, label);
+            Vertex abstractLabelVertex = abstractLabelVertexes.get(0);
+
+            Vertex indexVertex = sqlgGraph.addVertex(
+                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_INDEX,
+                    SQLG_SCHEMA_INDEX_NAME, index,
+                    SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.toString(),
+                    CREATED_ON, LocalDateTime.now()
+            );
+
+            if (vertex) {
+                abstractLabelVertex.addEdge(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertex);
+            } else {
+                abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
+            }
+            for (String property : properties) {
+                List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
+                        .out(vertex ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                        .has("name", property)
+                        .toList();
+                Preconditions.checkState(!propertyVertexes.isEmpty(), "Property %s for AbstractLabel %s.%s does not exists", property, schema, label);
+                Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property, schema, label);
+                Vertex propertyVertex = propertyVertexes.get(0);
+                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
+            }
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
 
     public static void addPropertyIndex(SqlgGraph sqlgGraph, String schema, String prefixedTable, Pair<String, PropertyType> column, IndexType indexType) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
