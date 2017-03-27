@@ -905,9 +905,6 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
-                    if (alias.equals("null")) {
-                        System.out.println(this.getColumnNameAliasMap());
-                    }
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -936,10 +933,6 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
-                    if (alias.equals("null")) {
-                        System.out.println("2");
-                        System.out.println(this.getColumnNameAliasMap());
-                    }
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -1772,6 +1765,30 @@ public class SchemaTableTree {
         schemaTableTree.hasContainers.removeAll(toRemove);
     }
 
+    private SchemaTable getHasContainerSchemaTable(SchemaTableTree schemaTableTree,SchemaTable predicateSchemaTable){
+    	SchemaTable hasContainerLabelSchemaTable;
+    	//Check if we are on a vertex or edge
+        if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
+            hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + predicateSchemaTable.getTable());
+        } else {
+            hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.EDGE_PREFIX + predicateSchemaTable.getTable());
+        }
+        return hasContainerLabelSchemaTable;
+    }
+
+    private SchemaTable getIDContainerSchemaTable(SchemaTableTree schemaTableTree,Object value){
+    	 RecordId id;
+    	 if (value instanceof Long){
+    		 return schemaTableTree.getSchemaTable();
+    	 } else if (!(value instanceof RecordId)) {
+             id = RecordId.from(String.valueOf(value));
+         } else {
+             id = (RecordId) value;
+         }
+         return getHasContainerSchemaTable(schemaTableTree, id.getSchemaTable());
+
+    }
+
     /**
      * verify the "has" containers we have are valid with the schema table tree given
      *
@@ -1782,22 +1799,43 @@ public class SchemaTableTree {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
-                    SchemaTable hasContainerLabelSchemaTable;
-                    // we may have been given a type in a schema
+                     // we may have been given a type in a schema
                     SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString());
-                    //Check if we are on a vertex or edge
-                    if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                        hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + predicateSchemaTable.getTable());
-                    } else {
-                        hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.EDGE_PREFIX + predicateSchemaTable.getTable());
-                    }
+                    SchemaTable hasContainerLabelSchemaTable =getHasContainerSchemaTable(schemaTableTree, predicateSchemaTable);
                     if (hasContainer.getBiPredicate().equals(Compare.eq) && !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
                         return true;
                     }
-                } else if (!hasContainer.getKey().equals(T.id.getAccessor())) {
-                    if (hasContainer.getBiPredicate() instanceof FullText && ((FullText) hasContainer.getBiPredicate()).getQuery() != null) {
-                        return false;
-                    }
+                } else if (hasContainer.getKey().equals(T.id.getAccessor())){
+
+                	if (hasContainer.getBiPredicate().equals(Compare.eq)){
+
+	                	Object value=hasContainer.getValue();
+	                	SchemaTable hasContainerLabelSchemaTable=getIDContainerSchemaTable(schemaTableTree,value);
+		            	if (!hasContainerLabelSchemaTable.equals(schemaTableTree.getSchemaTable())) {
+	                		return true;
+	                	}
+                	} else if (hasContainer.getBiPredicate().equals(Contains.within)){
+                		Collection<?> c=(Collection<?>) hasContainer.getPredicate().getValue();
+                		Iterator<?> it=c.iterator();
+                		Collection<Object> ok=new LinkedList<>();
+                		while (it.hasNext()){
+                			Object value=it.next();
+                			SchemaTable hasContainerLabelSchemaTable=getIDContainerSchemaTable(schemaTableTree,value);
+    		            	if (hasContainerLabelSchemaTable.equals(schemaTableTree.getSchemaTable())) {
+    		            		ok.add(value);
+    		            	}
+                		}
+                		if (ok.isEmpty()){
+                			return true;
+                		}
+                		((P<Collection<Object>>)(hasContainer.getPredicate())).setValue(ok);
+
+                	}
+
+                } else {
+                	if (hasContainer.getBiPredicate() instanceof FullText && ((FullText)hasContainer.getBiPredicate()).getQuery()!=null){
+                		return false;
+                	}
                     //check if the hasContainer is for a property that exists, if not remove this node from the query tree
                     if (!this.getFilteredAllTables().get(schemaTableTree.getSchemaTable().toString()).containsKey(hasContainer.getKey())) {
                         return true;
@@ -1806,8 +1844,6 @@ public class SchemaTableTree {
                     if (hasEmptyWithin(hasContainer)) {
                         return true;
                     }
-                } else if (hasEmptyWithin(hasContainer)) {
-                    return true;
                 }
             }
         }
@@ -2057,9 +2093,6 @@ public class SchemaTableTree {
         if (this.columnNamePropertyName != null) {
             this.columnNamePropertyName.clear();
             this.columnNamePropertyName = null;
-            if (this.columnNamePropertyName != null) {
-                System.out.println("asdasd");
-            }
         }
     }
 
@@ -2085,6 +2118,5 @@ public class SchemaTableTree {
     public void setFakeEmit(boolean fakeEmit) {
         this.fakeEmit = fakeEmit;
     }
-
 
 }

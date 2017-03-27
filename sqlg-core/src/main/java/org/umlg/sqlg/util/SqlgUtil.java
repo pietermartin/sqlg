@@ -625,14 +625,19 @@ public class SqlgUtil {
             if (key.equals(label.getAccessor())) {
                 continue;
             }
-            if (key.equals(T.id.getAccessor())) {
-                RecordId id;
-                if (!(value instanceof RecordId)) {
-                    id = RecordId.from(value);
-                } else {
-                    id = (RecordId) value;
-                }
-                result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
+            // we transform id in ID
+            if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
+            	if (value instanceof Long){
+            		 result.add(ImmutablePair.of(PropertyType.LONG, (Long)value));
+            	} else {
+	                RecordId id;
+	                if (!(value instanceof RecordId)) {
+	                    id = RecordId.from(value);
+	                } else {
+	                    id = (RecordId) value;
+	                }
+	                result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
+            	}
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
             }
