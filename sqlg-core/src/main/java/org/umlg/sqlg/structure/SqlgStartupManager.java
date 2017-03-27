@@ -5,7 +5,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
@@ -324,10 +323,10 @@ class SqlgStartupManager {
         			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
         		} else if (!lastIndexName.equals(indexName)){
         			if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
-        				if (Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
+        				if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
         					//System.out.println(lastColumns);
         					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-        				} else {
+        				//} else {
         					TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName,lastIndexType, lastColumns);
         				}
         			}
@@ -340,10 +339,10 @@ class SqlgStartupManager {
         		
         	}
         	if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
-        		if (Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
+        		if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
 					//System.out.println(lastColumns);
 					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-				} else {
+        			//} else {
 					TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName,lastIndexType, lastColumns);
 				}
         	}
