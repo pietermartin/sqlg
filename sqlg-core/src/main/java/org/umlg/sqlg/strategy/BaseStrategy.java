@@ -122,7 +122,8 @@ public abstract class BaseStrategy {
      */
     private void handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
         Step<?, ?> step = stepIterator.next();
-        if (step instanceof GraphStep) {
+//        if (step instanceof GraphStep) {
+        if (this.sqlgStep == null || step instanceof GraphStep) {
             this.sqlgStep = handleGraphStep(stepIterator, step, pathCount);
         } else {
             Preconditions.checkState(sqlgStep != null);

@@ -5,10 +5,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -16,7 +14,6 @@ import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -40,24 +37,24 @@ public class VertexStrategy extends BaseStrategy {
         final Step<?, ?> startStep = this.traversal.getStartStep();
 
         //Only optimize graph step.
-        if (!(startStep instanceof GraphStep) || !(this.traversal.getGraph().get() instanceof SqlgGraph)) {
+        if (!(this.traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
 
-        final GraphStep originalGraphStep = (GraphStep) startStep;
+//        final GraphStep originalGraphStep = (GraphStep) startStep;
 
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
             this.sqlgGraph.tx().flush();
         }
 
-        if (originalGraphStep.getIds().length > 0) {
-            Object id = originalGraphStep.getIds()[0];
-            if (id != null) {
-                Class clazz = id.getClass();
-                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> clazz.isAssignableFrom(i.getClass())))
-                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-            }
-        }
+//        if (originalGraphStep.getIds().length > 0) {
+//            Object id = originalGraphStep.getIds()[0];
+//            if (id != null) {
+//                Class clazz = id.getClass();
+//                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> clazz.isAssignableFrom(i.getClass())))
+//                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
+//            }
+//        }
         if (this.canNotBeOptimized()) {
             this.logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
