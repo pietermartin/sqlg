@@ -1,6 +1,7 @@
 package org.umlg.sqlg.strategy;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
@@ -12,8 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.ListIterator;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -21,7 +21,6 @@ import java.util.List;
  */
 public class VertexStrategy extends BaseStrategy {
 
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(VertexStep.class, EdgeVertexStep.class, EdgeOtherVertexStep.class);
     private Logger logger = LoggerFactory.getLogger(VertexStrategy.class.getName());
 
     public VertexStrategy(Traversal.Admin<?, ?> traversal) {
@@ -34,27 +33,13 @@ public class VertexStrategy extends BaseStrategy {
     }
 
     public void apply() {
-        final Step<?, ?> startStep = this.traversal.getStartStep();
-
         //Only optimize graph step.
         if (!(this.traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
-
-//        final GraphStep originalGraphStep = (GraphStep) startStep;
-
         if (this.sqlgGraph.features().supportsBatchMode() && this.sqlgGraph.tx().isInNormalBatchMode()) {
             this.sqlgGraph.tx().flush();
         }
-
-//        if (originalGraphStep.getIds().length > 0) {
-//            Object id = originalGraphStep.getIds()[0];
-//            if (id != null) {
-//                Class clazz = id.getClass();
-//                if (!Stream.of(originalGraphStep.getIds()).allMatch(i -> clazz.isAssignableFrom(i.getClass())))
-//                    throw Graph.Exceptions.idArgsMustBeEitherIdOrElement();
-//            }
-//        }
         if (this.canNotBeOptimized()) {
             this.logger.debug("gremlin not optimized due to path or tree step. " + this.traversal.toString() + "\nPath to gremlin:\n" + ExceptionUtils.getStackTrace(new Throwable()));
             return;
@@ -64,15 +49,30 @@ public class VertexStrategy extends BaseStrategy {
     }
 
     @Override
+    protected void doLast() {
+        this.currentTreeNodeNode.getReplacedStepTree().maybeAddLabelToLeafNodes();
+    }
+
+    @Override
+    protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
+        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep)) {
+            return false;
+        }
+        this.sqlgStep = constructSqlgStep(step);
+        TraversalHelper.insertBeforeStep(this.sqlgStep, step, this.traversal);
+        return true;
+    }
+
+    @Override
     protected SqlgStep constructSqlgStep(Step startStep) {
         SqlgVertexStepCompiled sqlgStep = new SqlgVertexStepCompiled(this.traversal);
-        ReplacedStep replacedStep = ReplacedStep.from(this.sqlgGraph.getTopology());
-        sqlgStep.addReplacedStep(replacedStep);
+        this.currentReplacedStep = ReplacedStep.from(this.sqlgGraph.getTopology());
+        this.currentTreeNodeNode = sqlgStep.addReplacedStep(this.currentReplacedStep);
         return sqlgStep;
     }
 
     @Override
-    protected boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep) {
+    protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
         return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 

@@ -210,7 +210,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
-    @Override
     public void parseForStrategy() {
         this.parsedForStrategySql.clear();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");

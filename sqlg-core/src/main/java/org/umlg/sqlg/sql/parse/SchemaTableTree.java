@@ -2,7 +2,6 @@ package org.umlg.sqlg.sql.parse;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
-import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
@@ -55,7 +54,7 @@ public class SchemaTableTree {
     //leafNodes is only set on the root node;
     private List<SchemaTableTree> leafNodes = new ArrayList<>();
     private List<HasContainer> hasContainers = new ArrayList<>();
-    private SqlgComparatorHolder sqlgComparatorHolder;
+    private SqlgComparatorHolder sqlgComparatorHolder = new SqlgComparatorHolder();
     private List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> dbComparators = new ArrayList<>();
     //labels are immutable
     private Set<String> labels;

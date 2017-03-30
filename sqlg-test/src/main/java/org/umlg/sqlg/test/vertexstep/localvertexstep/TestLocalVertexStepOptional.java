@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -34,7 +34,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.gt.V(a11).local(optional(out()).values("name")).path().toList();
+        List<Path> paths = this.gt.V(a11).local(__.optional(out()).values("name")).path().toList();
         assertEquals(1, paths.size());
         for (Path path : paths) {
             System.out.println(path);
@@ -78,7 +78,17 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().local(optional(out()).optional(out())).path().toList();
+        List<Path> paths = this.sqlgGraph.traversal()
+                .V()
+                .local(
+                        __.optional(
+                                out()
+                        ).optional(
+                                out()
+                        )
+                )
+                .path()
+                .toList();
         for (Path path : paths) {
             System.out.println(path);
         }
@@ -112,7 +122,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().local(optional(out().optional(out()))).path().toList();
+        List<Path> paths = this.sqlgGraph.traversal().V().local(__.optional(out().optional(out()))).path().toList();
         for (Path path : paths) {
             System.out.println(path);
         }
@@ -142,7 +152,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1).local(__.<Vertex, Vertex>choose(v -> v.label().equals("A"), out(), in())).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1).local(__.<Vertex, Vertex>choose(v -> v.label().equals("A"), out(), __.in())).toList();
         assertEquals(2, vertices.size());
     }
 
@@ -179,7 +189,16 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b2);
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V(a1).local(__.optional(out().optional(out())).path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal()
+                .V(a1)
+                .local(
+                        __.optional(
+                                out().optional(
+                                        out()
+                                )
+                        ).path()
+                )
+                .toList();
         assertEquals(2, paths.size());
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1),
@@ -192,7 +211,15 @@ public class TestLocalVertexStepOptional extends BaseTest {
         }
         assertTrue(paths.isEmpty());
 
-        paths = this.sqlgGraph.traversal().V().hasLabel("A").local(__.optional(out().optional(out())).path()).toList();
+        paths = this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .local(
+                        __.optional(
+                                out().optional(
+                                        out()
+                                )
+                        ).path()
+                ).toList();
         assertEquals(3, paths.size());
         pathsToAssert = Arrays.asList(
                 p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1),
@@ -513,7 +540,16 @@ public class TestLocalVertexStepOptional extends BaseTest {
         b1.addEdge("bc", c1);
         b2.addEdge("bd", d1);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V(a1).local(__.optional(out().optional(out())).path()).toList();
+        List<Path> paths = this.sqlgGraph.traversal()
+                .V(a1)
+                .local(
+                        __.optional(
+                                out().optional(
+                                        out()
+                                )
+                        ).path()
+                )
+                .toList();
         for (Path path : paths) {
             System.out.println(path.toString());
         }

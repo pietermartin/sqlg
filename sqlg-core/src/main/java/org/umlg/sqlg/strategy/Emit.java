@@ -46,6 +46,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     public Emit() {
         this.fake = true;
+        this.labels = Collections.emptySet();
     }
 
     public Emit(E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
@@ -72,19 +73,11 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
-        return sqlgComparatorHolder;
-    }
-
-    public List<SqlgComparatorHolder> getSqlgComparatorHolders() {
-        return sqlgComparatorHolders;
+        return this.sqlgComparatorHolder;
     }
 
     public void setSqlgComparatorHolders(List<SqlgComparatorHolder> sqlgComparatorHolders) {
         this.sqlgComparatorHolders = sqlgComparatorHolders;
-    }
-
-    public int getReplacedStepDepth() {
-        return replacedStepDepth;
     }
 
     public boolean isRepeat() {
@@ -142,13 +135,13 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         return result;
     }
 
-    public void evaluateElementValueTraversal() {
+    void evaluateElementValueTraversal() {
         for (int i = this.sqlgComparatorHolders.size()  - 1; i >= 0 ; i--) {
             if (this.comparatorValues == null) {
                 this.comparatorValues = new ArrayList<>();
             }
             SqlgElement sqlgElement;
-            SqlgComparatorHolder comparatorHolder = sqlgComparatorHolders.get(i);
+            SqlgComparatorHolder comparatorHolder = this.sqlgComparatorHolders.get(i);
             if (comparatorHolder.hasPrecedingSelectOneLabel()) {
                 String precedingLabel = comparatorHolder.getPrecedingSelectOneLabel();
                 sqlgElement = this.traverser.path().get(precedingLabel);

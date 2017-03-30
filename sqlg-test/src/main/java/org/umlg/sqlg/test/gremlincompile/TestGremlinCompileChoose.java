@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -15,6 +16,19 @@ import java.util.Arrays;
  * Time: 9:27 AM
  */
 public class TestGremlinCompileChoose extends BaseTest {
+
+    @Test
+    public void g_V_chooseXhasLabelXpersonX_and_outXcreatedX__outXknowsX__identityX_name() {
+        loadModern();
+
+        GraphTraversal<Vertex, String> traversal = this.sqlgGraph.traversal()
+                .V()
+                .choose(
+                        __.hasLabel("person").and().out("created"),
+                        __.out("knows"), __.identity()
+                ).values("name");
+        checkResults(Arrays.asList("lop", "ripple", "josh", "vadas", "vadas"), traversal);
+    }
 
     //not optimized
     @Test

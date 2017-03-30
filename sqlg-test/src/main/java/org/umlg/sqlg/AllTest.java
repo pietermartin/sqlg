@@ -5,6 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.aggregate.TestAggregate;
 import org.umlg.sqlg.test.batch.*;
+import org.umlg.sqlg.test.compilelocalstep.TestLocalStepCompile;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.github.TestGithub;
@@ -169,7 +170,9 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestBatchNormalUpdateDateTimeArrays.class,
         TestTopologyChangeListener.class,
         TestRangeLimit.class,
-        TestReplacedStepEmitComparator.class
+        TestReplacedStepEmitComparator.class,
+        TestLocalStepCompile.class,
+        TestLocalVertexStepLimit.class
 })
 public class AllTest {
 }

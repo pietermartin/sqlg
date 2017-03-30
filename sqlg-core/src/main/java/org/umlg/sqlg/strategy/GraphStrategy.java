@@ -2,19 +2,19 @@ package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.ListIterator;
 import java.util.stream.Stream;
 
 /**
@@ -27,13 +27,6 @@ import java.util.stream.Stream;
 public class GraphStrategy extends BaseStrategy {
 
     private Logger logger = LoggerFactory.getLogger(GraphStrategy.class.getName());
-    private static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
-            VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class
-            , OrderGlobalStep.class, RangeGlobalStep.class
-            , ChooseStep.class
-            , RepeatStep.class
-
-    );
 
     private GraphStrategy(Traversal.Admin<?, ?> traversal) {
         super(traversal);
@@ -79,8 +72,59 @@ public class GraphStrategy extends BaseStrategy {
     }
 
     @Override
-    protected boolean isReplaceableStep(Class<? extends Step> stepClass, boolean alreadyReplacedGraphStep) {
-        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);// && !(stepClass.isAssignableFrom(GraphStep.class) && alreadyReplacedGraphStep);
+    protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
+        this.currentReplacedStep = ReplacedStep.from(
+                this.currentReplacedStep,
+                this.sqlgGraph.getTopology(),
+                (AbstractStep<?, ?>) step,
+                pathCount.getValue()
+        );
+        collectHasSteps(stepIterator, pathCount.getValue());
+        collectOrderGlobalSteps(stepIterator, pathCount);
+        collectRangeGlobalSteps(stepIterator, pathCount);
+        this.sqlgStep = constructSqlgStep(step);
+        this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
+        replaceStepInTraversal(step, this.sqlgStep);
+        if (this.sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) this.sqlgStep).getIds().length > 0) {
+            addHasContainerForIds((SqlgGraphStepCompiled) this.sqlgStep);
+        }
+        if (this.currentReplacedStep.getLabels().isEmpty()) {
+            boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
+            if (precedesPathStep) {
+                this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_FAKE_LABEL);
+            }
+        }
+        pathCount.increment();
+        return true;
+    }
+
+    @Override
+    protected void doLast() {
+        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
+        replacedStepTree.maybeAddLabelToLeafNodes();
+        //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
+        if (replacedStepTree.hasOrderBy()) {
+            ((SqlgGraphStepCompiled)this.sqlgStep).parseForStrategy();
+            if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {
+                replacedStepTree.applyComparatorsOnDb();
+            } else {
+                this.sqlgStep.setEagerLoad(true);
+            }
+        }
+        //If a range follows an order that needs to be done in memory then do not apply the range on the db.
+        if (replacedStepTree.hasRange()) {
+            ((SqlgGraphStepCompiled)this.sqlgStep).parseForStrategy();
+            if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {
+            } else {
+                replacedStepTree.doNotApplyRangeOnDb();
+                this.sqlgStep.setEagerLoad(true);
+            }
+        }
+    }
+
+    @Override
+    protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
+        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 
     @Override

@@ -12,8 +12,6 @@ interface SqlgStep extends Step {
 
     ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep<?, ?> replacedStep);
 
-    void parseForStrategy();
-
     boolean isForMultipleQueries();
 
     void setEagerLoad(boolean eager);

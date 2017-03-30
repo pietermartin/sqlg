@@ -164,14 +164,11 @@ public class SqlgUtil {
                     //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
-//                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getComparators()));
                         result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
-//                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getComparators()));
                         result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                     } else {
-//                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getComparators()));
-                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(),schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                     }
                 }
             }
@@ -627,17 +624,17 @@ public class SqlgUtil {
             }
             // we transform id in ID
             if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
-            	if (value instanceof Long){
-            		 result.add(ImmutablePair.of(PropertyType.LONG, (Long)value));
-            	} else {
-	                RecordId id;
-	                if (!(value instanceof RecordId)) {
-	                    id = RecordId.from(value);
-	                } else {
-	                    id = (RecordId) value;
-	                }
-	                result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
-            	}
+                if (value instanceof Long) {
+                    result.add(ImmutablePair.of(PropertyType.LONG, (Long) value));
+                } else {
+                    RecordId id;
+                    if (!(value instanceof RecordId)) {
+                        id = RecordId.from(value);
+                    } else {
+                        id = (RecordId) value;
+                    }
+                    result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
+                }
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
             }
@@ -720,7 +717,7 @@ public class SqlgUtil {
      *
      * @param topology
      * @param hasContainers
-     * @param withSqlgSchema    do we want the sqlg schema tables too?
+     * @param withSqlgSchema do we want the sqlg schema tables too?
      * @return
      */
     public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
