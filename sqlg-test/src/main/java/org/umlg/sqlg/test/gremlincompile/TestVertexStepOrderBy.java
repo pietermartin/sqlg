@@ -200,7 +200,7 @@ public class TestVertexStepOrderBy extends BaseTest {
         god.addEdge("godDream", fantasy3, "sequence", 3);
         god.addEdge("godDream", fantasy4, "sequence", 4);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal)this.sqlgGraph.traversal().V(god)
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().V(god)
                 .outE("godDream").as("e")
                 .inV().as("v")
                 .select("e", "v")
@@ -257,7 +257,7 @@ public class TestVertexStepOrderBy extends BaseTest {
         Edge e1 = root.addEdge("rootFolder", folder1);
         Edge e2 = folder1.addEdge("subFolder", folder2, "sequence", 1);
         this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal)this.sqlgGraph.traversal().V(folder1)
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal().V(folder1)
                 .outE("subFolder").as("e")
                 .inV().as("v")
                 .select("e", "v")
@@ -269,10 +269,10 @@ public class TestVertexStepOrderBy extends BaseTest {
 
         Assert.assertEquals(1, result.size());
     }
-    
+
     @Test
-    public void testOrderRangeAs(){
-    	Vertex god = this.sqlgGraph.addVertex(T.label, "God");
+    public void testOrderRangeAs() {
+        Vertex god = this.sqlgGraph.addVertex(T.label, "God");
         Vertex fantasy1 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan1");
         Vertex fantasy2 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan2");
         Vertex fantasy3 = this.sqlgGraph.addVertex(T.label, "Fantasy", "name", "fan3");
@@ -281,37 +281,37 @@ public class TestVertexStepOrderBy extends BaseTest {
         Edge e2 = god.addEdge("godDream", fantasy2, "sequence", 2);
         Edge e3 = god.addEdge("godDream", fantasy3, "sequence", 3);
         Edge e4 = god.addEdge("godDream", fantasy4, "sequence", 4);
-        
+
         this.sqlgGraph.tx().commit();
         Traversal<Vertex, Map<String, Object>> traversal = this.sqlgGraph.traversal().V()
-        		.hasLabel("Fantasy")
-        		.order().by("name")
-        		.as("f")
-                .in("godDream").as("g").select("f","g");
-        List<Map<String, Object>> l=traversal.toList();
+                .hasLabel("Fantasy")
+                .order().by("name")
+                .as("f")
+                .in("godDream").as("g").select("f", "g");
+        List<Map<String, Object>> l = traversal.toList();
         Assert.assertEquals(4, l.size());
-        Set<Vertex> vs=new HashSet<>();
-        for (Map<String,Object> m:l){
-        	Assert.assertEquals(god, m.get("g"));
-        	vs.add((Vertex)m.get("f"));
+        Set<Vertex> vs = new HashSet<>();
+        for (Map<String, Object> m : l) {
+            Assert.assertEquals(god, m.get("g"));
+            vs.add((Vertex) m.get("f"));
         }
         Assert.assertEquals(4, vs.size());
         Assert.assertTrue(vs.contains(fantasy1));
         Assert.assertTrue(vs.contains(fantasy2));
         Assert.assertTrue(vs.contains(fantasy3));
         Assert.assertTrue(vs.contains(fantasy4));
-        
+
         traversal = this.sqlgGraph.traversal().V()
-        		.hasLabel("Fantasy")
-        		.order().by("name").range(0, 2)
-        		.as("f")
-                .in("godDream").as("g").select("f","g");
-        l=traversal.toList();
+                .hasLabel("Fantasy")
+                .order().by("name").range(0, 2)
+                .as("f")
+                .in("godDream").as("g").select("f", "g");
+        l = traversal.toList();
         Assert.assertEquals(2, l.size());
-        vs=new HashSet<>();
-        for (Map<String,Object> m:l){
-        	Assert.assertEquals(god, m.get("g"));
-        	vs.add((Vertex)m.get("f"));
+        vs = new HashSet<>();
+        for (Map<String, Object> m : l) {
+            Assert.assertEquals(god, m.get("g"));
+            vs.add((Vertex) m.get("f"));
         }
         Assert.assertEquals(2, vs.size());
         Assert.assertTrue(vs.contains(fantasy1));

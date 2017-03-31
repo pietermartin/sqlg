@@ -352,6 +352,10 @@ public abstract class BaseStrategy {
             Step<?, ?> step = iterator.next();
             if (step instanceof OrderGlobalStep) {
                 if (optimizable((OrderGlobalStep) step)) {
+                    //add the label if any
+                    for (String label : step.getLabels()) {
+                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                    }
                     //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
                     if (this.traversal.getSteps().contains(step)) {
                         this.traversal.removeStep(step);
@@ -404,6 +408,10 @@ public abstract class BaseStrategy {
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
             if (step instanceof RangeGlobalStep) {
+                //add the label if any
+                for (String label : step.getLabels()) {
+                    this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + label);
+                }
                 //The step might not be here. For instance if it was nested in a chooseStep where the chooseStep logic already removed the step.
                 if (this.traversal.getSteps().contains(step)) {
                     this.traversal.removeStep(step);
