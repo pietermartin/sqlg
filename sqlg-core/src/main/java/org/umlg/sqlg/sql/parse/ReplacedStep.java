@@ -97,7 +97,7 @@ public class ReplacedStep<S, E> {
         return this.sqlgComparatorHolder;
     }
 
-    public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
+    List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
         return this.dbComparators;
     }
 
@@ -698,7 +698,7 @@ public class ReplacedStep<S, E> {
     }
 
     public SqlgRangeHolder getSqlgRangeHolder() {
-        return sqlgRangeHolder;
+        return this.sqlgRangeHolder;
     }
 
     public void setSqlgRangeHolder(SqlgRangeHolder sqlgRangeHolder) {
@@ -707,6 +707,10 @@ public class ReplacedStep<S, E> {
 
     public boolean hasRange() {
         return this.getSqlgRangeHolder() != null;
+    }
+
+    public boolean applyInStep() {
+        return this.getSqlgRangeHolder().isApplyInStep();
     }
 
     public void markAsJoinToLeftJoin() {

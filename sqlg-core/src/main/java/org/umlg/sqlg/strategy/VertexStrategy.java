@@ -11,6 +11,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ListIterator;
@@ -50,7 +51,8 @@ public class VertexStrategy extends BaseStrategy {
 
     @Override
     protected void doLast() {
-        this.currentTreeNodeNode.getReplacedStepTree().maybeAddLabelToLeafNodes();
+        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
+        replacedStepTree.maybeAddLabelToLeafNodes();
     }
 
     @Override

@@ -56,7 +56,8 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+//                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+                if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep()) {
                     if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
                         throw FastNoSuchElementException.instance();
                     }
@@ -79,7 +80,8 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+//                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+                if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep()) {
                     if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
                         throw FastNoSuchElementException.instance();
                     }
@@ -152,7 +154,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
         this.toEmit.setTraverser(traverser);
-        this.toEmit.evaluateElementValueTraversal();
+        this.toEmit.evaluateElementValueTraversal(true);
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);

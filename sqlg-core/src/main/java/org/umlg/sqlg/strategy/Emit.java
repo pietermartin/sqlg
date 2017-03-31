@@ -135,39 +135,46 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         return result;
     }
 
-    void evaluateElementValueTraversal() {
-        for (int i = this.sqlgComparatorHolders.size()  - 1; i >= 0 ; i--) {
+    void evaluateElementValueTraversal(boolean graphStep) {
+        for (int i = this.sqlgComparatorHolders.size() - 1; i >= 0; i--) {
             if (this.comparatorValues == null) {
                 this.comparatorValues = new ArrayList<>();
             }
             SqlgElement sqlgElement;
             SqlgComparatorHolder comparatorHolder = this.sqlgComparatorHolders.get(i);
-            if (comparatorHolder.hasPrecedingSelectOneLabel()) {
-                String precedingLabel = comparatorHolder.getPrecedingSelectOneLabel();
-                sqlgElement = this.traverser.path().get(precedingLabel);
-            } else {
-                sqlgElement = (SqlgElement) this.traverser.path().objects().get(i);
-            }
-            for (Pair<Traversal.Admin<?, ?>, Comparator<?>> traversalComparator : comparatorHolder.getComparators()) {
-                Traversal.Admin<?, ?> traversal = traversalComparator.getValue0();
-                Comparator comparator = traversalComparator.getValue1();
-                ElementValueTraversal elementValueTraversal;
-                if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
-                    //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
-                    SelectOneStep selectOneStep = (SelectOneStep) traversal.getSteps().get(0);
-                    Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
-                    Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
-                    Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
-                    String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
-                    sqlgElement = this.traverser.path().get(selectKey);
-                    elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
-                    this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
-                } else if (traversal instanceof IdentityTraversal) {
-                    //This is for Order.shuffle
-                    this.comparatorValues.add(Pair.with(new Random().nextInt(), comparator));
+            if (comparatorHolder.hasComparators()) {
+                if (comparatorHolder.hasPrecedingSelectOneLabel()) {
+                    String precedingLabel = comparatorHolder.getPrecedingSelectOneLabel();
+                    sqlgElement = this.traverser.path().get(precedingLabel);
                 } else {
-                    elementValueTraversal = (ElementValueTraversal) traversal;
-                    this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                    if (graphStep) {
+                        sqlgElement = (SqlgElement) this.traverser.path().objects().get(i);
+                    } else {
+                        //skip the first object, its the incoming vertex
+                        sqlgElement = (SqlgElement) this.traverser.path().objects().get(i + 1);
+                    }
+                }
+                for (Pair<Traversal.Admin<?, ?>, Comparator<?>> traversalComparator : comparatorHolder.getComparators()) {
+                    Traversal.Admin<?, ?> traversal = traversalComparator.getValue0();
+                    Comparator comparator = traversalComparator.getValue1();
+                    ElementValueTraversal elementValueTraversal;
+                    if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
+                        //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
+                        SelectOneStep selectOneStep = (SelectOneStep) traversal.getSteps().get(0);
+                        Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
+                        Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
+                        Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+                        String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
+                        sqlgElement = this.traverser.path().get(selectKey);
+                        elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
+                        this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                    } else if (traversal instanceof IdentityTraversal) {
+                        //This is for Order.shuffle
+                        this.comparatorValues.add(Pair.with(new Random().nextInt(), comparator));
+                    } else {
+                        elementValueTraversal = (ElementValueTraversal) traversal;
+                        this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                    }
                 }
             }
         }
@@ -175,7 +182,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     @Override
     public int compareTo(Emit<E> emit) {
-        if (this.replacedStepDepth != emit.replacedStepDepth)  {
+        if (this.replacedStepDepth != emit.replacedStepDepth) {
             return Integer.valueOf(this.replacedStepDepth).compareTo(Integer.valueOf(emit.replacedStepDepth));
         }
         for (int i = 0; i < this.comparatorValues.size(); i++) {

@@ -10,6 +10,7 @@ public class SqlgRangeHolder {
 
     private Range<Long> range;
     private boolean applyOnDb = true;
+    private boolean applyInStep = true;
 
     private SqlgRangeHolder(Range<Long> range) {
         this.range = range;
@@ -23,6 +24,10 @@ public class SqlgRangeHolder {
         this.applyOnDb = false;
     }
 
+    public void doNotApplyInStep() {
+        this.applyInStep = false;
+    }
+
     public boolean isApplyOnDb() {
         return applyOnDb;
     }
@@ -33,5 +38,13 @@ public class SqlgRangeHolder {
 
     public boolean hasRange() {
         return this.range != null;
+    }
+
+    public boolean isApplyInStep() {
+        return applyInStep;
+    }
+
+    public void setApplyInStep(boolean applyInStep) {
+        this.applyInStep = applyInStep;
     }
 }

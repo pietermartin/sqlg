@@ -144,6 +144,13 @@ public class ReplacedStepTree {
         replacedStep.getSqlgRangeHolder().doNotApplyOnDb();
     }
 
+    public void doNotApplyInStep() {
+        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        Preconditions.checkState(replacedStep.hasRange());
+        replacedStep.getSqlgRangeHolder().doNotApplyOnDb();
+    }
+
     public class TreeNode {
         private ReplacedStep replacedStep;
         private TreeNode parent;

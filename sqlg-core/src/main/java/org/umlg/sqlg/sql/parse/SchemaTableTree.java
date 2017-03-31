@@ -1894,23 +1894,23 @@ public class SchemaTableTree {
     }
 
     private SchemaTableTree getParent() {
-        return parent;
+        return this.parent;
     }
 
     public Direction getDirection() {
-        return direction;
+        return this.direction;
     }
 
     public List<HasContainer> getHasContainers() {
-        return hasContainers;
+        return this.hasContainers;
     }
 
     public SqlgComparatorHolder getSqlgComparatorHolder() {
-        return sqlgComparatorHolder;
+        return this.sqlgComparatorHolder;
     }
 
     public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
-        return dbComparators;
+        return this.dbComparators;
     }
 
     public int getStepDepth() {

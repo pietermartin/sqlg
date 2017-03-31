@@ -50,7 +50,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+                if (this.lastReplacedStep.hasRange()) {
                     if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
                         throw FastNoSuchElementException.instance();
                     }
@@ -73,7 +73,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
+                if (this.lastReplacedStep.hasRange()) {
                     if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
                         throw FastNoSuchElementException.instance();
                     }
@@ -129,7 +129,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
         this.toEmit.setTraverser(traverser);
-        this.toEmit.evaluateElementValueTraversal();
+        this.toEmit.evaluateElementValueTraversal(false);
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);
@@ -153,13 +153,19 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 setEagerLoad(true);
             }
         }
+
         //If a range follows an order that needs to be done in memory then do not apply the range on the db.
-        if (this.replacedStepTree.hasRange()) {
-            parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
-            if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder()) {
-            } else {
-                this.replacedStepTree.doNotApplyRangeOnDb();
+        //range is always the last step as sqlg does not optimize beyond a range step.
+        if (replacedStepTree.hasRange()) {
+            if (replacedStepTree.hasOrderBy()) {
+                replacedStepTree.doNotApplyRangeOnDb();
                 setEagerLoad(true);
+            } else {
+                parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
+                if (!isForMultipleQueries()) {
+                    //In this case the range is only applied on the db.
+                    replacedStepTree.doNotApplyInStep();
+                }
             }
         }
 

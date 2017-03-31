@@ -46,7 +46,7 @@ import java.util.function.Predicate;
  */
 public abstract class BaseStrategy {
 
-    protected static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
+    static final List<Class> CONSECUTIVE_STEPS_TO_REPLACE = Arrays.asList(
             VertexStep.class, EdgeVertexStep.class, GraphStep.class, EdgeOtherVertexStep.class
             , OrderGlobalStep.class, RangeGlobalStep.class
             , ChooseStep.class
@@ -54,21 +54,20 @@ public abstract class BaseStrategy {
             , SelectStep.class
             , SelectOneStep.class
     );
-
     public static final String PATH_LABEL_SUFFIX = "P~~~";
     public static final String EMIT_LABEL_SUFFIX = "E~~~";
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
-    public static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
-
+    private static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
 
     protected Traversal.Admin<?, ?> traversal;
     protected SqlgGraph sqlgGraph;
-    protected SqlgStep sqlgStep = null;
+    SqlgStep sqlgStep = null;
     private Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
-    protected ReplacedStepTree.TreeNode currentTreeNodeNode;
-    protected ReplacedStep<?, ?> currentReplacedStep;
+    ReplacedStepTree.TreeNode currentTreeNodeNode;
+    ReplacedStep<?, ?> previousReplacedStep;
+    ReplacedStep<?, ?> currentReplacedStep;
     private boolean continueOptimization = true;
 
     BaseStrategy(Traversal.Admin<?, ?> traversal) {
@@ -173,6 +172,7 @@ public abstract class BaseStrategy {
     protected abstract void doLast();
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
+        this.previousReplacedStep = this.currentReplacedStep;
         this.currentReplacedStep = ReplacedStep.from(
                 this.currentReplacedStep,
                 this.sqlgGraph.getTopology(),
@@ -366,16 +366,44 @@ public abstract class BaseStrategy {
                         SelectOneStep selectOneStep = (SelectOneStep) previousStep;
                         String key = (String) selectOneStep.getScopeKeys().iterator().next();
                         this.currentReplacedStep.getSqlgComparatorHolder().setPrecedingSelectOneLabel(key);
+                        List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
+//                        this.previousReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
+//                        //add a label if the step does not yet have one and is not a leaf node
+//                        if (this.previousReplacedStep.getLabels().isEmpty()) {
+//                            this.previousReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+//                        }
+                        //get the step for the label
+                        Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
+                                r -> {
+                                    Set<String> labels = r.getLabels();
+                                    for (String label : labels) {
+                                        String stepLabel = label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length());
+                                        if (stepLabel.equals(key)) {
+                                            return true;
+                                        } else {
+                                            return false;
+                                        }
+                                    }
+                                    return false;
+                                }
+                        ).findAny();
+                        Preconditions.checkState(labeledReplacedStep.isPresent());
+                        ReplacedStep<?, ?> replacedStep = labeledReplacedStep.get();
+                        replacedStep.getSqlgComparatorHolder().setComparators(comparators);
+                        //add a label if the step does not yet have one and is not a leaf node
+                        if (replacedStep.getLabels().isEmpty()) {
+                            replacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                        }
+                    } else {
+                        List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
+                        this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
+                        //add a label if the step does not yet have one and is not a leaf node
+                        if (this.currentReplacedStep.getLabels().isEmpty()) {
+                            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                        }
                     }
                     iterator.next();
                     iterator.next();
-                    List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
-                    this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
-                    this.currentReplacedStep.getSqlgComparatorHolder().setReplacedStepDepth(this.currentReplacedStep.getDepth());
-                    //add a label if the step does not yet have one and is not a leaf node
-                    if (this.currentReplacedStep.getLabels().isEmpty()) {
-                        this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
-                    }
                 } else {
                     return;
                 }

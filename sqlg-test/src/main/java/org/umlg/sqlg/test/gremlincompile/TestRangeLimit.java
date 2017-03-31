@@ -186,7 +186,10 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A").range(1, 4).values("name");
+        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .range(1, 4)
+                .values("name");
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
@@ -438,8 +441,26 @@ public class TestRangeLimit extends BaseTest {
         for (Vertex v : vertexList) {
             assertTrue(v.label().equals("A") || v.label().equals("C"));
             int i = (Integer) v.property("age").value();
-            System.out.println(i);
             assertTrue(String.valueOf(i), i >= 5 && i < 10);
         }
+    }
+
+    @Test
+    public void testRangeWithNoOrder() {
+        for (int i = 0; i < 100; i++) {
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "age", i);
+            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "age", i);
+            Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "age", i);
+            a1.addEdge("ab", b1);
+            b1.addEdge("bc", c1);
+        }
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V().hasLabel("B")
+                .both()
+                .limit(10)
+                .toList();
+        Assert.assertEquals(10, vertices.size());
     }
 }

@@ -104,7 +104,7 @@ public class GraphStrategy extends BaseStrategy {
         replacedStepTree.maybeAddLabelToLeafNodes();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         if (replacedStepTree.hasOrderBy()) {
-            ((SqlgGraphStepCompiled)this.sqlgStep).parseForStrategy();
+            ((SqlgGraphStepCompiled) this.sqlgStep).parseForStrategy();
             if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {
                 replacedStepTree.applyComparatorsOnDb();
             } else {
@@ -112,14 +112,20 @@ public class GraphStrategy extends BaseStrategy {
             }
         }
         //If a range follows an order that needs to be done in memory then do not apply the range on the db.
+        //range is always the last step as sqlg does not optimize beyond a range step.
         if (replacedStepTree.hasRange()) {
-            ((SqlgGraphStepCompiled)this.sqlgStep).parseForStrategy();
-            if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {
-            } else {
+            if (replacedStepTree.hasOrderBy()) {
                 replacedStepTree.doNotApplyRangeOnDb();
                 this.sqlgStep.setEagerLoad(true);
+            } else {
+                ((SqlgGraphStepCompiled) this.sqlgStep).parseForStrategy();
+                if (!this.sqlgStep.isForMultipleQueries()) {
+                    //In this case the range is only applied on the db.
+                    replacedStepTree.doNotApplyInStep();
+                }
             }
         }
+        //TODO multiple queries with a range can still apply the range without an offset on the db and then do the final range in the step.
     }
 
     @Override
