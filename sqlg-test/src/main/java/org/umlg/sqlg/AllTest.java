@@ -5,7 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.aggregate.TestAggregate;
 import org.umlg.sqlg.test.batch.*;
-import org.umlg.sqlg.test.compilelocalstep.TestLocalStepCompile;
+import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.github.TestGithub;
@@ -34,7 +34,6 @@ import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
 import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
 
 /**
  * Date: 2014/07/16

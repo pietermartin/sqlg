@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.compilelocalstep;
+package org.umlg.sqlg.test.localvertexstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
