@@ -25,6 +25,11 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean isPrimaryKeyForeignKey(String lastIndexName) {
+        return lastIndexName.startsWith("SYS_IDX") || lastIndexName.startsWith("SYS_FK");
+    }
+
+    @Override
     public String dialectName() {
         return "HsqldbDialect";
     }

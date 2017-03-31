@@ -18,6 +18,8 @@ import java.util.*;
 
 public interface SqlDialect {
 
+    boolean isPrimaryKeyForeignKey(String lastIndexName);
+
     String dialectName();
 
     Set<String> getDefaultSchemas();

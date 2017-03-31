@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepLimit;
+import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.TestLocalVertexStepLimit;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestLocalVertexStepLimit.class
+        TestTopologyUpgrade.class
 })
 public class AnyTest {
 }

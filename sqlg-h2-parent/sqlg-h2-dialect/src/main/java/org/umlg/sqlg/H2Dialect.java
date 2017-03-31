@@ -30,6 +30,11 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean isPrimaryKeyForeignKey(String lastIndexName) {
+        return lastIndexName.startsWith("PRIMARY_KEY") || lastIndexName.startsWith("CONSTRAINT_") || lastIndexName.contains("_fkey_");
+    }
+
+    @Override
     public String dialectName() {
         return "H2Dialect";
     }

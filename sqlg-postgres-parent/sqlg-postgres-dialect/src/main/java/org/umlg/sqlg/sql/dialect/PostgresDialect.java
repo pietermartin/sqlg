@@ -77,6 +77,11 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean isPrimaryKeyForeignKey(String lastIndexName) {
+        return lastIndexName.endsWith("_pkey") || lastIndexName.endsWith("_idx");
+    }
+
+    @Override
     public String dialectName() {
         return "Postgresql";
     }
