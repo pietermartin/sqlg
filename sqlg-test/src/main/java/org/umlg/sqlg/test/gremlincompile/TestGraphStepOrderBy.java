@@ -390,4 +390,25 @@ public class TestGraphStepOrderBy extends BaseTest {
         Assert.assertEquals("bc", map4.get("b").value("name"));
     }
 
+    @Test
+    public void testMultipleOrder() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        for (int i = 0; i < 2; i++) {
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("ab", b);
+        }
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V().hasLabel("A").as("a")
+                .out().order().by("name")
+                .in().order().by("name")
+                .out().order().by("name", Order.decr)
+                .toList();
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertEquals("b1", vertices.get(0).value("name"));
+        Assert.assertEquals("b1", vertices.get(1).value("name"));
+        Assert.assertEquals("b0", vertices.get(2).value("name"));
+        Assert.assertEquals("b0", vertices.get(3).value("name"));
+    }
+
 }
