@@ -478,7 +478,7 @@ public class SchemaTableTree {
             } else {
                 //join the last with the first
                 singlePathSql += "\n) a" + count + " ON ";
-                singlePathSql += constructSectionedJoin(lastOfPrevious, firstSchemaTableTree, count);
+                singlePathSql += constructSectionedJoin(sqlgGraph, lastOfPrevious, firstSchemaTableTree, count);
                 if (count++ < subQueryLinkedLists.size()) {
                     singlePathSql += " INNER JOIN (";
                 }
@@ -531,7 +531,7 @@ public class SchemaTableTree {
     private Optional<String> printEmitMappedAliasIdForOuterFromClause(int countOuter, Map<String, String> columnNameAliasMap) {
         Optional<String> optional = this.mappedAliasIdForOuterFromClause(columnNameAliasMap);
         if (optional.isPresent()) {
-            return Optional.of(" a" + countOuter + ".\"" + optional.get() + "\"");
+            return Optional.of(" a" + countOuter + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(optional.get()));
         } else {
             return Optional.empty();
         }
@@ -562,17 +562,17 @@ public class SchemaTableTree {
         Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.toString());
         Optional<String> optional = this.lastMappedAliasIdForOuterFrom(columnNameAliasMapCopy);
         if (optional.isPresent()) {
-            sql = "a" + count + ".\"" + optional.get() + "\"";
+            sql = "a" + count + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(optional.get());
             if (propertyTypeMap.size() > 0) {
                 sql += ", ";
             }
         }
         int propertyCount = 1;
         for (Map.Entry<String, PropertyType> propertyNameEntry : propertyTypeMap.entrySet()) {
-            sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyNameEntry.getKey(), columnNameAliasMapCopy) + "\"";
+            sql += "a" + count + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.mappedAliasPropertyName(propertyNameEntry.getKey(), columnNameAliasMapCopy));
             for (String postFix : propertyNameEntry.getValue().getPostFixes()) {
                 sql += ", ";
-                sql += "a" + count + ".\"" + this.mappedAliasPropertyName(propertyNameEntry.getKey() + postFix, columnNameAliasMapCopy) + "\"";
+                sql += "a" + count + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.mappedAliasPropertyName(propertyNameEntry.getKey() + postFix, columnNameAliasMapCopy));
             }
             if (propertyCount++ < propertyTypeMap.size()) {
                 sql += ", ";
@@ -584,7 +584,7 @@ public class SchemaTableTree {
         return sql;
     }
 
-    private static String constructSectionedJoin(SchemaTableTree fromSchemaTableTree, SchemaTableTree toSchemaTableTree, int count) {
+    private static String constructSectionedJoin(SqlgGraph sqlgGraph, SchemaTableTree fromSchemaTableTree, SchemaTableTree toSchemaTableTree, int count) {
         if (toSchemaTableTree.direction == Direction.BOTH) {
             throw new IllegalStateException("Direction may not be BOTH!");
         }
@@ -605,32 +605,32 @@ public class SchemaTableTree {
         if (fromSchemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
             if (toSchemaTableTree.isEdgeVertexStep()) {
                 if (toSchemaTableTree.direction == Direction.OUT) {
-                    result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
+                    result = "a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END);
+                    result += " = a" + count + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasId());
                 } else {
-                    result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
+                    result = "a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END);
+                    result += " = a" + count + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasId());
                 }
             } else {
                 if (toSchemaTableTree.direction == Direction.OUT) {
-                    result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
+                    result = "a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.IN_VERTEX_COLUMN_END);
+                    result += " = a" + count + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasId());
                 } else {
-                    result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
-                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END + "\"";
-                    result += " = a" + count + ".\"" + toSchemaTableTree.lastMappedAliasId() + "\"";
+                    result = "a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." +
+                            toSchemaTableTree.getSchemaTable().getSchema() + "." + rawToLabel + SchemaManager.OUT_VERTEX_COLUMN_END);
+                    result += " = a" + count + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.lastMappedAliasId());
                 }
             }
         } else {
             if (toSchemaTableTree.direction == Direction.OUT) {
-                result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel) + "\"";
+                result = "a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID);
+                result += " = a" + count + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel));
             } else {
-                result = "a" + (count - 1) + ".\"" + fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID + "\"";
-                result += " = a" + count + ".\"" + toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel) + "\"";
+                result = "a" + (count - 1) + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(fromSchemaTableTree.getSchemaTable().getSchema() + "." + fromSchemaTableTree.getSchemaTable().getTable() + "." + SchemaManager.ID);
+                result += " = a" + count + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(toSchemaTableTree.mappedAliasVertexForeignKeyColumnEnd(fromSchemaTableTree, toSchemaTableTree.direction, rawFromLabel));
             }
         }
         return result;
@@ -799,9 +799,9 @@ public class SchemaTableTree {
                 //left join and in the where clause add a IS NULL, to find the values not in the right hand table
                 sb.append("\nLEFT JOIN ");
             }
-            sb.append(" \"");
-            sb.append(tmpTableIdentified);
-            sb.append("\" tmp");
+            sb.append(" ");
+            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tmpTableIdentified));
+            sb.append(" tmp");
             sb.append(this.rootSchemaTableTree().tmpTableAliasCounter);
             sb.append(" on");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
@@ -1198,7 +1198,7 @@ public class SchemaTableTree {
 
 
     private String printLabeledOuterFromClause(String sql, int counter, Map<String, String> columnNameAliasMapCopy) {
-        sql += " a" + counter + ".\"" + this.labeledMappedAliasIdForOuterFromClause(columnNameAliasMapCopy) + "\"";
+        sql += " a" + counter + "." + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasIdForOuterFromClause(columnNameAliasMapCopy));
         Map<String, PropertyType> propertyTypeMap = this.getFilteredAllTables().get(this.getSchemaTable().toString());
         if (!propertyTypeMap.isEmpty()) {
             sql += ", ";
@@ -1275,9 +1275,7 @@ public class SchemaTableTree {
         int count = 1;
         for (String propertyName : propertyTypeMap.keySet()) {
             sql += " a" + counter + ".";
-            sql += "\"";
-            sql += this.labeledMappedAliasPropertyNameForOuterFromClause(propertyName, columnNameAliasMapCopy);
-            sql += "\"";
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.labeledMappedAliasPropertyNameForOuterFromClause(propertyName, columnNameAliasMapCopy));
             if (count++ < propertyTypeMap.size()) {
                 sql += ", ";
             }
@@ -1331,9 +1329,8 @@ public class SchemaTableTree {
         for (String edgeForeignKey : edgeForeignKeys) {
             sql += ", ";
             sql += prepend;
-            sql += ".\"";
-            sql += this.mappedAliasPropertyName(edgeForeignKey, this.getColumnNameAliasMap());
-            sql += "\"";
+            sql += ".";
+            sql += this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.mappedAliasPropertyName(edgeForeignKey, this.getColumnNameAliasMap()));
         }
         return sql;
     }

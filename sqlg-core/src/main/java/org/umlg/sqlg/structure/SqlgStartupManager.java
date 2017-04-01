@@ -409,7 +409,7 @@ class SqlgStartupManager {
     private void createGuiSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE SCHEMA \"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\";");
+            statement.execute("CREATE SCHEMA " + this.sqlDialect.maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + ";");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -433,8 +433,7 @@ class SqlgStartupManager {
         try {
             if (this.sqlDialect.supportSchemas()) {
                 DatabaseMetaData metadata = conn.getMetaData();
-                ResultSet schemaRs = metadata.getSchemas(null /*catalog*/, SQLG_SCHEMA);
-                return schemaRs.next();
+                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, SQLG_SCHEMA);
             } else {
                 throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
             }
@@ -448,8 +447,7 @@ class SqlgStartupManager {
         try {
             if (this.sqlDialect.supportSchemas()) {
                 DatabaseMetaData metadata = conn.getMetaData();
-                ResultSet schemaRs = metadata.getSchemas(null /*catalog*/, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
-                return schemaRs.next();
+                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, Schema.GLOBAL_UNIQUE_INDEX_SCHEMA);
             } else {
                 throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
             }
