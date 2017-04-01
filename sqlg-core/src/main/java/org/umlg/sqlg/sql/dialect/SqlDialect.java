@@ -404,7 +404,7 @@ public interface SqlDialect {
     }
 
     default String sqlgSqlgSchemaCreationScript() {
-        return "CREATE SCHEMA \"sqlg_schema\";";
+        return "CREATE SCHEMA " + this.maybeWrapInQoutes("sqlg_schema");
     }
 
     List<String> sqlgTopologyCreationScripts();
@@ -442,4 +442,8 @@ public interface SqlDialect {
     	throw new UnsupportedOperationException("FullText search is not supported on this database");
     }
 
+    default boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
+        ResultSet schemaRs = metadata.getSchemas(catalog, schema);
+        return schemaRs.next();
+    }
 }
