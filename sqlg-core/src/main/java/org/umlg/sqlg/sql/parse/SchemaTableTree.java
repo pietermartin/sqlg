@@ -953,7 +953,9 @@ public class SchemaTableTree {
 
                 //need to find the schemaTable that the select is for.
                 //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
-                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable((String) selectOneStep.getScopeKeys().iterator().next());
+                String select = (String) selectOneStep.getScopeKeys().iterator().next();
+                SchemaTableTree selectSchemaTableTree = findSelectSchemaTable(select);
+                Preconditions.checkState(selectSchemaTableTree != null, "SchemaTableTree not found for " + select);
                 ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
 
                 String prefix;

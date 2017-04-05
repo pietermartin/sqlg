@@ -171,7 +171,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRangeLimit.class,
         TestReplacedStepEmitComparator.class,
         TestLocalStepCompile.class,
-        TestLocalVertexStepLimit.class
+        TestLocalVertexStepLimit.class,
+        TestLocalVertexStepOptionalWithOrder.class,
+        TestOptionalWithRange.class
 })
 public class AllTest {
 }

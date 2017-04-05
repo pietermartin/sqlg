@@ -6,7 +6,7 @@ import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 
 import java.util.List;
 
-interface SqlgStep extends Step {
+public interface SqlgStep extends Step {
 
     List<ReplacedStep<?, ?>> getReplacedSteps();
 

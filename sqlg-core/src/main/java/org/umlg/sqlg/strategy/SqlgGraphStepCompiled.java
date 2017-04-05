@@ -2,7 +2,6 @@ package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -33,8 +32,6 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
 
-    private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
-
     private Emit<E> toEmit = null;
     private Iterator<List<Emit<E>>> elementIter;
 
@@ -46,6 +43,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private ReplacedStep<?, ?> lastReplacedStep;
     private long rangeCount = 0;
     private boolean eagerLoad = false;
+    private boolean isForMultipleQueries = false;
 
     SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
@@ -56,20 +54,11 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-//                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
-                if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep()) {
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
-                        throw FastNoSuchElementException.instance();
-                    }
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
-                        this.rangeCount++;
-                        this.traversersLstIter.next();
-                        continue;
-                    }
-                    this.rangeCount++;
-                }
                 Emit<E> emit = this.traversersLstIter.next();
                 this.labels = emit.getLabels();
+                if (applyRange(emit)) {
+                    continue;
+                }
                 return emit.getTraverser();
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
@@ -80,20 +69,11 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-//                if (this.eagerLoad && this.lastReplacedStep.hasRange()) {
-                if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep()) {
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
-                        throw FastNoSuchElementException.instance();
-                    }
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
-                        this.rangeCount++;
-                        this.traversersLstIter.next();
-                        continue;
-                    }
-                    this.rangeCount++;
-                }
                 Emit<E> emit = this.traversersLstIter.next();
                 this.labels = emit.getLabels();
+                if (applyRange(emit)) {
+                    continue;
+                }
                 return emit.getTraverser();
             } else {
                 if (!this.isStart) {
@@ -113,6 +93,20 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
             }
         }
+    }
+
+    private boolean applyRange(Emit<E> emit) {
+        if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep() && this.lastReplacedStep.getDepth() == emit.getReplacedStepDepth()) {
+            if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
+                throw FastNoSuchElementException.instance();
+            }
+            if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
+                this.rangeCount++;
+                return true;
+            }
+            this.rangeCount++;
+        }
+        return false;
     }
 
     public void setEagerLoad(boolean eager) {
@@ -154,7 +148,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
         this.toEmit.setTraverser(traverser);
-        this.toEmit.evaluateElementValueTraversal(true);
+        this.toEmit.evaluateElementValueTraversal(0);
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);
@@ -213,28 +207,46 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     }
 
     public void parseForStrategy() {
-        this.parsedForStrategySql.clear();
+        this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
         Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parseForStrategy(this.replacedSteps);
-        for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
-            try {
-                //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
-                if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
-                    throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
-                }
-                List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = rootSchemaTableTree.constructSql();
-                this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
-            } finally {
+        if (rootSchemaTableTrees.size() > 1) {
+            this.isForMultipleQueries = true;
+            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
                 rootSchemaTableTree.resetColumnAliasMaps();
+            }
+        } else {
+            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+                try {
+                    //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
+                    if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
+                        throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+                    }
+                    //Regular
+                    List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
+//                    //Optional
+//                    List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
+//                    SchemaTableTree.constructDistinctOptionalQueries(rootSchemaTableTree, leftJoinResult);
+//                    //Emit
+//                    List<LinkedList<SchemaTableTree>> leftJoinResultEmit = new ArrayList<>();
+//                    SchemaTableTree.constructDistinctEmitBeforeQueries(rootSchemaTableTree, leftJoinResultEmit);
+//                    this.isForMultipleQueries = (distinctQueries.size() + leftJoinResult.size() + leftJoinResultEmit.size()) > 1;
+                    this.isForMultipleQueries = (distinctQueries.size()) > 1;
+                    if (this.isForMultipleQueries) {
+                        break;
+                    }
+                } finally {
+                    rootSchemaTableTree.resetColumnAliasMaps();
+                }
             }
         }
     }
 
+    @Override
     public boolean isForMultipleQueries() {
-        return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
+        return this.isForMultipleQueries;
     }
-
 
     @Override
     public int hashCode() {

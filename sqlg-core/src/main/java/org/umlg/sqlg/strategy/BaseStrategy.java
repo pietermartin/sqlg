@@ -39,6 +39,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -118,21 +119,11 @@ public abstract class BaseStrategy {
             }
         } else {
             Preconditions.checkState(sqlgStep != null);
+            if (!this.chooseStepStack.isEmpty()) {
+                return false;
+            }
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
-                if (!this.chooseStepStack.isEmpty()) {
-                    return true;
-                }
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount);
-
-//                //if the chooseStepStack size is greater than the chooseStepNestedCount then it means the just executed
-//                //handleVertexStep is after nested chooseSteps.
-//                //This means that this VertexStep applies to the nested chooseSteps where the chooseStep was not chosen.
-//                //I.e. there was no results for the chooseSteps traversal.
-//                for (int i = 0; i < this.chooseStepStack.size(); i++) {
-//                    ReplacedStepTree.TreeNode treeNode = this.chooseStepStack.get(i);
-//                    this.currentReplacedStep.markAsJoinToLeftJoin();
-//                    treeNode.addReplacedStep(this.currentReplacedStep);
-//                }
             } else if (step instanceof RepeatStep) {
                 if (!unoptimizableRepeatStep()) {
                     handleRepeatStep((RepeatStep<?>) step, pathCount);
@@ -141,7 +132,7 @@ public abstract class BaseStrategy {
                     return false;
                 }
             } else if (step instanceof ChooseStep) {
-                if (!unoptimizableChooseStep()) {
+                if (!unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
                     this.chooseStepStack.clear();
                     handleChooseStep(1, (ChooseStep<?, ?, ?>) step, this.traversal, pathCount);
                 } else {
@@ -149,14 +140,14 @@ public abstract class BaseStrategy {
                 }
             } else if (step instanceof OrderGlobalStep) {
                 stepIterator.previous();
-                collectOrderGlobalSteps(stepIterator, pathCount);
-                collectRangeGlobalSteps(stepIterator, pathCount);
+                handleOrderGlobalSteps(stepIterator, pathCount);
+                handleRangeGlobalSteps(stepIterator, pathCount);
             } else if (step instanceof RangeGlobalStep) {
-                collectRangeGlobalSteps(stepIterator, pathCount);
+                handleRangeGlobalSteps(stepIterator, pathCount);
 
             } else if (step instanceof SelectStep || (step instanceof SelectOneStep)) {
-                collectOrderGlobalSteps(stepIterator, pathCount);
-                collectRangeGlobalSteps(stepIterator, pathCount);
+                handleOrderGlobalSteps(stepIterator, pathCount);
+                handleRangeGlobalSteps(stepIterator, pathCount);
                 if (stepIterator.hasNext() && stepIterator.next() instanceof SelectOneStep) {
                     return false;
                 }
@@ -182,9 +173,9 @@ public abstract class BaseStrategy {
         //Important to add the replacedStep before collecting the additional steps.
         //In particular the orderGlobalStep needs to the currentStepDepth setted.
         ReplacedStepTree.TreeNode treeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
-        collectHasSteps(stepIterator, pathCount.getValue());
-        collectOrderGlobalSteps(stepIterator, pathCount);
-        collectRangeGlobalSteps(stepIterator, pathCount);
+        handleHasSteps(stepIterator, pathCount.getValue());
+        handleOrderGlobalSteps(stepIterator, pathCount);
+        handleRangeGlobalSteps(stepIterator, pathCount);
         //if called from ChooseStep then the VertexStep is nested inside the ChooseStep and not one of the traversal's direct steps.
         int index = TraversalHelper.stepIndex(step, this.traversal);
         if (index != -1) {
@@ -310,7 +301,7 @@ public abstract class BaseStrategy {
 
     protected abstract void replaceStepInTraversal(Step stepToReplace, SqlgStep sqlgStep);
 
-    protected void collectHasSteps(ListIterator<Step<?, ?>> iterator, int pathCount) {
+    protected void handleHasSteps(ListIterator<Step<?, ?>> iterator, int pathCount) {
         //Collect the hasSteps
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
@@ -346,7 +337,7 @@ public abstract class BaseStrategy {
         }
     }
 
-    protected void collectOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
+    protected void handleOrderGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
@@ -367,11 +358,6 @@ public abstract class BaseStrategy {
                         String key = (String) selectOneStep.getScopeKeys().iterator().next();
                         this.currentReplacedStep.getSqlgComparatorHolder().setPrecedingSelectOneLabel(key);
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
-//                        this.previousReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
-//                        //add a label if the step does not yet have one and is not a leaf node
-//                        if (this.previousReplacedStep.getLabels().isEmpty()) {
-//                            this.previousReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
-//                        }
                         //get the step for the label
                         Optional<ReplacedStep<?, ?>> labeledReplacedStep = this.sqlgStep.getReplacedSteps().stream().filter(
                                 r -> {
@@ -393,6 +379,14 @@ public abstract class BaseStrategy {
                         //add a label if the step does not yet have one and is not a leaf node
                         if (replacedStep.getLabels().isEmpty()) {
                             replacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
+                        }
+                    } else if (previousStep instanceof ChooseStep) {
+                        //The order applies to the current replaced step and the previous ChooseStep
+                        List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
+                        this.currentReplacedStep.getSqlgComparatorHolder().setComparators(comparators);
+                        //add a label if the step does not yet have one and is not a leaf node
+                        if (this.currentReplacedStep.getLabels().isEmpty()) {
+                            this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                         }
                     } else {
                         List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators = ((OrderGlobalStep) step).getComparators();
@@ -431,7 +425,7 @@ public abstract class BaseStrategy {
         return true;
     }
 
-    protected void collectRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
+    protected void handleRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
@@ -522,8 +516,9 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeWithInOut(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (!hasContainer.getKey().equals(T.label.getAccessor()) &&
-                    (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
+//            if (!hasContainer.getKey().equals(T.label.getAccessor()) &&
+//                    (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
+            if ((hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
 
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
@@ -631,42 +626,57 @@ public abstract class BaseStrategy {
                         s.getClass().equals(SackStep.class));
     }
 
-    private boolean unoptimizableChooseStep() {
-        List<ChooseStep<?, ?, ?>> chooseSteps = new ArrayList(TraversalHelper.getStepsOfAssignableClassRecursively(ChooseStep.class, this.traversal.asAdmin()));
-        for (ChooseStep<?, ?, ?> chooseStep : chooseSteps) {
-            List<? extends Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
-            if (traversalAdmins.size() != 2) {
-                return true;
-            }
-            Traversal.Admin<?, ?> predicate = chooseStep.getLocalChildren().get(0);
-            List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
-            predicateSteps.remove(predicate.getSteps().size() - 1);
+    protected boolean unoptimizableChooseStep(ChooseStep<?, ?, ?> chooseStep) {
+        List<? extends Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
+        if (traversalAdmins.size() != 2) {
+            return true;
+        }
+        Traversal.Admin<?, ?> predicate = chooseStep.getLocalChildren().get(0);
+        List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
+        predicateSteps.remove(predicate.getSteps().size() - 1);
 
-            Traversal.Admin<?, ?> globalChildOne = chooseStep.getGlobalChildren().get(0);
-            List<Step> globalChildOneSteps = new ArrayList<>(globalChildOne.getSteps());
-            globalChildOneSteps.remove(globalChildOneSteps.size() - 1);
+        Traversal.Admin<?, ?> globalChildOne = chooseStep.getGlobalChildren().get(0);
+        List<Step> globalChildOneSteps = new ArrayList<>(globalChildOne.getSteps());
+        globalChildOneSteps.remove(globalChildOneSteps.size() - 1);
 
-            Traversal.Admin<?, ?> globalChildTwo = chooseStep.getGlobalChildren().get(1);
-            List<Step> globalChildTwoSteps = new ArrayList<>(globalChildTwo.getSteps());
-            globalChildTwoSteps.remove(globalChildTwoSteps.size() - 1);
+        Traversal.Admin<?, ?> globalChildTwo = chooseStep.getGlobalChildren().get(1);
+        List<Step> globalChildTwoSteps = new ArrayList<>(globalChildTwo.getSteps());
+        globalChildTwoSteps.remove(globalChildTwoSteps.size() - 1);
 
-            boolean hasIdentity = globalChildOne.getSteps().stream().anyMatch(s -> s instanceof IdentityStep);
-            if (!hasIdentity) {
-                hasIdentity = globalChildTwo.getSteps().stream().anyMatch(s -> s instanceof IdentityStep);
-                if (hasIdentity) {
-                    //Identity found check predicate and true are the same
-                    if (!predicateSteps.equals(globalChildOneSteps)) {
-                        return true;
-                    }
-                } else {
-                    //Identity not found
+        boolean hasIdentity = globalChildOne.getSteps().stream().anyMatch(s -> s instanceof IdentityStep);
+        if (!hasIdentity) {
+            hasIdentity = globalChildTwo.getSteps().stream().anyMatch(s -> s instanceof IdentityStep);
+            if (hasIdentity) {
+                //Identity found check predicate and true are the same
+                if (!predicateSteps.equals(globalChildOneSteps)) {
                     return true;
                 }
             } else {
-                //Identity found check predicate and true are the same
-                if (!predicateSteps.equals(globalChildTwoSteps)) {
-                    return true;
-                }
+                //Identity not found
+                return true;
+            }
+        } else {
+            //Identity found check predicate and true are the same
+            if (!predicateSteps.equals(globalChildTwoSteps)) {
+                return true;
+            }
+        }
+
+        List<Step> rangeGlobalSteps = predicateSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).collect(Collectors.toList());
+        if (rangeGlobalSteps.size() > 1) {
+            return true;
+        }
+        if (rangeGlobalSteps.size() > 0) {
+            Step rangeGlobalStep = rangeGlobalSteps.get(0);
+            //Only if the rangeGlobalStep is the last step can it be optimized
+            if (predicateSteps.get(predicateSteps.size() - 1) != rangeGlobalStep) {
+                return true;
+            }
+        }
+        List<Step> chooseSteps = globalChildTwo.getSteps().stream().filter(p -> p.getClass().equals(ChooseStep.class)).collect(Collectors.toList());
+        for (Step step : chooseSteps) {
+            if (unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
+                return true;
             }
         }
         return false;

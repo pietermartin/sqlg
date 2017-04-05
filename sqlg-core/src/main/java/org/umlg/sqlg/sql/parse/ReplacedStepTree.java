@@ -121,7 +121,7 @@ public class ReplacedStepTree {
     public boolean orderByIsOrder() {
         for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
             for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
-                if (!(objects.getValue1() instanceof Order)) {
+                if (!(objects.getValue1() instanceof Order && objects.getValue1() != Order.shuffle)) {
                     return false;
                 }
             }
@@ -148,7 +148,7 @@ public class ReplacedStepTree {
         List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
         ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
         Preconditions.checkState(replacedStep.hasRange());
-        replacedStep.getSqlgRangeHolder().doNotApplyOnDb();
+        replacedStep.getSqlgRangeHolder().doNotApplyInStep();
     }
 
     public class TreeNode {
@@ -221,6 +221,7 @@ public class ReplacedStepTree {
                 child.internalLeafNodes(leafNodes);
             }
         }
+
     }
 
 

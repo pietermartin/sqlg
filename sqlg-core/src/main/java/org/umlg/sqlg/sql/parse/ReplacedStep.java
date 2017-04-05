@@ -97,7 +97,7 @@ public class ReplacedStep<S, E> {
         return this.sqlgComparatorHolder;
     }
 
-    List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
+    public List<org.javatuples.Pair<Traversal.Admin<?, ?>, Comparator<?>>> getDbComparators() {
         return this.dbComparators;
     }
 
@@ -557,61 +557,79 @@ public class ReplacedStep<S, E> {
         } else {
 
             for (HasContainer h : hasContainersWithLabel) {
-                //check if the table exist
-                String tbl = (String) h.getValue();
-                boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
-                SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, tbl);
-                String table = (isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
-                SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table);
-                // all potential tables
-                Set<SchemaTable> potentialsTables = new HashSet<>();
-                potentialsTables.add(schemaTableWithPrefix);
-                // edges usually don't have schema, so we're matching any table with any schema if we weren't given any
-                if (!isVertex && !tbl.contains(".")) {
-                    for (String key : filteredAllTables.keySet()) {
-                        if (key.endsWith("." + table)) {
-                            potentialsTables.add(SchemaTable.from(sqlgGraph, key));
-                        }
-                    }
-                }
-                for (SchemaTable schemaTableForLabel : potentialsTables) {
-                    if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
 
-                        List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
-                        if (!groupedIds.isEmpty()) {
-                            Collection<RecordId> recordIds = groupedIds.get(schemaTable);
-                            if (!recordIds.isEmpty()) {
-                                List<Long> ids = recordIds.stream().map(RecordId::getId).collect(Collectors.toList());
-                                HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
-                                hasContainers.add(idHasContainer);
-                                toRemove.add(idHasContainer);
-                            } else {
-                                continue;
-                            }
-                        }
-                        SchemaTableTree schemaTableTree = new SchemaTableTree(
-                                sqlgGraph,
-                                schemaTableForLabel,
-                                0,
-                                hasContainers,
-                                this.sqlgComparatorHolder,
-                                this.dbComparators,
-                                this.sqlgRangeHolder,
-                                SchemaTableTree.STEP_TYPE.GRAPH_STEP,
-                                ReplacedStep.this.emit,
-                                ReplacedStep.this.untilFirst,
-                                ReplacedStep.this.leftJoin,
-                                replacedStepDepth,
-                                ReplacedStep.this.labels
-                        );
-                        result.add(schemaTableTree);
+                //this is for g.V().hasLabel("A", "B")
+                if (h.getBiPredicate() == Contains.within) {
+                    List<String> labels = (List<String>) h.getPredicate().getValue();
+                    for (String label : labels) {
+                        handleLabelHasContainer(sqlgGraph, replacedStepDepth, graphStep, filteredAllTables, toRemove, groupedIds, result, hasContainersWithoutLabel, label);
                     }
+                } else {
+                    handleLabelHasContainer(sqlgGraph, replacedStepDepth, graphStep, filteredAllTables, toRemove, groupedIds, result, hasContainersWithoutLabel, (String) h.getValue());
                 }
+
 
             }
         }
         this.hasContainers.removeAll(toRemove);
         return result;
+    }
+
+    private void handleLabelHasContainer(SqlgGraph sqlgGraph, int replacedStepDepth, GraphStep graphStep,
+                                         Map<String, Map<String, PropertyType>> filteredAllTables, List<HasContainer> toRemove,
+                                         Multimap<SchemaTable, RecordId> groupedIds, Set<SchemaTableTree> result, List<HasContainer> hasContainersWithoutLabel,
+                                         String label) {
+        //check if the table exist
+//        String tbl = (String) h.getValue();
+        String tbl = label;
+        boolean isVertex = graphStep.getReturnClass().isAssignableFrom(Vertex.class);
+        SchemaTable schemaTable = SqlgUtil.parseLabelMaybeNoSchema(sqlgGraph, tbl);
+        String table = (isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
+        SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, schemaTable.getSchema() == null ? table : schemaTable.getSchema() + "." + table);
+        // all potential tables
+        Set<SchemaTable> potentialsTables = new HashSet<>();
+        potentialsTables.add(schemaTableWithPrefix);
+        // edges usually don't have schema, so we're matching any table with any schema if we weren't given any
+        if (!isVertex && !tbl.contains(".")) {
+            for (String key : filteredAllTables.keySet()) {
+                if (key.endsWith("." + table)) {
+                    potentialsTables.add(SchemaTable.from(sqlgGraph, key));
+                }
+            }
+        }
+        for (SchemaTable schemaTableForLabel : potentialsTables) {
+            if (filteredAllTables.containsKey(schemaTableForLabel.toString())) {
+
+                List<HasContainer> hasContainers = new ArrayList<>(hasContainersWithoutLabel);
+                if (!groupedIds.isEmpty()) {
+                    Collection<RecordId> recordIds = groupedIds.get(schemaTable);
+                    if (!recordIds.isEmpty()) {
+                        List<Long> ids = recordIds.stream().map(RecordId::getId).collect(Collectors.toList());
+                        HasContainer idHasContainer = new HasContainer(id.getAccessor(), P.within(ids));
+                        hasContainers.add(idHasContainer);
+                        toRemove.add(idHasContainer);
+                    } else {
+                        continue;
+                    }
+                }
+                SchemaTableTree schemaTableTree = new SchemaTableTree(
+                        sqlgGraph,
+                        schemaTableForLabel,
+                        0,
+                        hasContainers,
+                        this.sqlgComparatorHolder,
+                        this.dbComparators,
+                        this.sqlgRangeHolder,
+                        SchemaTableTree.STEP_TYPE.GRAPH_STEP,
+                        ReplacedStep.this.emit,
+                        ReplacedStep.this.untilFirst,
+                        ReplacedStep.this.leftJoin,
+                        replacedStepDepth,
+                        ReplacedStep.this.labels
+                );
+                result.add(schemaTableTree);
+            }
+        }
     }
 
     private boolean isContainsLabel(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
@@ -716,4 +734,5 @@ public class ReplacedStep<S, E> {
     public void markAsJoinToLeftJoin() {
         this.joinToLeftJoin = true;
     }
+
 }

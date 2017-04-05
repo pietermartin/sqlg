@@ -31,7 +31,7 @@ public class SqlgComparatorHolder {
         return this.precedingSelectOneLabel != null;
     }
 
-    void setComparators(List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators) {
+    public void setComparators(List<Pair<Traversal.Admin<?, ?>, Comparator<?>>> comparators) {
         this.comparators = comparators;
     }
 

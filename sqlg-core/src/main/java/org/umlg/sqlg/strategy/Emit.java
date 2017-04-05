@@ -135,7 +135,11 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         return result;
     }
 
-    void evaluateElementValueTraversal(boolean graphStep) {
+    /**
+     * @param pathSize Indicates the first objects ob the path to ignore.
+     *                 For SqlgVertexStepCompile they are objects that are already on the path before the step is executed.
+     */
+    void evaluateElementValueTraversal(int pathSize) {
         for (int i = this.sqlgComparatorHolders.size() - 1; i >= 0; i--) {
             if (this.comparatorValues == null) {
                 this.comparatorValues = new ArrayList<>();
@@ -147,12 +151,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                     String precedingLabel = comparatorHolder.getPrecedingSelectOneLabel();
                     sqlgElement = this.traverser.path().get(precedingLabel);
                 } else {
-                    if (graphStep) {
-                        sqlgElement = (SqlgElement) this.traverser.path().objects().get(i);
-                    } else {
-                        //skip the first object, its the incoming vertex
-                        sqlgElement = (SqlgElement) this.traverser.path().objects().get(i + 1);
-                    }
+                    sqlgElement = (SqlgElement) this.traverser.path().objects().get(i + pathSize);
                 }
                 for (Pair<Traversal.Admin<?, ?>, Comparator<?>> traversalComparator : comparatorHolder.getComparators()) {
                     Traversal.Admin<?, ?> traversal = traversalComparator.getValue0();
@@ -199,5 +198,9 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
             }
         }
         return 0;
+    }
+
+    public int getReplacedStepDepth() {
+        return this.replacedStepDepth;
     }
 }

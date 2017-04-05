@@ -29,8 +29,6 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
 
-    private Map<SchemaTableTree, List<Pair<LinkedList<SchemaTableTree>, String>>> parsedForStrategySql = new HashMap<>();
-
     private Emit<E> toEmit = null;
     private Iterator<List<Emit<E>>> elementIter;
 
@@ -40,6 +38,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     private ReplacedStep<?, ?> lastReplacedStep;
     private long rangeCount = 0;
     private boolean eagerLoad = false;
+    private boolean isForMultipleQueries = false;
 
 
     SqlgVertexStepCompiled(final Traversal.Admin traversal) {
@@ -50,19 +49,11 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     protected Traverser.Admin<E> processNextStart() {
         while (true) {
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.lastReplacedStep.hasRange()) {
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
-                        throw FastNoSuchElementException.instance();
-                    }
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
-                        this.rangeCount++;
-                        this.traversersLstIter.next();
-                        continue;
-                    }
-                    this.rangeCount++;
-                }
                 Emit<E> emit = this.traversersLstIter.next();
                 this.labels = emit.getLabels();
+                if (applyRange(emit)) {
+                    continue;
+                }
                 return emit.getTraverser();
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
@@ -73,19 +64,11 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                if (this.lastReplacedStep.hasRange()) {
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
-                        throw FastNoSuchElementException.instance();
-                    }
-                    if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
-                        this.rangeCount++;
-                        this.traversersLstIter.next();
-                        continue;
-                    }
-                    this.rangeCount++;
-                }
                 Emit<E> emit = this.traversersLstIter.next();
                 this.labels = emit.getLabels();
+                if (applyRange(emit)) {
+                    continue;
+                }
                 return emit.getTraverser();
             } else {
                 this.head = this.starts.next();
@@ -129,7 +112,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
         this.toEmit.setTraverser(traverser);
-        this.toEmit.evaluateElementValueTraversal(false);
+        this.toEmit.evaluateElementValueTraversal(this.head.path().size());
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);
@@ -142,11 +125,11 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         E s = traverser.get();
 
         SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
+        parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         this.replacedStepTree.maybeAddLabelToLeafNodes();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         if (this.replacedStepTree.hasOrderBy()) {
-            parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
             if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder()) {
                 this.replacedStepTree.applyComparatorsOnDb();
             } else {
@@ -161,7 +144,6 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 replacedStepTree.doNotApplyRangeOnDb();
                 setEagerLoad(true);
             } else {
-                parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
                 if (!isForMultipleQueries()) {
                     //In this case the range is only applied on the db.
                     replacedStepTree.doNotApplyInStep();
@@ -201,7 +183,6 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     public void reset() {
         super.reset();
         this.head = null;
-        this.parsedForStrategySql.clear();
         this.toEmit = null;
         this.elementIter = null;
         this.traversers.clear();
@@ -209,6 +190,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         this.lastReplacedStep = null;
         this.rangeCount = 0;
         this.eagerLoad = false;
+        this.isForMultipleQueries = false;
     }
 
     @Override
@@ -217,24 +199,32 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     }
 
     private void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
-        this.parsedForStrategySql.clear();
+        this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 1, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(1).isVertexStep() || this.replacedSteps.get(1).isEdgeVertexStep()
                 , "The first step must a VertexStep, EdgeVertexStep or GraphStep found " + this.replacedSteps.get(1).getStep().getClass().toString());
         SchemaTableTree rootSchemaTableTree = null;
         try {
             rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
-            List<Pair<LinkedList<SchemaTableTree>, String>> sqlStatements = rootSchemaTableTree.constructSql();
-            this.parsedForStrategySql.put(rootSchemaTableTree, sqlStatements);
+            //Regular
+            List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
+            //Optional
+            List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
+            SchemaTableTree.constructDistinctOptionalQueries(rootSchemaTableTree, leftJoinResult);
+            //Emit
+            List<LinkedList<SchemaTableTree>> leftJoinResultEmit = new ArrayList<>();
+            SchemaTableTree.constructDistinctEmitBeforeQueries(rootSchemaTableTree, leftJoinResultEmit);
+            this.isForMultipleQueries = (distinctQueries.size() + leftJoinResult.size() + leftJoinResultEmit.size()) > 1;
         } finally {
-            if (rootSchemaTableTree != null)
+            if (rootSchemaTableTree != null) {
                 rootSchemaTableTree.resetColumnAliasMaps();
+            }
         }
     }
 
     @Override
     public boolean isForMultipleQueries() {
-        return this.parsedForStrategySql.size() > 1 || this.parsedForStrategySql.values().stream().filter(l -> l.size() > 1).count() > 0;
+        return this.isForMultipleQueries;
     }
 
     @Override
@@ -247,4 +237,17 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         return this.eagerLoad;
     }
 
+    private boolean applyRange(Emit<E> emit) {
+        if (this.lastReplacedStep.hasRange() && this.lastReplacedStep.applyInStep() && this.lastReplacedStep.getDepth() == emit.getReplacedStepDepth()) {
+            if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isBefore(this.rangeCount + 1)) {
+                throw FastNoSuchElementException.instance();
+            }
+            if (this.lastReplacedStep.getSqlgRangeHolder().getRange().isAfter(this.rangeCount)) {
+                this.rangeCount++;
+                return true;
+            }
+            this.rangeCount++;
+        }
+        return false;
+    }
 }

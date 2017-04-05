@@ -79,9 +79,9 @@ public class GraphStrategy extends BaseStrategy {
                 (AbstractStep<?, ?>) step,
                 pathCount.getValue()
         );
-        collectHasSteps(stepIterator, pathCount.getValue());
-        collectOrderGlobalSteps(stepIterator, pathCount);
-        collectRangeGlobalSteps(stepIterator, pathCount);
+        handleHasSteps(stepIterator, pathCount.getValue());
+        handleOrderGlobalSteps(stepIterator, pathCount);
+        handleRangeGlobalSteps(stepIterator, pathCount);
         this.sqlgStep = constructSqlgStep(step);
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         replaceStepInTraversal(step, this.sqlgStep);
@@ -102,9 +102,9 @@ public class GraphStrategy extends BaseStrategy {
     protected void doLast() {
         ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
         replacedStepTree.maybeAddLabelToLeafNodes();
+        ((SqlgGraphStepCompiled) this.sqlgStep).parseForStrategy();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         if (replacedStepTree.hasOrderBy()) {
-            ((SqlgGraphStepCompiled) this.sqlgStep).parseForStrategy();
             if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {
                 replacedStepTree.applyComparatorsOnDb();
             } else {
@@ -115,13 +115,18 @@ public class GraphStrategy extends BaseStrategy {
         //range is always the last step as sqlg does not optimize beyond a range step.
         if (replacedStepTree.hasRange()) {
             if (replacedStepTree.hasOrderBy()) {
-                replacedStepTree.doNotApplyRangeOnDb();
-                this.sqlgStep.setEagerLoad(true);
+                if (this.sqlgStep.isForMultipleQueries()) {
+                    replacedStepTree.doNotApplyRangeOnDb();
+                    this.sqlgStep.setEagerLoad(true);
+                } else {
+                    replacedStepTree.doNotApplyInStep();
+                }
             } else {
-                ((SqlgGraphStepCompiled) this.sqlgStep).parseForStrategy();
                 if (!this.sqlgStep.isForMultipleQueries()) {
                     //In this case the range is only applied on the db.
                     replacedStepTree.doNotApplyInStep();
+                } else {
+                    replacedStepTree.doNotApplyRangeOnDb();
                 }
             }
         }

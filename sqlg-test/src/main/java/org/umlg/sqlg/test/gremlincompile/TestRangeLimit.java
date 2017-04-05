@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashSet;
@@ -56,6 +57,27 @@ public class TestRangeLimit extends BaseTest {
     }
 
     @Test
+    public void testRange() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+        for (int i = 0; i < 10; i++) {
+            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+            a.addEdge("ab", b);
+        }
+        this.sqlgGraph.tx().commit();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .out()
+                .range(5, 6);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, false, true, true);
+        Assert.assertEquals(1, vertices.size());
+    }
+
+    @Test
     public void testStepsAfterRangeNotOptimized() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "d");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "c");
@@ -72,10 +94,16 @@ public class TestRangeLimit extends BaseTest {
         a4.addEdge("ab", b4);
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("A").order().by("name").limit(2)
-                .out("ab")
-                .toList();
+                .out("ab");
+        Assert.assertEquals(5, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
 
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(b3));
@@ -95,13 +123,18 @@ public class TestRangeLimit extends BaseTest {
             tag.addEdge("tag", column);
         }
         this.sqlgGraph.tx().commit();
-        List<Vertex> vertices = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("BigData.Column")
                 .where(
                         __.in("tag").hasLabel("BigData.Tag").has("name", "Anonymized")
                 )
-                .limit(3)
-                .toList();
+                .limit(3);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, false, true, true);
 
         Assert.assertEquals(3, vertices.size());
     }
@@ -113,14 +146,17 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "B", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().range(1, 2);
-        ensureRangeGlobal(g);
-        Assert.assertEquals(1, g.toList().size());
-        g = this.sqlgGraph.traversal().V().range(1, 2);
-        ensureRangeGlobal(g);
-        assertTrue(g.hasNext());
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V()
+                .range(1, 2);
+        ensureRangeGlobal(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertEquals(1, traversal.toList().size());
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
     }
-
 
     @Test
     public void testRangeOnVertexLabels() {
@@ -128,11 +164,21 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A").order().by("name").range(1, 4).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .order().by("name")
+                .range(1, 4).values("name");
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
         String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -157,11 +203,22 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i, "prop0", "value");
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A").has("prop0", "value").order().by("name").range(1, 4).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V().hasLabel("A").has("prop0", "value")
+                .order().by("name")
+                .range(1, 4)
+                .values("name");
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
         String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -186,13 +243,20 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
                 .V().hasLabel("A")
                 .range(1, 4)
                 .values("name");
+        Assert.assertEquals(4, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, false, true, true);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -201,7 +265,6 @@ public class TestRangeLimit extends BaseTest {
         ensureNoRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-
     }
 
     @Test
@@ -210,11 +273,22 @@ public class TestRangeLimit extends BaseTest {
             this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A").order().by("name").limit(3).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .order().by("name")
+                .limit(3)
+                .values("name");
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
         String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -230,7 +304,6 @@ public class TestRangeLimit extends BaseTest {
         assertTrue(names.toString(), names.contains("a1"));
         assertTrue(names.toString(), names.contains("a10"));
         assertTrue(names.toString(), names.contains("a0"));
-
     }
 
     @Test
@@ -241,11 +314,22 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Edge, Object> g = this.sqlgGraph.traversal().E().hasLabel("E").order().by("name").range(1, 4).values("name");
+        DefaultGraphTraversal<Edge, Object> g = (DefaultGraphTraversal<Edge, Object>)this.sqlgGraph.traversal()
+                .E().hasLabel("E")
+                .order().by("name")
+                .range(1, 4)
+                .values("name");
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
         String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -261,22 +345,33 @@ public class TestRangeLimit extends BaseTest {
         assertTrue(names.toString(), names.contains("e1"));
         assertTrue(names.toString(), names.contains("e10"));
         assertTrue(names.toString(), names.contains("e11"));
-
     }
 
     @Test
     public void testRangeOnMultipleLabelsOrdered() {
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + 12);
         for (int i = 0; i < 20; i++) {
             Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
             Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A", "B").order().by("name").range(1, 4).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V().hasLabel("A", "B")
+                .order().by("name")
+                .range(1, 4)
+                .values("name");
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
         String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, true, true, true, false);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -304,10 +399,20 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A", "B").range(1, 4).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>) this.sqlgGraph.traversal()
+                .V().hasLabel("A", "B")
+                .range(1, 4)
+                .values("name");
+        Assert.assertEquals(4, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -317,7 +422,6 @@ public class TestRangeLimit extends BaseTest {
 //        ensureRangeGlobal(g);
         Assert.assertEquals(3, cnt);
         Assert.assertEquals(names.toString(), 3, names.size());
-
     }
 
     @Test
@@ -328,10 +432,22 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V().hasLabel("A", "B").limit(4).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V().hasLabel("A", "B")
+                .limit(4)
+                .values("name");
+        Assert.assertEquals(4, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            //TODO this really should execute limit on the db and finally in the step.
+            //That way less results are returned from the db
+            assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -353,11 +469,23 @@ public class TestRangeLimit extends BaseTest {
             a.addEdge("E", b, "name", "e" + i);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Object> g = this.sqlgGraph.traversal().V(a).out("E").order().by("name").range(1, 4).values("name");
+        DefaultGraphTraversal<Vertex, Object> g = (DefaultGraphTraversal<Vertex, Object>)this.sqlgGraph.traversal()
+                .V(a)
+                .out("E")
+                .order().by("name")
+                .range(1, 4)
+                .values("name");
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         int cnt = 0;
         Set<String> names = new HashSet<>();
         String previous = null;
+        if (g.hasNext()) {
+            Assert.assertEquals(2, g.getSteps().size());
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        }
         while (g.hasNext()) {
             String n = (String) g.next();
             names.add(n);
@@ -386,10 +514,18 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().hasLabel("A").out().out().order().by("age").range(10, 20);
-        ensureRangeGlobal(g);
-        List<Vertex> vertexList = g.toList();
-        ensureNoRangeGlobal(g);
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .out()
+                .out()
+                .order().by("age")
+                .range(10, 20);
+        Assert.assertEquals(6, traversal.getSteps().size());
+        List<Vertex> vertexList = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
         Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
             Assert.assertEquals("C", v.label());
@@ -408,9 +544,20 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal().V().hasLabel("A").repeat(__.out()).times(2).order().by("age").range(10, 20);
+        DefaultGraphTraversal<Vertex, Vertex> g = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .repeat(
+                        __.out()
+                ).times(2)
+                .order().by("age")
+                .range(10, 20);
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
+        Assert.assertEquals(1, g.getSteps().size());
+        Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
         ensureNoRangeGlobal(g);
         Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
@@ -430,11 +577,19 @@ public class TestRangeLimit extends BaseTest {
             b1.addEdge("bc", c1);
         }
         this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> g = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Vertex> g = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
                 .V().hasLabel("B")
-                .both().order().by("age").range(10, 20);
+                .both()
+                .order().by("age")
+                .range(10, 20);
+        Assert.assertEquals(5, g.getSteps().size());
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
+        Assert.assertEquals(1, g.getSteps().size());
+        Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, true, true, true, false);
+
         // cannot be done in SQL
 //        ensureRangeGlobal(g);
         Assert.assertEquals(10, vertexList.size());
@@ -456,11 +611,16 @@ public class TestRangeLimit extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
                 .V().hasLabel("B")
                 .both()
-                .limit(10)
-                .toList();
+                .limit(10);
+        Assert.assertEquals(4, traversal.getSteps().size());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
         Assert.assertEquals(10, vertices.size());
     }
 }

@@ -1,6 +1,7 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -15,7 +16,7 @@ import java.util.List;
  */
 public class TestTraversalPerformance extends BaseTest {
 
-    @Test
+    //    @Test
     public void testEagerLoadOrderPerf() {
         this.sqlgGraph.tx().normalBatchModeOn();
         for (int i = 0; i < 100_000; i++) {
@@ -35,6 +36,44 @@ public class TestTraversalPerformance extends BaseTest {
             stopWatch.stop();
             System.out.println(stopWatch.toString());
         }
+    }
+
+    @Test
+    public void testEagerLoadPerformance1() {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        for (int i = 0; i < 100; i++) {
+            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+            for (int j = 0; j < 100; j++) {
+                if (j % 2 == 0) {
+                    Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + j);
+                    a.addEdge("ab", b);
+                    for (int k = 0; k < 1000; k++) {
+                        if (k % 2 == 0) {
+                            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + j);
+                            b.addEdge("bc", c);
+                        }
+                    }
+                }
+            }
+        }
+        this.sqlgGraph.tx().commit();
+
+        for (int i = 0; i < 100; i++) {
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
+            List<Vertex> vertices = this.sqlgGraph.traversal()
+                    .V().hasLabel("A").order().by("name")
+                    .optional(
+                            __.out().optional(
+                                    __.out().range(10, 20)
+                            )
+                    )
+                    .toList();
+            Assert.assertEquals(10, vertices.size());
+            stopWatch.stop();
+            System.out.println(stopWatch.toString());
+        }
+
     }
 
 //    @Test

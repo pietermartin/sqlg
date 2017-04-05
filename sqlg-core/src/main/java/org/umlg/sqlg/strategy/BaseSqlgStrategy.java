@@ -105,7 +105,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 //                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
 //                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
 //                        }
-//                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+//                        handleHasSteps(stepIterator, traversal, replacedStep, pathCount);
 //                    }
 //
 //                    if (emit) {
@@ -157,7 +157,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 //                        if (index != -1) {
 //                            traversal.removeStep(step);
 //                        }
-//                        collectHasSteps(stepIterator, traversal, replacedStep, pathCount);
+//                        handleHasSteps(stepIterator, traversal, replacedStep, pathCount);
 //                    }
 //                    previous = step;
 //                    lastReplacedStep = replacedStep;
@@ -308,7 +308,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 //        return TraversalHelper.anyStepRecursively(p, traversal);
 //    }
 //
-//    private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
+//    private void handleHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
 //        //Collect the hasSteps
 //        while (iterator.hasNext()) {
 //            Step<?, ?> currentStep = iterator.next();

@@ -1,11 +1,16 @@
 package org.umlg.sqlg.test.localvertexstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -16,7 +21,6 @@ import java.util.function.Predicate;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.out;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2016/05/04
@@ -34,35 +38,45 @@ public class TestLocalVertexStepOptional extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.gt.V(a11).local(__.optional(out()).values("name")).path().toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.gt
+                .V(a11)
+                .local(
+                        __.optional(
+                                out()
+                        ).values("name")
+                ).path();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        LocalStep<?, ?> localStep = (LocalStep) traversal.getSteps().get(1);
+        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
+        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
+        assertStep(sqlgVertexStepCompiled, false, false, true, true);
+
         assertEquals(1, paths.size());
-        for (Path path : paths) {
-            System.out.println(path);
-        }
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 2 && p.get(0).equals(a11) && p.get(1).equals("a11")
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.gt.V(a1).local(out().out().values("name")).path().toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
         assertEquals(1, paths.size());
         pathsToAssert = Arrays.asList(
                 p -> p.size() == 4 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1) && p.get(3).equals("c1")
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -78,7 +92,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal()
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
                 .V()
                 .local(
                         __.optional(
@@ -87,11 +101,20 @@ public class TestLocalVertexStepOptional extends BaseTest {
                                 out()
                         )
                 )
-                .path()
-                .toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
+                .path();
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        LocalStep<?, ?> localStep = (LocalStep) traversal.getSteps().get(1);
+        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
+        //There are SqlgVertexStepCompiled. The first is the forst optional that is optimized.
+        //The next two are for the optional that is not optimized
+        Assert.assertEquals(3, sqlgVertexStepCompileds.size());
+        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
+        //isForMultipleQueries is arbitary here.
+        //Some will be true and some false, depending on the out from which vertex.
+        assertStep(sqlgVertexStepCompiled, false, false, true);
+
         assertEquals(6, paths.size());
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1),
@@ -103,10 +126,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -122,10 +145,15 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        List<Path> paths = this.sqlgGraph.traversal().V().local(__.optional(out().optional(out()))).path().toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().local(__.optional(out().optional(out()))).path();
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        LocalStep<?, ?> localStep = (LocalStep) traversal.getSteps().get(1);
+        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
+        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
+        assertStep(sqlgVertexStepCompiled, false, false, true);
         assertEquals(6, paths.size());
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 3 && p.get(0).equals(a1) && p.get(1).equals(b1) && p.get(2).equals(c1),
@@ -137,10 +165,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -152,7 +180,23 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1).local(__.<Vertex, Vertex>choose(v -> v.label().equals("A"), out(), __.in())).toList();
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+                .V(a1)
+                .local(
+                        __.<Vertex, Vertex>choose(
+                                v -> v.label().equals("A"), out(), __.in()
+                        )
+                );
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        LocalStep<?, ?> localStep = (LocalStep) traversal.getSteps().get(1);
+        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(2, sqlgVertexStepCompileds.size());
+        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
+        assertStep(sqlgVertexStepCompiled, false, false, false, true);
+        sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(1);
+        assertStep(sqlgVertexStepCompiled, false, false, false, true);
         assertEquals(2, vertices.size());
     }
 
@@ -164,7 +208,22 @@ public class TestLocalVertexStepOptional extends BaseTest {
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
-        List<Path> paths = this.sqlgGraph.traversal().V(a1).local(__.optional(out()).path()).toList();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V(a1)
+                .local(
+                        __.optional(
+                                out()
+                        ).path()
+                );
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        LocalStep<?, ?> localStep = (LocalStep) traversal.getSteps().get(1);
+        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
+        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
+        //isForMultipleQueries is arbitary
+        assertStep(sqlgVertexStepCompiled, false, false, true, true);
         assertEquals(2, paths.size());
         List<Predicate<Path>> pathsToAssert = Arrays.asList(
                 p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1),
@@ -172,10 +231,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -206,10 +265,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.sqlgGraph.traversal()
                 .V().hasLabel("A")
@@ -228,10 +287,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -259,10 +318,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -294,10 +353,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -314,10 +373,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.sqlgGraph.traversal().V(a1).local(__.optional(out("bb")).path()).toList();
         assertEquals(1, paths.size());
@@ -326,10 +385,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -355,10 +414,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         paths = this.sqlgGraph.traversal().V(a1).local(__.optional(out("ab").optional(out("bc"))).out().path()).toList();
         assertEquals(2, paths.size());
@@ -368,10 +427,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -401,10 +460,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
 
         List<Vertex> vertices = g.traversal().V(vadasVertex).local(__.optional(out("knows"))).toList();
         assertEquals(1, vertices.size());
@@ -429,10 +488,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -458,10 +517,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -485,10 +544,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -520,10 +579,10 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 
     @Test
@@ -562,9 +621,9 @@ public class TestLocalVertexStepOptional extends BaseTest {
         );
         for (Predicate<Path> pathPredicate : pathsToAssert) {
             Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
-            assertTrue(path.isPresent());
-            assertTrue(paths.remove(path.get()));
+            Assert.assertTrue(path.isPresent());
+            Assert.assertTrue(paths.remove(path.get()));
         }
-        assertTrue(paths.isEmpty());
+        Assert.assertTrue(paths.isEmpty());
     }
 }

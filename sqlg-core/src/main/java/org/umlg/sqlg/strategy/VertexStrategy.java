@@ -4,6 +4,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
@@ -57,8 +58,14 @@ public class VertexStrategy extends BaseStrategy {
 
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
-        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep)) {
+        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep ||
+                step instanceof ChooseStep)) {
             return false;
+        }
+        if (step instanceof ChooseStep) {
+            if (unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
+                return false;
+            }
         }
         this.sqlgStep = constructSqlgStep(step);
         TraversalHelper.insertBeforeStep(this.sqlgStep, step, this.traversal);
