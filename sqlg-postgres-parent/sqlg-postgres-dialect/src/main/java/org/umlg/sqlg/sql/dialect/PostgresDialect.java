@@ -12,6 +12,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.postgis.*;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
@@ -19,6 +20,7 @@ import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.postgresql.core.BaseConnection;
+import org.postgresql.core.ServerVersion;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -28,7 +30,6 @@ import org.umlg.sqlg.gis.GeographyPolygon;
 import org.umlg.sqlg.gis.Gis;
 import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.structure.*;
-import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
@@ -3473,5 +3474,88 @@ public class PostgresDialect extends BaseSqlDialect {
     		leftHand=column;
     	}
     	return "to_tsvector('"+fullText.getConfiguration()+"', "+leftHand+") @@ "+toQuery+"('"+fullText.getConfiguration()+"',?)";
+    }
+    
+    @Override
+    public Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException{
+        // copied and simplified from the postgres JDBC driver class (PgDatabaseMetaData)
+    	String sql = "SELECT NULL AS TABLE_CAT, n.nspname AS TABLE_SCHEM, "
+              + "  ct.relname AS TABLE_NAME, NOT i.indisunique AS NON_UNIQUE, "
+              + "  NULL AS INDEX_QUALIFIER, ci.relname AS INDEX_NAME, "
+              + "  CASE i.indisclustered "
+              + "    WHEN true THEN " + java.sql.DatabaseMetaData.tableIndexClustered
+              + "    ELSE CASE am.amname "
+              + "      WHEN 'hash' THEN " + java.sql.DatabaseMetaData.tableIndexHashed
+              + "      ELSE " + java.sql.DatabaseMetaData.tableIndexOther
+              + "    END "
+              + "  END AS TYPE, "
+              + "  (i.keys).n AS ORDINAL_POSITION, "
+              + "  trim(both '\"' from pg_catalog.pg_get_indexdef(ci.oid, (i.keys).n, false)) AS COLUMN_NAME "
+              + "FROM pg_catalog.pg_class ct "
+              + "  JOIN pg_catalog.pg_namespace n ON (ct.relnamespace = n.oid) "
+              + "  JOIN (SELECT i.indexrelid, i.indrelid, i.indoption, "
+              + "          i.indisunique, i.indisclustered, i.indpred, "
+              + "          i.indexprs, "
+              + "          information_schema._pg_expandarray(i.indkey) AS keys "
+              + "        FROM pg_catalog.pg_index i) i "
+              + "    ON (ct.oid = i.indrelid) "
+              + "  JOIN pg_catalog.pg_class ci ON (ci.oid = i.indexrelid) "
+              + "  JOIN pg_catalog.pg_am am ON (ci.relam = am.oid) "
+              + "WHERE true ";
+
+          if (schema != null && !"".equals(schema)) {
+            sql += " AND n.nspname = " + maybeWrapInQoutes(schema);
+          }
+          sql += " ORDER BY NON_UNIQUE, TYPE, INDEX_NAME, ORDINAL_POSITION ";
+         try (Statement s=conn.createStatement()){
+        	 try (ResultSet indexRs=s.executeQuery(sql)){
+        		 Map<String, Set<IndexRef>> ret=new HashMap<>();
+        	    	
+	    		String lastKey=null;
+	        	String lastIndexName=null;
+	        	IndexType lastIndexType=null;
+	        	List<String> lastColumns=new LinkedList<>();
+	        	while (indexRs.next()){
+	        		String cat=indexRs.getString("TABLE_CAT");
+	        		String sch=indexRs.getString("TABLE_SCHEM");
+	        		String tbl=indexRs.getString("TABLE_NAME");
+	        		String key=cat+"."+sch+"."+tbl;
+	        		String indexName=indexRs.getString("INDEX_NAME");
+	        		boolean nonUnique=indexRs.getBoolean("NON_UNIQUE");
+	        		
+	        		if (lastIndexName==null){
+	        			lastIndexName=indexName;
+	        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
+	        			lastKey=key;
+	        		} else if (!lastIndexName.equals(indexName)){
+	        			if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
+	        				if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
+	        					//System.out.println(lastColumns);
+	        					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+	        				//} else {
+	        					MultiMap.put(ret, lastKey, new IndexRef(lastIndexName,lastIndexType,lastColumns));
+	        				}
+	        			}
+	        			lastColumns.clear();
+	        			lastIndexName=indexName;
+	        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
+	        		}
+	        		
+	        		lastColumns.add(indexRs.getString("COLUMN_NAME"));
+	        		lastKey=key;
+	        	}
+	        	if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
+	        		if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
+						//System.out.println(lastColumns);
+						//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+	        			//} else {
+	        			MultiMap.put(ret, lastKey, new IndexRef(lastIndexName,lastIndexType,lastColumns));
+					}
+	        	}
+	    	
+	    	return ret;
+        	 }
+         }
+        
     }
 }

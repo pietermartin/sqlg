@@ -65,7 +65,11 @@ class SqlgStartupManager {
             if (!existSqlgSchema) {
                 //old versions of sqlg needs the topology populated from the information_schema table.
                 logger.debug("Upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
+                StopWatch stopWatch2 = new StopWatch();
+                stopWatch2.start();
                 loadSqlgSchemaFromInformationSchema();
+                stopWatch2.stop();
+                System.out.println("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
                 logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
                 //make sure the property index column exist, this if for upgrading from 1.3.2 to 1.4.0
@@ -120,6 +124,7 @@ class SqlgStartupManager {
     private void loadSqlgSchemaFromInformationSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
+        	
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
@@ -136,9 +141,12 @@ class SqlgStartupManager {
                     TopologyManager.addSchema(this.sqlgGraph, schema);
                 }
             }
+            Map<String,Set<IndexRef>> indices=this.sqlDialect.extractIndices(conn, catalog, schemaPattern);
+            
             //load the vertices
             try (ResultSet vertexRs = metadata.getTables(catalog, schemaPattern, "V_%", types)) {
                 while (vertexRs.next()) {
+                	String tblCat = vertexRs.getString(1);
                     String schema = vertexRs.getString(2);
                     String table = vertexRs.getString(3);
 
@@ -156,7 +164,7 @@ class SqlgStartupManager {
 
                     Map<String, PropertyType> columns = new ConcurrentHashMap<>();
                     //get the columns
-                    ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
+                    ResultSet columnsRs = metadata.getColumns(tblCat, schema, table, null);
                     //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
                     List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
                     //noinspection Duplicates
@@ -180,13 +188,23 @@ class SqlgStartupManager {
                     }
                     String label=table.substring(SchemaManager.VERTEX_PREFIX.length());
                     TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
-                    
-                    extractIndices(metadata,catalog,schema,table,label,true);
+                    if (indices!=null){
+                    	String key=tblCat+"."+schema+"."+table;
+                    	Set<IndexRef> idxs=indices.get(key);
+                    	if (idxs!=null){
+                    		for (IndexRef ir:idxs){
+                    			TopologyManager.addIndex(sqlgGraph, schema, label, true, ir.getIndexName(),ir.getIndexType(), ir.getColumns());
+                			}
+                    	}
+                    } else {
+                    	extractIndices(metadata,tblCat,schema,table,label,true);
+                    }
                 }
             }
             //load the edges without their properties
             try (ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types)) {
                 while (edgeRs.next()) {
+                	String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
 
@@ -205,7 +223,7 @@ class SqlgStartupManager {
                     Map<SchemaTable, MutablePair<SchemaTable, SchemaTable>> inOutSchemaTableMap = new HashMap<>();
                     Map<String, PropertyType> columns = Collections.emptyMap();
                     //get the columns
-                    ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
+                    ResultSet columnsRs = metadata.getColumns(edgCat, schema, table, null);
                     SchemaTable edgeSchemaTable = SchemaTable.of(schema, table);
                     boolean edgeAdded = false;
                     while (columnsRs.next()) {
@@ -256,6 +274,7 @@ class SqlgStartupManager {
             //load the edges without their in and out vertices
             try (ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types)) {
                 while (edgeRs.next()) {
+                	String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
 
@@ -273,7 +292,7 @@ class SqlgStartupManager {
 
                     Map<String, PropertyType> columns = new HashMap<>();
                     //get the columns
-                    ResultSet columnsRs = metadata.getColumns(catalog, schema, table, null);
+                    ResultSet columnsRs = metadata.getColumns(edgCat, schema, table, null);
                     //Cache the column meta data as we need to go backwards and forward through the resetSet and H2 does not support that.
                     List<Triple<String, Integer, String>> metaDatas = new ArrayList<>();
                     //noinspection Duplicates
@@ -297,7 +316,18 @@ class SqlgStartupManager {
                     }
                     TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
                     String label=table.substring(SchemaManager.EDGE_PREFIX.length());
-                    extractIndices(metadata,catalog,schema,table,label,false);
+                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
+                    if (indices!=null){
+                    	String key=edgCat+"."+schema+"."+table;
+                    	Set<IndexRef> idxs=indices.get(key);
+                    	if (idxs!=null){
+                    		for (IndexRef ir:idxs){
+                    			TopologyManager.addIndex(sqlgGraph, schema, label, false, ir.getIndexName(),ir.getIndexType(), ir.getColumns());
+                			}
+                    	}
+                    } else {
+                    	extractIndices(metadata,edgCat,schema,table,label,false);
+                    }
                 }
             }
             
@@ -307,9 +337,11 @@ class SqlgStartupManager {
         }
     }
 
+   
+    
     private void extractIndices(DatabaseMetaData metadata,String catalog,String schema
     		,String table,String label,boolean isVertex) throws SQLException{
-    	try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, false)){
+    	try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, true)){
         	String lastIndexName=null;
         	IndexType lastIndexType=null;
         	List<String> lastColumns=new LinkedList<>();
