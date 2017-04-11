@@ -9,6 +9,8 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -310,4 +312,17 @@ public class TestIndex extends BaseTest {
         this.sqlgGraph.tx().commit();
     }
 
+    @Test
+    public void testIndexTypeFromJSON() throws Exception {
+    	IndexType it1=IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"UNIQUE\"}"));
+    	Assert.assertEquals(IndexType.UNIQUE, it1);
+    	IndexType it2=IndexType.fromNotifyJson(new ObjectMapper().readTree("\"UNIQUE\""));
+    	Assert.assertEquals(IndexType.UNIQUE, it2);
+    	
+    	it1=IndexType.fromNotifyJson(new ObjectMapper().readTree("{\"name\":\"NON_UNIQUE\"}"));
+    	Assert.assertEquals(IndexType.NON_UNIQUE, it1);
+    	it2=IndexType.fromNotifyJson(new ObjectMapper().readTree("\"NON_UNIQUE\""));
+    	Assert.assertEquals(IndexType.NON_UNIQUE, it2);
+    	
+    }
 }

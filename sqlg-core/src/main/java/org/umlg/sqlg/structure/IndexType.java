@@ -100,6 +100,16 @@ public class IndexType {
 	}
 	
 	public static IndexType fromNotifyJson(JsonNode node){
+		// older version
+		if(node.isValueNode()){
+			String s=node.asText();
+			if ("UNIQUE".equalsIgnoreCase(s)){
+				return UNIQUE;
+			} else if ("NON_UNIQUE".equalsIgnoreCase(s)){
+				return NON_UNIQUE;
+			}
+		}
+		
 		IndexType it=new IndexType(node.get("name").asText());
 		Iterator<String> keys=node.fieldNames();
 		while (keys.hasNext()){
