@@ -3,16 +3,17 @@ package org.umlg.sqlg.sql.parse;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.javatuples.Pair;
 import org.umlg.sqlg.strategy.BaseStrategy;
+import org.umlg.sqlg.util.SqlgUtil;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -113,6 +114,39 @@ public class ReplacedStepTree {
         for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
             if (replacedStep.getSqlgComparatorHolder().hasComparators()) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * This happens when a SqlgVertexStepCompiled has a SelectOne step where the label is for an element on the path
+     * that is before the current optimized steps.
+     * @return
+     */
+    public boolean orderByHasSelectOneStepAndForLabelNotInTree() {
+        Set<String> labels = new HashSet<>();
+        for (ReplacedStep<?, ?> replacedStep : linearPathToLeafNode()) {
+            for (String label : labels) {
+                labels.add(SqlgUtil.originalLabel(label));
+            }
+            for (Pair<Traversal.Admin<?, ?>, Comparator<?>> objects : replacedStep.getSqlgComparatorHolder().getComparators()) {
+                Traversal.Admin<?, ?> traversal = objects.getValue0();
+                if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
+                    //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
+                    SelectOneStep selectOneStep = (SelectOneStep) traversal.getSteps().get(0);
+                    Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
+                    Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
+                    Preconditions.checkState(
+                            selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal ||
+                                    selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal
+                            ,
+                            "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or a TokenTraversal!");
+                    String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
+                    if (!labels.contains(selectKey)) {
+                        return true;
+                    }
+                }
             }
         }
         return false;

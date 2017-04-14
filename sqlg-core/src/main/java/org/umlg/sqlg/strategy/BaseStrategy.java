@@ -32,6 +32,7 @@ import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.time.Duration;
 import java.time.Period;
@@ -194,15 +195,19 @@ public abstract class BaseStrategy {
     private void handleRepeatStep(RepeatStep<?> repeatStep, MutableInt pathCount) {
         List<? extends Traversal.Admin<?, ?>> repeatTraversals = repeatStep.getGlobalChildren();
         Traversal.Admin admin = repeatTraversals.get(0);
-        List<Step<?, ?>> repeatStepInternalVertexSteps = admin.getSteps();
-        ListIterator<Step<?, ?>> repeatStepIterator = repeatStepInternalVertexSteps.listIterator();
+//        List<Step<?, ?>> repeatStepInternalVertexSteps = admin.getSteps();
+//        ListIterator<Step<?, ?>> repeatStepIterator = repeatStepInternalVertexSteps.listIterator();
+//        ListIterator<Step<?, ?>> repeatStepIterator = admin.getSteps().listIterator();
         //this is guaranteed by the previous check unoptimizableRepeat(...)
         LoopTraversal loopTraversal;
         long numberOfLoops;
         loopTraversal = (LoopTraversal) repeatStep.getUntilTraversal();
         numberOfLoops = loopTraversal.getMaxLoops();
         for (int i = 0; i < numberOfLoops; i++) {
-            for (Step internalRepeatStep : repeatStepInternalVertexSteps) {
+            ListIterator<Step<?, ?>> repeatStepIterator = admin.getSteps().listIterator();
+            while (repeatStepIterator.hasNext()) {
+//            for (Step internalRepeatStep : repeatStepInternalVertexSteps) {
+                Step internalRepeatStep = repeatStepIterator.next();
                 if (internalRepeatStep instanceof RepeatStep.RepeatEndStep) {
                     break;
                 } else if (internalRepeatStep instanceof VertexStep || internalRepeatStep instanceof EdgeVertexStep || internalRepeatStep instanceof EdgeOtherVertexStep) {
@@ -363,7 +368,7 @@ public abstract class BaseStrategy {
                                 r -> {
                                     Set<String> labels = r.getLabels();
                                     for (String label : labels) {
-                                        String stepLabel = label.substring(label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX) + BaseStrategy.PATH_LABEL_SUFFIX.length());
+                                        String stepLabel = SqlgUtil.originalLabel(label);
                                         if (stepLabel.equals(key)) {
                                             return true;
                                         } else {
@@ -660,6 +665,10 @@ public abstract class BaseStrategy {
             if (!predicateSteps.equals(globalChildTwoSteps)) {
                 return true;
             }
+        }
+        List<Step> localSteps = predicateSteps.stream().filter(p -> p.getClass().equals(LocalStep.class)).collect(Collectors.toList());
+        if (!localSteps.isEmpty()) {
+            return true;
         }
 
         List<Step> rangeGlobalSteps = predicateSteps.stream().filter(p -> p.getClass().equals(RangeGlobalStep.class)).collect(Collectors.toList());

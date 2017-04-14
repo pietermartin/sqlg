@@ -15,6 +15,7 @@ import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
+import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
@@ -1057,6 +1058,18 @@ public class SqlgUtil {
             Array.set(target, i, ((Time) value[i]).toLocalTime());
         }
         return target;
+    }
+
+    public static String originalLabel(String label) {
+        int indexOfLabel = label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX);
+        if (indexOfLabel != -1) {
+            return label.substring(indexOfLabel + BaseStrategy.PATH_LABEL_SUFFIX.length());
+        }
+        indexOfLabel = label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX);
+        if (indexOfLabel != -1) {
+            return label.substring(indexOfLabel + BaseStrategy.EMIT_LABEL_SUFFIX.length());
+        }
+        throw new IllegalStateException("originalLabel must only be called on labels with Sqlg's path prepended to it");
     }
 
 }

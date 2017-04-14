@@ -130,7 +130,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         this.replacedStepTree.maybeAddLabelToLeafNodes();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         if (this.replacedStepTree.hasOrderBy()) {
-            if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder()) {
+            if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder() && !this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {
                 this.replacedStepTree.applyComparatorsOnDb();
             } else {
                 setEagerLoad(true);

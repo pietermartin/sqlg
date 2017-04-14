@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRangeLimit;
+import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptionalWithOrder;
 
 /**
  * Date: 2014/07/16
@@ -10,13 +10,8 @@ import org.umlg.sqlg.test.gremlincompile.TestRangeLimit;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTraversalPerformance.class
-//        TestLocalVertexStepOptionalWithOrder.class,
-        TestRangeLimit.class,
-//        TestOptionalWithOrder.class,
-//        TestOptionalWithRange.class
-
-
+        TestLocalVertexStepOptionalWithOrder.class,
+//        TestRepeatWithOrderAndRange.class,
 })
 public class AnyTest {
 }

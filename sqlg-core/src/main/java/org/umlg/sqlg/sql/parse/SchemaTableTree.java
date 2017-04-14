@@ -6,6 +6,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.*;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
@@ -949,14 +950,17 @@ public class SchemaTableTree {
                 SelectOneStep selectOneStep = (SelectOneStep) comparator.getValue0().getSteps().get(0);
                 Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                 Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
-                Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+                Traversal.Admin<?,?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
+                Preconditions.checkState(
+                        t instanceof ElementValueTraversal ||
+                        t instanceof TokenTraversal,
+                        "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or TokenTraversal!");
 
                 //need to find the schemaTable that the select is for.
                 //this schemaTable is for the leaf node as the order by only occurs last in gremlin (optimized gremlin that is)
                 String select = (String) selectOneStep.getScopeKeys().iterator().next();
                 SchemaTableTree selectSchemaTableTree = findSelectSchemaTable(select);
                 Preconditions.checkState(selectSchemaTableTree != null, "SchemaTableTree not found for " + select);
-                ElementValueTraversal elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
 
                 String prefix;
                 if (selectSchemaTableTree.children.isEmpty()) {
@@ -973,7 +977,13 @@ public class SchemaTableTree {
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
                 prefix += selectSchemaTableTree.getSchemaTable().getTable();
                 prefix += SchemaTableTree.ALIAS_SEPARATOR;
-                prefix += elementValueTraversal.getPropertyKey();
+                if (t instanceof ElementValueTraversal) {
+                    ElementValueTraversal elementValueTraversal = (ElementValueTraversal) t;
+                    prefix += elementValueTraversal.getPropertyKey();
+                } else {
+                    TokenTraversal tokenTraversal= (TokenTraversal) t;
+                    prefix += tokenTraversal.getToken().getAccessor();
+                }
                 String alias;
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax

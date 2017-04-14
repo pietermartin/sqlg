@@ -6,6 +6,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.ElementValueTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.javatuples.Pair;
 import org.umlg.sqlg.structure.SqlgElement;
@@ -156,23 +157,38 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                 for (Pair<Traversal.Admin<?, ?>, Comparator<?>> traversalComparator : comparatorHolder.getComparators()) {
                     Traversal.Admin<?, ?> traversal = traversalComparator.getValue0();
                     Comparator comparator = traversalComparator.getValue1();
-                    ElementValueTraversal elementValueTraversal;
+
                     if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof SelectOneStep) {
                         //xxxxx.select("a").order().by(select("a").by("name"), Order.decr)
                         SelectOneStep selectOneStep = (SelectOneStep) traversal.getSteps().get(0);
                         Preconditions.checkState(selectOneStep.getScopeKeys().size() == 1, "toOrderByClause expects the selectOneStep to have one scopeKey!");
                         Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
-                        Preconditions.checkState(selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal, "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal!");
+                        Preconditions.checkState(
+                                selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal ||
+                                        selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal
+                                ,
+                                "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or a TokenTraversal!");
                         String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
-                        sqlgElement = this.traverser.path().get(selectKey);
-                        elementValueTraversal = (ElementValueTraversal) selectOneStep.getLocalChildren().get(0);
-                        this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                        SqlgElement sqlgElementSelect = this.traverser.path().get(selectKey);
+                        Traversal.Admin<?, ?> t = (Traversal.Admin<?, ?>) selectOneStep.getLocalChildren().get(0);
+                        if (t instanceof ElementValueTraversal) {
+                            ElementValueTraversal elementValueTraversal = (ElementValueTraversal) t;
+                            this.comparatorValues.add(Pair.with(sqlgElementSelect.value(elementValueTraversal.getPropertyKey()), comparator));
+                        } else {
+                            TokenTraversal tokenTraversal = (TokenTraversal) t;
+                            this.comparatorValues.add(Pair.with(tokenTraversal.getToken().apply(sqlgElementSelect), comparator));
+                        }
                     } else if (traversal instanceof IdentityTraversal) {
                         //This is for Order.shuffle
                         this.comparatorValues.add(Pair.with(new Random().nextInt(), comparator));
-                    } else {
-                        elementValueTraversal = (ElementValueTraversal) traversal;
+                    } else if (traversal instanceof ElementValueTraversal) {
+                        ElementValueTraversal elementValueTraversal = (ElementValueTraversal) traversal;
                         this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));
+                    } else if (traversal instanceof TokenTraversal) {
+                        TokenTraversal tokenTraversal = (TokenTraversal) traversal;
+                        this.comparatorValues.add(Pair.with(tokenTraversal.getToken().apply(sqlgElement), comparator));
+                    } else {
+                        throw new IllegalStateException("Unhandled traversal " + traversal.getClass().getName());
                     }
                 }
             }
