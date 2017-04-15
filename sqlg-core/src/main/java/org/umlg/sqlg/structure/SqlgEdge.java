@@ -322,7 +322,7 @@ public class SqlgEdge extends SqlgElement implements Edge {
     }
 
     @Override
-    SchemaTable getSchemaTablePrefixed() {
+    public SchemaTable getSchemaTablePrefixed() {
         return SchemaTable.of(this.getSchema(), SchemaManager.EDGE_PREFIX + this.getTable());
     }
 }

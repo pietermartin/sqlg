@@ -60,7 +60,7 @@ public class SqlgCompiledResultIterator<E> implements Iterator<E> {
         EMIT
     }
 
-    SqlgCompiledResultIterator(SqlgGraph sqlgGraph, Set<SchemaTableTree> rootSchemaTableTrees, RecordId recordId) {
+    public SqlgCompiledResultIterator(SqlgGraph sqlgGraph, Set<SchemaTableTree> rootSchemaTableTrees, RecordId recordId) {
         this(sqlgGraph, rootSchemaTableTrees);
         this.recordId = recordId;
     }

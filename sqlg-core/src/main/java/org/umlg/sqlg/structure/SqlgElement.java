@@ -8,9 +8,6 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.sql.*;
@@ -88,7 +85,7 @@ public abstract class SqlgElement implements Element {
         this.recordId = recordId;
     }
 
-    abstract SchemaTable getSchemaTablePrefixed();
+    public abstract SchemaTable getSchemaTablePrefixed();
 
     @Override
     public Object id() {
@@ -320,37 +317,6 @@ public abstract class SqlgElement implements Element {
         this.properties.put(key, value);
     }
 
-
-    /**
-     * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
-     * This is only called when not in BatchMode
-     *
-     * @param replacedSteps The original VertexStep and HasSteps that were replaced.
-     * @return The result of the query.
-     * //
-     */
-    public <E extends SqlgElement> Iterator<List<Emit<E>>> elements(List<ReplacedStep<?, ?>> replacedSteps) {
-        this.sqlgGraph.tx().readWrite();
-        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
-            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
-        }
-        return internalGetElements(replacedSteps);
-    }
-
-    /**
-     * Generate a query for the replaced steps.
-     * Each replaced step translates to a join statement and a section of the where clause.
-     *
-     * @param replacedSteps
-     * @return The results of the query
-     */
-    private <S, E extends SqlgElement> Iterator<List<Emit<E>>> internalGetElements(List<ReplacedStep<?, ?>> replacedSteps) {
-        SchemaTable schemaTable = getSchemaTablePrefixed();
-        SchemaTableTree rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
-        Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
-        rootSchemaTableTrees.add(rootSchemaTableTree);
-        return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, this.recordId);
-    }
 
     @Override
     public boolean equals(final Object object) {

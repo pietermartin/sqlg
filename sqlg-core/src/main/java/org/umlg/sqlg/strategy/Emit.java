@@ -38,7 +38,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
     private Traverser.Admin<E> traverser;
-    private List<Pair<Object, Comparator>> comparatorValues;
+    private List<Pair<Object, Comparator<?>>> comparatorValues;
 
     /**
      * The {@link org.umlg.sqlg.sql.parse.ReplacedStep}'s depth
@@ -115,10 +115,6 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     public void setTraverser(Traverser.Admin<E> traverser) {
         this.traverser = traverser;
-    }
-
-    public List<Pair<Object, Comparator>> getComparatorValues() {
-        return this.comparatorValues;
     }
 
     @Override
@@ -201,8 +197,8 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
             return Integer.valueOf(this.replacedStepDepth).compareTo(Integer.valueOf(emit.replacedStepDepth));
         }
         for (int i = 0; i < this.comparatorValues.size(); i++) {
-            Pair<Object, Comparator> comparatorPair1 = this.comparatorValues.get(i);
-            Pair<Object, Comparator> comparatorPair2 = emit.comparatorValues.get(i);
+            Pair<Object, Comparator<?>> comparatorPair1 = this.comparatorValues.get(i);
+            Pair<Object, Comparator<?>> comparatorPair2 = emit.comparatorValues.get(i);
             Object value1 = comparatorPair1.getValue0();
             Comparator comparator1 = comparatorPair1.getValue1();
             Object value2 = comparatorPair2.getValue0();

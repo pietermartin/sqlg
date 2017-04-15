@@ -526,7 +526,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
         return SqlgVertex.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
-    SchemaTable getSchemaTablePrefixed() {
+    public SchemaTable getSchemaTablePrefixed() {
         return SchemaTable.of(this.getSchema(), SchemaManager.VERTEX_PREFIX + this.getTable());
     }
 

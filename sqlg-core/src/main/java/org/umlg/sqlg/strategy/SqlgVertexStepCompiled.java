@@ -11,10 +11,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.structure.SchemaManager;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgElement;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 
 import java.util.*;
 
@@ -24,6 +21,8 @@ import java.util.*;
  */
 public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep implements SqlgStep {
 
+    private Map<Traverser.Admin<E>, E> heads = new LinkedHashMap<>();
+    private Map<Traverser.Admin<E>, Iterator<List<Emit<E>>>> headEmits = new LinkedHashMap<>();
     private Traverser.Admin<E> head = null;
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
@@ -71,15 +70,36 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 }
                 return emit.getTraverser();
             } else {
-                this.head = this.starts.next();
-                this.elementIter = flatMapCustom(this.head);
-                if (this.eagerLoad) {
-                    eagerLoad();
-                    Collections.sort(this.traversers);
-                    this.traversersLstIter = this.traversers.listIterator();
+                Iterator<Map.Entry<Traverser.Admin<E>, Iterator<List<Emit<E>>>>> iter = this.headEmits.entrySet().iterator();
+                if (iter.hasNext()) {
+                    Map.Entry<Traverser.Admin<E>, Iterator<List<Emit<E>>>> entry = iter.next();
+                    iter.remove();
+                    this.head = entry.getKey();
+                    this.elementIter = entry.getValue();
+                    if (this.eagerLoad) {
+                        eagerLoad();
+                        Collections.sort(this.traversers);
+                        this.traversersLstIter = this.traversers.listIterator();
+                    }
+                    this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
+                } else {
+                    barrierTheHeads();
+                    flatMapCustom();
                 }
-                this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
             }
+        }
+    }
+
+    private void barrierTheHeads() {
+        //RepeatStep does not seem to call reset() so reset here.
+        this.heads.clear();
+        this.headEmits.clear();
+        if (!this.starts.hasNext()) {
+            throw FastNoSuchElementException.instance();
+        }
+        while (this.starts.hasNext()) {
+            Traverser.Admin<E> h = this.starts.next();
+            this.heads.put(h, h.get());
         }
     }
 
@@ -120,39 +140,63 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         }
     }
 
-    private Iterator<List<Emit<E>>> flatMapCustom(Traverser.Admin<E> traverser) {
-        //for the OrderGlobalStep we'll need to remove the step here
-        E s = traverser.get();
+    private void flatMapCustom() {
+        for (Map.Entry<Traverser.Admin<E>, E> entry : heads.entrySet()) {
 
-        SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
-        parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
-        //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
-        this.replacedStepTree.maybeAddLabelToLeafNodes();
-        //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
-        if (this.replacedStepTree.hasOrderBy()) {
-            if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder() && !this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {
-                this.replacedStepTree.applyComparatorsOnDb();
-            } else {
-                setEagerLoad(true);
-            }
-        }
+            Traverser.Admin<E> head = entry.getKey();
+            E s = entry.getValue();
 
-        //If a range follows an order that needs to be done in memory then do not apply the range on the db.
-        //range is always the last step as sqlg does not optimize beyond a range step.
-        if (replacedStepTree.hasRange()) {
-            if (replacedStepTree.hasOrderBy()) {
-                replacedStepTree.doNotApplyRangeOnDb();
-                setEagerLoad(true);
-            } else {
-                if (!isForMultipleQueries()) {
-                    //In this case the range is only applied on the db.
-                    replacedStepTree.doNotApplyInStep();
+            SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
+            parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
+            //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
+            this.replacedStepTree.maybeAddLabelToLeafNodes();
+            //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
+            if (this.replacedStepTree.hasOrderBy()) {
+                if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder() && !this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {
+                    this.replacedStepTree.applyComparatorsOnDb();
+                } else {
+                    setEagerLoad(true);
                 }
             }
-        }
 
-        return s.elements(this.replacedSteps);
+            //If a range follows an order that needs to be done in memory then do not apply the range on the db.
+            //range is always the last step as sqlg does not optimize beyond a range step.
+            if (replacedStepTree.hasRange()) {
+                if (replacedStepTree.hasOrderBy()) {
+                    replacedStepTree.doNotApplyRangeOnDb();
+                    setEagerLoad(true);
+                } else {
+                    if (!isForMultipleQueries()) {
+                        //In this case the range is only applied on the db.
+                        replacedStepTree.doNotApplyInStep();
+                    }
+                }
+            }
+            this.headEmits.put(head, elements(sqlgGraph, s, this.replacedSteps));
+        }
     }
+
+    /**
+     * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
+     * This is only called when not in BatchMode
+     *
+     * @param sqlgGraph
+     * @param replacedSteps The original VertexStep and HasSteps that were replaced.
+     * @return The result of the query.
+     * //
+     */
+    public Iterator<List<Emit<E>>> elements(SqlgGraph sqlgGraph, E sqlgElement, List<ReplacedStep<?, ?>> replacedSteps) {
+        sqlgGraph.tx().readWrite();
+        if (sqlgGraph.tx().getBatchManager().isStreaming()) {
+            throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
+        }
+        SchemaTable schemaTable = sqlgElement.getSchemaTablePrefixed();
+        SchemaTableTree rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
+        Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
+        rootSchemaTableTrees.add(rootSchemaTableTree);
+        return new SqlgCompiledResultIterator<>(sqlgGraph, rootSchemaTableTrees, (RecordId) (sqlgElement.id()));
+    }
+
 
     @Override
     protected Iterator<E> flatMap(final Traverser.Admin traverser) {
@@ -180,8 +224,19 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     }
 
     @Override
+    public SqlgVertexStepCompiled<E> clone() {
+        final SqlgVertexStepCompiled<E> clone = (SqlgVertexStepCompiled<E>) super.clone();
+        clone.heads = new LinkedHashMap<>();
+        clone.headEmits = new LinkedHashMap<>();
+        clone.traversers = new ArrayList<>();
+        return clone;
+    }
+
+    @Override
     public void reset() {
         super.reset();
+        this.heads.clear();
+        this.headEmits.clear();
         this.head = null;
         this.toEmit = null;
         this.elementIter = null;
@@ -250,4 +305,5 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         }
         return false;
     }
+
 }
