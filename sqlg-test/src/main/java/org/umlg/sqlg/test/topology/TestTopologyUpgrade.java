@@ -785,6 +785,16 @@ public class TestTopologyUpgrade extends BaseTest {
         		eproperties);
         eLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(eLabel.getProperties().values()));
         
+        // test performance
+        /*for (int a=0;a<1000;a++){
+        	VertexLabel testVertex = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person"+a, new HashMap<String, PropertyType>() {{
+                put("firstName", PropertyType.STRING);
+                put("lastName", PropertyType.STRING);
+            }});
+        	testVertex.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(testVertex.getProperties().values()));
+          
+        }*/
+        
         // not supported yet
         /*this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(new HashSet<PropertyColumn>() {{
             add(personVertexLabel.getProperty("firstName").get());
