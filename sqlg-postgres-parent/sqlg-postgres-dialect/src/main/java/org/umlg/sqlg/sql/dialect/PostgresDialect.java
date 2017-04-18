@@ -3505,6 +3505,9 @@ public class PostgresDialect extends BaseSqlDialect {
 
           if (schema != null && !"".equals(schema)) {
             sql += " AND n.nspname = " + maybeWrapInQoutes(schema);
+          } else {
+        	  // exclude schemas we know we're not interested in
+        	  sql += " AND n.nspname <> 'pg_catalog' AND n.nspname <> 'pg_toast'  AND n.nspname <> '"+SQLG_SCHEMA+"'";  
           }
           sql += " ORDER BY NON_UNIQUE, TYPE, INDEX_NAME, ORDINAL_POSITION ";
          try (Statement s=conn.createStatement()){
@@ -3544,7 +3547,7 @@ public class PostgresDialect extends BaseSqlDialect {
 	        		lastColumns.add(indexRs.getString("COLUMN_NAME"));
 	        		lastKey=key;
 	        	}
-	        	if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
+	        	if (lastIndexName!=null && !lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
 	        		if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
 						//System.out.println(lastColumns);
 						//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
