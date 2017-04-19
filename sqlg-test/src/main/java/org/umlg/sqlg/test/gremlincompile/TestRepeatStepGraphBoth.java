@@ -196,7 +196,15 @@ public class TestRepeatStepGraphBoth extends BaseTest {
         Edge e2 = b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-                .V(b1).repeat(__.bothE().where(P.without("e")).aggregate("e").otherV()).emit().path();
+                .V(b1)
+                .repeat(
+                        __.bothE()
+                                .where(P.without("e"))
+                                .aggregate("e")
+                                .otherV()
+                )
+                .emit()
+                .path();
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());

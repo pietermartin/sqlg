@@ -185,6 +185,15 @@ public class ReplacedStepTree {
         replacedStep.getSqlgRangeHolder().doNotApplyInStep();
     }
 
+    public void reset() {
+        List<ReplacedStep<?,?>> replacedSteps = linearPathToLeafNode();
+        ReplacedStep<?, ?> replacedStep = replacedSteps.get(replacedSteps.size() - 1);
+        //TODO remove this null check
+        if (replacedStep.getSqlgRangeHolder() != null) {
+            replacedStep.getSqlgRangeHolder().reset();
+        }
+    }
+
     public class TreeNode {
         private ReplacedStep replacedStep;
         private TreeNode parent;

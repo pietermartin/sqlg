@@ -4,10 +4,11 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
-import static org.junit.Assert.*;
+import java.util.List;
 
 /**
  * Date: 2016/08/27
@@ -51,9 +52,9 @@ public class TestSchemaTableTreeAndHasContainer  extends BaseTest {
                                 .out("contains").has("__type", "structuredData").has("__structuredDataKey", "primitives")
                                 .out("contains").has("__type", "structuredData")
                 );
-        assertTrue(results.hasNext());
-        assertEquals(d0, results.next());
-        assertFalse(results.hasNext());
+        Assert.assertTrue(results.hasNext());
+        Assert.assertEquals(d0, results.next());
+        Assert.assertFalse(results.hasNext());
     }
 
     @Test
@@ -68,6 +69,12 @@ public class TestSchemaTableTreeAndHasContainer  extends BaseTest {
         b1.addEdge("e", c1);
         d1.addEdge("e", e1);
         this.sqlgGraph.tx().commit();
-        this.sqlgGraph.traversal().V(a1).local(__.out("e").has("nameB", "b").out("e")).toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(a1)
+                .local(
+                        __.out("e").has("nameB", "b")
+                                .out("e")
+                ).toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(c1, vertices.get(0));
     }
 }

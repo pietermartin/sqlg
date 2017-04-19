@@ -28,7 +28,11 @@ public class TestLocalStepCompile extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) gt.V(a1).local(__.out().out()).path();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) gt
+                .V(a1)
+                .local(
+                        __.out().out()
+                ).path();
 
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);

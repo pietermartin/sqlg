@@ -145,7 +145,16 @@ public class TestLocalVertexStepOptional extends BaseTest {
         Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal().V().local(__.optional(out().optional(out()))).path();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
+                .V()
+                .local(
+                        __.optional(
+                                out().optional(
+                                        out()
+                                )
+                        )
+                )
+                .path();
         List<Path> paths = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);

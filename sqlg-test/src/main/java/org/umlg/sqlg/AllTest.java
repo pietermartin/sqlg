@@ -20,6 +20,7 @@ import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
+import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
@@ -174,7 +175,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLocalVertexStepLimit.class,
         TestLocalVertexStepOptionalWithOrder.class,
         TestOptionalWithRange.class,
-        TestRepeatWithOrderAndRange.class
+        TestRepeatWithOrderAndRange.class,
+        TestVertexStepPerformance.class,
+        TestMatch.class
 })
 public class AllTest {
 }

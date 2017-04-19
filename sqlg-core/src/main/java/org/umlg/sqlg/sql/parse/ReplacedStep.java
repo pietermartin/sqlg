@@ -129,6 +129,7 @@ public class ReplacedStep<S, E> {
 
     private Set<SchemaTableTree> appendPathForEdgeOtherVertexStep(SchemaTableTree schemaTableTree) {
         Preconditions.checkArgument(schemaTableTree.getDirection() != Direction.BOTH, "ReplacedStep.appendPathForEdgeOtherVertexStep schemaTableTree may not have direction BOTH");
+        Preconditions.checkState(schemaTableTree.getDirection() != null, "SchemaTableTree must have an Direction to execute the EdgeOtherVertexStep");
         return calculatePathFromEdgeToVertex(schemaTableTree, schemaTableTree.getSchemaTable(), (schemaTableTree.getDirection() == Direction.IN ? Direction.OUT : Direction.IN));
     }
 
@@ -448,6 +449,10 @@ public class ReplacedStep<S, E> {
 
     public boolean isEdgeVertexStep() {
         return this.step instanceof EdgeVertexStep;
+    }
+
+    public boolean isEdgeOtherVertexStep() {
+        return this.step instanceof EdgeOtherVertexStep;
     }
 
     /**

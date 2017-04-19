@@ -186,16 +186,15 @@ public class TestGremlinCompileGraphStep extends BaseTest {
 
     @Test
     public void g_V_localXinEXknowsX_limitX2XX_outV_name() throws IOException {
-        Graph g = this.sqlgGraph;
-        final GraphReader reader = GryoReader.build()
-                .mapper(g.io(GryoIo.build()).mapper().create())
-                .create();
-        try (final InputStream stream = AbstractGremlinTest.class.getResourceAsStream("/tinkerpop-modern.kryo")) {
-            reader.readGraph(stream, g);
-        }
-        assertModernGraph(g, true, false);
-        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal)g.traversal()
-                .V().local(__.inE("knows").limit(2)).outV().values("name");
+        loadModern();
+        assertModernGraph(this.sqlgGraph, true, false);
+        DefaultGraphTraversal<Vertex, String> traversal = (DefaultGraphTraversal<Vertex, String>)this.sqlgGraph.traversal()
+                .V()
+                .local(
+                        __.inE("knows").limit(2)
+                )
+                .outV()
+                .<String>values("name");
         Assert.assertEquals(4, traversal.getSteps().size());
         printTraversalForm(traversal);
         Assert.assertEquals(4, traversal.getSteps().size());

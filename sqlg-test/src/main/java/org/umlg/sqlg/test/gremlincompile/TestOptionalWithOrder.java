@@ -566,7 +566,8 @@ public class TestOptionalWithOrder extends BaseTest {
         a2.addEdge("abb", bb3);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A")
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
                 .optional(
                         __.out("ab")
                                 .optional(
@@ -578,7 +579,7 @@ public class TestOptionalWithOrder extends BaseTest {
 
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(3, traversal.getSteps().size());
+        Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(6, vertices.size());
         assertStep(traversal.getSteps().get(0), true, false, false, true);
 

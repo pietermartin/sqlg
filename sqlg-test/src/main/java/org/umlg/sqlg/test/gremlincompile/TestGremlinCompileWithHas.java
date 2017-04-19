@@ -1268,15 +1268,4 @@ public class TestGremlinCompileWithHas extends BaseTest {
         return graph.traversal().V().has("name", outVertexName).outE(edgeLabel).as("e").inV().has("name", inVertexName).<Edge>select("e").next().id();
     }
 
-    private <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
-        final List<Map<A, B>> mapList = new ArrayList<>();
-        for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
-            final Map<A, B> map = new HashMap<>();
-            for (int j = 0; j < (2 * size); j = j + 2) {
-                map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
-            }
-            mapList.add(map);
-        }
-        return mapList;
-    }
 }

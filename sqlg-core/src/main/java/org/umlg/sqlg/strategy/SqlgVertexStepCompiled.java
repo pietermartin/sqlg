@@ -1,13 +1,13 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.LinkedListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
@@ -21,9 +21,14 @@ import java.util.*;
  */
 public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep implements SqlgStep {
 
-    private Map<Traverser.Admin<E>, E> heads = new LinkedHashMap<>();
-    private Map<Traverser.Admin<E>, Iterator<List<Emit<E>>>> headEmits = new LinkedHashMap<>();
-    private Traverser.Admin<E> head = null;
+    private SqlgGraph sqlgGraph;
+
+    private Map<SchemaTable, List<Traverser.Admin<E>>> heads = new LinkedHashMap<>();
+    //This needs to be a Multimap as the same element, i.e. same RecordId, can come in on different paths.
+    private LinkedListMultimap<RecordId, Traverser.Admin<E>> recordIdAdminMultimap = LinkedListMultimap.create();
+    //    private Map<RecordId, Traverser.Admin<E>> recordIdHeads = new LinkedHashMap<>();
+    private Map<SchemaTable, Iterator<List<Emit<E>>>> schemaTableElements = new LinkedHashMap<>();
+    private Map<SchemaTable, List<Long>> schemaTableParentIds = new LinkedHashMap<>();
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
@@ -42,6 +47,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
 
     SqlgVertexStepCompiled(final Traversal.Admin traversal) {
         super(traversal);
+        this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
     }
 
     @Override
@@ -53,7 +59,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraverser();
+                return emit.getTraversers().remove(0);
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
                 if (this.elementIter.hasNext()) {
@@ -68,14 +74,12 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraverser();
+                return emit.getTraversers().remove(0);
             } else {
-                Iterator<Map.Entry<Traverser.Admin<E>, Iterator<List<Emit<E>>>>> iter = this.headEmits.entrySet().iterator();
-                if (iter.hasNext()) {
-                    Map.Entry<Traverser.Admin<E>, Iterator<List<Emit<E>>>> entry = iter.next();
-                    iter.remove();
-                    this.head = entry.getKey();
-                    this.elementIter = entry.getValue();
+                Iterator<Map.Entry<SchemaTable, Iterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entrySet().iterator();
+                if (schemaTableIteratorEntry.hasNext()) {
+                    this.elementIter = schemaTableIteratorEntry.next().getValue();
+                    schemaTableIteratorEntry.remove();
                     if (this.eagerLoad) {
                         eagerLoad();
                         Collections.sort(this.traversers);
@@ -93,13 +97,24 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     private void barrierTheHeads() {
         //RepeatStep does not seem to call reset() so reset here.
         this.heads.clear();
-        this.headEmits.clear();
+//        this.recordIdHeads.clear();
+        this.recordIdAdminMultimap.clear();
+        this.schemaTableParentIds.clear();
         if (!this.starts.hasNext()) {
             throw FastNoSuchElementException.instance();
         }
         while (this.starts.hasNext()) {
             Traverser.Admin<E> h = this.starts.next();
-            this.heads.put(h, h.get());
+            E value = h.get();
+            SchemaTable schemaTable = value.getSchemaTablePrefixed();
+            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+            traverserList.add(h);
+            this.recordIdAdminMultimap.put((RecordId) value.id(), h);
+//            this.recordIdHeads.put((RecordId) value.id(), h);
+            List<Long> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+            if (!parentIdList.contains(((RecordId) value.id()).getId())) {
+                parentIdList.add(((RecordId) value.id()).getId());
+            }
         }
     }
 
@@ -113,42 +128,42 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
 
     private void internalLoad() {
         List<Emit<E>> emits = this.elementIter.next();
-        Traverser.Admin<E> traverser = this.head;
-        List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
-        for (Emit<E> emit : emits) {
-            if (!emit.isFake()) {
-                if (emit.isIncomingOnlyLocalOptionalStep()) {
+        Emit<E> emitToGetEmit = emits.get(0);
+        List<Traverser.Admin<E>> heads = this.recordIdAdminMultimap.get(emitToGetEmit.getParent());
+        for (Traverser.Admin<E> head : heads) {
+            Preconditions.checkState(head != null, "head not found for " + emits.get(0).getParent().toString());
+            Traverser.Admin<E> traverser = head;
+            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
+            for (Emit<E> emit : emits) {
+                if (!emit.isFake()) {
+                    if (emit.isIncomingOnlyLocalOptionalStep()) {
+                        this.toEmit = emit;
+                        break;
+                    }
                     this.toEmit = emit;
-                    break;
+                    E e = emit.getElement();
+                    this.labels = emit.getLabels();
+                    traverser = traverser.split(e, this);
+                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
+                } else {
+                    this.toEmit = emit;
                 }
-                this.toEmit = emit;
-                E e = emit.getElement();
-                this.labels = emit.getLabels();
-                traverser = traverser.split(e, this);
-                emitComparators.add(this.toEmit.getSqlgComparatorHolder());
-            } else {
-                this.toEmit = emit;
             }
-        }
-        this.toEmit.setSqlgComparatorHolders(emitComparators);
-        this.toEmit.setTraverser(traverser);
-        this.toEmit.evaluateElementValueTraversal(this.head.path().size());
-        this.traversers.add(this.toEmit);
-        if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
-            this.toEmit.setRepeated(true);
+            this.toEmit.setSqlgComparatorHolders(emitComparators);
+            this.toEmit.addTraverser(traverser);
+            this.toEmit.evaluateElementValueTraversal(head.path().size(), traverser);
             this.traversers.add(this.toEmit);
+            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+                this.toEmit.setRepeated(true);
+                this.toEmit.duplicateTraverser();
+                this.traversers.add(this.toEmit);
+            }
         }
     }
 
     private void flatMapCustom() {
-        for (Map.Entry<Traverser.Admin<E>, E> entry : heads.entrySet()) {
-
-            Traverser.Admin<E> head = entry.getKey();
-            E s = entry.getValue();
-
-            SqlgGraph sqlgGraph = (SqlgGraph) s.graph();
-            parseForStrategy(sqlgGraph, SchemaTable.of(s.getSchema(), s instanceof Vertex ? SchemaManager.VERTEX_PREFIX + s.getTable() : SchemaManager.EDGE_PREFIX + s.getTable()));
-            //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
+        for (SchemaTable schemaTable : this.heads.keySet()) {
+            parseForStrategy(schemaTable);
             this.replacedStepTree.maybeAddLabelToLeafNodes();
             //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
             if (this.replacedStepTree.hasOrderBy()) {
@@ -158,7 +173,6 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                     setEagerLoad(true);
                 }
             }
-
             //If a range follows an order that needs to be done in memory then do not apply the range on the db.
             //range is always the last step as sqlg does not optimize beyond a range step.
             if (replacedStepTree.hasRange()) {
@@ -172,29 +186,24 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                     }
                 }
             }
-            this.headEmits.put(head, elements(sqlgGraph, s, this.replacedSteps));
+            this.schemaTableElements.put(schemaTable, elements(schemaTable));
         }
     }
 
     /**
      * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
      * This is only called when not in BatchMode
-     *
-     * @param sqlgGraph
-     * @param replacedSteps The original VertexStep and HasSteps that were replaced.
-     * @return The result of the query.
-     * //
      */
-    public Iterator<List<Emit<E>>> elements(SqlgGraph sqlgGraph, E sqlgElement, List<ReplacedStep<?, ?>> replacedSteps) {
-        sqlgGraph.tx().readWrite();
-        if (sqlgGraph.tx().getBatchManager().isStreaming()) {
+    private Iterator<List<Emit<E>>> elements(SchemaTable schemaTable) {
+        this.sqlgGraph.tx().readWrite();
+        if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
-        SchemaTable schemaTable = sqlgElement.getSchemaTablePrefixed();
-        SchemaTableTree rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, replacedSteps);
+        SchemaTableTree rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
+        rootSchemaTableTree.setParentIds(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
-        return new SqlgCompiledResultIterator<>(sqlgGraph, rootSchemaTableTrees, (RecordId) (sqlgElement.id()));
+        return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true);
     }
 
 
@@ -227,7 +236,10 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     public SqlgVertexStepCompiled<E> clone() {
         final SqlgVertexStepCompiled<E> clone = (SqlgVertexStepCompiled<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
-        clone.headEmits = new LinkedHashMap<>();
+//        clone.recordIdHeads = new LinkedHashMap<>();
+        clone.recordIdAdminMultimap = LinkedListMultimap.create();
+        this.schemaTableElements = new LinkedHashMap<>();
+        clone.schemaTableParentIds = new LinkedHashMap<>();
         clone.traversers = new ArrayList<>();
         return clone;
     }
@@ -236,8 +248,10 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     public void reset() {
         super.reset();
         this.heads.clear();
-        this.headEmits.clear();
-        this.head = null;
+//        this.recordIdHeads.clear();
+        this.recordIdAdminMultimap.clear();
+        this.schemaTableElements.clear();
+        this.schemaTableParentIds.clear();
         this.toEmit = null;
         this.elementIter = null;
         this.traversers.clear();
@@ -246,6 +260,7 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         this.rangeCount = 0;
         this.eagerLoad = false;
         this.isForMultipleQueries = false;
+        this.replacedStepTree.reset();
     }
 
     @Override
@@ -253,14 +268,17 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         return EnumSet.of(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);
     }
 
-    private void parseForStrategy(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
+    private void parseForStrategy(SchemaTable schemaTable) {
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 1, "There must be at least one replacedStep");
-        Preconditions.checkState(this.replacedSteps.get(1).isVertexStep() || this.replacedSteps.get(1).isEdgeVertexStep()
-                , "The first step must a VertexStep, EdgeVertexStep or GraphStep found " + this.replacedSteps.get(1).getStep().getClass().toString());
+        Preconditions.checkState(
+                this.replacedSteps.get(1).isVertexStep() ||
+                        this.replacedSteps.get(1).isEdgeVertexStep() ||
+                        this.replacedSteps.get(1).isEdgeOtherVertexStep()
+                , "The first step must a VertexStep, EdgeVertexStep, EdgeOtherVertexStep or GraphStep, found " + this.replacedSteps.get(1).getStep().getClass().toString());
         SchemaTableTree rootSchemaTableTree = null;
         try {
-            rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
+            rootSchemaTableTree = this.sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
             //Regular
             List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
             //Optional

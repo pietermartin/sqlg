@@ -22,7 +22,6 @@ import java.util.stream.Stream;
  *         Date: 2017/03/04
  *         <p>
  *         Got tired of TinkerPop's static strategy vibe.
- *         Thank the good Lord for OO.
  */
 public class GraphStrategy extends BaseStrategy {
 
@@ -61,7 +60,6 @@ public class GraphStrategy extends BaseStrategy {
             return;
         }
         combineSteps();
-
     }
 
     @Override

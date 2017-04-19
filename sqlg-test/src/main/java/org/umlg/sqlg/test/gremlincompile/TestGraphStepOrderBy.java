@@ -31,18 +31,6 @@ public class TestGraphStepOrderBy extends BaseTest {
     }
 
     @Test
-    public void testOrderByByAndRange() {
-        loadGratefulDead();
-        List<String> names = this.sqlgGraph.traversal()
-                .V().hasLabel("song").order().by("performances", Order.decr).by("name")
-                .range(110, 120)
-                .<String>values("name").toList();
-        for (String name : names) {
-            System.out.println(name);
-        }
-    }
-
-    @Test
     public void testSelectBeforeOrder() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
@@ -140,9 +128,6 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .select("a", "b")
                 .toList();
         Assert.assertEquals(3, result.size());
-        for (Map<String, Object> stringObjectMap : result) {
-            System.out.println(stringObjectMap);
-        }
     }
 
     @Test
@@ -170,9 +155,6 @@ public class TestGraphStepOrderBy extends BaseTest {
                 .select("a", "b")
                 .toList();
         Assert.assertEquals(6, result.size());
-        for (Map<String, Object> stringObjectMap : result) {
-            System.out.println(stringObjectMap);
-        }
     }
 
     @Test

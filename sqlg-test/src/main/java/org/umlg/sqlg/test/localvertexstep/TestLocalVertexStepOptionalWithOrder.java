@@ -7,7 +7,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -622,12 +621,11 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
         Assert.assertEquals(5, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(4, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
 
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        Assert.assertTrue(traversal.getSteps().get(2) instanceof VertexStep);
-        Assert.assertTrue(traversal.getSteps().get(3) instanceof OrderGlobalStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgVertexStepCompiled);
         LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
         List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
         Assert.assertEquals(1, sqlgVertexStepCompileds.size());

@@ -36,10 +36,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -555,5 +552,17 @@ public abstract class BaseTest {
         for (int i = 0; i < expectedResults.size(); i++) {
             assertEquals(expectedResults.get(i), results.get(i));
         }
+    }
+
+    public <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
+        final List<Map<A, B>> mapList = new ArrayList<>();
+        for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
+            final Map<A, B> map = new HashMap<>();
+            for (int j = 0; j < (2 * size); j = j + 2) {
+                map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
+            }
+            mapList.add(map);
+        }
+        return mapList;
     }
 }

@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -12,6 +13,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
+import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -23,6 +26,27 @@ import java.util.function.Predicate;
  * Time: 8:18 PM
  */
 public class TestRepeatStepGraphOut extends BaseTest {
+
+    @Test
+    public void testRepeatToSelf() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        a1.addEdge("aa", a2);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().repeat(__.out()).until(__.hasLabel("A"));
+        Assert.assertEquals(2, traversal.getSteps().size());
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.getSteps().size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof RepeatStep);
+        RepeatStep repeatStep = (RepeatStep) traversal.getSteps().get(1);
+        DefaultGraphTraversal traversal1 = (DefaultGraphTraversal) repeatStep.getGlobalChildren().get(0);
+        Assert.assertEquals(2, traversal1.getSteps().size());
+        Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStepCompiled);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, vertices.size());
+    }
 
     @Test
     //This is not optimized
@@ -47,6 +71,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
         printTraversalForm(t);
         Assert.assertEquals(2, t.getSteps().size());
         List<Vertex> vertices = t.toList();
+        this.sqlgGraph.tx().commit();
         Assert.assertEquals(6, vertices.size());
         Assert.assertTrue(vertices.remove(c1));
         Assert.assertTrue(vertices.remove(c1));

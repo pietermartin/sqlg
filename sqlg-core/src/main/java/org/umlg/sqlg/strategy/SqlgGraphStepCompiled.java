@@ -59,7 +59,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraverser();
+                return emit.getTraversers().remove(0);
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
                 if (this.elementIter.hasNext()) {
@@ -74,7 +74,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraverser();
+                return emit.getTraversers().remove(0);
             } else {
                 if (!this.isStart) {
                     this.previousHead = this.starts.next();
@@ -147,11 +147,12 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
             }
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
-        this.toEmit.setTraverser(traverser);
-        this.toEmit.evaluateElementValueTraversal(0);
+        this.toEmit.addTraverser(traverser);
+        this.toEmit.evaluateElementValueTraversal(0, traverser);
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);
+            this.toEmit.duplicateTraverser();
             this.traversers.add(this.toEmit);
         }
     }
@@ -206,7 +207,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
-    public void parseForStrategy() {
+    void parseForStrategy() {
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");

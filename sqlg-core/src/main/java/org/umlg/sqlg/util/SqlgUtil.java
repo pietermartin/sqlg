@@ -45,6 +45,19 @@ public class SqlgUtil {
     private SqlgUtil() {
     }
 
+    public static List<Emit<SqlgElement>> loadResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> lastElementIdCountMap
+
+    ) throws SQLException {
+        return loadResultSetIntoResultIterator(sqlgGraph, resultSetMetaData, resultSet, rootSchemaTableTree, subQueryStacks, first, lastElementIdCountMap, false);
+    }
+
     /**
      * @param sqlgGraph
      * @param resultSetMetaData
@@ -53,6 +66,7 @@ public class SqlgUtil {
      * @param subQueryStacks
      * @param first
      * @param lastElementIdCountMap
+     * @param forParent             Indicates that the gremlin query is for SqlgVertexStepCompiled. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
      * @throws SQLException
      */
@@ -63,7 +77,8 @@ public class SqlgUtil {
             SchemaTableTree rootSchemaTableTree,
             List<LinkedList<SchemaTableTree>> subQueryStacks,
             boolean first,
-            Map<String, Integer> lastElementIdCountMap
+            Map<String, Integer> lastElementIdCountMap,
+            boolean forParent
     ) throws SQLException {
 
         List<Emit<SqlgElement>> result = new ArrayList<>();
@@ -80,7 +95,13 @@ public class SqlgUtil {
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
 
                 List<Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
-                        sqlgGraph, resultSet, subQueryStack, subQueryDepth == subQueryStacks.size(), lastElementIdCountMap
+                        sqlgGraph,
+                        resultSet,
+                        subQueryStack,
+                        subQueryDepth == subQueryStacks.size(),
+                        lastElementIdCountMap,
+                        forParent,
+                        subQueryStacks.get(0).peekFirst().getSchemaTable()
                 );
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
@@ -89,8 +110,12 @@ public class SqlgUtil {
                         SqlgElement e = SqlgUtil.loadElement(
                                 sqlgGraph, lastElementIdCountMap, resultSet, lastSchemaTableTree
                         );
-//                        Emit<SqlgElement> emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getComparators());
-                        Emit<SqlgElement> emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+                        Emit<SqlgElement> emit;
+                        if (!forParent) {
+                            emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+                        } else {
+                            emit = new Emit<>(RecordId.from(subQueryStacks.get(0).peekFirst().getSchemaTable().withOutPrefix(), resultSet.getLong(1)), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+                        }
                         if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
                             emit.setIncomingOnlyLocalOptionalStep(true);
                         }
@@ -140,7 +165,10 @@ public class SqlgUtil {
             final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
             boolean lastQueryStack,
-            Map<String, Integer> lastElementIdCountMap) throws SQLException {
+            Map<String, Integer> lastElementIdCountMap,
+            boolean forParent,
+            SchemaTable parentSchemaTable
+    ) throws SQLException {
 
         List<Emit<E>> result = new ArrayList<>();
         int count = 1;
@@ -150,13 +178,13 @@ public class SqlgUtil {
                 Integer columnCount = lastElementIdCountMap.get(idProperty);
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
-                    SqlgElement sqlgElement;
+                    E sqlgElement;
                     if (schemaTableTree.getSchemaTable().isVertexTable()) {
                         String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-                        sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                        sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     } else {
                         String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.EDGE_PREFIX.length());
-                        sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                        sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     schemaTableTree.loadProperty(resultSet, sqlgElement);
 
@@ -165,11 +193,23 @@ public class SqlgUtil {
                     //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
-                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        if (forParent) {
+                            result.add(new Emit<>(RecordId.from(parentSchemaTable.withOutPrefix(), resultSet.getLong(1)), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        } else {
+                            result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        }
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
-                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        if (forParent) {
+                            result.add(new Emit<>(RecordId.from(parentSchemaTable.withOutPrefix(), resultSet.getLong(1)), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        } else {
+                            result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        }
                     } else {
-                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        if (forParent) {
+                            result.add(new Emit<>(RecordId.from(parentSchemaTable.withOutPrefix(), resultSet.getLong(1)), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        } else {
+                            result.add(new Emit<>(sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        }
                     }
                 }
             }

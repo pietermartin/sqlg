@@ -5,7 +5,6 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -27,31 +26,33 @@ public class SqlgSqlExecutor {
     public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeRegularQuery(
             SqlgGraph sqlgGraph,
             SchemaTableTree rootSchemaTableTree,
-            RecordId recordId,
             LinkedList<SchemaTableTree> distinctQueryStack) {
 
         String sql = rootSchemaTableTree.constructSql(distinctQueryStack);
-        return executeQuery(sqlgGraph, recordId, sql, distinctQueryStack);
+        return executeQuery(sqlgGraph, sql, distinctQueryStack);
     }
 
     public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeOptionalQuery(
-            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
+            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree,
             Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>> leftJoinQuery) {
 
         String sql = rootSchemaTableTree.constructSqlForOptional(leftJoinQuery.getLeft(), leftJoinQuery.getRight());
         LinkedList<SchemaTableTree> distinctQueryStack = leftJoinQuery.getLeft();
-        return executeQuery(sqlgGraph, recordId, sql, distinctQueryStack);
+        return executeQuery(sqlgGraph, sql, distinctQueryStack);
     }
 
     public static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeEmitQuery(
-            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree, RecordId recordId,
+            SqlgGraph sqlgGraph, SchemaTableTree rootSchemaTableTree,
             LinkedList<SchemaTableTree> leftJoinQuery) {
 
         String sql = rootSchemaTableTree.constructSqlForEmit(leftJoinQuery);
-        return executeQuery(sqlgGraph, recordId, sql, leftJoinQuery);
+        return executeQuery(sqlgGraph, sql, leftJoinQuery);
     }
 
-    private static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeQuery(SqlgGraph sqlgGraph, RecordId recordId, String sql, LinkedList<SchemaTableTree> distinctQueryStack) {
+    private static Triple<ResultSet, ResultSetMetaData, PreparedStatement> executeQuery(SqlgGraph sqlgGraph, String sql, LinkedList<SchemaTableTree> distinctQueryStack) {
+        if (sqlgGraph.tx().isInBatchMode()) {
+            sqlgGraph.tx().flush();
+        }
         try {
             Connection conn = sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
@@ -84,9 +85,9 @@ public class SqlgSqlExecutor {
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
-            if (recordId != null) {
-                preparedStatement.setLong(parameterCount++, recordId.getId());
-            }
+//            if (recordId != null) {
+//                preparedStatement.setLong(parameterCount++, recordId.getId());
+//            }
             SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, conn, preparedStatement, parameterCount);
 //            preparedStatement.setFetchSize(100_000);
             ResultSet resultSet = preparedStatement.executeQuery();

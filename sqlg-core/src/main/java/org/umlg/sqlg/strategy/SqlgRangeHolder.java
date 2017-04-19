@@ -28,6 +28,11 @@ public class SqlgRangeHolder {
         this.applyInStep = false;
     }
 
+    public void reset() {
+        this.applyOnDb = true;
+        this.applyInStep = true;
+    }
+
     public boolean isApplyOnDb() {
         return applyOnDb;
     }

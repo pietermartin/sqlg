@@ -70,7 +70,7 @@ public abstract class BaseStrategy {
     ReplacedStepTree.TreeNode currentTreeNodeNode;
     ReplacedStep<?, ?> previousReplacedStep;
     ReplacedStep<?, ?> currentReplacedStep;
-    private boolean continueOptimization = true;
+    protected boolean continueOptimization = true;
 
     BaseStrategy(Traversal.Admin<?, ?> traversal) {
         this.traversal = traversal;
@@ -108,7 +108,7 @@ public abstract class BaseStrategy {
      *
      * @return false if optimization must be terminated.
      */
-    private boolean handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
+    protected boolean handleStep(ListIterator<Step<?, ?>> stepIterator, MutableInt pathCount) {
         Step<?, ?> step = stepIterator.next();
         if (step instanceof GraphStep) {
             doFirst(stepIterator, step, pathCount);

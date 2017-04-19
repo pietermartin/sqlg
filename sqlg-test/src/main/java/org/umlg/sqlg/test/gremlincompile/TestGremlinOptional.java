@@ -10,12 +10,10 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoReader;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -26,37 +24,6 @@ import java.util.function.Predicate;
  * Time: 6:36 PM
  */
 public class TestGremlinOptional extends BaseTest {
-
-    @Test
-    public void testLoadDateTypes() throws Exception {
-        LocalDateTime localDateTime = LocalDateTime.now();
-        LocalDate localDate = LocalDate.now();
-        LocalTime localTime = LocalTime.now();
-        ZonedDateTime zonedDateTime = ZonedDateTime.now();
-        Period period = Period.of(12, 13, 14);
-        Duration duration = Duration.ofSeconds(2);
-        this.sqlgGraph.addVertex(T.label, "Person",
-                "dateTime", localDateTime,
-                "date", localDate,
-                "time", localTime,
-                "zonedDateTime", zonedDateTime,
-                "period", period,
-                "duration", duration
-        );
-        this.sqlgGraph.tx().commit();
-
-        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("Person").hasNext());
-            Vertex v = sqlgGraph1.traversal().V().hasLabel("Person").next();
-            Assert.assertEquals(localDateTime, v.value("dateTime"));
-            Assert.assertEquals(localDate, v.value("date"));
-            Assert.assertEquals(localTime.toSecondOfDay(), v.<LocalTime>value("time").toSecondOfDay());
-            Assert.assertEquals(zonedDateTime, v.value("zonedDateTime"));
-            Assert.assertEquals(period, v.value("period"));
-            Assert.assertEquals(duration, v.value("duration"));
-        }
-    }
-
 
 //    @Test
     public void testOptionalFollowedByVertexStep() {
@@ -157,15 +124,22 @@ public class TestGremlinOptional extends BaseTest {
     @Test
     public void testUnoptimizableChooseStep() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
         Vertex b2 = this.sqlgGraph.addVertex(T.label, "B");
         a1.addEdge("ab", b1);
         a1.addEdge("ab", b2);
         this.sqlgGraph.tx().commit();
 
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal)this.sqlgGraph.traversal()
-                .V(a1).choose(v -> v.label().equals("A"), __.out(), __.in());
-        Assert.assertEquals(2, traversal.getSteps().size());
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>)this.sqlgGraph.traversal()
+                .V()
+                .hasLabel("A")
+                .choose(
+                        v -> v.label().equals("A"),
+                        __.out(),
+                        __.in()
+                );
+        Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(2, vertices.size());

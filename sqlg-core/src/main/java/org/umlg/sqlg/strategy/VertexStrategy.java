@@ -5,7 +5,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeOtherVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.EdgeVertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.VertexStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -15,6 +14,8 @@ import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.structure.SqlgGraph;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ListIterator;
 
 /**
@@ -47,7 +48,28 @@ public class VertexStrategy extends BaseStrategy {
             return;
         }
         combineSteps();
+    }
 
+    void combineSteps() {
+        List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
+        ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
+        MutableInt pathCount = new MutableInt(0);
+        while (stepIterator.hasNext()) {
+            Step<?, ?> step = stepIterator.next();
+            if (this.continueOptimization && isReplaceableStep(step.getClass())) {
+                stepIterator.previous();
+                boolean keepGoing = handleStep(stepIterator, pathCount);
+                if (!keepGoing) {
+                    break;
+                }
+            } else {
+                //restart
+                this.sqlgStep = null;
+            }
+        }
+        if (this.currentTreeNodeNode != null) {
+            doLast();
+        }
     }
 
     @Override
@@ -56,10 +78,16 @@ public class VertexStrategy extends BaseStrategy {
         replacedStepTree.maybeAddLabelToLeafNodes();
     }
 
+    /**
+     * EdgeOtherVertexStep can not be optimized as the direction information is lost.
+     * @param stepIterator
+     * @param step
+     * @param pathCount
+     * @return
+     */
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
-        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep ||
-                step instanceof ChooseStep)) {
+        if (!(step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof ChooseStep)) {
             return false;
         }
         if (step instanceof ChooseStep) {
@@ -69,6 +97,7 @@ public class VertexStrategy extends BaseStrategy {
         }
         this.sqlgStep = constructSqlgStep(step);
         TraversalHelper.insertBeforeStep(this.sqlgStep, step, this.traversal);
+//        TraversalHelper.insertBeforeStep(new NoOpBarrierStep<>(this.traversal), this.sqlgStep, this.traversal);
         return true;
     }
 
