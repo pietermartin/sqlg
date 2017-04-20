@@ -124,7 +124,7 @@ class SqlgStartupManager {
     private void loadSqlgSchemaFromInformationSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
-        	
+
             DatabaseMetaData metadata = conn.getMetaData();
             String catalog = null;
             String schemaPattern = null;
@@ -141,12 +141,12 @@ class SqlgStartupManager {
                     TopologyManager.addSchema(this.sqlgGraph, schema);
                 }
             }
-            Map<String,Set<IndexRef>> indices=this.sqlDialect.extractIndices(conn, catalog, schemaPattern);
-            
+            Map<String, Set<IndexRef>> indices = this.sqlDialect.extractIndices(conn, catalog, schemaPattern);
+
             //load the vertices
             try (ResultSet vertexRs = metadata.getTables(catalog, schemaPattern, "V_%", types)) {
                 while (vertexRs.next()) {
-                	String tblCat = vertexRs.getString(1);
+                    String tblCat = vertexRs.getString(1);
                     String schema = vertexRs.getString(2);
                     String table = vertexRs.getString(3);
 
@@ -186,25 +186,25 @@ class SqlgStartupManager {
                             extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                         }
                     }
-                    String label=table.substring(SchemaManager.VERTEX_PREFIX.length());
+                    String label = table.substring(SchemaManager.VERTEX_PREFIX.length());
                     TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
-                    if (indices!=null){
-                    	String key=tblCat+"."+schema+"."+table;
-                    	Set<IndexRef> idxs=indices.get(key);
-                    	if (idxs!=null){
-                    		for (IndexRef ir:idxs){
-                    			TopologyManager.addIndex(sqlgGraph, schema, label, true, ir.getIndexName(),ir.getIndexType(), ir.getColumns());
-                			}
-                    	}
+                    if (indices != null) {
+                        String key = tblCat + "." + schema + "." + table;
+                        Set<IndexRef> idxs = indices.get(key);
+                        if (idxs != null) {
+                            for (IndexRef ir : idxs) {
+                                TopologyManager.addIndex(sqlgGraph, schema, label, true, ir.getIndexName(), ir.getIndexType(), ir.getColumns());
+                            }
+                        }
                     } else {
-                    	extractIndices(metadata,tblCat,schema,table,label,true);
+                        extractIndices(metadata, tblCat, schema, table, label, true);
                     }
                 }
             }
             //load the edges without their properties
             try (ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types)) {
                 while (edgeRs.next()) {
-                	String edgCat = edgeRs.getString(1);
+                    String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
 
@@ -274,7 +274,7 @@ class SqlgStartupManager {
             //load the edges without their in and out vertices
             try (ResultSet edgeRs = metadata.getTables(catalog, schemaPattern, "E_%", types)) {
                 while (edgeRs.next()) {
-                	String edgCat = edgeRs.getString(1);
+                    String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
 
@@ -315,72 +315,70 @@ class SqlgStartupManager {
                         }
                     }
                     TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
-                    String label=table.substring(SchemaManager.EDGE_PREFIX.length());
-                    TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
-                    if (indices!=null){
-                    	String key=edgCat+"."+schema+"."+table;
-                    	Set<IndexRef> idxs=indices.get(key);
-                    	if (idxs!=null){
-                    		for (IndexRef ir:idxs){
-                    			TopologyManager.addIndex(sqlgGraph, schema, label, false, ir.getIndexName(),ir.getIndexType(), ir.getColumns());
-                			}
-                    	}
+                    String label = table.substring(SchemaManager.EDGE_PREFIX.length());
+                    if (indices != null) {
+                        String key = edgCat + "." + schema + "." + table;
+                        Set<IndexRef> idxs = indices.get(key);
+                        if (idxs != null) {
+                            for (IndexRef ir : idxs) {
+                                TopologyManager.addIndex(sqlgGraph, schema, label, false, ir.getIndexName(), ir.getIndexType(), ir.getColumns());
+                            }
+                        }
                     } else {
-                    	extractIndices(metadata,edgCat,schema,table,label,false);
+                        extractIndices(metadata, edgCat, schema, table, label, false);
                     }
                 }
             }
-            
-            
+
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-   
-    
-    private void extractIndices(DatabaseMetaData metadata,String catalog,String schema
-    		,String table,String label,boolean isVertex) throws SQLException{
-    	try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, true)){
-        	String lastIndexName=null;
-        	IndexType lastIndexType=null;
-        	List<String> lastColumns=new LinkedList<>();
-        	while (indexRs.next()){
-        		String indexName=indexRs.getString("INDEX_NAME");
-        		System.out.println(indexName);
-        		boolean nonUnique=indexRs.getBoolean("NON_UNIQUE");
-        		
-        		if (lastIndexName==null){
-        			lastIndexName=indexName;
-        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
-        		} else if (!lastIndexName.equals(indexName)){
-        			if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
-        				if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
-        					//System.out.println(lastColumns);
-        					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-        				//} else {
-        					TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName,lastIndexType, lastColumns);
-        				}
-        			}
-        			lastColumns.clear();
-        			lastIndexName=indexName;
-        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
-        		}
-        		
-        		lastColumns.add(indexRs.getString("COLUMN_NAME"));
-        		
-        	}
-        	if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
-        		if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
-					//System.out.println(lastColumns);
-					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-        			//} else {
-					TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName,lastIndexType, lastColumns);
-				}
-        	}
-    	}
+
+    private void extractIndices(DatabaseMetaData metadata, String catalog, String schema
+            , String table, String label, boolean isVertex) throws SQLException {
+        try (ResultSet indexRs = metadata.getIndexInfo(catalog, schema, table, false, true)) {
+            String lastIndexName = null;
+            IndexType lastIndexType = null;
+            List<String> lastColumns = new LinkedList<>();
+            while (indexRs.next()) {
+                String indexName = indexRs.getString("INDEX_NAME");
+                System.out.println(indexName);
+                boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
+
+                if (lastIndexName == null) {
+                    lastIndexName = indexName;
+                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+                } else if (!lastIndexName.equals(indexName)) {
+                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+                        if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+                            //System.out.println(lastColumns);
+                            //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+                            //} else {
+                            TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
+                        }
+                    }
+                    lastColumns.clear();
+                    lastIndexName = indexName;
+                    lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+                }
+
+                lastColumns.add(indexRs.getString("COLUMN_NAME"));
+
+            }
+            if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+                if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+                    //System.out.println(lastColumns);
+                    //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+                    //} else {
+                    TopologyManager.addIndex(sqlgGraph, schema, label, isVertex, lastIndexName, lastIndexType, lastColumns);
+                }
+            }
+        }
     }
-    
+
     private void extractProperty(String schema, String table, String columnName, Integer columnType, String typeName, Map<String, PropertyType> columns, ListIterator<Triple<String, Integer, String>> metaDataIter) throws SQLException {
         //check for ZONEDDATETIME, PERIOD, DURATION as they use more than one field to represent the type
         PropertyType propertyType = null;
