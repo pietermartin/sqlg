@@ -28,13 +28,47 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
-
 /**
  * Date: 2016/02/06
  * Time: 6:17 PM
  */
 public class TestTopologyUpgrade extends BaseTest {
+
+    @Test
+    public void testUpgradeEdgeWithMultipleInOutLabelsAndAIndex() throws Exception {
+        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A");
+        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B");
+        VertexLabel cVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("C");
+        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+            put("name", PropertyType.STRING);
+        }};
+        @SuppressWarnings("UnusedAssignment")
+        EdgeLabel edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureEdgeLabelExist("edge", bVertexLabel, aVertexLabel, properties);
+        edgeLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureEdgeLabelExist("edge", cVertexLabel, aVertexLabel, properties);
+        edgeLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(edgeLabel.getProperties().values()));
+        this.sqlgGraph.tx().commit();
+
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C");
+        b1.addEdge("edge", a1, "name", "b");
+        c1.addEdge("edge", a1, "name", "c");
+        this.sqlgGraph.tx().commit();
+
+        //Delete the topology
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(3, sqlgGraph1.traversal().V().count().next().intValue());
+            Assert.assertEquals(2, sqlgGraph1.traversal().E().count().next().intValue());
+        }
+    }
 
     @Test
     public void testUpgrade() throws Exception {
@@ -255,7 +289,7 @@ public class TestTopologyUpgrade extends BaseTest {
                 ).create()
         );
         List<Vertex> schemas = traversalSource.V()
-                .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                .hasLabel(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
                 .toList();
         //public and gui_schema
         Assert.assertEquals(2, schemas.size());
@@ -664,73 +698,73 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
 
-    private static void topologyCheck(SqlgGraph sqlgGraph){
-    	Assert.assertEquals(1,sqlgGraph.topology().V().has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Person").count().next().longValue());
+    private static void topologyCheck(SqlgGraph sqlgGraph) {
+        Assert.assertEquals(1, sqlgGraph.topology().V().has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Person").count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V().has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Dog").count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V().has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Dog").count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Person")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Person")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .count().next().longValue());
 
-        Assert.assertEquals(2,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Person")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        		.count().next().longValue());
+        Assert.assertEquals(2, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Person")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Person")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        		.has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"firstName")
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Person")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .has(Topology.SQLG_SCHEMA_PROPERTY_NAME, "firstName")
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Person")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        		.has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"lastName")
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Person")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .has(Topology.SQLG_SCHEMA_PROPERTY_NAME, "lastName")
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Dog")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Dog")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Dog")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Dog")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL,Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME,"Dog")
-        		.out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
-        		.out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        		.has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"name")
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Dog")
+                .out(Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .has(Topology.SQLG_SCHEMA_PROPERTY_NAME, "name")
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_EDGE_LABEL,Topology.SQLG_SCHEMA_EDGE_LABEL_NAME,"Owns").count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_EDGE_LABEL, Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "Owns").count().next().longValue());
 
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_EDGE_LABEL,Topology.SQLG_SCHEMA_EDGE_LABEL_NAME,"Owns")
-        		.out(Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE)
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_EDGE_LABEL, Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "Owns")
+                .out(Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE)
+                .count().next().longValue());
 
-        Assert.assertEquals(1,sqlgGraph.topology().V()
-        		.has(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_EDGE_LABEL,Topology.SQLG_SCHEMA_EDGE_LABEL_NAME,"Owns")
-        		.out(Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE)
-        		.out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
-        		.has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"since")
-        		.count().next().longValue());
+        Assert.assertEquals(1, sqlgGraph.topology().V()
+                .has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_EDGE_LABEL, Topology.SQLG_SCHEMA_EDGE_LABEL_NAME, "Owns")
+                .out(Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE)
+                .out(Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+                .has(Topology.SQLG_SCHEMA_PROPERTY_NAME, "since")
+                .count().next().longValue());
 
         // not supported yet
         /*assertEquals(1,sqlgGraph.topology().V()
-        		.hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX).count().next().longValue());
+                .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX).count().next().longValue());
 
         Assert.assertEquals(2,sqlgGraph.topology().V()
         		.hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
@@ -756,10 +790,10 @@ public class TestTopologyUpgrade extends BaseTest {
     }
 
     @SuppressWarnings("serial")
-	@Test
+    @Test
     public void testUpgradeIndex() throws Exception {
-    	 //with topology
-    	VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
+        //with topology
+        VertexLabel personVertexLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person", new HashMap<String, PropertyType>() {{
             put("firstName", PropertyType.STRING);
             put("lastName", PropertyType.STRING);
         }});
@@ -773,10 +807,10 @@ public class TestTopologyUpgrade extends BaseTest {
         Map<String, PropertyType> eproperties = new HashMap<String, PropertyType>() {{
             put("since", PropertyType.LOCALDATE);
         }};
-        EdgeLabel eLabel= this.sqlgGraph.getTopology().ensureEdgeLabelExist("Owns",
-        		personVertexLabel,
-        		dogVertexLabel,
-        		eproperties);
+        EdgeLabel eLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist("Owns",
+                personVertexLabel,
+                dogVertexLabel,
+                eproperties);
         eLabel.ensureIndexExists(IndexType.UNIQUE, new ArrayList<>(eLabel.getProperties().values()));
 
         // test performance
@@ -810,13 +844,13 @@ public class TestTopologyUpgrade extends BaseTest {
 
         //topology will be recreated
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-        	topologyCheck(sqlgGraph1);
+            topologyCheck(sqlgGraph1);
         }
 
 
         //from topology
         try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
-        	topologyCheck(sqlgGraph1);
+            topologyCheck(sqlgGraph1);
         }
 
     }

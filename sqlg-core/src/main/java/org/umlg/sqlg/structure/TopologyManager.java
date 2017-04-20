@@ -252,6 +252,7 @@ public class TopologyManager {
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
                         .has("name", abstractLabel.getLabel())
+                        .dedup()
                         .toList();
             }
             Preconditions.checkState(!abstractLabelVertexes.isEmpty(), "AbstractLabel %s.%s does not exists", abstractLabel.getSchema().getName(), abstractLabel.getLabel());
@@ -315,6 +316,7 @@ public class TopologyManager {
                         .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
                         .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
                         .has("name", label)
+                        .dedup()
                         .toList();
             }
             Preconditions.checkState(!abstractLabelVertexes.isEmpty(), "AbstractLabel %s.%s does not exists", schema, label);
