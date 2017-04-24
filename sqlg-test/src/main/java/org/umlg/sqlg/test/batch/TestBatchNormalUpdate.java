@@ -41,8 +41,8 @@ public class TestBatchNormalUpdate extends BaseTest {
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.tx().normalBatchModeOn();
         a1.property("name1", "aa1");
-        a2.property("name2", "aa2");
-        a3.property("name3", "aa3");
+        a2.property("name2", "'aa2'");
+        a3.property("name3", "$token$");
         this.sqlgGraph.tx().commit();
         testUpdateWithNullStringValuesAlreadyPresent_assert(this.sqlgGraph, a1, a2, a3);
         if (this.sqlgGraph1 != null) {
@@ -61,12 +61,12 @@ public class TestBatchNormalUpdate extends BaseTest {
         Assert.assertEquals("a111", a1.value("name3"));
 
         Assert.assertEquals("a2", a2.value("name1"));
-        Assert.assertEquals("aa2", a2.value("name2"));
+        Assert.assertEquals("'aa2'", a2.value("name2"));
         Assert.assertEquals("a222", a2.value("name3"));
 
         Assert.assertEquals("a3", a3.value("name1"));
         Assert.assertEquals("a33", a3.value("name2"));
-        Assert.assertEquals("aa3", a3.value("name3"));
+        Assert.assertEquals("$token$", a3.value("name3"));
     }
 
     @Test

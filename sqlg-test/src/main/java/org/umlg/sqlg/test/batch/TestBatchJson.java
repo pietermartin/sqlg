@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.batch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -71,6 +72,7 @@ public class TestBatchJson extends BaseTest {
             batchJson_assert(this.sqlgGraph, json);
         }
     }
+    
 
     private void batchJson_assert(SqlgGraph sqlgGraph, ObjectNode json) {
         List<Vertex> vertices = sqlgGraph.traversal().V().hasLabel("Person").toList();
@@ -95,7 +97,7 @@ public class TestBatchJson extends BaseTest {
         assertEquals(json, value);
         this.sqlgGraph.tx().normalBatchModeOn();
         json = new ObjectNode(objectMapper.getNodeFactory());
-        json.put("username", "pete");
+        json.put("username", "o'connor");
         for (Vertex vertex : vertices) {
             vertex.property("doc", json);
         }

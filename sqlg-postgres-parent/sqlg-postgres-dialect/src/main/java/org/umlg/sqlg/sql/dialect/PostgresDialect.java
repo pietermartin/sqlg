@@ -657,9 +657,9 @@ public class PostgresDialect extends BaseSqlDialect {
             case STRING:
                 //Postgres supports custom quoted strings using the 'with token' clause
                 if (value != null) {
-                    sql.append("$token$");
-                    sql.append(value);
-                    sql.append("$token$");
+                    sql.append("'");
+                    sql.append(value.toString().replace("'","''"));
+                    sql.append("'");
                 } else {
                     sql.append("null");
                 }
@@ -738,7 +738,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case JSON:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(value.toString());
+                    sql.append(value.toString().replace("'", "''"));
                     sql.append("'::JSONB");
                 } else {
                     sql.append("null");
