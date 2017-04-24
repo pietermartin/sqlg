@@ -657,9 +657,9 @@ public class PostgresDialect extends BaseSqlDialect {
             case STRING:
                 //Postgres supports custom quoted strings using the 'with token' clause
                 if (value != null) {
-                    sql.append("$token$");
-                    sql.append(value);
-                    sql.append("$token$");
+                    sql.append("'");
+                    sql.append(value.toString().replace("'","''"));
+                    sql.append("'");
                 } else {
                     sql.append("null");
                 }
@@ -738,7 +738,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case JSON:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(value.toString());
+                    sql.append(value.toString().replace("'", "''"));
                     sql.append("'::JSONB");
                 } else {
                     sql.append("null");
@@ -3167,7 +3167,11 @@ public class PostgresDialect extends BaseSqlDialect {
                 return SqlgUtil.copyToLocalDate(dates, new LocalDate[dates.length]);
             case LOCALTIME_ARRAY:
                 Time[] times = (Time[]) array.getArray();
-                return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
+                LocalTime[] lts= SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
+                for (int a=0;a<times.length;a++){
+                	lts[a]=shiftDST(lts[a]).toLocalTime();
+                }
+                return lts;
             case JSON_ARRAY:
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets

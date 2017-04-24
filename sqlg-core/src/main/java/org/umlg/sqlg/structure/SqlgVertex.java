@@ -445,6 +445,14 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             for (PropertyColumn propertyColumn : vertexLabel.properties.values()) {
                 sql.append(", ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
+                // additional columns for time zone, etc.
+                String[] ps=propertyColumn.getPropertyType().getPostFixes();
+                if (ps!=null){
+	                for (String p:propertyColumn.getPropertyType().getPostFixes()){
+	                	sql.append(", ");
+	                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()+p));
+	                }
+                }
             }
             sql.append("\nFROM\n\t");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
