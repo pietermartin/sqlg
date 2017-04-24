@@ -655,7 +655,6 @@ public class PostgresDialect extends BaseSqlDialect {
                 }
                 break;
             case STRING:
-                //Postgres supports custom quoted strings using the 'with token' clause
                 if (value != null) {
                     sql.append("'");
                     sql.append(value.toString().replace("'","''"));
@@ -1015,7 +1014,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     int countStringArray = 1;
                     for (LocalTime s : localTimeArray) {
                         sql.append("'");
-                        sql.append(s.toString());
+                        sql.append(shiftDST(s).toLocalTime().toString());
                         sql.append("'::TIME");
                         if (countStringArray++ < localTimeArray.length) {
                             sql.append(",");
@@ -3103,6 +3102,15 @@ public class PostgresDialect extends BaseSqlDialect {
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
             switch (propertyType) {
+            	case LOCALTIME_ARRAY:
+            		// shit DST for local time
+            		if (data!=null){
+            			int a=0;
+            			for (Object o:data){
+            				data[a++]=shiftDST(((Time)o).toLocalTime());
+            			}
+            		}
+            		// fall through
                 case STRING_ARRAY:
                 case long_ARRAY:
                 case LONG_ARRAY:
@@ -3118,7 +3126,6 @@ public class PostgresDialect extends BaseSqlDialect {
                 case BOOLEAN_ARRAY:
                 case LOCALDATETIME_ARRAY:
                 case LOCALDATE_ARRAY:
-                case LOCALTIME_ARRAY:
                 case ZONEDDATETIME_ARRAY:
                 case JSON_ARRAY:
                     return conn.createArrayOf(getArrayDriverType(propertyType), data);
@@ -3167,11 +3174,7 @@ public class PostgresDialect extends BaseSqlDialect {
                 return SqlgUtil.copyToLocalDate(dates, new LocalDate[dates.length]);
             case LOCALTIME_ARRAY:
                 Time[] times = (Time[]) array.getArray();
-                LocalTime[] lts= SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
-                for (int a=0;a<times.length;a++){
-                	lts[a]=shiftDST(lts[a]).toLocalTime();
-                }
-                return lts;
+                return SqlgUtil.copyToLocalTime(times, new LocalTime[times.length]);
             case JSON_ARRAY:
                 String arrayAsString = array.toString();
                 //remove the wrapping curly brackets
