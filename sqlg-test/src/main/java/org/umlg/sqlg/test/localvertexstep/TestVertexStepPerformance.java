@@ -64,7 +64,11 @@ public class TestVertexStepPerformance extends BaseTest {
     @Test
     public void testCount() {
         loadModern();
-        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>)this.sqlgGraph.traversal().V().local(__.out().count());
+        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>)this.sqlgGraph.traversal()
+                .V()
+                .local(
+                        __.out().count()
+                );
         while (traversal.hasNext()) {
             System.out.println(traversal.next());
         }

@@ -1,5 +1,7 @@
 package org.umlg.sqlg.step;
 
+import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
 
@@ -15,9 +17,18 @@ public class SqlgChooseStep<S, E, M> extends SqlgBranchStep<S, E, M> {
     }
 
     public SqlgChooseStep(final Traversal.Admin traversal, final Traversal.Admin<S, ?> predicateTraversal, final Traversal.Admin<S, E> trueChoice, final Traversal.Admin<S, E> falseChoice) {
-        this(traversal, (Traversal.Admin<S, M>) predicateTraversal.addStep(new HasNextStep<>(predicateTraversal)));
-        this.addGlobalChildOption((M) Boolean.TRUE, trueChoice);
-        this.addGlobalChildOption((M) Boolean.FALSE, falseChoice);
+        this(traversal, (Traversal.Admin<S, M>) predicateTraversal);
+        this.addGlobalChildOption((M) Boolean.FALSE, trueChoice);
+        this.addGlobalChildOption((M) Boolean.TRUE, falseChoice);
+        //remove the HasNextStep
+        HasNextStep hasNextStep = null;
+        for (Step step : predicateTraversal.getSteps()) {
+            if (step instanceof HasNextStep) {
+                hasNextStep = (HasNextStep) step;
+            }
+        }
+        Preconditions.checkState(hasNextStep != null);
+        predicateTraversal.removeStep(hasNextStep);
     }
 
     @Override

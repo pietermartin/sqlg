@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptional;
+import org.umlg.sqlg.test.localvertexstep.TestVertexStepPerformance;
 
 /**
  * Date: 2014/07/16
@@ -10,12 +10,12 @@ import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptional;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestVertexStepPerformance.class,
+        TestVertexStepPerformance.class,
 
 //        TestLocalEdgeOtherVertexStep.class,
 //        TestLocalEdgeVertexStep.class,
 //        TestLocalRepeatStep.class,
-        TestLocalVertexStepOptional.class
+//        TestLocalVertexStepOptional.class
 })
 public class AnyTest {
 }

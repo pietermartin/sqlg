@@ -98,7 +98,7 @@ public class VertexStrategy extends BaseStrategy {
         }
         this.sqlgStep = constructSqlgStep(step);
         TraversalHelper.insertBeforeStep(this.sqlgStep, step, this.traversal);
-//        TraversalHelper.insertBeforeStep(new NoOpBarrierStep<>(this.traversal), this.sqlgStep, this.traversal);
+//        TraversalHelper.insertAfterStep(new NoOpBarrierStep<>(this.traversal), this.sqlgStep, this.traversal);
         return true;
     }
 

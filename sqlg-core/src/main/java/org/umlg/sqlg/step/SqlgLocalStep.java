@@ -53,7 +53,6 @@ public class SqlgLocalStep<S, E> extends AbstractStep<S, E> implements Traversal
             } catch (SqlgResetTraversalException e) {
                 this.localTraversal.reset();
             } catch (SqlgNoSuchElementException e) {
-                e.printStackTrace();
                 throw FastNoSuchElementException.instance();
             }
         }

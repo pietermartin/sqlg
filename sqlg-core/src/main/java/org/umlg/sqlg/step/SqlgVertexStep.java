@@ -112,7 +112,12 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 } else {
                     if (this.isForLocalTraversal) {
                         //if not first and not startEmittingEmptyTraversals it means that there is still one non empty
-                        //traverser that needs to be let loose down the local traversal. i.e. need to tho FastNoSuchElementException
+                        //traverser that needs to be let loose down the local traversal. i.e. need to throw the FastNoSuchElementException
+                        //i.e. for V().local(out().count())
+                        //even if out() returns nothing the zero is counted as a zero as opposed to not happening.
+                        if (!this.first && !startEmittingEmptyTraversals && this.traversersWithNoElements.isEmpty()) {
+                            throw new SqlgNoSuchElementException();
+                        }
                         if (!this.first && !this.startEmittingEmptyTraversals) {
                             this.startEmittingEmptyTraversals = true;
                             this.reset = true;

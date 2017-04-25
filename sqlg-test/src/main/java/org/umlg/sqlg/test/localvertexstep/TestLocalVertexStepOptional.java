@@ -76,11 +76,52 @@ public class TestLocalVertexStepOptional extends BaseTest {
 //        }
 //        Assert.assertTrue(paths.isEmpty());
 //    }
+//
+//    @Test
+//    public void testLocalVertexStepNotOptimized() {
+//        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+//        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+//        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+//        a1.addEdge("ab", b1);
+//        this.sqlgGraph.tx().commit();
+//
+//        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.gt
+//                .V()
+//                .local(
+//                        __.optional(
+//                                __.where(__.has(T.label, "A")).out()
+//                        )
+//                ).path();
+//        Assert.assertEquals(3, traversal.getSteps().size());
+//        List<Path> paths = traversal.toList();
+//        Assert.assertEquals(3, traversal.getSteps().size());
+//        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+//        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep) traversal.getSteps().get(1);
+//        List<SqlgVertexStep> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+//        Assert.assertEquals(2, sqlgVertexStepCompileds.size());
+//        SqlgVertexStep sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
+//        assertStep(sqlgVertexStepCompiled, false, false, false, true);
+//        Assert.assertEquals(3, paths.size());
+//        List<Predicate<Path>> pathsToAssert = Arrays.asList(
+//                p -> p.size() == 2 && p.get(0).equals(a1) && p.get(1).equals(b1),
+//                p -> p.size() == 1 && p.get(0).equals(a2),
+//                p -> p.size() == 1 && p.get(0).equals(b1)
+//        );
+//        for (Predicate<Path> pathPredicate : pathsToAssert) {
+//            Optional<Path> path = paths.stream().filter(pathPredicate).findAny();
+//            Assert.assertTrue(path.isPresent());
+//            Assert.assertTrue(paths.remove(path.get()));
+//        }
+//        Assert.assertTrue(paths.isEmpty());
+////        while (traversal.hasNext()) {
+////            System.out.println(traversal.next());
+////        }
+//    }
 
     @Test
-    public void testLocalVertexStepNotOptimized() {
+    public void testLocalVertexStepNotOptimizedWithTraversalReset() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a11 = this.sqlgGraph.addVertex(T.label, "A", "name", "a11");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         a1.addEdge("ab", b1);
         this.sqlgGraph.tx().commit();
@@ -89,7 +130,7 @@ public class TestLocalVertexStepOptional extends BaseTest {
                 .V()
                 .local(
                         __.optional(
-                                __.where(__.has(T.label, "A")).out()
+                                __.where(__.has(T.label, "A")).out().count()
                         )
                 ).path();
         while (traversal.hasNext()) {
