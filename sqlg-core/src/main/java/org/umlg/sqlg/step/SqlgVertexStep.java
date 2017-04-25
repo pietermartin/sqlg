@@ -1,16 +1,20 @@
-package org.umlg.sqlg.strategy;
+package org.umlg.sqlg.step;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.strategy.*;
 import org.umlg.sqlg.structure.*;
 
 import java.util.*;
@@ -19,16 +23,24 @@ import java.util.*;
  * Date: 2014/08/15
  * Time: 8:10 PM
  */
-public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep implements SqlgStep {
+//public class SqlgVertexStep<E extends SqlgElement> extends FlatMapStep implements SqlgStep {
+public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implements SqlgStep, Barrier {
 
     private SqlgGraph sqlgGraph;
 
     private Map<SchemaTable, List<Traverser.Admin<E>>> heads = new LinkedHashMap<>();
     //This needs to be a Multimap as the same element, i.e. same RecordId, can come in on different paths.
-    private LinkedListMultimap<RecordId, Traverser.Admin<E>> recordIdAdminMultimap = LinkedListMultimap.create();
-    //    private Map<RecordId, Traverser.Admin<E>> recordIdHeads = new LinkedHashMap<>();
+    private LinkedListMultimap<RecordId, Traverser.Admin<E>> recordIdHeadTraverserAdminMultimap = LinkedListMultimap.create();
+    //Some incoming traverser will have no results but still needs to return
+    private List<Traverser.Admin<E>> traversersWithNoElements = new ArrayList<>();
     private Map<SchemaTable, Iterator<List<Emit<E>>>> schemaTableElements = new LinkedHashMap<>();
     private Map<SchemaTable, List<Long>> schemaTableParentIds = new LinkedHashMap<>();
+    private Traverser.Admin<E> currentHead;
+    private boolean first = true;
+    private boolean startEmittingEmptyTraversals = false;
+    private boolean reset = false;
+
+    private boolean isForLocalTraversal;
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
@@ -45,13 +57,24 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     private boolean isForMultipleQueries = false;
 
 
-    SqlgVertexStepCompiled(final Traversal.Admin traversal) {
+    public SqlgVertexStep(final Traversal.Admin traversal) {
         super(traversal);
         this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
+        this.isForLocalTraversal = !(traversal.getParent().asStep() instanceof EmptyStep);
     }
 
     @Override
     protected Traverser.Admin<E> processNextStart() {
+        if (this.isForLocalTraversal) {
+            if (this.reset) {
+                this.reset = false;
+                if (this.startEmittingEmptyTraversals && this.traversersWithNoElements.isEmpty()) {
+                    throw new SqlgNoSuchElementException();
+                } else {
+                    throw new SqlgResetTraversalException();
+                }
+            }
+        }
         while (true) {
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
                 Emit<E> emit = this.traversersLstIter.next();
@@ -64,8 +87,8 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
             if (!this.eagerLoad && (this.elementIter != null)) {
                 if (this.elementIter.hasNext()) {
                     this.traversers.clear();
+                    this.traversersLstIter = null;
                     internalLoad();
-                    this.traversersLstIter = this.traversers.listIterator();
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
@@ -87,6 +110,24 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                     }
                     this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                 } else {
+                    if (this.isForLocalTraversal) {
+                        //if not first and not startEmittingEmptyTraversals it means that there is still one non empty
+                        //traverser that needs to be let loose down the local traversal. i.e. need to tho FastNoSuchElementException
+                        if (!this.first && !this.startEmittingEmptyTraversals) {
+                            this.startEmittingEmptyTraversals = true;
+                            this.reset = true;
+                            throw FastNoSuchElementException.instance();
+                        }
+                        if (this.startEmittingEmptyTraversals && !this.traversersWithNoElements.isEmpty()) {
+                            this.traversersWithNoElements.remove(0);
+                            this.reset = true;
+                            throw FastNoSuchElementException.instance();
+                        }
+                    } else {
+                        if (!this.starts.hasNext()) {
+                            throw FastNoSuchElementException.instance();
+                        }
+                    }
                     barrierTheHeads();
                     flatMapCustom();
                 }
@@ -97,25 +138,22 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     private void barrierTheHeads() {
         //RepeatStep does not seem to call reset() so reset here.
         this.heads.clear();
-//        this.recordIdHeads.clear();
-        this.recordIdAdminMultimap.clear();
+        this.recordIdHeadTraverserAdminMultimap.clear();
         this.schemaTableParentIds.clear();
-        if (!this.starts.hasNext()) {
-            throw FastNoSuchElementException.instance();
-        }
         while (this.starts.hasNext()) {
             Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
             List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
             traverserList.add(h);
-            this.recordIdAdminMultimap.put((RecordId) value.id(), h);
-//            this.recordIdHeads.put((RecordId) value.id(), h);
+            this.recordIdHeadTraverserAdminMultimap.put((RecordId) value.id(), h);
+            this.traversersWithNoElements.add(h);
             List<Long> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
             if (!parentIdList.contains(((RecordId) value.id()).getId())) {
                 parentIdList.add(((RecordId) value.id()).getId());
             }
         }
+        this.first = false;
     }
 
     //B_LP_O_P_S_SE_SL_Traverser
@@ -129,8 +167,9 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     private void internalLoad() {
         List<Emit<E>> emits = this.elementIter.next();
         Emit<E> emitToGetEmit = emits.get(0);
-        List<Traverser.Admin<E>> heads = this.recordIdAdminMultimap.get(emitToGetEmit.getParent());
+        List<Traverser.Admin<E>> heads = this.recordIdHeadTraverserAdminMultimap.get(emitToGetEmit.getParent());
         for (Traverser.Admin<E> head : heads) {
+            this.traversersWithNoElements.remove(head);
             Preconditions.checkState(head != null, "head not found for " + emits.get(0).getParent().toString());
             Traverser.Admin<E> traverser = head;
             List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
@@ -158,7 +197,17 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
                 this.toEmit.duplicateTraverser();
                 this.traversers.add(this.toEmit);
             }
+            if (this.isForLocalTraversal) {
+                if (this.currentHead != null && this.currentHead != head) {
+                    this.currentHead = null;
+                    this.traversersLstIter = this.traversers.listIterator();
+                    this.reset = true;
+                    throw FastNoSuchElementException.instance();
+                }
+                this.currentHead = head;
+            }
         }
+        this.traversersLstIter = this.traversers.listIterator();
     }
 
     private void flatMapCustom() {
@@ -206,12 +255,6 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true);
     }
 
-
-    @Override
-    protected Iterator<E> flatMap(final Traverser.Admin traverser) {
-        throw new IllegalStateException("SqlgVertexStepCompiled.flatMap should never be called, it existVertexLabel been replaced with flatMapCustom");
-    }
-
     @Override
     public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep replacedStep) {
         replacedStep.setDepth(this.replacedSteps.size());
@@ -233,11 +276,10 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
     }
 
     @Override
-    public SqlgVertexStepCompiled<E> clone() {
-        final SqlgVertexStepCompiled<E> clone = (SqlgVertexStepCompiled<E>) super.clone();
+    public SqlgVertexStep<E> clone() {
+        final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
-//        clone.recordIdHeads = new LinkedHashMap<>();
-        clone.recordIdAdminMultimap = LinkedListMultimap.create();
+        clone.recordIdHeadTraverserAdminMultimap = LinkedListMultimap.create();
         this.schemaTableElements = new LinkedHashMap<>();
         clone.schemaTableParentIds = new LinkedHashMap<>();
         clone.traversers = new ArrayList<>();
@@ -246,21 +288,24 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
 
     @Override
     public void reset() {
-        super.reset();
-        this.heads.clear();
-//        this.recordIdHeads.clear();
-        this.recordIdAdminMultimap.clear();
-        this.schemaTableElements.clear();
-        this.schemaTableParentIds.clear();
-        this.toEmit = null;
-        this.elementIter = null;
-        this.traversers.clear();
-        this.traversersLstIter = null;
-        this.lastReplacedStep = null;
-        this.rangeCount = 0;
-        this.eagerLoad = false;
-        this.isForMultipleQueries = false;
-        this.replacedStepTree.reset();
+        if (this.isForLocalTraversal) {
+            this.nextEnd = null;
+        } else {
+            super.reset();
+            this.heads.clear();
+            this.recordIdHeadTraverserAdminMultimap.clear();
+            this.schemaTableElements.clear();
+            this.schemaTableParentIds.clear();
+            this.toEmit = null;
+            this.elementIter = null;
+            this.traversers.clear();
+            this.traversersLstIter = null;
+            this.lastReplacedStep = null;
+            this.rangeCount = 0;
+            this.eagerLoad = false;
+            this.isForMultipleQueries = false;
+            this.replacedStepTree.reset();
+        }
     }
 
     @Override
@@ -324,4 +369,26 @@ public class SqlgVertexStepCompiled<E extends SqlgElement> extends FlatMapStep i
         return false;
     }
 
+    @Override
+    public void processAllStarts() {
+    }
+
+    @Override
+    public boolean hasNextBarrier() {
+        return false;
+    }
+
+    @Override
+    public E nextBarrier() throws NoSuchElementException {
+        return null;
+    }
+
+    @Override
+    public void addBarrier(Object barrier) {
+    }
+
+    @Override
+    public MemoryComputeKey getMemoryComputeKey() {
+        return null;
+    }
 }

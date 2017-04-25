@@ -55,7 +55,7 @@ public class MidTraversalGraphTest extends BaseTest {
         DefaultGraphTraversal<?, ?> dgt = (DefaultGraphTraversal<?, ?>) g;
         int count = 0;
         for (Step<?, ?> s : dgt.getSteps()) {
-            if (s.getClass().getSimpleName().equals("SqlgGraphStepCompiled")) {
+            if (s.getClass().getSimpleName().equals("SqlgGraphStep")) {
                 count++;
             }
         }

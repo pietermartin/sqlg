@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
 import java.util.ArrayList;
@@ -103,7 +104,7 @@ public class VertexStrategy extends BaseStrategy {
 
     @Override
     protected SqlgStep constructSqlgStep(Step startStep) {
-        SqlgVertexStepCompiled sqlgStep = new SqlgVertexStepCompiled(this.traversal);
+        SqlgVertexStep sqlgStep = new SqlgVertexStep(this.traversal);
         this.currentReplacedStep = ReplacedStep.from(this.sqlgGraph.getTopology());
         this.currentTreeNodeNode = sqlgStep.addReplacedStep(this.currentReplacedStep);
         return sqlgStep;

@@ -176,7 +176,6 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLocalVertexStepOptionalWithOrder.class,
         TestOptionalWithRange.class,
         TestRepeatWithOrderAndRange.class,
-        TestVertexStepPerformance.class,
         TestMatch.class
 })
 public class AllTest {

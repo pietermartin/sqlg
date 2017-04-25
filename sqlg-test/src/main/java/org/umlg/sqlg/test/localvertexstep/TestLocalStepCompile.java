@@ -9,6 +9,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgLocalStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.*;
@@ -45,10 +46,10 @@ public class TestLocalStepCompile extends BaseTest {
         Assert.assertEquals(1, paths.size());
 
         Assert.assertEquals(3, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        localStep = (LocalStep) traversal.getSteps().get(1);
-        Assert.assertEquals(1, localStep.getLocalChildren().size());
-        traversal1 = localStep.getLocalChildren().get(0);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+        SqlgLocalStep<?,?> sqlgLocalStep= (SqlgLocalStep) traversal.getSteps().get(1);
+        Assert.assertEquals(1, sqlgLocalStep.getLocalChildren().size());
+        traversal1 = sqlgLocalStep.getLocalChildren().get(0);
         Assert.assertEquals(1, traversal1.getSteps().size());
     }
 

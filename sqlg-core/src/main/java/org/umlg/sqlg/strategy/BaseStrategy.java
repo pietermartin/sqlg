@@ -31,6 +31,9 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgLocalStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -104,7 +107,7 @@ public abstract class BaseStrategy {
 
 
     /**
-     * sqlgStep is either a {@link SqlgGraphStepCompiled} or {@link SqlgVertexStepCompiled}.
+     * sqlgStep is either a {@link SqlgGraphStep} or {@link SqlgVertexStep}.
      *
      * @return false if optimization must be terminated.
      */
@@ -460,9 +463,9 @@ public abstract class BaseStrategy {
     }
 
     protected static boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
-        if (traversal.getParent() != null && traversal.getParent() instanceof LocalStep) {
-            LocalStep localStep = (LocalStep) traversal.getParent();
-            if (precedesPathOrTreeStep(localStep.getTraversal())) {
+        if (traversal.getParent() != null && traversal.getParent() instanceof SqlgLocalStep) {
+            SqlgLocalStep sqlgLocalStep = (SqlgLocalStep) traversal.getParent();
+            if (precedesPathOrTreeStep(sqlgLocalStep.getTraversal())) {
                 return true;
             }
         }
@@ -475,8 +478,8 @@ public abstract class BaseStrategy {
         return TraversalHelper.anyStepRecursively(p, traversal);
     }
 
-    protected void addHasContainerForIds(SqlgGraphStepCompiled sqlgGraphStepCompiled) {
-        Object[] ids = sqlgGraphStepCompiled.getIds();
+    protected void addHasContainerForIds(SqlgGraphStep sqlgGraphStep) {
+        Object[] ids = sqlgGraphStep.getIds();
         List<Object> recordsIds = new ArrayList<>();
         for (Object id : ids) {
             if (id instanceof Element) {
@@ -487,7 +490,7 @@ public abstract class BaseStrategy {
         }
         HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(recordsIds.toArray()));
         this.currentReplacedStep.addHasContainers(Collections.singletonList(idHasContainer));
-        sqlgGraphStepCompiled.clearIds();
+        sqlgGraphStep.clearIds();
     }
 
     protected boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
@@ -682,6 +685,25 @@ public abstract class BaseStrategy {
                 return true;
             }
         }
+
+        Traversal.Admin<?, ?> trueTraversal;
+        Traversal.Admin<?, ?> a = globalChildOne;
+        Traversal.Admin<?, ?> b = globalChildTwo;
+        if (a.getSteps().stream().anyMatch(s -> s instanceof IdentityStep<?>)) {
+            trueTraversal = b;
+        } else {
+            trueTraversal = a;
+        }
+        List<Step<?, ?>> trueTraversalSteps = new ArrayList(trueTraversal.getSteps());
+        ListIterator<Step<?, ?>> trueTraversalStepsIterator = trueTraversalSteps.listIterator();
+        while (trueTraversalStepsIterator.hasNext()) {
+            Step internalChooseStep = trueTraversalStepsIterator.next();
+            if (!(internalChooseStep instanceof VertexStep || internalChooseStep instanceof EdgeVertexStep || internalChooseStep instanceof EdgeOtherVertexStep ||
+                    internalChooseStep instanceof ComputerAwareStep.EndStep || internalChooseStep instanceof ChooseStep)) {
+                return true;
+            }
+        }
+
         List<Step> chooseSteps = globalChildTwo.getSteps().stream().filter(p -> p.getClass().equals(ChooseStep.class)).collect(Collectors.toList());
         for (Step step : chooseSteps) {
             if (unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {

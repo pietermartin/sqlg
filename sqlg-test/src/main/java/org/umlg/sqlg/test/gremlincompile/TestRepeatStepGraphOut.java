@@ -13,8 +13,8 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
-import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.io.IOException;
@@ -38,12 +38,12 @@ public class TestRepeatStepGraphOut extends BaseTest {
         Assert.assertEquals(2, traversal.getSteps().size());
         printTraversalForm(traversal);
         Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof RepeatStep);
         RepeatStep repeatStep = (RepeatStep) traversal.getSteps().get(1);
         DefaultGraphTraversal traversal1 = (DefaultGraphTraversal) repeatStep.getGlobalChildren().get(0);
         Assert.assertEquals(2, traversal1.getSteps().size());
-        Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStepCompiled);
+        Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStep);
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, vertices.size());
     }

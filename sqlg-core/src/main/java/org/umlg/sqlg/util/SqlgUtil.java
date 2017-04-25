@@ -66,7 +66,7 @@ public class SqlgUtil {
      * @param subQueryStacks
      * @param first
      * @param lastElementIdCountMap
-     * @param forParent             Indicates that the gremlin query is for SqlgVertexStepCompiled. It is in the context of an incoming traverser, the parent.
+     * @param forParent             Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
      * @throws SQLException
      */

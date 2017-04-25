@@ -120,7 +120,7 @@ public class ReplacedStepTree {
     }
 
     /**
-     * This happens when a SqlgVertexStepCompiled has a SelectOne step where the label is for an element on the path
+     * This happens when a SqlgVertexStep has a SelectOne step where the label is for an element on the path
      * that is before the current optimized steps.
      * @return
      */

@@ -102,8 +102,8 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 //                            throw new IllegalStateException("Unknown strategy " + this.getClass().getName());
 //                        }
 //                        replaceStepInTraversal(step, sqlgStep, traversal);
-//                        if (sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) sqlgStep).getIds().length > 0) {
-//                            addHasContainerForIds((SqlgGraphStepCompiled) sqlgStep, replacedStep);
+//                        if (sqlgStep instanceof SqlgGraphStep && ((SqlgGraphStep) sqlgStep).getIds().length > 0) {
+//                            addHasContainerForIds((SqlgGraphStep) sqlgStep, replacedStep);
 //                        }
 //                        handleHasSteps(stepIterator, traversal, replacedStep, pathCount);
 //                    }
@@ -667,7 +667,7 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 //        return repeatStepAdded;
 //    }
 //
-//    private void addHasContainerForIds(SqlgGraphStepCompiled sqlgGraphStepCompiled, ReplacedStep replacedStep) {
+//    private void addHasContainerForIds(SqlgGraphStep sqlgGraphStepCompiled, ReplacedStep replacedStep) {
 //        Object[] ids = sqlgGraphStepCompiled.getIds();
 //        List<Object> recordsIds = new ArrayList<>();
 //        for (Object id : ids) {

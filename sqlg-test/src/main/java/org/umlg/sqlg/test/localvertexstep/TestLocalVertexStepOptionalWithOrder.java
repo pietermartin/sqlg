@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.PathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
@@ -14,8 +13,9 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
-import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
+import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgLocalStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -45,13 +45,13 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(1);
 
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
-        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
-        assertStep(sqlgVertexStepCompiled, false, false, false, false);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
+        SqlgVertexStep sqlgVertexStep = sqlgVertexSteps.get(0);
+        assertStep(sqlgVertexStep, false, false, false, false);
         Assert.assertEquals(3, vertices.size());
         Assert.assertEquals(b3, vertices.get(0));
         Assert.assertEquals(b2, vertices.get(1));
@@ -86,12 +86,12 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(4, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(2) instanceof LocalStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(2);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
-        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
-        assertStep(sqlgVertexStepCompiled, false, false, false, true);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgLocalStep);
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(2);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
+        SqlgVertexStep sqlgVertexStep = sqlgVertexSteps.get(0);
+        assertStep(sqlgVertexStep, false, false, false, true);
         Assert.assertEquals(6, vertices.size());
         Assert.assertEquals(b32, vertices.get(0));
         Assert.assertEquals(b22, vertices.get(1));
@@ -149,12 +149,12 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
-        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
-        assertStep(sqlgVertexStepCompiled, false, true, true, true);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(1);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
+        SqlgVertexStep sqlgVertexStep = sqlgVertexSteps.get(0);
+        assertStep(sqlgVertexStep, false, true, true, true);
 
         Assert.assertEquals(12, paths.size());
 
@@ -262,12 +262,12 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
-        SqlgVertexStepCompiled sqlgVertexStepCompiled = sqlgVertexStepCompileds.get(0);
-        assertStep(sqlgVertexStepCompiled, false, true, true, true);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(1);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
+        SqlgVertexStep sqlgVertexStep = sqlgVertexSteps.get(0);
+        assertStep(sqlgVertexStep, false, true, true, true);
 
         Assert.assertEquals(7, paths.size());
 
@@ -340,12 +340,12 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         //This query is no fully optimized.
-        //The range messes it up, so it has a SqlgVertexStepCompiled
+        //The range messes it up, so it has a SqlgVertexStep
         Assert.assertEquals(3, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(6, sqlgVertexStepCompileds.size());
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(1);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(6, sqlgVertexSteps.size());
 
         Assert.assertEquals(3, paths.size());
         List<Path> pathsOfLength1 = paths.stream().filter(p -> p.size() == 1).collect(Collectors.toList());
@@ -382,13 +382,13 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(4, traversal.getSteps().size());
 
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
         Assert.assertTrue(traversal.getSteps().get(1) instanceof IdentityStep);
-        Assert.assertTrue(traversal.getSteps().get(2) instanceof LocalStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgLocalStep);
         Assert.assertTrue(traversal.getSteps().get(3) instanceof OrderGlobalStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(2);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(2);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
 
         Assert.assertEquals(5, vertices.size());
         Assert.assertEquals(b3, vertices.get(0));
@@ -437,12 +437,12 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         List<Path> paths = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
 
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
         Assert.assertTrue(traversal.getSteps().get(2) instanceof PathStep);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(1);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
 
         Assert.assertEquals(7, paths.size());
         Assert.assertTrue(paths.stream().anyMatch(
@@ -623,12 +623,12 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
 
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof LocalStep);
-        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgVertexStepCompiled);
-        LocalStep<?, ?> localStep = (LocalStep<?, ?>) traversal.getSteps().get(1);
-        List<SqlgVertexStepCompiled> sqlgVertexStepCompileds = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStepCompiled.class, localStep.getLocalChildren().get(0));
-        Assert.assertEquals(1, sqlgVertexStepCompileds.size());
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgLocalStep);
+        Assert.assertTrue(traversal.getSteps().get(2) instanceof SqlgVertexStep);
+        SqlgLocalStep<?, ?> localStep = (SqlgLocalStep<?, ?>) traversal.getSteps().get(1);
+        List<SqlgVertexStep> sqlgVertexSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SqlgVertexStep.class, localStep.getLocalChildren().get(0));
+        Assert.assertEquals(1, sqlgVertexSteps.size());
 
         Assert.assertEquals(6, vertices.size());
         Assert.assertEquals(d3, vertices.get(0));

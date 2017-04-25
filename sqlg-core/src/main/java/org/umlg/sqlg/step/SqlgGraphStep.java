@@ -1,4 +1,4 @@
-package org.umlg.sqlg.strategy;
+package org.umlg.sqlg.step;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.time.StopWatch;
@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
+import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.strategy.SqlgComparatorHolder;
+import org.umlg.sqlg.strategy.SqlgStep;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -24,9 +27,9 @@ import java.util.*;
  * Date: 2015/02/20
  * Time: 9:54 PM
  */
-public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
+public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implements SqlgStep, TraversalParent {
 
-    private Logger logger = LoggerFactory.getLogger(SqlgGraphStepCompiled.class.getName());
+    private Logger logger = LoggerFactory.getLogger(SqlgGraphStep.class.getName());
     private SqlgGraph sqlgGraph;
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
@@ -45,7 +48,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
 
-    SqlgGraphStepCompiled(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
+    public SqlgGraphStep(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
     }
@@ -181,7 +184,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
         stopWatch.stop();
         if (logger.isDebugEnabled()) {
-            logger.debug("SqlgGraphStepCompiled finished, time taken {}", stopWatch.toString());
+            logger.debug("SqlgGraphStep finished, time taken {}", stopWatch.toString());
         }
         return resultIterator;
     }
@@ -207,7 +210,7 @@ public class SqlgGraphStepCompiled<S, E extends SqlgElement> extends GraphStep i
         return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
-    void parseForStrategy() {
+    public void parseForStrategy() {
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");

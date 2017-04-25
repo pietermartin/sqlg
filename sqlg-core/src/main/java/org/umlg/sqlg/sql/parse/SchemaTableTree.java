@@ -96,7 +96,7 @@ public class SchemaTableTree {
      */
     private SqlgRangeHolder sqlgRangeHolder;
     private String parentIdTemporaryTableName;
-    //This is the incoming element ids for SqlgVertexStepCompiled
+    //This is the incoming element ids for SqlgVertexStep
     private List<Long> parentIds;
 
 
@@ -682,7 +682,7 @@ public class SchemaTableTree {
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
 
-        //The SqlgVertexStepCompiled's incoming/parent element ids
+        //The SqlgVertexStep's incoming/parent element ids
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
             singlePathSql.append(".");

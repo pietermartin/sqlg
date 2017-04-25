@@ -22,9 +22,9 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.strategy.SqlgStep;
-import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -499,9 +499,9 @@ public abstract class BaseTest {
 
     protected void assertStep(Step<?, ?> step, boolean isGraph, boolean isEagerLoad, boolean isForMultipleQueries, boolean comparatorsNotOnDb, boolean rangeOnDb) {
         if (isGraph) {
-            Assert.assertTrue("Expected SqlgGraphStepCompiled, found " + step.getClass().getName(), step instanceof SqlgGraphStepCompiled);
+            Assert.assertTrue("Expected SqlgGraphStep, found " + step.getClass().getName(), step instanceof SqlgGraphStep);
         } else {
-            Assert.assertTrue("Expected SqlgVertexStepCompiled, found " + step.getClass().getName(), step instanceof SqlgVertexStepCompiled);
+            Assert.assertTrue("Expected SqlgVertexStep, found " + step.getClass().getName(), step instanceof SqlgVertexStep);
         }
         SqlgStep sqlgStep = (SqlgStep) step;
         Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());
@@ -520,9 +520,9 @@ public abstract class BaseTest {
 
     protected void assertStep(Step<?, ?> step, boolean isGraph, boolean isEagerLoad, boolean isForMultipleQueries, boolean comparatorsNotOnDb) {
         if (isGraph) {
-            Assert.assertTrue("Expected SqlgGraphStepCompiled, found " + step.getClass().getName(), step instanceof SqlgGraphStepCompiled);
+            Assert.assertTrue("Expected SqlgGraphStep, found " + step.getClass().getName(), step instanceof SqlgGraphStep);
         } else {
-            Assert.assertTrue("Expected SqlgVertexStepCompiled, found " + step.getClass().getName(), step instanceof SqlgVertexStepCompiled);
+            Assert.assertTrue("Expected SqlgVertexStep, found " + step.getClass().getName(), step instanceof SqlgVertexStep);
         }
         SqlgStep sqlgStep = (SqlgStep) step;
         Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());
@@ -532,9 +532,9 @@ public abstract class BaseTest {
 
     protected void assertStep(Step<?, ?> step, boolean isGraph, boolean isEagerLoad, boolean comparatorsNotOnDb) {
         if (isGraph) {
-            Assert.assertTrue("Expected SqlgGraphStepCompiled, found " + step.getClass().getName(), step instanceof SqlgGraphStepCompiled);
+            Assert.assertTrue("Expected SqlgGraphStep, found " + step.getClass().getName(), step instanceof SqlgGraphStep);
         } else {
-            Assert.assertTrue("Expected SqlgVertexStepCompiled, found " + step.getClass().getName(), step instanceof SqlgVertexStepCompiled);
+            Assert.assertTrue("Expected SqlgVertexStep, found " + step.getClass().getName(), step instanceof SqlgVertexStep);
         }
         SqlgStep sqlgStep = (SqlgStep) step;
         Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());

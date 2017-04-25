@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
+import org.umlg.sqlg.step.SqlgGraphStep;
 
 import java.util.ListIterator;
 import java.util.stream.Stream;
@@ -66,7 +67,7 @@ public class GraphStrategy extends BaseStrategy {
     protected SqlgStep constructSqlgStep(Step startStep) {
         Preconditions.checkArgument(startStep instanceof GraphStep, "Expected a GraphStep, found instead a " + startStep.getClass().getName());
         GraphStep<?, ?> graphStep = (GraphStep) startStep;
-        return new SqlgGraphStepCompiled(this.sqlgGraph, this.traversal, graphStep.getReturnClass(), graphStep.isStartStep(), graphStep.getIds());
+        return new SqlgGraphStep(this.sqlgGraph, this.traversal, graphStep.getReturnClass(), graphStep.isStartStep(), graphStep.getIds());
     }
 
     @Override
@@ -83,8 +84,8 @@ public class GraphStrategy extends BaseStrategy {
         this.sqlgStep = constructSqlgStep(step);
         this.currentTreeNodeNode = this.sqlgStep.addReplacedStep(this.currentReplacedStep);
         replaceStepInTraversal(step, this.sqlgStep);
-        if (this.sqlgStep instanceof SqlgGraphStepCompiled && ((SqlgGraphStepCompiled) this.sqlgStep).getIds().length > 0) {
-            addHasContainerForIds((SqlgGraphStepCompiled) this.sqlgStep);
+        if (this.sqlgStep instanceof SqlgGraphStep && ((SqlgGraphStep) this.sqlgStep).getIds().length > 0) {
+            addHasContainerForIds((SqlgGraphStep) this.sqlgStep);
         }
         if (this.currentReplacedStep.getLabels().isEmpty()) {
             boolean precedesPathStep = precedesPathOrTreeStep(this.traversal);
@@ -100,7 +101,7 @@ public class GraphStrategy extends BaseStrategy {
     protected void doLast() {
         ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
         replacedStepTree.maybeAddLabelToLeafNodes();
-        ((SqlgGraphStepCompiled) this.sqlgStep).parseForStrategy();
+        ((SqlgGraphStep) this.sqlgStep).parseForStrategy();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
         if (replacedStepTree.hasOrderBy()) {
             if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {

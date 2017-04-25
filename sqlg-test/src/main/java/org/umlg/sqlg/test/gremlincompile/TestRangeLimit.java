@@ -10,7 +10,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.strategy.SqlgGraphStepCompiled;
+import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.HashSet;
@@ -71,9 +71,9 @@ public class TestRangeLimit extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, false, true, true);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, false, true, true);
         Assert.assertEquals(1, vertices.size());
     }
 
@@ -101,9 +101,9 @@ public class TestRangeLimit extends BaseTest {
         List<Vertex> vertices = traversal.toList();
 
         Assert.assertEquals(2, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, false, false, true);
 
         Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(b3));
@@ -132,9 +132,9 @@ public class TestRangeLimit extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(3, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, false, true, true);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, false, true, true);
 
         Assert.assertEquals(3, vertices.size());
     }
@@ -153,9 +153,9 @@ public class TestRangeLimit extends BaseTest {
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertEquals(1, traversal.toList().size());
         Assert.assertEquals(1, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, true, true, false);
     }
 
     @Test
@@ -175,9 +175,9 @@ public class TestRangeLimit extends BaseTest {
         String previous = null;
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, false, false, true);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -215,9 +215,9 @@ public class TestRangeLimit extends BaseTest {
         String previous = null;
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, false, false, true);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -253,9 +253,9 @@ public class TestRangeLimit extends BaseTest {
         Set<String> names = new HashSet<>();
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, false, true, true);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, false, true, true);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -285,9 +285,9 @@ public class TestRangeLimit extends BaseTest {
         String previous = null;
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, false, false, true);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -326,9 +326,9 @@ public class TestRangeLimit extends BaseTest {
         String previous = null;
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, false, false, true);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -368,9 +368,9 @@ public class TestRangeLimit extends BaseTest {
         String previous = null;
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, true, true, true, false);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, true, true, true, false);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -409,9 +409,9 @@ public class TestRangeLimit extends BaseTest {
         Set<String> names = new HashSet<>();
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, true, true, false);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -442,11 +442,11 @@ public class TestRangeLimit extends BaseTest {
         Set<String> names = new HashSet<>();
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
             //TODO this really should execute limit on the db and finally in the step.
             //That way less results are returned from the db
-            assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
+            assertStep(sqlgGraphStep, true, false, true, true, false);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -482,9 +482,9 @@ public class TestRangeLimit extends BaseTest {
         String previous = null;
         if (g.hasNext()) {
             Assert.assertEquals(2, g.getSteps().size());
-            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-            SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-            assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+            Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+            SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+            assertStep(sqlgGraphStep, true, false, false, false, true);
         }
         while (g.hasNext()) {
             String n = (String) g.next();
@@ -523,9 +523,9 @@ public class TestRangeLimit extends BaseTest {
         Assert.assertEquals(6, traversal.getSteps().size());
         List<Vertex> vertexList = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, false, false, true);
         Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
             Assert.assertEquals("C", v.label());
@@ -555,9 +555,9 @@ public class TestRangeLimit extends BaseTest {
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
         Assert.assertEquals(1, g.getSteps().size());
-        Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, false, false, true);
+        Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, false, false, true);
         ensureNoRangeGlobal(g);
         Assert.assertEquals(10, vertexList.size());
         for (Vertex v : vertexList) {
@@ -586,9 +586,9 @@ public class TestRangeLimit extends BaseTest {
         ensureRangeGlobal(g);
         List<Vertex> vertexList = g.toList();
         Assert.assertEquals(1, g.getSteps().size());
-        Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) g.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, true, true, true, false);
+        Assert.assertTrue(g.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) g.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, true, true, true, false);
 
         // cannot be done in SQL
 //        ensureRangeGlobal(g);
@@ -618,9 +618,9 @@ public class TestRangeLimit extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStepCompiled);
-        SqlgGraphStepCompiled sqlgGraphStepCompiled = (SqlgGraphStepCompiled) traversal.getSteps().get(0);
-        assertStep(sqlgGraphStepCompiled, true, false, true, true, false);
+        Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
+        SqlgGraphStep sqlgGraphStep = (SqlgGraphStep) traversal.getSteps().get(0);
+        assertStep(sqlgGraphStep, true, false, true, true, false);
         Assert.assertEquals(10, vertices.size());
     }
 }

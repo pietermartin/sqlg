@@ -14,7 +14,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.strategy.SqlgVertexStepCompiled;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
@@ -308,15 +308,15 @@ public class TestOptionalWithOrder extends BaseTest {
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
         //This query is no fully optimized.
-        //The range messes it up, so it has a SqlgVertexStepCompiled
+        //The range messes it up, so it has a SqlgVertexStep
         assertStep(traversal.getSteps().get(0), true, false, false, true);
         Step<?,?> step = traversal.getSteps().get(1);
         Assert.assertTrue(step instanceof ChooseStep);
         ChooseStep<?,?,?> chooseStep = (ChooseStep<?, ?, ?>) step;
         Traversal.Admin<?, ?> traversal1 = chooseStep.getLocalChildren().get(0);
-        Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStepCompiled);
+        Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStep);
         assertStep(traversal1.getSteps().get(0), false, true, true, true);
-        //There is another SqlgVertexStepCompiled but it is not being asserted
+        //There is another SqlgVertexStep but it is not being asserted
 
         Assert.assertEquals(3, paths.size());
 

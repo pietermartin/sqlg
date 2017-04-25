@@ -40,7 +40,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
 
     private RecordId parent;
     //Mostly an emit is for only one traverser.
-    //However for SqlgVertexStepCompiled the same element can be incoming multiple times each with a different path thus far.
+    //However for SqlgVertexStep the same element can be incoming multiple times each with a different path thus far.
     //In this case the database is only queried once but the split happens for each incoming traverser.
     private List<Traverser.Admin<E>> traversers = new ArrayList<>();
     private List<Pair<Object, Comparator<?>>> comparatorValues;
@@ -114,7 +114,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         return fake;
     }
 
-    boolean isIncomingOnlyLocalOptionalStep() {
+    public boolean isIncomingOnlyLocalOptionalStep() {
         return incomingOnlyLocalOptionalStep;
     }
 
@@ -149,7 +149,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
      * @param pathSize Indicates the first objects ob the path to ignore.
      *                 For SqlgVertexStepCompile they are objects that are already on the path before the step is executed.
      */
-    void evaluateElementValueTraversal(int pathSize, Traverser.Admin<E> traverser) {
+    public void evaluateElementValueTraversal(int pathSize, Traverser.Admin<E> traverser) {
         for (int i = this.sqlgComparatorHolders.size() - 1; i >= 0; i--) {
             if (this.comparatorValues == null) {
                 this.comparatorValues = new ArrayList<>();
