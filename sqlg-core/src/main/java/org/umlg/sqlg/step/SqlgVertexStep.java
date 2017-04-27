@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
@@ -33,7 +34,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     private LinkedListMultimap<RecordId, Traverser.Admin<E>> recordIdHeadTraverserAdminMultimap = LinkedListMultimap.create();
     //Some incoming traverser will have no results but still needs to return
     private List<Traverser.Admin<E>> traversersWithNoElements = new ArrayList<>();
-    private Map<SchemaTable, Iterator<List<Emit<E>>>> schemaTableElements = new LinkedHashMap<>();
+    private Map<SchemaTable, ListIterator<List<Emit<E>>>> schemaTableElements = new LinkedHashMap<>();
     private Map<SchemaTable, List<Long>> schemaTableParentIds = new LinkedHashMap<>();
     private Traverser.Admin<E> currentHead;
     private boolean first = true;
@@ -46,7 +47,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     private ReplacedStepTree replacedStepTree;
 
     private Emit<E> toEmit = null;
-    private Iterator<List<Emit<E>>> elementIter;
+    private ListIterator<List<Emit<E>>> elementIter;
 
     private List<Emit<E>> traversers = new ArrayList<>();
     private ListIterator<Emit<E>> traversersLstIter;
@@ -65,13 +66,22 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
 
     @Override
     protected Traverser.Admin<E> processNextStart() {
+        if (this.first) {
+            barrierTheHeads();
+            constructQueryPerSchemaTable();
+        }
         if (this.isForLocalTraversal) {
             if (this.reset) {
                 this.reset = false;
-                if (this.startEmittingEmptyTraversals && this.traversersWithNoElements.isEmpty()) {
-                    throw new SqlgNoSuchElementException();
+                throw new SqlgResetTraversalException();
+            }
+            if (this.startEmittingEmptyTraversals) {
+                if (!this.traversersWithNoElements.isEmpty()) {
+                    this.traversersWithNoElements.remove(0);
+                    this.reset = true;
+                    throw FastNoSuchElementException.instance();
                 } else {
-                    throw new SqlgResetTraversalException();
+                    throw new SqlgNoSuchElementException();
                 }
             }
         }
@@ -99,7 +109,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 }
                 return emit.getTraversers().remove(0);
             } else {
-                Iterator<Map.Entry<SchemaTable, Iterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entrySet().iterator();
+                Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entrySet().iterator();
                 if (schemaTableIteratorEntry.hasNext()) {
                     this.elementIter = schemaTableIteratorEntry.next().getValue();
                     schemaTableIteratorEntry.remove();
@@ -118,13 +128,10 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                         if (!this.first && !startEmittingEmptyTraversals && this.traversersWithNoElements.isEmpty()) {
                             throw new SqlgNoSuchElementException();
                         }
+                        //this means we are done with the current head/start.
+                        //throw FastNoSuchElementException to release the traverser down the line.
                         if (!this.first && !this.startEmittingEmptyTraversals) {
                             this.startEmittingEmptyTraversals = true;
-                            this.reset = true;
-                            throw FastNoSuchElementException.instance();
-                        }
-                        if (this.startEmittingEmptyTraversals && !this.traversersWithNoElements.isEmpty()) {
-                            this.traversersWithNoElements.remove(0);
                             this.reset = true;
                             throw FastNoSuchElementException.instance();
                         }
@@ -133,8 +140,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                             throw FastNoSuchElementException.instance();
                         }
                     }
-                    barrierTheHeads();
-                    flatMapCustom();
                 }
             }
         }
@@ -145,18 +150,22 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         this.heads.clear();
         this.recordIdHeadTraverserAdminMultimap.clear();
         this.schemaTableParentIds.clear();
-        while (this.starts.hasNext()) {
-            Traverser.Admin<E> h = this.starts.next();
-            E value = h.get();
-            SchemaTable schemaTable = value.getSchemaTablePrefixed();
-            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
-            traverserList.add(h);
-            this.recordIdHeadTraverserAdminMultimap.put((RecordId) value.id(), h);
-            this.traversersWithNoElements.add(h);
-            List<Long> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
-            if (!parentIdList.contains(((RecordId) value.id()).getId())) {
-                parentIdList.add(((RecordId) value.id()).getId());
+        try {
+            while (this.starts.hasNext()) {
+                Traverser.Admin<E> h = this.starts.next();
+                E value = h.get();
+                SchemaTable schemaTable = value.getSchemaTablePrefixed();
+                List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+                traverserList.add(h);
+                this.recordIdHeadTraverserAdminMultimap.put((RecordId) value.id(), h);
+                this.traversersWithNoElements.add(h);
+                List<Long> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+                if (!parentIdList.contains(((RecordId) value.id()).getId())) {
+                    parentIdList.add(((RecordId) value.id()).getId());
+                }
             }
+        } catch (SqlgNoSuchElementException e) {
+            this.traversersWithNoElements.add(EmptyTraverser.instance());
         }
         this.first = false;
     }
@@ -174,6 +183,18 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         Emit<E> emitToGetEmit = emits.get(0);
         List<Traverser.Admin<E>> heads = this.recordIdHeadTraverserAdminMultimap.get(emitToGetEmit.getParent());
         for (Traverser.Admin<E> head : heads) {
+            if (this.isForLocalTraversal) {
+                if (this.currentHead != null && this.currentHead != head) {
+                    this.currentHead = null;
+//                    this.traversersLstIter = this.traversers.listIterator();
+                    this.elementIter.previous();
+                    this.reset = true;
+                    //if the head changed then the traverser needs to be reset.
+                    //However a FastNoSuchElementException needs to be thrown first to complete the local iteration.
+                    throw FastNoSuchElementException.instance();
+                }
+                this.currentHead = head;
+            }
             this.traversersWithNoElements.remove(head);
             Preconditions.checkState(head != null, "head not found for " + emits.get(0).getParent().toString());
             Traverser.Admin<E> traverser = head;
@@ -202,20 +223,11 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 this.toEmit.duplicateTraverser();
                 this.traversers.add(this.toEmit);
             }
-            if (this.isForLocalTraversal) {
-                if (this.currentHead != null && this.currentHead != head) {
-                    this.currentHead = null;
-                    this.traversersLstIter = this.traversers.listIterator();
-                    this.reset = true;
-                    throw FastNoSuchElementException.instance();
-                }
-                this.currentHead = head;
-            }
         }
         this.traversersLstIter = this.traversers.listIterator();
     }
 
-    private void flatMapCustom() {
+    private void constructQueryPerSchemaTable() {
         for (SchemaTable schemaTable : this.heads.keySet()) {
             parseForStrategy(schemaTable);
             this.replacedStepTree.maybeAddLabelToLeafNodes();
@@ -248,7 +260,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
      * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
      * This is only called when not in BatchMode
      */
-    private Iterator<List<Emit<E>>> elements(SchemaTable schemaTable) {
+    private ListIterator<List<Emit<E>>> elements(SchemaTable schemaTable) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
@@ -257,7 +269,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         rootSchemaTableTree.setParentIds(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
-        return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true);
+        return new SqlgCompiledResultListIterator<>(new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true));
     }
 
     @Override

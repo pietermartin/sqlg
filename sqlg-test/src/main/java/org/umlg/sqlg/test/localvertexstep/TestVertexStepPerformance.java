@@ -1,10 +1,16 @@
 package org.umlg.sqlg.test.localvertexstep;
 
+import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.List;
 
 /**
  * Date: 2017/04/17
@@ -12,79 +18,55 @@ import org.umlg.sqlg.test.BaseTest;
  */
 public class TestVertexStepPerformance extends BaseTest {
 
-//    @Test
-//    public void testBatchingIncomingTraversersOnVertexStep() {
-//        int count = 10_000;
-//        for (int i = 0; i < count; i++) {
-//            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-//            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-//            a1.addEdge("ab", b1);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        GraphTraversal traversal = this.sqlgGraph.traversal()
-//                .V().where(__.hasLabel("A"))
-//                .out();
-//        printTraversalForm(traversal);
-//        List<Vertex> vertices = traversal.toList();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//        Assert.assertEquals(count, vertices.size());
-//    }
-//
-//    @Test
-//    public void testBatchingIncomingTraversersOnLocalVertexStep() {
-//        int count = 10_000;
-//        for (int i = 0; i < count; i++) {
-//            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
-//            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
-//            a1.addEdge("ab", b1);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        DefaultGraphTraversal traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
-//                .V().hasLabel("A")
-//                .local(
-//                        __.out()
-//                );
-////        while (traversal.hasNext()) {
-////            System.out.println(traversal.next());
-////        }
-//        printTraversalForm(traversal);
-//        List<Vertex> vertices = traversal.toList();
-//        stopWatch.stop();
-//        System.out.println(stopWatch.toString());
-//        Assert.assertEquals(count, vertices.size());
-//    }
-
     @Test
-    public void testCount() {
-        loadModern();
-        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>)this.sqlgGraph.traversal()
-                .V()
-                .local(
-                        __.out().count()
-                );
-        while (traversal.hasNext()) {
-            System.out.println(traversal.next());
+    public void testBatchingIncomingTraversersOnVertexStep() {
+        int count = 10_000;
+        for (int i = 0; i < count; i++) {
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+            a1.addEdge("ab", b1);
         }
-//        List<Long> counts = traversal.toList();
-//        for (Long count : counts) {
-//            System.out.println(count);
-//        }
-//        Assert.assertEquals(6, counts.size());
-//        Assert.assertTrue(counts.remove(3L));
-//        Assert.assertTrue(counts.remove(2L));
-//        Assert.assertTrue(counts.remove(1L));
-//        Assert.assertTrue(counts.remove(0L));
-//        Assert.assertTrue(counts.remove(0L));
-//        Assert.assertTrue(counts.remove(0L));
-//        Assert.assertTrue(counts.isEmpty());
+        this.sqlgGraph.tx().commit();
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        GraphTraversal traversal = this.sqlgGraph.traversal()
+                .V().where(__.hasLabel("A"))
+                .out();
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        Assert.assertEquals(count, vertices.size());
     }
+
+//    @Test
+    public void testBatchingIncomingTraversersOnLocalVertexStep() {
+        int count = 10_000;
+        for (int i = 0; i < count; i++) {
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
+            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B");
+            a1.addEdge("ab", b1);
+        }
+        this.sqlgGraph.tx().commit();
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        DefaultGraphTraversal traversal = (DefaultGraphTraversal) this.sqlgGraph.traversal()
+                .V().hasLabel("A")
+                .local(
+                        __.out()
+                );
+//        while (traversal.hasNext()) {
+//            System.out.println(traversal.next());
+//        }
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        stopWatch.stop();
+        System.out.println(stopWatch.toString());
+        Assert.assertEquals(count, vertices.size());
+    }
+
 
 //    @Test
 //    public void testGroup() {

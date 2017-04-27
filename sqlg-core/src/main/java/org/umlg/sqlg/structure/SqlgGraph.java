@@ -213,6 +213,7 @@ public class SqlgGraph implements Graph {
                         new SqlgLocalStepStrategy(),
                         new SqlgWhereStrategy(),
                         new SqlgChooseStepStrategy(),
+                        new SqlgHasStepStrategy(),
                         TopologyStrategy.build().create()));
     }
 

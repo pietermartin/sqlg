@@ -5,9 +5,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.umlg.sqlg.strategy.SqlgNoSuchElementException;
+import org.umlg.sqlg.strategy.SqlgResetTraversalException;
+import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,6 +44,7 @@ public class SqlgBranchStep<S, E, M> extends AbstractStep<S, E> implements Trave
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         List<Traverser.Admin<S>> tmpStarts = new ArrayList<>();
         List<Traverser.Admin<S>> tmpStartsToRemove = new ArrayList<>();
+        List<Traverser.Admin<M>> branchResult = new ArrayList<>();
         while (this.starts.hasNext()) {
             Traverser.Admin<S> start = this.starts.next();
             this.branchTraversal.addStart(start);
@@ -51,17 +53,38 @@ public class SqlgBranchStep<S, E, M> extends AbstractStep<S, E> implements Trave
 
         if (this.first) {
             this.first = false;
-            while (this.branchTraversal.hasNext()) {
-                Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
+            try {
+                while (true) {
+                    if (this.branchTraversal.hasNext()) {
+                        Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
+                        branchResult.add(branchTraverser);
+                    }
+                }
+//                while (this.branchTraversal.hasNext()) {
+//                Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
+//                branchResult.add(branchTraverser);
+//                }
+            } catch (SqlgResetTraversalException e) {
+                //swallow
+                //no need to reset the traversal as the branch traversal is done
+                System.out.println("ehat");
+            }
+            for (Traverser.Admin<M> branchTraverser : branchResult) {
                 for (Traverser.Admin<S> tmpStart : tmpStarts) {
                     List<Object> startObjects = tmpStart.path().objects();
                     List<Object> optionObjects = branchTraverser.path().objects();
                     int count = 0;
-                    boolean startsWith = true;
-                    for (Object startObject : startObjects) {
-                        startsWith = optionObjects.get(count++).equals(startObject);
-                        if (!startsWith) {
-                            break;
+                    boolean startsWith = false;
+                    //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
+                    if (!(optionObjects.get(0) instanceof SqlgElement)) {
+                        startsWith = true;
+                    }
+                    if (!startsWith) {
+                        for (Object startObject : startObjects) {
+                            startsWith = optionObjects.get(count++).equals(startObject);
+                            if (!startsWith) {
+                                break;
+                            }
                         }
                     }
                     if (startsWith) {
@@ -78,7 +101,6 @@ public class SqlgBranchStep<S, E, M> extends AbstractStep<S, E> implements Trave
                     falseOption.addStart(tmpStart);
                 }
             }
-
         }
         try {
             for (Traversal.Admin<S, E> option : this.traversalOptions.get(true)) {
@@ -95,81 +117,6 @@ public class SqlgBranchStep<S, E, M> extends AbstractStep<S, E> implements Trave
             }
         }
         throw new SqlgNoSuchElementException();
-    }
-
-//    @Override
-//    protected Iterator<Traverser.Admin<E>> standardAlgorithm() {
-//        while (true) {
-//            if (!this.first) {
-//                for (final List<Traversal.Admin<S, E>> options : this.traversalOptions.values()) {
-//                    for (final Traversal.Admin<S, E> option : options) {
-//                        if (option.hasNext())
-//                            return option.getEndStep();
-//                    }
-//                }
-//            }
-//            this.first = false;
-//            ///
-////            if (this.hasBarrier) {
-//            if (!this.starts.hasNext())
-//                throw FastNoSuchElementException.instance();
-//
-//            List<Traverser.Admin<S>> tmpStarts = new ArrayList<>();
-//            while (this.starts.hasNext()) {
-//                Traverser.Admin<S> start = this.starts.next();
-//                this.branchTraversal.addStart(start);
-//                tmpStarts.add(start);
-////                this.handleStart(start);
-//            }
-//
-//            List<Traversal.Admin<S, E>> tmpOptions = new ArrayList<>();
-//            while (this.branchTraversal.hasNext()) {
-//                Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
-//                M branch = branchTraverser.get();
-//                Traversal.Admin<S, E> option = (Traversal.Admin<S, E>) this.traversalOptions.get(branch);
-//                for (Traverser.Admin<S> tmpStart : tmpStarts) {
-//                    option.addStart(tmpStart);
-//                }
-//                tmpOptions.add(option);
-//            }
-//
-//            for (Traversal.Admin<S, E> tmpOption : tmpOptions) {
-//                while (tmpOption.hasNext()) {
-//                    return tmpOption.nextTraverser();
-//                }
-//            }
-//
-////            while (true) {
-////                try {
-////                    if (this.branchTraversal.hasNext()) {
-////                        Traverser.Admin<M> traverser = this.branchTraversal.nextTraverser();
-////                        return traverser;
-////                    }
-////                } catch (SqlgResetTraversalException e) {
-////                    this.branchTraversal.reset();
-////                } catch (SqlgNoSuchElementException e) {
-////                    e.printStackTrace();
-////                    throw FastNoSuchElementException.instance();
-////                }
-////            }
-//
-//
-////            } else {
-////                this.handleStart(this.starts.next());
-////            }
-//        }
-//    }
-
-    private final void handleStart(final Traverser.Admin<S> start) {
-        final M choice = TraversalUtil.apply(start, this.branchTraversal);
-        final List<Traversal.Admin<S, E>> branch = this.traversalOptions.containsKey(choice) ? this.traversalOptions.get(choice) : this.traversalOptions.get(Pick.none);
-        if (null != branch)
-            branch.forEach(traversal -> traversal.addStart(start.split()));
-        if (choice != Pick.any) {
-            final List<Traversal.Admin<S, E>> anyBranch = this.traversalOptions.get(Pick.any);
-            if (null != anyBranch)
-                anyBranch.forEach(traversal -> traversal.addStart(start.split()));
-        }
     }
 
     @Override
