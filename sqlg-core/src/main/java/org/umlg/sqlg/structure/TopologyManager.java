@@ -231,6 +231,51 @@ public class TopologyManager {
         }
 
     }
+    
+    public static void removeVertexColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX), "prefixedTable must be for a vertex. prefixedTable = " + prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", prefixedTable.substring(SchemaManager.VERTEX_PREFIX.length()))
+                    .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+                    .has("name",column)
+                    .drop().iterate();
+            
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
+    
+    public static void removeEdgeColumn(SqlgGraph sqlgGraph, String schema, String prefixedTable, String column) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.EDGE_PREFIX), "prefixedTable must be for an edge. prefixedTable = " + prefixedTable);
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+
+            traversalSource.V()
+            		.hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_EDGE_LABEL)
+            		.has("name", prefixedTable.substring(SchemaManager.EDGE_PREFIX.length()))
+            		.as("a")
+                    .in(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                    .in(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                    .has("name", schema)
+                    .select("a")
+                    .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+                    .has("name",column)
+                    .drop().iterate();
+            
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+
+    }
 
     public static void addIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, Index index, IndexType indexType, List<PropertyColumn> properties) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);

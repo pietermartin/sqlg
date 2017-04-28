@@ -13,4 +13,5 @@ public interface TopologyInf {
 
     String getName();
 
+    void remove(boolean preserveData);
 }

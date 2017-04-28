@@ -132,4 +132,10 @@ public class PropertyColumn implements TopologyInf {
     public String toString() {
         return this.abstractLabel.getSchema().getName() + "." + this.abstractLabel.getLabel() + "." + this.name;
     }
+    
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	this.abstractLabel.removeProperty(this, preserveData);
+    }
 }

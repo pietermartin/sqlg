@@ -356,7 +356,8 @@ public class Schema implements TopologyInf {
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
             Map<String, PropertyColumn> uncommittedPropertyColumnMap = vertexLabelEntry.getValue().getUncommittedPropertyTypeMap();
-            if (!uncommittedPropertyColumnMap.isEmpty()) {
+            Set<String> uncommittedRemovedProperties = vertexLabelEntry.getValue().getUncommittedRemovedProperties();
+            if (!uncommittedPropertyColumnMap.isEmpty() || !uncommittedRemovedProperties.isEmpty()) {
                 result.put(vertexQualifiedName, vertexLabelEntry.getValue());
             }
         }
@@ -1107,4 +1108,9 @@ public class Schema implements TopologyInf {
         return validationErrors;
     }
 
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	throw new UnsupportedOperationException();
+    }
 }

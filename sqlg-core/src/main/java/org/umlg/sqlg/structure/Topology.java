@@ -709,12 +709,8 @@ public class Topology {
             for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
                 String uncommittedSchemaTable = stringMapEntry.getKey();
                 AbstractLabel abstractLabel = stringMapEntry.getValue();
-                Map<String, PropertyType> committedProperties = this.allTableCache.get(uncommittedSchemaTable);
-                if (committedProperties != null) {
-                    committedProperties.putAll(abstractLabel.getPropertyTypeMap());
-                } else {
-                    this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
-                }
+                // we replace the whole map since getPropertyTypeMap() gives the full map, and we may have removed properties
+                this.allTableCache.put(uncommittedSchemaTable, abstractLabel.getPropertyTypeMap());
             }
 
             Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedSchemaTableForeignKeys = getUncommittedSchemaTableForeignKeys();

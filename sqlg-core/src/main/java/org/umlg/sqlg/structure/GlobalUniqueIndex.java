@@ -166,4 +166,10 @@ public class GlobalUniqueIndex implements TopologyInf {
     public String toString() {
         return toJson().toString();
     }
+    
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	throw new UnsupportedOperationException();
+    }
 }

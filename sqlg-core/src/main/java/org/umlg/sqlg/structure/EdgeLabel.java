@@ -536,6 +536,7 @@ public class EdgeLabel extends AbstractLabel {
             foundSomething = true;
             edgeLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             edgeLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
+            edgeLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
         }
 
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
@@ -583,5 +584,18 @@ public class EdgeLabel extends AbstractLabel {
     @Override
     protected String getPrefix() {
         return SchemaManager.EDGE_PREFIX;
+    }
+    
+    @Override
+    void removeProperty(PropertyColumn propertyColumn,boolean preserveData){
+    	this.getSchema().getTopology().lock();
+    	if (!uncommittedRemovedProperties.contains(propertyColumn.getName())){
+    		uncommittedRemovedProperties.add(propertyColumn.getName());
+    		TopologyManager.removeEdgeColumn(this.sqlgGraph, this.getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName());
+    		if (!preserveData){
+    			removeColumn(this.getSchema().getName(), EDGE_PREFIX + getLabel(), propertyColumn.getName());
+    		}
+    		this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
+    	}
     }
 }

@@ -245,4 +245,10 @@ public class Index implements TopologyInf {
     public AbstractLabel getParentLabel() {
 		return abstractLabel;
 	}
+    
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	throw new UnsupportedOperationException();
+    }
 }

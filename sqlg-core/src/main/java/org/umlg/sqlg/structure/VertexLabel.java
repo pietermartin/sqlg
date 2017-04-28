@@ -124,7 +124,7 @@ public class VertexLabel extends AbstractLabel {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
                 Map<String, PropertyColumn> propertyMap = outEdgeLabel.getUncommittedPropertyTypeMap();
-                if (!propertyMap.isEmpty()) {
+                if (!propertyMap.isEmpty() || !outEdgeLabel.getUncommittedRemovedProperties().isEmpty()) {
                     result.put(outEdgeLabel.getLabel(), outEdgeLabel);
                 }
             }
@@ -402,6 +402,7 @@ public class VertexLabel extends AbstractLabel {
         if (abstractLabelNode.isPresent()) {
             vertexLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             vertexLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
+            vertexLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
         }
 
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutEdgeLabels.isEmpty()) {
@@ -591,5 +592,18 @@ public class VertexLabel extends AbstractLabel {
             result.getLeft().add(SchemaTable.of(uncommittedEdgeLabelEntry.getValue().getSchema().getName(), SchemaManager.EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
         }
         return result;
+    }
+    
+    @Override
+    void removeProperty(PropertyColumn propertyColumn,boolean preserveData){
+    	this.getSchema().getTopology().lock();
+    	if (!uncommittedRemovedProperties.contains(propertyColumn.getName())){
+    		uncommittedRemovedProperties.add(propertyColumn.getName());
+    		TopologyManager.removeVertexColumn(this.sqlgGraph, this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
+    		if (!preserveData){
+    			removeColumn(this.schema.getName(), VERTEX_PREFIX + getLabel(), propertyColumn.getName());
+    		}
+    		this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
+    	}
     }
 }
