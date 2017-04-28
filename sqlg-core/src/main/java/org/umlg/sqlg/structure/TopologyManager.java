@@ -277,12 +277,14 @@ public class TopologyManager {
 
     }
 
-    public static void addIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, Index index, IndexType indexType, List<PropertyColumn> properties) {
+    public static void addIndex(SqlgGraph sqlgGraph, Index index) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             //get the abstractLabel's vertex
             GraphTraversalSource traversalSource = sqlgGraph.topology();
             List<Vertex> abstractLabelVertexes;
+            
+            AbstractLabel abstractLabel=index.getParentLabel();
             if (abstractLabel instanceof VertexLabel) {
                 abstractLabelVertexes = traversalSource.V()
                         .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
@@ -307,7 +309,7 @@ public class TopologyManager {
             Vertex indexVertex = sqlgGraph.addVertex(
                     T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_INDEX,
                     SQLG_SCHEMA_INDEX_NAME, index.getName(),
-                    SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.toString(),
+                    SQLG_SCHEMA_INDEX_INDEX_TYPE, index.getIndexType().toString(),
                     CREATED_ON, LocalDateTime.now()
             );
 
@@ -316,7 +318,7 @@ public class TopologyManager {
             } else {
                 abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
             }
-            for (PropertyColumn property : properties) {
+            for (PropertyColumn property : index.getProperties()) {
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
                         .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
                         .has("name", property.getName())
@@ -326,6 +328,50 @@ public class TopologyManager {
                 Vertex propertyVertex = propertyVertexes.get(0);
                 indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
             }
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+    
+    public static void removeIndex(SqlgGraph sqlgGraph, Index index) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+        	GraphTraversalSource traversalSource = sqlgGraph.topology();
+        	List<Vertex> abstractLabelVertexes;
+            
+            AbstractLabel abstractLabel=index.getParentLabel();
+            if (abstractLabel instanceof VertexLabel) {
+                abstractLabelVertexes = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has(SQLG_SCHEMA_SCHEMA_NAME, abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .has("name", abstractLabel.getLabel())
+                        .toList();
+            } else {
+                abstractLabelVertexes = traversalSource.V()
+                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+                        .has(SQLG_SCHEMA_SCHEMA_NAME, abstractLabel.getSchema().getName())
+                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+                        .has("name", abstractLabel.getLabel())
+                        .dedup()
+                        .toList();
+            }
+        	if (abstractLabelVertexes.size()>0){
+        		Vertex v=abstractLabelVertexes.get(0);
+        		traversalSource.V(v.id())
+        			.out(abstractLabel instanceof VertexLabel?SQLG_SCHEMA_VERTEX_INDEX_EDGE:SQLG_SCHEMA_EDGE_INDEX_EDGE)
+        			.has(SQLG_SCHEMA_INDEX_NAME,index.getName())
+        			.out(SQLG_SCHEMA_INDEX_PROPERTY_EDGE)
+        			.drop()
+        			.iterate();
+        		traversalSource.V(v.id())
+	    			.out(abstractLabel instanceof VertexLabel?SQLG_SCHEMA_VERTEX_INDEX_EDGE:SQLG_SCHEMA_EDGE_INDEX_EDGE)
+	    			.has(SQLG_SCHEMA_INDEX_NAME,index.getName())
+	    			.drop()
+	    			.iterate();
+        	}
+            
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

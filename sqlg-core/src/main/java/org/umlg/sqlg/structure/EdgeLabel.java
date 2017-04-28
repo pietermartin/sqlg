@@ -437,7 +437,7 @@ public class EdgeLabel extends AbstractLabel {
             return false;
         }
         EdgeLabel otherEdgeLabel = (EdgeLabel) other;
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
             VertexLabel otherVertexLabel = otherEdgeLabel.uncommittedOutVertexLabels.iterator().next();
             return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
@@ -537,7 +537,8 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedProperties", abstractLabelNode.get().get("uncommittedProperties"));
             edgeLabelNode.set("uncommittedIndexes", abstractLabelNode.get().get("uncommittedIndexes"));
             edgeLabelNode.set("uncommittedRemovedProperties", abstractLabelNode.get().get("uncommittedRemovedProperties"));
-        }
+            edgeLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));
+          }
 
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             foundSomething = true;

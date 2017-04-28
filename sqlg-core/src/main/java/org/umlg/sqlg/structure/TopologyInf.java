@@ -13,5 +13,9 @@ public interface TopologyInf {
 
     String getName();
 
+    /**
+     * remove the topology item
+     * @param preserveData if true we don't delete at the SQL level
+     */
     void remove(boolean preserveData);
 }
