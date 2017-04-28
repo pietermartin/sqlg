@@ -615,9 +615,14 @@ public class EdgeLabel extends AbstractLabel {
          sql.append(sqlDialect.maybeWrapInQoutes(schema));
          sql.append(".");
          sql.append(sqlDialect.maybeWrapInQoutes(tableName));
-         sql.append(" CASCADE");
+         if (sqlDialect.supportsCascade()){
+        	 sql.append(" CASCADE");
+         }
          if (logger.isDebugEnabled()) {
              logger.debug(sql.toString());
+         }
+         if (sqlDialect.needsSemicolon()) {
+             sql.append(";");
          }
          Connection conn = sqlgGraph.tx().getConnection();
          try (Statement stmt = conn.createStatement()) {

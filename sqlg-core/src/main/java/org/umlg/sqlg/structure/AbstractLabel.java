@@ -385,7 +385,7 @@ public abstract class AbstractLabel implements TopologyInf {
             for (JsonNode propertyNode : removedPropertyArrayNode) {
             	String pName=propertyNode.asText();
             	PropertyColumn old=this.properties.remove(pName);
-                if (fire && old==null){
+                if (fire && old!=null){
                 	this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
@@ -403,7 +403,7 @@ public abstract class AbstractLabel implements TopologyInf {
             for (JsonNode indexNode : removedIndexArrayNode) {
             	String iName=indexNode.asText();
             	Index old=this.indexes.remove(iName);
-                if (fire && old==null){
+                if (fire && old!=null){
                 	this.getSchema().getTopology().fire(old, "", TopologyChangeAction.DELETE);
                 }
             }
@@ -451,7 +451,9 @@ public abstract class AbstractLabel implements TopologyInf {
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
         sql.append(" DROP COLUMN IF EXISTS ");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(column));
-        sql.append(" CASCADE");
+        if (sqlgGraph.getSqlDialect().supportsCascade()){
+        	sql.append(" CASCADE");
+        }
         if (sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
         }

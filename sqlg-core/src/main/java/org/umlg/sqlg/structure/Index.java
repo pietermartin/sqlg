@@ -266,6 +266,9 @@ public class Index implements TopologyInf {
          sql.append(sqlDialect.maybeWrapInQoutes(getParentLabel().getSchema().getName()));
          sql.append(".");
          sql.append(sqlDialect.maybeWrapInQoutes(getName()));
+         if (sqlDialect.needsSemicolon()) {
+             sql.append(";");
+         }
          if (logger.isDebugEnabled()) {
              logger.debug(sql.toString());
          }

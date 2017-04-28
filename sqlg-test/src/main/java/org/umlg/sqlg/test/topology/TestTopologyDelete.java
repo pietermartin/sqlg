@@ -34,7 +34,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.umlg.sqlg.structure.EdgeLabel;
 import org.umlg.sqlg.structure.Index;
@@ -144,13 +143,11 @@ public class TestTopologyDelete extends BaseTest {
 	
 	
 	@Test
-	@Ignore
 	public void testDeleteVertexPropertySchema() throws Exception {
 		testDeleteVertexProperty("MySchema");
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteVertexPropertyNoSchema() throws Exception {
 		testDeleteVertexProperty(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -249,13 +246,11 @@ public class TestTopologyDelete extends BaseTest {
 	
 
 	@Test
-	@Ignore
 	public void testDeleteEdgePropertySchema() throws Exception {
 		testDeleteEdgeProperty("MySchema");
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteEdgePropertyNoSchema() throws Exception {
 		testDeleteEdgeProperty(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -350,13 +345,11 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteVertexIndexSchema() throws Exception {
 		testDeleteVertexIndex("MySchema");
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteVertexIndexNoSchema() throws Exception {
 		testDeleteVertexIndex(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -440,13 +433,11 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteEdgeIndexSchema() throws Exception {
 		testDeleteEdgeIndex("MySchema");
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteEdgeIndexNoSchema() throws Exception {
 		testDeleteEdgeIndex(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
