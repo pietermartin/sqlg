@@ -138,6 +138,34 @@ public class TopologyManager {
         }
     }
 
+    public static void removeEdgeLabel(SqlgGraph sqlgGraph, EdgeLabel edge){
+    	 BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+         try {
+             GraphTraversalSource traversalSource = sqlgGraph.topology();
+             List<Vertex> edges=
+	             traversalSource.V()
+		          	.hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
+		          	.has("name", edge.getSchema().getName())
+		         	.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+		         	.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+		         	.has("name",edge.getName()).toList();
+	         if (edges.size()>0){
+	        	 Vertex edgeV=edges.get(0);
+             
+	        	 traversalSource.V(edgeV)
+	             	.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+	             	.drop()
+            		.iterate();
+	        	 traversalSource.V(edgeV)
+	             	.drop()
+	             	.iterate();
+	         }
+             	
+         } finally {
+             sqlgGraph.tx().batchMode(batchModeType);
+         }
+    }
+    
     public static void addLabelToEdge(SqlgGraph sqlgGraph, String schema, String prefixedTable, boolean in, SchemaTable foreignKey) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {

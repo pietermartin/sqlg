@@ -39,7 +39,8 @@ public class Schema implements TopologyInf {
 
     private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
-
+    private Set<String> uncommittedRemovedEdges = new HashSet<>();
+    
     public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
     private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
     private Map<String, GlobalUniqueIndex> globalUniqueIndexes = new HashMap<>();
@@ -284,6 +285,9 @@ public class Schema implements TopologyInf {
         result.putAll(this.outEdgeLabels);
         if (this.topology.isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
+            for (String e:uncommittedRemovedEdges){
+            	result.remove(e);
+            }
         }
         return result;
     }
@@ -297,12 +301,18 @@ public class Schema implements TopologyInf {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
                 result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
             }
+            for (String e:uncommittedRemovedEdges){
+            	result.remove(e);
+            }
         }
         return result;
     }
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
+        if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdges.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
+        	return Optional.empty();
+        }
         EdgeLabel edgeLabel = this.outEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
         if (edgeLabel != null) {
             return Optional.of(edgeLabel);
@@ -550,6 +560,11 @@ public class Schema implements TopologyInf {
                 globalUniqueIndex.afterCommit();
             }
         }
+        for (Iterator<String> it=uncommittedRemovedEdges.iterator();it.hasNext();){
+        	String s=it.next();
+        	this.outEdgeLabels.remove(s);
+        	it.remove();
+        }
         this.uncommittedOutEdgeLabels.clear();
         this.committed = true;
     }
@@ -585,6 +600,7 @@ public class Schema implements TopologyInf {
             }
         }
         this.uncommittedOutEdgeLabels.clear();
+        this.uncommittedRemovedEdges.clear();
     }
 
     boolean isSqlgSchema() {
@@ -1112,5 +1128,26 @@ public class Schema implements TopologyInf {
     @Override
     public void remove(boolean preserveData) {
     	throw new UnsupportedOperationException();
+    }
+    
+    void removeEdge(EdgeLabel edgeLabel,boolean preserveData){
+    	getTopology().lock();
+    	String fn=this.name + "." + EDGE_PREFIX + edgeLabel.getName();
+    	
+    	if (!uncommittedRemovedEdges.contains(fn)){
+    		uncommittedRemovedEdges.add(fn);
+    		TopologyManager.removeEdgeLabel(this.sqlgGraph, edgeLabel);
+    		for (VertexLabel lbl:edgeLabel.getOutVertexLabels()){
+    			lbl.removeOutEdge(edgeLabel);
+    		}
+    		for (VertexLabel lbl:edgeLabel.getInVertexLabels()){
+    			lbl.removeInEdge(edgeLabel);
+    		}
+    		
+    		if (!preserveData){
+    			edgeLabel.delete();
+    		}
+    		getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
+    	}
     }
 }

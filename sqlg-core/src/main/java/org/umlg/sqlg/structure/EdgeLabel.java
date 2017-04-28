@@ -599,4 +599,35 @@ public class EdgeLabel extends AbstractLabel {
     		this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
     	}
     }
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	getSchema().removeEdge(this,preserveData);
+    }
+    
+    void delete(){
+    	 String schema = getSchema().getName();
+         String tableName = EDGE_PREFIX + getLabel();
+
+         SqlDialect sqlDialect = this.sqlgGraph.getSqlDialect();
+         sqlDialect.assertTableName(tableName);
+         StringBuilder sql = new StringBuilder("DROP TABLE IF EXISTS ");
+         sql.append(sqlDialect.maybeWrapInQoutes(schema));
+         sql.append(".");
+         sql.append(sqlDialect.maybeWrapInQoutes(tableName));
+         sql.append(" CASCADE");
+         if (logger.isDebugEnabled()) {
+             logger.debug(sql.toString());
+         }
+         Connection conn = sqlgGraph.tx().getConnection();
+         try (Statement stmt = conn.createStatement()) {
+             stmt.execute(sql.toString());
+         } catch (SQLException e) {
+             throw new RuntimeException(e);
+         }
+    }
+    
+    public String getFullName(){
+    	return getSchema().getName()+"."+getName();
+    }
 }

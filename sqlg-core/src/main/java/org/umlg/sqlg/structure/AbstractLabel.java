@@ -458,9 +458,6 @@ public abstract class AbstractLabel implements TopologyInf {
         if (logger.isDebugEnabled()) {
             logger.debug(sql.toString());
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
-        }
         Connection conn = sqlgGraph.tx().getConnection();
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql.toString());

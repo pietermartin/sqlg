@@ -35,7 +35,10 @@ public class VertexLabel extends AbstractLabel {
     private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedInEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
-
+    private Set<String> uncommittedRemovedInEdgeLabels = new HashSet();
+    private Set<String> uncommittedRemovedOutEdgeLabels = new HashSet();
+    
+    
     static VertexLabel createSqlgSchemaVertexLabel(Schema schema, String label, Map<String, PropertyType> columns) {
         Preconditions.checkArgument(schema.isSqlgSchema(), "createSqlgSchemaVertexLabel may only be called for \"%s\"", SQLG_SCHEMA);
         VertexLabel vertexLabel = new VertexLabel(schema, label);
@@ -83,6 +86,9 @@ public class VertexLabel extends AbstractLabel {
         result.putAll(this.inEdgeLabels);
         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedInEdgeLabels);
+            for (String e:this.uncommittedRemovedInEdgeLabels){
+            	result.remove(e);
+            }
         }
         return result;
     }
@@ -92,6 +98,9 @@ public class VertexLabel extends AbstractLabel {
         result.putAll(this.outEdgeLabels);
         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
+            for (String e:this.uncommittedRemovedOutEdgeLabels){
+            	result.remove(e);
+            }
         }
         return Collections.unmodifiableMap(result);
     }
@@ -111,6 +120,7 @@ public class VertexLabel extends AbstractLabel {
         return Optional.empty();
     }
 
+    
     /**
      * A getter for a map of all uncommitted {@link EdgeLabel}s. This may include {@link EdgeLabel}s that are already
      * committed but that contain uncommitted properties.
@@ -310,6 +320,18 @@ public class VertexLabel extends AbstractLabel {
             edgeLabelEntryIter.remove();
 
         }
+        for (Iterator<String> it=this.uncommittedRemovedOutEdgeLabels.iterator();it.hasNext();){
+        	String s=it.next();
+        	this.outEdgeLabels.remove(s);
+        	it.remove();
+        }
+        
+        for (Iterator<String> it=this.uncommittedRemovedInEdgeLabels.iterator();it.hasNext();){
+        	String s=it.next();
+        	this.inEdgeLabels.remove(s);
+        	it.remove();
+        }
+        
         for (EdgeLabel edgeLabel : this.outEdgeLabels.values()) {
             edgeLabel.afterCommit();
         }
@@ -417,6 +439,15 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
         }
 
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedOutEdgeLabels.isEmpty()) {
+            ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (String edgeLabel : this.uncommittedRemovedOutEdgeLabels) {
+                outEdgeLabelsArrayNode.add(edgeLabel);
+            }
+            vertexLabelNode.set("uncommittedRemovedOutEdgeLabels", outEdgeLabelsArrayNode);
+        }
+
+        
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInEdgeLabels.isEmpty()) {
             ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels.values()) {
@@ -428,6 +459,14 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
         }
 
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedInEdgeLabels.isEmpty()) {
+            ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (String edgeLabel : this.uncommittedRemovedInEdgeLabels) {
+                outEdgeLabelsArrayNode.add(edgeLabel);
+            }
+            vertexLabelNode.set("uncommittedRemovedInEdgeLabels", outEdgeLabelsArrayNode);
+        }
+        
         //check for uncommittedProperties in existing edges
         ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         boolean foundOutEdgeLabel = false;
@@ -496,6 +535,16 @@ public class VertexLabel extends AbstractLabel {
                 }
             }
         }
+        ArrayNode uncommittedRemoveOutEdgeLabels = (ArrayNode) vertexLabelJson.get("uncommittedRemovedOutEdgeLabels");
+        if (uncommittedRemoveOutEdgeLabels != null) {
+        	for (JsonNode n:uncommittedRemoveOutEdgeLabels){
+        		String s=n.asText();
+        		EdgeLabel lbl=this.outEdgeLabels.remove(s);
+        		if (lbl!=null){
+        			this.getSchema().getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+        		}
+        	}
+        }
     }
 
     void fromNotifyJsonInEdge(JsonNode vertexLabelJson) {
@@ -521,6 +570,16 @@ public class VertexLabel extends AbstractLabel {
                             this.getSchema().getName() + "." + this.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
                 }
             }
+        }
+        ArrayNode uncommittedRemoveInEdgeLabels = (ArrayNode) vertexLabelJson.get("uncommittedRemovedInEdgeLabels");
+        if (uncommittedRemoveInEdgeLabels != null) {
+        	for (JsonNode n:uncommittedRemoveInEdgeLabels){
+        		String s=n.asText();
+        		EdgeLabel lbl=this.inEdgeLabels.remove(s);
+        		if (lbl!=null){
+        			this.getSchema().getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+        		}
+        	}
         }
     }
 
@@ -606,5 +665,13 @@ public class VertexLabel extends AbstractLabel {
     		}
     		this.getSchema().getTopology().fire(propertyColumn, "", TopologyChangeAction.DELETE);
     	}
+    }
+    
+    void removeOutEdge(EdgeLabel lbl){
+    	uncommittedRemovedOutEdgeLabels.add(lbl.getFullName());
+    }
+    
+    void removeInEdge(EdgeLabel lbl){
+    	uncommittedRemovedInEdgeLabels.add(lbl.getFullName());
     }
 }
