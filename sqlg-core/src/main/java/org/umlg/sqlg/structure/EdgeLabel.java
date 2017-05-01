@@ -1,21 +1,34 @@
 package org.umlg.sqlg.structure;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
-import java.sql.*;
-import java.util.*;
-
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 
 /**
  * Date: 2016/09/04
@@ -26,10 +39,13 @@ public class EdgeLabel extends AbstractLabel {
     private Logger logger = LoggerFactory.getLogger(EdgeLabel.class.getName());
     //This just won't stick in my brain.
     //hand (out) ----<label>---- finger (in)
-    private Set<VertexLabel> outVertexLabels = new HashSet<>();
-    private Set<VertexLabel> inVertexLabels = new HashSet<>();
+    Set<VertexLabel> outVertexLabels = new HashSet<>();
+    Set<VertexLabel> inVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedOutVertexLabels = new HashSet<>();
     private Set<VertexLabel> uncommittedInVertexLabels = new HashSet<>();
+    private Set<VertexLabel> uncommittedRemovedInVertexLabels = new HashSet<>();
+    private Set<VertexLabel> uncommittedRemovedOutVertexLabels = new HashSet<>();
+    
     private Topology topology;
 
     static EdgeLabel loadSqlgSchemaEdgeLabel(String edgeLabelName, VertexLabel outVertexLabel, VertexLabel inVertexLabel, Map<String, PropertyType> properties) {
@@ -120,11 +136,11 @@ public class EdgeLabel extends AbstractLabel {
         }
         buildColumns(this.sqlgGraph, columns, sql);
         sql.append(", ");
-        sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END));
+        sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getFullName() + SchemaManager.IN_VERTEX_COLUMN_END));
         sql.append(" ");
         sql.append(sqlDialect.getForeignKeyTypeDefinition());
         sql.append(", ");
-        sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName() + "." + outVertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END));
+        sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getFullName() + SchemaManager.OUT_VERTEX_COLUMN_END));
         sql.append(" ");
         sql.append(sqlDialect.getForeignKeyTypeDefinition());
 
@@ -194,10 +210,20 @@ public class EdgeLabel extends AbstractLabel {
             this.inVertexLabels.add(vertexLabel);
             it.remove();
         }
+        for(Iterator<VertexLabel> it = this.uncommittedRemovedInVertexLabels.iterator(); it.hasNext(); ){
+        	VertexLabel vertexLabel = it.next();
+        	this.inVertexLabels.remove(vertexLabel);
+        	it.remove();
+        }
         for (Iterator<VertexLabel> it = this.uncommittedOutVertexLabels.iterator(); it.hasNext(); ) {
             VertexLabel vertexLabel = it.next();
             this.outVertexLabels.add(vertexLabel);
             it.remove();
+        }
+        for(Iterator<VertexLabel> it = this.uncommittedRemovedOutVertexLabels.iterator(); it.hasNext(); ){
+        	VertexLabel vertexLabel = it.next();
+        	this.outVertexLabels.remove(vertexLabel);
+        	it.remove();
         }
     }
 
@@ -255,20 +281,15 @@ public class EdgeLabel extends AbstractLabel {
 
     Set<String> getAllEdgeForeignKeys() {
         Set<String> result = new HashSet<>();
-        for (VertexLabel vertexLabel : this.inVertexLabels) {
-            result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+        for (VertexLabel vertexLabel : this.getInVertexLabels()) {
+        	if (!this.getSchema().getTopology().isWriteLockHeldByCurrentThread() || !this.uncommittedRemovedInVertexLabels.contains(vertexLabel)){
+        		result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+        	}
         }
-        for (VertexLabel vertexLabel : this.outVertexLabels) {
-            result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
-        }
-        //noinspection Duplicates
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-            for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
-                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
-            }
-            for (VertexLabel vertexLabel : this.uncommittedOutVertexLabels) {
-                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
-            }
+        for (VertexLabel vertexLabel : this.getOutVertexLabels()) {
+        	if (!this.getSchema().getTopology().isWriteLockHeldByCurrentThread() || !this.uncommittedRemovedOutVertexLabels.contains(vertexLabel)){
+        		result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+        	}
         }
         return result;
     }
@@ -278,10 +299,14 @@ public class EdgeLabel extends AbstractLabel {
         //noinspection Duplicates
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
-                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+            	if (!this.uncommittedRemovedInVertexLabels.contains(vertexLabel)){
+            		result.add(vertexLabel.getFullName() + SchemaManager.IN_VERTEX_COLUMN_END);
+            	}
             }
             for (VertexLabel vertexLabel : this.uncommittedOutVertexLabels) {
-                result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            	if (!this.uncommittedRemovedOutVertexLabels.contains(vertexLabel)){
+            		result.add(vertexLabel.getFullName() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            	}
             }
         }
         return result;
@@ -292,8 +317,9 @@ public class EdgeLabel extends AbstractLabel {
         result.addAll(this.outVertexLabels);
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedOutVertexLabels);
+           	result.removeAll(this.uncommittedRemovedOutVertexLabels);
         }
-        return result;
+        return Collections.unmodifiableSet(result);
     }
 
     public Set<VertexLabel> getInVertexLabels() {
@@ -301,9 +327,46 @@ public class EdgeLabel extends AbstractLabel {
         result.addAll(this.inVertexLabels);
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedInVertexLabels);
+        	result.removeAll(this.uncommittedInVertexLabels);
         }
-        return result;
+        return Collections.unmodifiableSet(result);
     }
+    
+    public Set<EdgeRole> getOutEdgeRoles() {
+        Set<EdgeRole> result = new HashSet<>();
+        for (VertexLabel lbl:this.outVertexLabels){
+        	if (!this.uncommittedOutVertexLabels.contains(lbl)){
+        		result.add(new EdgeRole(lbl,this,Direction.OUT,true));
+        	}
+        }
+        
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            for (VertexLabel lbl:this.uncommittedOutVertexLabels){
+            	if (!this.uncommittedOutVertexLabels.contains(lbl)){
+            		result.add(new EdgeRole(lbl,this,Direction.OUT,false));
+            	}
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    public Set<EdgeRole> getInEdgeRoles() {
+        Set<EdgeRole> result = new HashSet<>();
+        for (VertexLabel lbl:this.inVertexLabels){
+        	if (!this.uncommittedInVertexLabels.contains(lbl)){
+        		result.add(new EdgeRole(lbl,this,Direction.IN,true));
+        	}
+        }
+        
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+            for (VertexLabel lbl:this.uncommittedInVertexLabels){
+            	if (!this.uncommittedInVertexLabels.contains(lbl)){
+            		result.add(new EdgeRole(lbl,this,Direction.IN,false));
+            	}
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    } 
 
     public void ensureEdgeVertexLabelExist(Direction direction, VertexLabel vertexLabel) {
         //if the direction is OUT then the vertexLabel must be in the same schema as the edgeLabel (this)
@@ -550,6 +613,17 @@ public class EdgeLabel extends AbstractLabel {
             }
             edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
         }
+        
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedOutVertexLabels.isEmpty()) {
+            foundSomething = true;
+            ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel outVertexLabel : this.uncommittedRemovedOutVertexLabels) {
+                ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                outVertexLabelObjectNode.put("label", outVertexLabel.getLabel());
+                outVertexLabelArrayNode.add(outVertexLabelObjectNode);
+            }
+            edgeLabelNode.set("uncommittedRemovedOutVertexLabels", outVertexLabelArrayNode);
+        }
 
         if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
             foundSomething = true;
@@ -560,6 +634,17 @@ public class EdgeLabel extends AbstractLabel {
                 inVertexLabelArrayNode.add(inVertexLabelObjectNode);
             }
             edgeLabelNode.set("uncommittedInVertexLabels", inVertexLabelArrayNode);
+        }
+        
+        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedInVertexLabels.isEmpty()) {
+            foundSomething = true;
+            ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for (VertexLabel inVertexLabel : this.uncommittedRemovedInVertexLabels) {
+                ObjectNode inVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
+                inVertexLabelObjectNode.put("label", inVertexLabel.getLabel());
+                inVertexLabelArrayNode.add(inVertexLabelObjectNode);
+            }
+            edgeLabelNode.set("uncommittedRemovedInVertexLabels", inVertexLabelArrayNode);
         }
 
         if (foundSomething) {
@@ -632,7 +717,21 @@ public class EdgeLabel extends AbstractLabel {
          }
     }
     
-    public String getFullName(){
-    	return getSchema().getName()+"."+getName();
+    void deleteColumn(String column){
+    	removeColumn(getSchema().getName(),  EDGE_PREFIX + getLabel(), column);
+    }
+    
+    void removeOutVertexLabel(VertexLabel lbl,boolean preserveData){
+    	this.uncommittedRemovedOutVertexLabels.add(lbl);
+    	if (!preserveData){
+    		deleteColumn(lbl.getFullName() + SchemaManager.OUT_VERTEX_COLUMN_END);
+    	}
+    }
+    
+    void removeInVertexLabel(VertexLabel lbl,boolean preserveData){
+    	this.uncommittedRemovedInVertexLabels.add(lbl);
+    	if (!preserveData){
+    		deleteColumn(lbl.getFullName() + SchemaManager.IN_VERTEX_COLUMN_END);
+    	}
     }
 }

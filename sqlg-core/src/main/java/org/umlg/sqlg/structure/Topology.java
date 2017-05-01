@@ -1529,6 +1529,16 @@ public class Topology {
             foreignKeys.add(foreignKey);
         }
     }
+    
+    void removeFromEdgeForeignKeyCache(String name, String foreignKey) {
+        Set<String> foreignKeys = this.edgeForeignKeyCache.get(name);
+        if (foreignKeys != null) {
+            foreignKeys.remove(foreignKey);
+        }
+        if (foreignKeys.isEmpty()){
+        	this.edgeForeignKeyCache.remove(name);
+        }
+    }
 
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
         this.allTableCache.put(tableName, propertyTypeMap);
@@ -1561,6 +1571,22 @@ public class Topology {
         foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
+    void removeOutForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
+        if (foreignKeys != null) {
+         	foreignKeys.getRight().remove(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+        }
+    }
+
+    void removeInForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
+        if (foreignKeys != null) {
+            foreignKeys.getLeft().remove(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+        }
+    }
+    
     void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {
         this.uncommittedGlobalUniqueIndexes.add(globalUniqueIndex);
     }

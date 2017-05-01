@@ -116,6 +116,11 @@ public abstract class AbstractLabel implements TopologyInf {
     public String getName() {
         return this.label;
     }
+    
+    
+    public String getFullName(){
+    	return getSchema().getName()+"."+getName();
+    }
 
     public Map<String, PropertyColumn> getProperties() {
         Map<String, PropertyColumn> result = new HashMap<>();
@@ -479,4 +484,5 @@ public abstract class AbstractLabel implements TopologyInf {
     		this.getSchema().getTopology().fire(idx, "", TopologyChangeAction.DELETE);
     	}
     }
+
 }
