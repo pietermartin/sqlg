@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
+import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 
@@ -57,7 +58,11 @@ public class VertexStrategy extends BaseStrategy {
         MutableInt pathCount = new MutableInt(0);
         while (stepIterator.hasNext()) {
             Step<?, ?> step = stepIterator.next();
-            if (this.continueOptimization && isReplaceableStep(step.getClass())) {
+            if (this.reset) {
+                this.reset = false;
+                this.sqlgStep = null;
+            }
+            if (isReplaceableStep(step.getClass())) {
                 stepIterator.previous();
                 boolean keepGoing = handleStep(stepIterator, pathCount);
                 if (!keepGoing) {
@@ -81,6 +86,7 @@ public class VertexStrategy extends BaseStrategy {
 
     /**
      * EdgeOtherVertexStep can not be optimized as the direction information is lost.
+     *
      * @param stepIterator
      * @param step
      * @param pathCount
@@ -98,7 +104,6 @@ public class VertexStrategy extends BaseStrategy {
         }
         this.sqlgStep = constructSqlgStep(step);
         TraversalHelper.insertBeforeStep(this.sqlgStep, step, this.traversal);
-//        TraversalHelper.insertAfterStep(new NoOpBarrierStep<>(this.traversal), this.sqlgStep, this.traversal);
         return true;
     }
 

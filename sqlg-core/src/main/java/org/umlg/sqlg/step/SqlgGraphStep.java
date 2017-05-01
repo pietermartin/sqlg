@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.B_LP_O_P_S_SE_SL_TraverserGenerator;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.slf4j.Logger;
@@ -16,10 +15,10 @@ import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
-import org.umlg.sqlg.strategy.SqlgStep;
 import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.SqlgTraverserGenerator;
 
 import java.util.*;
 
@@ -62,7 +61,8 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraversers().remove(0);
+//                return emit.getTraversers().remove(0);
+                return emit.getTraverser();
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
                 if (this.elementIter.hasNext()) {
@@ -77,7 +77,8 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraversers().remove(0);
+//                return emit.getTraversers().remove(0);
+                return emit.getTraverser();
             } else {
                 if (!this.isStart) {
                     this.previousHead = this.starts.next();
@@ -142,7 +143,8 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                     traverser = previousHead.split(e, this);
                 } else if (first) {
                     first = false;
-                    traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
+//                    traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
+                    traverser = SqlgTraverserGenerator.instance().generate(e, this, 1L);
                 } else {
                     traverser = traverser.split(e, this);
                 }
@@ -150,12 +152,13 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
             }
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
-        this.toEmit.addTraverser(traverser);
+        this.toEmit.setTraverser(traverser);
+//        this.toEmit.addTraverser(traverser);
         this.toEmit.evaluateElementValueTraversal(0, traverser);
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);
-            this.toEmit.duplicateTraverser();
+//            this.toEmit.duplicateTraversers();
             this.traversers.add(this.toEmit);
         }
     }

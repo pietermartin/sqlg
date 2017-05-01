@@ -14,15 +14,16 @@ import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgStep;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.stream.Stream;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/03/04
- *         <p>
- *         Got tired of TinkerPop's static strategy vibe.
  */
 public class GraphStrategy extends BaseStrategy {
 
@@ -61,6 +62,28 @@ public class GraphStrategy extends BaseStrategy {
             return;
         }
         combineSteps();
+    }
+
+    void combineSteps() {
+        List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
+        ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
+        MutableInt pathCount = new MutableInt(0);
+        while (stepIterator.hasNext()) {
+            Step<?, ?> step = stepIterator.next();
+            if (isReplaceableStep(step.getClass())) {
+                stepIterator.previous();
+                boolean keepGoing = handleStep(stepIterator, pathCount);
+                if (!keepGoing) {
+                    break;
+                }
+            } else {
+                //If a step can not be replaced then its the end of optimizationinging.
+                break;
+            }
+        }
+        if (this.currentTreeNodeNode != null) {
+            doLast();
+        }
     }
 
     @Override
@@ -134,7 +157,7 @@ public class GraphStrategy extends BaseStrategy {
 
     @Override
     protected boolean isReplaceableStep(Class<? extends Step> stepClass) {
-        return CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
+        return !this.reset && CONSECUTIVE_STEPS_TO_REPLACE.contains(stepClass);
     }
 
     @Override

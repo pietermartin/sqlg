@@ -37,7 +37,10 @@ public class TestRepeatStepVertexOut extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
-                .V(a1.id()).repeat(__.out()).until(__.hasLabel("C"));
+                .V(a1.id())
+                .repeat(
+                        __.out()
+                ).until(__.hasLabel("C"));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> t = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());

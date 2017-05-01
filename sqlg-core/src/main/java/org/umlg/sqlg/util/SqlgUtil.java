@@ -100,8 +100,7 @@ public class SqlgUtil {
                         subQueryStack,
                         subQueryDepth == subQueryStacks.size(),
                         lastElementIdCountMap,
-                        forParent,
-                        subQueryStacks.get(0).peekFirst().getSchemaTable()
+                        forParent
                 );
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
@@ -114,7 +113,7 @@ public class SqlgUtil {
                         if (!forParent) {
                             emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
                         } else {
-                            emit = new Emit<>(RecordId.from(subQueryStacks.get(0).peekFirst().getSchemaTable().withOutPrefix(), resultSet.getLong(1)), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+                            emit = new Emit<>(resultSet.getLong(1), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
                         }
                         if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
                             emit.setIncomingOnlyLocalOptionalStep(true);
@@ -166,8 +165,7 @@ public class SqlgUtil {
             LinkedList<SchemaTableTree> subQueryStack,
             boolean lastQueryStack,
             Map<String, Integer> lastElementIdCountMap,
-            boolean forParent,
-            SchemaTable parentSchemaTable
+            boolean forParent
     ) throws SQLException {
 
         List<Emit<E>> result = new ArrayList<>();
@@ -194,19 +192,19 @@ public class SqlgUtil {
                     //Elements that come before the last element in the path must not get the labels.
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
                         if (forParent) {
-                            result.add(new Emit<>(RecordId.from(parentSchemaTable.withOutPrefix(), resultSet.getLong(1)), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         } else {
                             result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         }
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
                         if (forParent) {
-                            result.add(new Emit<>(RecordId.from(parentSchemaTable.withOutPrefix(), resultSet.getLong(1)), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         } else {
                             result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         }
                     } else {
                         if (forParent) {
-                            result.add(new Emit<>(RecordId.from(parentSchemaTable.withOutPrefix(), resultSet.getLong(1)), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         } else {
                             result.add(new Emit<>(sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
                         }

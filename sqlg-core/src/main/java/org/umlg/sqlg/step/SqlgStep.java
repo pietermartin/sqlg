@@ -1,4 +1,4 @@
-package org.umlg.sqlg.strategy;
+package org.umlg.sqlg.step;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.umlg.sqlg.sql.parse.ReplacedStep;

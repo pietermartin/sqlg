@@ -6,7 +6,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.OrderGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -14,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
+import org.umlg.sqlg.step.SqlgChooseStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -237,8 +237,8 @@ public class TestOptionalWithOrder extends BaseTest {
                 .path();
         Assert.assertEquals(4, traversal.getSteps().size());
         List<Path> paths = traversal.toList();
-        assertStep(traversal.getSteps().get(0), true, true, true, true);
         Assert.assertEquals(2, traversal.getSteps().size());
+        assertStep(traversal.getSteps().get(0), true, true, true, true);
         Assert.assertEquals(7, paths.size());
 
         //all the paths of length 2 and 3 must be sorted
@@ -311,9 +311,9 @@ public class TestOptionalWithOrder extends BaseTest {
         //The range messes it up, so it has a SqlgVertexStep
         assertStep(traversal.getSteps().get(0), true, false, false, true);
         Step<?,?> step = traversal.getSteps().get(1);
-        Assert.assertTrue(step instanceof ChooseStep);
-        ChooseStep<?,?,?> chooseStep = (ChooseStep<?, ?, ?>) step;
-        Traversal.Admin<?, ?> traversal1 = chooseStep.getLocalChildren().get(0);
+        Assert.assertTrue(step instanceof SqlgChooseStepBarrier);
+        SqlgChooseStepBarrier<?,?,?> sqlgChooseStepBarrier = (SqlgChooseStepBarrier<?, ?, ?>) step;
+        Traversal.Admin<?, ?> traversal1 = sqlgChooseStepBarrier.getLocalChildren().get(0);
         Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStep);
         assertStep(traversal1.getSteps().get(0), false, true, true, true);
         //There is another SqlgVertexStep but it is not being asserted

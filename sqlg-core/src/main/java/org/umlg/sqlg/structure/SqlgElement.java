@@ -34,6 +34,8 @@ public abstract class SqlgElement implements Element {
     protected Map<String, Object> properties = new ConcurrentHashMap<>();
     private SqlgElementElementPropertyRollback elementPropertyRollback;
     boolean removed = false;
+    //Used in the SqlgBranchStepBarrier to sort the results by the start elements.
+    private long internalStartTraverserIndex;
 
     public SqlgElement(SqlgGraph sqlgGraph, String schema, String table) {
         this.sqlgGraph = sqlgGraph;
@@ -356,18 +358,6 @@ public abstract class SqlgElement implements Element {
     private static int setKeyValueAsParameter(SqlgGraph sqlgGraph, int parameterStartIndex, PreparedStatement preparedStatement, List<ImmutablePair<PropertyType, Object>> typeAndValues) throws SQLException {
         return SqlgUtil.setKeyValuesAsParameter(sqlgGraph, true, parameterStartIndex++, preparedStatement, typeAndValues);
     }
-
-//    protected <V> Map<String, ? extends Property<V>> internalGetAllProperties(final String... propertyKeys) {
-//        this.graph.tx().readWrite();
-//        load();
-//        Map<String, SqlgProperty<V>> properties = new HashMap<>();
-//        this.properties.entrySet().stream()
-//                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-//                .filter(entry -> !entry.getKey().equals("ID"))
-//                .filter(entry -> entry.getValue() != null)
-//                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
-//        return properties;
-//    }
 
     protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
         this.sqlgGraph.tx().readWrite();
@@ -839,4 +829,11 @@ public abstract class SqlgElement implements Element {
 
     public abstract void loadResultSet(ResultSet resultSet) throws SQLException;
 
+    public long getInternalStartTraverserIndex() {
+        return internalStartTraverserIndex;
+    }
+
+    public void setInternalStartTraverserIndex(long internalStartTraverserIndex) {
+        this.internalStartTraverserIndex = internalStartTraverserIndex;
+    }
 }

@@ -5,7 +5,7 @@ import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.aggregate.TestAggregate;
 import org.umlg.sqlg.test.batch.*;
-import org.umlg.sqlg.test.localvertexstep.*;
+import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
 import org.umlg.sqlg.test.github.TestGithub;
@@ -20,6 +20,7 @@ import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
+import org.umlg.sqlg.test.localvertexstep.*;
 import org.umlg.sqlg.test.match.TestMatch;
 import org.umlg.sqlg.test.memory.TestMemoryUsage;
 import org.umlg.sqlg.test.mod.*;
@@ -176,7 +177,9 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestLocalVertexStepOptionalWithOrder.class,
         TestOptionalWithRange.class,
         TestRepeatWithOrderAndRange.class,
-        TestMatch.class
+        TestMatch.class,
+        TestSqlgBranchStep.class,
+        TestLocalVertexStepWithOrder.class
 })
 public class AllTest {
 }

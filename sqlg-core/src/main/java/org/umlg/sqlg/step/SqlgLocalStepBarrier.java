@@ -8,23 +8,22 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
-import org.umlg.sqlg.strategy.SqlgNoSuchElementException;
-import org.umlg.sqlg.strategy.SqlgResetTraversalException;
+import org.umlg.sqlg.structure.SqlgTraverser;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/04/20
  */
-public class SqlgLocalStep<S, E> extends AbstractStep<S, E> implements TraversalParent, Step<S, E> {
+public class SqlgLocalStepBarrier<S, E> extends AbstractStep<S, E> implements TraversalParent, Step<S, E> {
 
+    private boolean first = true;
     private Traversal.Admin<S, E> localTraversal;
+    private List<Traverser.Admin<E>> results = new ArrayList<>();
+    private Iterator<Traverser.Admin<E>> resultIterator;
 
-    public SqlgLocalStep(final Traversal.Admin traversal, LocalStep<S, E> localStep) {
+    public SqlgLocalStepBarrier(final Traversal.Admin traversal, LocalStep<S, E> localStep) {
         super(traversal);
         this.localTraversal = localStep.getLocalChildren().get(0);
     }
@@ -41,32 +40,40 @@ public class SqlgLocalStep<S, E> extends AbstractStep<S, E> implements Traversal
 
     @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
-        while (this.starts.hasNext()) {
-            this.localTraversal.addStart(this.starts.next());
-        }
-        while (true) {
-            try {
-                if (this.localTraversal.hasNext()) {
-                    Traverser.Admin<E> traverser = this.localTraversal.nextTraverser();
-                    return traverser;
-                }
-            } catch (SqlgResetTraversalException e) {
-                this.localTraversal.reset();
-            } catch (SqlgNoSuchElementException e) {
-                throw FastNoSuchElementException.instance();
+        if (this.first) {
+            this.first = false;
+            while (this.starts.hasNext()) {
+                this.localTraversal.addStart(this.starts.next());
             }
+            while (this.localTraversal.hasNext()) {
+                this.results.add(this.localTraversal.nextTraverser());
+            }
+            Collections.sort(this.results, (o1, o2) -> {
+                SqlgTraverser x = (SqlgTraverser)o1;
+                SqlgTraverser y = (SqlgTraverser)o2;
+                return (x.getStartElementIndex() < y.getStartElementIndex()) ? -1 : ((x.getStartElementIndex() == y.getStartElementIndex()) ? 0 : 1);
+            });
+            this.resultIterator = this.results.iterator();
+        }
+        if (this.resultIterator.hasNext()) {
+            Traverser.Admin<E> traverser = this.resultIterator.next();
+            return traverser;
+        } else {
+            throw FastNoSuchElementException.instance();
         }
     }
 
     @Override
     public void reset() {
         super.reset();
+        this.first = true;
+        this.results.clear();
         this.localTraversal.reset();
     }
 
     @Override
-    public SqlgLocalStep<S, E> clone() {
-        final SqlgLocalStep<S, E> clone = (SqlgLocalStep<S, E>) super.clone();
+    public SqlgLocalStepBarrier<S, E> clone() {
+        final SqlgLocalStepBarrier<S, E> clone = (SqlgLocalStepBarrier<S, E>) super.clone();
         clone.localTraversal = this.localTraversal.clone();
         return clone;
     }

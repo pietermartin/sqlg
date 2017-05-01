@@ -8,14 +8,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.EmptyTraverser;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
-import org.umlg.sqlg.strategy.*;
+import org.umlg.sqlg.strategy.Emit;
+import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.structure.*;
 
 import java.util.*;
@@ -24,24 +25,30 @@ import java.util.*;
  * Date: 2014/08/15
  * Time: 8:10 PM
  */
-//public class SqlgVertexStep<E extends SqlgElement> extends FlatMapStep implements SqlgStep {
 public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implements SqlgStep, Barrier {
 
+    private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class.getName());
     private SqlgGraph sqlgGraph;
 
+    //This holds the head/start traversers per SchemaTable.
+    //A query is executed per SchemaTable
     private Map<SchemaTable, List<Traverser.Admin<E>>> heads = new LinkedHashMap<>();
-    //This needs to be a Multimap as the same element, i.e. same RecordId, can come in on different paths.
-    private LinkedListMultimap<RecordId, Traverser.Admin<E>> recordIdHeadTraverserAdminMultimap = LinkedListMultimap.create();
-    //Some incoming traverser will have no results but still needs to return
-    private List<Traverser.Admin<E>> traversersWithNoElements = new ArrayList<>();
-    private Map<SchemaTable, ListIterator<List<Emit<E>>>> schemaTableElements = new LinkedHashMap<>();
-    private Map<SchemaTable, List<Long>> schemaTableParentIds = new LinkedHashMap<>();
-    private Traverser.Admin<E> currentHead;
-    private boolean first = true;
-    private boolean startEmittingEmptyTraversals = false;
-    private boolean reset = false;
 
-    private boolean isForLocalTraversal;
+    //Holds all the incoming head/start elements start index. i.e. the index in which it was added to starts.
+    private LinkedHashMap<Long, Traverser.Admin<E>> startIndexTraverserAdminMap = new LinkedHashMap<>();
+    //important to start with 1 here to distinguish is from the default long being 0
+    private long startIndex = 1;
+
+    /**
+     * Needs to be a multi map as TinkerPop will add new starts mid traversal.
+     * look at {@link TestRepeatStepVertexOut#testUntilRepeat}
+     */
+    private LinkedListMultimap<SchemaTable, ListIterator<List<Emit<E>>>> schemaTableElements = LinkedListMultimap.create();
+
+    //This holds, for each SchemaTable, a list of RecordId's ids and the start elements' index.
+    //It is used to generate the select statements, 'VALUES' and ORDER BY 'index' sql
+    private Map<SchemaTable, List<Pair<Long, Long>>> schemaTableParentIds = new LinkedHashMap<>();
+    private List<SqlgElement> startElements = new ArrayList<>();
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
@@ -57,33 +64,23 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
 
+    private boolean first = true;
 
     public SqlgVertexStep(final Traversal.Admin traversal) {
         super(traversal);
         this.sqlgGraph = (SqlgGraph) traversal.getGraph().get();
-        this.isForLocalTraversal = !(traversal.getParent().asStep() instanceof EmptyStep);
     }
 
     @Override
     protected Traverser.Admin<E> processNextStart() {
-        if (this.first) {
+//        if (this.first) {
+//            this.first = false;
+//            barrierTheHeads();
+//            constructQueryPerSchemaTable();
+//        }
+        if (this.starts.hasNext()) {
             barrierTheHeads();
             constructQueryPerSchemaTable();
-        }
-        if (this.isForLocalTraversal) {
-            if (this.reset) {
-                this.reset = false;
-                throw new SqlgResetTraversalException();
-            }
-            if (this.startEmittingEmptyTraversals) {
-                if (!this.traversersWithNoElements.isEmpty()) {
-                    this.traversersWithNoElements.remove(0);
-                    this.reset = true;
-                    throw FastNoSuchElementException.instance();
-                } else {
-                    throw new SqlgNoSuchElementException();
-                }
-            }
         }
         while (true) {
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
@@ -92,13 +89,12 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraversers().remove(0);
+                return emit.getTraverser();
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
                 if (this.elementIter.hasNext()) {
                     this.traversers.clear();
-                    this.traversersLstIter = null;
-                    internalLoad();
+                    this.traversersLstIter = internalLoad();
                 }
             }
             if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
@@ -107,38 +103,27 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 if (applyRange(emit)) {
                     continue;
                 }
-                return emit.getTraversers().remove(0);
+                return emit.getTraverser();
             } else {
-                Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entrySet().iterator();
+//                Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entrySet().iterator();
+                Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entries().iterator();
                 if (schemaTableIteratorEntry.hasNext()) {
                     this.elementIter = schemaTableIteratorEntry.next().getValue();
                     schemaTableIteratorEntry.remove();
                     if (this.eagerLoad) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("eager load is true");
+                        }
                         eagerLoad();
                         Collections.sort(this.traversers);
                         this.traversersLstIter = this.traversers.listIterator();
                     }
                     this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                 } else {
-                    if (this.isForLocalTraversal) {
-                        //if not first and not startEmittingEmptyTraversals it means that there is still one non empty
-                        //traverser that needs to be let loose down the local traversal. i.e. need to throw the FastNoSuchElementException
-                        //i.e. for V().local(out().count())
-                        //even if out() returns nothing the zero is counted as a zero as opposed to not happening.
-                        if (!this.first && !startEmittingEmptyTraversals && this.traversersWithNoElements.isEmpty()) {
-                            throw new SqlgNoSuchElementException();
-                        }
-                        //this means we are done with the current head/start.
-                        //throw FastNoSuchElementException to release the traverser down the line.
-                        if (!this.first && !this.startEmittingEmptyTraversals) {
-                            this.startEmittingEmptyTraversals = true;
-                            this.reset = true;
-                            throw FastNoSuchElementException.instance();
-                        }
+                    if (!this.starts.hasNext()) {
+                        throw FastNoSuchElementException.instance();
                     } else {
-                        if (!this.starts.hasNext()) {
-                            throw FastNoSuchElementException.instance();
-                        }
+                        throw new IllegalStateException("BUG: this should never happen.");
                     }
                 }
             }
@@ -146,85 +131,68 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     }
 
     private void barrierTheHeads() {
-        //RepeatStep does not seem to call reset() so reset here.
+        //these collections are only used for the current starts.
         this.heads.clear();
-        this.recordIdHeadTraverserAdminMultimap.clear();
         this.schemaTableParentIds.clear();
-        try {
-            while (this.starts.hasNext()) {
-                Traverser.Admin<E> h = this.starts.next();
-                E value = h.get();
-                SchemaTable schemaTable = value.getSchemaTablePrefixed();
-                List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
-                traverserList.add(h);
-                this.recordIdHeadTraverserAdminMultimap.put((RecordId) value.id(), h);
-                this.traversersWithNoElements.add(h);
-                List<Long> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
-                if (!parentIdList.contains(((RecordId) value.id()).getId())) {
-                    parentIdList.add(((RecordId) value.id()).getId());
-                }
-            }
-        } catch (SqlgNoSuchElementException e) {
-            this.traversersWithNoElements.add(EmptyTraverser.instance());
+        while (this.starts.hasNext()) {
+            Traverser.Admin<E> h = this.starts.next();
+            E value = h.get();
+            this.startElements.add(value);
+            SchemaTable schemaTable = value.getSchemaTablePrefixed();
+            List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+            traverserList.add(h);
+            List<Pair<Long, Long>> parentIdList = this.schemaTableParentIds.computeIfAbsent(schemaTable, k -> new ArrayList<>());
+            parentIdList.add(Pair.of(((RecordId) value.id()).getId(), this.startIndex));
+            this.startIndexTraverserAdminMap.put(this.startIndex++, h);
         }
-        this.first = false;
     }
 
     //B_LP_O_P_S_SE_SL_Traverser
     private void eagerLoad() {
         this.traversers.clear();
         while (this.elementIter.hasNext()) {
+            //can ignore the result as the result gets sorted before the iterator is set.
             internalLoad();
         }
     }
 
-    private void internalLoad() {
+    private ListIterator<Emit<E>> internalLoad() {
         List<Emit<E>> emits = this.elementIter.next();
         Emit<E> emitToGetEmit = emits.get(0);
-        List<Traverser.Admin<E>> heads = this.recordIdHeadTraverserAdminMultimap.get(emitToGetEmit.getParent());
-        for (Traverser.Admin<E> head : heads) {
-            if (this.isForLocalTraversal) {
-                if (this.currentHead != null && this.currentHead != head) {
-                    this.currentHead = null;
-//                    this.traversersLstIter = this.traversers.listIterator();
-                    this.elementIter.previous();
-                    this.reset = true;
-                    //if the head changed then the traverser needs to be reset.
-                    //However a FastNoSuchElementException needs to be thrown first to complete the local iteration.
-                    throw FastNoSuchElementException.instance();
-                }
-                this.currentHead = head;
-            }
-            this.traversersWithNoElements.remove(head);
-            Preconditions.checkState(head != null, "head not found for " + emits.get(0).getParent().toString());
-            Traverser.Admin<E> traverser = head;
-            List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
-            for (Emit<E> emit : emits) {
-                if (!emit.isFake()) {
-                    if (emit.isIncomingOnlyLocalOptionalStep()) {
-                        this.toEmit = emit;
-                        break;
-                    }
+        Traverser.Admin<E> head = this.startIndexTraverserAdminMap.get(emitToGetEmit.getParentIndex());
+        Preconditions.checkState(head != null, "head not found for " + emits.get(0).toString());
+        Traverser.Admin<E> traverser = head;
+        List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
+        for (Emit<E> emit : emits) {
+            emit.getElement().setInternalStartTraverserIndex(emit.getParentIndex());
+            if (!emit.isFake()) {
+                if (emit.isIncomingOnlyLocalOptionalStep()) {
+                    //no split it happening for left joined elements
+                    ((SqlgTraverser)traverser).setStartElementIndex(emit.getParentIndex());
+                    traverser.get().setInternalStartTraverserIndex(emit.getParentIndex());
                     this.toEmit = emit;
-                    E e = emit.getElement();
-                    this.labels = emit.getLabels();
-                    traverser = traverser.split(e, this);
-                    emitComparators.add(this.toEmit.getSqlgComparatorHolder());
-                } else {
-                    this.toEmit = emit;
+                    break;
                 }
-            }
-            this.toEmit.setSqlgComparatorHolders(emitComparators);
-            this.toEmit.addTraverser(traverser);
-            this.toEmit.evaluateElementValueTraversal(head.path().size(), traverser);
-            this.traversers.add(this.toEmit);
-            if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
-                this.toEmit.setRepeated(true);
-                this.toEmit.duplicateTraverser();
-                this.traversers.add(this.toEmit);
+                this.toEmit = emit;
+                E e = emit.getElement();
+                this.labels = emit.getLabels();
+                traverser = traverser.split(e, this);
+                ((SqlgTraverser)traverser).setStartElementIndex(emit.getParentIndex());
+                emitComparators.add(this.toEmit.getSqlgComparatorHolder());
+            } else {
+                this.toEmit = emit;
             }
         }
-        this.traversersLstIter = this.traversers.listIterator();
+        this.toEmit.setSqlgComparatorHolders(emitComparators);
+        this.toEmit.setTraverser(traverser);
+
+        this.toEmit.evaluateElementValueTraversal(head.path().size(), traverser);
+        this.traversers.add(this.toEmit);
+        if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
+            this.toEmit.setRepeated(true);
+            this.traversers.add(this.toEmit);
+        }
+        return this.traversers.listIterator();
     }
 
     private void constructQueryPerSchemaTable() {
@@ -241,14 +209,14 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
             }
             //If a range follows an order that needs to be done in memory then do not apply the range on the db.
             //range is always the last step as sqlg does not optimize beyond a range step.
-            if (replacedStepTree.hasRange()) {
-                if (replacedStepTree.hasOrderBy()) {
-                    replacedStepTree.doNotApplyRangeOnDb();
+            if (this.replacedStepTree.hasRange()) {
+                if (this.replacedStepTree.hasOrderBy()) {
+                    this.replacedStepTree.doNotApplyRangeOnDb();
                     setEagerLoad(true);
                 } else {
                     if (!isForMultipleQueries()) {
                         //In this case the range is only applied on the db.
-                        replacedStepTree.doNotApplyInStep();
+                        this.replacedStepTree.doNotApplyInStep();
                     }
                 }
             }
@@ -266,7 +234,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
         SchemaTableTree rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
-        rootSchemaTableTree.setParentIds(this.schemaTableParentIds.get(schemaTable));
+        rootSchemaTableTree.setParentIdsAndIndexes(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
         return new SqlgCompiledResultListIterator<>(new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees, true));
@@ -276,7 +244,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     public ReplacedStepTree.TreeNode addReplacedStep(ReplacedStep replacedStep) {
         replacedStep.setDepth(this.replacedSteps.size());
         this.replacedSteps.add(replacedStep);
-        //New way of interpreting steps
         if (this.replacedStepTree == null) {
             //the first root node
             this.replacedStepTree = new ReplacedStepTree(replacedStep);
@@ -296,33 +263,33 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     public SqlgVertexStep<E> clone() {
         final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
-        clone.recordIdHeadTraverserAdminMultimap = LinkedListMultimap.create();
-        this.schemaTableElements = new LinkedHashMap<>();
+//        this.schemaTableElements = new LinkedHashMap<>();
+        this.schemaTableElements = LinkedListMultimap.create();
         clone.schemaTableParentIds = new LinkedHashMap<>();
         clone.traversers = new ArrayList<>();
+        clone.startIndexTraverserAdminMap = new LinkedHashMap<>();
+        clone.startIndex = 1;
         return clone;
     }
 
     @Override
     public void reset() {
-        if (this.isForLocalTraversal) {
-            this.nextEnd = null;
-        } else {
-            super.reset();
-            this.heads.clear();
-            this.recordIdHeadTraverserAdminMultimap.clear();
-            this.schemaTableElements.clear();
-            this.schemaTableParentIds.clear();
-            this.toEmit = null;
-            this.elementIter = null;
-            this.traversers.clear();
-            this.traversersLstIter = null;
-            this.lastReplacedStep = null;
-            this.rangeCount = 0;
-            this.eagerLoad = false;
-            this.isForMultipleQueries = false;
-            this.replacedStepTree.reset();
-        }
+        super.reset();
+        this.startIndex = 1;
+        this.first = true;
+        this.heads.clear();
+        this.startIndexTraverserAdminMap.clear();
+        this.schemaTableElements.clear();
+        this.schemaTableParentIds.clear();
+        this.toEmit = null;
+        this.elementIter = null;
+        this.traversers.clear();
+        this.traversersLstIter = null;
+        this.lastReplacedStep = null;
+        this.rangeCount = 0;
+        this.eagerLoad = false;
+        this.isForMultipleQueries = false;
+        this.replacedStepTree.reset();
     }
 
     @Override

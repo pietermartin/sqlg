@@ -95,9 +95,8 @@ public class SchemaTableTree {
      * range limitation, if any
      */
     private SqlgRangeHolder sqlgRangeHolder;
-    private String parentIdTemporaryTableName;
-    //This is the incoming element ids for SqlgVertexStep
-    private List<Long> parentIds;
+    //This is the incoming element id and the traversals start elements index, for SqlgVertexStep.
+    private List<Pair<Long, Long>> parentIdsAndIndexes;
 
 
     enum STEP_TYPE {
@@ -515,7 +514,7 @@ public class SchemaTableTree {
 
                 //print the ID of the incoming element.
                 if (first && subQueryLinkedList.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-                    result += ("a1.parent as parent,\n\t");
+                    result += "a1." + sqlgGraph.getSqlDialect().maybeWrapInQoutes("index") + " as index,\n\r";
                 }
                 first = false;
 
@@ -682,14 +681,16 @@ public class SchemaTableTree {
         SchemaTableTree firstSchemaTableTree = distinctQueryStack.getFirst();
         SchemaTable firstSchemaTable = firstSchemaTableTree.getSchemaTable();
 
-        //The SqlgVertexStep's incoming/parent element ids
+        //The SqlgVertexStep's incoming/parent element index and ids
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-            singlePathSql.append(".");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-            singlePathSql.append(".");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
-            singlePathSql.append(" as parent,\n\t");
+            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+            singlePathSql.append(",\n\t");
+//            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+//            singlePathSql.append(".");
+//            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+//            singlePathSql.append(".");
+//            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
+//            singlePathSql.append(" as parent,\n\t");
         }
 
         singlePathSql.append(constructFromClause(sqlgGraph, distinctQueryStack, lastOfPrevious, firstOfNextStack));
@@ -731,16 +732,20 @@ public class SchemaTableTree {
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
             singlePathSql.append(" INNER JOIN\n\t(VALUES");
             int count = 1;
-            for (Long parentId : this.parentIds) {
+            for (Pair<Long, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
                 singlePathSql.append("(");
-                singlePathSql.append(parentId);
+                singlePathSql.append(parentIdAndIndex.getLeft());
+                singlePathSql.append(", ");
+                singlePathSql.append(parentIdAndIndex.getRight());
                 singlePathSql.append(")");
-                if (count++ < this.parentIds.size()) {
+                if (count++ < this.parentIdsAndIndexes.size()) {
                     singlePathSql.append(",");
                 }
             }
             singlePathSql.append(") AS tmp (");
             singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+            singlePathSql.append(", ");
+            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
             singlePathSql.append(") ON ");
 
             singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
@@ -753,10 +758,7 @@ public class SchemaTableTree {
         }
 
 
-        //check if the 'where' has already been printed
-//        boolean printedWhere = (lastOfPrevious == null) && (distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP);
-        boolean printedWhere = false;
-        MutableBoolean mutableWhere = new MutableBoolean(printedWhere);
+        MutableBoolean mutableWhere = new MutableBoolean(false);
         MutableBoolean mutableOrderBy = new MutableBoolean(false);
 
         //construct the where clause for the hasContainers
@@ -770,6 +772,13 @@ public class SchemaTableTree {
 
         //if partOfDuplicateQuery then the order by clause is on the outer select
         if (!partOfDuplicateQuery) {
+
+            if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
+                singlePathSql.append("\nORDER BY\n\t");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                mutableOrderBy.setTrue();
+            }
+
             //construct the order by clause for the comparators
             for (SchemaTableTree schemaTableTree : distinctQueryStack) {
                 singlePathSql.append(schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, -1));
@@ -971,6 +980,9 @@ public class SchemaTableTree {
                 if (counter == -1) {
                     //counter is -1 for single queries, i.e. they are not prefixed with ax
                     alias = sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
+                    if (alias.equals("\"null\"")) {
+                        throw new IllegalArgumentException("order by field '" + elementValueTraversal.getPropertyKey() + "' not found!");
+                    }
                 } else {
                     alias = "a" + counter + "." + sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getColumnNameAliasMap().get(prefix));
                 }
@@ -2105,24 +2117,11 @@ public class SchemaTableTree {
 
     public void loadProperty(ResultSet resultSet, SqlgElement sqlgElement) throws SQLException {
         for (int ix = 1; ix <= resultSet.getMetaData().getColumnCount(); ix++) {
-
-            //for (Map.Entry<String, Pair<String, PropertyType>> entry : getColumnNamePropertyName().entrySet()) {
             String columnName = resultSet.getMetaData().getColumnLabel(ix);//entry.getKey();
             Pair<String, PropertyType> p = getColumnNamePropertyName().get(columnName);
             if (p != null) {
                 String propertyName = p.getKey();
                 PropertyType propertyType = p.getValue();
-
-                //make sure that if we request an array-backed type, we do it using
-                //the getArray() call. Don't bother for byte arrays, because they are
-                //handled differently by all supported DBs, so getObject() on them
-                //works.
-//                Object o = (propertyType != null && propertyType.isArray()
-//                        && propertyType != PropertyType.byte_ARRAY
-//                        && propertyType != PropertyType.BYTE_ARRAY)
-//                        ? resultSet.getArray(ix)
-//                        : resultSet.getObject(ix);
-//                if (!Objects.isNull(o)) {
                 if (propertyName.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
                     ((SqlgEdge) sqlgElement).loadInVertex(resultSet, propertyName, ix);
                 } else if (propertyName.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
@@ -2130,7 +2129,6 @@ public class SchemaTableTree {
                 } else {
                     sqlgElement.loadProperty(resultSet, propertyName, ix, getColumnNameAliasMap(), this.stepDepth, propertyType);
                 }
-//                }
             }
         }
     }
@@ -2165,11 +2163,7 @@ public class SchemaTableTree {
         this.fakeEmit = fakeEmit;
     }
 
-    public void setParentIdTemporaryTableName(String parentIdTemporaryTableName) {
-        this.parentIdTemporaryTableName = parentIdTemporaryTableName;
-    }
-
-    public void setParentIds(List<Long> parentIds) {
-        this.parentIds = parentIds;
+    public void setParentIdsAndIndexes(List<Pair<Long, Long>> parentIdsAndIndexes) {
+        this.parentIdsAndIndexes = parentIdsAndIndexes;
     }
 }

@@ -9,7 +9,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.lambda.IdentityTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.lambda.TokenTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.SelectOneStep;
 import org.javatuples.Pair;
-import org.umlg.sqlg.structure.RecordId;
 import org.umlg.sqlg.structure.SqlgElement;
 
 import java.util.*;
@@ -38,11 +37,13 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
      */
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
-    private RecordId parent;
+
+    private long parentIndex;
     //Mostly an emit is for only one traverser.
     //However for SqlgVertexStep the same element can be incoming multiple times each with a different path thus far.
     //In this case the database is only queried once but the split happens for each incoming traverser.
     private List<Traverser.Admin<E>> traversers = new ArrayList<>();
+    private Traverser.Admin<E> traverser;
     private List<Pair<Object, Comparator<?>>> comparatorValues;
 
     /**
@@ -62,8 +63,8 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         this.sqlgComparatorHolder = sqlgComparatorHolder;
     }
 
-    public Emit(RecordId parent, E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
-        this.parent = parent;
+    public Emit(long parentIndex, E element, Set<String> labels, int replacedStepDepth, SqlgComparatorHolder sqlgComparatorHolder) {
+        this.parentIndex = parentIndex;
         this.element = element;
         this.labels = labels;
         this.replacedStepDepth = replacedStepDepth;
@@ -79,7 +80,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     }
 
     public E getElement() {
-        return element;
+        return this.element;
     }
 
     public Set<String> getLabels() {
@@ -122,12 +123,12 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         this.incomingOnlyLocalOptionalStep = incomingOnlyLocalOptionalStep;
     }
 
-    public List<Traverser.Admin<E>> getTraversers() {
-        return this.traversers;
+    public Traverser.Admin<E> getTraverser() {
+        return traverser;
     }
 
-    public void addTraverser(Traverser.Admin<E> traverser) {
-        this.traversers.add(traverser);
+    public void setTraverser(Traverser.Admin<E> traverser) {
+        this.traverser = traverser;
     }
 
     @Override
@@ -146,18 +147,20 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     }
 
     /**
-     * @param pathSize Indicates the first objects ob the path to ignore.
+     * @param pathSize Indicates the head object path size.
      *                 For SqlgVertexStepCompile they are objects that are already on the path before the step is executed.
      */
     public void evaluateElementValueTraversal(int pathSize, Traverser.Admin<E> traverser) {
+        if (this.comparatorValues == null) {
+            this.comparatorValues = new ArrayList<>();
+        }
+        //loop in reverse, from end to start.
         for (int i = this.sqlgComparatorHolders.size() - 1; i >= 0; i--) {
-            if (this.comparatorValues == null) {
-                this.comparatorValues = new ArrayList<>();
-            }
             SqlgElement sqlgElement;
             SqlgComparatorHolder comparatorHolder = this.sqlgComparatorHolders.get(i);
             if (comparatorHolder.hasComparators()) {
                 if (comparatorHolder.hasPrecedingSelectOneLabel()) {
+                    //Go get the element to compare against.
                     String precedingLabel = comparatorHolder.getPrecedingSelectOneLabel();
                     sqlgElement = traverser.path().get(precedingLabel);
                 } else {
@@ -174,8 +177,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                         Preconditions.checkState(selectOneStep.getLocalChildren().size() == 1, "toOrderByClause expects the selectOneStep to have one traversal!");
                         Preconditions.checkState(
                                 selectOneStep.getLocalChildren().get(0) instanceof ElementValueTraversal ||
-                                        selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal
-                                ,
+                                        selectOneStep.getLocalChildren().get(0) instanceof TokenTraversal,
                                 "toOrderByClause expects the selectOneStep's traversal to be a ElementValueTraversal or a TokenTraversal!");
                         String selectKey = (String) selectOneStep.getScopeKeys().iterator().next();
                         SqlgElement sqlgElementSelect = traverser.path().get(selectKey);
@@ -207,6 +209,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
     @Override
     public int compareTo(Emit<E> emit) {
         if (this.replacedStepDepth != emit.replacedStepDepth) {
+            //TODO what is this for again. find out and put a comment!
             return Integer.valueOf(this.replacedStepDepth).compareTo(Integer.valueOf(emit.replacedStepDepth));
         }
         for (int i = 0; i < this.comparatorValues.size(); i++) {
@@ -229,18 +232,8 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
         return this.replacedStepDepth;
     }
 
-    public RecordId getParent() {
-        return parent;
+    public long getParentIndex() {
+        return parentIndex;
     }
 
-    public void duplicateTraverser() {
-        List<Traverser.Admin<E>> tmp = new ArrayList<>();
-        for (Traverser.Admin<E> traverser : this.traversers) {
-            tmp.add(traverser);
-        }
-        for (Traverser.Admin<E> traverser : this.traversers) {
-            tmp.add(traverser);
-        }
-        this.traversers = tmp;
-    }
 }

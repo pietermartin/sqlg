@@ -25,7 +25,8 @@ public class TestGremlinCompileChoose extends BaseTest {
                 .V()
                 .choose(
                         __.hasLabel("person").and().out("created"),
-                        __.out("knows"), __.identity()
+                        __.out("knows"),
+                        __.identity()
                 ).values("name");
         checkResults(Arrays.asList("lop", "ripple", "josh", "vadas", "vadas"), traversal);
     }

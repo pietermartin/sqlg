@@ -10,6 +10,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
@@ -31,9 +32,7 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
-import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.SqlgLocalStep;
-import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -64,16 +63,16 @@ public abstract class BaseStrategy {
     public static final String SQLG_PATH_FAKE_LABEL = "sqlgPathFakeLabel";
     private static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
-            Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte);
+            Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte
+    );
 
     protected Traversal.Admin<?, ?> traversal;
     protected SqlgGraph sqlgGraph;
     SqlgStep sqlgStep = null;
     private Stack<ReplacedStepTree.TreeNode> chooseStepStack = new Stack<>();
     ReplacedStepTree.TreeNode currentTreeNodeNode;
-    ReplacedStep<?, ?> previousReplacedStep;
     ReplacedStep<?, ?> currentReplacedStep;
-    protected boolean continueOptimization = true;
+    boolean reset = false;
 
     BaseStrategy(Traversal.Admin<?, ?> traversal) {
         this.traversal = traversal;
@@ -83,28 +82,7 @@ public abstract class BaseStrategy {
         this.sqlgGraph = (SqlgGraph) graph.get();
     }
 
-    void combineSteps() {
-        List<Step<?, ?>> steps = new ArrayList(this.traversal.asAdmin().getSteps());
-        ListIterator<Step<?, ?>> stepIterator = steps.listIterator();
-        MutableInt pathCount = new MutableInt(0);
-        while (stepIterator.hasNext()) {
-            Step<?, ?> step = stepIterator.next();
-            if (this.continueOptimization && isReplaceableStep(step.getClass())) {
-                stepIterator.previous();
-                boolean keepGoing = handleStep(stepIterator, pathCount);
-                if (!keepGoing) {
-                    break;
-                }
-            } else {
-                //If a step can not be replaced then its the end of optimizationinging.
-                break;
-            }
-        }
-        if (this.currentTreeNodeNode != null) {
-            doLast();
-        }
-    }
-
+    abstract void combineSteps();
 
     /**
      * sqlgStep is either a {@link SqlgGraphStep} or {@link SqlgVertexStep}.
@@ -123,9 +101,9 @@ public abstract class BaseStrategy {
             }
         } else {
             Preconditions.checkState(sqlgStep != null);
-            if (!this.chooseStepStack.isEmpty()) {
-                return false;
-            }
+//            if (!this.chooseStepStack.isEmpty()) {
+//                return false;
+//            }
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount);
             } else if (step instanceof RepeatStep) {
@@ -139,8 +117,21 @@ public abstract class BaseStrategy {
                 if (!unoptimizableChooseStep((ChooseStep<?, ?, ?>) step)) {
                     this.chooseStepStack.clear();
                     handleChooseStep(1, (ChooseStep<?, ?, ?>) step, this.traversal, pathCount);
+                    this.chooseStepStack.clear();
+                    //after choose steps the optimization starts over
+                    this.reset = true;
                 } else {
-                    return false;
+                    if (!this.chooseStepStack.isEmpty()) {
+                        TraversalHelper.replaceStep(
+                                step,
+                                new SqlgChooseStepBarrier(
+                                        step.getTraversal(),
+                                        (Traversal.Admin) ((ChooseStep) step).getLocalChildren().get(0),
+                                        (Traversal.Admin) ((ChooseStep) step).getGlobalChildren().get(0),
+                                        (Traversal.Admin) ((ChooseStep) step).getGlobalChildren().get(1)),
+                                step.getTraversal()
+                        );
+                    }
                 }
             } else if (step instanceof OrderGlobalStep) {
                 stepIterator.previous();
@@ -167,7 +158,6 @@ public abstract class BaseStrategy {
     protected abstract void doLast();
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
-        this.previousReplacedStep = this.currentReplacedStep;
         this.currentReplacedStep = ReplacedStep.from(
                 this.currentReplacedStep,
                 this.sqlgGraph.getTopology(),
@@ -453,7 +443,7 @@ public abstract class BaseStrategy {
                 if (this.currentReplacedStep.getLabels().isEmpty()) {
                     this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                 }
-                this.continueOptimization = false;
+                this.reset = true;
             } else {
                 //break on the first step that is not a RangeGlobalStep
                 iterator.previous();
@@ -463,9 +453,9 @@ public abstract class BaseStrategy {
     }
 
     protected static boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
-        if (traversal.getParent() != null && traversal.getParent() instanceof SqlgLocalStep) {
-            SqlgLocalStep sqlgLocalStep = (SqlgLocalStep) traversal.getParent();
-            if (precedesPathOrTreeStep(sqlgLocalStep.getTraversal())) {
+        if (traversal.getParent() != null && traversal.getParent() instanceof SqlgLocalStepBarrier) {
+            SqlgLocalStepBarrier sqlgLocalStepBarrier = (SqlgLocalStepBarrier) traversal.getParent();
+            if (precedesPathOrTreeStep(sqlgLocalStepBarrier.getTraversal())) {
                 return true;
             }
         }
@@ -635,6 +625,9 @@ public abstract class BaseStrategy {
     }
 
     protected boolean unoptimizableChooseStep(ChooseStep<?, ?, ?> chooseStep) {
+        if (!this.chooseStepStack.isEmpty()) {
+            return true;
+        }
         List<? extends Traversal.Admin<?, ?>> traversalAdmins = chooseStep.getGlobalChildren();
         if (traversalAdmins.size() != 2) {
             return true;
@@ -698,8 +691,10 @@ public abstract class BaseStrategy {
         ListIterator<Step<?, ?>> trueTraversalStepsIterator = trueTraversalSteps.listIterator();
         while (trueTraversalStepsIterator.hasNext()) {
             Step internalChooseStep = trueTraversalStepsIterator.next();
-            if (!(internalChooseStep instanceof VertexStep || internalChooseStep instanceof EdgeVertexStep || internalChooseStep instanceof EdgeOtherVertexStep ||
-                    internalChooseStep instanceof ComputerAwareStep.EndStep || internalChooseStep instanceof ChooseStep)) {
+            if (!(internalChooseStep instanceof VertexStep || internalChooseStep instanceof EdgeVertexStep ||
+                    internalChooseStep instanceof EdgeOtherVertexStep || internalChooseStep instanceof ComputerAwareStep.EndStep ||
+                    internalChooseStep instanceof ChooseStep || internalChooseStep instanceof HasStep ||
+                    internalChooseStep instanceof OrderGlobalStep || internalChooseStep instanceof RangeGlobalStep)) {
                 return true;
             }
         }

@@ -5,21 +5,24 @@ import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
  *         Date: 2017/04/24
  */
-public class SqlgChooseStep<S, E, M> extends SqlgBranchStep<S, E, M> {
+public class SqlgChooseStepBarrier<S, E, M> extends SqlgBranchStepBarrier<S, E, M> {
 
-    public SqlgChooseStep(final Traversal.Admin traversal, final Traversal.Admin<S, M> choiceTraversal) {
+    public SqlgChooseStepBarrier(final Traversal.Admin traversal, final Traversal.Admin<S, M> choiceTraversal) {
         super(traversal);
         this.setBranchTraversal(choiceTraversal);
     }
 
-    public SqlgChooseStep(final Traversal.Admin traversal, final Traversal.Admin<S, ?> predicateTraversal, final Traversal.Admin<S, E> trueChoice, final Traversal.Admin<S, E> falseChoice) {
+    public SqlgChooseStepBarrier(final Traversal.Admin traversal, final Traversal.Admin<S, ?> predicateTraversal, final Traversal.Admin<S, E> trueChoice, final Traversal.Admin<S, E> falseChoice) {
         this(traversal, (Traversal.Admin<S, M>) predicateTraversal);
-        this.addGlobalChildOption((M) Boolean.FALSE, trueChoice);
-        this.addGlobalChildOption((M) Boolean.TRUE, falseChoice);
+        this.addGlobalChildOption((M) Boolean.TRUE, trueChoice);
+        this.addGlobalChildOption((M) Boolean.FALSE, falseChoice);
         //remove the HasNextStep
         HasNextStep hasNextStep = null;
         for (Step step : predicateTraversal.getSteps()) {
@@ -29,6 +32,10 @@ public class SqlgChooseStep<S, E, M> extends SqlgBranchStep<S, E, M> {
         }
         Preconditions.checkState(hasNextStep != null);
         predicateTraversal.removeStep(hasNextStep);
+    }
+
+    public Map<M, List<Traversal.Admin<S, E>>> getTraversalOptions() {
+        return this.traversalOptions;
     }
 
     @Override
