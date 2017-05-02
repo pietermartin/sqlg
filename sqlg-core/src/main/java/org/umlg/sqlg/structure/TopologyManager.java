@@ -1,7 +1,6 @@
 package org.umlg.sqlg.structure;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -11,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 import static org.umlg.sqlg.structure.Topology.*;
 
 /**
@@ -340,52 +337,12 @@ public class TopologyManager {
                         .out(vertex ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
                         .has("name", property)
                         .toList();
-                Preconditions.checkState(!propertyVertexes.isEmpty(), "Property %s for AbstractLabel %s.%s does not exists", property, schema, label);
-                Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property, schema, label);
-                Vertex propertyVertex = propertyVertexes.get(0);
-                indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
+                if (!propertyVertexes.isEmpty()) {
+                    Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property, schema, label);
+                    Vertex propertyVertex = propertyVertexes.get(0);
+                    indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
+                }
             }
-        } finally {
-            sqlgGraph.tx().batchMode(batchModeType);
-        }
-    }
-
-    public static void addPropertyIndex(SqlgGraph sqlgGraph, String schema, String prefixedTable, Pair<String, PropertyType> column, IndexType indexType) {
-        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
-        try {
-            Preconditions.checkArgument(prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX) || prefixedTable.startsWith(SchemaManager.EDGE_PREFIX), "prefixedTable must be prefixed with %s or %s. prefixedTable = %s", VERTEX_PREFIX, EDGE_PREFIX, prefixedTable);
-            GraphTraversalSource traversalSource = sqlgGraph.topology();
-            List<Vertex> propertyVertices;
-
-            if (prefixedTable.startsWith(SchemaManager.VERTEX_PREFIX)) {
-                propertyVertices = traversalSource.V()
-                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
-                        .has("name", schema)
-                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .has("name", prefixedTable.substring(SchemaManager.VERTEX_PREFIX.length()))
-                        .out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
-                        .has("name", column.getKey())
-                        .toList();
-
-            } else {
-                propertyVertices = traversalSource.V()
-                        .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_SCHEMA)
-                        .has("name", schema)
-                        .out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
-                        .out(SQLG_SCHEMA_OUT_EDGES_EDGE)
-                        .out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
-                        .has("name", column.getKey())
-                        .toList();
-            }
-
-            if (propertyVertices.size() == 0) {
-                throw new IllegalStateException("Found no vertex for " + schema + "." + prefixedTable);
-            }
-            if (propertyVertices.size() > 1) {
-                throw new IllegalStateException("Found more than one vertex for " + schema + "." + prefixedTable);
-            }
-            Vertex propertyVertex = propertyVertices.get(0);
-            propertyVertex.property("index_type", indexType.toString());
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }
