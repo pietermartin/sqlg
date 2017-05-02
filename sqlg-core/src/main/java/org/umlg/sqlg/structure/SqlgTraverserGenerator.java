@@ -27,9 +27,13 @@ public class SqlgTraverserGenerator implements TraverserGenerator {
     private SqlgTraverserGenerator() {
     }
 
+    public <S> Traverser.Admin<S> generate(final S start, final Step<S, ?> startStep, final long initialBulk, boolean endsWithSack, boolean requiresOneBulk) {
+        return new SqlgTraverser<>(start, startStep, initialBulk, endsWithSack, requiresOneBulk);
+    }
+
     @Override
     public <S> Traverser.Admin<S> generate(final S start, final Step<S, ?> startStep, final long initialBulk) {
-        return new SqlgTraverser<>(start, startStep, initialBulk);
+        throw new IllegalStateException("SqlgTraverserGenerator.generate(final S start, final Step<S, ?> startStep, final long initialBulk) should not be called.");
     }
 
     @Override

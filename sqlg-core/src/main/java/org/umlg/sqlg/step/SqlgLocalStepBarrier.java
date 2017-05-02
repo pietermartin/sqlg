@@ -48,9 +48,9 @@ public class SqlgLocalStepBarrier<S, E> extends AbstractStep<S, E> implements Tr
             while (this.localTraversal.hasNext()) {
                 this.results.add(this.localTraversal.nextTraverser());
             }
-            Collections.sort(this.results, (o1, o2) -> {
-                SqlgTraverser x = (SqlgTraverser)o1;
-                SqlgTraverser y = (SqlgTraverser)o2;
+            this.results.sort((o1, o2) -> {
+                SqlgTraverser x = (SqlgTraverser) o1;
+                SqlgTraverser y = (SqlgTraverser) o2;
                 return (x.getStartElementIndex() < y.getStartElementIndex()) ? -1 : ((x.getStartElementIndex() == y.getStartElementIndex()) ? 0 : 1);
             });
             this.resultIterator = this.results.iterator();

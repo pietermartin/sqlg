@@ -6,8 +6,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.map.SackStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
@@ -19,6 +21,7 @@ import org.umlg.sqlg.structure.SqlgCompiledResultIterator;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.SqlgTraverserGenerator;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.util.*;
 
@@ -47,9 +50,20 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
 
+    /**
+     * This is a jippo of sorts.
+     * Sqlg always uses SqlgTraverser which extends B_LP_O_P_S_SE_SL_Traverser.
+     * This means the path is included in hashCode and equals which buggers up ...sack() gremlins.
+     * So for traversals with a sack this indicates to ignore the path in the hasCode and equals.
+     */
+    private boolean requiresSack;
+    private boolean requiresOneBulk;
+
     public SqlgGraphStep(final SqlgGraph sqlgGraph, final Traversal.Admin traversal, final Class<E> returnClass, final boolean isStart, final Object... ids) {
         super(traversal, returnClass, isStart, ids);
         this.sqlgGraph = sqlgGraph;
+        this.requiresSack = TraversalHelper.hasStepOfAssignableClass(SackStep.class, traversal);
+        this.requiresOneBulk = SqlgTraversalUtil.hasOneBulkRequirement(traversal);
     }
 
     @Override
@@ -61,7 +75,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 if (applyRange(emit)) {
                     continue;
                 }
-//                return emit.getTraversers().remove(0);
                 return emit.getTraverser();
             }
             if (!this.eagerLoad && (this.elementIter != null)) {
@@ -77,7 +90,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 if (applyRange(emit)) {
                     continue;
                 }
-//                return emit.getTraversers().remove(0);
                 return emit.getTraverser();
             } else {
                 if (!this.isStart) {
@@ -143,8 +155,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                     traverser = previousHead.split(e, this);
                 } else if (first) {
                     first = false;
-//                    traverser = B_LP_O_P_S_SE_SL_TraverserGenerator.instance().generate(e, this, 1L);
-                    traverser = SqlgTraverserGenerator.instance().generate(e, this, 1L);
+                    traverser = SqlgTraverserGenerator.instance().generate(e, this, 1L, this.requiresSack, this.requiresOneBulk);
                 } else {
                     traverser = traverser.split(e, this);
                 }
@@ -153,12 +164,10 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         }
         this.toEmit.setSqlgComparatorHolders(emitComparators);
         this.toEmit.setTraverser(traverser);
-//        this.toEmit.addTraverser(traverser);
         this.toEmit.evaluateElementValueTraversal(0, traverser);
         this.traversers.add(this.toEmit);
         if (this.toEmit.isRepeat() && !this.toEmit.isRepeated()) {
             this.toEmit.setRepeated(true);
-//            this.toEmit.duplicateTraversers();
             this.traversers.add(this.toEmit);
         }
     }

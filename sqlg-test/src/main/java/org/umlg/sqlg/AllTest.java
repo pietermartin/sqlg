@@ -4,6 +4,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.umlg.sqlg.test.*;
 import org.umlg.sqlg.test.aggregate.TestAggregate;
+import org.umlg.sqlg.test.aggregate.TestGroupCount;
+import org.umlg.sqlg.test.aggregate.TestMax;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
@@ -27,6 +29,8 @@ import org.umlg.sqlg.test.mod.*;
 import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
+import org.umlg.sqlg.test.sack.TestSack;
+import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
@@ -179,7 +183,11 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestRepeatWithOrderAndRange.class,
         TestMatch.class,
         TestSqlgBranchStep.class,
-        TestLocalVertexStepWithOrder.class
+        TestLocalVertexStepWithOrder.class,
+        TestMax.class,
+        TestGroupCount.class,
+        TestSack.class,
+        TestSample.class
 })
 public class AllTest {
 }

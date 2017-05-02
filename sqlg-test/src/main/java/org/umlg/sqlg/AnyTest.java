@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestRepeatStepVertexOut;
+import org.umlg.sqlg.test.sample.TestSample;
 
 /**
  * Date: 2014/07/16
@@ -10,6 +10,11 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepVertexOut;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
+        TestSample.class,
+//        TestSack.class,
+//        TestGroupCount.class,
+//        TestMax.class,
+//        TestGremlinCompileChoose.class,
 //        TestLocalVertexStepLimit.class,
 //        TestGremlinOptional.class,
 //        TestLocalVertexStepOptional.class,
@@ -18,7 +23,7 @@ import org.umlg.sqlg.test.gremlincompile.TestRepeatStepVertexOut;
 //        TestOptionalWithOrder.class,
 //        TestLocalVertexStepWithOrder.class,
 //        TestSqlgBranchStep.class,
-        TestRepeatStepVertexOut.class
+//        TestRepeatStepVertexOut.class,
 })
 public class AnyTest {
 }

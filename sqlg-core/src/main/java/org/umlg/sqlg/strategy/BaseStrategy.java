@@ -620,8 +620,9 @@ public abstract class BaseStrategy {
         return toCome.stream().anyMatch(s ->
                 s.getClass().equals(Order.class) ||
                         s.getClass().equals(LambdaCollectingBarrierStep.class) ||
-                        s.getClass().equals(SackValueStep.class) ||
-                        s.getClass().equals(SackStep.class));
+                        s.getClass().equals(SackValueStep.class)
+//                        s.getClass().equals(SackStep.class)
+        );
     }
 
     protected boolean unoptimizableChooseStep(ChooseStep<?, ?, ?> chooseStep) {

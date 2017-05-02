@@ -4,7 +4,6 @@ import org.apache.tinkerpop.gremlin.process.computer.traversal.strategy.optimiza
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
-import org.apache.tinkerpop.gremlin.process.traversal.step.map.GraphStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.*;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -27,7 +26,10 @@ public class SqlgGraphStepStrategy extends AbstractTraversalStrategy<TraversalSt
     public void apply(final Traversal.Admin<?, ?> traversal) {
         final Step<?, ?> startStep = traversal.getStartStep();
         //noinspection OptionalGetWithoutIsPresent
-        if (!(startStep instanceof GraphStep) || !(traversal.getGraph().get() instanceof SqlgGraph)) {
+//        if (!(startStep instanceof GraphStep) || !(traversal.getGraph().get() instanceof SqlgGraph)) {
+//            return;
+//        }
+        if (!(traversal.getGraph().get() instanceof SqlgGraph)) {
             return;
         }
         GraphStrategy.from(traversal).apply();

@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SampleGlobalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
@@ -57,6 +58,15 @@ public class SqlgLocalStepStrategy extends AbstractTraversalStrategy<TraversalSt
                     }
                 }
 
+                //Any traversal with a sample can not be optimized.
+                localChildren = localStep.getLocalChildren();
+                for (Traversal.Admin<?, ?> localChild : localChildren) {
+                    List<SampleGlobalStep> sampleGlobalSteps = TraversalHelper.getStepsOfAssignableClassRecursively(SampleGlobalStep.class, localChild);
+                    if (!sampleGlobalSteps.isEmpty()) {
+                        return;
+                    }
+                }
+
                 SqlgLocalStepBarrier<?, ?> sqlgLocalStepBarrier = new SqlgLocalStepBarrier<>(traversal, localStep);
                 for (String label : localStep.getLabels()) {
                     sqlgLocalStepBarrier.addLabel(label);
@@ -72,6 +82,13 @@ public class SqlgLocalStepStrategy extends AbstractTraversalStrategy<TraversalSt
     public Set<Class<? extends OptimizationStrategy>> applyPost() {
         return Stream.of(
                 SqlgVertexStepStrategy.class
+        ).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Class<? extends OptimizationStrategy>> applyPrior() {
+        return Stream.of(
+                SqlgGraphStepStrategy.class
         ).collect(Collectors.toSet());
     }
 

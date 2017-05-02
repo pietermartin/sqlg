@@ -122,10 +122,12 @@ public class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implement
                                 start.setBulk(1L);
                             }
                         } else {
-                            for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Pick.none)) {
-                                optionTraversal.addStart(start);
-                                //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                                start.setBulk(1L);
+                            if (this.traversalOptions.containsKey(Pick.none)) {
+                                for (Traversal.Admin<S, E> optionTraversal : this.traversalOptions.get(Pick.none)) {
+                                    optionTraversal.addStart(start);
+                                    //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
+                                    start.setBulk(1L);
+                                }
                             }
                         }
                     }

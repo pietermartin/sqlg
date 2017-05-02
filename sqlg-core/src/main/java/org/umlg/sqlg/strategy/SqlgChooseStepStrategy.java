@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.SqlgChooseStepBarrier;
@@ -39,6 +40,13 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
         for (ChooseStep<S, E, M> chooseStep : chooseSteps) {
             Traversal.Admin<S, M> predicateTraversal = chooseStep.getLocalChildren().get(0);
 
+            //The predicate branch step is a local traversal.
+            //As such if it contains a ReducingBarrierStep the SqlgBranchStepBarrier will not work.
+            List<ReducingBarrierStep> reducingBarrierSteps = TraversalHelper.getStepsOfAssignableClass(ReducingBarrierStep.class, predicateTraversal);
+            if (!reducingBarrierSteps.isEmpty()) {
+                continue;
+            }
+
             //remove the HasNextStep
             HasNextStep hasNextStep = null;
             for (Step step : predicateTraversal.getSteps()) {
@@ -69,17 +77,6 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                     sqlgChooseStepBarrier,
                     chooseStep.getTraversal()
             );
-//            Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversalPair = SqlgTraversalUtil.trueFalseTraversals(chooseStep);
-//            TraversalHelper.replaceStep(
-//                    chooseStep,
-//                    new SqlgChooseStepBarrier(
-//                            chooseStep.getTraversal(),
-//                            (Traversal.Admin) chooseStep.getLocalChildren().get(0),
-//                            trueFalseTraversalPair.getLeft(),
-//                            trueFalseTraversalPair.getRight()
-//                    ),
-//                    chooseStep.getTraversal()
-//            );
         }
     }
 

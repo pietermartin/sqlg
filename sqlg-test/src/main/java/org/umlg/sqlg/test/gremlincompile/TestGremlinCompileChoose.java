@@ -1,15 +1,19 @@
 package org.umlg.sqlg.test.gremlincompile;
 
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalOptionParent;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Date: 2017/02/06
@@ -44,5 +48,27 @@ public class TestGremlinCompileChoose extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(3, traversal.getSteps().size());
         checkResults(Arrays.asList("marko", "vadas", "peter", "josh", "lop", "ripple"), traversal);
+    }
+
+    @Test
+    public void g_V_chooseXout_countX_optionX2L__nameX_optionX3L__valueMapX() {
+        loadModern();
+        final Traversal<Vertex, Object> traversal =  this.sqlgGraph.traversal()
+                .V()
+                .choose(__.out().count())
+                .option(2L, __.values("name"))
+                .option(3L, __.valueMap());
+        printTraversalForm(traversal);
+        final Map<String, Long> counts = new HashMap<>();
+        int counter = 0;
+        while (traversal.hasNext()) {
+            MapHelper.incr(counts, traversal.next().toString(), 1l);
+            counter++;
+        }
+        Assert.assertFalse(traversal.hasNext());
+        Assert.assertEquals(2, counter);
+        Assert.assertEquals(2, counts.size());
+        Assert.assertEquals(Long.valueOf(1), counts.get("{name=[marko], age=[29]}"));
+        Assert.assertEquals(Long.valueOf(1), counts.get("josh"));
     }
 }

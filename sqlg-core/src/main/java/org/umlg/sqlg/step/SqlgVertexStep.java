@@ -3,10 +3,8 @@ package org.umlg.sqlg.step;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.LinkedListMultimap;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
-import org.apache.tinkerpop.gremlin.process.traversal.step.Barrier;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.AbstractStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
@@ -25,7 +23,7 @@ import java.util.*;
  * Date: 2014/08/15
  * Time: 8:10 PM
  */
-public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implements SqlgStep, Barrier {
+public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implements SqlgStep {
 
     private static Logger logger = LoggerFactory.getLogger(SqlgVertexStep.class.getName());
     private SqlgGraph sqlgGraph;
@@ -41,7 +39,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
 
     /**
      * Needs to be a multi map as TinkerPop will add new starts mid traversal.
-     * look at {@link TestRepeatStepVertexOut#testUntilRepeat}
+     * look at TestRepeatStepVertexOut#testUntilRepeat
      */
     private LinkedListMultimap<SchemaTable, ListIterator<List<Emit<E>>>> schemaTableElements = LinkedListMultimap.create();
 
@@ -54,17 +52,15 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     private ReplacedStepTree replacedStepTree;
 
     private Emit<E> toEmit = null;
-    private ListIterator<List<Emit<E>>> elementIter;
+    private ListIterator<List<Emit<E>>> elementIterator;
 
     private List<Emit<E>> traversers = new ArrayList<>();
-    private ListIterator<Emit<E>> traversersLstIter;
+    private ListIterator<Emit<E>> traversersLstIterator;
 
     private ReplacedStep<?, ?> lastReplacedStep;
     private long rangeCount = 0;
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
-
-    private boolean first = true;
 
     public SqlgVertexStep(final Traversal.Admin traversal) {
         super(traversal);
@@ -73,42 +69,36 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
 
     @Override
     protected Traverser.Admin<E> processNextStart() {
-//        if (this.first) {
-//            this.first = false;
-//            barrierTheHeads();
-//            constructQueryPerSchemaTable();
-//        }
         if (this.starts.hasNext()) {
             barrierTheHeads();
             constructQueryPerSchemaTable();
         }
         while (true) {
-            if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                Emit<E> emit = this.traversersLstIter.next();
+            if (this.traversersLstIterator != null && this.traversersLstIterator.hasNext()) {
+                Emit<E> emit = this.traversersLstIterator.next();
                 this.labels = emit.getLabels();
                 if (applyRange(emit)) {
                     continue;
                 }
                 return emit.getTraverser();
             }
-            if (!this.eagerLoad && (this.elementIter != null)) {
-                if (this.elementIter.hasNext()) {
+            if (!this.eagerLoad && (this.elementIterator != null)) {
+                if (this.elementIterator.hasNext()) {
                     this.traversers.clear();
-                    this.traversersLstIter = internalLoad();
+                    this.traversersLstIterator = internalLoad();
                 }
             }
-            if (this.traversersLstIter != null && this.traversersLstIter.hasNext()) {
-                Emit<E> emit = this.traversersLstIter.next();
+            if (this.traversersLstIterator != null && this.traversersLstIterator.hasNext()) {
+                Emit<E> emit = this.traversersLstIterator.next();
                 this.labels = emit.getLabels();
                 if (applyRange(emit)) {
                     continue;
                 }
                 return emit.getTraverser();
             } else {
-//                Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entrySet().iterator();
                 Iterator<Map.Entry<SchemaTable, ListIterator<List<Emit<E>>>>> schemaTableIteratorEntry = this.schemaTableElements.entries().iterator();
                 if (schemaTableIteratorEntry.hasNext()) {
-                    this.elementIter = schemaTableIteratorEntry.next().getValue();
+                    this.elementIterator = schemaTableIteratorEntry.next().getValue();
                     schemaTableIteratorEntry.remove();
                     if (this.eagerLoad) {
                         if (logger.isDebugEnabled()) {
@@ -116,7 +106,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                         }
                         eagerLoad();
                         Collections.sort(this.traversers);
-                        this.traversersLstIter = this.traversers.listIterator();
+                        this.traversersLstIterator = this.traversers.listIterator();
                     }
                     this.lastReplacedStep = this.replacedSteps.get(this.replacedSteps.size() - 1);
                 } else {
@@ -150,14 +140,14 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     //B_LP_O_P_S_SE_SL_Traverser
     private void eagerLoad() {
         this.traversers.clear();
-        while (this.elementIter.hasNext()) {
+        while (this.elementIterator.hasNext()) {
             //can ignore the result as the result gets sorted before the iterator is set.
             internalLoad();
         }
     }
 
     private ListIterator<Emit<E>> internalLoad() {
-        List<Emit<E>> emits = this.elementIter.next();
+        List<Emit<E>> emits = this.elementIterator.next();
         Emit<E> emitToGetEmit = emits.get(0);
         Traverser.Admin<E> head = this.startIndexTraverserAdminMap.get(emitToGetEmit.getParentIndex());
         Preconditions.checkState(head != null, "head not found for " + emits.get(0).toString());
@@ -177,7 +167,9 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                 E e = emit.getElement();
                 this.labels = emit.getLabels();
                 traverser = traverser.split(e, this);
-                ((SqlgTraverser)traverser).setStartElementIndex(emit.getParentIndex());
+                if (traverser instanceof SqlgTraverser) {
+                    ((SqlgTraverser)traverser).setStartElementIndex(emit.getParentIndex());
+                }
                 emitComparators.add(this.toEmit.getSqlgComparatorHolder());
             } else {
                 this.toEmit = emit;
@@ -263,7 +255,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     public SqlgVertexStep<E> clone() {
         final SqlgVertexStep<E> clone = (SqlgVertexStep<E>) super.clone();
         clone.heads = new LinkedHashMap<>();
-//        this.schemaTableElements = new LinkedHashMap<>();
         this.schemaTableElements = LinkedListMultimap.create();
         clone.schemaTableParentIds = new LinkedHashMap<>();
         clone.traversers = new ArrayList<>();
@@ -276,15 +267,14 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     public void reset() {
         super.reset();
         this.startIndex = 1;
-        this.first = true;
         this.heads.clear();
         this.startIndexTraverserAdminMap.clear();
         this.schemaTableElements.clear();
         this.schemaTableParentIds.clear();
         this.toEmit = null;
-        this.elementIter = null;
+        this.elementIterator = null;
         this.traversers.clear();
-        this.traversersLstIter = null;
+        this.traversersLstIterator = null;
         this.lastReplacedStep = null;
         this.rangeCount = 0;
         this.eagerLoad = false;
@@ -353,26 +343,4 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         return false;
     }
 
-    @Override
-    public void processAllStarts() {
-    }
-
-    @Override
-    public boolean hasNextBarrier() {
-        return false;
-    }
-
-    @Override
-    public E nextBarrier() throws NoSuchElementException {
-        return null;
-    }
-
-    @Override
-    public void addBarrier(Object barrier) {
-    }
-
-    @Override
-    public MemoryComputeKey getMemoryComputeKey() {
-        return null;
-    }
 }
