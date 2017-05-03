@@ -320,25 +320,34 @@ public class TopologyManager {
             Preconditions.checkState(abstractLabelVertexes.size() == 1, "BUG: multiple AbstractLabels found for %s.%s", schema, label);
             Vertex abstractLabelVertex = abstractLabelVertexes.get(0);
 
-            Vertex indexVertex = sqlgGraph.addVertex(
-                    T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_INDEX,
-                    SQLG_SCHEMA_INDEX_NAME, index,
-                    SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.toString(),
-                    CREATED_ON, LocalDateTime.now()
-            );
-
-            if (vertex) {
-                abstractLabelVertex.addEdge(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertex);
-            } else {
-                abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
-            }
+            boolean createdIndexVertex = false;
+            Vertex indexVertex =  null;
             for (String property : properties) {
+
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
                         .out(vertex ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
                         .has("name", property)
                         .toList();
+
+                //do not create indexes for properties that are not found.
+                //TODO, Sqlg needs to get more sophisticated support for indexes, i.e. function indexes on a property etc.
+                if (!createdIndexVertex && !propertyVertexes.isEmpty()) {
+                    createdIndexVertex = true;
+                    indexVertex = sqlgGraph.addVertex(
+                            T.label, SQLG_SCHEMA + "." + SQLG_SCHEMA_INDEX,
+                            SQLG_SCHEMA_INDEX_NAME, index,
+                            SQLG_SCHEMA_INDEX_INDEX_TYPE, indexType.toString(),
+                            CREATED_ON, LocalDateTime.now()
+                    );
+                    if (vertex) {
+                        abstractLabelVertex.addEdge(SQLG_SCHEMA_VERTEX_INDEX_EDGE, indexVertex);
+                    } else {
+                        abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
+                    }
+                }
                 if (!propertyVertexes.isEmpty()) {
                     Preconditions.checkState(propertyVertexes.size() == 1, "BUG: multiple Properties %s found for AbstractLabels found for %s.%s", property, schema, label);
+                    Preconditions.checkState(indexVertex != null);
                     Vertex propertyVertex = propertyVertexes.get(0);
                     indexVertex.addEdge(SQLG_SCHEMA_INDEX_PROPERTY_EDGE, propertyVertex);
                 }

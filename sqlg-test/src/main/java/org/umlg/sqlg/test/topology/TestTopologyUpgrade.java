@@ -23,16 +23,45 @@ import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.time.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Date: 2016/02/06
  * Time: 6:17 PM
  */
 public class TestTopologyUpgrade extends BaseTest {
+
+    //The asdasd index is for a property that foes not exist, it will be ignored when loading the topology.
+    @Test
+    public void testCustomIndexIgnored() throws Exception {
+        Map<String, PropertyType> properties = new HashMap<String, PropertyType>() {{
+            put("name", PropertyType.STRING);
+        }};
+        Schema hour = this.sqlgGraph.getTopology().ensureSchemaExist("A");
+        VertexLabel vertexLabel = hour.ensureVertexLabelExist("A", properties);
+        PropertyColumn propertyColumn = vertexLabel.getProperty("name").get();
+        vertexLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(propertyColumn));
+
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.addVertex(T.label, "A.A", "name", "aaaa");
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE INDEX \"asdasd\" ON \"A\".\"V_A\" USING btree (left('name', 1)) ");
+        }
+        this.sqlgGraph.tx().commit();
+        //Delete the topology
+        conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.getTopology().getSchema("A").get().getVertexLabel("A").get().getIndexes().size());
+        }
+    }
 
     @Test
     public void testUpgradeEdgeWithMultipleInOutLabelsAndAIndex() throws Exception {
