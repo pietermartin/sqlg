@@ -164,6 +164,8 @@
         <module>sqlg-postgres-parent</module>
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
+        <module>sqlg-mssqlserver-parent</module>
+        <module>sqlg-mysql-parent</module>
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
@@ -226,6 +228,26 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-hsqldb-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mssqlserver</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mssqlserver-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mysql</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mysql-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
