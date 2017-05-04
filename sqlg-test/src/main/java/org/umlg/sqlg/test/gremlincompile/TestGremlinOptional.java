@@ -25,39 +25,6 @@ import java.util.function.Predicate;
  */
 public class TestGremlinOptional extends BaseTest {
 
-//    @Test
-    public void testOptionalFollowedByVertexStep() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
-        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
-        Vertex d1 = this.sqlgGraph.addVertex(T.label, "D", "name", "d1");
-        this.sqlgGraph.tx().commit();
-        a1.addEdge("ab", b1);
-        a1.addEdge("ab", b2);
-        a1.addEdge("ab", b3);
-        a2.addEdge("d", d1);
-        b1.addEdge("bc", c1);
-        b1.addEdge("bc", c2);
-        b1.addEdge("bc", c3);
-        c1.addEdge("d", d1);
-        this.sqlgGraph.tx().commit();
-
-        List<Path> paths = this.sqlgGraph.traversal().V().hasLabel("A").optional(
-                __.out("ab").optional(
-                        __.out("bc")
-                )
-        ).path()
-        .toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
-    }
-
     @Test
     public void testOptionalWithHasContainer() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");

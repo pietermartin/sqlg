@@ -1,6 +1,5 @@
 package org.umlg.sqlg.strategy;
 
-import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
@@ -10,6 +9,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.umlg.sqlg.step.SqlgChooseStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -48,17 +48,25 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
             }
 
             //remove the HasNextStep
-            HasNextStep hasNextStep = null;
-            for (Step step : predicateTraversal.getSteps()) {
-                if (step instanceof HasNextStep) {
-                    hasNextStep = (HasNextStep) step;
-                }
+            boolean hasNextStep = false;
+            if (predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1) instanceof HasNextStep) {
+                hasNextStep = true;
+                predicateTraversal.removeStep(predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1));
             }
-            if (hasNextStep != null) {
-                predicateTraversal.removeStep(hasNextStep);
-            }
+//            for (Step step : predicateTraversal.getSteps()) {
+//                if (step instanceof HasNextStep) {
+//                    hasNextStep = (HasNextStep) step;
+//                }
+//            }
+//            if (hasNextStep != null) {
+//                predicateTraversal.removeStep(hasNextStep);
+//            }
 
-            SqlgChooseStepBarrier<S, E, M> sqlgChooseStepBarrier = new SqlgChooseStepBarrier<>(traversal, predicateTraversal);
+            SqlgChooseStepBarrier<S, E, M> sqlgChooseStepBarrier = new SqlgChooseStepBarrier<>(
+                    traversal,
+                    predicateTraversal,
+                    hasNextStep && SqlgTraversalUtil.isOptionalChooseStep(chooseStep)
+            );
             try {
                 Field traversalOptionsField = chooseStep.getClass().getSuperclass().getDeclaredField("traversalOptions");
                 traversalOptionsField.setAccessible(true);

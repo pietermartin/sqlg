@@ -707,6 +707,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(1, t.getSteps().size());
         Assert.assertTrue(t.getSteps().get(0) instanceof SqlgChooseStepBarrier);
         SqlgChooseStepBarrier sqlgChooseStepBarrier = (SqlgChooseStepBarrier) t.getSteps().get(0);
+        Assert.assertTrue(sqlgChooseStepBarrier.isOptionalStep());
         Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgChooseStepBarrier);
         Traversal.Admin<?, ?> trueTraversal = trueFalseTraversals.getLeft();
         Assert.assertEquals(3, trueTraversal.getSteps().size());
@@ -843,6 +844,7 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertEquals(1, t.getSteps().size());
         Assert.assertTrue(t.getSteps().get(0) instanceof SqlgChooseStepBarrier);
         SqlgChooseStepBarrier sqlgChooseStepBarrier = (SqlgChooseStepBarrier) t.getSteps().get(0);
+        Assert.assertTrue(sqlgChooseStepBarrier.isOptionalStep());
         Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgChooseStepBarrier);
         Traversal.Admin<?, ?> trueTraversal = trueFalseTraversals.getLeft();
         Assert.assertEquals(3, trueTraversal.getSteps().size());

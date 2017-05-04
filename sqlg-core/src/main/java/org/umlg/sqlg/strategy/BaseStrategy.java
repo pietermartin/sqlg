@@ -101,9 +101,6 @@ public abstract class BaseStrategy {
             }
         } else {
             Preconditions.checkState(sqlgStep != null);
-//            if (!this.chooseStepStack.isEmpty()) {
-//                return false;
-//            }
             if (step instanceof VertexStep || step instanceof EdgeVertexStep || step instanceof EdgeOtherVertexStep) {
                 handleVertexStep(stepIterator, (AbstractStep<?, ?>) step, pathCount);
             } else if (step instanceof RepeatStep) {
@@ -120,18 +117,6 @@ public abstract class BaseStrategy {
                     this.chooseStepStack.clear();
                     //after choose steps the optimization starts over
                     this.reset = true;
-                } else {
-                    if (!this.chooseStepStack.isEmpty()) {
-                        TraversalHelper.replaceStep(
-                                step,
-                                new SqlgChooseStepBarrier(
-                                        step.getTraversal(),
-                                        (Traversal.Admin) ((ChooseStep) step).getLocalChildren().get(0),
-                                        (Traversal.Admin) ((ChooseStep) step).getGlobalChildren().get(0),
-                                        (Traversal.Admin) ((ChooseStep) step).getGlobalChildren().get(1)),
-                                step.getTraversal()
-                        );
-                    }
                 }
             } else if (step instanceof OrderGlobalStep) {
                 stepIterator.previous();
@@ -635,6 +620,10 @@ public abstract class BaseStrategy {
         }
         Traversal.Admin<?, ?> predicate = chooseStep.getLocalChildren().get(0);
         List<Step> predicateSteps = new ArrayList<>(predicate.getSteps());
+        if (!(predicate.getSteps().get(predicate.getSteps().size() - 1) instanceof HasNextStep)) {
+            return true;
+        }
+        //Remove the HasNextStep
         predicateSteps.remove(predicate.getSteps().size() - 1);
 
         Traversal.Admin<?, ?> globalChildOne = chooseStep.getGlobalChildren().get(0);

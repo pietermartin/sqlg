@@ -20,16 +20,16 @@ import java.util.stream.Collectors;
 public class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implements TraversalOptionParent<M, S, E> {
 
     protected Traversal.Admin<S, M> branchTraversal;
-    protected Map<M, List<Traversal.Admin<S, E>>> traversalOptions = new HashMap<>();
-    private boolean first = true;
-    private List<Traverser.Admin<E>> results = new ArrayList<>();
-    private Iterator<Traverser.Admin<E>> resultIterator;
+    Map<M, List<Traversal.Admin<S, E>>> traversalOptions = new HashMap<>();
+    protected boolean first = true;
+    protected List<Traverser.Admin<E>> results = new ArrayList<>();
+    protected Iterator<Traverser.Admin<E>> resultIterator;
 
-    public SqlgBranchStepBarrier(final Traversal.Admin traversal) {
+    SqlgBranchStepBarrier(final Traversal.Admin traversal) {
         super(traversal);
     }
 
-    public void setBranchTraversal(final Traversal.Admin<S, M> branchTraversal) {
+    void setBranchTraversal(final Traversal.Admin<S, M> branchTraversal) {
         this.branchTraversal = this.integrateChild(branchTraversal);
     }
 
@@ -44,11 +44,12 @@ public class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implement
 
     @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
-        List<Traverser.Admin<S>> tmpStarts = new ArrayList<>();
-        List<Traverser.Admin<S>> tmpStartsToRemove = new ArrayList<>();
-        Map<M, List<Traverser.Admin<S>>> predicateWithSuccessfulStarts = new HashMap<>();
 
         if (this.first) {
+            
+            List<Traverser.Admin<S>> tmpStarts = new ArrayList<>();
+            List<Traverser.Admin<S>> tmpStartsToRemove = new ArrayList<>();
+            Map<M, List<Traverser.Admin<S>>> predicateWithSuccessfulStarts = new HashMap<>();
 
             this.first = false;
 
@@ -63,7 +64,6 @@ public class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implement
             while (true) {
                 if (this.branchTraversal.hasNext()) {
                     Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
-
                     for (Traverser.Admin<S> tmpStart : tmpStarts) {
                         List<Object> startObjects = tmpStart.path().objects();
                         List<Object> optionObjects = branchTraverser.path().objects();
@@ -154,16 +154,11 @@ public class SqlgBranchStepBarrier<S, E, M> extends AbstractStep<S, E> implement
                 }
             }
             //Sort the results, this is to ensure the the incoming start order is not lost.
-            Collections.sort(this.results, (o1, o2) -> {
-                SqlgTraverser x = (SqlgTraverser)o1;
-                SqlgTraverser y = (SqlgTraverser)o1;
+            this.results.sort((o1, o2) -> {
+                SqlgTraverser x = (SqlgTraverser) o1;
+                SqlgTraverser y = (SqlgTraverser) o1;
                 return (x.getStartElementIndex() < y.getStartElementIndex()) ? -1 : ((x.getStartElementIndex() == y.getStartElementIndex()) ? 0 : 1);
             });
-//            Collections.sort(results, (o1, o2) -> {
-//                long x = ((SqlgElement)o1.get()).getInternalStartTraverserIndex();
-//                long y = ((SqlgElement)o2.get()).getInternalStartTraverserIndex();
-//                return (x < y) ? -1 : ((x == y) ? 0 : 1);
-//            });
             this.resultIterator = this.results.iterator();
         }
         while (this.resultIterator.hasNext()) {

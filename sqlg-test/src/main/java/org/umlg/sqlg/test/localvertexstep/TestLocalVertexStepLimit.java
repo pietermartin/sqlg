@@ -2,6 +2,7 @@ package org.umlg.sqlg.test.localvertexstep;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
@@ -15,6 +16,29 @@ import java.util.List;
  * Time: 10:33 PM
  */
 public class TestLocalVertexStepLimit extends BaseTest {
+
+    //This is not optimized as LocalSteps with a local traversal with a reducing barrier step is not optimized.
+    @Test
+    public void testCount() {
+        loadModern();
+        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal()
+                .V()
+                .local(
+                        __.out().count()
+                );
+        List<Long> counts = traversal.toList();
+//        for (Long count : counts) {
+//            System.out.println(count);
+//        }
+        Assert.assertEquals(6, counts.size());
+        Assert.assertTrue(counts.remove(3L));
+        Assert.assertTrue(counts.remove(2L));
+        Assert.assertTrue(counts.remove(1L));
+        Assert.assertTrue(counts.remove(0L));
+        Assert.assertTrue(counts.remove(0L));
+        Assert.assertTrue(counts.remove(0L));
+        Assert.assertTrue(counts.isEmpty());
+    }
 
     @Test
     public void g_V_localXoutE_limitX1X_inVX_limitX3X() {

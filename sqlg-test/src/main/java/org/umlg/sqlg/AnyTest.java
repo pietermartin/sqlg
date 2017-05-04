@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.sample.TestSample;
+import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptionalWithOrder;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.sample.TestSample;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSample.class,
+//        TestSample.class,
 //        TestSack.class,
 //        TestGroupCount.class,
 //        TestMax.class,
@@ -18,7 +18,7 @@ import org.umlg.sqlg.test.sample.TestSample;
 //        TestLocalVertexStepLimit.class,
 //        TestGremlinOptional.class,
 //        TestLocalVertexStepOptional.class,
-//        TestLocalVertexStepOptionalWithOrder.class,
+        TestLocalVertexStepOptionalWithOrder.class,
 //        TestGremlinCompileChoose.class,
 //        TestOptionalWithOrder.class,
 //        TestLocalVertexStepWithOrder.class,

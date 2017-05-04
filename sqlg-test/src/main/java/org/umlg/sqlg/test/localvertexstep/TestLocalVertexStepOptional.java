@@ -3,7 +3,6 @@ package org.umlg.sqlg.test.localvertexstep;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.util.DefaultTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -25,29 +24,6 @@ import java.util.function.Predicate;
  * Time: 8:01 PM
  */
 public class TestLocalVertexStepOptional extends BaseTest {
-
-    //This is not optimized as LocalSteps with a local traversal with a reducing barrier step is not optimized.
-    @Test
-    public void testCount() {
-        loadModern();
-        DefaultTraversal<Vertex, Long> traversal = (DefaultTraversal<Vertex, Long>) this.sqlgGraph.traversal()
-                .V()
-                .local(
-                        __.out().count()
-                );
-        List<Long> counts = traversal.toList();
-//        for (Long count : counts) {
-//            System.out.println(count);
-//        }
-        Assert.assertEquals(6, counts.size());
-        Assert.assertTrue(counts.remove(3L));
-        Assert.assertTrue(counts.remove(2L));
-        Assert.assertTrue(counts.remove(1L));
-        Assert.assertTrue(counts.remove(0L));
-        Assert.assertTrue(counts.remove(0L));
-        Assert.assertTrue(counts.remove(0L));
-        Assert.assertTrue(counts.isEmpty());
-    }
 
     @Test
     public void testLocalVertexStepOptimized() {
