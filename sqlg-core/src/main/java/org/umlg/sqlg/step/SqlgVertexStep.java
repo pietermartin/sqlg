@@ -46,7 +46,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
     //This holds, for each SchemaTable, a list of RecordId's ids and the start elements' index.
     //It is used to generate the select statements, 'VALUES' and ORDER BY 'index' sql
     private Map<SchemaTable, List<Pair<Long, Long>>> schemaTableParentIds = new LinkedHashMap<>();
-    private List<SqlgElement> startElements = new ArrayList<>();
 
     private List<ReplacedStep<?, ?>> replacedSteps = new ArrayList<>();
     private ReplacedStepTree replacedStepTree;
@@ -127,7 +126,6 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         while (this.starts.hasNext()) {
             Traverser.Admin<E> h = this.starts.next();
             E value = h.get();
-            this.startElements.add(value);
             SchemaTable schemaTable = value.getSchemaTablePrefixed();
             List<Traverser.Admin<E>> traverserList = this.heads.computeIfAbsent(schemaTable, k -> new ArrayList<>());
             traverserList.add(h);
