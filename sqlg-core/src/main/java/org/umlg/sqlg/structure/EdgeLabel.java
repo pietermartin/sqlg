@@ -331,7 +331,7 @@ public class EdgeLabel extends AbstractLabel {
         result.addAll(this.inVertexLabels);
         if (isValid() && this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedInVertexLabels);
-        	result.removeAll(this.uncommittedInVertexLabels);
+        	result.removeAll(this.uncommittedRemovedInVertexLabels);
         }
         return Collections.unmodifiableSet(result);
     }
