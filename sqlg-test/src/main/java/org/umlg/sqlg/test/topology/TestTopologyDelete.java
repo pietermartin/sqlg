@@ -10,6 +10,8 @@ import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_EDGE_LABEL_NAME;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_INDEX_NAME;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_OUT_EDGES_EDGE;
 import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_NAME;
@@ -25,6 +27,10 @@ import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -40,9 +46,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.umlg.sqlg.structure.EdgeLabel;
 import org.umlg.sqlg.structure.EdgeRole;
+import org.umlg.sqlg.structure.GlobalUniqueIndex;
 import org.umlg.sqlg.structure.Index;
 import org.umlg.sqlg.structure.IndexType;
 import org.umlg.sqlg.structure.PropertyColumn;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.Schema;
 import org.umlg.sqlg.structure.SchemaManager;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.Topology;
@@ -194,6 +203,8 @@ public class TestTopologyDelete extends BaseTest {
 			assertFalse(a1.property("p1").isPresent());
 			assertFalse(a1.property("p2").isPresent());
 			*/
+			TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
 			this.sqlgGraph.tx().commit();
 			checkPropertyExistenceAfterDeletion(this.sqlgGraph,schema);
 			
@@ -203,6 +214,9 @@ public class TestTopologyDelete extends BaseTest {
 		
 			Thread.sleep(1_000);
 			checkPropertyExistenceAfterDeletion(sqlgGraph1,schema);
+			assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
+			assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
+			
 		}
 	}
 	
@@ -253,11 +267,13 @@ public class TestTopologyDelete extends BaseTest {
 	
 
 	@Test
+	
 	public void testDeleteEdgePropertySchema() throws Exception {
 		testDeleteEdgeProperty("MySchema");
 	}
 	
 	@Test
+	
 	public void testDeleteEdgePropertyNoSchema() throws Exception {
 		testDeleteEdgeProperty(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -298,6 +314,8 @@ public class TestTopologyDelete extends BaseTest {
 			assertFalse(a1.property("p1").isPresent());
 			assertFalse(a1.property("p2").isPresent());
 			*/
+			TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
 			this.sqlgGraph.tx().commit();
 			checkEdgePropertyExistenceAfterDeletion(this.sqlgGraph,schema);
 			
@@ -308,6 +326,8 @@ public class TestTopologyDelete extends BaseTest {
 			
 			Thread.sleep(1_000);
 			checkEdgePropertyExistenceAfterDeletion(sqlgGraph1,schema);
+			assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
+			assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
 		}
 	}
 	
@@ -388,12 +408,18 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(i2, TopologyChangeAction.DELETE));
 			
 			checkIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
+			TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
+			
+			
 			this.sqlgGraph.tx().commit();
 			checkIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
 			
 			
 			Thread.sleep(1_000);
 			checkIndexExistenceAfterDeletion(sqlgGraph1,schema,i1,i2);
+			assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
+			assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
 		}
 	}
 	
@@ -481,12 +507,17 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(i2, TopologyChangeAction.DELETE));
 			
 			checkEdgeIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
+			TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
+			
 			this.sqlgGraph.tx().commit();
 			checkEdgeIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
 			
 			
 			Thread.sleep(1_000);
 			checkEdgeIndexExistenceAfterDeletion(sqlgGraph1,schema,i1,i2);
+			assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
+			assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
 		}
 	}
 	
@@ -589,12 +620,16 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(e2, TopologyChangeAction.DELETE));
 			
 			checkEdgeExistenceAfterDeletion(this.sqlgGraph,schema);
+			TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
 			this.sqlgGraph.tx().commit();
 			checkEdgeExistenceAfterDeletion(this.sqlgGraph,schema);
 			
 			
 			Thread.sleep(1_000);
 			checkEdgeExistenceAfterDeletion(sqlgGraph1,schema);
+			assertTrue(tlt1.receivedEvent(e1, TopologyChangeAction.DELETE));
+			assertTrue(tlt1.receivedEvent(e2, TopologyChangeAction.DELETE));
 		}
 	}
 	
@@ -832,11 +867,13 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
+	
 	public void testDeleteVertexLabelSchema() throws Exception {
 		testDeleteVertexLabel("MySchema");
 	}
 	
 	@Test
+	
 	public void testDeleteVertexLabelNoSchema() throws Exception {
 		testDeleteVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -885,10 +922,139 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(lblb, TopologyChangeAction.DELETE));
 			
 			assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
+			
+			TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
+				
 			sqlgGraph.tx().commit();
 			assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
 			Thread.sleep(1_000);
 			assertFalse(sqlgGraph1.getTopology().getEdgeLabel(schema, "E").isPresent());
+			assertTrue(tlt1.receivedEvent(lblb, TopologyChangeAction.DELETE));
+			
+		}
+	}
+	
+	private void checkGlobalUniqueIndexBeforeDeletion(SqlgGraph g,String schema,GlobalUniqueIndex gui1,GlobalUniqueIndex gui2) throws Exception {
+		Set<GlobalUniqueIndex> guis=g.getTopology().getGlobalUniqueIndexes();
+		assertNotNull(guis);
+		assertEquals(2,guis.size());
+		assertTrue(guis.contains(gui1));
+		assertTrue(guis.contains(gui2));
+		
+		Map<String,GlobalUniqueIndex> mguis=g.getTopology().getGlobalUniqueIndexSchema().getGlobalUniqueIndexes();
+		assertNotNull(mguis);
+		assertEquals(2,mguis.size());
+		assertTrue(mguis.containsKey(gui1.getName()));
+		assertTrue(mguis.containsKey(gui2.getName()));
+		String name1=gui1.getName();
+		assertEquals(1,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                    "name",name1 ).count().next().longValue());
+                    
+		assertEquals(2,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name1 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).count().next().longValue());
+		assertEquals(1,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name1 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+				.has("name","name1").count().next().longValue());
+    
+		assertTrue(tableExistsInSQL(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, VERTEX_PREFIX+name1));
+	
+		String name2=gui2.getName();
+		assertEquals(1,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                    "name",name2 ).count().next().longValue());
+                    
+		assertEquals(2,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name2 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).count().next().longValue());
+		assertEquals(1,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name2 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+				.has("name","name1").count().next().longValue());
+    
+		assertTrue(tableExistsInSQL(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, VERTEX_PREFIX+name2));
+	}
+	
+	private void checkGlobalUniqueIndexAfterDeletion(SqlgGraph g,String schema,GlobalUniqueIndex gui1,GlobalUniqueIndex gui2) throws Exception {
+		String name1=gui1.getName();
+		String name2=gui2.getName();
+		
+		Set<GlobalUniqueIndex> guis=g.getTopology().getGlobalUniqueIndexes();
+		assertNotNull(guis);
+		assertEquals(0,guis.size());
+		Map<String,GlobalUniqueIndex> mguis=g.getTopology().getGlobalUniqueIndexSchema().getGlobalUniqueIndexes();
+		assertNotNull(mguis);
+		assertEquals(0,mguis.size());
+		assertEquals(0,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                    "name",name1 ).count().next().longValue());
+                    
+		assertEquals(0,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name1 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).count().next().longValue());
+		assertEquals(0,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name1 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+				.has("name","name1").count().next().longValue());
+    
+		assertFalse(tableExistsInSQL(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, VERTEX_PREFIX+name1));
+	
+		assertEquals(0,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                    "name",name2 ).count().next().longValue());
+                    
+		assertEquals(0,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name2 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).count().next().longValue());
+		assertEquals(0,g.topology().V().has(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX,
+                "name",name2 ).out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+				.has("name","name1").count().next().longValue());
+    
+		assertTrue(tableExistsInSQL(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, VERTEX_PREFIX+name2));
+	}
+	
+	@Test
+	public void testDeleteGlobalUniqueIndexSchema() throws Exception {
+		testDeleteGlobalUniqueIndex("MySchema");
+	}
+	
+	private void testDeleteGlobalUniqueIndex(String schema) throws Exception {
+		try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+		    Map<String, PropertyType> properties = new HashMap<>();
+	        properties.put("name1", PropertyType.STRING);
+	        properties.put("name2", PropertyType.STRING);
+	        
+	        VertexLabel aVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("A", properties);
+	        assertTrue(aVertexLabel.isUncommitted());
+	        Set<PropertyColumn> globalUniqueIndexPropertyColumns = new HashSet<>();
+	        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(aVertexLabel.getProperties().values()));
+	        GlobalUniqueIndex gui1=this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
+	        
+	        VertexLabel bVertexLabel = this.sqlgGraph.getTopology().getPublicSchema().ensureVertexLabelExist("B", properties);
+	        assertTrue(bVertexLabel.isUncommitted());
+	        globalUniqueIndexPropertyColumns = new HashSet<>();
+	        globalUniqueIndexPropertyColumns.addAll(new HashSet<>(bVertexLabel.getProperties().values()));
+	        GlobalUniqueIndex gui2=this.sqlgGraph.getTopology().ensureGlobalUniqueIndexExist(globalUniqueIndexPropertyColumns);
+	        
+	        checkGlobalUniqueIndexBeforeDeletion(this.sqlgGraph,schema,gui1,gui2);
+	        this.sqlgGraph.tx().commit();
+	        checkGlobalUniqueIndexBeforeDeletion(this.sqlgGraph,schema,gui1,gui2);
+	        Thread.sleep(1_000);
+	        checkGlobalUniqueIndexBeforeDeletion(sqlgGraph1,schema,gui1,gui2);
+	        
+	        TopologyListenerTest tlt=new TopologyListenerTest();
+			this.sqlgGraph.getTopology().registerListener(tlt);
+	        
+	        gui1.remove(false);
+	        assertTrue(tlt.receivedEvent(gui1, TopologyChangeAction.DELETE));
+	        
+	        gui2.remove(true);
+	        assertTrue(tlt.receivedEvent(gui2, TopologyChangeAction.DELETE));
+	        
+	        checkGlobalUniqueIndexAfterDeletion(this.sqlgGraph,schema,gui1,gui2);
+	        
+	        TopologyListenerTest tlt1=new TopologyListenerTest();
+			sqlgGraph1.getTopology().registerListener(tlt1);
+	        
+	        this.sqlgGraph.tx().commit();
+	        checkGlobalUniqueIndexAfterDeletion(this.sqlgGraph,schema,gui1,gui2);
+	        Thread.sleep(1_000);
+	        checkGlobalUniqueIndexAfterDeletion(sqlgGraph1,schema,gui1,gui2);
+	        assertTrue(tlt1.receivedEvent(gui1, TopologyChangeAction.DELETE));
+	        assertTrue(tlt1.receivedEvent(gui2, TopologyChangeAction.DELETE));
+	       
 		}
 	}
 }

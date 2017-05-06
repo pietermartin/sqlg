@@ -442,10 +442,6 @@ public abstract class AbstractLabel implements TopologyInf {
 
     protected abstract String getPrefix();
     
-    @Override
-    public void remove(boolean preserveData) {
-    	throw new UnsupportedOperationException();
-    }
     
     abstract void removeProperty(PropertyColumn propertyColumn,boolean preserveData);
 

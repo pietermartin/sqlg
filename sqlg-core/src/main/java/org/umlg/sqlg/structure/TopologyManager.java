@@ -601,6 +601,30 @@ public class TopologyManager {
             sqlgGraph.tx().batchMode(batchModeType);
         }
     }
+    
+    static void removeGlobalUniqueIndex(SqlgGraph sqlgGraph, String globalUniqueIndexName) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+            GraphTraversalSource traversalSource = sqlgGraph.topology();
+            List<Vertex> uniquePropertyConstraints = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
+                    .has("name", globalUniqueIndexName)
+                    .toList();
+            if (uniquePropertyConstraints.size() > 0) {
+            	traversalSource.V(uniquePropertyConstraints.get(0))
+            		.out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+            		.drop()
+            		.iterate();
+            	traversalSource.V(uniquePropertyConstraints.get(0))
+        			.drop()
+        			.iterate();
+            }
+            
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+    
 
     private static BatchManager.BatchModeType flushAndSetTxToNone(SqlgGraph sqlgGraph) {
         //topology elements can not be added in batch mode because on flushing the topology
