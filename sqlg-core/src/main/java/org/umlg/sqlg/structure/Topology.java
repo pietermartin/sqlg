@@ -1582,9 +1582,26 @@ public class Topology {
     void removeInForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
-        if (foreignKeys != null) {
+        if (foreignKeys != null && edgeLabel.isValid()) {
             foreignKeys.getLeft().remove(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
         }
+    }
+    
+    void removeVertexLabel(VertexLabel vertexLabel){
+    	SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+    	this.schemaTableForeignKeyCache.remove(schemaTable);
+    	for (EdgeLabel lbl:vertexLabel.getOutEdgeLabels().values()){
+    		removeFromEdgeForeignKeyCache(
+                lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
+                vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+    	}
+    	for (EdgeLabel lbl:vertexLabel.getInEdgeLabels().values()){
+    		if (lbl.isValid()){
+    			removeFromEdgeForeignKeyCache(
+    					lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
+    					vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+    		}
+    	}
     }
     
     void addToUncommittedGlobalUniqueIndexes(GlobalUniqueIndex globalUniqueIndex) {

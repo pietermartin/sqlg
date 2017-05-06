@@ -36,10 +36,11 @@ public class Schema implements TopologyInf {
     //The key is schema + "." + VERTEX_PREFIX + vertex label. i.e. "A.V_A"
     private Map<String, VertexLabel> vertexLabels = new HashMap<>();
     private Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
-
+    private Set<String> uncommittedRemovedVertexLabels = new HashSet<>();
+    
     private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
-    private Set<String> uncommittedRemovedEdges = new HashSet<>();
+    private Set<String> uncommittedRemovedEdgeLabels = new HashSet<>();
     
     public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
     private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
@@ -273,6 +274,9 @@ public class Schema implements TopologyInf {
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", SchemaManager.VERTEX_PREFIX);
+        if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
+        	return Optional.empty();
+        }
         VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         if (result == null && this.topology.isWriteLockHeldByCurrentThread()) {
             result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
@@ -285,7 +289,7 @@ public class Schema implements TopologyInf {
         result.putAll(this.outEdgeLabels);
         if (this.topology.isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
-            for (String e:uncommittedRemovedEdges){
+            for (String e:uncommittedRemovedEdgeLabels){
             	result.remove(e);
             }
         }
@@ -301,7 +305,7 @@ public class Schema implements TopologyInf {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
                 result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
             }
-            for (String e:uncommittedRemovedEdges){
+            for (String e:uncommittedRemovedEdgeLabels){
             	result.remove(e);
             }
         }
@@ -310,7 +314,7 @@ public class Schema implements TopologyInf {
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
         Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
-        if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdges.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
+        if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
         	return Optional.empty();
         }
         EdgeLabel edgeLabel = this.outEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
@@ -356,6 +360,9 @@ public class Schema implements TopologyInf {
         result.putAll(this.vertexLabels);
         if (this.topology.isWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedVertexLabels);
+            for (String e:uncommittedRemovedVertexLabels){
+            	result.remove(e);
+            }
         }
         return Collections.unmodifiableMap(result);
     }
@@ -552,6 +559,14 @@ public class Schema implements TopologyInf {
                 it.remove();
             }
         }
+        for (Iterator<String> it=uncommittedRemovedVertexLabels.iterator();it.hasNext();){
+        	String s=it.next();
+        	VertexLabel lbl=this.vertexLabels.remove(s);
+        	if (lbl!=null){
+        		this.getTopology().removeVertexLabel(lbl);
+        	}
+        	it.remove();
+        }
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             vertexLabel.afterCommit();
         }
@@ -560,7 +575,7 @@ public class Schema implements TopologyInf {
                 globalUniqueIndex.afterCommit();
             }
         }
-        for (Iterator<String> it=uncommittedRemovedEdges.iterator();it.hasNext();){
+        for (Iterator<String> it=uncommittedRemovedEdgeLabels.iterator();it.hasNext();){
         	String s=it.next();
         	this.outEdgeLabels.remove(s);
         	it.remove();
@@ -600,7 +615,8 @@ public class Schema implements TopologyInf {
             }
         }
         this.uncommittedOutEdgeLabels.clear();
-        this.uncommittedRemovedEdges.clear();
+        this.uncommittedRemovedEdgeLabels.clear();
+        this.uncommittedRemovedVertexLabels.clear();
     }
 
     boolean isSqlgSchema() {
@@ -977,6 +993,23 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;
         }
+        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
+        	 ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+             for(String s:this.uncommittedRemovedVertexLabels){
+            	 vertexLabelArrayNode.add(s);
+             }
+             schemaNode.set("uncommittedRemovedVertexLabels", vertexLabelArrayNode);
+             foundVertexLabels = true;
+        }
+        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedEdgeLabels.isEmpty()) {
+       	 	ArrayNode edgeLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
+            for(String s:this.uncommittedRemovedEdgeLabels){
+           	 edgeLabelArrayNode.add(s);
+            }
+            schemaNode.set("uncommittedRemovedEdgeLabels", edgeLabelArrayNode);
+            foundVertexLabels = true;
+       }
+       
         if (!this.getVertexLabelsOnly().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getVertexLabelsOnly().values()) {
@@ -987,7 +1020,10 @@ public class Schema implements TopologyInf {
                             notifyJson.get("uncommittedOutEdgeLabels") != null ||
                             notifyJson.get("uncommittedInEdgeLabels") != null ||
                             notifyJson.get("outEdgeLabels") != null ||
-                            notifyJson.get("inEdgeLabels") != null) {
+                            notifyJson.get("inEdgeLabels") != null || 
+                            notifyJson.get("uncommittedRemovedOutEdgeLabels")!=null ||
+                            notifyJson.get("uncommittedRemovedInEdgeLabels")!=null
+                            ) {
 
                         vertexLabelArrayNode.add(notifyJsonOptional.get());
                         foundVertexLabels = true;
@@ -1028,19 +1064,72 @@ public class Schema implements TopologyInf {
                 }
             }
         }
+        JsonNode rem=jsonSchema.get("uncommittedRemovedVertexLabels");
+        if (rem!=null && rem.isArray()){
+        	ArrayNode an=(ArrayNode)rem;
+        	for (int a=0;a<an.size();a++){
+        		String s=an.get(a).asText();
+        		VertexLabel lbl=this.vertexLabels.remove(s);
+        		if (lbl!=null){
+        			this.getTopology().removeVertexLabel(lbl);
+        			for(EdgeRole er:lbl.getOutEdgeRoles().values()){
+        				er.getEdgeLabel().outVertexLabels.remove(lbl);
+            		}
+            		for(EdgeRole er:lbl.getInEdgeRoles().values()){
+            			er.getEdgeLabel().inVertexLabels.remove(lbl);
+            		}
+        			this.getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
+        			
+        		}
+        	}
+        }
+        
+        rem=jsonSchema.get("uncommittedRemovedEdgeLabels");
+        if (rem!=null && rem.isArray()){
+        	ArrayNode an=(ArrayNode)rem;
+        	for (int a=0;a<an.size();a++){
+        		String s=an.get(a).asText();
+        		EdgeLabel edgeLabel=this.outEdgeLabels.remove(s);
+        		if (edgeLabel!=null){
+        			for (VertexLabel lbl:edgeLabel.getOutVertexLabels()){
+        				if (edgeLabel.isValid()){
+        					lbl.outEdgeLabels.remove(edgeLabel.getFullName());
+        				}
+            		}
+            		for (VertexLabel lbl:edgeLabel.getInVertexLabels()){
+            			if (edgeLabel.isValid()){
+            				lbl.inEdgeLabels.remove(edgeLabel.getFullName());
+            			}
+            		}
+        			this.getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
+        		}
+        	}
+        }
+        
     }
 
     void fromNotifyJsonInEdges(JsonNode jsonSchema) {
+        JsonNode rem=jsonSchema.get("uncommittedRemovedVertexLabels");
+        Set<String> removed=new HashSet<>();
+        if (rem!=null && rem.isArray()){
+        	ArrayNode an=(ArrayNode)rem;
+        	for (int a=0;a<an.size();a++){
+        		String s=an.get(a).asText();
+        		removed.add(s);
+        	}
+        }
         for (String s : Arrays.asList("vertexLabels", "uncommittedVertexLabels")) {
             JsonNode vertexLabels = jsonSchema.get(s);
             if (vertexLabels != null) {
                 for (JsonNode vertexLabelJson : vertexLabels) {
                     String vertexLabelName = vertexLabelJson.get("label").asText();
-                    Optional<VertexLabel> vertexLabelOptional = getVertexLabel(vertexLabelName);
-                    Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel must be present");
-                    @SuppressWarnings("OptionalGetWithoutIsPresent")
-                    VertexLabel vertexLabel = vertexLabelOptional.get();
-                    vertexLabel.fromNotifyJsonInEdge(vertexLabelJson);
+                    if (!removed.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
+	                    Optional<VertexLabel> vertexLabelOptional = getVertexLabel(vertexLabelName);
+	                    Preconditions.checkState(vertexLabelOptional.isPresent(), "VertexLabel "+vertexLabelName+" must be present");
+	                    @SuppressWarnings("OptionalGetWithoutIsPresent")
+	                    VertexLabel vertexLabel = vertexLabelOptional.get();
+	                    vertexLabel.fromNotifyJsonInEdge(vertexLabelJson);
+                    }
                 }
             }
         }
@@ -1130,12 +1219,12 @@ public class Schema implements TopologyInf {
     	throw new UnsupportedOperationException();
     }
     
-    void removeEdge(EdgeLabel edgeLabel,boolean preserveData){
+    void removeEdgeLabel(EdgeLabel edgeLabel,boolean preserveData){
     	getTopology().lock();
     	String fn=this.name + "." + EDGE_PREFIX + edgeLabel.getName();
     	
-    	if (!uncommittedRemovedEdges.contains(fn)){
-    		uncommittedRemovedEdges.add(fn);
+    	if (!uncommittedRemovedEdgeLabels.contains(fn)){
+    		uncommittedRemovedEdgeLabels.add(fn);
     		TopologyManager.removeEdgeLabel(this.sqlgGraph, edgeLabel);
     		for (VertexLabel lbl:edgeLabel.getOutVertexLabels()){
     			lbl.removeOutEdge(edgeLabel);
@@ -1149,5 +1238,25 @@ public class Schema implements TopologyInf {
     		}
     		getTopology().fire(edgeLabel, "", TopologyChangeAction.DELETE);
     	}
+    }
+    
+    void removeVertexLabel(VertexLabel vertexLabel, boolean preserveData){
+    	getTopology().lock();
+    	String fn=this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
+    	if (!uncommittedRemovedVertexLabels.contains(fn)){
+    		uncommittedRemovedVertexLabels.add(fn);
+    		TopologyManager.removeVertexLabel(this.sqlgGraph, vertexLabel);
+    		for(EdgeRole er:vertexLabel.getOutEdgeRoles().values()){
+    			er.remove(preserveData);
+    		}
+    		for(EdgeRole er:vertexLabel.getInEdgeRoles().values()){
+    			er.remove(preserveData);
+    		}
+    		if (!preserveData){
+    			vertexLabel.delete();
+    		}
+    		getTopology().fire(vertexLabel, "", TopologyChangeAction.DELETE);
+    	}
+    	
     }
 }

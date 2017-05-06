@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.dialect.SqlDialect;
 
 import java.sql.*;
 import java.util.*;
@@ -32,8 +33,8 @@ public class VertexLabel extends AbstractLabel {
     //        B.B --ab-->A.B
     //In this case 2 EdgeLabels will exist A.ab and B.ab
     //A.B's inEdgeLabels will contain both EdgeLabels
-    private Map<String, EdgeLabel> inEdgeLabels = new HashMap<>();
-    private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
+    Map<String, EdgeLabel> inEdgeLabels = new HashMap<>();
+    Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedInEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
     private Map<String,EdgeRemoveType> uncommittedRemovedInEdgeLabels = new HashMap<>();
@@ -601,12 +602,12 @@ public class VertexLabel extends AbstractLabel {
         		EdgeLabel lbl=this.outEdgeLabels.remove(n.get("label").asText());
         		if (lbl!=null){
         			EdgeRemoveType ert=EdgeRemoveType.valueOf(n.get("type").asText());
-        			lbl.outVertexLabels.remove(this);
-       		        this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
+        			this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                          lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
                          this.getSchema().getName() + "." + this.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
        		        this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, lbl);
-                 
+       		        lbl.outVertexLabels.remove(this);
+    		        
         			switch (ert){
         			case LABEL:
         				this.getSchema().getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
@@ -651,12 +652,14 @@ public class VertexLabel extends AbstractLabel {
         		EdgeLabel lbl=this.inEdgeLabels.remove(n.get("label").asText());
         		if (lbl!=null){
         			EdgeRemoveType ert=EdgeRemoveType.valueOf(n.get("type").asText());
-        			lbl.inVertexLabels.remove(this);
-        		     this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
+        			if (lbl.isValid()){
+        				this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                              lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
                              this.getSchema().getName() + "." + this.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
-        		     this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, lbl);
-                     
+        				this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, lbl);
+            		}
+        		    lbl.inVertexLabels.remove(this);
+         		     
         			switch (ert){
         			case LABEL:
         				this.getSchema().getTopology().fire(lbl, "", TopologyChangeAction.DELETE);
@@ -804,4 +807,36 @@ public class VertexLabel extends AbstractLabel {
     		this.getSchema().getTopology().fire(er, "", TopologyChangeAction.DELETE);
     	}
     }
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	this.getSchema().removeVertexLabel(this, preserveData);
+    }
+    
+    void delete(){
+   	 String schema = getSchema().getName();
+        String tableName = VERTEX_PREFIX + getLabel();
+
+        SqlDialect sqlDialect = this.sqlgGraph.getSqlDialect();
+        sqlDialect.assertTableName(tableName);
+        StringBuilder sql = new StringBuilder("DROP TABLE IF EXISTS ");
+        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(sqlDialect.maybeWrapInQoutes(tableName));
+        if (sqlDialect.supportsCascade()){
+       	 sql.append(" CASCADE");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        if (sqlDialect.needsSemicolon()) {
+            sql.append(";");
+        }
+        Connection conn = sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+   }
 }

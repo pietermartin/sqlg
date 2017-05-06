@@ -312,10 +312,14 @@ public class EdgeLabel extends AbstractLabel {
         return result;
     }
 
+    boolean isValid(){
+    	return this.outVertexLabels.size()>0 || this.uncommittedOutVertexLabels.size()>0;
+    }
+    
     public Set<VertexLabel> getOutVertexLabels() {
         Set<VertexLabel> result = new HashSet<>();
         result.addAll(this.outVertexLabels);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (isValid() && this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedOutVertexLabels);
            	result.removeAll(this.uncommittedRemovedOutVertexLabels);
         }
@@ -325,7 +329,7 @@ public class EdgeLabel extends AbstractLabel {
     public Set<VertexLabel> getInVertexLabels() {
         Set<VertexLabel> result = new HashSet<>();
         result.addAll(this.inVertexLabels);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (isValid() && this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedInVertexLabels);
         	result.removeAll(this.uncommittedInVertexLabels);
         }
@@ -687,7 +691,7 @@ public class EdgeLabel extends AbstractLabel {
     
     @Override
     public void remove(boolean preserveData) {
-    	getSchema().removeEdge(this,preserveData);
+    	getSchema().removeEdgeLabel(this,preserveData);
     }
     
     void delete(){

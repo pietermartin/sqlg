@@ -148,13 +148,13 @@ public class TestTopologyDelete extends BaseTest {
 	
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteVertexPropertySchema() throws Exception {
 		testDeleteVertexProperty("MySchema");
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteVertexPropertyNoSchema() throws Exception {
 		testDeleteVertexProperty(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -253,13 +253,11 @@ public class TestTopologyDelete extends BaseTest {
 	
 
 	@Test
-	@Ignore
 	public void testDeleteEdgePropertySchema() throws Exception {
 		testDeleteEdgeProperty("MySchema");
 	}
 	
 	@Test
-	@Ignore
 	public void testDeleteEdgePropertyNoSchema() throws Exception {
 		testDeleteEdgeProperty(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -354,13 +352,13 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteVertexIndexSchema() throws Exception {
 		testDeleteVertexIndex("MySchema");
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteVertexIndexNoSchema() throws Exception {
 		testDeleteVertexIndex(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -444,13 +442,13 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteEdgeIndexSchema() throws Exception {
 		testDeleteEdgeIndex("MySchema");
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteEdgeIndexNoSchema() throws Exception {
 		testDeleteEdgeIndex(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -519,22 +517,22 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	private void checkEdgeExistenceAfterDeletion(SqlgGraph g,String schema) throws Exception {
-		Optional<EdgeLabel> olbl=this.sqlgGraph.getTopology().getEdgeLabel(schema, "E1");
+		Optional<EdgeLabel> olbl=g.getTopology().getEdgeLabel(schema, "E1");
 		assertNotNull(olbl);
 		assertFalse(olbl.isPresent());
-		olbl=this.sqlgGraph.getTopology().getEdgeLabel(schema, "E2");
+		olbl=g.getTopology().getEdgeLabel(schema, "E2");
 		assertNotNull(olbl);
 		assertFalse(olbl.isPresent());
 		
-		VertexLabel a=this.sqlgGraph.getTopology().getVertexLabel(schema, "A").get();
+		VertexLabel a=g.getTopology().getVertexLabel(schema, "A").get();
 		assertFalse(a.getOutEdgeLabel("E1").isPresent());
 		assertFalse(a.getOutEdgeLabel("E2").isPresent());
 		
-		assertEquals(0L,this.sqlgGraph.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+		assertEquals(0L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
 				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"A")
 				.out(SQLG_SCHEMA_OUT_EDGES_EDGE).has(SQLG_SCHEMA_EDGE_LABEL_NAME,"E1").count().next().longValue());
 				
-		assertEquals(0L,this.sqlgGraph.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+		assertEquals(0L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
 				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"A")
 				.out(SQLG_SCHEMA_OUT_EDGES_EDGE).has(SQLG_SCHEMA_EDGE_LABEL_NAME,"E2").count().next().longValue());
 			
@@ -544,13 +542,13 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteEdgeSchema() throws Exception {
 		testDeleteEdge("MySchema");
 	}
 	
 	@Test
-	@Ignore
+	
 	public void testDeleteEdgeNoSchema() throws Exception {
 		testDeleteEdge(this.sqlgGraph.getSqlDialect().getPublicSchema());
 	}
@@ -680,11 +678,13 @@ public class TestTopologyDelete extends BaseTest {
 	}
 	
 	@Test
+	
 	public void testDeleteEdgeRoleSchemaPublic() throws Exception{
 		testDeleteEdgeRole("MySchema", sqlgGraph.getSqlDialect().getPublicSchema());
 	}
 	
 	@Test
+	
 	public void testDeleteEdgeRolePublicSchema() throws Exception{
 		testDeleteEdgeRole(sqlgGraph.getSqlDialect().getPublicSchema(),"MySchema");
 	}
@@ -739,6 +739,156 @@ public class TestTopologyDelete extends BaseTest {
 			assertFalse(this.sqlgGraph.getTopology().getEdgeLabel(schemaOut, "E1").isPresent());
 			this.sqlgGraph.tx().commit();
 			assertFalse(this.sqlgGraph.getTopology().getEdgeLabel(schemaOut, "E1").isPresent());			
+		}
+	}
+	
+	private void checkVertexLabelBeforeDeletion(SqlgGraph g,String schema) throws Exception {
+		Optional<VertexLabel> olbl=g.getTopology().getVertexLabel(schema, "A");
+		assertNotNull(olbl);
+		assertTrue(olbl.isPresent());
+		
+		olbl=g.getTopology().getVertexLabel(schema, "B");
+		assertNotNull(olbl);
+		assertTrue(olbl.isPresent());
+		
+		olbl=g.getTopology().getVertexLabel(schema, "C");
+		assertNotNull(olbl);
+		assertTrue(olbl.isPresent());
+		
+		olbl=g.getTopology().getVertexLabel(schema, "D");
+		assertNotNull(olbl);
+		assertTrue(olbl.isPresent());
+		
+		assertEquals(1L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"A").count().next().longValue());
+	
+		assertEquals(1L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"B").count().next().longValue());
+	
+		assertEquals(1L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"C").count().next().longValue());
+	
+		assertEquals(1L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"D").count().next().longValue());
+	
+		
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"A"));
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"B"));
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"C"));
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"D"));
+		
+		
+		Optional<EdgeLabel> oelbl=g.getTopology().getEdgeLabel(schema, "E");
+		assertNotNull(oelbl);
+		assertTrue(oelbl.isPresent());
+		EdgeLabel elbl=oelbl.get();
+		assertEquals(3,elbl.getInVertexLabels().size());
+		assertEquals(3,elbl.getOutVertexLabels().size());
+		
+	}
+	
+	private void checkVertexLabelAfterDeletion(SqlgGraph g,String schema) throws Exception {
+		Optional<VertexLabel> olbl=g.getTopology().getVertexLabel(schema, "A");
+		assertNotNull(olbl);
+		assertTrue(olbl.isPresent());
+		
+		olbl=g.getTopology().getVertexLabel(schema, "B");
+		assertNotNull(olbl);
+		assertTrue(olbl.isPresent());
+		
+		olbl=g.getTopology().getVertexLabel(schema, "C");
+		assertNotNull(olbl);
+		assertFalse(olbl.isPresent());
+		
+		olbl=g.getTopology().getVertexLabel(schema, "D");
+		assertNotNull(olbl);
+		assertFalse(olbl.isPresent());
+		
+		assertEquals(1L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"A").count().next().longValue());
+	
+		assertEquals(1L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"B").count().next().longValue());
+	
+		assertEquals(0L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"C").count().next().longValue());
+	
+		assertEquals(0L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
+				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"D").count().next().longValue());
+	
+		
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"A"));
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"B"));
+		assertFalse(tableExistsInSQL(schema, VERTEX_PREFIX+"C"));
+		assertTrue(tableExistsInSQL(schema, VERTEX_PREFIX+"D"));
+		
+		
+		Optional<EdgeLabel> oelbl=g.getTopology().getEdgeLabel(schema, "E");
+		assertNotNull(oelbl);
+		assertTrue(oelbl.isPresent());
+		EdgeLabel elbl=oelbl.get();
+		assertEquals(1,elbl.getInVertexLabels().size());
+		assertEquals(2,elbl.getOutVertexLabels().size());
+	}
+	
+	@Test
+	public void testDeleteVertexLabelSchema() throws Exception {
+		testDeleteVertexLabel("MySchema");
+	}
+	
+	@Test
+	public void testDeleteVertexLabelNoSchema() throws Exception {
+		testDeleteVertexLabel(sqlgGraph.getSqlDialect().getPublicSchema());
+	}
+	
+	private void testDeleteVertexLabel(String schema) throws Exception {
+		try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+			String A=getLabel(schema,"A");
+			String B=getLabel(schema,"B");
+			String C=getLabel(schema,"C");
+			String D=getLabel(schema,"D");
+			Vertex a = this.sqlgGraph.addVertex(T.label, A, "name", "A");
+			Vertex b = this.sqlgGraph.addVertex(T.label, B, "name", "B");
+			Vertex c = this.sqlgGraph.addVertex(T.label, C, "name", "C", "p1","v1");
+			Vertex d = this.sqlgGraph.addVertex(T.label, D, "name", "D", "p1","v1");
+			a.addEdge("E", b);
+			b.addEdge("E", c);
+			c.addEdge("E", d);
+			
+			//checkVertexLabelBeforeDeletion(sqlgGraph,schema);
+			this.sqlgGraph.tx().commit();
+			checkVertexLabelBeforeDeletion(sqlgGraph,schema);
+			Thread.sleep(1_000);
+			checkVertexLabelBeforeDeletion(sqlgGraph1,schema);
+			
+			
+			TopologyListenerTest tlt=new TopologyListenerTest();
+			this.sqlgGraph.getTopology().registerListener(tlt);
+			
+			VertexLabel lblc=this.sqlgGraph.getTopology().getVertexLabel(schema, "C").get();
+			lblc.remove(false);
+			assertTrue(tlt.receivedEvent(lblc, TopologyChangeAction.DELETE));
+			
+			VertexLabel lbld=this.sqlgGraph.getTopology().getVertexLabel(schema, "D").get();
+			lbld.remove(true);
+			assertTrue(tlt.receivedEvent(lbld, TopologyChangeAction.DELETE));
+			
+			//checkVertexLabelAfterDeletion(sqlgGraph,schema);
+			sqlgGraph.tx().commit();
+			checkVertexLabelAfterDeletion(sqlgGraph,schema);
+			Thread.sleep(1_000);
+			checkVertexLabelAfterDeletion(sqlgGraph1,schema);
+			
+			
+			VertexLabel lblb=this.sqlgGraph.getTopology().getVertexLabel(schema, "B").get();
+			lblb.remove(true);
+			assertTrue(tlt.receivedEvent(lblb, TopologyChangeAction.DELETE));
+			
+			assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
+			sqlgGraph.tx().commit();
+			assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
+			Thread.sleep(1_000);
+			assertFalse(sqlgGraph1.getTopology().getEdgeLabel(schema, "E").isPresent());
 		}
 	}
 }
