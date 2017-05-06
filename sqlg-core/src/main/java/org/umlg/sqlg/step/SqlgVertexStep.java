@@ -148,7 +148,9 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         List<Emit<E>> emits = this.elementIterator.next();
         Emit<E> emitToGetEmit = emits.get(0);
         Traverser.Admin<E> head = this.startIndexTraverserAdminMap.get(emitToGetEmit.getParentIndex());
-        Preconditions.checkState(head != null, "head not found for " + emits.get(0).toString());
+        if (head == null) {
+            throw new IllegalStateException("head not found for " + emits.get(0).toString());
+        }
         Traverser.Admin<E> traverser = head;
         List<SqlgComparatorHolder> emitComparators = new ArrayList<>();
         for (Emit<E> emit : emits) {

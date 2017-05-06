@@ -99,7 +99,7 @@ public class SchemaTableTree {
     private List<Pair<Long, Long>> parentIdsAndIndexes;
 
 
-    enum STEP_TYPE {
+    public enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
         EDGE_VERTEX_STEP
@@ -683,14 +683,15 @@ public class SchemaTableTree {
 
         //The SqlgVertexStep's incoming/parent element index and ids
         if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+            //if there is only 1 incoming start/traverser we use a where clause as its faster.
+            if (this.parentIdsAndIndexes.size() == 1) {
+                singlePathSql.append(this.parentIdsAndIndexes.get(0).getRight());
+                singlePathSql.append(" as ");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+            } else {
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+            }
             singlePathSql.append(",\n\t");
-//            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-//            singlePathSql.append(".");
-//            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-//            singlePathSql.append(".");
-//            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
-//            singlePathSql.append(" as parent,\n\t");
         }
 
         singlePathSql.append(constructFromClause(sqlgGraph, distinctQueryStack, lastOfPrevious, firstOfNextStack));
@@ -728,38 +729,49 @@ public class SchemaTableTree {
             }
         }
 
-        //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
-        if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
-            singlePathSql.append(" INNER JOIN\n\t(VALUES");
-            int count = 1;
-            for (Pair<Long, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
-                singlePathSql.append("(");
-                singlePathSql.append(parentIdAndIndex.getLeft());
-                singlePathSql.append(", ");
-                singlePathSql.append(parentIdAndIndex.getRight());
-                singlePathSql.append(")");
-                if (count++ < this.parentIdsAndIndexes.size()) {
-                    singlePathSql.append(",");
-                }
-            }
-            singlePathSql.append(") AS tmp (");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
-            singlePathSql.append(", ");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
-            singlePathSql.append(") ON ");
-
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-            singlePathSql.append(".");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-            singlePathSql.append(".");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
-            singlePathSql.append(" = tmp.");
-            singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
-        }
-
-
         MutableBoolean mutableWhere = new MutableBoolean(false);
         MutableBoolean mutableOrderBy = new MutableBoolean(false);
+
+        //lastOfPrevious is null for the first call in the call stack it needs the id parameter in the where clause.
+        if (lastOfPrevious == null && distinctQueryStack.getFirst().stepType != STEP_TYPE.GRAPH_STEP) {
+            if (this.parentIdsAndIndexes.size() != 1) {
+                singlePathSql.append(" INNER JOIN\n\t(VALUES");
+                int count = 1;
+                for (Pair<Long, Long> parentIdAndIndex : this.parentIdsAndIndexes) {
+                    singlePathSql.append("(");
+                    singlePathSql.append(parentIdAndIndex.getLeft());
+                    singlePathSql.append(", ");
+                    singlePathSql.append(parentIdAndIndex.getRight());
+                    singlePathSql.append(")");
+                    if (count++ < this.parentIdsAndIndexes.size()) {
+                        singlePathSql.append(",");
+                    }
+                }
+                singlePathSql.append(") AS tmp (");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                singlePathSql.append(", ");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                singlePathSql.append(") ON ");
+
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
+                singlePathSql.append(" = tmp.");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+            } else {
+                singlePathSql.append("\nWHERE\n\t");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                singlePathSql.append(".");
+                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
+                singlePathSql.append(" = ");
+                singlePathSql.append(this.parentIdsAndIndexes.get(0).getLeft());
+                mutableWhere.setTrue();
+            }
+        }
 
         //construct the where clause for the hasContainers
         for (SchemaTableTree schemaTableTree : distinctQueryStack) {
@@ -2165,5 +2177,13 @@ public class SchemaTableTree {
 
     public void setParentIdsAndIndexes(List<Pair<Long, Long>> parentIdsAndIndexes) {
         this.parentIdsAndIndexes = parentIdsAndIndexes;
+    }
+
+    public STEP_TYPE getStepType() {
+        return stepType;
+    }
+
+    public List<Pair<Long, Long>> getParentIdsAndIndexes() {
+        return parentIdsAndIndexes;
     }
 }

@@ -2,7 +2,8 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptionalWithOrder;
+import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptional;
+import org.umlg.sqlg.test.localvertexstep.TestVertexStepPerformance;
 
 /**
  * Date: 2014/07/16
@@ -10,20 +11,8 @@ import org.umlg.sqlg.test.localvertexstep.TestLocalVertexStepOptionalWithOrder;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestSample.class,
-//        TestSack.class,
-//        TestGroupCount.class,
-//        TestMax.class,
-//        TestGremlinCompileChoose.class,
-//        TestLocalVertexStepLimit.class,
-//        TestGremlinOptional.class,
-//        TestLocalVertexStepOptional.class,
-        TestLocalVertexStepOptionalWithOrder.class,
-//        TestGremlinCompileChoose.class,
-//        TestOptionalWithOrder.class,
-//        TestLocalVertexStepWithOrder.class,
-//        TestSqlgBranchStep.class,
-//        TestRepeatStepVertexOut.class,
+        TestVertexStepPerformance.class,
+        TestLocalVertexStepOptional.class,
 })
 public class AnyTest {
 }

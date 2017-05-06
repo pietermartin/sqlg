@@ -1,5 +1,6 @@
 package org.umlg.sqlg.strategy;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
@@ -54,6 +55,9 @@ public class SqlgSqlExecutor {
             sqlgGraph.tx().flush();
         }
         try {
+            if (distinctQueryStack.peekFirst().getStepType() != SchemaTableTree.STEP_TYPE.GRAPH_STEP) {
+                Preconditions.checkState(!distinctQueryStack.peekFirst().getParentIdsAndIndexes().isEmpty());
+            }
             Connection conn = sqlgGraph.tx().getConnection();
             if (logger.isDebugEnabled()) {
                 logger.debug(sql);
@@ -85,10 +89,7 @@ public class SqlgSqlExecutor {
             PreparedStatement preparedStatement = conn.prepareStatement(sql);
             sqlgGraph.tx().add(preparedStatement);
             int parameterCount = 1;
-//            if (recordId != null) {
-//                preparedStatement.setLong(parameterCount++, recordId.getId());
-//            }
-            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, conn, preparedStatement, parameterCount);
+            SqlgUtil.setParametersOnStatement(sqlgGraph, distinctQueryStack, preparedStatement, parameterCount);
 //            preparedStatement.setFetchSize(100_000);
             ResultSet resultSet = preparedStatement.executeQuery();
             ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
