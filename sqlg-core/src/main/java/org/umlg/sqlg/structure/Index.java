@@ -223,7 +223,7 @@ public class Index implements TopologyInf {
         Index index = new Index(indexName, indexType, abstractLabel, properties);
         SchemaTable schemaTable = SchemaTable.of(abstractLabel.getSchema().getName(), abstractLabel.getLabel());
         index.addIndex(sqlgGraph, schemaTable, indexName, indexType, properties);
-        TopologyManager.addIndex(sqlgGraph, index);
+        TopologyManager.addIndex(sqlgGraph, index,  properties);
         index.committed = false;
         return index;
     }

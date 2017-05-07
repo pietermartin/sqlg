@@ -425,7 +425,7 @@ public class TopologyManager {
 
     }
 
-    public static void addIndex(SqlgGraph sqlgGraph, Index index) {
+    public static void addIndex(SqlgGraph sqlgGraph, Index index, List<PropertyColumn> properties) {
         BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
         try {
             //get the abstractLabel's vertex
@@ -466,7 +466,7 @@ public class TopologyManager {
             } else {
                 abstractLabelVertex.addEdge(SQLG_SCHEMA_EDGE_INDEX_EDGE, indexVertex);
             }
-            for (PropertyColumn property : index.getProperties()) {
+            for (PropertyColumn property : properties) {
                 List<Vertex> propertyVertexes = traversalSource.V(abstractLabelVertex)
                         .out(abstractLabel instanceof VertexLabel ? SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE : SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
                         .has("name", property.getName())
