@@ -18,7 +18,6 @@ import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
-import org.postgresql.core.BaseConnection;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -31,7 +30,6 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.sql.Date;
@@ -334,8 +332,8 @@ public class PostgresDialect extends BaseSqlDialect {
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
         Connection con = sqlgGraph.tx().getConnection();
         try {
-            CopyManager copyManager = (CopyManager) con.unwrap(BaseConnection.class);
-
+            PGConnection pgConnection = con.unwrap(PGConnection.class);
+            CopyManager copyManager = pgConnection.getCopyAPI();
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
@@ -400,76 +398,6 @@ public class PostgresDialect extends BaseSqlDialect {
                 long id = endHigh - numberInserted + 1;
                 for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
                     sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    //TODO this does not call ensureVertexColumnExist
-//    @Override
-    public void flushEdgeCacheOld(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        Connection con = sqlgGraph.tx().getConnection();
-        try {
-            CopyManager copyManager = (CopyManager)con.unwrap(BaseConnection.class);
-            for (MetaEdge metaEdge : edgeCache.keySet()) {
-                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-
-
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-                long endHigh;
-                long numberInserted;
-                try (InputStream is = mapEdgeToInputStream(propertyTypeMap, triples)) {
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("COPY ");
-                    sql.append(maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
-                    sql.append(" (");
-                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
-                        int count = 1;
-                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-                        sql.append(", ");
-                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                        for (String key : triples.getLeft()) {
-                            if (count <= triples.getLeft().size()) {
-                                sql.append(", ");
-                            }
-                            count++;
-                            appendKeyForStream(propertyTypeMap.get(key), sql, key);
-                        }
-                        break;
-                    }
-                    sql.append(") ");
-
-                    sql.append(" FROM stdin CSV DELIMITER '");
-                    sql.append(COPY_COMMAND_DELIMITER);
-                    sql.append("' ");
-                    sql.append("QUOTE ");
-                    sql.append(COPY_COMMAND_QUOTE);
-                    sql.append(" ESCAPE '");
-                    sql.append(ESCAPE);
-                    sql.append("';");
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-
-                    numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement(
-                            "SELECT CURRVAL('\"" + metaEdge.getSchemaTable().getSchema() + "\".\"" +
-                                    EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq\"');")) {
-
-                        ResultSet resultSet = preparedStatement.executeQuery();
-                        resultSet.next();
-                        endHigh = resultSet.getLong(1);
-                        resultSet.close();
-                    }
-                    //set the id on the vertex
-                    long id = endHigh - numberInserted + 1;
-                    for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
-                        sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
-                    }
                 }
             }
         } catch (Exception e) {
