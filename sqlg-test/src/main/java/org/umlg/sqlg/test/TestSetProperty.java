@@ -8,11 +8,14 @@ import java.time.Period;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.umlg.sqlg.structure.SqlgGraph;
 
 /**
  * Date: 2014/07/13
@@ -316,7 +319,7 @@ public class TestSetProperty extends BaseTest {
     }
     
     @Test
-    public void testDateTimeProperties(){
+    public void testDateTimeProperties() throws Exception {
     	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
     	LocalDateTime ldt=LocalDateTime.now();
     	v.property("ldt",ldt);
@@ -333,6 +336,9 @@ public class TestSetProperty extends BaseTest {
     	Duration d=Duration.ofHours(12);
     	v.property("d", d);
     	
+    	Vertex vJ = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+    	vJ.addEdge("knows", v);
+    	
     	this.sqlgGraph.tx().commit();
     	assertProperty(v, "ldt", ldt);
     	assertProperty(v, "ld", ldt.toLocalDate());
@@ -340,9 +346,91 @@ public class TestSetProperty extends BaseTest {
     	assertProperty(v, "zdt", zdt);
     	assertProperty(v, "p", p);
     	assertProperty(v, "d", d);
+    	Vertex vJ2=sqlgGraph.vertices(vJ.id()).next();
+		Vertex v2=vJ2.edges(Direction.OUT).next().inVertex();
+		assertProperty(v2, "ldt", ldt);
+    	assertProperty(v2, "ld", ldt.toLocalDate());
+    	assertProperty(v2, "lt", lt);
+    	assertProperty(v2, "zdt", zdt);
+    	assertProperty(v2, "p", p);
+    	assertProperty(v2, "d", d);
+    	
+    	this.sqlgGraph.close();
+    	
+    	try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+    		v2=sqlgGraph1.vertices(v.id()).next();
+    		assertProperty(sqlgGraph1, v2, "ldt", ldt);
+        	assertProperty(sqlgGraph1, v2, "ld", ldt.toLocalDate());
+        	assertProperty(sqlgGraph1, v2, "lt", lt);
+        	assertProperty(sqlgGraph1, v2, "zdt", zdt);
+        	assertProperty(sqlgGraph1, v2, "p", p);
+        	assertProperty(sqlgGraph1, v2, "d", d);
+    	}
+    	try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+    		v2=sqlgGraph1.traversal().V().hasLabel("Person").next();
+    		assertProperty(sqlgGraph1, v2, "ldt", ldt);
+        	assertProperty(sqlgGraph1, v2, "ld", ldt.toLocalDate());
+        	assertProperty(sqlgGraph1, v2, "lt", lt);
+        	assertProperty(sqlgGraph1, v2, "zdt", zdt);
+        	assertProperty(sqlgGraph1, v2, "p", p);
+        	assertProperty(sqlgGraph1, v2, "d", d);
+        	
+        }
+    	try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+    		vJ2=sqlgGraph1.vertices(vJ.id()).next();
+    		v2=vJ2.edges(Direction.OUT).next().inVertex();
+    		assertProperty(sqlgGraph1, v2, "ldt", ldt);
+        	assertProperty(sqlgGraph1, v2, "ld", ldt.toLocalDate());
+        	assertProperty(sqlgGraph1, v2, "lt", lt);
+        	assertProperty(sqlgGraph1, v2, "zdt", zdt);
+        	assertProperty(sqlgGraph1, v2, "p", p);
+        	assertProperty(sqlgGraph1, v2, "d", d);
+        	
+        }
     }
 
+    
+    @Test
+    public void testEdgeDateTimeProperties() throws Exception {
+    	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
+    	
+    	Vertex vJ = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
+    	Edge e1=vJ.addEdge("knows", v);
+    	
+    	LocalDateTime ldt=LocalDateTime.now();
+    	e1.property("ldt",ldt);
+    	e1.property("ld",ldt.toLocalDate());
+    	LocalTime lt=ldt.toLocalTime().truncatedTo(ChronoUnit.SECONDS);
+    	e1.property("lt",lt);
+    	
+    	ZonedDateTime zdt=ZonedDateTime.now();
+    	e1.property("zdt",zdt);
+    	    	
+    	Period p=Period.ofDays(3);
+    	e1.property("p", p);
+    	
+    	Duration d=Duration.ofHours(12);
+    	e1.property("d", d);
 
+    	this.sqlgGraph.tx().commit();
+    	assertProperty(e1, "ldt", ldt);
+    	assertProperty(e1, "ld", ldt.toLocalDate());
+    	assertProperty(e1, "lt", lt);
+    	assertProperty(e1, "zdt", zdt);
+    	assertProperty(e1, "p", p);
+    	assertProperty(e1, "d", d);
+    	Vertex vJ2=sqlgGraph.vertices(vJ.id()).next();
+		Edge e2=vJ2.edges(Direction.OUT).next();
+		assertProperty(e2, "ldt", ldt);
+    	assertProperty(e2, "ld", ldt.toLocalDate());
+    	assertProperty(e2, "lt", lt);
+    	assertProperty(e2, "zdt", zdt);
+    	assertProperty(e2, "p", p);
+    	assertProperty(e2, "d", d);
+
+
+    }
+    
     @Test
     public void testDateTimeArrayProperties(){
     	Vertex v = this.sqlgGraph.addVertex(T.label, "Person", "name", "marko");
@@ -372,10 +460,22 @@ public class TestSetProperty extends BaseTest {
 
     
     private <TP> void assertProperty(Vertex v,String property,TP expected){
-    	Assert.assertEquals(expected, v.property(property).value());
-        Assert.assertEquals(expected, this.sqlgGraph.traversal().V(v).values(property).next());
+    	assertProperty(this.sqlgGraph, v, property, expected);
     }
     
+    private static <TP> void assertProperty(SqlgGraph g,Vertex v,String property,TP expected){
+    	Assert.assertEquals(expected, v.property(property).value());
+        Assert.assertEquals(expected, g.traversal().V(v).values(property).next());
+    }
+    
+    private <TP> void assertProperty(Edge e,String property,TP expected){
+    	assertProperty(this.sqlgGraph, e, property, expected);
+    }
+    
+    private static <TP> void assertProperty(SqlgGraph g,Edge e,String property,TP expected){
+    	Assert.assertEquals(expected, e.property(property).value());
+        Assert.assertEquals(expected, g.traversal().E(e).values(property).next());
+    }
 
     private void assertObjectArrayProperty(Vertex v,String property,Object... expected){
     	Assert.assertArrayEquals(expected,(Object[]) v.property(property).value());

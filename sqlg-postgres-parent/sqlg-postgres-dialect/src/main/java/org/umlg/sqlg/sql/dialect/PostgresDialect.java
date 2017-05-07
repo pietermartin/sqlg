@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,8 +18,6 @@ import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
-import org.postgresql.core.BaseConnection;
-import org.postgresql.core.ServerVersion;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -33,7 +30,6 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.sql.Date;
@@ -211,7 +207,7 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
 
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
@@ -339,12 +335,10 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         try {
-            Method m = BaseConnection.class.getMethod("getCopyAPI");
-            Object[] arg = new Object[]{};
-            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
-
+            PGConnection pgConnection = con.unwrap(PGConnection.class);
+            CopyManager copyManager = pgConnection.getCopyAPI();
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
@@ -409,79 +403,6 @@ public class PostgresDialect extends BaseSqlDialect {
                 long id = endHigh - numberInserted + 1;
                 for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
                     sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    //TODO this does not call ensureVertexColumnExist
-//    @Override
-    public void flushEdgeCacheOld(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
-        try {
-            Method m = BaseConnection.class.getMethod("getCopyAPI");
-            Object[] arg = new Object[]{};
-            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
-
-            for (MetaEdge metaEdge : edgeCache.keySet()) {
-                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-
-
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-                long endHigh;
-                long numberInserted;
-                try (InputStream is = mapEdgeToInputStream(propertyTypeMap, triples)) {
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("COPY ");
-                    sql.append(maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
-                    sql.append(" (");
-                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
-                        int count = 1;
-                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-                        sql.append(", ");
-                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                        for (String key : triples.getLeft()) {
-                            if (count <= triples.getLeft().size()) {
-                                sql.append(", ");
-                            }
-                            count++;
-                            appendKeyForStream(propertyTypeMap.get(key), sql, key);
-                        }
-                        break;
-                    }
-                    sql.append(") ");
-
-                    sql.append(" FROM stdin CSV DELIMITER '");
-                    sql.append(COPY_COMMAND_DELIMITER);
-                    sql.append("' ");
-                    sql.append("QUOTE ");
-                    sql.append(COPY_COMMAND_QUOTE);
-                    sql.append(" ESCAPE '");
-                    sql.append(ESCAPE);
-                    sql.append("';");
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-
-                    numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement(
-                            "SELECT CURRVAL('\"" + metaEdge.getSchemaTable().getSchema() + "\".\"" +
-                                    EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq\"');")) {
-
-                        ResultSet resultSet = preparedStatement.executeQuery();
-                        resultSet.next();
-                        endHigh = resultSet.getLong(1);
-                        resultSet.close();
-                    }
-                    //set the id on the vertex
-                    long id = endHigh - numberInserted + 1;
-                    for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
-                        sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
-                    }
                 }
             }
         } catch (Exception e) {
@@ -660,11 +581,10 @@ public class PostgresDialect extends BaseSqlDialect {
                 }
                 break;
             case STRING:
-                //Postgres supports custom quoted strings using the 'with token' clause
                 if (value != null) {
-                    sql.append("$token$");
-                    sql.append(value);
-                    sql.append("$token$");
+                    sql.append("'");
+                    sql.append(value.toString().replace("'", "''"));
+                    sql.append("'");
                 } else {
                     sql.append("null");
                 }
@@ -743,7 +663,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case JSON:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(value.toString());
+                    sql.append(value.toString().replace("'", "''"));
                     sql.append("'::JSONB");
                 } else {
                     sql.append("null");
@@ -1020,7 +940,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     int countStringArray = 1;
                     for (LocalTime s : localTimeArray) {
                         sql.append("'");
-                        sql.append(s.toString());
+                        sql.append(shiftDST(s).toLocalTime().toString());
                         sql.append("'::TIME");
                         if (countStringArray++ < localTimeArray.length) {
                             sql.append(",");
@@ -2766,7 +2686,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public Writer streamSql(SqlgGraph sqlgGraph, String sql) {
-        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
@@ -2779,7 +2699,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
@@ -3108,6 +3028,15 @@ public class PostgresDialect extends BaseSqlDialect {
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
         try {
             switch (propertyType) {
+                case LOCALTIME_ARRAY:
+                    // shit DST for local time
+                    if (data != null) {
+                        int a = 0;
+                        for (Object o : data) {
+                            data[a++] = shiftDST(((Time) o).toLocalTime());
+                        }
+                    }
+                    // fall through
                 case STRING_ARRAY:
                 case long_ARRAY:
                 case LONG_ARRAY:
@@ -3123,7 +3052,6 @@ public class PostgresDialect extends BaseSqlDialect {
                 case BOOLEAN_ARRAY:
                 case LOCALDATETIME_ARRAY:
                 case LOCALDATE_ARRAY:
-                case LOCALTIME_ARRAY:
                 case ZONEDDATETIME_ARRAY:
                 case JSON_ARRAY:
                     return conn.createArrayOf(getArrayDriverType(propertyType), data);
@@ -3211,8 +3139,8 @@ public class PostgresDialect extends BaseSqlDialect {
         //get the database name
         String dbName;
         try (Statement st = conn.createStatement();
-                ResultSet rs = st.executeQuery("SELECT current_database();")) {
-            
+             ResultSet rs = st.executeQuery("SELECT current_database();")) {
+
             if (!rs.next()) {
                 throw new IllegalStateException("Could not obtain the name of the current database.");
             }
@@ -3229,11 +3157,11 @@ public class PostgresDialect extends BaseSqlDialect {
             //configure the DB to use the standard conforming strings otherwise the escape sequences cause errors
             st.executeUpdate("ALTER DATABASE \"" + dbName + "\" SET standard_conforming_strings TO ON;");
         } catch (SQLException e) {
-        	// ignore concurrency error, probably only works if PostgreSQL uses english
-        	// but the error code is always 0, and the SQLState is "internal error" which is not really helpful
-        	if (!e.getMessage().toLowerCase().contains("tuple concurrently updated")){
-        		throw new IllegalStateException("Failed to modify the database configuration.",e);
-        	}
+            // ignore concurrency error, probably only works if PostgreSQL uses english
+            // but the error code is always 0, and the SQLState is "internal error" which is not really helpful
+            if (!e.getMessage().toLowerCase().contains("tuple concurrently updated")) {
+                throw new IllegalStateException("Failed to modify the database configuration.", e);
+            }
         }
     }
 
@@ -3468,102 +3396,102 @@ public class PostgresDialect extends BaseSqlDialect {
     public boolean requiredPreparedStatementDeallocate() {
         return true;
     }
-    
+
     @Override
     public String getFullTextQueryText(FullText fullText, String column) {
-    	String toQuery=fullText.isPlain()?"plainto_tsquery":"to_tsquery";
-    	// either we provided the query expression...
-    	String leftHand=fullText.getQuery();
-    	// or we use the column
-    	if (leftHand==null){
-    		leftHand=column;
-    	}
-    	return "to_tsvector('"+fullText.getConfiguration()+"', "+leftHand+") @@ "+toQuery+"('"+fullText.getConfiguration()+"',?)";
+        String toQuery = fullText.isPlain() ? "plainto_tsquery" : "to_tsquery";
+        // either we provided the query expression...
+        String leftHand = fullText.getQuery();
+        // or we use the column
+        if (leftHand == null) {
+            leftHand = column;
+        }
+        return "to_tsvector('" + fullText.getConfiguration() + "', " + leftHand + ") @@ " + toQuery + "('" + fullText.getConfiguration() + "',?)";
     }
-    
-    @Override
-    public Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException{
-        // copied and simplified from the postgres JDBC driver class (PgDatabaseMetaData)
-    	String sql = "SELECT NULL AS TABLE_CAT, n.nspname AS TABLE_SCHEM, "
-              + "  ct.relname AS TABLE_NAME, NOT i.indisunique AS NON_UNIQUE, "
-              + "  NULL AS INDEX_QUALIFIER, ci.relname AS INDEX_NAME, "
-              + "  CASE i.indisclustered "
-              + "    WHEN true THEN " + java.sql.DatabaseMetaData.tableIndexClustered
-              + "    ELSE CASE am.amname "
-              + "      WHEN 'hash' THEN " + java.sql.DatabaseMetaData.tableIndexHashed
-              + "      ELSE " + java.sql.DatabaseMetaData.tableIndexOther
-              + "    END "
-              + "  END AS TYPE, "
-              + "  (i.keys).n AS ORDINAL_POSITION, "
-              + "  trim(both '\"' from pg_catalog.pg_get_indexdef(ci.oid, (i.keys).n, false)) AS COLUMN_NAME "
-              + "FROM pg_catalog.pg_class ct "
-              + "  JOIN pg_catalog.pg_namespace n ON (ct.relnamespace = n.oid) "
-              + "  JOIN (SELECT i.indexrelid, i.indrelid, i.indoption, "
-              + "          i.indisunique, i.indisclustered, i.indpred, "
-              + "          i.indexprs, "
-              + "          information_schema._pg_expandarray(i.indkey) AS keys "
-              + "        FROM pg_catalog.pg_index i) i "
-              + "    ON (ct.oid = i.indrelid) "
-              + "  JOIN pg_catalog.pg_class ci ON (ci.oid = i.indexrelid) "
-              + "  JOIN pg_catalog.pg_am am ON (ci.relam = am.oid) "
-              + "WHERE true ";
 
-          if (schema != null && !"".equals(schema)) {
+    @Override
+    public Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException {
+        // copied and simplified from the postgres JDBC driver class (PgDatabaseMetaData)
+        String sql = "SELECT NULL AS TABLE_CAT, n.nspname AS TABLE_SCHEM, "
+                + "  ct.relname AS TABLE_NAME, NOT i.indisunique AS NON_UNIQUE, "
+                + "  NULL AS INDEX_QUALIFIER, ci.relname AS INDEX_NAME, "
+                + "  CASE i.indisclustered "
+                + "    WHEN true THEN " + java.sql.DatabaseMetaData.tableIndexClustered
+                + "    ELSE CASE am.amname "
+                + "      WHEN 'hash' THEN " + java.sql.DatabaseMetaData.tableIndexHashed
+                + "      ELSE " + java.sql.DatabaseMetaData.tableIndexOther
+                + "    END "
+                + "  END AS TYPE, "
+                + "  (i.keys).n AS ORDINAL_POSITION, "
+                + "  trim(both '\"' from pg_catalog.pg_get_indexdef(ci.oid, (i.keys).n, false)) AS COLUMN_NAME "
+                + "FROM pg_catalog.pg_class ct "
+                + "  JOIN pg_catalog.pg_namespace n ON (ct.relnamespace = n.oid) "
+                + "  JOIN (SELECT i.indexrelid, i.indrelid, i.indoption, "
+                + "          i.indisunique, i.indisclustered, i.indpred, "
+                + "          i.indexprs, "
+                + "          information_schema._pg_expandarray(i.indkey) AS keys "
+                + "        FROM pg_catalog.pg_index i) i "
+                + "    ON (ct.oid = i.indrelid) "
+                + "  JOIN pg_catalog.pg_class ci ON (ci.oid = i.indexrelid) "
+                + "  JOIN pg_catalog.pg_am am ON (ci.relam = am.oid) "
+                + "WHERE true ";
+
+        if (schema != null && !"".equals(schema)) {
             sql += " AND n.nspname = " + maybeWrapInQoutes(schema);
-          } else {
-        	  // exclude schemas we know we're not interested in
-        	  sql += " AND n.nspname <> 'pg_catalog' AND n.nspname <> 'pg_toast'  AND n.nspname <> '"+SQLG_SCHEMA+"'";  
-          }
-          sql += " ORDER BY NON_UNIQUE, TYPE, INDEX_NAME, ORDINAL_POSITION ";
-         try (Statement s=conn.createStatement()){
-        	 try (ResultSet indexRs=s.executeQuery(sql)){
-        		 Map<String, Set<IndexRef>> ret=new HashMap<>();
-        	    	
-	    		String lastKey=null;
-	        	String lastIndexName=null;
-	        	IndexType lastIndexType=null;
-	        	List<String> lastColumns=new LinkedList<>();
-	        	while (indexRs.next()){
-	        		String cat=indexRs.getString("TABLE_CAT");
-	        		String sch=indexRs.getString("TABLE_SCHEM");
-	        		String tbl=indexRs.getString("TABLE_NAME");
-	        		String key=cat+"."+sch+"."+tbl;
-	        		String indexName=indexRs.getString("INDEX_NAME");
-	        		boolean nonUnique=indexRs.getBoolean("NON_UNIQUE");
-	        		
-	        		if (lastIndexName==null){
-	        			lastIndexName=indexName;
-	        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
-	        			lastKey=key;
-	        		} else if (!lastIndexName.equals(indexName)){
-	        			if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
-	        				if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
-	        					//System.out.println(lastColumns);
-	        					//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-	        				//} else {
-	        					MultiMap.put(ret, lastKey, new IndexRef(lastIndexName,lastIndexType,lastColumns));
-	        				}
-	        			}
-	        			lastColumns.clear();
-	        			lastIndexName=indexName;
-	        			lastIndexType=nonUnique?IndexType.NON_UNIQUE:IndexType.UNIQUE;
-	        		}
-	        		
-	        		lastColumns.add(indexRs.getString("COLUMN_NAME"));
-	        		lastKey=key;
-	        	}
-	        	if (lastIndexName!=null && !lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")){
-	        		if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)){
-						//System.out.println(lastColumns);
-						//TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-	        			//} else {
-	        			MultiMap.put(ret, lastKey, new IndexRef(lastIndexName,lastIndexType,lastColumns));
-					}
-	        	}
-	    	
-	    	return ret;
-        	 }
-         }
-        
+        } else {
+            // exclude schemas we know we're not interested in
+            sql += " AND n.nspname <> 'pg_catalog' AND n.nspname <> 'pg_toast'  AND n.nspname <> '" + SQLG_SCHEMA + "'";
+        }
+        sql += " ORDER BY NON_UNIQUE, TYPE, INDEX_NAME, ORDINAL_POSITION ";
+        try (Statement s = conn.createStatement()) {
+            try (ResultSet indexRs = s.executeQuery(sql)) {
+                Map<String, Set<IndexRef>> ret = new HashMap<>();
+
+                String lastKey = null;
+                String lastIndexName = null;
+                IndexType lastIndexType = null;
+                List<String> lastColumns = new LinkedList<>();
+                while (indexRs.next()) {
+                    String cat = indexRs.getString("TABLE_CAT");
+                    String sch = indexRs.getString("TABLE_SCHEM");
+                    String tbl = indexRs.getString("TABLE_NAME");
+                    String key = cat + "." + sch + "." + tbl;
+                    String indexName = indexRs.getString("INDEX_NAME");
+                    boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
+
+                    if (lastIndexName == null) {
+                        lastIndexName = indexName;
+                        lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+                        lastKey = key;
+                    } else if (!lastIndexName.equals(indexName)) {
+                        if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+                            if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+                                //System.out.println(lastColumns);
+                                //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+                                //} else {
+                                MultiMap.put(ret, lastKey, new IndexRef(lastIndexName, lastIndexType, lastColumns));
+                            }
+                        }
+                        lastColumns.clear();
+                        lastIndexName = indexName;
+                        lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
+                    }
+
+                    lastColumns.add(indexRs.getString("COLUMN_NAME"));
+                    lastKey = key;
+                }
+                if (lastIndexName != null && !lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+                    if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
+                        //System.out.println(lastColumns);
+                        //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
+                        //} else {
+                        MultiMap.put(ret, lastKey, new IndexRef(lastIndexName, lastIndexType, lastColumns));
+                    }
+                }
+
+                return ret;
+            }
+        }
+
     }
 }
