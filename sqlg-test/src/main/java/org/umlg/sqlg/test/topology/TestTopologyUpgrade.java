@@ -16,16 +16,8 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.strategy.TopologyStrategy;
-import org.umlg.sqlg.structure.EdgeLabel;
-import org.umlg.sqlg.structure.IndexType;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SqlgGraph;
-import org.umlg.sqlg.structure.Topology;
-import org.umlg.sqlg.structure.VertexLabel;
+import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.test.BaseTest;
-
-import static org.junit.Assert.assertEquals;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
 
 import java.io.InputStream;
 import java.sql.Connection;
