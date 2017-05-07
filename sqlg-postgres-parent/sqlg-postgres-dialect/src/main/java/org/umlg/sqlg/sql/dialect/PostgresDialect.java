@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,7 +18,6 @@ import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
 import org.postgresql.copy.PGCopyInputStream;
 import org.postgresql.copy.PGCopyOutputStream;
-import org.postgresql.core.BaseConnection;
 import org.postgresql.util.PGbytea;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
@@ -32,7 +30,6 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.sql.Date;
@@ -205,7 +202,7 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
 
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
@@ -333,12 +330,10 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         try {
-            Method m = BaseConnection.class.getMethod("getCopyAPI");
-            Object[] arg = new Object[]{};
-            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
-
+            PGConnection pgConnection = con.unwrap(PGConnection.class);
+            CopyManager copyManager = pgConnection.getCopyAPI();
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
                 Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
@@ -403,79 +398,6 @@ public class PostgresDialect extends BaseSqlDialect {
                 long id = endHigh - numberInserted + 1;
                 for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
                     sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    //TODO this does not call ensureVertexColumnExist
-//    @Override
-    public void flushEdgeCacheOld(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
-        try {
-            Method m = BaseConnection.class.getMethod("getCopyAPI");
-            Object[] arg = new Object[]{};
-            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
-
-            for (MetaEdge metaEdge : edgeCache.keySet()) {
-                Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
-
-
-                Map<String, PropertyType> propertyTypeMap = sqlgGraph.getTopology().getTableFor(metaEdge.getSchemaTable().withPrefix(EDGE_PREFIX));
-                long endHigh;
-                long numberInserted;
-                try (InputStream is = mapEdgeToInputStream(propertyTypeMap, triples)) {
-                    StringBuilder sql = new StringBuilder();
-                    sql.append("COPY ");
-                    sql.append(maybeWrapInQoutes(metaEdge.getSchemaTable().getSchema()));
-                    sql.append(".");
-                    sql.append(maybeWrapInQoutes(EDGE_PREFIX + metaEdge.getSchemaTable().getTable()));
-                    sql.append(" (");
-                    for (Triple<SqlgVertex, SqlgVertex, Map<String, Object>> triple : triples.getRight().values()) {
-                        int count = 1;
-                        sql.append(maybeWrapInQoutes(triple.getLeft().getSchema() + "." + triple.getLeft().getTable() + SchemaManager.OUT_VERTEX_COLUMN_END));
-                        sql.append(", ");
-                        sql.append(maybeWrapInQoutes(triple.getMiddle().getSchema() + "." + triple.getMiddle().getTable() + SchemaManager.IN_VERTEX_COLUMN_END));
-                        for (String key : triples.getLeft()) {
-                            if (count <= triples.getLeft().size()) {
-                                sql.append(", ");
-                            }
-                            count++;
-                            appendKeyForStream(propertyTypeMap.get(key), sql, key);
-                        }
-                        break;
-                    }
-                    sql.append(") ");
-
-                    sql.append(" FROM stdin CSV DELIMITER '");
-                    sql.append(COPY_COMMAND_DELIMITER);
-                    sql.append("' ");
-                    sql.append("QUOTE ");
-                    sql.append(COPY_COMMAND_QUOTE);
-                    sql.append(" ESCAPE '");
-                    sql.append(ESCAPE);
-                    sql.append("';");
-                    if (logger.isDebugEnabled()) {
-                        logger.debug(sql.toString());
-                    }
-
-                    numberInserted = copyManager.copyIn(sql.toString(), is);
-                    try (PreparedStatement preparedStatement = con.prepareStatement(
-                            "SELECT CURRVAL('\"" + metaEdge.getSchemaTable().getSchema() + "\".\"" +
-                                    EDGE_PREFIX + metaEdge.getSchemaTable().getTable() + "_ID_seq\"');")) {
-
-                        ResultSet resultSet = preparedStatement.executeQuery();
-                        resultSet.next();
-                        endHigh = resultSet.getLong(1);
-                        resultSet.close();
-                    }
-                    //set the id on the vertex
-                    long id = endHigh - numberInserted + 1;
-                    for (SqlgEdge sqlgEdge : triples.getRight().keySet()) {
-                        sqlgEdge.setInternalPrimaryKey(RecordId.from(metaEdge.getSchemaTable(), id++));
-                    }
                 }
             }
         } catch (Exception e) {
@@ -2759,7 +2681,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public Writer streamSql(SqlgGraph sqlgGraph, String sql) {
-        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
@@ -2772,7 +2694,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
