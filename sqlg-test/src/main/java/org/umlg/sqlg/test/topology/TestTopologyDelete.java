@@ -75,14 +75,18 @@ import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTe
 @RunWith(Parameterized.class)
 public class TestTopologyDelete extends BaseTest {
 	
-	@Parameters(name = "{index}: schema:{0}, preserve:{1}")
+	@Parameters(name = "{index}: schema:{0}, preserve:{1}, rollback:{2}")
     public static Collection<Object[]> data() {
     	List<Object[]> l=new ArrayList<>();
     	String[] schemas=new String[]{null,"MySchema"};
     	boolean[] preserve=new boolean[]{true,false};
+    	boolean[] rollback=new boolean[]{true,false};
+    	
     	for (String s:schemas){
     		for (boolean p:preserve){
-    			l.add(new Object[]{s,p});
+    			for (boolean r:rollback){
+    				l.add(new Object[]{s,p,r});
+    			}
     		}
     	}
         return l;
@@ -112,6 +116,8 @@ public class TestTopologyDelete extends BaseTest {
 	public String schema;
 	@Parameter(1)
 	public boolean preserve;
+	@Parameter(2)
+	public boolean rollback;
 	
 	@Before
 	public void buildLoops(){
@@ -232,20 +238,24 @@ public class TestTopologyDelete extends BaseTest {
 			assertFalse(a1.property("p1").isPresent());
 			assertFalse(a1.property("p2").isPresent());
 			*/
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
-			this.sqlgGraph.tx().commit();
-			checkPropertyExistenceAfterDeletion(this.sqlgGraph,schema);
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				checkPropertyExistenceBeforeDeletion(schema);
+			} else {
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+				this.sqlgGraph.tx().commit();
+				checkPropertyExistenceAfterDeletion(this.sqlgGraph,schema);
+				
+				a1=this.sqlgGraph.traversal().V(aid).next();
+				assertFalse(a1.property("p1").isPresent());
+				assertFalse(a1.property("p2").isPresent());
 			
-			a1=this.sqlgGraph.traversal().V(aid).next();
-			assertFalse(a1.property("p1").isPresent());
-			assertFalse(a1.property("p2").isPresent());
-		
-			Thread.sleep(1_000);
-			checkPropertyExistenceAfterDeletion(sqlgGraph1,schema);
-			assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
-			assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
-			
+				Thread.sleep(1_000);
+				checkPropertyExistenceAfterDeletion(sqlgGraph1,schema);
+				assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
+				assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
+			}
 		}
 	}
 	
@@ -332,20 +342,25 @@ public class TestTopologyDelete extends BaseTest {
 			assertFalse(a1.property("p1").isPresent());
 			assertFalse(a1.property("p2").isPresent());
 			*/
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
-			this.sqlgGraph.tx().commit();
-			checkEdgePropertyExistenceAfterDeletion(this.sqlgGraph,schema);
-			
-			
-			e1=this.sqlgGraph.traversal().E(eid).next();
-			assertFalse(e1.property("p1").isPresent());
-			assertFalse(e1.property("p2").isPresent());
-			
-			Thread.sleep(1_000);
-			checkEdgePropertyExistenceAfterDeletion(sqlgGraph1,schema);
-			assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
-			assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				checkEdgePropertyExistenceBeforeDeletion(schema);
+			} else {
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+				this.sqlgGraph.tx().commit();
+				checkEdgePropertyExistenceAfterDeletion(this.sqlgGraph,schema);
+				
+				
+				e1=this.sqlgGraph.traversal().E(eid).next();
+				assertFalse(e1.property("p1").isPresent());
+				assertFalse(e1.property("p2").isPresent());
+				
+				Thread.sleep(1_000);
+				checkEdgePropertyExistenceAfterDeletion(sqlgGraph1,schema);
+				assertTrue(tlt1.receivedEvent(p1, TopologyChangeAction.DELETE));
+				assertTrue(tlt1.receivedEvent(p2, TopologyChangeAction.DELETE));
+			}
 		}
 	}
 	
@@ -415,18 +430,24 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(i2, TopologyChangeAction.DELETE));
 			
 			checkIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
 			
-			
-			this.sqlgGraph.tx().commit();
-			checkIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
-			
-			
-			Thread.sleep(1_000);
-			checkIndexExistenceAfterDeletion(sqlgGraph1,schema,i1,i2);
-			assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
-			assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				checkIndexExistenceBeforeDeletion(schema,i1,i2);
+			} else {
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+				
+				
+				this.sqlgGraph.tx().commit();
+				checkIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
+				
+				
+				Thread.sleep(1_000);
+				checkIndexExistenceAfterDeletion(sqlgGraph1,schema,i1,i2);
+				assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
+				assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
+			}
 		}
 	}
 	
@@ -503,17 +524,23 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(i2, TopologyChangeAction.DELETE));
 			
 			checkEdgeIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				checkEdgeIndexExistenceBeforeDeletion(schema,i1,i2);
+			} else {
 			
-			this.sqlgGraph.tx().commit();
-			checkEdgeIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
-			
-			
-			Thread.sleep(1_000);
-			checkEdgeIndexExistenceAfterDeletion(sqlgGraph1,schema,i1,i2);
-			assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
-			assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+				
+				this.sqlgGraph.tx().commit();
+				checkEdgeIndexExistenceAfterDeletion(this.sqlgGraph,schema,i1,i2);
+				
+				
+				Thread.sleep(1_000);
+				checkEdgeIndexExistenceAfterDeletion(sqlgGraph1,schema,i1,i2);
+				assertTrue(tlt1.receivedEvent(i1, TopologyChangeAction.DELETE));
+				assertTrue(tlt1.receivedEvent(i2, TopologyChangeAction.DELETE));
+			}
 		}
 	}
 	
@@ -605,16 +632,23 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(e2, TopologyChangeAction.DELETE));
 			
 			checkEdgeExistenceAfterDeletion(this.sqlgGraph,schema);
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
-			this.sqlgGraph.tx().commit();
-			checkEdgeExistenceAfterDeletion(this.sqlgGraph,schema);
 			
-			
-			Thread.sleep(1_000);
-			checkEdgeExistenceAfterDeletion(sqlgGraph1,schema);
-			assertTrue(tlt1.receivedEvent(e1, TopologyChangeAction.DELETE));
-			assertTrue(tlt1.receivedEvent(e2, TopologyChangeAction.DELETE));
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				checkEdgeExistenceBeforeDeletion(this.sqlgGraph,schema);
+			} else {
+				
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+				this.sqlgGraph.tx().commit();
+				checkEdgeExistenceAfterDeletion(this.sqlgGraph,schema);
+				
+				
+				Thread.sleep(1_000);
+				checkEdgeExistenceAfterDeletion(sqlgGraph1,schema);
+				assertTrue(tlt1.receivedEvent(e1, TopologyChangeAction.DELETE));
+				assertTrue(tlt1.receivedEvent(e2, TopologyChangeAction.DELETE));
+			}
 		}
 	}
 	
@@ -751,18 +785,24 @@ public class TestTopologyDelete extends BaseTest {
 					
 				}
 			}
-			this.sqlgGraph.tx().commit();
-			checkEdgeRoleExistenceAfterRoleDeletion(this.sqlgGraph,schemaOut,schemaIn);
-			Thread.sleep(1_000);
-			checkEdgeRoleExistenceAfterRoleDeletion(sqlgGraph1,schemaOut,schemaIn);
-			
-			assertFalse(b1.edges(Direction.OUT, "E1").hasNext());
-			assertTrue(a1.edges(Direction.OUT, "E1").hasNext());
-			
-			lbl.getOutEdgeRoles().iterator().next().remove(false);
-			assertFalse(this.sqlgGraph.getTopology().getEdgeLabel(schemaOut, "E1").isPresent());
-			this.sqlgGraph.tx().commit();
-			assertFalse(this.sqlgGraph.getTopology().getEdgeLabel(schemaOut, "E1").isPresent());			
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				checkEdgeRoleExistenceBeforeDeletion(schemaOut,schemaIn);
+				
+			} else {
+				this.sqlgGraph.tx().commit();
+				checkEdgeRoleExistenceAfterRoleDeletion(this.sqlgGraph,schemaOut,schemaIn);
+				Thread.sleep(1_000);
+				checkEdgeRoleExistenceAfterRoleDeletion(sqlgGraph1,schemaOut,schemaIn);
+				
+				assertFalse(b1.edges(Direction.OUT, "E1").hasNext());
+				assertTrue(a1.edges(Direction.OUT, "E1").hasNext());
+				
+				lbl.getOutEdgeRoles().iterator().next().remove(false);
+				assertFalse(this.sqlgGraph.getTopology().getEdgeLabel(schemaOut, "E1").isPresent());
+				this.sqlgGraph.tx().commit();
+				assertFalse(this.sqlgGraph.getTopology().getEdgeLabel(schemaOut, "E1").isPresent());			
+			}
 		}
 	}
 	
@@ -888,28 +928,32 @@ public class TestTopologyDelete extends BaseTest {
 			lbld.remove(true);
 			assertTrue(tlt.receivedEvent(lbld, TopologyChangeAction.DELETE));
 			
-			//checkVertexLabelAfterDeletion(sqlgGraph,schema);
-			sqlgGraph.tx().commit();
-			checkVertexLabelAfterDeletion(sqlgGraph,schema);
-			Thread.sleep(1_000);
-			checkVertexLabelAfterDeletion(sqlgGraph1,schema);
-			
-			
-			VertexLabel lblb=this.sqlgGraph.getTopology().getVertexLabel(schema, "B").get();
-			lblb.remove(true);
-			assertTrue(tlt.receivedEvent(lblb, TopologyChangeAction.DELETE));
-			
-			assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
-			
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
+			if (rollback){
+				sqlgGraph.tx().rollback();
+				checkVertexLabelBeforeDeletion(sqlgGraph,schema);
+			} else {
+				//checkVertexLabelAfterDeletion(sqlgGraph,schema);
+				sqlgGraph.tx().commit();
+				checkVertexLabelAfterDeletion(sqlgGraph,schema);
+				Thread.sleep(1_000);
+				checkVertexLabelAfterDeletion(sqlgGraph1,schema);
 				
-			sqlgGraph.tx().commit();
-			assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
-			Thread.sleep(1_000);
-			assertFalse(sqlgGraph1.getTopology().getEdgeLabel(schema, "E").isPresent());
-			assertTrue(tlt1.receivedEvent(lblb, TopologyChangeAction.DELETE));
-			
+				
+				VertexLabel lblb=this.sqlgGraph.getTopology().getVertexLabel(schema, "B").get();
+				lblb.remove(true);
+				assertTrue(tlt.receivedEvent(lblb, TopologyChangeAction.DELETE));
+				
+				assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
+				
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+					
+				sqlgGraph.tx().commit();
+				assertFalse(sqlgGraph.getTopology().getEdgeLabel(schema, "E").isPresent());
+				Thread.sleep(1_000);
+				assertFalse(sqlgGraph1.getTopology().getEdgeLabel(schema, "E").isPresent());
+				assertTrue(tlt1.receivedEvent(lblb, TopologyChangeAction.DELETE));
+			}
 		}
 	}
 	
@@ -1019,16 +1063,22 @@ public class TestTopologyDelete extends BaseTest {
 	        
 	        checkGlobalUniqueIndexAfterDeletion(this.sqlgGraph,schema,gui1,gui2);
 	        
-	        TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
+	        if (rollback){
+	        	this.sqlgGraph.tx().rollback();
+	        	checkGlobalUniqueIndexBeforeDeletion(this.sqlgGraph,schema,gui1,gui2);
+		        
+	        } else {
 	        
-	        this.sqlgGraph.tx().commit();
-	        checkGlobalUniqueIndexAfterDeletion(this.sqlgGraph,schema,gui1,gui2);
-	        Thread.sleep(1_000);
-	        checkGlobalUniqueIndexAfterDeletion(sqlgGraph1,schema,gui1,gui2);
-	        assertTrue(tlt1.receivedEvent(gui1, TopologyChangeAction.DELETE));
-	        assertTrue(tlt1.receivedEvent(gui2, TopologyChangeAction.DELETE));
-	       
+		        TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+		        
+		        this.sqlgGraph.tx().commit();
+		        checkGlobalUniqueIndexAfterDeletion(this.sqlgGraph,schema,gui1,gui2);
+		        Thread.sleep(1_000);
+		        checkGlobalUniqueIndexAfterDeletion(sqlgGraph1,schema,gui1,gui2);
+		        assertTrue(tlt1.receivedEvent(gui1, TopologyChangeAction.DELETE));
+		        assertTrue(tlt1.receivedEvent(gui2, TopologyChangeAction.DELETE));
+	        }
 		}
 	}
 	
@@ -1142,14 +1192,21 @@ public class TestTopologyDelete extends BaseTest {
 			assertTrue(tlt.receivedEvent(sch, TopologyChangeAction.DELETE));
 						
 			testSchemaAfterDeletion(this.sqlgGraph,schema,gui1,preserve);
-			TopologyListenerTest tlt1=new TopologyListenerTest();
-			sqlgGraph1.getTopology().registerListener(tlt1);
+			
+			if (rollback){
+				this.sqlgGraph.tx().rollback();
+				testSchemaBeforeDeletion(this.sqlgGraph,schema,gui1);
 		        
-		    this.sqlgGraph.tx().commit();
-		    testSchemaAfterDeletion(this.sqlgGraph,schema,gui1,preserve);
-		    Thread.sleep(1_000);
-		    assertTrue(tlt1.receivedEvent(sch, TopologyChangeAction.DELETE));
-		    testSchemaAfterDeletion(sqlgGraph1,schema,gui1,preserve);
+			} else {
+				TopologyListenerTest tlt1=new TopologyListenerTest();
+				sqlgGraph1.getTopology().registerListener(tlt1);
+			        
+			    this.sqlgGraph.tx().commit();
+			    testSchemaAfterDeletion(this.sqlgGraph,schema,gui1,preserve);
+			    Thread.sleep(1_000);
+			    assertTrue(tlt1.receivedEvent(sch, TopologyChangeAction.DELETE));
+			    testSchemaAfterDeletion(sqlgGraph1,schema,gui1,preserve);
+			}
 		}
 	}
 }
