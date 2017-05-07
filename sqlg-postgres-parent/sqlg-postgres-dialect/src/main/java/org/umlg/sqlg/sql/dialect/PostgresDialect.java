@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import com.mchange.v2.c3p0.C3P0ProxyConnection;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -205,7 +204,7 @@ public class PostgresDialect extends BaseSqlDialect {
     @Override
     public Map<SchemaTable, Pair<Long, Long>> flushVertexCache(SqlgGraph sqlgGraph, Map<SchemaTable, Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>>> vertexCache) {
 
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         Map<SchemaTable, Pair<Long, Long>> verticesRanges = new LinkedHashMap<>();
         for (SchemaTable schemaTable : vertexCache.keySet()) {
             Pair<SortedSet<String>, Map<SqlgVertex, Map<String, Object>>> vertices = vertexCache.get(schemaTable);
@@ -333,11 +332,9 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public void flushEdgeCache(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         try {
-            Method m = BaseConnection.class.getMethod("getCopyAPI");
-            Object[] arg = new Object[]{};
-            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
+            CopyManager copyManager = (CopyManager) con.unwrap(BaseConnection.class);
 
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
@@ -413,12 +410,9 @@ public class PostgresDialect extends BaseSqlDialect {
     //TODO this does not call ensureVertexColumnExist
 //    @Override
     public void flushEdgeCacheOld(SqlgGraph sqlgGraph, Map<MetaEdge, Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>>> edgeCache) {
-        C3P0ProxyConnection con = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection con = sqlgGraph.tx().getConnection();
         try {
-            Method m = BaseConnection.class.getMethod("getCopyAPI");
-            Object[] arg = new Object[]{};
-            CopyManager copyManager = (CopyManager) con.rawConnectionOperation(m, C3P0ProxyConnection.RAW_CONNECTION, arg);
-
+            CopyManager copyManager = (CopyManager)con.unwrap(BaseConnection.class);
             for (MetaEdge metaEdge : edgeCache.keySet()) {
                 Pair<SortedSet<String>, Map<SqlgEdge, Triple<SqlgVertex, SqlgVertex, Map<String, Object>>>> triples = edgeCache.get(metaEdge);
 
@@ -2759,7 +2753,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public Writer streamSql(SqlgGraph sqlgGraph, String sql) {
-        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
@@ -2772,7 +2766,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     @Override
     public InputStream inputStreamSql(SqlgGraph sqlgGraph, String sql) {
-        C3P0ProxyConnection conn = (C3P0ProxyConnection) sqlgGraph.tx().getConnection();
+        Connection conn = sqlgGraph.tx().getConnection();
         PGConnection pgConnection;
         try {
             pgConnection = conn.unwrap(PGConnection.class);
