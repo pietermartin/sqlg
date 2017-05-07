@@ -46,6 +46,7 @@ public class Topology {
     //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
+    private Set<String> uncommittedRemovedSchemas = new HashSet<>();
     private Map<String, Schema> metaSchemas = new HashMap<>();
     //A cache of just the sqlg_schema's AbstractLabels
     private Set<TopologyInf> sqlgSchemaAbstractLabels = new HashSet<>();
@@ -311,7 +312,7 @@ public class Topology {
         this.sqlgSchemaAbstractLabels.add(logVertexLabel);
 
         //add the public schema
-        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(this, sqlgGraph.getSqlDialect().getPublicSchema()));
+        this.schemas.put(sqlgGraph.getSqlDialect().getPublicSchema(), Schema.createPublicSchema(sqlgGraph,this, sqlgGraph.getSqlDialect().getPublicSchema()));
 
         //add the global unique index schema
         this.schemas.put(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA, Schema.createGlobalUniqueIndexSchema(this));
@@ -696,6 +697,29 @@ public class Topology {
         }
     }
 
+    private Schema removeSchemaFromCaches(String schema){
+    	Schema s=this.schemas.remove(schema);
+    	for (Iterator<String> all=this.allTableCache.keySet().iterator();all.hasNext();){
+    		String schemaTable=all.next();
+    		if (schemaTable.startsWith(schema+".")){
+    			all.remove();
+    		}
+    	}
+    	for (Iterator<String> all=this.edgeForeignKeyCache.keySet().iterator();all.hasNext();){
+    		String schemaTable=all.next();
+    		if (schemaTable.startsWith(schema+".")){
+    			all.remove();
+    		}
+    	}
+    	for (Iterator<SchemaTable> all=this.schemaTableForeignKeyCache.keySet().iterator();all.hasNext();){
+    		SchemaTable schemaTable=all.next();
+    		if (schemaTable.getSchema().equals(schema)){
+    			all.remove();
+    		}
+    	}
+    	return s;
+    }
+   
     private void afterCommit() {
         this.temporaryTables.clear();
         if (this.isWriteLockHeldByCurrentThread()) {
@@ -704,7 +728,11 @@ public class Topology {
                 this.schemas.put(entry.getKey(), entry.getValue());
                 it.remove();
             }
-
+            for (Iterator<String> it=this.uncommittedRemovedSchemas.iterator();it.hasNext();){
+            	String sch=it.next();
+            	removeSchemaFromCaches(sch);
+            	it.remove();
+            }
             //merge the allTableCache and uncommittedAllTables
             Map<String, AbstractLabel> uncommittedAllTables = getUncommittedAllTables();
             for (Map.Entry<String, AbstractLabel> stringMapEntry : uncommittedAllTables.entrySet()) {
@@ -760,6 +788,7 @@ public class Topology {
                 entry.getValue().afterRollback();
                 it.remove();
             }
+            this.uncommittedRemovedSchemas.clear();
             z_internalReadLock();
             try {
                 for (Schema schema : this.schemas.values()) {
@@ -972,6 +1001,16 @@ public class Topology {
                         unCommittedSchemaArrayNode.add(schemaNode);
                     }
                 }
+                ArrayNode removed=new ArrayNode(OBJECT_MAPPER.getNodeFactory());
+                for(String schema:this.uncommittedRemovedSchemas){
+                	removed.add(schema);
+                }
+                if (removed.size()>0){
+                	if (topologyNode == null) {
+                        topologyNode = new ObjectNode(OBJECT_MAPPER.getNodeFactory());
+                    }
+                	topologyNode.set("uncommittedRemovedSchemas", removed);
+                }
             }
             /*ArrayNode unCommittedGlobalUniqueIndexesArrayNode = null;
             if (this.isWriteLockHeldByCurrentThread()) {
@@ -1072,7 +1111,16 @@ public class Topology {
                 }
             }
         }
-
+        ArrayNode rem=(ArrayNode)log.get("uncommittedRemovedSchemas");
+        if (rem!=null){
+        	for (JsonNode jsonSchema : rem){
+        		String name=jsonSchema.asText();
+        		Schema s=removeSchemaFromCaches(name);
+        		if (s!=null){
+        			fire(s,"",TopologyChangeAction.DELETE);
+        		}
+        	}
+        }
         
         this.notificationTimestamps.add(timestamp);
     }
@@ -1145,6 +1193,14 @@ public class Topology {
             result.addAll(this.schemas.values());
             if (this.isWriteLockHeldByCurrentThread()) {
                 result.addAll(this.uncommittedSchemas.values());
+                if (uncommittedRemovedSchemas.size()>0){
+                	for (Iterator<Schema> it=result.iterator();it.hasNext();){
+                		Schema sch=it.next();
+                		if (uncommittedRemovedSchemas.contains(sch.getName())){
+                			it.remove();
+                		}
+                	}
+                }
             }
             return Collections.unmodifiableSet(result);
         } finally {
@@ -1169,6 +1225,9 @@ public class Topology {
     public Optional<Schema> getSchema(String schema) {
         this.z_internalReadLock();
         try {
+        	if (isWriteLockHeldByCurrentThread() && this.uncommittedRemovedSchemas.contains(schema)) {
+        		return Optional.empty();
+        	}
             Schema result = this.schemas.get(schema);
             if (result == null) {
                 if (isWriteLockHeldByCurrentThread()) {
@@ -1583,6 +1642,17 @@ public class Topology {
         }
     }
 
+    void removeSchema(Schema schema,boolean preserveData){
+    	lock();
+    	if(!this.uncommittedRemovedSchemas.contains(schema.getName())){
+    		this.uncommittedRemovedSchemas.add(schema.getName());
+    		TopologyManager.removeSchema(sqlgGraph, schema.getName());
+    		if (!preserveData){
+    			schema.delete();
+    		}
+    		fire(schema,"",TopologyChangeAction.DELETE);
+    	}
+    }
 
     static class TopologyValidationError {
         private TopologyInf error;

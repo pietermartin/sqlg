@@ -1,16 +1,38 @@
 package org.umlg.sqlg.structure;
 
-import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import static org.umlg.sqlg.structure.Topology.SCHEMA_VERTEX_DISPLAY;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_EDGE_INDEX_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_EDGE_LABEL;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_EDGE_PROPERTIES_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_INDEX;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_INDEX_INDEX_TYPE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_INDEX_NAME;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_INDEX_PROPERTY_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_IN_EDGES_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_OUT_EDGES_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA_NAME;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA_VERTEX_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_VERTEX_INDEX_EDGE;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_VERTEX_LABEL;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME;
+import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.umlg.sqlg.structure.Topology.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import com.google.common.base.Preconditions;
 
 /**
  * Created by pieter on 2015/12/08.
@@ -34,6 +56,80 @@ public class TopologyManager {
                     "name", schema,
                     CREATED_ON, LocalDateTime.now()
             );
+        } finally {
+            sqlgGraph.tx().batchMode(batchModeType);
+        }
+    }
+    
+    public static void removeSchema(SqlgGraph sqlgGraph, String schema) {
+        BatchManager.BatchModeType batchModeType = flushAndSetTxToNone(sqlgGraph);
+        try {
+        	GraphTraversalSource traversalSource = sqlgGraph.topology();
+        
+        	List<Vertex> schemas = traversalSource.V()
+                    .hasLabel(SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_SCHEMA)
+                    .has("name", schema)
+                    .toList();
+            if (schemas.size()>0){
+            	Vertex vs=schemas.get(0);
+            	traversalSource.V(vs)
+            		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+            		.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+            		.drop().iterate();
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+	        		.inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+	        		.drop().iterate();            	
+            	
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_VERTEX_INDEX_EDGE)
+	        		.drop().iterate();
+            	
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_VERTEX_PROPERTIES_EDGE)
+	        		.drop().iterate();
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+	        		.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+	        		.inE(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)
+	        		.drop().iterate();
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+	        		.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE)
+	        		.drop().iterate();
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+	        		.out(SQLG_SCHEMA_EDGE_INDEX_EDGE)
+	        		.drop().iterate();
+            	traversalSource.V(vs)
+	        		.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+	        		.out(SQLG_SCHEMA_OUT_EDGES_EDGE)
+	        		.drop().iterate();
+            	traversalSource.V(vs)
+        			.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE)
+        			.drop().iterate();
+            	
+            	// delete global unique indices with no properties left
+            	// TODO this doesn't work, to investigate?
+            	/*traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
+            		.where(__.not(__.out(SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE)))
+            		.drop().iterate();*/
+            	for (Vertex v:traversalSource.V().hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX)
+            			.toList()){
+            		if (!v.edges(Direction.OUT, SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE).hasNext()){
+            			traversalSource.V(v).drop().iterate();
+            		}
+            	}
+            	traversalSource.V(vs)
+    				.drop().iterate();
+            } 	
+           
         } finally {
             sqlgGraph.tx().batchMode(batchModeType);
         }

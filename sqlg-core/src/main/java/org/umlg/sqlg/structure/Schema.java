@@ -65,8 +65,11 @@ public class Schema implements TopologyInf {
      * @param topology         The {@link Topology} that contains the public schema.
      * @return The Schema that represents 'public'
      */
-    static Schema createPublicSchema(Topology topology, String publicSchemaName) {
-        return new Schema(topology, publicSchemaName);
+    static Schema createPublicSchema(SqlgGraph sqlgGraph, Topology topology, String publicSchemaName) {
+        Schema schema= new Schema(topology, publicSchemaName);
+        schema.createSchemaOnDb();
+        schema.committed = false;
+        return schema;
     }
 
     /**
@@ -81,7 +84,7 @@ public class Schema implements TopologyInf {
 
     static Schema createSchema(SqlgGraph sqlgGraph, Topology topology, String name) {
         Schema schema = new Schema(topology, name);
-        Preconditions.checkArgument(!name.equals(SQLG_SCHEMA) && !sqlgGraph.getSqlDialect().getPublicSchema().equals(name), "createSchema may not be called for 'sqlg_schema' or 'public'");
+        Preconditions.checkArgument(!name.equals(SQLG_SCHEMA) && !sqlgGraph.getSqlDialect().getPublicSchema().equals(name) , "createSchema may not be called for 'sqlg_schema' or 'public'");
         schema.createSchemaOnDb();
         TopologyManager.addSchema(sqlgGraph, name);
         schema.committed = false;
@@ -1296,7 +1299,10 @@ public class Schema implements TopologyInf {
     
     @Override
     public void remove(boolean preserveData) {
-    	throw new UnsupportedOperationException();
+    	/*if (this.getName().equals(sqlgGraph.getSqlDialect().getPublicSchema()) && !preserveData){
+    		throw new IllegalArgumentException("Public schema cannot be deleted");
+    	}*/
+    	getTopology().removeSchema(this, preserveData);
     }
     
     void removeEdgeLabel(EdgeLabel edgeLabel,boolean preserveData){
@@ -1352,5 +1358,27 @@ public class Schema implements TopologyInf {
     		}
     		getTopology().fire(index, "", TopologyChangeAction.DELETE);
     	}
+    }
+    
+    void delete(){
+        StringBuilder sql = new StringBuilder();
+        sql.append("DROP SCHEMA ");
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.name));
+        if (this.sqlgGraph.getSqlDialect().supportsCascade()){
+        	sql.append(" CASCADE");
+        }
+        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
+            sql.append(";");
+        }
+        if (logger.isDebugEnabled()) {
+            logger.debug(sql.toString());
+        }
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql.toString());
+        } catch (SQLException e) {
+            logger.error("schema deletion failed " + this.sqlgGraph.toString(), e);
+            throw new RuntimeException(e);
+        }
     }
 }
