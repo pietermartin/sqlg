@@ -242,7 +242,7 @@ public class TestMultiThread extends BaseTest {
      *
      * @throws Exception
      */
-    @Test
+//    @Test
     public void testMultipleGraphs() throws Exception {
         URL sqlProperties = Thread.currentThread().getContextClassLoader().getResource("sqlg.properties");
         try {
