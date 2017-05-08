@@ -112,7 +112,7 @@ public class GlobalUniqueIndex implements TopologyInf {
         vertexLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(valuePropertyColumn));
         vertexLabel.ensureIndexExists(IndexType.UNIQUE, Arrays.asList(recordIdColumn, propertyColumn));
         GlobalUniqueIndex globalUniqueIndex = new GlobalUniqueIndex(topology, globalUniqueIndexName, properties);
-        topology.addToUncommittedGlobalUniqueIndexes(globalUniqueIndex);
+        topology.getGlobalUniqueIndexSchema().globalUniqueIndexes.put(globalUniqueIndex.getName(),globalUniqueIndex);
         TopologyManager.addGlobalUniqueIndex(sqlgGraph, globalUniqueIndexName, properties);
         globalUniqueIndex.committed = false;
         return globalUniqueIndex;
@@ -165,5 +165,11 @@ public class GlobalUniqueIndex implements TopologyInf {
     @Override
     public String toString() {
         return toJson().toString();
+    }
+    
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	topology.getGlobalUniqueIndexSchema().removeGlobalUniqueIndex(this,preserveData);
     }
 }
