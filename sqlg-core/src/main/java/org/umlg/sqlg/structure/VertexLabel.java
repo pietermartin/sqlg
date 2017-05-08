@@ -788,6 +788,8 @@ public class VertexLabel extends AbstractLabel {
 		case OUT:
 			ers=er.getEdgeLabel().getOutVertexLabels();
 			break;
+		default:
+			throw new IllegalStateException("Unknown direction!");
     	}
     	if (!ers.contains(this)){
     		throw new IllegalStateException("Trying to remove a EdgeRole from a non owner VertexLabel");
