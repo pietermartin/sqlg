@@ -442,9 +442,19 @@ public abstract class AbstractLabel implements TopologyInf {
 
     protected abstract String getPrefix();
     
-    
+    /**
+     * remove a given property
+     * @param propertyColumn the property column
+     * @param preserveData should we preserve the SQL data?
+     */
     abstract void removeProperty(PropertyColumn propertyColumn,boolean preserveData);
 
+    /**
+     * remove a column from the table
+     * @param schema the schema
+     * @param table the table name
+     * @param column the column name
+     */
     void removeColumn(String schema, String table,String column){
     	StringBuilder sql = new StringBuilder("ALTER TABLE ");
         sql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
@@ -469,6 +479,11 @@ public abstract class AbstractLabel implements TopologyInf {
         }
     }
     
+    /**
+     * remove a given index that was on this label
+     * @param idx  the index
+     * @param preserveData should we keep the SQL data
+     */
     void removeIndex(Index idx,boolean preserveData){
     	this.getSchema().getTopology().lock();
     	if (!uncommittedRemovedIndexes.contains(idx.getName())){

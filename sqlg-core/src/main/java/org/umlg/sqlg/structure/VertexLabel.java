@@ -766,6 +766,11 @@ public class VertexLabel extends AbstractLabel {
     	uncommittedRemovedInEdgeLabels.put(lbl.getFullName(),EdgeRemoveType.LABEL);
     }
     
+    /**
+     * remove a given edge role
+     * @param er the edge role
+     * @param preserveData should we keep the SQL data
+     */
     void removeEdgeRole(EdgeRole er, boolean preserveData){
     	if (er.getVertexLabel()!=this){
     		throw new IllegalStateException("Trying to remove a EdgeRole from a non owner VertexLabel");
@@ -813,6 +818,9 @@ public class VertexLabel extends AbstractLabel {
     	this.getSchema().removeVertexLabel(this, preserveData);
     }
     
+    /**
+     * delete the table
+     */
     void delete(){
    	 String schema = getSchema().getName();
         String tableName = VERTEX_PREFIX + getLabel();

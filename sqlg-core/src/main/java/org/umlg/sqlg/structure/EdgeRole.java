@@ -8,11 +8,23 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
  *
  */
 public class EdgeRole implements TopologyInf {
+	/**
+	 * the vertex label
+	 */
 	private VertexLabel vertexLabel;
+	/**
+	 * the edge label
+	 */
 	private EdgeLabel edgeLabel;
 	
+	/**
+	 * the direction of the edge for the vertex label
+	 */
 	private Direction direction;
 	
+	/**
+	 * are we committed or still in a transaction?
+	 */
 	private boolean committed;
 	
 	EdgeRole(VertexLabel vertexLabel, EdgeLabel edgeLabel, Direction direction, boolean committed) {

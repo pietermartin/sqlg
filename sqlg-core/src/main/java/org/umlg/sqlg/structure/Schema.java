@@ -1305,6 +1305,11 @@ public class Schema implements TopologyInf {
     	getTopology().removeSchema(this, preserveData);
     }
     
+    /**
+     * remove a given edge label
+     * @param edgeLabel the edge label
+     * @param preserveData should we keep the SQL data
+     */
     void removeEdgeLabel(EdgeLabel edgeLabel,boolean preserveData){
     	getTopology().lock();
     	String fn=this.name + "." + EDGE_PREFIX + edgeLabel.getName();
@@ -1326,6 +1331,11 @@ public class Schema implements TopologyInf {
     	}
     }
     
+    /**
+     * remove a given vertex label
+     * @param vertexLabel the vertex label
+     * @param preserveData should we keep the SQL data
+     */
     void removeVertexLabel(VertexLabel vertexLabel, boolean preserveData){
     	getTopology().lock();
     	String fn=this.name + "." + VERTEX_PREFIX + vertexLabel.getName();
@@ -1346,6 +1356,11 @@ public class Schema implements TopologyInf {
     	
     }
     
+    /**
+     * remove the given global unique index
+     * @param index the index to remove
+     * @param preserveData should we keep the sql data?
+     */
     void removeGlobalUniqueIndex(GlobalUniqueIndex index,boolean preserveData){
     	getTopology().lock();
     	String fn=index.getName();
@@ -1360,6 +1375,9 @@ public class Schema implements TopologyInf {
     	}
     }
     
+    /**
+     * delete schema in DB
+     */
     void delete(){
         StringBuilder sql = new StringBuilder();
         sql.append("DROP SCHEMA ");

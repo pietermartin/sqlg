@@ -699,6 +699,9 @@ public class EdgeLabel extends AbstractLabel {
     	getSchema().removeEdgeLabel(this,preserveData);
     }
     
+    /**
+     * delete the table
+     */
     void delete(){
     	 String schema = getSchema().getName();
          String tableName = EDGE_PREFIX + getLabel();
@@ -726,10 +729,19 @@ public class EdgeLabel extends AbstractLabel {
          }
     }
     
+    /**
+     * delete a given column from the table
+     * @param column
+     */
     void deleteColumn(String column){
     	removeColumn(getSchema().getName(),  EDGE_PREFIX + getLabel(), column);
     }
     
+    /**
+     * remove a vertex label from the out collection
+     * @param lbl the vertex label
+     * @param preserveData should we keep the sql data?
+     */
     void removeOutVertexLabel(VertexLabel lbl,boolean preserveData){
     	this.uncommittedRemovedOutVertexLabels.add(lbl);
     	if (!preserveData){
@@ -737,6 +749,11 @@ public class EdgeLabel extends AbstractLabel {
     	}
     }
     
+    /**
+     * remove a vertex label from the in collection
+     * @param lbl the vertex label
+     * @param preserveData should we keep the sql data?
+     */
     void removeInVertexLabel(VertexLabel lbl,boolean preserveData){
     	this.uncommittedRemovedInVertexLabels.add(lbl);
     	if (!preserveData){

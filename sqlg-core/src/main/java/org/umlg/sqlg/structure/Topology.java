@@ -1574,6 +1574,11 @@ public class Topology {
         }
     }
 
+    /**
+     * add out foreign key between a vertex label and a edge label
+     * @param vertexLabel
+     * @param edgeLabel
+     */
     void addOutForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
@@ -1585,6 +1590,11 @@ public class Topology {
         foreignKeys.getRight().add(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
+    /**
+     * add in foreign key between a vertex label and a edge label
+     * @param vertexLabel
+     * @param edgeLabel
+     */
     void addInForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
@@ -1595,6 +1605,11 @@ public class Topology {
         foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
+    /**
+     * remove out foreign key for a given vertex label and edge label
+     * @param vertexLabel
+     * @param edgeLabel
+     */
     void removeOutForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
@@ -1603,6 +1618,11 @@ public class Topology {
         }
     }
 
+    /**
+     * remove in foreign key for a given vertex label and edge label
+     * @param vertexLabel
+     * @param edgeLabel
+     */
     void removeInForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
         SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
@@ -1611,6 +1631,10 @@ public class Topology {
         }
     }
     
+    /**
+     * remove a given vertex label
+     * @param vertexLabel
+     */
     void removeVertexLabel(VertexLabel vertexLabel){
     	SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
     	this.schemaTableForeignKeyCache.remove(schemaTable);
@@ -1642,9 +1666,23 @@ public class Topology {
         }
     }
 
+    /**
+     * remove a given schema
+     * @param schema the schema
+     * @param preserveData should we preserve the SQL data?
+     */
     void removeSchema(Schema schema,boolean preserveData){
     	lock();
     	if(!this.uncommittedRemovedSchemas.contains(schema.getName())){
+    		// remove edge roles in other schemas pointing to vertex labels in removed schema
+    		for (VertexLabel vlbl:schema.getVertexLabels().values()){
+    			for (EdgeRole er:vlbl.getInEdgeRoles().values()){
+    				if (er.getEdgeLabel().getSchema()!=schema){
+    					er.remove(preserveData);
+    				}
+    			}
+    		}
+    		
     		this.uncommittedRemovedSchemas.add(schema.getName());
     		TopologyManager.removeSchema(sqlgGraph, schema.getName());
     		if (!preserveData){
