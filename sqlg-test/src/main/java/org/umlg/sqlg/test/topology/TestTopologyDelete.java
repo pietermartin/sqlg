@@ -76,6 +76,13 @@ import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTe
 @RunWith(Parameterized.class)
 public class TestTopologyDelete extends BaseTest {
 	
+	@Parameter(0)
+	public String schema;
+	@Parameter(1)
+	public boolean preserve;
+	@Parameter(2)
+	public boolean rollback;
+	
 	@Parameters(name = "{index}: schema:{0}, preserve:{1}, rollback:{2}")
     public static Collection<Object[]> data() {
     	List<Object[]> l=new ArrayList<>();
@@ -93,9 +100,7 @@ public class TestTopologyDelete extends BaseTest {
         return l;
     }
     
-	public TestTopologyDelete() {
 
-	}
 	
 	@SuppressWarnings("Duplicates")
     @BeforeClass
@@ -112,13 +117,7 @@ public class TestTopologyDelete extends BaseTest {
             throw new IllegalStateException(e);
         }
     }
-	
-	@Parameter(0)
-	public String schema;
-	@Parameter(1)
-	public boolean preserve;
-	@Parameter(2)
-	public boolean rollback;
+
 	
 	@Before
 	public void buildLoops(){
@@ -292,12 +291,12 @@ public class TestTopologyDelete extends BaseTest {
 		assertEquals(0L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
 			.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"A")
 			.out(SQLG_SCHEMA_OUT_EDGES_EDGE).has(SQLG_SCHEMA_EDGE_LABEL_NAME,"E")
-			.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"p1").count().next().longValue());
+			.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).has(SQLG_SCHEMA_PROPERTY_NAME,"p1").count().next().longValue());
 			
 		assertEquals(0L,g.topology().V().hasLabel(SQLG_SCHEMA+"."+SQLG_SCHEMA_SCHEMA).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,schema)
 				.out(SQLG_SCHEMA_SCHEMA_VERTEX_EDGE).has(SQLG_SCHEMA_VERTEX_LABEL_NAME,"A")
 				.out(SQLG_SCHEMA_OUT_EDGES_EDGE).has(SQLG_SCHEMA_EDGE_LABEL_NAME,"E")
-				.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).has(Topology.SQLG_SCHEMA_PROPERTY_NAME,"p2").count().next().longValue());
+				.out(SQLG_SCHEMA_EDGE_PROPERTIES_EDGE).has(SQLG_SCHEMA_PROPERTY_NAME,"p2").count().next().longValue());
 			
 		assertFalse(columnExistsInSQL(schema, EDGE_PREFIX+"E", "p1"));
 		assertTrue(columnExistsInSQL(schema, EDGE_PREFIX+"E", "p2"));
