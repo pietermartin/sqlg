@@ -101,6 +101,8 @@ public class EdgeRole implements TopologyInf {
 				break;
 			case OUT: dir="->";
 				break;
+			default: dir="unknown";
+				break;
 		}
 		return vertexLabel.getName()+dir+edgeLabel.getName();
 	}

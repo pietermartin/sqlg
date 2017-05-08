@@ -326,8 +326,8 @@ public class Topology {
         sqlgSchema.getVertexLabels().values().forEach((v) -> {
             SchemaTable vertexLabelSchemaTable = SchemaTable.of(v.getSchema().getName(), VERTEX_PREFIX + v.getLabel());
             this.schemaTableForeignKeyCache.put(vertexLabelSchemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
-            v.getInEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel())));
-            v.getOutEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getRight().add(SchemaTable.of(v.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel())));
+            v.getInEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel())));
+            v.getOutEdgeLabels().forEach((edgeLabelName, edgeLabel) -> this.schemaTableForeignKeyCache.get(vertexLabelSchemaTable).getRight().add(SchemaTable.of(v.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel())));
         });
 
         this.edgeForeignKeyCache = sqlgSchema.getAllEdgeForeignKeys();
@@ -1376,7 +1376,7 @@ public class Topology {
                 if (f instanceof AbstractLabel) {
                     AbstractLabel abstractLabel = (AbstractLabel) f;
                     Schema schema = abstractLabel.getSchema();
-                    result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel());
+                    result.remove(schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel());
                 }
             }
             return Collections.unmodifiableMap(result);
@@ -1393,7 +1393,7 @@ public class Topology {
                 if (f instanceof AbstractLabel) {
                     AbstractLabel abstractLabel = (AbstractLabel) f;
                     Schema schema = abstractLabel.getSchema();
-                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + abstractLabel.getLabel();
+                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
                     Map<String, PropertyType> tmp = this.allTableCache.get(key);
                     result.put(key, tmp);
                 } else if (f instanceof GlobalUniqueIndex) {
@@ -1580,14 +1580,14 @@ public class Topology {
      * @param edgeLabel
      */
     void addOutForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
-        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys == null) {
             foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
             this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
 
         }
-        foreignKeys.getRight().add(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+        foreignKeys.getRight().add(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
     /**
@@ -1596,13 +1596,13 @@ public class Topology {
      * @param edgeLabel
      */
     void addInForeignKeysToVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
-        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys == null) {
             foreignKeys = Pair.of(new HashSet<>(), new HashSet<>());
             this.schemaTableForeignKeyCache.put(schemaTable, foreignKeys);
         }
-        foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+        foreignKeys.getLeft().add(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
     }
 
     /**
@@ -1611,10 +1611,10 @@ public class Topology {
      * @param edgeLabel
      */
     void removeOutForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
-        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys != null) {
-         	foreignKeys.getRight().remove(SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+         	foreignKeys.getRight().remove(SchemaTable.of(vertexLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
         }
     }
 
@@ -1624,10 +1624,10 @@ public class Topology {
      * @param edgeLabel
      */
     void removeInForeignKeysFromVertexLabel(VertexLabel vertexLabel, EdgeLabel edgeLabel) {
-        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         Pair<Set<SchemaTable>, Set<SchemaTable>> foreignKeys = this.schemaTableForeignKeyCache.get(schemaTable);
         if (foreignKeys != null && edgeLabel.isValid()) {
-            foreignKeys.getLeft().remove(SchemaTable.of(edgeLabel.getSchema().getName(), SchemaManager.EDGE_PREFIX + edgeLabel.getLabel()));
+            foreignKeys.getLeft().remove(SchemaTable.of(edgeLabel.getSchema().getName(), EDGE_PREFIX + edgeLabel.getLabel()));
         }
     }
     

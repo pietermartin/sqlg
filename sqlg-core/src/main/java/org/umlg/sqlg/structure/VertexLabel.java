@@ -615,6 +615,8 @@ public class VertexLabel extends AbstractLabel {
         			case ROLE:
         				this.getSchema().getTopology().fire(new EdgeRole(this, lbl,Direction.OUT,true), "", TopologyChangeAction.DELETE);
         				break;
+        			default:
+        				break;
         			}
         			
         		}
