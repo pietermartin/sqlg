@@ -48,9 +48,20 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
     
     @Override
-    public String createSchemaStatement() {
-    	// if ever schema is created outside of sqlg while the graph is already instantiated
-    	return "CREATE SCHEMA IF NOT EXISTS ";
+    public String addColumnStatement(String schema, String table, String column, String typeDefinition) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" ADD ");
+        sql.append(maybeWrapInQoutes(column));
+        sql.append(" ");
+        sql.append(typeDefinition);
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
     }
 
     @Override
@@ -479,22 +490,34 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE SCHEMA \"sqlg_schema\";");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_schema\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_vertex\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"schemaVertex\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_edge\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_property\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"type\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_index\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"index_type\" VARCHAR(255));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
+                "\"ID\" BIGINT PRIMARY KEY, " +
+                "\"createdOn\" DATETIME, " +
+                "\"name\" VARCHAR(255));");
+
         result.add("CREATE TABLE \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_in_edges\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_out_edges\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
         result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"),  FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_vertex_index\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_edge_index\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_index_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"V_log\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" VARCHAR);");
+
+        result.add("CREATE TABLE \"sqlg_schema\".\"E_globalUniqueIndex_property\"(\"ID\" BIGINT IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.globalUniqueIndex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
         return result;
     }
 
     @Override
     public String sqlgAddPropertyIndexTypeColumn() {
-        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" TEXT DEFAULT 'NONE';";
+        return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD \"index_type\" TEXT DEFAULT 'NONE';";
     }
 
     @Override
@@ -556,7 +579,12 @@ public class MSSqlServerDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String getRangeClause(Range<Long> r) {
-        return "OFFSET " + r.getMinimum() + " ROWS FETCH NEXT " + (r.getMaximum() - r.getMinimum()) + " ROWS ONLY";
+    public String getRangeClause(Range<Long> r, boolean printedOrderBy) {
+        StringBuilder sql = new StringBuilder();
+        if(!printedOrderBy) {
+            sql.append("\nORDER BY 1 ");
+        }
+        sql.append("OFFSET ").append(r.getMinimum()).append(" ROWS FETCH NEXT ").append(r.getMaximum() - r.getMinimum()).append(" ROWS ONLY");
+        return sql.toString();
     }
 }

@@ -481,7 +481,6 @@ public class MySQLDialect extends BaseSqlDialect {
     @Override
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
-        result.add("CREATE SCHEMA IF NOT EXISTS `sqlg_schema`;");
         result.add("CREATE TABLE `sqlg_schema`.`V_schema` (`ID` BIGINT AUTO_INCREMENT PRIMARY KEY, `createdOn` DATETIME, `name` VARCHAR(255));");
         result.add("CREATE TABLE `sqlg_schema`.`V_vertex` (`ID` BIGINT AUTO_INCREMENT PRIMARY KEY, `createdOn` DATETIME, `name` VARCHAR(255), `schemaVertex` VARCHAR(255));");
         result.add("CREATE TABLE `sqlg_schema`.`V_edge` (`ID` BIGINT AUTO_INCREMENT PRIMARY KEY, `createdOn` DATETIME, `name` VARCHAR(255));");
