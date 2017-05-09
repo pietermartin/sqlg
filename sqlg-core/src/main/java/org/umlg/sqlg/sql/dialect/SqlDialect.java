@@ -270,6 +270,30 @@ public interface SqlDialect {
     default String createSchemaStatement() {
         return "CREATE SCHEMA ";
     }
+    
+    /**
+     * Builds an add column statement.
+     * @param schema schema name
+     * @param table table name
+     * @param column new column name
+     * @param typeDefinition column definition
+     * @return the statement to add the column
+     */
+    default String addColumnStatement(String schema, String table, String column, String typeDefinition) {
+        StringBuilder sql = new StringBuilder();
+        sql.append("ALTER TABLE ");
+        sql.append(maybeWrapInQoutes(schema));
+        sql.append(".");
+        sql.append(maybeWrapInQoutes(table));
+        sql.append(" ADD COLUMN ");
+        sql.append(maybeWrapInQoutes(column));
+        sql.append(" ");
+        sql.append(typeDefinition);
+        if (needsSemicolon()) {
+            sql.append(";");
+        }
+        return sql.toString();
+    }
 
     default void prepareDB(Connection conn) {
     }
@@ -420,6 +444,18 @@ public interface SqlDialect {
     /**
      * range condition
      *
+     * @param r range
+     * @param printedOrderBy indicates if order by was already produced
+     * @return
+     */
+    default String getRangeClause(Range<Long> r, boolean printedOrderBy) {
+        return getRangeClause(r);
+    }
+
+    /**
+     * range condition
+     *
+     * @param r range
      * @return
      */
     default String getRangeClause(Range<Long> r) {

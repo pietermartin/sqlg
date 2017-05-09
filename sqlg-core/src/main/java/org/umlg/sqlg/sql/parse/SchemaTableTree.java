@@ -548,7 +548,7 @@ public class SchemaTableTree {
                 //last entry, only order on the last entry as duplicate paths are for the same SchemaTable
                 if (countOuter == subQueryLinkedLists.size() && countInner == subQueryLinkedList.size()) {
                     result += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, countOuter);
-                    result += schemaTableTree.toRangeClause(sqlgGraph);
+                    result += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy.booleanValue());
                 }
                 countInner++;
             }
@@ -726,7 +726,7 @@ public class SchemaTableTree {
             //construct the order by clause for the comparators
             for (SchemaTableTree schemaTableTree : distinctQueryStack) {
                 singlePathSql += schemaTableTree.toOrderByClause(sqlgGraph, mutableOrderBy, -1);
-                singlePathSql += schemaTableTree.toRangeClause(sqlgGraph);
+                singlePathSql += schemaTableTree.toRangeClause(sqlgGraph, mutableOrderBy.booleanValue());
             }
         }
 
@@ -982,9 +982,9 @@ public class SchemaTableTree {
         return result;
     }
 
-    private String toRangeClause(SqlgGraph sqlgGraph) {
+    private String toRangeClause(SqlgGraph sqlgGraph, boolean printedOrderBy) {
         if (range != null) {
-            return " " + sqlgGraph.getSqlDialect().getRangeClause(range);
+            return " " + sqlgGraph.getSqlDialect().getRangeClause(range, printedOrderBy);
         }
         return "";
     }

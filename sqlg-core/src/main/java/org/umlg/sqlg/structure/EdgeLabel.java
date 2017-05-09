@@ -158,7 +158,11 @@ public class EdgeLabel extends AbstractLabel {
         }
 
         if (sqlDialect.needForeignKeyIndex()) {
-            sql.append("\nCREATE INDEX ON ");
+            List<String> c = new ArrayList<>();
+            c.add(inVertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+            sql.append("\nCREATE INDEX ");
+            sql.append(sqlDialect.indexName(SchemaTable.of(schema, tableName), "", c));
+            sql.append(" ON ");
             sql.append(sqlDialect.maybeWrapInQoutes(schema));
             sql.append(".");
             sql.append(sqlDialect.maybeWrapInQoutes(tableName));
@@ -166,7 +170,11 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END));
             sql.append(");");
 
-            sql.append("\nCREATE INDEX ON ");
+            c = new ArrayList<>();
+            c.add(outVertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+            sql.append("\nCREATE INDEX ");
+            sql.append(sqlDialect.indexName(SchemaTable.of(schema, tableName), "", c));
+            sql.append(" ON ");
             sql.append(sqlDialect.maybeWrapInQoutes(schema));
             sql.append(".");
             sql.append(sqlDialect.maybeWrapInQoutes(tableName));
@@ -333,28 +341,18 @@ public class EdgeLabel extends AbstractLabel {
 
     private void addEdgeForeignKey(String schema, String table, SchemaTable foreignKey, SchemaTable otherVertex) {
         Preconditions.checkState(!this.getSchema().isSqlgSchema(), "BUG: ensureEdgeVertexLabelExist may not be called for %s", SQLG_SCHEMA);
-        StringBuilder sql = new StringBuilder();
-        sql.append("ALTER TABLE ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
-        sql.append(".");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
-        sql.append(" ADD COLUMN ");
-        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(foreignKey.getSchema() + "." + foreignKey.getTable()));
-        sql.append(" ");
-        sql.append(this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition());
-        if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
-            sql.append(";");
-        }
+        String sqlStr = this.sqlgGraph.getSqlDialect().addColumnStatement(schema, table,
+                foreignKey.getSchema() + "." + foreignKey.getTable(), this.sqlgGraph.getSqlDialect().getForeignKeyTypeDefinition());
         if (logger.isDebugEnabled()) {
-            logger.debug(sql.toString());
+            logger.debug(sqlStr);
         }
         Connection conn = this.sqlgGraph.tx().getConnection();
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+        try (PreparedStatement preparedStatement = conn.prepareStatement(sqlStr)) {
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        sql.setLength(0);
+        StringBuilder sql = new StringBuilder();
         //foreign key definition start
         if (this.sqlgGraph.isImplementForeignKeys()) {
             sql.append(" ALTER TABLE ");
@@ -386,7 +384,11 @@ public class EdgeLabel extends AbstractLabel {
         }
         sql.setLength(0);
         if (this.sqlgGraph.getSqlDialect().needForeignKeyIndex()) {
-            sql.append("\nCREATE INDEX ON ");
+            List<String> c = new ArrayList<>();
+            c.add(foreignKey.getTable());
+            sql.append("\nCREATE INDEX ");
+            sql.append(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of(schema, table), "", c));
+            sql.append(" ON ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
             sql.append(".");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(table));
