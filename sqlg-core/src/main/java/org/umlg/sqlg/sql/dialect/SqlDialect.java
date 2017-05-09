@@ -271,7 +271,7 @@ public interface SqlDialect {
      * @return the statement head to create a schema
      */
     default String createSchemaStatement() {
-        return "CREATE SCHEMA ";
+        return "CREATE SCHEMA IF NOT EXISTS ";
     }
 
     default void prepareDB(Connection conn) {

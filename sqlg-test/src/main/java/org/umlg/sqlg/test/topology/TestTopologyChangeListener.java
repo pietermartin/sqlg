@@ -113,6 +113,10 @@ public class TestTopologyChangeListener extends BaseTest {
 			super();
 			this.topologyListenerTriple = topologyListenerTriple;
 		}
+        
+        public TopologyListenerTest(){
+        	
+        }
 
 		@Override
         public void change(TopologyInf topologyInf, String oldValue, TopologyChangeAction action) {
@@ -123,5 +127,22 @@ public class TestTopologyChangeListener extends BaseTest {
                     Triple.of(topologyInf, oldValue, action)
             );
         }
+		
+		public List<Triple<TopologyInf, String, TopologyChangeAction>> getTopologyListenerTriple() {
+			return topologyListenerTriple;
+		}
+		
+		public boolean receivedEvent(TopologyInf topologyInf, TopologyChangeAction action){
+			for (Triple<TopologyInf, String, TopologyChangeAction> t:topologyListenerTriple){
+				if (t.getLeft().equals(topologyInf) && t.getRight().equals(action)){
+					return true;
+				}
+			}
+			return false;
+		}
+		
+		public void reset(){
+			topologyListenerTriple.clear();
+		}
     }
 }

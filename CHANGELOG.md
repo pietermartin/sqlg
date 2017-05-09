@@ -1,11 +1,14 @@
 ##1.3.3
 
-. codeship test 2
-
+* `TopologyInf` support for `remove(boolean preserveData)` added.
+        Thanks to [JPMoresmau](https://github.com/JPMoresmau)
 * Replace `ResultSet.getObject(index)` with `ResultSet.getString/Int...` as its faster.
+* Removed Hazelcast. The topology is now distributed using Postgresql's `lock` to hold a global lock across multiple Graphs and JVMs
+and a `V_log` table which hold the changes made. The changes are in turn sent to other Graphs and JVMs using Postgresql's `notify` mechanism.
+* Added `TopologyListener` as a mechanism to observe changes to the topology.
 * Added support for global  unique indexes. This means that a unique index can be placed on multiple properties from any Vertex or Edge.
 * Rewrite of the topology/schema management. `SchemaManager` is replaced with `Topology`.
-There are now object representing the topology. `Topology`, `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn` and `Index`
+There are now classes representing the topology. `Topology`, `Schema`, `VertexLabel`, `EdgeLabel`, `PropertyColumn`, `Index` and `GlobalUniqueIndex`
 * Strengthened the reloading of the topology from the information_schema tables.
 This highlighted some limitations. It is not possible to tell a primitive array from a object array. 
 As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become `Integer[]{1,2,3}`
@@ -18,14 +21,13 @@ As such all arrays are  loaded as object arrays. i.e. `int[]{1,2,3}` will become
 
     If a `RepeapStep` could not be optimized then the incoming emit `Element` did not get a label so it was not being returned from the sql.
 
-
 ##1.3.2
 
 * Ensure SqlgGraphStepStrategy and SqlgVertexStepStrategy fires before InlineFilterStrategy.
 * Fix a bug where hasId uses the P.neq predicate.
 * Use BIGSERIAL for auto increment columns in Postgresql [#91](https://github.com/pietermartin/sqlg/issues/91)
 * Fix bug [#92](https://github.com/pietermartin/sqlg/issues/92)
-* Broaded SqlgGraph.bulkAddEdges to take a Collection of ids as opposed to a List.
+* SqlgGraph.bulkAddEdges to take a Collection of ids as opposed to a List.
     Fix bug [#102](https://github.com/pietermartin/sqlg/issues/102)
 * Fix bug [#73](https://github.com/pietermartin/sqlg/issues/73)
         Thanks to [JPMoresmau](https://github.com/JPMoresmau)
