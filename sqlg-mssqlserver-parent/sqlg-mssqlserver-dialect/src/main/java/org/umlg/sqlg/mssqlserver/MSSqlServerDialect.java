@@ -496,7 +496,7 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         result.add("CREATE TABLE \"sqlg_schema\".\"V_property\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"type\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_index\" (\"ID\" BIGINT IDENTITY PRIMARY KEY, \"createdOn\" DATETIME, \"name\" VARCHAR(255), \"index_type\" VARCHAR(255));");
         result.add("CREATE TABLE \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
-                "\"ID\" BIGINT PRIMARY KEY, " +
+                "\"ID\" BIGINT IDENTITY PRIMARY KEY, " +
                 "\"createdOn\" DATETIME, " +
                 "\"name\" VARCHAR(255));");
 
