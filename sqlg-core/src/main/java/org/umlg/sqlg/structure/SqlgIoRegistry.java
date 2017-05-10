@@ -8,7 +8,7 @@ import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
  * Date: 2015/05/07
  * Time: 8:05 PM
  */
-class SqlgIoRegistry extends AbstractIoRegistry {
+public class SqlgIoRegistry extends AbstractIoRegistry {
 
     private static final SqlgIoRegistry INSTANCE = new SqlgIoRegistry();
 

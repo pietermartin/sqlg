@@ -430,9 +430,9 @@ public class TestLoadSchemaViaNotify extends BaseTest {
 	         assertEquals("", topologyListenerTriple.get(4).getMiddle());
 	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(4).getRight());
     
-	         assertEquals(globalUniqueIndex, topologyListenerTriple.get(8).getLeft());
-	         assertEquals("", topologyListenerTriple.get(8).getMiddle());
-	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(8).getRight());
+	         assertEquals(globalUniqueIndex, topologyListenerTriple.get(5).getLeft());
+	         assertEquals("", topologyListenerTriple.get(5).getMiddle());
+	         assertEquals(TopologyChangeAction.CREATE, topologyListenerTriple.get(5).getRight());
     	}
     }
 }

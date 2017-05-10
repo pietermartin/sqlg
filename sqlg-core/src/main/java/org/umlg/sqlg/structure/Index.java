@@ -1,19 +1,29 @@
 package org.umlg.sqlg.structure;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.base.Preconditions;
+import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 
-import java.sql.*;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
 
 /**
  * Date: 2016/11/26
@@ -39,6 +49,7 @@ public class Index implements TopologyInf {
      */
     Index(String name, IndexType indexType, AbstractLabel abstractLabel, List<PropertyColumn> properties) {
         this.name = name;
+        this.indexType = indexType;
         this.uncommittedIndexType = indexType;
         this.abstractLabel = abstractLabel;
         this.uncommittedProperties.addAll(properties);
@@ -120,15 +131,15 @@ public class Index implements TopologyInf {
         this.uncommittedProperties.clear();
     }
 
-    private void addIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable, IndexType indexType, List<PropertyColumn> properties) {
+    private void addIndex(SqlgGraph sqlgGraph, SchemaTable schemaTable) {
         String prefix = this.abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
         StringBuilder sql = new StringBuilder("CREATE ");
-        if (IndexType.UNIQUE.equals(indexType)) {
+        if (IndexType.UNIQUE.equals(getIndexType())) {
             sql.append("UNIQUE ");
         }
         sql.append("INDEX ");
         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
-        sql.append(sqlDialect.maybeWrapInQoutes(sqlDialect.indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()))));
+        sql.append(sqlDialect.maybeWrapInQoutes(getName()));
         sql.append(" ON ");
         sql.append(sqlDialect.maybeWrapInQoutes(schemaTable.getSchema()));
         sql.append(".");
@@ -139,7 +150,8 @@ public class Index implements TopologyInf {
         }
         
         sql.append(" (");
-        if(IndexType.GIN_FULLTEXT.equals(indexType.getName())){
+        List<PropertyColumn> props=getProperties();
+        if(IndexType.GIN_FULLTEXT.equals(getIndexType().getName())){
         	sql.append("to_tsvector(");
         	String conf=indexType.getProperties().get(IndexType.GIN_CONFIGURATION);
         	if (conf!=null){
@@ -147,18 +159,18 @@ public class Index implements TopologyInf {
         		sql.append(",");
         	}
         	int count = 1;
-	        for (PropertyColumn property : properties) {
+	        for (PropertyColumn property : props) {
 	            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
-	            if (count++ < properties.size()) {
+	            if (count++ < props.size()) {
 	                sql.append(" || ' ' || ");
 	            }
 	        }
 	        sql.append(")");
         } else {
 	        int count = 1;
-	        for (PropertyColumn property : properties) {
+	        for (PropertyColumn property : props) {
 	            sql.append(sqlDialect.maybeWrapInQoutes(property.getName()));
-	            if (count++ < properties.size()) {
+	            if (count++ < props.size()) {
 	                sql.append(",");
 	            }
 	        }
@@ -212,8 +224,8 @@ public class Index implements TopologyInf {
     static Index createIndex(SqlgGraph sqlgGraph, AbstractLabel abstractLabel, String indexName, IndexType indexType, List<PropertyColumn> properties) {
         Index index = new Index(indexName, indexType, abstractLabel, properties);
         SchemaTable schemaTable = SchemaTable.of(abstractLabel.getSchema().getName(), abstractLabel.getLabel());
-        index.addIndex(sqlgGraph, schemaTable, indexType, properties);
-        TopologyManager.addIndex(sqlgGraph, abstractLabel, index, indexType, properties);
+        index.addIndex(sqlgGraph, schemaTable);
+        TopologyManager.addIndex(sqlgGraph, index);
         index.committed = false;
         return index;
     }
@@ -245,4 +257,41 @@ public class Index implements TopologyInf {
     public AbstractLabel getParentLabel() {
 		return abstractLabel;
 	}
+    
+    public List<PropertyColumn> getProperties() {
+    	List<PropertyColumn> props=new ArrayList<>(properties);
+    	if (this.getParentLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+    		props.addAll(uncommittedProperties);
+    	}
+		return Collections.unmodifiableList(props);
+	}
+    
+    /**
+     * delete the index from the database
+     * @param sqlgGraph
+     */
+    void delete(SqlgGraph sqlgGraph){
+    	 StringBuilder sql = new StringBuilder("DROP INDEX IF EXISTS ");
+         SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+         sql.append(sqlDialect.maybeWrapInQoutes(getParentLabel().getSchema().getName()));
+         sql.append(".");
+         sql.append(sqlDialect.maybeWrapInQoutes(getName()));
+         if (sqlDialect.needsSemicolon()) {
+             sql.append(";");
+         }
+         if (logger.isDebugEnabled()) {
+             logger.debug(sql.toString());
+         }
+         Connection conn = sqlgGraph.tx().getConnection();
+         try (Statement stmt = conn.createStatement()) {
+             stmt.execute(sql.toString());
+         } catch (SQLException e) {
+             throw new RuntimeException(e);
+         }
+    }
+    
+    @Override
+    public void remove(boolean preserveData) {
+    	getParentLabel().removeIndex(this, preserveData);
+    }
 }

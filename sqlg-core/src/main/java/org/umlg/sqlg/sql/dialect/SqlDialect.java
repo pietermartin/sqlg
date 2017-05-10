@@ -9,6 +9,7 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
+import org.umlg.sqlg.structure.IndexRef;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -479,5 +480,17 @@ public interface SqlDialect {
     default boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
         ResultSet schemaRs = metadata.getSchemas(catalog, schema);
         return schemaRs.next();
+    }
+    
+    /**
+     * extract all indices in one go
+     * @param conn
+     * @param catalog
+     * @param schema
+     * @return a map of indices references by key, the key being cat+schema+table
+     * @throws SQLException
+     */
+    default Map<String, Set<IndexRef>> extractIndices(Connection conn,String catalog,String schema) throws SQLException {
+    	return null;
     }
 }

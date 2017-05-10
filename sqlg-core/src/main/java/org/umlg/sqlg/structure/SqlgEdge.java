@@ -224,6 +224,14 @@ public class SqlgEdge extends SqlgElement implements Edge {
             for (PropertyColumn propertyColumn : edgeLabel.properties.values()) {
                 sql.append(", ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
+                // additional columns for time zone, etc.
+                String[] ps=propertyColumn.getPropertyType().getPostFixes();
+                if (ps!=null){
+	                for (String p:propertyColumn.getPropertyType().getPostFixes()){
+	                	sql.append(", ");
+	                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()+p));
+	                }
+                }
             }
             for (VertexLabel vertexLabel : edgeLabel.getOutVertexLabels()) {
                 sql.append(", ");
