@@ -13,7 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.SqlgChooseStepBarrier;
+import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -311,9 +311,9 @@ public class TestOptionalWithOrder extends BaseTest {
         //The range messes it up, so it has a SqlgVertexStep
         assertStep(traversal.getSteps().get(0), true, false, false, true);
         Step<?,?> step = traversal.getSteps().get(1);
-        Assert.assertTrue(step instanceof SqlgChooseStepBarrier);
-        SqlgChooseStepBarrier<?,?,?> sqlgChooseStepBarrier = (SqlgChooseStepBarrier<?, ?, ?>) step;
-        Traversal.Admin<?, ?> traversal1 = sqlgChooseStepBarrier.getLocalChildren().get(0);
+        Assert.assertTrue(step instanceof SqlgOptionalStepBarrier);
+        SqlgOptionalStepBarrier<?,?,?> sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier<?, ?, ?>) step;
+        Traversal.Admin<?, ?> traversal1 = sqlgOptionalStepBarrier.getLocalChildren().get(0);
         Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStep);
         assertStep(traversal1.getSteps().get(0), false, true, true, true);
         //There is another SqlgVertexStep but it is not being asserted
