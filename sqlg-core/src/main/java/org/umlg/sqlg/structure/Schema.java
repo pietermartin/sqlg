@@ -67,9 +67,25 @@ public class Schema implements TopologyInf {
      */
     static Schema createPublicSchema(SqlgGraph sqlgGraph, Topology topology, String publicSchemaName) {
         Schema schema= new Schema(topology, publicSchemaName);
-        schema.createSchemaOnDb();
+        if (!existPublicSchema(sqlgGraph)) {
+            schema.createSchemaOnDb();
+        }
         schema.committed = false;
         return schema;
+    }
+
+    private static boolean existPublicSchema(SqlgGraph sqlgGraph) {
+        Connection conn = sqlgGraph.tx().getConnection();
+        try {
+            if (sqlgGraph.getSqlDialect().supportSchemas()) {
+                DatabaseMetaData metadata = conn.getMetaData();
+                return sqlgGraph.getSqlDialect().schemaExists(metadata, null /*catalog*/, sqlgGraph.getSqlDialect().getPublicSchema());
+            } else {
+                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

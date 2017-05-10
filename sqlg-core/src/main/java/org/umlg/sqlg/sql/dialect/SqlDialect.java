@@ -271,7 +271,7 @@ public interface SqlDialect {
      * @return the statement head to create a schema
      */
     default String createSchemaStatement() {
-        return "CREATE SCHEMA IF NOT EXISTS ";
+        return "CREATE SCHEMA ";
     }
 
     default void prepareDB(Connection conn) {
@@ -459,4 +459,6 @@ public interface SqlDialect {
     default Map<String, Set<IndexRef>> extractIndices(Connection conn,String catalog,String schema) throws SQLException {
     	return null;
     }
+
+    boolean isSystemIndex(String indexName);
 }

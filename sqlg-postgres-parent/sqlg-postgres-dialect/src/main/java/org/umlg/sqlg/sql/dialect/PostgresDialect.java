@@ -3494,4 +3494,9 @@ public class PostgresDialect extends BaseSqlDialect {
         }
 
     }
+
+    @Override
+    public boolean isSystemIndex(String indexName) {
+        return indexName.endsWith("_pkey") || indexName.endsWith("_idx");
+    }
 }

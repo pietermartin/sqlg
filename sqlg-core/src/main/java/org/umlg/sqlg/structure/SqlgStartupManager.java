@@ -352,7 +352,8 @@ class SqlgStartupManager {
                     lastIndexName = indexName;
                     lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
                 } else if (!lastIndexName.equals(indexName)) {
-                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+//                    if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+                    if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
                         if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
                             //System.out.println(lastColumns);
                             //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
@@ -368,7 +369,8 @@ class SqlgStartupManager {
                 lastColumns.add(indexRs.getString("COLUMN_NAME"));
 
             }
-            if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+//            if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
+            if (!this.sqlDialect.isSystemIndex(lastIndexName)) {
                 if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
                     //System.out.println(lastColumns);
                     //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
