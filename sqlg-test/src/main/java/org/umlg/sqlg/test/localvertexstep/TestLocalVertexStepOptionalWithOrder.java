@@ -18,10 +18,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.SqlgChooseStepBarrier;
-import org.umlg.sqlg.step.SqlgGraphStep;
-import org.umlg.sqlg.step.SqlgLocalStepBarrier;
-import org.umlg.sqlg.step.SqlgVertexStep;
+import org.umlg.sqlg.step.*;
 import org.umlg.sqlg.test.BaseTest;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
@@ -705,10 +702,9 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
 //        First optional is a non optimized, optimized SqlgChooseBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
-        Assert.assertTrue(t.getSteps().get(0) instanceof SqlgChooseStepBarrier);
-        SqlgChooseStepBarrier sqlgChooseStepBarrier = (SqlgChooseStepBarrier) t.getSteps().get(0);
-        Assert.assertTrue(sqlgChooseStepBarrier.isOptionalStep());
-        Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgChooseStepBarrier);
+        Assert.assertTrue(t.getSteps().get(0) instanceof SqlgOptionalStepBarrier);
+        SqlgOptionalStepBarrier sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier) t.getSteps().get(0);
+        Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgOptionalStepBarrier);
         Traversal.Admin<?, ?> trueTraversal = trueFalseTraversals.getLeft();
         Assert.assertEquals(3, trueTraversal.getSteps().size());
         Assert.assertTrue(trueTraversal.getSteps().get(0) instanceof SqlgVertexStep);
@@ -842,10 +838,9 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
 
         //First optional is a non optimized, optimized SqlgChooseBarrierStep
         Assert.assertEquals(1, t.getSteps().size());
-        Assert.assertTrue(t.getSteps().get(0) instanceof SqlgChooseStepBarrier);
-        SqlgChooseStepBarrier sqlgChooseStepBarrier = (SqlgChooseStepBarrier) t.getSteps().get(0);
-        Assert.assertTrue(sqlgChooseStepBarrier.isOptionalStep());
-        Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgChooseStepBarrier);
+        Assert.assertTrue(t.getSteps().get(0) instanceof SqlgOptionalStepBarrier);
+        SqlgOptionalStepBarrier sqlgOptionalStepBarrier = (SqlgOptionalStepBarrier) t.getSteps().get(0);
+        Pair<Traversal.Admin<?, ?>, Traversal.Admin<?, ?>> trueFalseTraversals = SqlgTraversalUtil.trueFalseTraversals(sqlgOptionalStepBarrier);
         Traversal.Admin<?, ?> trueTraversal = trueFalseTraversals.getLeft();
         Assert.assertEquals(3, trueTraversal.getSteps().size());
         Assert.assertTrue(trueTraversal.getSteps().get(0) instanceof SqlgVertexStep);

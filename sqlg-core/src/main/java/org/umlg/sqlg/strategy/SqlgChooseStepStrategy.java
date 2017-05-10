@@ -7,7 +7,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.map.HasNextStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ReducingBarrierStep;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.umlg.sqlg.step.SqlgBranchStepBarrier;
 import org.umlg.sqlg.step.SqlgChooseStepBarrier;
+import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
@@ -23,7 +25,6 @@ import java.util.stream.Stream;
  *         Date: 2014/08/15
  */
 public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<TraversalStrategy.OptimizationStrategy> implements TraversalStrategy.OptimizationStrategy {
-
 
     public SqlgChooseStepStrategy() {
         super();
@@ -53,27 +54,27 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                 hasNextStep = true;
                 predicateTraversal.removeStep(predicateTraversal.getSteps().get(predicateTraversal.getSteps().size() - 1));
             }
-//            for (Step step : predicateTraversal.getSteps()) {
-//                if (step instanceof HasNextStep) {
-//                    hasNextStep = (HasNextStep) step;
-//                }
-//            }
-//            if (hasNextStep != null) {
-//                predicateTraversal.removeStep(hasNextStep);
-//            }
 
-            SqlgChooseStepBarrier<S, E, M> sqlgChooseStepBarrier = new SqlgChooseStepBarrier<>(
-                    traversal,
-                    predicateTraversal,
-                    hasNextStep && SqlgTraversalUtil.isOptionalChooseStep(chooseStep)
-            );
+            SqlgBranchStepBarrier sqlgBranchStepBarrier;
+            if (hasNextStep && SqlgTraversalUtil.isOptionalChooseStep(chooseStep)) {
+                sqlgBranchStepBarrier = new SqlgOptionalStepBarrier<>(
+                        traversal,
+                        predicateTraversal
+                );
+
+            } else {
+                sqlgBranchStepBarrier = new SqlgChooseStepBarrier<>(
+                        traversal,
+                        predicateTraversal
+                );
+            }
             try {
                 Field traversalOptionsField = chooseStep.getClass().getSuperclass().getDeclaredField("traversalOptions");
                 traversalOptionsField.setAccessible(true);
                 Map<M, List<Traversal.Admin<S, E>>> traversalOptions = (Map<M, List<Traversal.Admin<S, E>>>) traversalOptionsField.get(chooseStep);
                 for (Map.Entry<M, List<Traversal.Admin<S, E>>> entry : traversalOptions.entrySet()) {
                     for (Traversal.Admin<S, E> admin : entry.getValue()) {
-                        sqlgChooseStepBarrier.addGlobalChildOption(entry.getKey(), admin);
+                        sqlgBranchStepBarrier.addGlobalChildOption(entry.getKey(), admin);
                     }
                 }
             } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -82,7 +83,7 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
 
             TraversalHelper.replaceStep(
                     chooseStep,
-                    sqlgChooseStepBarrier,
+                    sqlgBranchStepBarrier,
                     chooseStep.getTraversal()
             );
         }
