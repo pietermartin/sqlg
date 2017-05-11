@@ -43,7 +43,6 @@ public class Topology {
     private Map<String, Set<String>> edgeForeignKeyCache = new HashMap<>();
 
     //Map the topology. This is for regular schemas. i.e. 'public.Person', 'special.Car'
-    //The map needs to be concurrent as elements can be added in one thread and merged via notify from another at the same time.
     private Map<String, Schema> schemas = new HashMap<>();
     private Map<String, Schema> uncommittedSchemas = new HashMap<>();
     private Set<String> uncommittedRemovedSchemas = new HashSet<>();
