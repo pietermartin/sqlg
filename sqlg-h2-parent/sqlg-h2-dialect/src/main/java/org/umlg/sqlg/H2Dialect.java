@@ -646,4 +646,9 @@ public class H2Dialect extends BaseSqlDialect {
     public String getPublicSchema() {
         return "PUBLIC";
     }
+
+    @Override
+    public boolean isSystemIndex(String indexName) {
+        return indexName.startsWith("PRIMARY_KEY_") || indexName.startsWith("CONSTRAINT_INDEX_");
+    }
 }
