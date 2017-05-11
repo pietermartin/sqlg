@@ -1,5 +1,12 @@
 package org.umlg.sqlg.test.batch;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
+import java.beans.PropertyVetoException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -9,11 +16,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
-
-import java.beans.PropertyVetoException;
-import java.io.IOException;
-
-import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Date: 2016/05/22
@@ -303,19 +305,45 @@ public class TestBatchNormalPrimitiveArrays extends BaseTest {
     @Test
     public void testBatchArraybyte() throws InterruptedException {
         this.sqlgGraph.tx().normalBatchModeOn();
-        Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new byte[]{1, 3});
+        Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", new byte[]{1,3});
         this.sqlgGraph.tx().commit();
         testBatchArraybyte_assert(this.sqlgGraph, god);
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
             testBatchArraybyte_assert(this.sqlgGraph1, god);
         }
+        this.sqlgGraph.tx().normalBatchModeOn();
+        god.property("array", "I pack some weirdness:'\",:/?".getBytes(StandardCharsets.UTF_8));
+        this.sqlgGraph.tx().commit();
+        testBatchArraybyteSpecial_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchArraybyteSpecial_assert(this.sqlgGraph1, god);
+        }
     }
 
     private void testBatchArraybyte_assert(SqlgGraph sqlgGraph, Vertex god) {
         god = sqlgGraph.traversal().V(god.id()).next();
         byte[] array = god.value("array");
-        assertArrayEquals(new byte[]{1, 3}, array);
+        assertArrayEquals(new byte[]{1,3}, array);
+    }
+    
+    @Test
+    public void testBatchArraybyteSpecial() throws InterruptedException {
+        this.sqlgGraph.tx().normalBatchModeOn();
+        Vertex god = this.sqlgGraph.addVertex(T.label, "GOD", "array", "I pack some weirdness:'\",:/?".getBytes(StandardCharsets.UTF_8));
+        this.sqlgGraph.tx().commit();
+        testBatchArraybyteSpecial_assert(this.sqlgGraph, god);
+        if (this.sqlgGraph1 != null) {
+            Thread.sleep(SLEEP_TIME);
+            testBatchArraybyteSpecial_assert(this.sqlgGraph1, god);
+        }
+    }
+
+    private void testBatchArraybyteSpecial_assert(SqlgGraph sqlgGraph, Vertex god) {
+        god = sqlgGraph.traversal().V(god.id()).next();
+        byte[] array = god.value("array");
+        assertEquals("I pack some weirdness:'\",:/?", new String(array,StandardCharsets.UTF_8));
     }
 
     @Test
