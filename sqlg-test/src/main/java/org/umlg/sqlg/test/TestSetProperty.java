@@ -1,10 +1,12 @@
 package org.umlg.sqlg.test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -49,6 +51,11 @@ public class TestSetProperty extends BaseTest {
         marko.property("bytes", new Byte[]{(byte)1,(byte)2});
         this.sqlgGraph.tx().commit();
         Assert.assertArrayEquals(new Byte[]{(byte)1,(byte)2}, (Byte[]) marko.property("bytes").value());
+        
+        marko.property("bytesText","I pack some weirdness:'\",:/?".getBytes(StandardCharsets.UTF_8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("I pack some weirdness:'\",:/?", new String((byte[]) marko.property("bytesText").value(),StandardCharsets.UTF_8));
+  
     }
     
     @Test
@@ -112,6 +119,11 @@ public class TestSetProperty extends BaseTest {
         marko.property("bytes", new byte[]{(byte)1,(byte)2});
         this.sqlgGraph.tx().commit();
         Assert.assertArrayEquals(new byte[]{(byte)1,(byte)2}, (byte[]) marko.property("bytes").value());
+        
+        marko.property("bytesText","I pack some weirdness:'\",:/?".getBytes(StandardCharsets.UTF_8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("I pack some weirdness:'\",:/?", new String((byte[]) marko.property("bytesText").value(),StandardCharsets.UTF_8));
+        
     }
     
     @Test
@@ -330,6 +342,10 @@ public class TestSetProperty extends BaseTest {
     	ZonedDateTime zdt=ZonedDateTime.now();
     	v.property("zdt",zdt);
     	    	
+    	ZonedDateTime zdt2=ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00"));
+    	v.property("zdt2",zdt2);
+    	    	
+    	
     	Period p=Period.ofDays(3);
     	v.property("p", p);
     	
@@ -344,6 +360,7 @@ public class TestSetProperty extends BaseTest {
     	assertProperty(v, "ld", ldt.toLocalDate());
     	assertProperty(v, "lt", lt);
     	assertProperty(v, "zdt", zdt);
+    	assertProperty(v, "zdt2", zdt2);
     	assertProperty(v, "p", p);
     	assertProperty(v, "d", d);
     	Vertex vJ2=sqlgGraph.vertices(vJ.id()).next();
@@ -352,6 +369,7 @@ public class TestSetProperty extends BaseTest {
     	assertProperty(v2, "ld", ldt.toLocalDate());
     	assertProperty(v2, "lt", lt);
     	assertProperty(v2, "zdt", zdt);
+    	assertProperty(v2, "zdt2", zdt2);
     	assertProperty(v2, "p", p);
     	assertProperty(v2, "d", d);
     	
@@ -363,6 +381,7 @@ public class TestSetProperty extends BaseTest {
         	assertProperty(sqlgGraph1, v2, "ld", ldt.toLocalDate());
         	assertProperty(sqlgGraph1, v2, "lt", lt);
         	assertProperty(sqlgGraph1, v2, "zdt", zdt);
+        	assertProperty(sqlgGraph1, v2, "zdt2", zdt2);
         	assertProperty(sqlgGraph1, v2, "p", p);
         	assertProperty(sqlgGraph1, v2, "d", d);
     	}
@@ -372,6 +391,7 @@ public class TestSetProperty extends BaseTest {
         	assertProperty(sqlgGraph1, v2, "ld", ldt.toLocalDate());
         	assertProperty(sqlgGraph1, v2, "lt", lt);
         	assertProperty(sqlgGraph1, v2, "zdt", zdt);
+        	assertProperty(sqlgGraph1, v2, "zdt2", zdt2);
         	assertProperty(sqlgGraph1, v2, "p", p);
         	assertProperty(sqlgGraph1, v2, "d", d);
         	
@@ -383,6 +403,7 @@ public class TestSetProperty extends BaseTest {
         	assertProperty(sqlgGraph1, v2, "ld", ldt.toLocalDate());
         	assertProperty(sqlgGraph1, v2, "lt", lt);
         	assertProperty(sqlgGraph1, v2, "zdt", zdt);
+        	assertProperty(sqlgGraph1, v2, "zdt2", zdt2);
         	assertProperty(sqlgGraph1, v2, "p", p);
         	assertProperty(sqlgGraph1, v2, "d", d);
         	
@@ -405,6 +426,7 @@ public class TestSetProperty extends BaseTest {
     	
     	ZonedDateTime zdt=ZonedDateTime.now();
     	e1.property("zdt",zdt);
+    	
     	    	
     	Period p=Period.ofDays(3);
     	e1.property("p", p);
@@ -443,6 +465,9 @@ public class TestSetProperty extends BaseTest {
     	ZonedDateTime zdt=ZonedDateTime.now();
     	v.property("zdt",new ZonedDateTime[]{zdt});
     	    	
+    	ZonedDateTime zdt2=ZonedDateTime.of(LocalDateTime.now(), ZoneId.of("+02:00"));
+    	v.property("zdt2",new ZonedDateTime[]{zdt2});
+    	
     	Period p=Period.ofDays(3);
     	v.property("p", new Period[]{p});
     	
@@ -454,6 +479,7 @@ public class TestSetProperty extends BaseTest {
     	assertObjectArrayProperty(v, "ld", ldt.toLocalDate());
     	assertObjectArrayProperty(v, "lt", lt);
     	assertObjectArrayProperty(v, "zdt", zdt);
+    	assertObjectArrayProperty(v, "zdt2", zdt2);
     	assertObjectArrayProperty(v, "p", p);
     	assertObjectArrayProperty(v, "d", d);
     }
