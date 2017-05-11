@@ -493,4 +493,6 @@ public interface SqlDialect {
     default Map<String, Set<IndexRef>> extractIndices(Connection conn,String catalog,String schema) throws SQLException {
     	return null;
     }
+
+    boolean isSystemIndex(String indexName);
 }

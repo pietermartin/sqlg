@@ -696,4 +696,9 @@ public class HsqldbDialect extends BaseSqlDialect {
                          Object[] values) throws SQLException {
         statement.setArray(index, createArrayOf(statement.getConnection(), type, values));
     }
+
+    @Override
+    public boolean isSystemIndex(String indexName) {
+        return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.endsWith("SYS_FK");
+    }
 }
