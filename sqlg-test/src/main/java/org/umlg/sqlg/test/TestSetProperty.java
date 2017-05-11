@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +50,11 @@ public class TestSetProperty extends BaseTest {
         marko.property("bytes", new Byte[]{(byte)1,(byte)2});
         this.sqlgGraph.tx().commit();
         Assert.assertArrayEquals(new Byte[]{(byte)1,(byte)2}, (Byte[]) marko.property("bytes").value());
+        
+        marko.property("bytesText","I pack some weirdness:'\",:/?".getBytes(StandardCharsets.UTF_8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("I pack some weirdness:'\",:/?", new String((byte[]) marko.property("bytesText").value(),StandardCharsets.UTF_8));
+  
     }
     
     @Test
@@ -112,6 +118,11 @@ public class TestSetProperty extends BaseTest {
         marko.property("bytes", new byte[]{(byte)1,(byte)2});
         this.sqlgGraph.tx().commit();
         Assert.assertArrayEquals(new byte[]{(byte)1,(byte)2}, (byte[]) marko.property("bytes").value());
+        
+        marko.property("bytesText","I pack some weirdness:'\",:/?".getBytes(StandardCharsets.UTF_8));
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals("I pack some weirdness:'\",:/?", new String((byte[]) marko.property("bytesText").value(),StandardCharsets.UTF_8));
+        
     }
     
     @Test

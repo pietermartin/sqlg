@@ -699,7 +699,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case byte_ARRAY:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) value));
+                    sql.append(PGbytea.toPGString((byte[]) value).replace("'", "''"));
                     sql.append("'");
                 } else {
                     sql.append("null");
@@ -708,7 +708,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case BYTE_ARRAY:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)));
+                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)).replace("'", "''"));
                     sql.append("'");
                 } else {
                     sql.append("null");
