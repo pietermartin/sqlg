@@ -5,6 +5,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
@@ -43,6 +44,44 @@ public class TestGremlinCompileWithHas extends BaseTest {
         if (configuration.getString("jdbc.url").contains("postgresql")) {
             configuration.addProperty("distributed", true);
         }
+    }
+
+    @Test
+    public void testHasLabelWithin() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        a1.addEdge("ab", b1);
+        this.sqlgGraph.tx().commit();
+
+        GraphTraversal traversal = this.sqlgGraph.traversal().V(a1).out().hasLabel("C", "B").in();
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+
+    }
+
+    @Test
+    public void testHasLabelWithWithinPredicate() {
+        Vertex vEPerson = this.sqlgGraph.addVertex(T.label, "EnterprisePerson", "_uniqueId", "1");
+        Vertex vEProvider = this.sqlgGraph.addVertex(T.label, "EnterpriseProvider", "_uniqueId", "2");
+        Vertex vSPerson = this.sqlgGraph.addVertex(T.label, "SystemPerson", "_uniqueId", "3");
+        Vertex vSProvider = this.sqlgGraph.addVertex(T.label, "SystemProvider", "_uniqueId", "4");
+        Edge e1 = vSPerson.addEdge("euid", vEPerson);
+        Edge e2 = vSProvider.addEdge("euid", vEProvider);
+        Edge e3 = vSProvider.addEdge("primary", vSPerson);
+        this.sqlgGraph.tx().commit();
+
+        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
+                .hasLabel("EnterprisePerson")
+                .has("_uniqueId", "1")
+                .in("euid")
+                .bothE("primary")
+                .otherV()
+                .hasLabel("SystemPerson", "SystemProvider")
+                .out("euid");
+        printTraversalForm(traversal);
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(1, vertices.size());
+        Assert.assertEquals(vEProvider, vertices.get(0));
     }
 
     @Test
