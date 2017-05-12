@@ -584,4 +584,9 @@ public class MySQLDialect extends BaseSqlDialect {
         
         return false;
     }
+
+    @Override
+    public boolean isSystemIndex(String indexName) {
+        return false;
+    }
 }

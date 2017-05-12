@@ -587,4 +587,9 @@ public class MSSqlServerDialect extends BaseSqlDialect {
         sql.append("OFFSET ").append(r.getMinimum()).append(" ROWS FETCH NEXT ").append(r.getMaximum() - r.getMinimum()).append(" ROWS ONLY");
         return sql.toString();
     }
+
+    @Override
+    public boolean isSystemIndex(String indexName) {
+        return false;
+    }
 }
