@@ -615,7 +615,7 @@ public class PostgresDialect extends BaseSqlDialect {
                 if (value != null) {
                     ZonedDateTime zonedDateTime = (ZonedDateTime) value;
                     LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
                     sql.append("'");
                     sql.append(localDateTime.toString());
                     sql.append("'::TIMESTAMP");
@@ -699,7 +699,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case byte_ARRAY:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) value));
+                    sql.append(PGbytea.toPGString((byte[]) value).replace("'", "''"));
                     sql.append("'");
                 } else {
                     sql.append("null");
@@ -708,7 +708,7 @@ public class PostgresDialect extends BaseSqlDialect {
             case BYTE_ARRAY:
                 if (value != null) {
                     sql.append("'");
-                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)));
+                    sql.append(PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value)).replace("'", "''"));
                     sql.append("'");
                 } else {
                     sql.append("null");
@@ -953,7 +953,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     int countStringArray = 1;
                     for (ZonedDateTime zonedDateTime : localZonedDateTimeArray) {
                         LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-                        TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                        TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
                         sql.append("'");
                         sql.append(localDateTime.toString());
                         sql.append("'::TIMESTAMP");
@@ -966,7 +966,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     countStringArray = 1;
                     for (ZonedDateTime zonedDateTime : localZonedDateTimeArray) {
                         LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-                        TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                        TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
                         sql.append("'");
                         sql.append(timeZone.getID());
                         sql.append("'");
@@ -1477,7 +1477,7 @@ public class PostgresDialect extends BaseSqlDialect {
                 case ZONEDDATETIME:
                     ZonedDateTime zonedDateTime = (ZonedDateTime) value;
                     LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
-                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
                     result = localDateTime.toString() + COPY_COMMAND_DELIMITER + timeZone.getID();
                     break;
                 case PERIOD:
@@ -1511,7 +1511,7 @@ public class PostgresDialect extends BaseSqlDialect {
                     sb.append("{");
                     for (int i = 0; i < length; i++) {
                         zonedDateTime = zonedDateTimes[i];
-                        timeZone = TimeZone.getTimeZone(zonedDateTime.getZone().getId());
+                        timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
                         result = timeZone.getID();
                         sb.append(result);
                         if (i < length - 1) {

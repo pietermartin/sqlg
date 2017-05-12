@@ -13,8 +13,6 @@ import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Date: 2015/01/01
  * Time: 4:38 PM
@@ -28,6 +26,7 @@ public class TestGremlinCompileV extends BaseTest {
             configuration.addProperty("distributed", true);
         }
     }
+
 
     @Test
     public void testSimpleOutOut() throws InterruptedException {
@@ -47,7 +46,7 @@ public class TestGremlinCompileV extends BaseTest {
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        assertEquals(1, vertices.size());
+        Assert.assertEquals(1, vertices.size());
     }
 
     @Test
@@ -77,7 +76,7 @@ public class TestGremlinCompileV extends BaseTest {
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        assertEquals(4, vertices.size());
+        Assert.assertEquals(4, vertices.size());
         Assert.assertTrue(vertices.contains(c));
         Assert.assertTrue(vertices.contains(d1));
         Assert.assertTrue(vertices.contains(d2));
@@ -87,10 +86,10 @@ public class TestGremlinCompileV extends BaseTest {
                 count++;
             }
         }
-        assertEquals(2, count);
-        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
-        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
-        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
+        Assert.assertEquals(2, count);
+        Assert.assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+        Assert.assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
+        Assert.assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
     }
 
     @Test
@@ -121,7 +120,7 @@ public class TestGremlinCompileV extends BaseTest {
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        assertEquals(4, vertices.size());
+        Assert.assertEquals(4, vertices.size());
         Assert.assertTrue(vertices.contains(c));
         Assert.assertTrue(vertices.contains(d1));
         Assert.assertTrue(vertices.contains(d2));
@@ -131,10 +130,10 @@ public class TestGremlinCompileV extends BaseTest {
                 count++;
             }
         }
-        assertEquals(2, count);
-        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
-        assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
-        assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
+        Assert.assertEquals(2, count);
+        Assert.assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+        Assert.assertEquals("d1", vertices.get(vertices.indexOf(d1)).value("NAME"));
+        Assert.assertEquals("d2", vertices.get(vertices.indexOf(d2)).value("NAME"));
     }
 
     @Test
@@ -164,7 +163,7 @@ public class TestGremlinCompileV extends BaseTest {
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Vertex> vertices = traversal.toList();
         Assert.assertEquals(1, traversal.getSteps().size());
-        assertEquals(2, vertices.size());
+        Assert.assertEquals(2, vertices.size());
         Assert.assertTrue(vertices.contains(c));
         int count = 0;
         for (Vertex vertex : vertices) {
@@ -172,8 +171,8 @@ public class TestGremlinCompileV extends BaseTest {
                 count++;
             }
         }
-        assertEquals(2, count);
-        assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
+        Assert.assertEquals(2, count);
+        Assert.assertEquals("c", vertices.get(vertices.indexOf(c)).value("nAmE"));
     }
 
     @Test
@@ -201,9 +200,9 @@ public class TestGremlinCompileV extends BaseTest {
     private void testInIn_assert(SqlgGraph sqlgGraph, Vertex a, Vertex d1) {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, d1).in().in().count();
         Assert.assertEquals(4, traversal.getSteps().size());
-        assertEquals(1, traversal.next().intValue());
+        Assert.assertEquals(1, traversal.next().intValue());
         Assert.assertEquals(2, traversal.getSteps().size());
-        assertEquals(a, vertexTraversal(sqlgGraph, d1).in().in().next());
+        Assert.assertEquals(a, vertexTraversal(sqlgGraph, d1).in().in().next());
     }
 
     @Test
@@ -222,7 +221,7 @@ public class TestGremlinCompileV extends BaseTest {
         c2.addEdge("c_outB", b2);
         c3.addEdge("c_outB", b3);
         this.sqlgGraph.tx().commit();
-        assertEquals(6, vertexTraversal(this.sqlgGraph, a1).out().in().count().next().intValue());
+        Assert.assertEquals(6, vertexTraversal(this.sqlgGraph, a1).out().in().count().next().intValue());
 
         Vertex e1 = this.sqlgGraph.addVertex(T.label, "E", "name", "e1");
         Vertex e2 = this.sqlgGraph.addVertex(T.label, "E", "name", "e2");
@@ -250,7 +249,7 @@ public class TestGremlinCompileV extends BaseTest {
     private void testInOutInOut_assert(SqlgGraph sqlgGraph, Vertex a1) {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, a1).out().in().out().count();
         Assert.assertEquals(5, traversal.getSteps().size());
-        assertEquals(19, traversal.next().intValue());
+        Assert.assertEquals(19, traversal.next().intValue());
         Assert.assertEquals(2, traversal.getSteps().size());
     }
 
@@ -296,7 +295,7 @@ public class TestGremlinCompileV extends BaseTest {
     private void testInOutinOut3_assert(SqlgGraph sqlgGraph, Vertex a1) {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) sqlgGraph.traversal().V(a1.id()).out().in().out().count();
         Assert.assertEquals(5, traversal.getSteps().size());
-        assertEquals(19, traversal.next().intValue());
+        Assert.assertEquals(19, traversal.next().intValue());
         Assert.assertEquals(2, traversal.getSteps().size());
     }
 
@@ -326,12 +325,12 @@ public class TestGremlinCompileV extends BaseTest {
     private void testInOutToSelf_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex a2) {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, a1).out().out().count();
         Assert.assertEquals(4, traversal.getSteps().size());
-        assertEquals(1, traversal.next().intValue());
+        Assert.assertEquals(1, traversal.next().intValue());
         Assert.assertEquals(2, traversal.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(sqlgGraph, a1).out().out();
         Assert.assertEquals(3, traversal1.getSteps().size());
-        assertEquals(a2, traversal1.next());
+        Assert.assertEquals(a2, traversal1.next());
         Assert.assertEquals(1, traversal1.getSteps().size());
     }
 
@@ -356,12 +355,12 @@ public class TestGremlinCompileV extends BaseTest {
     private void testOutOutoutToSelf_assert(SqlgGraph sqlgGraph, Vertex a1, Vertex b2) {
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(sqlgGraph, a1).out().out().out().count();
         Assert.assertEquals(5, traversal.getSteps().size());
-        assertEquals(1, traversal.next().intValue());
+        Assert.assertEquals(1, traversal.next().intValue());
         Assert.assertEquals(2, traversal.getSteps().size());
 
         DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) vertexTraversal(sqlgGraph, a1).out().out().out();
         Assert.assertEquals(4, traversal1.getSteps().size());
-        assertEquals(b2, traversal1.next());
+        Assert.assertEquals(b2, traversal1.next());
         Assert.assertEquals(1, traversal1.getSteps().size());
     }
 
@@ -371,10 +370,10 @@ public class TestGremlinCompileV extends BaseTest {
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
         a1.addEdge("aOutB", b1);
         this.sqlgGraph.tx().commit();
-        assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().in().count().next().intValue());
+        Assert.assertEquals(1, vertexTraversal(this.sqlgGraph, a1).out().in().count().next().intValue());
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
-            assertEquals(1, vertexTraversal(this.sqlgGraph1, a1).out().in().count().next().intValue());
+            Assert.assertEquals(1, vertexTraversal(this.sqlgGraph1, a1).out().in().count().next().intValue());
         }
     }
 
@@ -393,13 +392,13 @@ public class TestGremlinCompileV extends BaseTest {
 
         DefaultGraphTraversal<Vertex, Long> traversal = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph, a1).out().in().out().count();
         Assert.assertEquals(5, traversal.getSteps().size());
-        assertEquals(9, traversal.next().intValue());
+        Assert.assertEquals(9, traversal.next().intValue());
         Assert.assertEquals(2, traversal.getSteps().size());
         if (this.sqlgGraph1 != null) {
             Thread.sleep(SLEEP_TIME);
             DefaultGraphTraversal<Vertex, Long> traversal1 = (DefaultGraphTraversal<Vertex, Long>) vertexTraversal(this.sqlgGraph1, a1).out().in().out().count();
             Assert.assertEquals(5, traversal1.getSteps().size());
-            assertEquals(9, traversal1.next().intValue());
+            Assert.assertEquals(9, traversal1.next().intValue());
             Assert.assertEquals(2, traversal1.getSteps().size());
         }
     }

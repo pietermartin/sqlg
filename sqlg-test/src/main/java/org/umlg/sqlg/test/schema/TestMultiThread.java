@@ -255,7 +255,7 @@ public class TestMultiThread extends BaseTest {
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
-        ExecutorService executorService = newFixedThreadPool(200);
+        ExecutorService executorService = newFixedThreadPool(100);
         int loop = 400;
         for (int i = 0; i < loop; i++) {
             String n = "person" + i;

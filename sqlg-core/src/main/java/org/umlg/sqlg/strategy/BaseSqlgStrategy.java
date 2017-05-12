@@ -352,8 +352,10 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
 
     private void collectHasSteps(ListIterator<Step> iterator, Traversal.Admin<?, ?> traversal, ReplacedStep<?, ?> replacedStep, int pathCount) {
         //Collect the hasSteps
+        int countToGoPrevious = 0;
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
+            countToGoPrevious++;
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
@@ -375,42 +377,17 @@ public abstract class BaseSqlgStrategy extends AbstractTraversalStrategy<Travers
                             traversal.removeStep(currentStep);
                         }
                         iterator.remove();
+                        countToGoPrevious--;
                     }
                 }
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {
-                iterator.previous();
+                for (int i = 0; i < countToGoPrevious; i++) {
+                    iterator.previous();
+                }
                 break;
             }
-
-//            if (currentStep instanceof HasContainerHolder && isNotZonedDateTimeOrPeriodOrDuration((HasContainerHolder) currentStep) &&
-//                    (isSingleBiPredicate(((HasContainerHolder) currentStep).getHasContainers()) ||
-//                            isBetween(((HasContainerHolder) currentStep).getHasContainers()) ||
-//                            isInside(((HasContainerHolder) currentStep).getHasContainers()) ||
-//                            isOutside(((HasContainerHolder) currentStep).getHasContainers()) ||
-//                            isWithinOut(((HasContainerHolder) currentStep).getHasContainers()) ||
-//                            isTextContains(((HasContainerHolder) currentStep).getHasContainers()))) {
-//
-//                if (!currentStep.getLabels().isEmpty()) {
-//                    final IdentityStep identityStep = new IdentityStep<>(traversal);
-//                    currentStep.getLabels().forEach(l -> replacedStep.addLabel(pathCount + BaseSqlgStrategy.PATH_LABEL_SUFFIX + l));
-//                    TraversalHelper.insertAfterStep(identityStep, currentStep, traversal);
-//                }
-//                iterator.remove();
-//                //TODO strengthen this if statement.
-//                //The step is not present for ChooseSteps as the currentStep is nested inside the ChooserStep which has already been removed.
-//                //The same should be true for RepeatStep only currently do not optimize if there is a HasStep in the nested traversal.
-//                if (traversal.getSteps().contains(currentStep)) {
-//                    traversal.removeStep(currentStep);
-//                }
-//                replacedStep.addHasContainers(((HasContainerHolder) currentStep).getHasContainers());
-//            } else if (currentStep instanceof IdentityStep) {
-//                // do nothing
-//            } else {
-//                iterator.previous();
-//                break;
-//            }
         }
     }
 
