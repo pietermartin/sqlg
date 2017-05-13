@@ -24,9 +24,11 @@ import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.id;
+import static org.apache.tinkerpop.gremlin.structure.T.label;
 
 /**
  * Date: 2015/06/27
@@ -55,7 +57,6 @@ public class ReplacedStep<S, E> {
     private boolean joinToLeftJoin;
 
     private ReplacedStep() {
-
     }
 
     /**
@@ -165,6 +166,7 @@ public class ReplacedStep<S, E> {
                 throw new IllegalStateException("Unknown direction " + direction.name());
         }
 
+
         if (elementClass.isAssignableFrom(Edge.class)) {
             inLabelsToTraversers = filterEdgeOnIdHasContainers(inLabelsToTraversers);
             outLabelsToTraversers = filterEdgeOnIdHasContainers(outLabelsToTraversers);
@@ -173,13 +175,16 @@ public class ReplacedStep<S, E> {
         //Each labelToTravers more than the first one forms a new distinct path
         for (SchemaTable inLabelsToTravers : inLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        inLabelsToTravers,
-                        Direction.IN,
-                        elementClass,
-                        this,
-                        this.labels);
-                result.add(schemaTableTreeChild);
+                boolean filter = filterLabelHasContainers(inLabelsToTravers);
+                if (!filter) {
+                    SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
+                            inLabelsToTravers,
+                            Direction.IN,
+                            elementClass,
+                            this,
+                            this.labels);
+                    result.add(schemaTableTreeChild);
+                }
             } else {
                 Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
                 Set<String> foreignKeys = edgeForeignKeys.get(inLabelsToTravers.toString());
@@ -193,6 +198,9 @@ public class ReplacedStep<S, E> {
                         String foreignKeyTable = split[1];
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
                         filter = filterVertexOnIdHasContainers(schemaTableTo);
+                        if (!filter) {
+                            filter = filterLabelHasContainers(schemaTableTo);
+                        }
                         if (!filter) {
                             if (first) {
                                 first = false;
@@ -212,13 +220,16 @@ public class ReplacedStep<S, E> {
 
         for (SchemaTable outLabelToTravers : outLabelsToTraversers) {
             if (elementClass.isAssignableFrom(Edge.class)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        outLabelToTravers,
-                        Direction.OUT,
-                        elementClass,
-                        this,
-                        this.labels);
-                result.add(schemaTableTreeChild);
+                boolean filter = filterLabelHasContainers(outLabelToTravers);
+                if (!filter) {
+                    SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
+                            outLabelToTravers,
+                            Direction.OUT,
+                            elementClass,
+                            this,
+                            this.labels);
+                    result.add(schemaTableTreeChild);
+                }
             } else {
                 Map<String, Set<String>> edgeForeignKeys = this.topology.getAllEdgeForeignKeys();
                 Set<String> foreignKeys = edgeForeignKeys.get(outLabelToTravers.toString());
@@ -232,6 +243,9 @@ public class ReplacedStep<S, E> {
                         String foreignKeyTable = split[1];
                         SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
                         filter = filterVertexOnIdHasContainers(schemaTableTo);
+                        if (!filter) {
+                            filter = filterLabelHasContainers(schemaTableTo);
+                        }
                         if (!filter) {
                             if (first) {
                                 first = false;
@@ -251,6 +265,28 @@ public class ReplacedStep<S, E> {
         return result;
     }
 
+    private boolean filterLabelHasContainers(SchemaTable outLabelsToTraverser) {
+        for (HasContainer hasContainer : getLabelHasContainer()) {
+            if (hasContainer.getValue() instanceof Collection) {
+                Collection<String> labels = (Collection<String>) hasContainer.getValue();
+                Set<SchemaTable> labelSchemaTables = labels.stream().map(l -> SchemaTable.from(this.topology.getSqlgGraph(), l)).collect(Collectors.toSet());
+                BiPredicate<SchemaTable, Collection<SchemaTable>> biPredicate = (BiPredicate<SchemaTable, Collection<SchemaTable>>) hasContainer.getBiPredicate();
+                boolean validLabel = biPredicate.test(outLabelsToTraverser.withOutPrefix(), labelSchemaTables);
+                if (!validLabel) {
+                    return true;
+                }
+            } else {
+                BiPredicate<SchemaTable, SchemaTable> biPredicate = (BiPredicate<SchemaTable, SchemaTable>) hasContainer.getBiPredicate();
+                SchemaTable labelSchemaTable = SchemaTable.from(this.topology.getSqlgGraph(), (String)hasContainer.getValue());
+                boolean validLabel = biPredicate.test(outLabelsToTraverser.withOutPrefix(), labelSchemaTable);
+                if (!validLabel) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private Set<SchemaTable> filterEdgeOnIdHasContainers(Set<SchemaTable> labelsToTraversers) {
         Set<SchemaTable> idFilteredResult = new HashSet<>(labelsToTraversers);
         //Filter out labels if there is a hasContainer on the id field
@@ -264,6 +300,29 @@ public class ReplacedStep<S, E> {
             }
         }
         return idFilteredResult;
+    }
+
+    private boolean filterVertexOnLabelHasContainers(SchemaTable labelsToTraverser) {
+        boolean result = !getLabelHasContainer().isEmpty();
+        for (HasContainer labelHasContainer : getLabelHasContainer()) {
+            if (labelHasContainer.getValue() instanceof Collection) {
+                Collection<String> labels = (Collection<String>) labelHasContainer.getValue();
+                for (String label : labels) {
+                    SchemaTable hasContainerSchemaTable = SchemaTable.of("public", label);
+                    hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + hasContainerSchemaTable.getTable());
+                    if (!labelsToTraverser.equals(hasContainerSchemaTable)) {
+                        return false;
+                    }
+                }
+            } else {
+                SchemaTable hasContainerSchemaTable = SchemaTable.of("public", labelHasContainer.getValue().toString());
+                hasContainerSchemaTable = SchemaTable.of(hasContainerSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + hasContainerSchemaTable.getTable());
+                if (!labelsToTraverser.equals(hasContainerSchemaTable)) {
+                    return false;
+                }
+            }
+        }
+        return result;
     }
 
     private boolean filterVertexOnIdHasContainers(SchemaTable labelsToTraverser) {
@@ -309,26 +368,32 @@ public class ReplacedStep<S, E> {
             String foreignKeySchema = split[0];
             String foreignKeyTable = split[1];
             if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable)),
-                        Direction.OUT,
-                        Vertex.class,
-                        this,
-                        true,
-                        this.labels
-                );
-                result.add(schemaTableTreeChild);
+                SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
+                if (!filterLabelHasContainers(schemaTable)) {
+                    SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
+                            schemaTable,
+                            Direction.OUT,
+                            Vertex.class,
+                            this,
+                            true,
+                            this.labels
+                    );
+                    result.add(schemaTableTreeChild);
+                }
             }
             if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
-                        SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable)),
-                        Direction.IN,
-                        Vertex.class,
-                        this,
-                        true,
-                        this.labels
-                );
-                result.add(schemaTableTreeChild);
+                SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
+                if (!filterLabelHasContainers(schemaTable)) {
+                    SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
+                            schemaTable,
+                            Direction.IN,
+                            Vertex.class,
+                            this,
+                            true,
+                            this.labels
+                    );
+                    result.add(schemaTableTreeChild);
+                }
             }
         }
         return result;
@@ -428,6 +493,10 @@ public class ReplacedStep<S, E> {
 
     private List<HasContainer> getIdHasContainer() {
         return this.hasContainers.stream().filter(h -> h.getKey().equals(id.getAccessor())).collect(Collectors.toList());
+    }
+
+    private List<HasContainer> getLabelHasContainer() {
+        return this.hasContainers.stream().filter(h -> h.getKey().equals(label.getAccessor())).collect(Collectors.toList());
     }
 
     @Override

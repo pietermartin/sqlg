@@ -1483,12 +1483,11 @@ public class SchemaTableTree {
         return alias;
     }
 
-    private String calculateLabeledAliasId(String alias) {
+    private void calculateLabeledAliasId(String alias) {
         String reducedLabels = reducedLabels();
         String result = this.stepDepth + ALIAS_SEPARATOR + reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + SchemaManager.ID;
         this.getColumnNameAliasMap().put(result, alias);
         this.getAliasColumnNameMap().put(alias, result);
-        return alias;
     }
 
     private String calculateLabeledAliasPropertyName(String propertyName) {
@@ -1500,12 +1499,11 @@ public class SchemaTableTree {
         return alias;
     }
 
-    private String calculateLabeledAliasPropertyName(String propertyName, String alias) {
+    private void calculateLabeledAliasPropertyName(String propertyName, String alias) {
         String reducedLabels = reducedLabels();
         String result = this.stepDepth + ALIAS_SEPARATOR + reducedLabels + ALIAS_SEPARATOR + getSchemaTable().getSchema() + ALIAS_SEPARATOR + getSchemaTable().getTable() + ALIAS_SEPARATOR + propertyName;
         this.getColumnNameAliasMap().put(result, alias);
         this.getAliasColumnNameMap().put(alias, result);
-        return alias;
     }
 
     private String calculateAliasPropertyName(String propertyName) {
@@ -1817,19 +1815,8 @@ public class SchemaTableTree {
     private void removeObsoleteHasContainers(final SchemaTableTree schemaTableTree) {
         Set<HasContainer> toRemove = new HashSet<>();
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
-            if (hasContainer.getKey().equals(label.getAccessor()) && hasContainer.getBiPredicate().equals(Compare.eq)) {
-                SchemaTable hasContainerLabelSchemaTable;
-                // we may have been given a type in a schema
-                SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString());
-                //Check if we are on a vertex or edge
-                if (schemaTableTree.getSchemaTable().getTable().startsWith(SchemaManager.VERTEX_PREFIX)) {
-                    hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.VERTEX_PREFIX + predicateSchemaTable.getTable());
-                } else {
-                    hasContainerLabelSchemaTable = SchemaTable.of(predicateSchemaTable.getSchema(), SchemaManager.EDGE_PREFIX + predicateSchemaTable.getTable());
-                }
-                if (hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
-                    toRemove.add(hasContainer);
-                }
+            if (hasContainer.getKey().equals(label.getAccessor())) {
+                toRemove.add(hasContainer);
             }
         }
         schemaTableTree.hasContainers.removeAll(toRemove);
@@ -1869,16 +1856,31 @@ public class SchemaTableTree {
         for (HasContainer hasContainer : schemaTableTree.hasContainers) {
             if (!hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_WITHOUT) && !hasContainer.getKey().equals(TopologyStrategy.TOPOLOGY_SELECTION_FROM)) {
                 if (hasContainer.getKey().equals(label.getAccessor())) {
-                    // we may have been given a type in a schema
-                    SchemaTable predicateSchemaTable = SchemaTable.from(sqlgGraph, hasContainer.getValue().toString());
-                    SchemaTable hasContainerLabelSchemaTable = getHasContainerSchemaTable(schemaTableTree, predicateSchemaTable);
-                    if (hasContainer.getBiPredicate().equals(Compare.eq) && !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
-                        return true;
-                    }
+                    Preconditions.checkState(false, "label hasContainers should have been removed by now.");
+//                    if (hasContainer.getValue() instanceof Collection) {
+//                        Collection<String> labels = (Collection<String>) hasContainer.getValue();
+//                        Set<SchemaTable> labelSchemaTables = labels.stream().map(l -> SchemaTable.from(this.sqlgGraph, l)).collect(Collectors.toSet());
+//                        BiPredicate<SchemaTable, Collection<SchemaTable>> biPredicate  = (BiPredicate<SchemaTable, Collection<SchemaTable>>) hasContainer.getBiPredicate();
+//                        boolean whatever = biPredicate.test(schemaTableTree.getSchemaTable().withOutPrefix(), labelSchemaTables);
+//                        if (!whatever) {
+//                            return true;
+//                        }
+//                    } else {
+//                        SchemaTable labelSchemaTable = SchemaTable.from(this.sqlgGraph, (String)hasContainer.getValue());
+//                        BiPredicate<SchemaTable, SchemaTable> biPredicate  = (BiPredicate<SchemaTable, SchemaTable>) hasContainer.getBiPredicate();
+//                        boolean whatever = biPredicate.test(schemaTableTree.getSchemaTable().withOutPrefix(), labelSchemaTable);
+//                        if (!whatever) {
+//                            return true;
+//                        }
+//                    }
+////                    // we may have been given a type in a schema
+////                    SchemaTable predicateSchemaTable = SchemaTable.from(this.sqlgGraph, hasContainer.getValue().toString());
+////                    SchemaTable hasContainerLabelSchemaTable = getHasContainerSchemaTable(schemaTableTree, predicateSchemaTable);
+////                    if (hasContainer.getBiPredicate().equals(Compare.eq) && !hasContainerLabelSchemaTable.toString().equals(schemaTableTree.getSchemaTable().toString())) {
+////                        return true;
+////                    }
                 } else if (hasContainer.getKey().equals(T.id.getAccessor())) {
-
                     if (hasContainer.getBiPredicate().equals(Compare.eq)) {
-
                         Object value = hasContainer.getValue();
                         SchemaTable hasContainerLabelSchemaTable = getIDContainerSchemaTable(schemaTableTree, value);
                         if (!hasContainerLabelSchemaTable.equals(schemaTableTree.getSchemaTable())) {
@@ -1899,9 +1901,7 @@ public class SchemaTableTree {
                             return true;
                         }
                         ((P<Collection<Object>>) (hasContainer.getPredicate())).setValue(ok);
-
                     }
-
                 } else {
                     if (hasContainer.getBiPredicate() instanceof FullText && ((FullText) hasContainer.getBiPredicate()).getQuery() != null) {
                         return false;

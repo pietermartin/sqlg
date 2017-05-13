@@ -24,10 +24,6 @@ public class SchemaTable implements Serializable, Comparable {
     private String schema;
     private String table;
 
-    //Needed for Hazelcast
-    public SchemaTable() {
-    }
-
     private SchemaTable(String schema, String table) {
         this.schema = schema;
         this.table = table;
@@ -56,7 +52,6 @@ public class SchemaTable implements Serializable, Comparable {
         } else {
             schema = label.substring(0, indexOfPeriod);
             table = label.substring(indexOfPeriod + 1);
-
         }
         sqlgGraph.getSqlDialect().validateSchemaName(schema);
         sqlgGraph.getSqlDialect().validateTableName(table);

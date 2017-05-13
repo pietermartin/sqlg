@@ -47,6 +47,114 @@ public class TestGremlinCompileWithHas extends BaseTest {
     }
 
     @Test
+    public void testGraphStepHasLabelWithin() {
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.addVertex(T.label, "B");
+        this.sqlgGraph.addVertex(T.label, "C");
+        this.sqlgGraph.addVertex(T.label, "D");
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A", "B");
+        printTraversalForm(traversal);
+        Assert.assertEquals(2, traversal.toList().size());
+    }
+
+    @Test
+    public void testVertexStepWithLabelWithinOnOut() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ac", c1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
+                .V()
+                .where(__.has("name", "x"))
+                .out().hasLabel("B", "D");
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+    }
+
+    @Test
+    public void testVertexStepWithLabelWithinOnIn() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
+                .V()
+                .where(__.has("name", "x"))
+                .in().hasLabel("B", "D");
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+    }
+
+    @Test
+    public void testVertexStepWithLabelWithinOnEdgeOut() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ac", c1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
+                .V()
+                .where(__.has("name", "x"))
+                .outE().hasLabel("ab", "ce");
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+    }
+
+    @Test
+    public void testVertexStepWithLabelWithinOnEdgeIn() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
+                .V()
+                .where(__.has("name", "x"))
+                .inE().hasLabel("ab", "ce");
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+    }
+
+    @Test
+    public void testVertexStepWithLabelWithinOnOtherVertexStepVertexStepOut() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ac", c1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
+                .V()
+                .where(__.has("name", "x"))
+                .outE().otherV().hasLabel("B", "D");
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+    }
+
+    @Test
+    public void testVertexStepWithLabelWithinOnOtherVertexStepIn() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
+        a1.addEdge("ab", b1);
+        b1.addEdge("bc", c1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
+                .V()
+                .where(__.has("name", "x"))
+                .inE().otherV().hasLabel("B", "D");
+        printTraversalForm(traversal);
+        Assert.assertEquals(1, traversal.toList().size());
+    }
+
+    @Test
     public void testHasLabelWithin() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");

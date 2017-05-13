@@ -286,8 +286,10 @@ public abstract class BaseStrategy {
 
     protected void handleHasSteps(ListIterator<Step<?, ?>> iterator, int pathCount) {
         //Collect the hasSteps
+        int countToGoPrevious = 0;
         while (iterator.hasNext()) {
             Step<?, ?> currentStep = iterator.next();
+            countToGoPrevious++;
             if (currentStep instanceof HasContainerHolder) {
                 HasContainerHolder hasContainerHolder = (HasContainerHolder) currentStep;
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
@@ -309,12 +311,15 @@ public abstract class BaseStrategy {
                             this.traversal.removeStep(currentStep);
                         }
                         iterator.remove();
+                        countToGoPrevious--;
                     }
                 }
             } else if (currentStep instanceof IdentityStep) {
                 // do nothing
             } else {
-                iterator.previous();
+                for (int i = 0; i < countToGoPrevious; i++) {
+                    iterator.previous();
+                }
                 break;
             }
         }
@@ -502,7 +507,6 @@ public abstract class BaseStrategy {
 //            if (!hasContainer.getKey().equals(T.label.getAccessor()) &&
 //                    (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
             if ((hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
-
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }

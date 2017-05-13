@@ -351,7 +351,7 @@ public class Topology {
         }
     }
 
-    SqlgGraph getSqlgGraph() {
+    public SqlgGraph getSqlgGraph() {
         return this.sqlgGraph;
     }
 
