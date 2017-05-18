@@ -1,14 +1,19 @@
 package org.umlg.sqlg.step;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.umlg.sqlg.structure.SqlgElement;
 import org.umlg.sqlg.structure.SqlgTraverser;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -25,9 +30,7 @@ public class SqlgOptionalStepBarrier<S, E, M> extends SqlgBranchStepBarrier<S, E
     @Override
     protected Traverser.Admin<E> processNextStart() throws NoSuchElementException {
         if (this.first) {
-            List<Traverser.Admin<S>> tmpStarts = new ArrayList<>();
-            List<Traverser.Admin<S>> tmpStartsToRemove = new ArrayList<>();
-            Map<M, List<Traverser.Admin<S>>> predicateWithSuccessfulStarts = new HashMap<>();
+            Multimap<String, Traverser.Admin<S>> startRecordIds = LinkedListMultimap.create();
             this.first = false;
             long startCount = 1;
 
@@ -35,56 +38,44 @@ public class SqlgOptionalStepBarrier<S, E, M> extends SqlgBranchStepBarrier<S, E
                 Traverser.Admin<S> start = this.starts.next();
                 this.branchTraversal.addStart(start);
                 ((SqlgElement) start.get()).setInternalStartTraverserIndex(startCount++);
-                tmpStarts.add(start);
+                List<Object> startObjects = start.path().objects();
+                String recordIdConcatenated = "";
+                for (Object startObject : startObjects) {
+                    Element e = (Element)startObject;
+                    recordIdConcatenated += e.id().toString();
+                }
+                startRecordIds.put(recordIdConcatenated, start);
             }
             while (true) {
                 if (this.branchTraversal.hasNext()) {
                     Traverser.Admin<M> branchTraverser = this.branchTraversal.nextTraverser();
                     this.results.add((Traverser.Admin<E>) branchTraverser);
-                    for (Traverser.Admin<S> tmpStart : tmpStarts) {
-                        List<Object> startObjects = tmpStart.path().objects();
-                        List<Object> optionObjects = branchTraverser.path().objects();
-                        int count = 0;
-                        boolean startsWith = false;
-                        //for CountGlobalStep the path is lost but all elements return something so the branch to take is always the 'true' branch.
-                        if (!(optionObjects.get(0) instanceof SqlgElement)) {
-                            startsWith = true;
-                        }
-                        if (!startsWith) {
-                            for (Object startObject : startObjects) {
-                                startsWith = optionObjects.get(count++).equals(startObject);
-                                if (!startsWith) {
-                                    break;
-                                }
-                            }
-                        }
-                        if (startsWith) {
-                            List<Traverser.Admin<S>> starts = predicateWithSuccessfulStarts.computeIfAbsent(branchTraverser.get(), k -> new ArrayList<>());
-                            starts.add(tmpStart);
-                            tmpStartsToRemove.add(tmpStart);
+                    List<Object> optionObjects = branchTraverser.path().objects();
+                    String startId = "";
+                    for (Object optionObject : optionObjects) {
+                        Element e = (Element)optionObject;
+                        startId += e.id().toString();
+                        if (startRecordIds.removeAll(startId).isEmpty()) {
+                            break;
                         }
                     }
                 } else {
                     break;
                 }
             }
-            tmpStarts.removeAll(tmpStartsToRemove);
-
             Preconditions.checkState(this.traversalOptions.containsKey(Boolean.TRUE) && this.traversalOptions.containsKey(Boolean.FALSE),
                     "ChooseStep's traversalOptions must contain true and false as keys!");
             Preconditions.checkState(this.traversalOptions.get(Boolean.FALSE).size() == 1);
             Preconditions.checkState(this.traversalOptions.get(Boolean.FALSE).get(0).getSteps().stream().anyMatch(s -> s instanceof IdentityStep));
 
             //true false choose step does not have a HasNextStep. Its been removed to keep the path.
-            if (this.traversalOptions.containsKey(Boolean.TRUE) && this.traversalOptions.containsKey(Boolean.FALSE)) {
-                //Add the unsuccessful entries to the identity traversal
-                List<Traversal.Admin<S, E>> optionTraversals = this.traversalOptions.get(Boolean.FALSE);
-                for (Traversal.Admin<S, E> optionTraversal : optionTraversals) {
-                    for (Traverser.Admin<S> start : tmpStarts) {
-                        optionTraversal.addStart(start);
-                        //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
-                        start.setBulk(1L);
-                    }
+            //Add the unsuccessful entries to the identity traversal
+            List<Traversal.Admin<S, E>> optionTraversals = this.traversalOptions.get(Boolean.FALSE);
+            for (Traversal.Admin<S, E> optionTraversal : optionTraversals) {
+                for (Traverser.Admin<S> start : startRecordIds.values()) {
+                    optionTraversal.addStart(start);
+                    //Bulking logic interferes here, addStart calls DefaultTraversal.merge which has bulking logic
+                    start.setBulk(1L);
                 }
             }
             //Now travers the options. The starts have been set.

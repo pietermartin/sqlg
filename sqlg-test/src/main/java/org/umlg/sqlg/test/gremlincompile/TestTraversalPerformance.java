@@ -1,6 +1,9 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -16,66 +19,126 @@ import java.util.List;
  */
 public class TestTraversalPerformance extends BaseTest {
 
-    //    @Test
-    public void testEagerLoadOrderPerf() {
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 100_000; i++) {
-            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
-            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
-            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + i);
-            a.addEdge("ab", b);
-            b.addEdge("bc", c);
-        }
-        this.sqlgGraph.tx().commit();
-
-        for (int i = 0; i < 100; i++) {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").both().order().by("name").toList();
-            Assert.assertEquals(200_000, vertices.size());
-            stopWatch.stop();
-            System.out.println(stopWatch.toString());
-        }
-    }
-
     @Test
-    public void testEagerLoadPerformance1() {
+    public void testSqlgOptionalBarrierStepPerformance() {
         this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 100; i++) {
-            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
-            for (int j = 0; j < 100; j++) {
-                if (j % 2 == 0) {
-                    Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + j);
-                    a.addEdge("ab", b);
-                    for (int k = 0; k < 1000; k++) {
-                        if (k % 2 == 0) {
-                            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + j);
-                            b.addEdge("bc", c);
-                        }
-                    }
-                }
-            }
+        int count = 10_000;
+        for (int i = 0; i < count; i++) {
+            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+            Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+            Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+            Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb1");
+            Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb2");
+            Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb3");
+            a1.addEdge("ab", b1, "order", 3);
+            a1.addEdge("ab", b2, "order", 2);
+            a1.addEdge("ab", b3, "order", 1);
+            a1.addEdge("abb", bb1, "order", 3);
+            a1.addEdge("abb", bb2, "order", 2);
+            a1.addEdge("abb", bb3, "order", 1);
+            Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+            Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+            Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+            b1.addEdge("bc", c1, "order", 1);
+            b1.addEdge("bc", c2, "order", 2);
+            b1.addEdge("bc", c3, "order", 3);
+            Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "cc1");
+            Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "cc2");
+            Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "cc3");
+            b1.addEdge("bcc", cc1, "order", 3);
+            b1.addEdge("bcc", cc2, "order", 2);
+            b1.addEdge("bcc", cc3, "order", 1);
         }
         this.sqlgGraph.tx().commit();
 
-        for (int i = 0; i < 100; i++) {
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            List<Vertex> vertices = this.sqlgGraph.traversal()
-                    .V().hasLabel("A").order().by("name")
-                    .optional(
-                            __.out().optional(
-                                    __.out().range(10, 20)
-                            )
-                    )
-                    .toList();
-            Assert.assertEquals(10, vertices.size());
-            stopWatch.stop();
-            System.out.println(stopWatch.toString());
-        }
+        System.out.println("start querying");
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
+                .V().hasLabel("A").as("a").order().by("name", Order.decr)
+                .local(
+                        __.optional(
+                                __.outE().as("e1").inV().as("b").order().by(T.label).by(__.select("e1").by("order"))
+                                        .local(
+                                                __.optional(
+                                                        __.outE().as("e2").inV().order().by(T.label).by(__.select("e2").by("order"))
+                                                )
+                                        )
+                        )
+                )
+
+                .path();
+
+        Assert.assertEquals(5, traversal.getSteps().size());
+        List<Path> paths = traversal.toList();
+        Assert.assertEquals(12 * count, paths.size());
+        System.out.println(stopWatch.toString());
 
     }
 
+//    @Test
+//    public void testEagerLoadOrderPerf() {
+//        this.sqlgGraph.tx().normalBatchModeOn();
+//        for (int i = 0; i < 100_000; i++) {
+//            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+//            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
+//            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + i);
+//            a.addEdge("ab", b);
+//            b.addEdge("bc", c);
+//        }
+//        this.sqlgGraph.tx().commit();
+//
+//        for (int i = 0; i < 100; i++) {
+//            StopWatch stopWatch = new StopWatch();
+//            stopWatch.start();
+//            List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").both().order().by("name").toList();
+//            Assert.assertEquals(200_000, vertices.size());
+//            stopWatch.stop();
+//            System.out.println(stopWatch.toString());
+//        }
+//    }
+//
+//    @Test
+//    public void testEagerLoadPerformance1() {
+//        this.sqlgGraph.tx().normalBatchModeOn();
+//        for (int i = 0; i < 100; i++) {
+//            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
+//            for (int j = 0; j < 100; j++) {
+//                if (j % 2 == 0) {
+//                    Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + j);
+//                    a.addEdge("ab", b);
+//                    for (int k = 0; k < 1000; k++) {
+//                        if (k % 2 == 0) {
+//                            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + j);
+//                            b.addEdge("bc", c);
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        this.sqlgGraph.tx().commit();
+//
+//        for (int i = 0; i < 100; i++) {
+//            StopWatch stopWatch = new StopWatch();
+//            stopWatch.start();
+//            List<Vertex> vertices = this.sqlgGraph.traversal()
+//                    .V().hasLabel("A").order().by("name")
+//                    .optional(
+//                            __.out().optional(
+//                                    __.out().range(10, 20)
+//                            )
+//                    )
+//                    .toList();
+//            Assert.assertEquals(10, vertices.size());
+//            stopWatch.stop();
+//            System.out.println(stopWatch.toString());
+//        }
+//
+//    }
+//
 //    @Test
 //    public void testOptionalWithOrder() {
 //
