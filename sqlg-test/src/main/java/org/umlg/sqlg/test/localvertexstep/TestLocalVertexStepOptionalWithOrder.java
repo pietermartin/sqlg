@@ -18,7 +18,10 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.step.*;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgLocalStepBarrier;
+import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 import org.umlg.sqlg.util.SqlgTraversalUtil;
 
@@ -677,19 +680,21 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         b1.addEdge("bcc", cc1, "order", 3);
         b1.addEdge("bcc", cc2, "order", 2);
         b1.addEdge("bcc", cc3, "order", 1);
+        this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
                 .V().hasLabel("A").as("a").order().by("name", Order.decr)
                 .local(
                         __.optional(
-                                __.outE().as("e1").inV().as("b").order().by(__.select("a").by(T.id)).by(T.label).by(__.select("e1").by("order"))
+                                __.outE().as("e1").inV().as("b").order().by(T.label).by(__.select("e1").by("order"))
                                         .local(
                                                 __.optional(
-                                                        __.outE().as("e2").inV().order().by(__.select("b").by(T.id)).by(T.label).by(__.select("e2").by("order"))
+                                                        __.outE().as("e2").inV().order().by(T.label).by(__.select("e2").by("order"))
                                                 )
                                         )
                         )
                 )
+
                 .path();
 
         Assert.assertEquals(5, traversal.getSteps().size());
@@ -773,8 +778,8 @@ public class TestLocalVertexStepOptionalWithOrder extends BaseTest {
         Assert.assertTrue(pathX.get(0).equals(a1));
 
         for (Path path : paths) {
-            for (Object v: path.objects()) {
-                Element vertex = (Element)v;
+            for (Object v : path.objects()) {
+                Element vertex = (Element) v;
                 if (vertex instanceof Vertex) {
                     System.out.print(vertex.<String>value("name"));
                     System.out.print(" - ");
