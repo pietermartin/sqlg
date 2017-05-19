@@ -1348,6 +1348,15 @@ public class Topology {
                         result.put(table, uncommittedLabels.get(table).getPropertyTypeMap());
                     }
                 }
+                for (Schema s:this.schemas.values()){
+                	for (String removed:s.uncommittedRemovedVertexLabels){
+                		result.remove(removed);
+                	}
+                	for (String removed:s.uncommittedRemovedEdgeLabels){
+                		result.remove(removed);
+                	}
+                	
+                }
             }
             if (!withSqlgSchema) {
                 for (String sqlgSchemaSchemaTable : SQLG_SCHEMA_SCHEMA_TABLES) {
@@ -1387,19 +1396,26 @@ public class Topology {
     public Map<String, Map<String, PropertyType>> getAllTablesFrom(Set<TopologyInf> selectFrom) {
         z_internalReadLock();
         try {
+        	Map<String, Map<String, PropertyType>> tbls=getAllTables(true);
             Map<String, Map<String, PropertyType>> result = new HashMap<>();
             for (TopologyInf f : selectFrom) {
                 if (f instanceof AbstractLabel) {
                     AbstractLabel abstractLabel = (AbstractLabel) f;
-                    Schema schema = abstractLabel.getSchema();
-                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
-                    Map<String, PropertyType> tmp = this.allTableCache.get(key);
-                    result.put(key, tmp);
+                    if (abstractLabel.isValid()){
+	                    Schema schema = abstractLabel.getSchema();
+	                    String key = schema.getName() + "." + (abstractLabel instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX) + abstractLabel.getLabel();
+	                    Map<String, PropertyType> tmp = tbls.get(key);
+	                    if (tmp!=null){
+	                    	result.put(key, tmp);
+	                    }
+                    }
                 } else if (f instanceof GlobalUniqueIndex) {
                     GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
                     String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName();
-                    Map<String, PropertyType> tmp = this.allTableCache.get(key);
-                    result.put(key, tmp);
+                    Map<String, PropertyType> tmp = tbls.get(key);
+                    if (tmp!=null){
+                    	result.put(key, tmp);
+                    }
                 }
             }
             return Collections.unmodifiableMap(result);
@@ -1637,6 +1653,7 @@ public class Topology {
     void removeVertexLabel(VertexLabel vertexLabel){
     	SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
     	this.schemaTableForeignKeyCache.remove(schemaTable);
+    	this.allTableCache.remove(schemaTable.toString());
     	for (EdgeLabel lbl:vertexLabel.getOutEdgeLabels().values()){
     		removeFromEdgeForeignKeyCache(
                 lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),

@@ -495,5 +495,14 @@ public abstract class AbstractLabel implements TopologyInf {
     		this.getSchema().getTopology().fire(idx, "", TopologyChangeAction.DELETE);
     	}
     }
+    
+    /**
+     * check if we're valid (have a valid schema, for example)
+     * this is used for edge labels that require at least one out vertex but sometimes don't (in the middle of deletion operations)
+     * @return
+     */
+    boolean isValid(){
+    	return true;
+    }
 
 }
