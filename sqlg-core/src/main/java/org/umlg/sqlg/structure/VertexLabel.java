@@ -545,11 +545,13 @@ public class VertexLabel extends AbstractLabel {
         ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         boolean foundInEdgeLabels = false;
         for (EdgeLabel edgeLabel : this.inEdgeLabels.values()) {
-            Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
-            if (jsonNodeOptional.isPresent()) {
-                foundInEdgeLabels = true;
-                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
-            }
+        	if (edgeLabel.isValid()){
+	            Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
+	            if (jsonNodeOptional.isPresent()) {
+	                foundInEdgeLabels = true;
+	                inEdgeLabelsArrayNode.add(jsonNodeOptional.get());
+	            }
+        	}
         }
         if (foundInEdgeLabels) {
             vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
