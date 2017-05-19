@@ -24,7 +24,7 @@ public class SqlgMySQLGremlinPlugin implements GremlinPlugin {
 
     @Override
     public String getName() {
-        return "sqlg.mssqlserver";
+        return "sqlg.mysql";
     }
 
     @Override
