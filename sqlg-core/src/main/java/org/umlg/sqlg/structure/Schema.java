@@ -36,11 +36,11 @@ public class Schema implements TopologyInf {
     //The key is schema + "." + VERTEX_PREFIX + vertex label. i.e. "A.V_A"
     private Map<String, VertexLabel> vertexLabels = new HashMap<>();
     private Map<String, VertexLabel> uncommittedVertexLabels = new HashMap<>();
-    private Set<String> uncommittedRemovedVertexLabels = new HashSet<>();
+    public Set<String> uncommittedRemovedVertexLabels = new HashSet<>();
     
     private Map<String, EdgeLabel> outEdgeLabels = new HashMap<>();
     private Map<String, EdgeLabel> uncommittedOutEdgeLabels = new HashMap<>();
-    private Set<String> uncommittedRemovedEdgeLabels = new HashSet<>();
+    Set<String> uncommittedRemovedEdgeLabels = new HashSet<>();
     
     public static final String GLOBAL_UNIQUE_INDEX_SCHEMA = "gui_schema";
     private Map<String, GlobalUniqueIndex> uncommittedGlobalUniqueIndexes = new HashMap<>();
@@ -803,7 +803,7 @@ public class Schema implements TopologyInf {
                             break;
                         case "sqlgPathFakeLabel":
                             break;
-                        case MARKER:
+                        case Schema.MARKER:
                             break;
                         default:
                             throw new IllegalStateException(String.format("BUG: Only \"vertex\",\"index\" and \"property\" is expected as a label. Found %s", label));
