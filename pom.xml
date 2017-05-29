@@ -239,11 +239,6 @@
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>2.5.3</version>
-            </dependency>
-            <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-h2</artifactId>
                 <version>${sqlg.version}</version>
@@ -252,6 +247,11 @@
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-h2-dialect</artifactId>
                 <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>2.5.3</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
