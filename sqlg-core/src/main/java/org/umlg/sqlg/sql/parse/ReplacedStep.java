@@ -539,7 +539,10 @@ public class ReplacedStep<S, E> {
 
             P<Object> idPredicate = (P<Object>) idHasContainer.getPredicate();
             BiPredicate biPredicate = idHasContainer.getBiPredicate();
-
+            //This is statement is for g.V().hasId(Collection) where the loginc is actually P.within not P.eq
+            if (biPredicate == Compare.eq && idPredicate.getValue() instanceof Collection && ((Collection)idPredicate.getValue()).size() > 1) {
+                biPredicate = Contains.within;
+            }
             Multimap<BiPredicate, RecordId> biPredicateRecordIdMultimap = null;
             if (idPredicate.getValue() instanceof Collection) {
                 Collection<Object> ids = (Collection<Object>) idPredicate.getValue();
