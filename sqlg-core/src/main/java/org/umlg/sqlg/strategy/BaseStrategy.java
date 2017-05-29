@@ -24,7 +24,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.javatuples.Pair;
@@ -32,7 +31,10 @@ import org.umlg.sqlg.predicate.FullText;
 import org.umlg.sqlg.predicate.Text;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
 import org.umlg.sqlg.sql.parse.ReplacedStepTree;
-import org.umlg.sqlg.step.*;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgLocalStepBarrier;
+import org.umlg.sqlg.step.SqlgStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -64,6 +66,12 @@ public abstract class BaseStrategy {
     private static final String SQLG_PATH_ORDER_RANGE_LABEL = "sqlgPathOrderRangeLabel";
     private static final List<BiPredicate> SUPPORTED_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Compare.gt, Compare.gte, Compare.lt, Compare.lte
+    );
+    public static final List<BiPredicate> SUPPORTED_LABEL_BI_PREDICATE = Arrays.asList(
+            Compare.eq, Compare.neq, Contains.within, Contains.without
+    );
+    public static final List<BiPredicate> SUPPORTED_ID_BI_PREDICATE = Arrays.asList(
+            Compare.eq, Compare.neq, Contains.within, Contains.without
     );
 
     protected Traversal.Admin<?, ?> traversal;
@@ -144,7 +152,6 @@ public abstract class BaseStrategy {
 
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
         this.currentReplacedStep = ReplacedStep.from(
-                this.currentReplacedStep,
                 this.sqlgGraph.getTopology(),
                 step,
                 pathCount.getValue()
@@ -295,6 +302,10 @@ public abstract class BaseStrategy {
                 List<HasContainer> hasContainers = hasContainerHolder.getHasContainers();
                 List<HasContainer> toRemoveHasContainers = new ArrayList<>();
                 if (isNotZonedDateTimeOrPeriodOrDuration(hasContainerHolder)) {
+                    toRemoveHasContainers.addAll(optimizeLabelHas(this.currentReplacedStep, hasContainers));
+                    //important to do optimizeIdHas after optimizeLabelHas as it might add its labels to the previous labelHasContainers labels.
+                    //i.e. for neq and without 'or' logic
+                    toRemoveHasContainers.addAll(optimizeIdHas(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeHas(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeWithInOut(this.currentReplacedStep, hasContainers));
                     toRemoveHasContainers.addAll(optimizeBetween(this.currentReplacedStep, hasContainers));
@@ -458,22 +469,13 @@ public abstract class BaseStrategy {
         return TraversalHelper.anyStepRecursively(p, traversal);
     }
 
-    protected void addHasContainerForIds(SqlgGraphStep sqlgGraphStep) {
-        Object[] ids = sqlgGraphStep.getIds();
-        List<Object> recordsIds = new ArrayList<>();
-        for (Object id : ids) {
-            if (id instanceof Element) {
-                recordsIds.add(((Element) id).id());
-            } else {
-                recordsIds.add(id);
-            }
-        }
-        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(recordsIds.toArray()));
-        this.currentReplacedStep.addHasContainers(Collections.singletonList(idHasContainer));
+    void addHasContainerForIds(SqlgGraphStep sqlgGraphStep) {
+        HasContainer idHasContainer = new HasContainer(T.id.getAccessor(), P.within(sqlgGraphStep.getIds()));
+        this.currentReplacedStep.addIdHasContainer(idHasContainer);
         sqlgGraphStep.clearIds();
     }
 
-    protected boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
+    private boolean isNotZonedDateTimeOrPeriodOrDuration(HasContainerHolder currentStep) {
         for (HasContainer h : currentStep.getHasContainers()) {
             P<?> predicate = h.getPredicate();
             if (predicate.getValue() instanceof ZonedDateTime ||
@@ -490,10 +492,36 @@ public abstract class BaseStrategy {
         return true;
     }
 
+    private boolean hasContainerKeyNotIdOrLabel(HasContainer hasContainer) {
+        return !(hasContainer.getKey().equals(T.id.getAccessor()) || (hasContainer.getKey().equals(T.label.getAccessor())));
+    }
+
+    private List<HasContainer> optimizeIdHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+        List<HasContainer> result = new ArrayList<>();
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainer.getKey().equals(T.id.getAccessor()) && SUPPORTED_ID_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+                replacedStep.addIdHasContainer(hasContainer);
+                result.add(hasContainer);
+            }
+        }
+        return result;
+    }
+
+    private List<HasContainer> optimizeLabelHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
+        List<HasContainer> result = new ArrayList<>();
+        for (HasContainer hasContainer : hasContainers) {
+            if (hasContainer.getKey().equals(T.label.getAccessor()) && SUPPORTED_LABEL_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+                replacedStep.addLabelHasContainer(hasContainer);
+                result.add(hasContainer);
+            }
+        }
+        return result;
+    }
+
     private List<HasContainer> optimizeHas(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && SUPPORTED_BI_PREDICATE.contains(hasContainer.getBiPredicate())) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }
@@ -504,9 +532,7 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeWithInOut(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-//            if (!hasContainer.getKey().equals(T.label.getAccessor()) &&
-//                    (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
-            if ((hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && (hasContainer.getBiPredicate() == Contains.without || hasContainer.getBiPredicate() == Contains.within)) {
                 replacedStep.addHasContainer(hasContainer);
                 result.add(hasContainer);
             }
@@ -518,7 +544,7 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeBetween(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getPredicate() instanceof AndP) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof AndP) {
                 AndP<?> andP = (AndP) hasContainer.getPredicate();
                 List<? extends P<?>> predicates = andP.getPredicates();
                 if (predicates.size() == 2) {
@@ -535,7 +561,7 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeInside(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getPredicate() instanceof AndP) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof AndP) {
                 AndP<?> andP = (AndP) hasContainer.getPredicate();
                 List<? extends P<?>> predicates = andP.getPredicates();
                 if (predicates.size() == 2) {
@@ -552,7 +578,7 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeOutside(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getPredicate() instanceof OrP) {
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getPredicate() instanceof OrP) {
                 OrP<?> orP = (OrP) hasContainer.getPredicate();
                 List<? extends P<?>> predicates = orP.getPredicates();
                 if (predicates.size() == 2) {
@@ -569,7 +595,7 @@ public abstract class BaseStrategy {
     private List<HasContainer> optimizeTextContains(ReplacedStep<?, ?> replacedStep, List<HasContainer> hasContainers) {
         List<HasContainer> result = new ArrayList<>();
         for (HasContainer hasContainer : hasContainers) {
-            if (hasContainer.getBiPredicate() instanceof Text ||
+            if (hasContainerKeyNotIdOrLabel(hasContainer) && hasContainer.getBiPredicate() instanceof Text ||
                     hasContainer.getBiPredicate() instanceof FullText
                     ) {
                 replacedStep.addHasContainer(hasContainer);

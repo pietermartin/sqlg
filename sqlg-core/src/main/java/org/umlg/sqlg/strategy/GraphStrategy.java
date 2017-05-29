@@ -96,7 +96,6 @@ public class GraphStrategy extends BaseStrategy {
     @Override
     protected boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount) {
         this.currentReplacedStep = ReplacedStep.from(
-                this.currentReplacedStep,
                 this.sqlgGraph.getTopology(),
                 (AbstractStep<?, ?>) step,
                 pathCount.getValue()

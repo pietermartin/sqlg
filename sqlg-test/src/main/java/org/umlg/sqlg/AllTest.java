@@ -19,6 +19,7 @@ import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
+import org.umlg.sqlg.test.labels.TestHasLabelAndId;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
@@ -58,7 +59,7 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestEdgeToDifferentLabeledVertexes.class,
         TestGetById.class,
         TestHas.class,
-        TestHasLabel.class,
+        TestHasLabelAndId.class,
         TestLoadArrayProperties.class,
         TestLoadElementProperties.class,
         TestLoadSchema.class,

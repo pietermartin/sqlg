@@ -759,7 +759,7 @@ public class SqlgUtil {
      * @param withSqlgSchema do we want the sqlg schema tables too?
      * @return
      */
-    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
+    public static Map<String, Map<String, PropertyType>> filterSqlgSchemaHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
         HasContainer fromHasContainer = null;
         HasContainer withoutHasContainer = null;
 

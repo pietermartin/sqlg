@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Scope;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
@@ -44,199 +43,6 @@ public class TestGremlinCompileWithHas extends BaseTest {
         if (configuration.getString("jdbc.url").contains("postgresql")) {
             configuration.addProperty("distributed", true);
         }
-    }
-
-    @Test
-    public void testGraphStepHasLabelWithin() {
-        this.sqlgGraph.addVertex(T.label, "A");
-        this.sqlgGraph.addVertex(T.label, "B");
-        this.sqlgGraph.addVertex(T.label, "C");
-        this.sqlgGraph.addVertex(T.label, "D");
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasLabel("A", "B");
-        printTraversalForm(traversal);
-        Assert.assertEquals(2, traversal.toList().size());
-    }
-
-    @Test
-    public void testVertexStepWithLabelWithinOnOut() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
-        a1.addEdge("ab", b1);
-        a1.addEdge("ac", c1);
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(__.has("name", "x"))
-                .out().hasLabel("B", "D");
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-    }
-
-    @Test
-    public void testVertexStepWithLabelWithinOnIn() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
-        a1.addEdge("ab", b1);
-        b1.addEdge("bc", c1);
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(__.has("name", "x"))
-                .in().hasLabel("B", "D");
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-    }
-
-    @Test
-    public void testVertexStepWithLabelWithinOnEdgeOut() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
-        a1.addEdge("ab", b1);
-        a1.addEdge("ac", c1);
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(__.has("name", "x"))
-                .outE().hasLabel("ab", "ce");
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-    }
-
-    @Test
-    public void testVertexStepWithLabelWithinOnEdgeIn() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
-        a1.addEdge("ab", b1);
-        b1.addEdge("bc", c1);
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Edge> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(__.has("name", "x"))
-                .inE().hasLabel("ab", "ce");
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-    }
-
-    @Test
-    public void testVertexStepWithLabelWithinOnOtherVertexStepVertexStepOut() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
-        a1.addEdge("ab", b1);
-        a1.addEdge("ac", c1);
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(__.has("name", "x"))
-                .outE().otherV().hasLabel("B", "D");
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-    }
-
-    @Test
-    public void testVertexStepWithLabelWithinOnOtherVertexStepIn() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "x");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "x");
-        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "x");
-        a1.addEdge("ab", b1);
-        b1.addEdge("bc", c1);
-        this.sqlgGraph.tx().commit();
-        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal()
-                .V()
-                .where(__.has("name", "x"))
-                .inE().otherV().hasLabel("B", "D");
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-    }
-
-    @Test
-    public void testHasLabelWithin() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-        a1.addEdge("ab", b1);
-        this.sqlgGraph.tx().commit();
-
-        GraphTraversal traversal = this.sqlgGraph.traversal().V(a1).out().hasLabel("C", "B").in();
-        printTraversalForm(traversal);
-        Assert.assertEquals(1, traversal.toList().size());
-
-    }
-
-    @Test
-    public void testHasLabelWithWithinPredicate() {
-        Vertex vEPerson = this.sqlgGraph.addVertex(T.label, "EnterprisePerson", "_uniqueId", "1");
-        Vertex vEProvider = this.sqlgGraph.addVertex(T.label, "EnterpriseProvider", "_uniqueId", "2");
-        Vertex vSPerson = this.sqlgGraph.addVertex(T.label, "SystemPerson", "_uniqueId", "3");
-        Vertex vSProvider = this.sqlgGraph.addVertex(T.label, "SystemProvider", "_uniqueId", "4");
-        Edge e1 = vSPerson.addEdge("euid", vEPerson);
-        Edge e2 = vSProvider.addEdge("euid", vEProvider);
-        Edge e3 = vSProvider.addEdge("primary", vSPerson);
-        this.sqlgGraph.tx().commit();
-
-        DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V()
-                .hasLabel("EnterprisePerson")
-                .has("_uniqueId", "1")
-                .in("euid")
-                .bothE("primary")
-                .otherV()
-                .hasLabel("SystemPerson", "SystemProvider")
-                .out("euid");
-        printTraversalForm(traversal);
-        List<Vertex> vertices = traversal.toList();
-        Assert.assertEquals(1, vertices.size());
-        Assert.assertEquals(vEProvider, vertices.get(0));
-    }
-
-    @Test
-    public void testConsecutiveHasLabels() {
-
-        this.sqlgGraph.addVertex(T.label, "A");
-        this.sqlgGraph.addVertex(T.label, "A");
-        this.sqlgGraph.addVertex(T.label, "A");
-        this.sqlgGraph.addVertex(T.label, "A");
-        this.sqlgGraph.tx().commit();
-
-        Assert.assertEquals(4, this.sqlgGraph.traversal().V().hasLabel("A").hasLabel("A").toList().size());
-
-    }
-
-    @Test
-    public void testHasCompareEq() {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-        this.sqlgGraph.addVertex(T.label, "A", "name", "b");
-        this.sqlgGraph.tx().commit();
-        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal().V().hasLabel("A").has("name", "a");
-        Assert.assertEquals(2, graphTraversal.getSteps().size());
-        List<Vertex> vertices = graphTraversal.toList();
-        Assert.assertEquals(1, graphTraversal.getSteps().size());
-        Assert.assertEquals(1, vertices.size());
-        Assert.assertEquals(a1, vertices.get(0));
-    }
-
-    @Test
-    public void testHasCompareBetween() throws InterruptedException {
-        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", 1);
-        this.sqlgGraph.addVertex(T.label, "A", "name", 2);
-        this.sqlgGraph.tx().commit();
-        testCompareBetween_assert(this.sqlgGraph, a1);
-        if (this.sqlgGraph1 != null) {
-            Thread.sleep(1000);
-            testCompareBetween_assert(this.sqlgGraph1, a1);
-        }
-    }
-
-    private void testCompareBetween_assert(SqlgGraph sqlgGraph, Vertex a1) {
-        DefaultGraphTraversal<Vertex, Vertex> graphTraversal = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().hasLabel("A").has("name", P.between(1, 2));
-        Assert.assertEquals(2, graphTraversal.getSteps().size());
-        List<Vertex> vertices = graphTraversal.toList();
-        Assert.assertEquals(1, graphTraversal.getSteps().size());
-        Assert.assertEquals(1, vertices.size());
-        Assert.assertEquals(a1, vertices.get(0));
     }
 
     @Test
@@ -327,7 +133,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
         Assert.assertEquals(1, traversal1.getSteps().size());
-        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(0, vertices.size());
 
         DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1));
         Assert.assertEquals(2, traversal2.getSteps().size());
@@ -617,7 +423,7 @@ public class TestGremlinCompileWithHas extends BaseTest {
         Assert.assertEquals(2, traversal1.getSteps().size());
         vertices = traversal1.toList();
         Assert.assertEquals(1, traversal1.getSteps().size());
-        Assert.assertEquals(3, vertices.size());
+        Assert.assertEquals(0, vertices.size());
 
         DefaultGraphTraversal<Vertex, Vertex> traversal2 = (DefaultGraphTraversal<Vertex, Vertex>) sqlgGraph.traversal().V().has(T.id, P.within(recordIda1, recordIda2, recordIdb1));
         Assert.assertEquals(2, traversal2.getSteps().size());
