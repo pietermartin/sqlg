@@ -424,7 +424,7 @@ public abstract class BaseStrategy {
         return true;
     }
 
-    protected void handleRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
+    void handleRangeGlobalSteps(ListIterator<Step<?, ?>> iterator, MutableInt pathCount) {
         //Collect the OrderGlobalSteps
         while (iterator.hasNext()) {
             Step<?, ?> step = iterator.next();
@@ -445,6 +445,7 @@ public abstract class BaseStrategy {
                     this.currentReplacedStep.addLabel(pathCount.getValue() + BaseStrategy.PATH_LABEL_SUFFIX + BaseStrategy.SQLG_PATH_ORDER_RANGE_LABEL);
                 }
                 this.reset = true;
+                break;
             } else {
                 //break on the first step that is not a RangeGlobalStep
                 iterator.previous();
@@ -453,7 +454,7 @@ public abstract class BaseStrategy {
         }
     }
 
-    protected static boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
+    static boolean precedesPathOrTreeStep(Traversal.Admin<?, ?> traversal) {
         if (traversal.getParent() != null && traversal.getParent() instanceof SqlgLocalStepBarrier) {
             SqlgLocalStepBarrier sqlgLocalStepBarrier = (SqlgLocalStepBarrier) traversal.getParent();
             if (precedesPathOrTreeStep(sqlgLocalStepBarrier.getTraversal())) {

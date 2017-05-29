@@ -2,9 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileWithHas;
-import org.umlg.sqlg.test.labels.TestHasLabelAndId;
-import org.umlg.sqlg.test.schema.TestSchema;
+import org.umlg.sqlg.test.gremlincompile.TestRangeLimit;
 
 /**
  * Date: 2014/07/16
@@ -12,9 +10,7 @@ import org.umlg.sqlg.test.schema.TestSchema;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestSchema.class,
-        TestHasLabelAndId.class,
-        TestGremlinCompileWithHas.class
+        TestRangeLimit.class,
 })
 public class AnyTest {
 }
