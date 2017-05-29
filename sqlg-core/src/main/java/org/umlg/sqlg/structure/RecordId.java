@@ -1,5 +1,6 @@
 package org.umlg.sqlg.structure;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerationException;
 import org.apache.tinkerpop.shaded.jackson.core.JsonGenerator;
@@ -61,6 +62,12 @@ public class RecordId implements KryoSerializable, Comparable {
     }
 
     public static RecordId from(Object vertexId) {
+        if (vertexId instanceof Element) {
+            return (RecordId) ((SqlgElement)vertexId).id();
+        }
+        if (vertexId instanceof RecordId) {
+            return (RecordId)vertexId;
+        }
         if (!(vertexId instanceof String)) {
             throw SqlgExceptions.invalidId(vertexId.toString());
         }

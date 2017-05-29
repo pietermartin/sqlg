@@ -26,6 +26,145 @@ import java.util.List;
 public class TestHasLabelAndId extends BaseTest {
 
     @Test
+    public void testConsecutiveIdCollectionAfterOut() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4");
+        a1.addEdge("ab", b1);
+        a1.addEdge("ab", b2);
+        a1.addEdge("ab", b3);
+        a1.addEdge("ab", b4);
+        a1.addEdge("ac", c1);
+        a1.addEdge("ac", c2);
+        a1.addEdge("ac", c3);
+        a1.addEdge("ac", c4);
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V(a1)
+                .out()
+                .hasId(Arrays.asList(b1, c1, b2, c2, b3, c3, b4, c4))
+                .hasId(b2, c2, b3, c3).toList();
+        Assert.assertEquals(4, vertices.size());
+        Assert.assertTrue(
+                vertices.contains(b2) &&
+                        vertices.contains(c2) &&
+                        vertices.contains(b3) &&
+                        vertices.contains(c3)
+        );
+
+    }
+
+    @Test
+    public void testCollectionIdsComplex() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        this.sqlgGraph.tx().commit();
+
+        List<Vertex> vertices = this.sqlgGraph.traversal().V(Arrays.asList(a1, b1, c1, a2, b2, c2)).toList();
+        Assert.assertEquals(6, vertices.size());
+        Assert.assertTrue(
+                vertices.contains(a1) &&
+                        vertices.contains(b1) &&
+                        vertices.contains(c1) &&
+                        vertices.contains(a2) &&
+                        vertices.contains(b2) &&
+                        vertices.contains(c2)
+        );
+    }
+
+    @Test
+    public void testCollectionIdsComplexConsecutive() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V(Arrays.asList(a1, b1, c1, a2, b2, c2))
+                .hasId(Arrays.asList(a1, b1, c1, a3, b3, c3))
+                .toList();
+        Assert.assertEquals(3, vertices.size());
+        Assert.assertTrue(vertices.contains(a1) && vertices.contains(b1) && vertices.contains(c1));
+    }
+
+    //More than 2 parameters for an in clause goes via tmp tables
+    @Test
+    public void testCollectionIdsComplexConsecutiveUsingTmpTables() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "a3");
+        Vertex a4 = this.sqlgGraph.addVertex(T.label, "A", "name", "a4");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
+        Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
+        Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
+        Vertex b4 = this.sqlgGraph.addVertex(T.label, "B", "name", "b4");
+        Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
+        Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
+        Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
+        Vertex c4 = this.sqlgGraph.addVertex(T.label, "C", "name", "c4");
+        this.sqlgGraph.tx().commit();
+        List<Vertex> vertices = this.sqlgGraph.traversal()
+                .V(Arrays.asList(a1, b1, c1, a2, b2, c2, a3, b3, c3, a4, b4, c4))
+                .hasId(Arrays.asList(a1, b1, c1, a3, b3, c3, a4, b4, c4))
+                .toList();
+        Assert.assertEquals(9, vertices.size());
+        Assert.assertTrue(
+                vertices.contains(a1) && vertices.contains(b1) && vertices.contains(c1) &&
+                        vertices.contains(a3) && vertices.contains(b3) && vertices.contains(c3) &&
+                        vertices.contains(a4) && vertices.contains(b4) && vertices.contains(c4)
+        );
+    }
+
+    @Test
+    public void testCollectionIds() {
+        Vertex a = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
+        Vertex b = this.sqlgGraph.addVertex(T.label, "B");
+        Vertex c = this.sqlgGraph.addVertex(T.label, "C");
+        Vertex d = this.sqlgGraph.addVertex(T.label, "D");
+        this.sqlgGraph.tx().commit();
+
+        GraphTraversal<Vertex, Vertex> traversal = this.sqlgGraph.traversal().V().hasId(a.id()).hasId(b.id());
+        List<Vertex> vertices = traversal.toList();
+        Assert.assertEquals(0, vertices.size());
+
+        traversal = this.sqlgGraph.traversal().V(a.id()).hasId(b.id());
+        vertices = traversal.toList();
+        Assert.assertEquals(0, vertices.size());
+
+        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(b.id(), c.id(), d.id()));
+        vertices = traversal.toList();
+        Assert.assertEquals(0, vertices.size());
+
+        traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(a2.id(), b.id(), c.id(), d.id()));
+        vertices = traversal.toList();
+        Assert.assertEquals(0, vertices.size());
+
+        traversal = this.sqlgGraph.traversal().V(Arrays.asList(a.id(), a2.id(), b.id(), c.id(), d.id()));
+        vertices = traversal.toList();
+        Assert.assertEquals(5, vertices.size());
+    }
+
+    @Test
     public void testConsecutiveHasId() {
         Vertex a = this.sqlgGraph.addVertex(T.label, "A");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A");
@@ -49,7 +188,6 @@ public class TestHasLabelAndId extends BaseTest {
         traversal = traversal = this.sqlgGraph.traversal().V(a.id()).has(T.id, P.within(a2.id(), b.id(), c.id(), d.id()));
         vertices = traversal.toList();
         Assert.assertEquals(0, vertices.size());
-
     }
 
     @Test

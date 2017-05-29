@@ -535,53 +535,38 @@ public class ReplacedStep<S, E> {
         Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> result = new HashMap<>();
         for (HasContainer idHasContainer : this.idHasContainers) {
 
-            boolean newHasContainer = true;
-
+            Map<SchemaTable, Boolean> newHasContainerMap = new HashMap<>();
             P<Object> idPredicate = (P<Object>) idHasContainer.getPredicate();
             BiPredicate biPredicate = idHasContainer.getBiPredicate();
-            //This is statement is for g.V().hasId(Collection) where the loginc is actually P.within not P.eq
-            if (biPredicate == Compare.eq && idPredicate.getValue() instanceof Collection && ((Collection)idPredicate.getValue()).size() > 1) {
+            //This is statement is for g.V().hasId(Collection) where the logic is actually P.within not P.eq
+            if (biPredicate == Compare.eq && idPredicate.getValue() instanceof Collection && ((Collection) idPredicate.getValue()).size() > 1) {
                 biPredicate = Contains.within;
             }
-            Multimap<BiPredicate, RecordId> biPredicateRecordIdMultimap = null;
+            Multimap<BiPredicate, RecordId> biPredicateRecordIdMultimap;
             if (idPredicate.getValue() instanceof Collection) {
+
                 Collection<Object> ids = (Collection<Object>) idPredicate.getValue();
                 for (Object id : ids) {
-                    RecordId recordId;
-                    if (id instanceof Element) {
-                        recordId = (RecordId) ((Element) id).id();
-                    } else {
-                        if (id instanceof RecordId) {
-                            recordId = (RecordId) id;
-                        } else {
-                            recordId = RecordId.from(id);
-                        }
-                    }
+                    RecordId recordId = RecordId.from(id);
                     List<Multimap<BiPredicate, RecordId>> biPredicateRecordIdList = result.get(recordId.getSchemaTable());
+                    Boolean newHasContainer = newHasContainerMap.get(recordId.getSchemaTable());
                     if (biPredicateRecordIdList == null) {
                         biPredicateRecordIdList = new ArrayList<>();
-                        result.put(recordId.getSchemaTable(), biPredicateRecordIdList);
-                        newHasContainer = true;
-                    }
-                    if (newHasContainer) {
                         biPredicateRecordIdMultimap = LinkedListMultimap.create();
                         biPredicateRecordIdList.add(biPredicateRecordIdMultimap);
+                        result.put(recordId.getSchemaTable(), biPredicateRecordIdList);
+                        newHasContainerMap.put(recordId.getSchemaTable(), false);
+                    } else if (newHasContainer == null) {
+                        biPredicateRecordIdMultimap = LinkedListMultimap.create();
+                        biPredicateRecordIdList.add(biPredicateRecordIdMultimap);
+                        newHasContainerMap.put(recordId.getSchemaTable(), false);
                     }
-                    newHasContainer = false;
+                    biPredicateRecordIdMultimap = biPredicateRecordIdList.get(biPredicateRecordIdList.size() - 1);
                     biPredicateRecordIdMultimap.put(biPredicate, recordId);
                 }
             } else {
                 Object id = idPredicate.getValue();
-                RecordId recordId;
-                if (id instanceof Element) {
-                    recordId = (RecordId) ((Element) id).id();
-                } else {
-                    if (id instanceof RecordId) {
-                        recordId = (RecordId) id;
-                    } else {
-                        recordId = RecordId.from(id);
-                    }
-                }
+                RecordId recordId = RecordId.from(id);
                 List<Multimap<BiPredicate, RecordId>> biPredicateRecordIdList = result.computeIfAbsent(recordId.getSchemaTable(), k -> new ArrayList<>());
                 biPredicateRecordIdMultimap = LinkedListMultimap.create();
                 biPredicateRecordIdList.add(biPredicateRecordIdMultimap);
