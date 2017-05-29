@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestGetById;
+import org.umlg.sqlg.test.gremlincompile.TestRangeLimit;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,7 @@ import org.umlg.sqlg.test.TestGetById;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestGetById.class,
+        TestRangeLimit.class,
 })
 public class AnyTest {
 }

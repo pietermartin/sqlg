@@ -65,6 +65,9 @@ public class TestRangeLimit extends BaseTest {
 
         List<Vertex> vertices = this.sqlgGraph.traversal().V().limit(1).limit(2).toList();
         Assert.assertEquals(1, vertices.size());
+
+        vertices = this.sqlgGraph.traversal().V().limit(3).limit(2).toList();
+        Assert.assertEquals(2, vertices.size());
     }
 
     @Test
