@@ -23,9 +23,9 @@ public class SqlgMySQLProvider extends SqlgAbstractGraphProvider {
     	System.out.println(graphName);
     	Map<String, Object> m= new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
-            put("jdbc.url", "jdbc:postgresql://localhost:5432/" + graphName);
-            put("jdbc.username", "postgres");
-            put("jdbc.password", "postgres");
+            put("jdbc.url", "jdbc:mysql://localhost:3306/" + graphName);
+            put("jdbc.username", "root");
+            put("jdbc.password", "root");
             put("maxPoolSize", 10);
         }};
         

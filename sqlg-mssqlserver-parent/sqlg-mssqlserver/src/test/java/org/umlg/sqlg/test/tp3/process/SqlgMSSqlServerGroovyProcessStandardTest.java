@@ -8,7 +8,7 @@ import org.umlg.sqlg.test.tp3.SqlgMSSqlServerProvider;
 
 
 /**
- * Executes the Standard Gremlin Structure Test Suite using SqlgGraph on postgresql.
+ * Executes the Standard Gremlin Structure Test Suite using SqlgGraph on SQL Server.
  */
 @RunWith(GroovyProcessStandardSuite.class)
 @GraphProviderClass(provider = SqlgMSSqlServerProvider.class, graph = SqlgGraph.class)

@@ -8,7 +8,7 @@ import org.umlg.sqlg.test.tp3.SqlgMySQLProvider;
 
 
 /**
- * Executes the Standard Gremlin Structure Test Suite using SqlgGraph on postgresql.
+ * Executes the Standard Gremlin Structure Test Suite using SqlgGraph on MySQL.
  */
 @RunWith(GroovyProcessStandardSuite.class)
 @GraphProviderClass(provider = SqlgMySQLProvider.class, graph = SqlgGraph.class)
