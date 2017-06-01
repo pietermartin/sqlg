@@ -794,6 +794,58 @@ public class TestTopologyUpgrade extends BaseTest {
 
     }
 
+    @Test
+    public void testNonEdgeNonVerticeTablesIgnored() throws Exception {
+        //with topology
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "john");
+        Object idA1 = a1.id();
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "joe");
+        Object idB1 = b1.id();
+        a1.addEdge("knows", b1, "name", "hithere");
+        this.sqlgGraph.tx().commit();
+
+        // Create some user tables that should be ignored by sqlg
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE TABLE EVENT (ID INT)");
+        }
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE TABLE VIKINGS (ID INT)");
+        }
+        //Delete the topology
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("DROP SCHEMA " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("sqlg_schema")
+                    + (this.sqlgGraph.getSqlDialect().needsSchemaDropCascade() ? " CASCADE" : ""));
+        }
+        this.sqlgGraph.tx().commit();
+        this.sqlgGraph.close();
+
+        //topology will be recreated
+        try (SqlgGraph sqlgGraph1 = SqlgGraph.open(configuration)) {
+            Assert.assertEquals(2, sqlgGraph1.traversal().V().count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().E().count().next().intValue());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("A").hasNext());
+            Assert.assertTrue(sqlgGraph1.traversal().V().hasLabel("B").hasNext());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("A").count().next().intValue());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V().hasLabel("B").count().next().intValue());
+            Vertex a = sqlgGraph1.traversal().V().hasLabel("A").next();
+            Assert.assertEquals(idA1, a.id());
+            Vertex b = sqlgGraph1.traversal().V().hasLabel("B").next();
+            Assert.assertEquals(idB1, b.id());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V(a).out("knows").count().next().intValue());
+            Assert.assertEquals(b, sqlgGraph1.traversal().V(a).out("knows").next());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V(b).in("knows").count().next().intValue());
+            Assert.assertEquals(a, sqlgGraph1.traversal().V(b).in("knows").next());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V(a).properties("name").count().next().intValue());
+            Assert.assertTrue(sqlgGraph1.traversal().V(a).properties("name").next().isPresent());
+            Assert.assertEquals("john", sqlgGraph1.traversal().V(a).properties("name").next().value());
+            Assert.assertEquals(1, sqlgGraph1.traversal().V(a).outE("knows").properties("name").count().next().intValue());
+            Assert.assertTrue(sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().isPresent());
+            Assert.assertEquals("hithere", sqlgGraph1.traversal().V(a).outE("knows").properties("name").next().value());
+            Assert.assertEquals(2, sqlgGraph1.getTopology().getPublicSchema().getVertexLabels().size());
+        }
+    }
+
     private static void topologyCheck(SqlgGraph sqlgGraph) {
         Assert.assertEquals(1, sqlgGraph.topology().V().has(Topology.SQLG_SCHEMA + "." + Topology.SQLG_SCHEMA_VERTEX_LABEL, Topology.SQLG_SCHEMA_VERTEX_LABEL_NAME, "Person").count().next().longValue());
 
