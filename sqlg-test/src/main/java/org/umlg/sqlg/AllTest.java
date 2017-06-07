@@ -27,6 +27,7 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 import org.umlg.sqlg.test.topology.TestTopologyDelete;
+import org.umlg.sqlg.test.topology.TestTopologyDeleteBatch;
 import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 import org.umlg.sqlg.test.topology.TestValidateTopology;
@@ -169,7 +170,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestValidateTopology.class,
         TestBatchNormalUpdateDateTimeArrays.class,
         TestTopologyChangeListener.class,
-        TestTopologyDelete.class
+        TestTopologyDelete.class,
+        TestTopologyDeleteBatch.class
 })
 public class AllTest {
 }
