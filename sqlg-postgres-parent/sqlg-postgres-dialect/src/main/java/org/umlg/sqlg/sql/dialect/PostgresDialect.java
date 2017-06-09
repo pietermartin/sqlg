@@ -3258,7 +3258,9 @@ public class PostgresDialect extends BaseSqlDialect {
     public int notifyChange(SqlgGraph sqlgGraph, LocalDateTime timestamp, JsonNode jsonNode) {
         Connection connection = sqlgGraph.tx().getConnection();
         try {
+        	
             PGConnection pgConnection = connection.unwrap(PGConnection.class);
+            int pid=pgConnection.getBackendPID();
             if (sqlgGraph.tx().isInBatchMode()) {
                 BatchManager.BatchModeType batchModeType = sqlgGraph.tx().getBatchModeType();
                 sqlgGraph.tx().flush();
@@ -3267,7 +3269,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         T.label,
                         SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
                         "timestamp", timestamp,
-                        "pid", pgConnection.getBackendPID(),
+                        "pid", pid,
                         "log", jsonNode
                 );
                 sqlgGraph.tx().batchMode(batchModeType);
@@ -3276,14 +3278,14 @@ public class PostgresDialect extends BaseSqlDialect {
                         T.label,
                         SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG,
                         "timestamp", timestamp,
-                        "pid", pgConnection.getBackendPID(),
+                        "pid", pid,
                         "log", jsonNode
                 );
             }
             try (Statement statement = connection.createStatement()) {
                 statement.execute("NOTIFY " + SQLG_NOTIFICATION_CHANNEL + ", '" + timestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'");
             }
-            return pgConnection.getBackendPID();
+            return pid;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
