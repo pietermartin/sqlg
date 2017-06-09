@@ -1,5 +1,6 @@
 package org.umlg.sqlg.test.topology;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Optional;
@@ -22,6 +23,10 @@ import org.umlg.sqlg.test.BaseTest;
  */
 public class TestTopologyDeleteSpecific extends BaseTest {
 
+	/**
+	 * this failed with a NPE because we lost the table definition we're working on
+	 * @throws Exception
+	 */
 	@Test
 	public void testSchemaDelete() throws Exception {
 		String schema="willDelete";
@@ -40,12 +45,12 @@ public class TestTopologyDeleteSpecific extends BaseTest {
 		
 		sqlgGraph.tx().normalBatchModeOn();
 		v1.property("hello", "world");
-		
+		// this line was failing
 		e1.property("hello", "world");
-		
-		//sqlgGraph1.getTopology().getSchema(schema).ifPresent((Schema s)->s.remove(false));
+	
 		sqlgGraph.tx().commit();
 		
+		assertEquals("world",e1.value("hello"));
 	}
 	
 	/**
