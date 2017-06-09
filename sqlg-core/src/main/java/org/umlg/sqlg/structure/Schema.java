@@ -171,6 +171,7 @@ public class Schema implements TopologyInf {
             edgeLabelOptional = this.getEdgeLabel(edgeLabelName);
             if (!edgeLabelOptional.isPresent()) {
                 edgeLabel = this.createEdgeLabel(edgeLabelName, outVertexLabel, inVertexLabel, columns);
+                this.uncommittedRemovedEdgeLabels.remove(this.name + "." + EDGE_PREFIX + edgeLabelName);
                 this.uncommittedOutEdgeLabels.put(this.name + "." + EDGE_PREFIX + edgeLabelName, edgeLabel);
                 this.getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
                 //nothing more to do as the edge did not exist and will have been created with the correct foreign keys.
@@ -219,6 +220,7 @@ public class Schema implements TopologyInf {
     private VertexLabel createVertexLabel(String vertexLabelName, Map<String, PropertyType> columns) {
         Preconditions.checkState(!this.isSqlgSchema(), "createVertexLabel may not be called for \"%s\"", SQLG_SCHEMA);
         Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with " + VERTEX_PREFIX);
+        this.uncommittedRemovedVertexLabels.remove(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         VertexLabel vertexLabel = VertexLabel.createVertexLabel(this.sqlgGraph, this, vertexLabelName, columns);
         this.uncommittedVertexLabels.put(this.name + "." + VERTEX_PREFIX + vertexLabelName, vertexLabel);
         this.getTopology().fire(vertexLabel, "", TopologyChangeAction.CREATE);
