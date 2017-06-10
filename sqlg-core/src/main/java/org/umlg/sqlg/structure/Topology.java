@@ -453,6 +453,7 @@ public class Topology {
             if (!schemaOptional.isPresent()) {
                 //create the schema and the vertex label.
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
+                this.uncommittedRemovedSchemas.remove(schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
                 fire(schema, "", TopologyChangeAction.CREATE);
                 return schema;
