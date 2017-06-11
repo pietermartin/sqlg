@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections4.map.HashedMap;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -60,7 +61,7 @@ public class Topology {
     private Map<String, Map<String, PropertyType>> temporaryTables = new ConcurrentHashMap<>();
 
     //ownPids are the pids to ignore as it is what the graph sent a notification for.
-    private Set<Integer> ownPids = new HashSet<>();
+    private Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
 
     //every notification will have a unique timestamp.
     //This is so because modification happen one at a time via the lock.
@@ -387,8 +388,12 @@ public class Topology {
                                 .has(SQLG_SCHEMA_LOG_TIMESTAMP, P.gt(timestamp))
                                 .toList();
                         for (Vertex logVertex : logs) {
-                            ObjectNode log = logVertex.value("log");
-                            fromNotifyJson(timestamp, log);
+                        	int pid=logVertex.value("pid");
+                        	LocalDateTime timestamp2=logVertex.value("timestamp");
+                        	if (!ownPids.contains(new ImmutablePair<>(pid,timestamp2))){
+                        		ObjectNode log = logVertex.value("log");
+                        		fromNotifyJson(timestamp, log);
+                        	}
                         }
                     }
                 }
@@ -448,6 +453,7 @@ public class Topology {
             if (!schemaOptional.isPresent()) {
                 //create the schema and the vertex label.
                 schema = Schema.createSchema(this.sqlgGraph, this, schemaName);
+                this.uncommittedRemovedSchemas.remove(schemaName);
                 this.uncommittedSchemas.put(schemaName, schema);
                 fire(schema, "", TopologyChangeAction.CREATE);
                 return schema;
@@ -692,7 +698,7 @@ public class Topology {
             SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
             LocalDateTime timestamp = LocalDateTime.now();
             int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
-            this.ownPids.add(pid);
+            this.ownPids.add(new ImmutablePair<>(pid,timestamp));
         }
     }
 
@@ -1049,8 +1055,9 @@ public class Topology {
     public void fromNotifyJson(int pid, LocalDateTime notifyTimestamp) {
         z_internalWriteLock();
         try {
-            if (!this.ownPids.contains(pid)) {
-                List<Vertex> logs = this.sqlgGraph.topology().V()
+        	ImmutablePair<Integer,LocalDateTime> p=new ImmutablePair<>(pid,notifyTimestamp);
+            if (!this.ownPids.contains(p)) {
+            	List<Vertex> logs = this.sqlgGraph.topology().V()
                         .hasLabel(SQLG_SCHEMA + "." + SQLG_SCHEMA_LOG)
                         .has(SQLG_SCHEMA_LOG_TIMESTAMP, notifyTimestamp)
                         .toList();
@@ -1062,7 +1069,8 @@ public class Topology {
                 ObjectNode log = logs.get(0).value("log");
                 fromNotifyJson(timestamp, log);
             } else {
-                this.ownPids.remove(pid);
+            	// why? we get notifications for our own things
+                //this.ownPids.remove(p);
             }
         } finally {
             this.sqlgGraph.tx().rollback();

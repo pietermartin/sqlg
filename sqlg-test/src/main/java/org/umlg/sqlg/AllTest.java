@@ -35,6 +35,7 @@ import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 import org.umlg.sqlg.test.topology.TestTopologyDelete;
+import org.umlg.sqlg.test.topology.TestTopologyDeleteSpecific;
 import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
 import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
 import org.umlg.sqlg.test.topology.TestValidateTopology;
@@ -191,7 +192,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestSack.class,
         TestSample.class,
         TestTopologyChangeListener.class,
-        TestTopologyDelete.class
+        TestTopologyDelete.class,
+        TestTopologyDeleteSpecific.class
 })
 public class AllTest {
 }
