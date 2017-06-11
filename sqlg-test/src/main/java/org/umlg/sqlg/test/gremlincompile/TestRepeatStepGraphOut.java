@@ -5,7 +5,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.DefaultGraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.MapHelper;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.Tree;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -14,6 +13,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgRepeatStepBarrier;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -39,8 +39,8 @@ public class TestRepeatStepGraphOut extends BaseTest {
         printTraversalForm(traversal);
         Assert.assertEquals(2, traversal.getSteps().size());
         Assert.assertTrue(traversal.getSteps().get(0) instanceof SqlgGraphStep);
-        Assert.assertTrue(traversal.getSteps().get(1) instanceof RepeatStep);
-        RepeatStep repeatStep = (RepeatStep) traversal.getSteps().get(1);
+        Assert.assertTrue(traversal.getSteps().get(1) instanceof SqlgRepeatStepBarrier);
+        SqlgRepeatStepBarrier repeatStep = (SqlgRepeatStepBarrier) traversal.getSteps().get(1);
         DefaultGraphTraversal traversal1 = (DefaultGraphTraversal) repeatStep.getGlobalChildren().get(0);
         Assert.assertEquals(2, traversal1.getSteps().size());
         Assert.assertTrue(traversal1.getSteps().get(0) instanceof SqlgVertexStep);
@@ -121,7 +121,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
                 .V().repeat(__.groupCount("m").by("name").out()).times(2).<Map<String, Vertex>>cap("m");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Map<String, Vertex>> t = traversal.toList();
-        Assert.assertEquals(7, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, t.size());
         Assert.assertTrue(t.get(0).containsKey("a1"));
         Assert.assertTrue(t.get(0).containsKey("b1"));
@@ -162,7 +162,7 @@ public class TestRepeatStepGraphOut extends BaseTest {
                 .V().repeat(__.groupCount("m").by("name.A").out()).times(2).<Map<String, Vertex>>cap("m");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Map<String, Vertex>> t = traversal.toList();
-        Assert.assertEquals(7, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, t.size());
         Assert.assertTrue(t.get(0).containsKey("a1"));
         Assert.assertTrue(t.get(0).containsKey("b1"));

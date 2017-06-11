@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.labels.TestHasLabelAndId;
+import org.umlg.sqlg.test.repeatstep.NetAggregateTest;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,10 @@ import org.umlg.sqlg.test.labels.TestHasLabelAndId;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestHasLabelAndId.class,
+//        TestRepeatStepGraphOut.class,
+//        TestUnoptimizedRepeatStep.class,
+        NetAggregateTest.class
+//        TestLocalVertexStepRepeatStep.class,
 })
 public class AnyTest {
 }
