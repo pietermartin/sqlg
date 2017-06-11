@@ -150,6 +150,11 @@ class SqlgStartupManager {
                     String schema = vertexRs.getString(2);
                     String table = vertexRs.getString(3);
 
+                    //verify the table name matches our pattern
+                    if (!table.startsWith("V_")) {
+                        continue;
+                    }
+
                     //check if is internal, if so ignore.
                     Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
                     schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
@@ -207,6 +212,11 @@ class SqlgStartupManager {
                     String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
+
+                    //verify the table name matches our pattern
+                    if (!table.startsWith("E_")) {
+                        continue;
+                    }
 
                     //check if is internal, if so ignore.
                     Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
@@ -277,6 +287,11 @@ class SqlgStartupManager {
                     String edgCat = edgeRs.getString(1);
                     String schema = edgeRs.getString(2);
                     String table = edgeRs.getString(3);
+
+                    //verify the table name matches our pattern
+                    if (!table.startsWith("E_")) {
+                        continue;
+                    }
 
                     //check if is internal, if so ignore.
                     Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
