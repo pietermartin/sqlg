@@ -23,7 +23,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
     private SqlgElement element;
     protected SqlgGraph sqlgGraph;
 
-    public SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
+    SqlgProperty(SqlgGraph sqlgGraph, SqlgElement element, String key, V value) {
         this.sqlgGraph = sqlgGraph;
         this.element = element;
         this.key = key;
@@ -90,6 +90,7 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
         return StringFactory.propertyString(this);
     }
 
+    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);
