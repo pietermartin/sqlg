@@ -116,7 +116,9 @@ public class RecordId implements KryoSerializable, Comparable {
 
     @Override
     public int hashCode() {
-        return (this.schemaTable + this.id.toString()).hashCode();
+        int result = this.schemaTable.hashCode();
+        return result ^ this.id.hashCode();
+//        return (this.schemaTable + this.id.toString()).hashCode();
     }
 
     @Override

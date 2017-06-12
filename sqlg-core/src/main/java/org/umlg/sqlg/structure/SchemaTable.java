@@ -65,7 +65,9 @@ public class SchemaTable implements Serializable, Comparable {
 
     @Override
     public int hashCode() {
-        return (this.schema + this.table).hashCode();
+        int result = this.schema.hashCode();
+        return result ^ this.table.hashCode();
+//        return (this.schema + this.table).hashCode();
     }
 
     @Override
