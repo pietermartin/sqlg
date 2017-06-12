@@ -42,27 +42,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-//    /**
-//     * Called from {@link SqlgVertex#edges(Direction, String...)}
-//     * The edge already exist and must supply its table id. Not a {@link RecordId}.
-//     *
-//     * @param sqlgGraph The graph.
-//     * @param id        The edge's id. This the edge's table's id. Not a {@link RecordId}.
-//     * @param schema    The schema the edge is in.
-//     * @param table     The table the edge is in. This translates to its label.
-//     * @param inVertex  The in vertex.
-//     * @param outVertex The out vertex.
-//     * @param keyValues The properties of the edge. #TODO this is not used at present. It is loaded again from the db
-//     *                  when the property is accessed.
-//     */
-//    public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table, SqlgVertex inVertex, SqlgVertex outVertex, Object... keyValues) {
-//        super(sqlgGraph, id, schema, table);
-//        this.inVertex = inVertex;
-//        this.outVertex = outVertex;
-//        properties.clear();
-//        properties.putAll(SqlgUtil.transformToInsertValues(keyValues).getRight());
-//    }
-
     /**
      * This is the primary constructor for loading edges from the db via gremlin.
      *
@@ -73,13 +52,6 @@ public class SqlgEdge extends SqlgElement implements Edge {
      */
     public SqlgEdge(SqlgGraph sqlgGraph, Long id, String schema, String table) {
         super(sqlgGraph, id, schema, table);
-    }
-
-    @Override
-    public <V> Property<V> property(String key, V value) {
-        if (this.removed) throw Element.Exceptions.elementAlreadyRemoved(Edge.class, this.id());
-        this.sqlgGraph.tx().readWrite();
-        return super.property(key, value);
     }
 
     private Iterator<Vertex> internalGetVertices(Direction direction) {
@@ -204,13 +176,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
         }
     }
 
-
     //TODO this needs optimizing, an edge created in the transaction need not go to the db to load itself again
     @Override
     protected void load() {
         //recordId can be null when in batchMode
-        if (recordId != null && this.properties.isEmpty()) {
-
+        if (this.recordId != null && this.properties.isEmpty()) {
+            this.sqlgGraph.tx().readWrite();
             if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
                 throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
             }
@@ -225,12 +196,12 @@ public class SqlgEdge extends SqlgElement implements Edge {
                 sql.append(", ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()));
                 // additional columns for time zone, etc.
-                String[] ps=propertyColumn.getPropertyType().getPostFixes();
-                if (ps!=null){
-	                for (String p:propertyColumn.getPropertyType().getPostFixes()){
-	                	sql.append(", ");
-	                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName()+p));
-	                }
+                String[] ps = propertyColumn.getPropertyType().getPostFixes();
+                if (ps != null) {
+                    for (String p : propertyColumn.getPropertyType().getPostFixes()) {
+                        sql.append(", ");
+                        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(propertyColumn.getName() + p));
+                    }
                 }
             }
             for (VertexLabel vertexLabel : edgeLabel.getOutVertexLabels()) {
