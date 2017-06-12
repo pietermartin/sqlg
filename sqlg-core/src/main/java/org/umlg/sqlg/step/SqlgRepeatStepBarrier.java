@@ -7,11 +7,16 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ComputerAwareStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.process.traversal.util.FastNoSuchElementException;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalUtil;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -21,6 +26,7 @@ import java.util.*;
  */
 public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements TraversalParent {
 
+    private static Logger logger = LoggerFactory.getLogger(SqlgRepeatStepBarrier.class.getName());
     private Traversal.Admin<S, S> repeatTraversal = null;
     private Traversal.Admin<S, ?> untilTraversal = null;
     private Traversal.Admin<S, ?> emitTraversal = null;
@@ -29,6 +35,9 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
     private boolean first = true;
     private List<Traverser.Admin<S>> cachedStarts;
     private List<Iterator<Traverser.Admin<S>>> toReturn;
+    //Special cache for untilTraverser
+    private List<HasContainer> untilHasContainers;
+    private HasContainer untilHasContainer;
 
     public SqlgRepeatStepBarrier(final Traversal.Admin traversal, RepeatStep<S> repeatStep) {
         super(traversal);
@@ -65,13 +74,13 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
     }
 
     public final boolean doUntil(final Traverser.Admin<S> traverser, boolean utilFirst) {
-//        return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
-        return utilFirst == this.untilFirst && null != this.untilTraversal && test(traverser, this.untilTraversal);
+//        return utilFirst == this.untilFirst && null != this.untilTraversal && test(traverser, this.untilTraversal);
+        return utilFirst == this.untilFirst && null != this.untilTraversal && TraversalUtil.test(traverser, this.untilTraversal);
     }
 
     public final boolean doEmit(final Traverser.Admin<S> traverser, boolean emitFirst) {
-//        return emitFirst == this.emitFirst && null != this.emitTraversal && TraversalUtil.test(traverser, this.emitTraversal);
-        return emitFirst == this.emitFirst && null != this.emitTraversal && test(traverser, this.emitTraversal);
+//        return emitFirst == this.emitFirst && null != this.emitTraversal && test(traverser, this.emitTraversal);
+        return emitFirst == this.emitFirst && null != this.emitTraversal && TraversalUtil.test(traverser, this.emitTraversal);
     }
 
     @Override
@@ -215,6 +224,7 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
                 if (this.cachedStarts.isEmpty()) {
                     throw FastNoSuchElementException.instance();
                 }
+                logger.info("cached starts size = " + this.cachedStarts.size() + " loops = " + this.cachedStarts.get(0).loops());
                 Iterator<Traverser.Admin<S>> iterator = this.cachedStarts.iterator();
                 while (iterator.hasNext()) {
                     Traverser.Admin<S> cachedStart = iterator.next();
@@ -244,14 +254,29 @@ public class SqlgRepeatStepBarrier<S> extends ComputerAwareStep<S, S> implements
         }
     }
 
-    public static final <S, E> boolean test(final Traverser.Admin<S> traverser, final Traversal.Admin<S, E> traversal) {
-        final Traverser.Admin<S> split = traverser.split();
+    public <S, E> boolean test(final Traverser.Admin<S> traverser, final Traversal.Admin<S, E> traversal) {
+        if (this.untilHasContainer != null) {
+            Element e = (Element) traverser.get();
+            return this.untilHasContainer.getPredicate().test(e.value(this.untilHasContainer.getKey()));
+        }
         if (traversal.getSteps().size() == 1 && traversal.getSteps().get(0) instanceof HasStep) {
-            HasStep hasStep = (HasStep) traversal.getSteps().get(0);
-            hasStep.reset();
-            hasStep.addStart(split);
-            return hasStep.hasNext();
+            if (this.untilHasContainers == null) {
+                HasStep hasStep = (HasStep) traversal.getSteps().get(0);
+                this.untilHasContainers = hasStep.getHasContainers();
+                if (this.untilHasContainers.size() == 1) {
+                    this.untilHasContainer = this.untilHasContainers.get(0);
+                    Element e = (Element) traverser.get();
+                    return this.untilHasContainer.getPredicate().test(e.value(this.untilHasContainer.getKey()));
+                }
+            }
+            for (HasContainer hasContainer : this.untilHasContainers) {
+                if (!hasContainer.test((Element) traverser.get())) {
+                    return false;
+                }
+            }
+            return true;
         } else {
+            final Traverser.Admin<S> split = traverser.split();
             split.setSideEffects(traversal.getSideEffects());
             split.setBulk(1l);
             traversal.reset();
