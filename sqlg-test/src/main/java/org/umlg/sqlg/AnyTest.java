@@ -12,8 +12,13 @@ import org.umlg.sqlg.test.repeatstep.NetAggregateTest;
 @Suite.SuiteClasses({
 //        TestRepeatStepGraphOut.class,
 //        TestUnoptimizedRepeatStep.class,
+//        TestSetProperty.class,
         NetAggregateTest.class
 //        TestLocalVertexStepRepeatStep.class,
+//        TestHas.class
+//        TestRollback.class,
+//        TestVertexCache.class,
+//        TestEdgeCache.class
 })
 public class AnyTest {
 }

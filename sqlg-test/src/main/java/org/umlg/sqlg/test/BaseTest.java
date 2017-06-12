@@ -26,6 +26,7 @@ import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.beans.PropertyVetoException;
 import java.io.IOException;
@@ -92,7 +93,7 @@ public abstract class BaseTest {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         this.sqlgGraph = SqlgGraph.open(configuration);
-//        SqlgUtil.dropDb(this.sqlgGraph);
+        SqlgUtil.dropDb(this.sqlgGraph);
         this.sqlgGraph.tx().commit();
         this.sqlgGraph.close();
         this.sqlgGraph = SqlgGraph.open(configuration);

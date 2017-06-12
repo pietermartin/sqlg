@@ -1,20 +1,21 @@
 package org.umlg.sqlg.test.topology;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Optional;
-
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assume;
 import org.junit.Test;
 import org.umlg.sqlg.structure.EdgeLabel;
 import org.umlg.sqlg.structure.Schema;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.structure.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
+
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * test deletion behavior in a specific scenarios
@@ -33,6 +34,7 @@ public class TestTopologyDeleteSpecific extends BaseTest {
 		Vertex v1=sqlgGraph.addVertex(T.label,schema+".t1","name","n1","hello", "world");
 		sqlgGraph.tx().commit();
 		Configuration c= getConfigurationClone();
+		Assume.assumeTrue(c.getString("jdbc.url").contains("postgresql"));
 		c.setProperty(SqlgGraph.DISTRIBUTED, true);
 		sqlgGraph=SqlgGraph.open(c);
 		sqlgGraph.getTopology().getSchema(schema).ifPresent((Schema s)->s.remove(false));
