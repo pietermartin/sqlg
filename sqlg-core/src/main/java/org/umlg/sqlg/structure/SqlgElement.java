@@ -14,7 +14,6 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import static org.umlg.sqlg.sql.parse.SchemaTableTree.ALIAS_SEPARATOR;
 
@@ -164,35 +163,29 @@ public abstract class SqlgElement implements Element {
         return this.internalGetProperties().keySet();
     }
 
-    //TODO relook at hiddens, unnecessary looping and queries
     @Override
     public <V> Property<V> property(String key) {
         if (this.removed) {
             throw Element.Exceptions.elementAlreadyRemoved(this.getClass(), this.id());
         } else {
-            Property property = internalGetProperties().get(key);
-            if (property == null) {
-                return emptyProperty();
-//                //try hiddens
-//                property = internalGetHiddens().get(key);
-//                if (property == null) {
-//                    return emptyProperty();
-//                } else {
-//                    return property;
-//                }
+            load();
+            V propertyValue = (V) this.properties.get(key);
+            if (propertyValue != null) {
+                return instantiateProperty(key, propertyValue);
             } else {
-                return property;
+                return emptyProperty();
             }
         }
     }
 
-    protected Property emptyProperty() {
+    protected <V> Property<V> emptyProperty() {
         return Property.empty();
     }
 
     @Override
     public <V> Property<V> property(String key, V value) {
         ElementHelper.validateProperty(key, value);
+        this.sqlgGraph.tx().readWrite();
         this.sqlgGraph.getSqlDialect().validateProperty(key, value);
         if (!this.sqlgGraph.tx().isInStreamingBatchMode() && !this.sqlgGraph.tx().isInStreamingWithLockBatchMode()) {
             sqlgGraph.tx().addElementPropertyRollback(this.elementPropertyRollback);
@@ -282,16 +275,16 @@ public abstract class SqlgElement implements Element {
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key));
             sql.append(" = ?");
             // some data types require several columns in the db, make sure to update them all
-            PropertyType pt=PropertyType.from(value);
-            String[] postfixes=this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(pt);
-            if (postfixes!=null && postfixes.length>1){
-            	for (int i=1;i<postfixes.length;i++){
-            		sql.append(",");
-            		sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key+pt.getPostFixes()[i-1]));
+            PropertyType pt = PropertyType.from(value);
+            String[] postfixes = this.sqlgGraph.getSqlDialect().propertyTypeToSqlDefinition(pt);
+            if (postfixes != null && postfixes.length > 1) {
+                for (int i = 1; i < postfixes.length; i++) {
+                    sql.append(",");
+                    sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(key + pt.getPostFixes()[i - 1]));
                     sql.append(" = ?");
-            	}
+                }
             }
-            
+
             sql.append(" WHERE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
             sql.append(" = ?");
@@ -306,7 +299,7 @@ public abstract class SqlgElement implements Element {
                 Map<String, Object> keyValue = new HashMap<>();
                 keyValue.put(key, value);
                 // the index of the id column in the statement depend on how many columns we had to use to store that data type
-                int idx=setKeyValuesAsParameter(this.sqlgGraph, 1, preparedStatement, keyValue);
+                int idx = setKeyValuesAsParameter(this.sqlgGraph, 1, preparedStatement, keyValue);
                 preparedStatement.setLong(idx, ((RecordId) this.id()).getId());
                 preparedStatement.executeUpdate();
                 preparedStatement.close();
@@ -369,14 +362,30 @@ public abstract class SqlgElement implements Element {
     }
 
     protected <V> Map<String, ? extends Property<V>> internalGetProperties(final String... propertyKeys) {
-        this.sqlgGraph.tx().readWrite();
+//        this.sqlgGraph.tx().readWrite();
         load();
         Map<String, SqlgProperty<V>> properties = new HashMap<>();
-        this.properties.entrySet().stream()
-                .filter(entry -> propertyKeys.length == 0 || Stream.of(propertyKeys).filter(k -> k.equals(entry.getKey())).findAny().isPresent())
-                .filter(entry -> !entry.getKey().equals("ID"))
-                .filter(entry -> entry.getValue() != null)
-                .forEach(entry -> properties.put(entry.getKey(), instantiateProperty(entry.getKey(), (V) entry.getValue())));
+
+        //Check the propertyKeys parameter
+        if (propertyKeys.length > 0) {
+            for (String propertyKey : propertyKeys) {
+                if (!propertyKey.equals(SchemaManager.ID)) {
+                    V propertyValue = (V) this.properties.get(propertyKey);
+                    if (propertyValue != null) {
+                        properties.put(propertyKey, instantiateProperty(propertyKey, propertyValue));
+                    }
+                }
+            }
+        } else {
+            for (Map.Entry<String, Object> propertyEntry : this.properties.entrySet()) {
+                String key = propertyEntry.getKey();
+                V propertyValue = (V) propertyEntry.getValue();
+                if (key.equals(SchemaManager.ID) || propertyValue == null) {
+                    continue;
+                }
+                properties.put(key, instantiateProperty(key, propertyValue));
+            }
+        }
         return properties;
     }
 
@@ -477,7 +486,7 @@ public abstract class SqlgElement implements Element {
 
     @Override
     public <V> Iterator<? extends Property<V>> properties(final String... propertyKeys) {
-        SqlgElement.this.sqlgGraph.tx().readWrite();
+//        SqlgElement.this.sqlgGraph.tx().readWrite();
         return SqlgElement.this.<V>internalGetProperties(propertyKeys).values().iterator();
     }
 
@@ -640,7 +649,7 @@ public abstract class SqlgElement implements Element {
                 break;
             case boolean_ARRAY:
                 java.sql.Array array = resultSet.getArray(columnIndex);
-                if (array != null)  {
+                if (array != null) {
                     this.properties.put(propertyName, this.sqlgGraph.getSqlDialect().convertArray(propertyType, array));
                 }
                 break;
