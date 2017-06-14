@@ -22,6 +22,26 @@ import java.util.Map;
 public class TestGremlinCompileChoose extends BaseTest {
 
     @Test
+    public void g_V_hasLabelXpersonX_asXp1X_chooseXoutEXknowsX__outXknowsXX_asXp2X_selectXp1_p2X_byXnameX() {
+        loadModern();
+        final Traversal<Vertex, Map<String, String>> traversal = this.sqlgGraph.traversal()
+                .V()
+                .hasLabel("person").as("p1")
+                .choose(
+                        __.outE("knows"), __.out("knows")
+                ).as("p2")
+                .<String>select("p1", "p2").by("name");
+        printTraversalForm(traversal);
+        checkResults(makeMapList(2,
+                "p1", "marko", "p2", "vadas",
+                "p1", "marko", "p2", "josh",
+                "p1", "vadas", "p2", "vadas",
+                "p1", "josh", "p2", "josh",
+                "p1", "peter", "p2", "peter"
+        ), traversal);
+    }
+
+    @Test
     public void g_V_chooseXhasLabelXpersonX_and_outXcreatedX__outXknowsX__identityX_name() {
         loadModern();
 

@@ -9,10 +9,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.HasContainerHolder;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.LocalStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.RepeatStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.CyclicPathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasStep;
+import org.apache.tinkerpop.gremlin.process.traversal.step.filter.PathFilterStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.filter.RangeGlobalStep;
-import org.apache.tinkerpop.gremlin.process.traversal.step.filter.SimplePathStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.*;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.SackValueStep;
@@ -36,6 +35,7 @@ import org.umlg.sqlg.step.SqlgLocalStepBarrier;
 import org.umlg.sqlg.step.SqlgStep;
 import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.util.SqlgTraversalUtil;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.time.Duration;
@@ -464,10 +464,9 @@ public abstract class BaseStrategy {
         Predicate p = s -> s.getClass().equals(PathStep.class) ||
                 s.getClass().equals(TreeStep.class) ||
                 s.getClass().equals(TreeSideEffectStep.class) ||
-                s.getClass().equals(CyclicPathStep.class) ||
-                s.getClass().equals(SimplePathStep.class) ||
+                s.getClass().equals(PathFilterStep.class) ||
                 s.getClass().equals(EdgeOtherVertexStep.class);
-        return TraversalHelper.anyStepRecursively(p, traversal);
+        return SqlgTraversalUtil.anyStepRecursively(p, traversal);
     }
 
     void addHasContainerForIds(SqlgGraphStep sqlgGraphStep) {

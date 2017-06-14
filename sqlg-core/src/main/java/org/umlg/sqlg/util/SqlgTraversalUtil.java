@@ -3,6 +3,7 @@ package org.umlg.sqlg.util;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
 import org.apache.tinkerpop.gremlin.process.traversal.step.branch.ChooseStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.IdentityStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
@@ -11,6 +12,7 @@ import org.umlg.sqlg.step.SqlgOptionalStepBarrier;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * @author Pieter Martin (https://github.com/pietermartin)
@@ -67,5 +69,30 @@ public class SqlgTraversalUtil {
             }
         }
         return true;
+    }
+
+    public static boolean anyStepRecursively(final Predicate<Step> predicate, final Traversal.Admin<?, ?> traversal) {
+        for (final Step<?, ?> step : traversal.getSteps()) {
+            if (predicate.test(step)) {
+                return true;
+            }
+
+            if (step instanceof TraversalParent) {
+                if (anyStepRecursively(predicate, ((TraversalParent) step))) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static boolean anyStepRecursively(final Predicate<Step> predicate, final TraversalParent step) {
+        for (final Traversal.Admin<?, ?> localChild : step.getLocalChildren()) {
+            if (anyStepRecursively(predicate, localChild)) return true;
+        }
+        for (final Traversal.Admin<?, ?> globalChild : step.getGlobalChildren()) {
+            if (anyStepRecursively(predicate, globalChild)) return true;
+        }
+        return false;
     }
 }

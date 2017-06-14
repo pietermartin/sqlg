@@ -1,6 +1,7 @@
 package org.umlg.sqlg.strategy;
 
 import com.google.common.base.Preconditions;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -37,12 +38,7 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
      */
     private List<SqlgComparatorHolder> sqlgComparatorHolders;
 
-
     private long parentIndex;
-    //Mostly an emit is for only one traverser.
-    //However for SqlgVertexStep the same element can be incoming multiple times each with a different path thus far.
-    //In this case the database is only queried once but the split happens for each incoming traverser.
-    private List<Traverser.Admin<E>> traversers = new ArrayList<>();
     private Traverser.Admin<E> traverser;
     private List<Pair<Object, Comparator<?>>> comparatorValues;
 
@@ -190,8 +186,9 @@ public class Emit<E extends SqlgElement> implements Comparable<Emit<E>> {
                             this.comparatorValues.add(Pair.with(tokenTraversal.getToken().apply(sqlgElementSelect), comparator));
                         }
                     } else if (traversal instanceof IdentityTraversal) {
-                        //This is for Order.shuffle
-                        this.comparatorValues.add(Pair.with(new Random().nextInt(), comparator));
+                        //This is for Order.shuffle, Order.shuffle can not be used in Collections.sort(), it violates the sort contract.
+                        //Basically its a crap comparator.
+                        this.comparatorValues.add(Pair.with(new Random().nextInt(), Order.incr));
                     } else if (traversal instanceof ElementValueTraversal) {
                         ElementValueTraversal elementValueTraversal = (ElementValueTraversal) traversal;
                         this.comparatorValues.add(Pair.with(sqlgElement.value(elementValueTraversal.getPropertyKey()), comparator));

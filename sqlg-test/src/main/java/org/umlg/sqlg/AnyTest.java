@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.repeatstep.NetAggregateTest;
+import org.umlg.sqlg.test.complex.TestComplex;
 
 /**
  * Date: 2014/07/16
@@ -13,12 +13,18 @@ import org.umlg.sqlg.test.repeatstep.NetAggregateTest;
 //        TestRepeatStepGraphOut.class,
 //        TestUnoptimizedRepeatStep.class,
 //        TestSetProperty.class,
-        NetAggregateTest.class
+//        NetAggregateTest.class,
 //        TestLocalVertexStepRepeatStep.class,
 //        TestHas.class
 //        TestRollback.class,
 //        TestVertexCache.class,
 //        TestEdgeCache.class
+//        TestTraversalPerformance.class
+//        TestRepeatStepOnEdges.class,
+//        TestGremlinCompileChoose.class,
+//        TestTinkerPopEvent.class,
+//        TestRepeatStepOnEdges.class
+        TestComplex.class
 })
 public class AnyTest {
 }

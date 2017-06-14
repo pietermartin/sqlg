@@ -11,7 +11,7 @@ import org.apache.tinkerpop.shaded.jackson.databind.ser.std.StdSerializer;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -135,7 +135,7 @@ public class SchemaTable implements Serializable, Comparable {
             // to write it out with the type.  in this way, data-bind should be able to deserialize
             // it back when types are embedded.
             typeSerializer.writeTypePrefixForScalar(schemaTable, jsonGenerator);
-            final Map<String, Object> m = new HashMap<>();
+            final Map<String, Object> m = new LinkedHashMap<>();
             m.put("schema", schemaTable.getSchema());
             m.put("table", schemaTable.getTable());
             jsonGenerator.writeObject(m);

@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.sql.Connection;
@@ -18,6 +20,7 @@ import java.util.NoSuchElementException;
  */
 public class SqlgProperty<V> implements Property<V>, Serializable {
 
+    private Logger logger = LoggerFactory.getLogger(SqlgProperty.class.getName());
     private final String key;
     private V value;
     private SqlgElement element;
@@ -70,6 +73,9 @@ public class SqlgProperty<V> implements Property<V>, Serializable {
             sql.append(" = ?");
             if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                 sql.append(";");
+            }
+            if (logger.isDebugEnabled()) {
+                logger.debug(sql.toString());
             }
             Connection conn = this.sqlgGraph.tx().getConnection();
             try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {

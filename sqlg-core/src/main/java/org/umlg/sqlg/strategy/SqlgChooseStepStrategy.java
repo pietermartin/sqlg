@@ -61,12 +61,14 @@ public class SqlgChooseStepStrategy<M, S, E> extends AbstractTraversalStrategy<T
                         traversal,
                         predicateTraversal
                 );
-
             } else {
                 sqlgBranchStepBarrier = new SqlgChooseStepBarrier<>(
                         traversal,
                         predicateTraversal
                 );
+            }
+            for (String label : chooseStep.getLabels()) {
+                sqlgBranchStepBarrier.addLabel(label);
             }
             try {
                 Field traversalOptionsField = chooseStep.getClass().getSuperclass().getDeclaredField("traversalOptions");

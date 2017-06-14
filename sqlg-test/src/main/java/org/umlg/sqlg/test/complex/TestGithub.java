@@ -1,4 +1,4 @@
-package org.umlg.sqlg.test.github;
+package org.umlg.sqlg.test.complex;
 
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;

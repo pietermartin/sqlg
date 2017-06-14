@@ -42,6 +42,25 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
 @Graph.OptIn(Graph.OptIn.SUITE_PROCESS_STANDARD)
 
+//Start remove these for 3.2.6
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+        method = "shouldDetachVertexPropertyWhenRemoved",
+        reason = "Tests assumes elements are auto synchronized.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+        method = "shouldDetachPropertyOfEdgeWhenNew",
+        reason = "Tests assumes elements are auto synchronized.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+        method = "shouldDetachPropertyOfEdgeWhenRemoved",
+        reason = "Tests assumes elements are auto synchronized.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.process.traversal.strategy.decoration.EventStrategyProcessTest",
+        method = "shouldDetachVertexPropertyWhenNew",
+        reason = "Tests assumes elements are auto synchronized.")
+//End remove these for 3.2.6
+
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.TraversalInterruptionTest",
         method = "*",
@@ -65,10 +84,6 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ExplainTest$Traversals",
         method = "g_V_outE_identity_inV_explain",
         reason = "Assertions assume that the strategies are in a particular order.")
-@Graph.OptOut(
-        test = "org.apache.tinkerpop.gremlin.process.traversal.step.filter.HasTest$Traversals",
-        method = "g_V_hasId_compilationEquality",
-        reason = "Assertions are TinkerGraph specific.")
 
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.map.ProfileTest$Traversals",

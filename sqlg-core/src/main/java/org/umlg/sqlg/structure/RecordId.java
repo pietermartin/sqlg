@@ -15,10 +15,7 @@ import org.apache.tinkerpop.shaded.kryo.io.Output;
 import org.umlg.sqlg.util.SqlgUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Date: 2015/02/21
@@ -185,7 +182,7 @@ public class RecordId implements KryoSerializable, Comparable {
             // to write it out with the type.  in this way, data-bind should be able to deserialize
             // it back when types are embedded.
             typeSerializer.writeTypePrefixForScalar(recordId, jsonGenerator);
-            final Map<String, Object> m = new HashMap<>();
+            final Map<String, Object> m = new LinkedHashMap<>();
             m.put("schemaTable", recordId.getSchemaTable());
             m.put("id", recordId.getId());
             jsonGenerator.writeObject(m);

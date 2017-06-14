@@ -8,15 +8,18 @@ import org.umlg.sqlg.test.aggregate.TestGroupCount;
 import org.umlg.sqlg.test.aggregate.TestMax;
 import org.umlg.sqlg.test.batch.*;
 import org.umlg.sqlg.test.branchstep.TestSqlgBranchStep;
+import org.umlg.sqlg.test.complex.TestComplex;
+import org.umlg.sqlg.test.complex.TestGithub;
 import org.umlg.sqlg.test.edgehas.TestEdgeHas;
 import org.umlg.sqlg.test.edges.*;
-import org.umlg.sqlg.test.github.TestGithub;
+import org.umlg.sqlg.test.event.TestTinkerPopEvent;
 import org.umlg.sqlg.test.graph.MidTraversalGraphTest;
 import org.umlg.sqlg.test.graph.TestEmptyGraph;
 import org.umlg.sqlg.test.graph.TestGraphStepWithIds;
 import org.umlg.sqlg.test.gremlincompile.*;
 import org.umlg.sqlg.test.index.TestIndex;
 import org.umlg.sqlg.test.index.TestIndexTopologyTraversal;
+import org.umlg.sqlg.test.io.TestIo;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestHasLabelAndId;
@@ -33,12 +36,7 @@ import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.sack.TestSack;
 import org.umlg.sqlg.test.sample.TestSample;
 import org.umlg.sqlg.test.schema.*;
-import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
-import org.umlg.sqlg.test.topology.TestTopologyDelete;
-import org.umlg.sqlg.test.topology.TestTopologyDeleteSpecific;
-import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
-import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
-import org.umlg.sqlg.test.topology.TestValidateTopology;
+import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
@@ -193,7 +191,10 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestSample.class,
         TestTopologyChangeListener.class,
         TestTopologyDelete.class,
-        TestTopologyDeleteSpecific.class
+        TestTopologyDeleteSpecific.class,
+        TestTinkerPopEvent.class,
+        TestIo.class,
+        TestComplex.class
 })
 public class AllTest {
 }

@@ -1,18 +1,14 @@
 package org.umlg.sqlg.test.gremlincompile;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
 import org.junit.Test;
-import org.umlg.sqlg.structure.*;
+import org.umlg.sqlg.structure.PropertyType;
+import org.umlg.sqlg.structure.SqlgVertex;
+import org.umlg.sqlg.structure.VertexLabel;
 import org.umlg.sqlg.test.BaseTest;
 
-import java.time.LocalDate;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,312 +18,51 @@ import java.util.Map;
 public class TestTraversalPerformance extends BaseTest {
 
     @Test
-    public void testForum() {
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-
-        Map<String, PropertyType> properties = new HashMap<>();
-        properties.put("userId", PropertyType.INTEGER);
-        VertexLabel userLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("user", properties);
-        properties.clear();
-        properties.put("productId", PropertyType.INTEGER);
-        VertexLabel productLabel = this.sqlgGraph.getTopology().ensureVertexLabelExist("product", properties);
-        properties.clear();
-        properties.put("viewDate", PropertyType.LOCALDATE);
-        EdgeLabel viewLabel = this.sqlgGraph.getTopology().ensureEdgeLabelExist("view", userLabel, productLabel, properties);
-        PropertyColumn viewDatePropertyColumn = viewLabel.getProperty("viewDate").get();
-        viewLabel.ensureIndexExists(IndexType.NON_UNIQUE, Collections.singletonList(viewDatePropertyColumn));
-        this.sqlgGraph.tx().commit();
-
+    public void testSpeedWithLargeSchemaFastQuery1() {
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        LocalDate _20170502 = LocalDate.of(2017, 5, 2);
-        this.sqlgGraph.tx().normalBatchModeOn();
-        for (int i = 0; i < 7_000_000; i++) {
-            Vertex U = this.sqlgGraph.addVertex(T.label, "user", "userId", i);
-            Vertex P = this.sqlgGraph.addVertex(T.label, "product", "productId", i);
-            U.addEdge("view", P, "viewDate", LocalDate.of(2017, 1, 1));
-            U.addEdge("view", P, "viewDate", LocalDate.of(2017, 5, 1));
-            U.addEdge("view", P, "viewDate", _20170502);
-            if (i % 100_000 == 0) {
-                this.sqlgGraph.tx().flush();
+        Map<String, PropertyType> columns = new HashMap<>();
+        for (int i = 0; i < 100; i++) {
+            columns.put("property_" + i, PropertyType.STRING);
+        }
+        //Create a large schema, it slows the maps  down
+        for (int i = 0; i < 1_000; i++) {
+            VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person_" + i, columns);
+            VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist("Dog_" + i, columns);
+            person.ensureEdgeLabelExist("pet_" + i, dog, columns);
+            if (i % 100 == 0) {
+                this.sqlgGraph.tx().commit();
             }
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("Time to insert:" + stopWatch.toString());
+        System.out.println("done time taken " + stopWatch.toString());
+        stopWatch.reset();
+        stopWatch.start();
 
+        Map<String, Object> columnValues = new HashMap<>();
         for (int i = 0; i < 100; i++) {
-            stopWatch.reset();
-            stopWatch.start();
-            List<Object> values = this.sqlgGraph.traversal()
-                    .V()
-                    .hasLabel("product")
-                    .inE("view")
-                    .order().by("viewDate", Order.decr)
-                    .limit(1)
-                    .values()
-                    .toList();
-            stopWatch.stop();
-            Assert.assertEquals(1, values.size());
-            Assert.assertEquals(_20170502, values.get(0));
-            System.out.println("query 1: " + stopWatch.toString());
-            System.out.println("--------------");
-            stopWatch.reset();
-            stopWatch.start();
-            values = this.sqlgGraph.traversal()
-                    .E()
-                    .hasLabel("view")
-                    .order().by("viewDate", Order.decr)
-                    .limit(1)
-                    .values()
-                    .toList();
-            stopWatch.stop();
-            Assert.assertEquals(1, values.size());
-            Assert.assertEquals(_20170502, values.get(0));
-            System.out.println("query 2: " + stopWatch.toString());
+            columnValues.put("property_" + i, "asdasdasd");
         }
+        for (int i = 0; i < 1_000; i++) {
+            SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex("Person_" + i, columnValues);
+            SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex("Dog_" + i, columnValues);
+            person.addEdgeWithMap("pet_" + i, dog, columnValues);
+        }
+        this.sqlgGraph.tx().commit();
+
+        for (int i = 0; i < 100_000; i++) {
+            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList().size());
+            stopWatch.stop();
+            System.out.println("query time " + stopWatch.toString());
+            stopWatch.reset();
+            stopWatch.start();
+        }
+        stopWatch.stop();
+        System.out.println("query time " + stopWatch.toString());
 
     }
 
-//    @Test
-//    public void testSqlgOptionalBarrierStepPerformance() {
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        int count = 10_000;
-//        for (int i = 0; i < count; i++) {
-//            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
-//            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "a2");
-//            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");
-//            Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "b2");
-//            Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b3");
-//            Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb1");
-//            Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb2");
-//            Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "bb3");
-//            a1.addEdge("ab", b1, "order", 3);
-//            a1.addEdge("ab", b2, "order", 2);
-//            a1.addEdge("ab", b3, "order", 1);
-//            a1.addEdge("abb", bb1, "order", 3);
-//            a1.addEdge("abb", bb2, "order", 2);
-//            a1.addEdge("abb", bb3, "order", 1);
-//            Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "c1");
-//            Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "c2");
-//            Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "c3");
-//            b1.addEdge("bc", c1, "order", 1);
-//            b1.addEdge("bc", c2, "order", 2);
-//            b1.addEdge("bc", c3, "order", 3);
-//            Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "cc1");
-//            Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "cc2");
-//            Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "cc3");
-//            b1.addEdge("bcc", cc1, "order", 3);
-//            b1.addEdge("bcc", cc2, "order", 2);
-//            b1.addEdge("bcc", cc3, "order", 1);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        System.out.println("start querying");
-//
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) sqlgGraph.traversal()
-//                .V().hasLabel("A").as("a").order().by("name", Order.decr)
-//                .local(
-//                        __.optional(
-//                                __.outE().as("e1").inV().as("b").order().by(T.label).by(__.select("e1").by("order"))
-//                                        .local(
-//                                                __.optional(
-//                                                        __.outE().as("e2").inV().order().by(T.label).by(__.select("e2").by("order"))
-//                                                )
-//                                        )
-//                        )
-//                )
-//
-//                .path();
-//
-//        Assert.assertEquals(5, traversal.getSteps().size());
-//        List<Path> paths = traversal.toList();
-//        Assert.assertEquals(12 * count, paths.size());
-//        System.out.println(stopWatch.toString());
-//
-//    }
-//
-//    @Test
-//    public void testEagerLoadOrderPerf() {
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        for (int i = 0; i < 100_000; i++) {
-//            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
-//            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
-//            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + i);
-//            a.addEdge("ab", b);
-//            b.addEdge("bc", c);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        for (int i = 0; i < 100; i++) {
-//            StopWatch stopWatch = new StopWatch();
-//            stopWatch.start();
-//            List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("B").both().order().by("name").toList();
-//            Assert.assertEquals(200_000, vertices.size());
-//            stopWatch.stop();
-//            System.out.println(stopWatch.toString());
-//        }
-//    }
-//
-//    @Test
-//    public void testEagerLoadPerformance1() {
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        for (int i = 0; i < 100; i++) {
-//            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
-//            for (int j = 0; j < 100; j++) {
-//                if (j % 2 == 0) {
-//                    Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + j);
-//                    a.addEdge("ab", b);
-//                    for (int k = 0; k < 1000; k++) {
-//                        if (k % 2 == 0) {
-//                            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + j);
-//                            b.addEdge("bc", c);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        for (int i = 0; i < 100; i++) {
-//            StopWatch stopWatch = new StopWatch();
-//            stopWatch.start();
-//            List<Vertex> vertices = this.sqlgGraph.traversal()
-//                    .V().hasLabel("A").order().by("name")
-//                    .optional(
-//                            __.out().optional(
-//                                    __.out().range(10, 20)
-//                            )
-//                    )
-//                    .toList();
-//            Assert.assertEquals(10, vertices.size());
-//            stopWatch.stop();
-//            System.out.println(stopWatch.toString());
-//        }
-//
-//    }
-//
-//    @Test
-//    public void testOptionalWithOrder() {
-//
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        for (int i = 0; i < 2_000; i++) {
-//            Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a");
-//            Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name", "aa");
-//            Vertex a3 = this.sqlgGraph.addVertex(T.label, "A", "name", "aaa");
-//
-//            Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "d");
-//            Vertex b2 = this.sqlgGraph.addVertex(T.label, "B", "name", "c");
-//            Vertex b3 = this.sqlgGraph.addVertex(T.label, "B", "name", "b");
-//            Vertex bb1 = this.sqlgGraph.addVertex(T.label, "BB", "name", "g");
-//            Vertex bb2 = this.sqlgGraph.addVertex(T.label, "BB", "name", "f");
-//            Vertex bb3 = this.sqlgGraph.addVertex(T.label, "BB", "name", "e");
-//
-//            Vertex c1 = this.sqlgGraph.addVertex(T.label, "C", "name", "h");
-//            Vertex c2 = this.sqlgGraph.addVertex(T.label, "C", "name", "i");
-//            Vertex c3 = this.sqlgGraph.addVertex(T.label, "C", "name", "j");
-//            Vertex cc1 = this.sqlgGraph.addVertex(T.label, "CC", "name", "k");
-//            Vertex cc2 = this.sqlgGraph.addVertex(T.label, "CC", "name", "l");
-//            Vertex cc3 = this.sqlgGraph.addVertex(T.label, "CC", "name", "m");
-//
-//            a1.addEdge("ab", b1);
-//            a1.addEdge("ab", b2);
-//            a1.addEdge("ab", b3);
-//            a1.addEdge("abb", bb1);
-//            a1.addEdge("abb", bb2);
-//            a1.addEdge("abb", bb3);
-//
-//            b1.addEdge("bc", c1);
-//            b1.addEdge("bc", c2);
-//            b1.addEdge("bc", c3);
-//            b2.addEdge("bcc", cc1);
-//            b2.addEdge("bcc", cc2);
-//            b2.addEdge("bcc", cc3);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        DefaultGraphTraversal<Vertex, Path> traversal = (DefaultGraphTraversal<Vertex, Path>) this.sqlgGraph.traversal()
-//                .V().hasLabel("A")
-//                .optional(
-//                        __.out().order().by("name").optional(
-//                                __.out().order().by("name", Order.decr)
-//                        )
-//                )
-//                .path();
-//        List<Path> paths = traversal.toList();
-//        System.out.println(paths.size());
-//    }
-
-//    @Test
-//    public void testEagerLoadOrderPerf() {
-//        this.sqlgGraph.tx().normalBatchModeOn();
-//        for (int i = 0; i < 100_000; i++) {
-//            Vertex a = this.sqlgGraph.addVertex(T.label, "A", "name", "a" + i);
-//            Vertex b = this.sqlgGraph.addVertex(T.label, "B", "name", "b" + i);
-//            Vertex c = this.sqlgGraph.addVertex(T.label, "C", "name", "c" + i);
-//            a.addEdge("ab", b);
-//            b.addEdge("bc", c);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        StopWatch stopWatch = new StopWatch();
-//        GraphTraversalSource graphTraversalSource = this.sqlgGraph.traversal();
-//        for (int i = 0; i < 100; i++) {
-//            stopWatch.start();
-//            List<Vertex> vertices = graphTraversalSource.V().hasLabel("B").both().order().by("name").toList();
-//            Assert.assertEquals(200_000, vertices.size());
-//            stopWatch.stop();
-//            System.out.println(stopWatch.toString());
-//            stopWatch.reset();
-//        }
-//    }
-//
-//    @Test
-//    public void testSpeedWithLargeSchemaFastQuery1() {
-//        StopWatch stopWatch = new StopWatch();
-//        stopWatch.start();
-//        Map<String, PropertyType> columns = new HashMap<>();
-//        for (int i = 0; i < 10; i++) {
-//            columns.put("property_" + i, PropertyType.STRING);
-//        }
-//        //Create a large schema, it slows the maps  down
-//        for (int i = 0; i < 1_00; i++) {
-//            VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person_" + i, columns);
-//            VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist("Dog_" + i, columns);
-//            person.ensureEdgeLabelExist("pet_" + i, dog, columns);
-//        }
-//        this.sqlgGraph.tx().commit();
-//        stopWatch.stop();
-//        System.out.println("done time taken " + stopWatch.toString());
-//        stopWatch.reset();
-//        stopWatch.start();
-//
-//        Map<String, Object> columnValues = new HashMap<>();
-//        for (int i = 0; i < 10; i++) {
-//            columnValues.put("property_" + i, "asdasdasd");
-//        }
-//        for (int i = 0; i < 1_00; i++) {
-//            SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex("Person_" + i, columnValues);
-//            SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex("Dog_" + i, columnValues);
-//            person.addEdgeWithMap("pet_" + i, dog, columnValues);
-//        }
-//        this.sqlgGraph.tx().commit();
-//
-//        for (int i = 0; i < 100_000; i++) {
-//            Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList().size());
-//            stopWatch.stop();
-//            System.out.println("query time " + stopWatch.toString());
-//            stopWatch.reset();
-//            stopWatch.start();
-//        }
-//        stopWatch.stop();
-//        System.out.println("query time " + stopWatch.toString());
-//
-//    }
-//
 ////    @Test
 //    public void testSpeedWithLargeSchemaFastQuery() {
 //        StopWatch stopWatch = new StopWatch();
