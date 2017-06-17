@@ -100,11 +100,6 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String getDefaultSchema() {
-        return "public";
-    }
-
-    @Override
     public Set<String> getSpacialRefTable() {
         return ImmutableSet.copyOf(Collections.singletonList("spatial_ref_sys"));
     }
