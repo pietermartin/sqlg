@@ -28,7 +28,7 @@ public class SqlgH2Provider extends SqlgAbstractGraphProvider {
         logger.info("H2, Starting test: " + test.getSimpleName() + "." + testMethodName);
         return new HashMap<String, Object>() {{
             put("gremlin.graph", SqlgGraph.class.getName());
-            put("jdbc.url", "jdbc:h2:file:src/test/db/" + graphName + "");
+            put("jdbc.url", "jdbc:h2:file:./src/test/db/" + graphName + "");
             put("jdbc.username", "SA");
             put("jdbc.password", "");
         }};

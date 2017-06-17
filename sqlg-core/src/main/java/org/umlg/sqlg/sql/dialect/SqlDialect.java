@@ -23,7 +23,7 @@ public interface SqlDialect {
 
     String dialectName();
 
-    Set<String> getDefaultSchemas();
+    Set<String> getInternalSchemas();
 
     PropertyType sqlTypeToPropertyType(SqlgGraph sqlgGraph, String schema, String table, String column, int sqlType, String typeName, ListIterator<Triple<String, Integer, String>> metaDataIter);
 
@@ -63,7 +63,8 @@ public interface SqlDialect {
     String getForeignKeyTypeDefinition();
 
     default String maybeWrapInQoutes(String field) {
-        return getColumnEscapeKey() + field + getColumnEscapeKey();
+        return getColumnEscapeKey() + field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey()) + getColumnEscapeKey();
+//        return getColumnEscapeKey() + field + getColumnEscapeKey();
     }
 
     default boolean supportsFloatValues() {
@@ -461,4 +462,19 @@ public interface SqlDialect {
     }
 
     boolean isSystemIndex(String indexName);
+
+    /**
+     * This is needed for H2 that does not support the standard <code>select * from values((1,1),(2,2)) as tmp("field1", "field2")</code>
+     * Instead the columns are hardcoded as "C1", "C2"
+     *
+     * @return true if the valueExpression is similar to Postgresql. i.e. <code>select * from values((1,1),(2,2)) as tmp("field1", "field2")</code>
+     *         H2 returns false and has some special code for it.
+     */
+    default boolean supportsFullValueExpression() {
+        return true;
+    }
+
+    default boolean supportsDropSchemas() {
+        return true;
+    }
 }

@@ -33,10 +33,9 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
 
     @Override
     public void close() {
-        if (! closed.compareAndSet(false, true)) {
+        if (!this.closed.compareAndSet(false, true)) {
             return;
         }
-
         try {
             int numBusyConnections = dss.getNumBusyConnections();
             if (numBusyConnections > 0) {

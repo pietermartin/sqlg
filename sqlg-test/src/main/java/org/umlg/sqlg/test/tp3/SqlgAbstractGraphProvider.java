@@ -11,14 +11,16 @@ import org.umlg.sqlg.SqlgPlugin;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.structure.SqlgDataSourceFactory.SqlgDataSource;
+import org.umlg.sqlg.util.SqlgUtil;
 
 import java.beans.PropertyVetoException;
-import java.sql.*;
+import java.sql.Connection;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Created by pieter on 2015/12/13.
+ * @author Pieter Martin (https://github.com/pietermartin)
+ *         Date: 2015/12/13
  */
 public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
@@ -47,50 +49,9 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
         SqlgPlugin plugin = getSqlgPlugin();
         SqlDialect sqlDialect = plugin.instantiateDialect();
         try {
-
             sqlgDataSource = SqlgGraph.createDataSourceFactory(configuration).setup(plugin.getDriverFor(configuration.getString("jdbc.url")), configuration);
             try (Connection conn = sqlgDataSource.getDatasource().getConnection()) {
-                DatabaseMetaData metadata = conn.getMetaData();
-                if (sqlDialect.supportsCascade()) {
-                    String tableNamePattern = "%";
-                    String[] types = {"TABLE"};
-                    ResultSet resultSet = metadata.getTables(null, null, tableNamePattern, types);
-                    while (resultSet.next()) {
-                        String schema = resultSet.getString(2);
-                        if (!sqlDialect.getGisSchemas().contains(schema)) {
-                            StringBuilder sql = new StringBuilder("DROP TABLE ");
-                            sql.append(sqlDialect.maybeWrapInQoutes(resultSet.getString(2)));
-                            sql.append(".");
-                            sql.append(sqlDialect.maybeWrapInQoutes(resultSet.getString(3)));
-                            sql.append(" CASCADE");
-                            if (sqlDialect.needsSemicolon()) {
-                                sql.append(";");
-                            }
-                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                                preparedStatement.executeUpdate();
-                            }
-                        }
-                    }
-                    resultSet = metadata.getSchemas(null, null);
-                    while (resultSet.next()) {
-                        String schema = resultSet.getString(1);
-                        if (!sqlDialect.getDefaultSchemas().contains(schema) && !sqlDialect.getGisSchemas().contains(schema)) {
-                            StringBuilder sql = new StringBuilder("DROP SCHEMA ");
-                            sql.append(sqlDialect.maybeWrapInQoutes(schema));
-                            if (sqlDialect.needsSchemaDropCascade()) {
-                                sql.append(" CASCADE");
-                            }
-                            if (sqlDialect.needsSemicolon()) {
-                                sql.append(";");
-                            }
-                            try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                                preparedStatement.executeUpdate();
-                            }
-                        }
-                    }
-                }
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+                SqlgUtil.dropDb(sqlDialect, conn);
             }
         } catch (PropertyVetoException e) {
             throw new RuntimeException(e);

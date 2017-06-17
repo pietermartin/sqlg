@@ -689,6 +689,13 @@ public class SchemaTableTree {
                 singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
             } else {
+                //Hardcoding here for H2
+                if (sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                } else {
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C2"));
+                }
+                singlePathSql.append(" as ");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
             }
             singlePathSql.append(",\n\t");
@@ -747,19 +754,32 @@ public class SchemaTableTree {
                         singlePathSql.append(",");
                     }
                 }
-                singlePathSql.append(") AS tmp (");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
-                singlePathSql.append(", ");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
-                singlePathSql.append(") ON ");
 
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
-                singlePathSql.append(".");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
-                singlePathSql.append(".");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
-                singlePathSql.append(" = tmp.");
-                singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                if (sqlgGraph.getSqlDialect().supportsFullValueExpression()) {
+                    singlePathSql.append(") AS tmp (");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                    singlePathSql.append(", ");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("index"));
+                    singlePathSql.append(") ON ");
+
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
+                    singlePathSql.append(" = tmp.");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("tmpId"));
+                } else {
+                    //This really is only for H2
+                    singlePathSql.append(") ON ");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getTable()));
+                    singlePathSql.append(".");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.ID));
+                    singlePathSql.append(" = ");
+                    singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes("C1"));
+                }
             } else {
                 singlePathSql.append("\nWHERE\n\t");
                 singlePathSql.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(firstSchemaTable.getSchema()));

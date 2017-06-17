@@ -31,7 +31,7 @@ public class TestRemoveElement extends BaseTest {
         Vertex john = this.sqlgGraph.addVertex(T.label, "Person", "name", "john");
         Vertex peter = this.sqlgGraph.addVertex(T.label, "Person", "name", "peter");
         Edge edge1 = marko.addEdge("friend", john);
-        Edge edge2 =marko.addEdge("friend", peter);
+        Edge edge2 = marko.addEdge("friend", peter);
         this.sqlgGraph.tx().commit();
         Assert.assertEquals(3L, this.sqlgGraph.traversal().V().count().next(), 0);
         Assert.assertEquals(2L, vertexTraversal(this.sqlgGraph, marko).out("friend").count().next(), 0);

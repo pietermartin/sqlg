@@ -20,8 +20,8 @@ import org.umlg.sqlg.structure.*;
 import java.util.*;
 
 /**
- * Date: 2014/08/15
- * Time: 8:10 PM
+ * @author Pieter Martin (https://github.com/pietermartin)
+ *         Date: 2014/08/15
  */
 public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implements SqlgStep {
 

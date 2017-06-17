@@ -35,8 +35,13 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public Set<String> getDefaultSchemas() {
-        return new HashSet<>(Arrays.asList("PUBLIC", "INFORMATION_SCHEMA", "SYSTEM_LOBS"));
+    public Set<String> getInternalSchemas() {
+        return new HashSet<>(Arrays.asList("INFORMATION_SCHEMA", "SYSTEM_LOBS"));
+    }
+
+    @Override
+    public boolean supportsDropSchemas() {
+        return false;
     }
 
     @Override
@@ -335,7 +340,7 @@ public class HsqldbDialect extends BaseSqlDialect {
                 return PropertyType.DOUBLE;
             case Types.VARCHAR:
                 return PropertyType.STRING;
-            case Types.TIMESTAMP:
+            case Types.TIMESTAMP_WITH_TIMEZONE:
                 return PropertyType.LOCALDATETIME;
             case Types.DATE:
                 return PropertyType.LOCALDATE;

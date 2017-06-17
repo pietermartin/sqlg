@@ -12,6 +12,8 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
@@ -36,6 +38,8 @@ import static org.apache.tinkerpop.gremlin.structure.T.label;
  * Time: 3:13 PM
  */
 public class SqlgUtil {
+
+    private static Logger logger = LoggerFactory.getLogger(SqlgUtil.class.getName());
 
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
@@ -793,14 +797,37 @@ public class SqlgUtil {
         withoutHasContainer.ifPresent(hasContainers::remove);
     }
 
-    public static void dropDb(SqlgGraph sqlgGraph) {
+    public static void dropDb(SqlDialect sqlDialect, Connection conn) {
         try {
-            SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
-            Connection conn = sqlgGraph.tx().getConnection();
             DatabaseMetaData metadata = conn.getMetaData();
-            if (sqlDialect.supportsCascade()) {
+            if (sqlDialect.supportsDropSchemas()) {
                 String catalog = null;
                 String schemaPattern = null;
+                ResultSet result = metadata.getSchemas(catalog, schemaPattern);
+                while (result.next()) {
+                    String schema = result.getString(1);
+                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
+                        StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        if (sqlDialect.needsSchemaDropCascade()) {
+                            sql.append(" CASCADE");
+                        }
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
+                    }
+                }
+            } else {
+                //Drop tables one by one and then the schemas.
+                //HSQLDB dead locks when trying to drop the 'PUBLIC' schema, so alas drop tables first.
+                String catalog = null;
+                String schemaPattern = "PUBLIC";
                 String tableNamePattern = "%";
                 String[] types = {"TABLE"};
                 ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
@@ -818,6 +845,9 @@ public class SqlgUtil {
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         preparedStatement.executeUpdate();
                     }
@@ -827,7 +857,7 @@ public class SqlgUtil {
                 result = metadata.getSchemas(catalog, schemaPattern);
                 while (result.next()) {
                     String schema = result.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(schema)) {
+                    if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
                         StringBuilder sql = new StringBuilder("DROP SCHEMA ");
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));
                         if (sqlDialect.needsSchemaDropCascade()) {
@@ -836,20 +866,8 @@ public class SqlgUtil {
                         if (sqlDialect.needsSemicolon()) {
                             sql.append(";");
                         }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
-                    }
-                }
-            } else if (!sqlDialect.supportSchemas()) {
-                ResultSet result = metadata.getCatalogs();
-                while (result.next()) {
-                    StringBuilder sql = new StringBuilder("DROP DATABASE ");
-                    String database = result.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(database)) {
-                        sql.append(sqlDialect.maybeWrapInQoutes(database));
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
                         }
                         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                             preparedStatement.executeUpdate();
@@ -860,6 +878,12 @@ public class SqlgUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void dropDb(SqlgGraph sqlgGraph) {
+        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+        Connection conn = sqlgGraph.tx().getConnection();
+        dropDb(sqlDialect, conn);
     }
 
     public static Byte[] convertPrimitiveByteArrayToByteArray(byte[] value) {

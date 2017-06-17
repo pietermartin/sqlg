@@ -95,8 +95,13 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public Set<String> getDefaultSchemas() {
-        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "public", "information_schema", "tiger", "tiger_data", "topology"));
+    public Set<String> getInternalSchemas() {
+        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology"));
+    }
+
+    @Override
+    public String getDefaultSchema() {
+        return "public";
     }
 
     @Override

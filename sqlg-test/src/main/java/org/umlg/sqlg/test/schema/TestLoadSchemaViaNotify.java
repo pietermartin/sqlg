@@ -17,13 +17,13 @@ import org.umlg.sqlg.test.BaseTest;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
 import org.umlg.sqlg.test.topology.TestTopologyChangeListener.TopologyListenerTest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.beans.PropertyVetoException;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Date: 2014/11/03
@@ -172,7 +172,6 @@ public class TestLoadSchemaViaNotify extends BaseTest {
             Vertex v2 = this.sqlgGraph.addVertex(T.label, "Person", "name", "b");
             v1.addEdge("friend", v2);
             this.sqlgGraph.tx().commit();
-            //Not entirely sure what this is for, else it seems hazelcast existVertexLabel not yet distributed the map
             Thread.sleep(1000);
 
             Assert.assertEquals(1, this.sqlgGraph.traversal().E().has(T.label, "friend").count().next().intValue());
