@@ -693,12 +693,14 @@ public class Topology {
 
 
     private void beforeCommit() {
-        Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
-        if (jsonNodeOptional.isPresent() && this.distributed) {
-            SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
-            LocalDateTime timestamp = LocalDateTime.now();
-            int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
-            this.ownPids.add(new ImmutablePair<>(pid,timestamp));
+        if (this.distributed) {
+            Optional<JsonNode> jsonNodeOptional = this.toNotifyJson();
+            if (jsonNodeOptional.isPresent()) {
+                SqlSchemaChangeDialect sqlSchemaChangeDialect = (SqlSchemaChangeDialect) this.sqlgGraph.getSqlDialect();
+                LocalDateTime timestamp = LocalDateTime.now();
+                int pid = sqlSchemaChangeDialect.notifyChange(sqlgGraph, timestamp, jsonNodeOptional.get());
+                this.ownPids.add(new ImmutablePair<>(pid,timestamp));
+            }
         }
     }
 
