@@ -25,12 +25,7 @@ import org.umlg.sqlg.test.properties.TestEscapedValues;
 import org.umlg.sqlg.test.remove.TestRemoveEdge;
 import org.umlg.sqlg.test.rollback.TestRollback;
 import org.umlg.sqlg.test.schema.*;
-import org.umlg.sqlg.test.topology.TestTopologyChangeListener;
-import org.umlg.sqlg.test.topology.TestTopologyDelete;
-import org.umlg.sqlg.test.topology.TestTopologyDeleteSpecific;
-import org.umlg.sqlg.test.topology.TestTopologyMultipleGraphs;
-import org.umlg.sqlg.test.topology.TestTopologyUpgrade;
-import org.umlg.sqlg.test.topology.TestValidateTopology;
+import org.umlg.sqlg.test.topology.*;
 import org.umlg.sqlg.test.travers.TestTraversals;
 import org.umlg.sqlg.test.tree.TestColumnNamePropertyNameMapScope;
 import org.umlg.sqlg.test.vertex.*;
@@ -171,7 +166,8 @@ import org.umlg.sqlg.test.vertexstep.localvertexstep.*;
         TestBatchNormalUpdateDateTimeArrays.class,
         TestTopologyChangeListener.class,
         TestTopologyDelete.class,
-        TestTopologyDeleteSpecific.class
+        TestTopologyDeleteSpecific.class,
+        TestDeadLock.class
 })
 public class AllTest {
 }
