@@ -74,6 +74,11 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean supporstDistribution() {
+        return true;
+    }
+
+    @Override
     public String dialectName() {
         return "Postgresql";
     }

@@ -19,6 +19,10 @@ import java.util.*;
 
 public interface SqlDialect {
 
+    default boolean supporstDistribution() {
+        return false;
+    }
+
     String dialectName();
 
     Set<String> getDefaultSchemas();
