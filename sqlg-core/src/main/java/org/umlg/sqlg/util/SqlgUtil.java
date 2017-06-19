@@ -827,7 +827,7 @@ public class SqlgUtil {
                 //Drop tables one by one and then the schemas.
                 //HSQLDB dead locks when trying to drop the 'PUBLIC' schema, so alas drop tables first.
                 String catalog = null;
-                String schemaPattern = "PUBLIC";
+                String schemaPattern = sqlDialect.getPublicSchema();
                 String tableNamePattern = "%";
                 String[] types = {"TABLE"};
                 ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
