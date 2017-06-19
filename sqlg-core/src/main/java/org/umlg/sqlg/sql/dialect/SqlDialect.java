@@ -21,6 +21,10 @@ public interface SqlDialect {
 
     boolean isPrimaryKeyForeignKey(String lastIndexName);
 
+    default boolean supporstDistribution() {
+        return false;
+    }
+
     String dialectName();
 
     Set<String> getInternalSchemas();
