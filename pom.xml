@@ -32,7 +32,7 @@
     </scm>
     <properties>
         <sqlg.version>1.4.0-SNAPSHOT</sqlg.version>
-        <tinkerpop.version>3.2.5-SNAPSHOT</tinkerpop.version>
+        <tinkerpop.version>3.2.5</tinkerpop.version>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
     </properties>
@@ -104,13 +104,13 @@
                         <!--<include>**/SqlgH2ProcessStandardTest.java</include>-->
                         <!--<include>**/H2AllTest.java</include>-->
 
-                        <!--<include>**/SqlgHsqldbStructureStandardTest.java</include>-->
-                        <!--<include>**/SqlgHsqldbProcessStandardTest.java</include>-->
-                        <!--<include>**/HsqldbAllTest.java</include>-->
+                        <include>**/SqlgHsqldbStructureStandardTest.java</include>
+                        <include>**/SqlgHsqldbProcessStandardTest.java</include>
+                        <include>**/HsqldbAllTest.java</include>
 
-                        <include>**/SqlgPostgresStructureStandardTest.java</include>
-                        <include>**/SqlgGraphPostgresProcessStandardTest.java</include>
-                        <include>**/PostgresAllTest.java</include>
+                        <!--<include>**/SqlgPostgresStructureStandardTest.java</include>-->
+                        <!--<include>**/SqlgGraphPostgresProcessStandardTest.java</include>-->
+                        <!--<include>**/PostgresAllTest.java</include>-->
                     </includes>
                 </configuration>
             </plugin>
