@@ -61,6 +61,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 // read default setting for laziness
                 boolean lazy=this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY,true);
                 this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy));
+                if (this.sqlgGraph.getTopology() != null) {
+                    this.sqlgGraph.getTopology().z_internalReadLock();
+                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
