@@ -430,8 +430,7 @@ public class ReplacedStep<S, E> {
         //All tables depending on the strategy, topology tables only or the rest.
         Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterSqlgSchemaHasContainers(this.topology, this.hasContainers, false);
 
-        filteredAllTables.forEach((table, properties) -> {
-
+        for (String table : filteredAllTables.keySet()) {
             //if graphStep's return class is Vertex ignore all edges and vice versa.
             if ((isVertex && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
                     (isEdge && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
@@ -482,7 +481,7 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTree);
                 }
             }
-        });
+        }
         return result;
     }
 
