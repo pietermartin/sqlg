@@ -69,16 +69,22 @@ import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
         reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
-
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldSupportTransactionIsolationCommitCheck",
         reason = "Fails for as the schema creation deadlock because of unnatural locking in the test.")
-
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
         method = "shouldRollbackElementAutoTransactionByDefault",
         reason = "Fails for HSQLDB as HSQLDB commits the transaction on schema creation and buggers the rollback test logic.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldAllowReferenceOfEdgeIdOutsideOfOriginalThreadManual",
+        reason = "Fails as the test leaves multiple transactions open which causes a dead lock.")
+@Graph.OptOut(
+        test = "org.apache.tinkerpop.gremlin.structure.TransactionTest",
+        method = "shouldAllowReferenceOfVertexIdOutsideOfOriginalThreadManual",
+        reason = "Fails as the test leaves multiple transactions open which causes a dead lock.")
 
 @Graph.OptOut(
         test = "org.apache.tinkerpop.gremlin.process.traversal.step.sideEffect.ExplainTest$Traversals",
