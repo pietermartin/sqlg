@@ -17,8 +17,10 @@ public class HsqldbAllTest extends AllTest {
     @BeforeClass
     public static void setUp() {
         try {
-            System.out.println(new File(".").getAbsolutePath());
-            FileUtils.cleanDirectory(new File("./src/test/db/"));
+            File db = new File("./src/test/db/");
+            if (db.exists()) {
+                FileUtils.cleanDirectory(db);
+            }
         } catch (IOException e) {
             Assert.fail("Failed to delete Hsqldb's db dir at ./src/test/db");
         }

@@ -23,7 +23,10 @@ public class SqlgHsqldbStructureStandardTest {
     @BeforeClass
     public static void setUp() {
         try {
-            FileUtils.cleanDirectory(new File("./src/test/db/"));
+            File db = new File("./src/test/db/");
+            if (db.exists()) {
+                FileUtils.cleanDirectory(db);
+            }
         } catch (IOException e) {
             Assert.fail("Failed to delete Hsqldb's db dir at ./src/test/db");
         }
