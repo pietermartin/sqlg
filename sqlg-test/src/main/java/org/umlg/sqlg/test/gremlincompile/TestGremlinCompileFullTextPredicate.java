@@ -35,7 +35,6 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
         }
     }
 
-
     @Test
     public void testDefaultImplementation() {
         FullText ft = new FullText("", null, true);
@@ -51,7 +50,7 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
         Vertex v1 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "fatal error");
         Vertex v2 = this.sqlgGraph.addVertex(T.label, "Sentence", "name", "error is not fatal");
 
-		 
+
 		 /*this.sqlgGraph.tx().commit();
 		 try (Statement s=this.sqlgGraph.tx().getConnection().createStatement();){
 			 String create="CREATE INDEX sentence_idx ON \""+SchemaManager.VERTEX_PREFIX+"Sentence\" USING GIN (to_tsvector('english', \"public\".\"V_Sentence\".\"name\"))";
@@ -138,7 +137,6 @@ public class TestGremlinCompileFullTextPredicate extends BaseTest {
         assertEquals(1, vts.size());
         assertTrue(vts.contains(v0));
     }
-
 
     @Test
     public void testConcat() throws SQLException {

@@ -12,7 +12,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.parse.ReplacedStep;
-import org.umlg.sqlg.sql.parse.ReplacedStepTree;
 import org.umlg.sqlg.step.SqlgGraphStep;
 import org.umlg.sqlg.step.SqlgStep;
 
@@ -81,9 +80,6 @@ public class GraphStrategy extends BaseStrategy {
                 break;
             }
         }
-        if (this.currentTreeNodeNode != null) {
-            doLast();
-        }
     }
 
     @Override
@@ -117,41 +113,6 @@ public class GraphStrategy extends BaseStrategy {
         }
         pathCount.increment();
         return true;
-    }
-
-    @Override
-    protected void doLast() {
-        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
-        replacedStepTree.maybeAddLabelToLeafNodes();
-        ((SqlgGraphStep) this.sqlgStep).parseForStrategy();
-        //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
-        if (replacedStepTree.hasOrderBy()) {
-            if (!this.sqlgStep.isForMultipleQueries() && replacedStepTree.orderByIsOrder()) {
-                replacedStepTree.applyComparatorsOnDb();
-            } else {
-                this.sqlgStep.setEagerLoad(true);
-            }
-        }
-        //If a range follows an order that needs to be done in memory then do not apply the range on the db.
-        //range is always the last step as sqlg does not optimize beyond a range step.
-        if (replacedStepTree.hasRange()) {
-            if (replacedStepTree.hasOrderBy()) {
-                if (this.sqlgStep.isForMultipleQueries()) {
-                    replacedStepTree.doNotApplyRangeOnDb();
-                    this.sqlgStep.setEagerLoad(true);
-                } else {
-                    replacedStepTree.doNotApplyInStep();
-                }
-            } else {
-                if (!this.sqlgStep.isForMultipleQueries()) {
-                    //In this case the range is only applied on the db.
-                    replacedStepTree.doNotApplyInStep();
-                } else {
-                    replacedStepTree.doNotApplyRangeOnDb();
-                }
-            }
-        }
-        //TODO multiple queries with a range can still apply the range without an offset on the db and then do the final range in the step.
     }
 
     @Override

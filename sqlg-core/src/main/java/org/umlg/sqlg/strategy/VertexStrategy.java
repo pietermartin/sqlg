@@ -74,14 +74,9 @@ public class VertexStrategy extends BaseStrategy {
             }
         }
         if (this.currentTreeNodeNode != null) {
-            doLast();
+            ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
+            replacedStepTree.maybeAddLabelToLeafNodes();
         }
-    }
-
-    @Override
-    protected void doLast() {
-        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
-        replacedStepTree.maybeAddLabelToLeafNodes();
     }
 
     /**

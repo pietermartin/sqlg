@@ -189,16 +189,20 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
 
     private void constructQueryPerSchemaTable() {
         for (SchemaTable schemaTable : this.heads.keySet()) {
-            parseForStrategy(schemaTable);
+            SchemaTableTree rootSchemaTableTree = parseForStrategy(schemaTable);
             this.replacedStepTree.maybeAddLabelToLeafNodes();
             //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
             if (this.replacedStepTree.hasOrderBy()) {
-                if (!isForMultipleQueries() && this.replacedStepTree.orderByIsOrder() && !this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {
-                    this.replacedStepTree.applyComparatorsOnDb();
-                } else {
+                if (isForMultipleQueries() || !replacedStepTree.orderByIsOrder() || this.replacedStepTree.orderByHasSelectOneStepAndForLabelNotInTree()) {
                     setEagerLoad(true);
+                    //Remove the dbComparators
+                    rootSchemaTableTree.removeDbComparators();
+                } else {
+                    //This is only needed for test assertions at the moment.
+                    replacedStepTree.applyComparatorsOnDb();
                 }
             }
+
             //If a range follows an order that needs to be done in memory then do not apply the range on the db.
             //range is always the last step as sqlg does not optimize beyond a range step.
             if (this.replacedStepTree.hasRange()) {
@@ -212,7 +216,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
                     }
                 }
             }
-            this.schemaTableElements.put(schemaTable, elements(schemaTable));
+            this.schemaTableElements.put(schemaTable, elements(schemaTable, rootSchemaTableTree));
         }
     }
 
@@ -220,12 +224,11 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
      * Called from SqlgVertexStepCompiler which compiled VertexStep and HasSteps.
      * This is only called when not in BatchMode
      */
-    private ListIterator<List<Emit<E>>> elements(SchemaTable schemaTable) {
+    private ListIterator<List<Emit<E>>> elements(SchemaTable schemaTable, SchemaTableTree rootSchemaTableTree) {
         this.sqlgGraph.tx().readWrite();
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
-        SchemaTableTree rootSchemaTableTree = sqlgGraph.getGremlinParser().parse(schemaTable, this.replacedSteps);
         rootSchemaTableTree.setParentIdsAndIndexes(this.schemaTableParentIds.get(schemaTable));
         Set<SchemaTableTree> rootSchemaTableTrees = new HashSet<>();
         rootSchemaTableTrees.add(rootSchemaTableTree);
@@ -287,7 +290,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
         return EnumSet.of(TraverserRequirement.PATH, TraverserRequirement.SIDE_EFFECTS);
     }
 
-    private void parseForStrategy(SchemaTable schemaTable) {
+    private SchemaTableTree parseForStrategy(SchemaTable schemaTable) {
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 1, "There must be at least one replacedStep");
         Preconditions.checkState(
@@ -307,6 +310,7 @@ public class SqlgVertexStep<E extends SqlgElement> extends AbstractStep implemen
             List<LinkedList<SchemaTableTree>> leftJoinResultEmit = new ArrayList<>();
             SchemaTableTree.constructDistinctEmitBeforeQueries(rootSchemaTableTree, leftJoinResultEmit);
             this.isForMultipleQueries = (distinctQueries.size() + leftJoinResult.size() + leftJoinResultEmit.size()) > 1;
+            return rootSchemaTableTree;
         } finally {
             if (rootSchemaTableTree != null) {
                 rootSchemaTableTree.resetColumnAliasMaps();

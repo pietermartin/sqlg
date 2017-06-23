@@ -380,10 +380,6 @@ public class ReplacedStep<S, E> {
         return result;
     }
 
-    private List<HasContainer> getLabelHasContainer() {
-        return this.labelHasContainers;
-    }
-
     @Override
     public String toString() {
         if (this.step != null) {
@@ -425,64 +421,88 @@ public class ReplacedStep<S, E> {
         final boolean isEdge = !isVertex;
 
         //RecordIds grouped by SchemaTable
-        Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> groupedIds = groupIdsBySchemaTable();
+        Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> groupedIds = null;
+        if (!this.idHasContainers.isEmpty()) {
+            groupedIds = groupIdsBySchemaTable();
+        }
 
         //All tables depending on the strategy, topology tables only or the rest.
         Map<String, Map<String, PropertyType>> filteredAllTables = SqlgUtil.filterSqlgSchemaHasContainers(this.topology, this.hasContainers, false);
 
-        for (String table : filteredAllTables.keySet()) {
-            //if graphStep's return class is Vertex ignore all edges and vice versa.
-            if ((isVertex && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
-                    (isEdge && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
+        //Optimization for the simple case of only one label specified.
+        if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
+            HasContainer labelHasContainer = this.labelHasContainers.get(0);
+            String table = (String) labelHasContainer.getValue();
+            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX);
+            if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
+                collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
+            }
+        } else {
+            for (String table : filteredAllTables.keySet()) {
+                //if graphStep's return class is Vertex ignore all edges and vice versa.
+                if ((isVertex && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
+                        (isEdge && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
 
-                if (passesLabelHasContainers(sqlgGraph, isVertex, table)) {
-
-                    SchemaTable schemaTable = SchemaTable.from(sqlgGraph, table);
-
-                    List<HasContainer> schemaTableTreeHasContainers = new ArrayList<>(this.hasContainers);
-
-                    List<Multimap<BiPredicate, RecordId>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
-                    if (biPredicateRecordIds != null) {
-                        for (Multimap<BiPredicate, RecordId> biPredicateRecordId : biPredicateRecordIds) {
-                            for (BiPredicate biPredicate : biPredicateRecordId.keySet()) {
-                                Collection<RecordId> recordIds = biPredicateRecordId.get(biPredicate);
-                                HasContainer idHasContainer;
-                                //id hasContainers are only optimized for BaseStrategy.SUPPORTED_ID_BI_PREDICATE within, without, eq, neq
-                                if (biPredicate == Contains.without || biPredicate == Contains.within) {
-                                    idHasContainer = new HasContainer(T.id.getAccessor(), P.test(biPredicate, recordIds));
-                                    schemaTableTreeHasContainers.add(idHasContainer);
-                                } else {
-                                    Preconditions.checkState(biPredicate == Compare.eq || biPredicate == Compare.neq);
-                                    for (RecordId recordId : recordIds) {
-                                        idHasContainer = new HasContainer(T.id.getAccessor(), P.test(biPredicate, recordId));
-                                        schemaTableTreeHasContainers.add(idHasContainer);
-                                    }
-                                }
-                            }
-                        }
+                    if (passesLabelHasContainers(sqlgGraph, isVertex, table)) {
+                        collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, table);
                     }
-
-                    SchemaTableTree schemaTableTree = new SchemaTableTree(
-                            sqlgGraph,
-                            schemaTable,
-                            0,
-                            schemaTableTreeHasContainers,
-                            this.sqlgComparatorHolder,
-                            this.dbComparators,
-                            this.sqlgRangeHolder,
-                            SchemaTableTree.STEP_TYPE.GRAPH_STEP,
-                            ReplacedStep.this.emit,
-                            ReplacedStep.this.untilFirst,
-                            ReplacedStep.this.leftJoin,
-                            replacedStepDepth,
-                            ReplacedStep.this.labels
-                    );
-
-                    result.add(schemaTableTree);
                 }
             }
         }
         return result;
+    }
+
+    private void collectSchemaTableTrees(
+            SqlgGraph sqlgGraph,
+            int replacedStepDepth,
+            Set<SchemaTableTree> result,
+            Map<SchemaTable, List<Multimap<BiPredicate, RecordId>>> groupedIds,
+            String table) {
+
+        SchemaTable schemaTable = SchemaTable.from(sqlgGraph, table);
+
+        List<HasContainer> schemaTableTreeHasContainers = new ArrayList<>(this.hasContainers);
+
+        if (groupedIds != null) {
+            List<Multimap<BiPredicate, RecordId>> biPredicateRecordIds = groupedIds.get(schemaTable.withOutPrefix());
+            if (biPredicateRecordIds != null) {
+                for (Multimap<BiPredicate, RecordId> biPredicateRecordId : biPredicateRecordIds) {
+                    for (BiPredicate biPredicate : biPredicateRecordId.keySet()) {
+                        Collection<RecordId> recordIds = biPredicateRecordId.get(biPredicate);
+                        HasContainer idHasContainer;
+                        //id hasContainers are only optimized for BaseStrategy.SUPPORTED_ID_BI_PREDICATE within, without, eq, neq
+                        if (biPredicate == Contains.without || biPredicate == Contains.within) {
+                            idHasContainer = new HasContainer(T.id.getAccessor(), P.test(biPredicate, recordIds));
+                            schemaTableTreeHasContainers.add(idHasContainer);
+                        } else {
+                            Preconditions.checkState(biPredicate == Compare.eq || biPredicate == Compare.neq);
+                            for (RecordId recordId : recordIds) {
+                                idHasContainer = new HasContainer(T.id.getAccessor(), P.test(biPredicate, recordId));
+                                schemaTableTreeHasContainers.add(idHasContainer);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        SchemaTableTree schemaTableTree = new SchemaTableTree(
+                sqlgGraph,
+                schemaTable,
+                0,
+                schemaTableTreeHasContainers,
+                this.sqlgComparatorHolder,
+//                this.dbComparators,
+                this.sqlgComparatorHolder.getComparators(),
+                this.sqlgRangeHolder,
+                SchemaTableTree.STEP_TYPE.GRAPH_STEP,
+                ReplacedStep.this.emit,
+                ReplacedStep.this.untilFirst,
+                ReplacedStep.this.leftJoin,
+                replacedStepDepth,
+                ReplacedStep.this.labels
+        );
+
+        result.add(schemaTableTree);
     }
 
     private boolean passesLabelHasContainers(SqlgGraph sqlgGraph, boolean isVertex, String table) {

@@ -50,6 +50,8 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
 
+    private Set<SchemaTableTree> rootSchemaTableTrees;
+
     /**
      * This is a jippo of sorts.
      * Sqlg always uses SqlgTraverser which extends B_LP_O_P_S_SE_SL_Traverser.
@@ -192,13 +194,61 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
-        SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
+        //TODO this if statement must be removed.
+        //It is here because of mid traversal V() statements which the strategy does not handle.
+//        if (this.rootSchemaTableTrees == null) {
+        this.rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
+//        }
+
+        doLast();
+
+        SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, this.rootSchemaTableTrees);
         stopWatch.stop();
         if (logger.isDebugEnabled()) {
             logger.debug("SqlgGraphStep finished, time taken {}", stopWatch.toString());
         }
         return resultIterator;
+    }
+
+    private void doLast() {
+
+//        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
+        replacedStepTree.maybeAddLabelToLeafNodes();
+        Set<SchemaTableTree> rootSchemaTableTrees = parseForStrategy();
+        //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
+        if (replacedStepTree.hasOrderBy()) {
+            if (isForMultipleQueries() || !replacedStepTree.orderByIsOrder()) {
+                setEagerLoad(true);
+                //Remove the dbComparators
+                for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+                    rootSchemaTableTree.removeDbComparators();
+                }
+            } else {
+                //This is only needed for test assertions at the moment.
+                replacedStepTree.applyComparatorsOnDb();
+            }
+        }
+        //If a range follows an order that needs to be done in memory then do not apply the range on the db.
+        //range is always the last step as sqlg does not optimize beyond a range step.
+        if (replacedStepTree.hasRange()) {
+            if (replacedStepTree.hasOrderBy()) {
+                if (isForMultipleQueries()) {
+                    replacedStepTree.doNotApplyRangeOnDb();
+                    setEagerLoad(true);
+                } else {
+                    replacedStepTree.doNotApplyInStep();
+                }
+            } else {
+                if (!isForMultipleQueries()) {
+                    //In this case the range is only applied on the db.
+                    replacedStepTree.doNotApplyInStep();
+                } else {
+                    replacedStepTree.doNotApplyRangeOnDb();
+                }
+            }
+        }
+        //TODO multiple queries with a range can still apply the range without an offset on the db and then do the final range in the step.
+
     }
 
     @Override
@@ -222,18 +272,18 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         return this.replacedStepTree.getCurrentTreeNodeNode();
     }
 
-    public void parseForStrategy() {
+    public Set<SchemaTableTree> parseForStrategy() {
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parseForStrategy(this.replacedSteps);
-        if (rootSchemaTableTrees.size() > 1) {
+        this.rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
+        if (this.rootSchemaTableTrees.size() > 1) {
             this.isForMultipleQueries = true;
-            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            for (SchemaTableTree rootSchemaTableTree : this.rootSchemaTableTrees) {
                 rootSchemaTableTree.resetColumnAliasMaps();
             }
         } else {
-            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
+            for (SchemaTableTree rootSchemaTableTree : this.rootSchemaTableTrees) {
                 try {
                     //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
                     if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
@@ -241,13 +291,6 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                     }
                     //Regular
                     List<LinkedList<SchemaTableTree>> distinctQueries = rootSchemaTableTree.constructDistinctQueries();
-//                    //Optional
-//                    List<Pair<LinkedList<SchemaTableTree>, Set<SchemaTableTree>>> leftJoinResult = new ArrayList<>();
-//                    SchemaTableTree.constructDistinctOptionalQueries(rootSchemaTableTree, leftJoinResult);
-//                    //Emit
-//                    List<LinkedList<SchemaTableTree>> leftJoinResultEmit = new ArrayList<>();
-//                    SchemaTableTree.constructDistinctEmitBeforeQueries(rootSchemaTableTree, leftJoinResultEmit);
-//                    this.isForMultipleQueries = (distinctQueries.size() + leftJoinResult.size() + leftJoinResultEmit.size()) > 1;
                     this.isForMultipleQueries = (distinctQueries.size()) > 1;
                     if (this.isForMultipleQueries) {
                         break;
@@ -257,6 +300,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 }
             }
         }
+        return this.rootSchemaTableTrees;
     }
 
     @Override

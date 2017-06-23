@@ -148,8 +148,6 @@ public abstract class BaseStrategy {
 
     protected abstract boolean doFirst(ListIterator<Step<?, ?>> stepIterator, Step<?, ?> step, MutableInt pathCount);
 
-    protected abstract void doLast();
-
     private void handleVertexStep(ListIterator<Step<?, ?>> stepIterator, AbstractStep<?, ?> step, MutableInt pathCount) {
         this.currentReplacedStep = ReplacedStep.from(
                 this.sqlgGraph.getTopology(),

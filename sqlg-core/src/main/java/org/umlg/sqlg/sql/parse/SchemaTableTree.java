@@ -28,7 +28,6 @@ import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -99,6 +98,7 @@ public class SchemaTableTree {
     private List<Pair<Long, Long>> parentIdsAndIndexes;
 
 
+
     public enum STEP_TYPE {
         GRAPH_STEP,
         VERTEX_STEP,
@@ -165,7 +165,8 @@ public class SchemaTableTree {
                 elementClass,
                 replacedStep.getHasContainers(),
                 replacedStep.getSqlgComparatorHolder(),
-                replacedStep.getDbComparators(),
+//                replacedStep.getDbComparators(),
+                replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
                 replacedStep.getDepth(),
                 isEdgeVertexStep,
@@ -199,7 +200,8 @@ public class SchemaTableTree {
                 elementClass,
                 replacedStep.getHasContainers(),
                 replacedStep.getSqlgComparatorHolder(),
-                replacedStep.getDbComparators(),
+//                replacedStep.getDbComparators(),
+                replacedStep.getSqlgComparatorHolder().getComparators(),
                 replacedStep.getSqlgRangeHolder(),
                 replacedStep.getDepth(),
                 false,
@@ -2012,55 +2014,6 @@ public class SchemaTableTree {
         return replacedStepDepth;
     }
 
-    public int depth() {
-        AtomicInteger depth = new AtomicInteger();
-        walk(v -> {
-            if (v.stepDepth > depth.get()) {
-                depth.set(v.stepDepth);
-            }
-            return null;
-        });
-        return depth.get();
-    }
-
-    public int numberOfNodes() {
-        AtomicInteger count = new AtomicInteger();
-        walk(v -> {
-            count.getAndIncrement();
-            return null;
-        });
-        return count.get();
-    }
-
-    private void walk(Visitor v) {
-        v.visit(this);
-        this.children.forEach(c -> c.walk(v));
-    }
-
-    public SchemaTableTree schemaTableAtDepth(final int depth, final int number) {
-        AtomicInteger count = new AtomicInteger();
-        //Need to reset the count when the depth changes.
-        AtomicInteger depthCache = new AtomicInteger(depth);
-        return walkWithExit(
-                v -> {
-                    if (depthCache.get() != v.stepDepth) {
-                        depthCache.set(v.stepDepth);
-                        count.set(0);
-                    }
-                    return (count.getAndIncrement() == number && v.stepDepth == depth);
-                }
-        );
-    }
-
-    private SchemaTableTree walkWithExit(Visitor<Boolean> v) {
-        if (!v.visit(this)) {
-            if (!this.children.isEmpty()) {
-                return this.children.get(0).walkWithExit(v);
-            }
-        }
-        return this;
-    }
-
     @Override
     public int hashCode() {
         if (this.parent != null) {
@@ -2205,5 +2158,12 @@ public class SchemaTableTree {
 
     public List<Pair<Long, Long>> getParentIdsAndIndexes() {
         return parentIdsAndIndexes;
+    }
+
+    public void removeDbComparators() {
+        this.dbComparators = new ArrayList<>();
+        for (SchemaTableTree child : this.children) {
+            child.removeDbComparators();
+        }
     }
 }

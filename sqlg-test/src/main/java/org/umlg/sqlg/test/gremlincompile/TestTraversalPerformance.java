@@ -26,7 +26,8 @@ public class TestTraversalPerformance extends BaseTest {
             columns.put("property_" + i, PropertyType.STRING);
         }
         //Create a large schema, it slows the maps  down
-        for (int i = 0; i < 1_000; i++) {
+        int NUMBER_OF_SCHEMA_ELEMENTS = 1_000;
+        for (int i = 0; i < NUMBER_OF_SCHEMA_ELEMENTS; i++) {
             VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person_" + i, columns);
             VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist("Dog_" + i, columns);
             person.ensureEdgeLabelExist("pet_" + i, dog, columns);
@@ -36,7 +37,7 @@ public class TestTraversalPerformance extends BaseTest {
         }
         this.sqlgGraph.tx().commit();
         stopWatch.stop();
-        System.out.println("done time taken " + stopWatch.toString());
+        System.out.println("done creating schema time taken " + stopWatch.toString());
         stopWatch.reset();
         stopWatch.start();
 
@@ -44,22 +45,22 @@ public class TestTraversalPerformance extends BaseTest {
         for (int i = 0; i < 100; i++) {
             columnValues.put("property_" + i, "asdasdasd");
         }
-        for (int i = 0; i < 1_000; i++) {
+        for (int i = 0; i < NUMBER_OF_SCHEMA_ELEMENTS; i++) {
             SqlgVertex person = (SqlgVertex) this.sqlgGraph.addVertex("Person_" + i, columnValues);
             SqlgVertex dog = (SqlgVertex) this.sqlgGraph.addVertex("Dog_" + i, columnValues);
             person.addEdgeWithMap("pet_" + i, dog, columnValues);
         }
         this.sqlgGraph.tx().commit();
+        stopWatch.stop();
+        System.out.println("done inserting data time taken " + stopWatch.toString());
 
-        for (int i = 0; i < 100_000; i++) {
+        stopWatch.reset();
+        stopWatch.start();
+        for (int i = 0; i < 10_000; i++) {
             Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList().size());
-            stopWatch.stop();
-            System.out.println("query time " + stopWatch.toString());
-            stopWatch.reset();
-            stopWatch.start();
         }
         stopWatch.stop();
-        System.out.println("query time " + stopWatch.toString());
+        System.out.println("total query time " + stopWatch.toString());
 
     }
 
