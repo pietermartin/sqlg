@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileFullTextPredicate;
+import org.umlg.sqlg.test.TestAddVertexViaMap;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.gremlincompile.TestGremlinCompileFullTextPredicate;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestTraversalPerformance.class
-        TestGremlinCompileFullTextPredicate.class,
+        TestAddVertexViaMap.class,
 })
 public class AnyTest {
 }

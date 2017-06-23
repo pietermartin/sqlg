@@ -1,7 +1,6 @@
 package org.umlg.sqlg.step;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.TraversalParent;
@@ -50,7 +49,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
     private boolean eagerLoad = false;
     private boolean isForMultipleQueries = false;
 
-    private Set<SchemaTableTree> rootSchemaTableTrees;
+//    private Set<SchemaTableTree> rootSchemaTableTrees;
 
     /**
      * This is a jippo of sorts.
@@ -190,34 +189,18 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         if (this.sqlgGraph.tx().getBatchManager().isStreaming()) {
             throw new IllegalStateException("streaming is in progress, first flush or commit before querying.");
         }
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        //TODO this if statement must be removed.
-        //It is here because of mid traversal V() statements which the strategy does not handle.
-//        if (this.rootSchemaTableTrees == null) {
-        this.rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
-//        }
-
-        doLast();
-
-        SqlgCompiledResultIterator<List<Emit<E>>> resultIterator = new SqlgCompiledResultIterator<>(this.sqlgGraph, this.rootSchemaTableTrees);
-        stopWatch.stop();
-        if (logger.isDebugEnabled()) {
-            logger.debug("SqlgGraphStep finished, time taken {}", stopWatch.toString());
-        }
-        return resultIterator;
+        Set<SchemaTableTree> rootSchemaTableTrees = doLast();
+        return new SqlgCompiledResultIterator<>(this.sqlgGraph, rootSchemaTableTrees);
     }
 
-    private void doLast() {
-
-//        ReplacedStepTree replacedStepTree = this.currentTreeNodeNode.getReplacedStepTree();
-        replacedStepTree.maybeAddLabelToLeafNodes();
+    private Set<SchemaTableTree> doLast() {
+        this.replacedStepTree.maybeAddLabelToLeafNodes();
         Set<SchemaTableTree> rootSchemaTableTrees = parseForStrategy();
         //If the order is over multiple tables then the resultSet will be completely loaded into memory and then sorted.
-        if (replacedStepTree.hasOrderBy()) {
-            if (isForMultipleQueries() || !replacedStepTree.orderByIsOrder()) {
+        if (this.replacedStepTree.hasOrderBy()) {
+            if (isForMultipleQueries() || !this.replacedStepTree.orderByIsOrder()) {
                 setEagerLoad(true);
                 //Remove the dbComparators
                 for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
@@ -225,30 +208,29 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 }
             } else {
                 //This is only needed for test assertions at the moment.
-                replacedStepTree.applyComparatorsOnDb();
+                this.replacedStepTree.applyComparatorsOnDb();
             }
         }
         //If a range follows an order that needs to be done in memory then do not apply the range on the db.
         //range is always the last step as sqlg does not optimize beyond a range step.
-        if (replacedStepTree.hasRange()) {
-            if (replacedStepTree.hasOrderBy()) {
+        if (this.replacedStepTree.hasRange()) {
+            if (this.replacedStepTree.hasOrderBy()) {
                 if (isForMultipleQueries()) {
-                    replacedStepTree.doNotApplyRangeOnDb();
+                    this.replacedStepTree.doNotApplyRangeOnDb();
                     setEagerLoad(true);
                 } else {
-                    replacedStepTree.doNotApplyInStep();
+                    this.replacedStepTree.doNotApplyInStep();
                 }
             } else {
                 if (!isForMultipleQueries()) {
                     //In this case the range is only applied on the db.
-                    replacedStepTree.doNotApplyInStep();
+                    this.replacedStepTree.doNotApplyInStep();
                 } else {
-                    replacedStepTree.doNotApplyRangeOnDb();
+                    this.replacedStepTree.doNotApplyRangeOnDb();
                 }
             }
         }
-        //TODO multiple queries with a range can still apply the range without an offset on the db and then do the final range in the step.
-
+        return rootSchemaTableTrees;
     }
 
     @Override
@@ -276,14 +258,14 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
         this.isForMultipleQueries = false;
         Preconditions.checkState(this.replacedSteps.size() > 0, "There must be at least one replacedStep");
         Preconditions.checkState(this.replacedSteps.get(0).isGraphStep(), "The first step must a SqlgGraphStep");
-        this.rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
-        if (this.rootSchemaTableTrees.size() > 1) {
+        Set<SchemaTableTree> rootSchemaTableTrees = this.sqlgGraph.getGremlinParser().parse(this.replacedStepTree);
+        if (rootSchemaTableTrees.size() > 1) {
             this.isForMultipleQueries = true;
-            for (SchemaTableTree rootSchemaTableTree : this.rootSchemaTableTrees) {
+            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
                 rootSchemaTableTree.resetColumnAliasMaps();
             }
         } else {
-            for (SchemaTableTree rootSchemaTableTree : this.rootSchemaTableTrees) {
+            for (SchemaTableTree rootSchemaTableTree : rootSchemaTableTrees) {
                 try {
                     //TODO this really sucks, constructsql should not query, but alas it does for P.within and temp table jol
                     if (this.sqlgGraph.tx().isOpen() && this.sqlgGraph.tx().getBatchManager().isStreaming()) {
@@ -300,7 +282,7 @@ public class SqlgGraphStep<S, E extends SqlgElement> extends GraphStep implement
                 }
             }
         }
-        return this.rootSchemaTableTrees;
+        return rootSchemaTableTrees;
     }
 
     @Override

@@ -1273,10 +1273,6 @@ public class Topology {
             for (Map.Entry<String, Map<String, PropertyType>> allTableCacheMapEntry : this.allTableCache.entrySet()) {
                 result.put(allTableCacheMapEntry.getKey(), new HashMap<>(allTableCacheMapEntry.getValue()));
             }
-        } else {
-            result = new HashMap<>(this.allTableCache);
-        }
-        if (this.isWriteLockHeldByCurrentThread()) {
             Map<String, AbstractLabel> uncommittedLabels = this.getUncommittedAllTables();
             for (String table : uncommittedLabels.keySet()) {
                 if (result.containsKey(table)) {
@@ -1293,6 +1289,12 @@ public class Topology {
                     result.remove(removed);
                 }
 
+            }
+        } else {
+            if (!withSqlgSchema) {
+                result = new HashMap<>(this.allTableCache);
+            } else {
+                result = this.allTableCache;
             }
         }
         if (!withSqlgSchema) {
