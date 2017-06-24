@@ -24,10 +24,10 @@ public enum PropertyType {
     LOCALDATETIME(LocalDateTime.class.getName(), new String[]{}),
     LOCALTIME(LocalTime.class.getName(), new String[]{}),
 
-    ZONEDDATETIME(ZonedDateTime.class.getName(), new String[]{SchemaManager.ZONEID}),
+    ZONEDDATETIME(ZonedDateTime.class.getName(), new String[]{Topology.ZONEID}),
     //years is the first default column
-    PERIOD(Period.class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS}),
-    DURATION(Duration.class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
+    PERIOD(Period.class.getName(), new String[]{Topology.MONTHS, Topology.DAYS}),
+    DURATION(Duration.class.getName(), new String[]{Topology.DURATION_NANOS}),
 
     JSON(JsonNode.class.getName(), new String[]{}),
 
@@ -56,9 +56,9 @@ public enum PropertyType {
     LOCALDATETIME_ARRAY(LocalDateTime[].class.getName(), new String[]{}),
     LOCALDATE_ARRAY(LocalDate[].class.getName(), new String[]{}),
     LOCALTIME_ARRAY(LocalTime[].class.getName(), new String[]{}),
-    ZONEDDATETIME_ARRAY(ZonedDateTime[].class.getName(), new String[]{SchemaManager.ZONEID}),
-    DURATION_ARRAY(Duration[].class.getName(), new String[]{SchemaManager.DURATION_NANOS}),
-    PERIOD_ARRAY(Period[].class.getName(), new String[]{SchemaManager.MONTHS, SchemaManager.DAYS}),
+    ZONEDDATETIME_ARRAY(ZonedDateTime[].class.getName(), new String[]{Topology.ZONEID}),
+    DURATION_ARRAY(Duration[].class.getName(), new String[]{Topology.DURATION_NANOS}),
+    PERIOD_ARRAY(Period[].class.getName(), new String[]{Topology.MONTHS, Topology.DAYS}),
     JSON_ARRAY(JsonNode[].class.getName(), new String[]{});
 
     private String javaClassName;

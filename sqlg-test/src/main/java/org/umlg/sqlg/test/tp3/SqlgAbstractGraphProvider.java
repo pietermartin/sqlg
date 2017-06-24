@@ -69,7 +69,7 @@ public abstract class SqlgAbstractGraphProvider extends AbstractGraphProvider {
 
     @Override
     public Object convertId(final Object id, final Class<? extends Element> c) {
-        return "jippo.jippo" + SchemaManager.LABEL_SEPARATOR + id.toString();
+        return "jippo.jippo" + Topology.LABEL_SEPARATOR + id.toString();
     }
 
     public abstract SqlgPlugin getSqlgPlugin();

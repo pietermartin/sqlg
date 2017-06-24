@@ -33,7 +33,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12
@@ -215,7 +216,6 @@ public class SqlgGraph implements Graph {
     private final SqlgDataSource sqlgDataSource;
     private Logger logger = LoggerFactory.getLogger(SqlgGraph.class.getName());
     private final SqlgTransaction sqlgTransaction;
-    private SchemaManager schemaManager;
     private Topology topology;
     private GremlinParser gremlinParser;
     private SqlDialect sqlDialect;
@@ -312,7 +312,6 @@ public class SqlgGraph implements Graph {
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
         this.tx().readWrite();
         this.topology = new Topology(this);
-        this.schemaManager = new SchemaManager(this, this.topology);
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
             //This is for mariadb. Need to make sure a db called public exist
@@ -328,10 +327,6 @@ public class SqlgGraph implements Graph {
 
     public String getJdbcUrl() {
         return jdbcUrl;
-    }
-
-    public SchemaManager getSchemaManager() {
-        return schemaManager;
     }
 
     public Topology getTopology() {
@@ -794,55 +789,55 @@ public class SqlgGraph implements Graph {
             @Override
             @FeatureDescriptor(name = FEATURE_BYTE_VALUES)
             public boolean supportsByteValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteValues();
+                return SqlgGraph.this.getSqlDialect().supportsByteValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_FLOAT_VALUES)
             public boolean supportsFloatValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
+                return SqlgGraph.this.getSqlDialect().supportsFloatValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_BOOLEAN_ARRAY_VALUES)
             public boolean supportsBooleanArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsBooleanArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_BYTE_ARRAY_VALUES)
             public boolean supportsByteArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsByteArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_DOUBLE_ARRAY_VALUES)
             public boolean supportsDoubleArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsDoubleArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_FLOAT_ARRAY_VALUES)
             public boolean supportsFloatArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsFloatArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_INTEGER_ARRAY_VALUES)
             public boolean supportsIntegerArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsIntegerArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_LONG_ARRAY_VALUES)
             public boolean supportsLongArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsLongArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_STRING_ARRAY_VALUES)
             public boolean supportsStringArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsStringArrayValues();
             }
 
 
@@ -877,55 +872,55 @@ public class SqlgGraph implements Graph {
             @Override
             @FeatureDescriptor(name = FEATURE_BYTE_VALUES)
             public boolean supportsByteValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteValues();
+                return SqlgGraph.this.getSqlDialect().supportsByteValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_FLOAT_VALUES)
             public boolean supportsFloatValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatValues();
+                return SqlgGraph.this.getSqlDialect().supportsFloatValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_BOOLEAN_ARRAY_VALUES)
             public boolean supportsBooleanArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsBooleanArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsBooleanArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_BYTE_ARRAY_VALUES)
             public boolean supportsByteArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsByteArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsByteArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_DOUBLE_ARRAY_VALUES)
             public boolean supportsDoubleArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsDoubleArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsDoubleArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_FLOAT_ARRAY_VALUES)
             public boolean supportsFloatArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsFloatArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsFloatArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_INTEGER_ARRAY_VALUES)
             public boolean supportsIntegerArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsIntegerArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsIntegerArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_LONG_ARRAY_VALUES)
             public boolean supportsLongArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsLongArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsLongArrayValues();
             }
 
             @Override
             @FeatureDescriptor(name = FEATURE_STRING_ARRAY_VALUES)
             public boolean supportsStringArrayValues() {
-                return SqlgGraph.this.getSchemaManager().getSqlDialect().supportsStringArrayValues();
+                return SqlgGraph.this.getSqlDialect().supportsStringArrayValues();
             }
         }
 
@@ -1179,7 +1174,7 @@ public class SqlgGraph implements Graph {
             Map<SchemaTable, List<Long>> distinctTableIdMap = RecordId.normalizeIds(elementIds);
             for (Map.Entry<SchemaTable, List<Long>> schemaTableListEntry : distinctTableIdMap.entrySet()) {
                 SchemaTable schemaTable = schemaTableListEntry.getKey();
-                String tableName = (returnVertices ? VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + schemaTable.getTable();
+                String tableName = (returnVertices ? VERTEX_PREFIX : EDGE_PREFIX) + schemaTable.getTable();
                 if (this.getTopology().getAllTables().containsKey(schemaTable.getSchema() + "." + tableName)) {
                     List<Long> schemaTableIds = schemaTableListEntry.getValue();
                     StringBuilder sql = new StringBuilder("SELECT * FROM ");
@@ -1189,7 +1184,7 @@ public class SqlgGraph implements Graph {
                     if (returnVertices) {
                         sql.append(VERTEX_PREFIX);
                     } else {
-                        sql.append(SchemaManager.EDGE_PREFIX);
+                        sql.append(EDGE_PREFIX);
                     }
                     sql.append(schemaTable.getTable());
                     sql.append("\" WHERE ");
@@ -1257,7 +1252,7 @@ public class SqlgGraph implements Graph {
                             if (returnVertices) {
                                 sqlgElement = SqlgVertex.of(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(VERTEX_PREFIX.length()));
                             } else {
-                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length()));
+                                sqlgElement = new SqlgEdge(this, id, schemaTable.getSchema(), schemaTable.getTable().substring(EDGE_PREFIX.length()));
                             }
                             sqlgElement.loadResultSet(resultSet);
                             sqlgElements.add((T) sqlgElement);

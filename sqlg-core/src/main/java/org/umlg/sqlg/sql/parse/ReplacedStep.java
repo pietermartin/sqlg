@@ -28,6 +28,8 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.id;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2015/06/27
@@ -188,11 +190,11 @@ public class ReplacedStep<S, E> {
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
                 for (String foreignKey : foreignKeys) {
-                    if (foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                    if (foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
                         String[] split = foreignKey.split("\\.");
                         String foreignKeySchema = split[0];
                         String foreignKeyTable = split[1];
-                        SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
+                        SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
                         if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
                             if (first) {
                                 first = false;
@@ -234,11 +236,11 @@ public class ReplacedStep<S, E> {
                 boolean first = true;
                 SchemaTableTree schemaTableTreeChild = null;
                 for (String foreignKey : foreignKeys) {
-                    if (foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                    if (foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
                         String[] split = foreignKey.split("\\.");
                         String foreignKeySchema = split[0];
                         String foreignKeyTable = split[1];
-                        SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
+                        SchemaTable schemaTableTo = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
                         if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTableTo.toString())) {
 
                             if (first) {
@@ -273,8 +275,8 @@ public class ReplacedStep<S, E> {
             String[] split = foreignKey.split("\\.");
             String foreignKeySchema = split[0];
             String foreignKeyTable = split[1];
-            if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-                SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
+            if ((direction == Direction.BOTH || direction == Direction.OUT) && foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+                SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingOutId(foreignKeyTable));
                 if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             schemaTable,
@@ -289,8 +291,8 @@ public class ReplacedStep<S, E> {
                     result.add(schemaTableTreeChild);
                 }
             }
-            if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-                SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, SchemaManager.VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
+            if ((direction == Direction.BOTH || direction == Direction.IN) && foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+                SchemaTable schemaTable = SchemaTable.of(foreignKeySchema, VERTEX_PREFIX + SqlgUtil.removeTrailingInId(foreignKeyTable));
                 if (passesLabelHasContainers(this.topology.getSqlgGraph(), true, schemaTable.toString())) {
                     SchemaTableTree schemaTableTreeChild = schemaTableTree.addChild(
                             schemaTable,
@@ -364,10 +366,10 @@ public class ReplacedStep<S, E> {
         Set<SchemaTable> result = new HashSet<>();
         List<String> edges = Arrays.asList(edgeLabels);
         for (SchemaTable label : labels) {
-            if (!label.getTable().startsWith(SchemaManager.EDGE_PREFIX)) {
-                throw new IllegalStateException("Expected label to start with " + SchemaManager.EDGE_PREFIX);
+            if (!label.getTable().startsWith(EDGE_PREFIX)) {
+                throw new IllegalStateException("Expected label to start with " + EDGE_PREFIX);
             }
-            String rawLabel = label.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+            String rawLabel = label.getTable().substring(EDGE_PREFIX.length());
             //only filter if there are edges to filter
             if (!edges.isEmpty()) {
                 if (edges.contains(rawLabel)) {
@@ -433,15 +435,15 @@ public class ReplacedStep<S, E> {
         if (isVertex && this.labelHasContainers.size() == 1 && this.labelHasContainers.get(0).getBiPredicate() == Compare.eq) {
             HasContainer labelHasContainer = this.labelHasContainers.get(0);
             String table = (String) labelHasContainer.getValue();
-            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX);
+            SchemaTable schemaTableWithPrefix = SchemaTable.from(sqlgGraph, table).withPrefix(isVertex ? VERTEX_PREFIX : EDGE_PREFIX);
             if (filteredAllTables.containsKey(schemaTableWithPrefix.toString())) {
                 collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, schemaTableWithPrefix.toString());
             }
         } else {
             for (String table : filteredAllTables.keySet()) {
                 //if graphStep's return class is Vertex ignore all edges and vice versa.
-                if ((isVertex && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.VERTEX_PREFIX)) ||
-                        (isEdge && table.substring(table.indexOf(".") + 1).startsWith(SchemaManager.EDGE_PREFIX))) {
+                if ((isVertex && table.substring(table.indexOf(".") + 1).startsWith(VERTEX_PREFIX)) ||
+                        (isEdge && table.substring(table.indexOf(".") + 1).startsWith(EDGE_PREFIX))) {
 
                     if (passesLabelHasContainers(sqlgGraph, isVertex, table)) {
                         collectSchemaTableTrees(sqlgGraph, replacedStepDepth, result, groupedIds, table);
@@ -519,7 +521,7 @@ public class ReplacedStep<S, E> {
                         //edges usually don't have schema, so we're matching any table with any schema if we weren't given any
                         edgeTableWithoutSchemaAndPrefixes.add(value);
                     } else {
-                        SchemaTable predicateValueAsSchemaTableWithPrefix = SchemaTable.from(sqlgGraph, value).withPrefix(isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX);
+                        SchemaTable predicateValueAsSchemaTableWithPrefix = SchemaTable.from(sqlgGraph, value).withPrefix(isVertex ? VERTEX_PREFIX : EDGE_PREFIX);
                         tableWithPrefixes.add(predicateValueAsSchemaTableWithPrefix.toString());
                     }
                 }
@@ -537,7 +539,7 @@ public class ReplacedStep<S, E> {
                     SchemaTable schemaTableWithOutPrefix = SchemaTable.from(sqlgGraph, table).withOutPrefix();
                     return biPredicate.test(schemaTableWithOutPrefix.getTable(), predicateValue);
                 } else {
-                    SchemaTable predicateValueAsSchemaTableWithPrefix = SchemaTable.from(sqlgGraph, (String) predicateValue).withPrefix(isVertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX);
+                    SchemaTable predicateValueAsSchemaTableWithPrefix = SchemaTable.from(sqlgGraph, (String) predicateValue).withPrefix(isVertex ? VERTEX_PREFIX : EDGE_PREFIX);
                     return biPredicate.test(table, predicateValueAsSchemaTableWithPrefix.toString());
                 }
             }

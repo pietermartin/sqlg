@@ -14,9 +14,7 @@ import org.umlg.sqlg.sql.dialect.SqlDialect;
 import java.sql.*;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2016/09/04
@@ -366,7 +364,7 @@ public class VertexLabel extends AbstractLabel {
         	if (lbl!=null){
         		  this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                           lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                          this.getSchema().getName() + "." + this.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+                          this.getSchema().getName() + "." + this.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
         		  this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, lbl);
                   
         	}
@@ -380,7 +378,7 @@ public class VertexLabel extends AbstractLabel {
         	if (lbl!=null){
       		  this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                         lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                        this.getSchema().getName() + "." + this.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+                        this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
       		  this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, lbl);
             
         	}
@@ -590,7 +588,7 @@ public class VertexLabel extends AbstractLabel {
                     this.getSchema().getTopology().addOutForeignKeysToVertexLabel(this, edgeLabel);
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
                             this.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            this.getSchema().getName() + "." + this.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+                            this.getSchema().getName() + "." + this.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
                     // fire only applies to top level, fire for new edges
                     if (!edgeLabelOptional.isPresent()){
                     	this.getSchema().getTopology().fire(edgeLabel, "", TopologyChangeAction.CREATE);
@@ -606,7 +604,7 @@ public class VertexLabel extends AbstractLabel {
         			EdgeRemoveType ert=EdgeRemoveType.valueOf(n.get("type").asText());
         			this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                          lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                         this.getSchema().getName() + "." + this.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+                         this.getSchema().getName() + "." + this.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
        		        this.getSchema().getTopology().removeOutForeignKeysFromVertexLabel(this, lbl);
        		        lbl.outVertexLabels.remove(this);
     		        
@@ -646,7 +644,7 @@ public class VertexLabel extends AbstractLabel {
                     this.getSchema().getTopology().addInForeignKeysToVertexLabel(this, edgeLabel);
                     this.getSchema().getTopology().addToEdgeForeignKeyCache(
                             edgeLabel.getSchema().getName() + "." + EDGE_PREFIX + edgeLabel.getLabel(),
-                            this.getSchema().getName() + "." + this.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+                            this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
                 }
             }
         }
@@ -659,7 +657,7 @@ public class VertexLabel extends AbstractLabel {
         			if (lbl.isValid()){
         				this.getSchema().getTopology().removeFromEdgeForeignKeyCache(
                              lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                             this.getSchema().getName() + "." + this.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+                             this.getSchema().getName() + "." + this.getLabel() + Topology.IN_VERTEX_COLUMN_END);
         				this.getSchema().getTopology().removeInForeignKeysFromVertexLabel(this, lbl);
             		}
         		    lbl.inVertexLabels.remove(this);
@@ -735,16 +733,16 @@ public class VertexLabel extends AbstractLabel {
 
     @Override
     protected String getPrefix() {
-        return SchemaManager.VERTEX_PREFIX;
+        return VERTEX_PREFIX;
     }
 
     Pair<Set<SchemaTable>, Set<SchemaTable>> getUncommittedSchemaTableForeignKeys() {
         Pair<Set<SchemaTable>, Set<SchemaTable>> result = Pair.of(new HashSet<>(), new HashSet<>());
         for (Map.Entry<String, EdgeLabel> uncommittedEdgeLabelEntry : this.uncommittedOutEdgeLabels.entrySet()) {
-            result.getRight().add(SchemaTable.of(this.getSchema().getName(), SchemaManager.EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
+            result.getRight().add(SchemaTable.of(this.getSchema().getName(), EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
         }
         for (Map.Entry<String, EdgeLabel> uncommittedEdgeLabelEntry : this.uncommittedInEdgeLabels.entrySet()) {
-            result.getLeft().add(SchemaTable.of(uncommittedEdgeLabelEntry.getValue().getSchema().getName(), SchemaManager.EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
+            result.getLeft().add(SchemaTable.of(uncommittedEdgeLabelEntry.getValue().getSchema().getName(), EDGE_PREFIX + uncommittedEdgeLabelEntry.getValue().getLabel()));
         }
         return result;
     }

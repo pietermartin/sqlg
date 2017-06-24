@@ -26,7 +26,7 @@ public class TestTraversalPerformance extends BaseTest {
             columns.put("property_" + i, PropertyType.STRING);
         }
         //Create a large schema, it slows the maps  down
-        int NUMBER_OF_SCHEMA_ELEMENTS = 1_0;
+        int NUMBER_OF_SCHEMA_ELEMENTS = 1_000;
         for (int i = 0; i < NUMBER_OF_SCHEMA_ELEMENTS; i++) {
             VertexLabel person = this.sqlgGraph.getTopology().ensureVertexLabelExist("Person_" + i, columns);
             VertexLabel dog = this.sqlgGraph.getTopology().ensureVertexLabelExist("Dog_" + i, columns);
@@ -56,7 +56,7 @@ public class TestTraversalPerformance extends BaseTest {
 
         stopWatch.reset();
         stopWatch.start();
-        for (int i = 0; i < 1_000_000; i++) {
+        for (int i = 0; i < 10_000; i++) {
             Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel("Person_0").out("pet_0").toList().size());
         }
         stopWatch.stop();

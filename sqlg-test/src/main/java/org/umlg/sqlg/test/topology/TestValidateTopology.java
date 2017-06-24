@@ -171,7 +171,7 @@ public class TestValidateTopology extends BaseTest {
         this.sqlgGraph.tx().commit();
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("DROP TABLE " + "\"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\".\"" + SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName() + "\" CASCADE ");
+            statement.execute("DROP TABLE " + "\"" + Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "\".\"" + Topology.VERTEX_PREFIX + globalUniqueIndex.getName() + "\" CASCADE ");
             this.sqlgGraph.tx().commit();
         } catch (SQLException e) {
             fail(e.getMessage());

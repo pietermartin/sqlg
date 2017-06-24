@@ -24,14 +24,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
-
 /**
  * Date: 2016/09/04
  * Time: 8:49 AM
  */
 public class Topology {
+
+    public static final String VERTEX_PREFIX = "V_";
+    public static final String EDGE_PREFIX = "E_";
+    public static final String VERTICES = "VERTICES";
+    public static final String ID = "ID";
+    public static final String VERTEX_SCHEMA = "VERTEX_SCHEMA";
+    public static final String VERTEX_TABLE = "VERTEX_TABLE";
+    public static final String LABEL_SEPARATOR = ":::";
+    public static final String IN_VERTEX_COLUMN_END = "__I";
+    public static final String OUT_VERTEX_COLUMN_END = "__O";
+    public static final String ZONEID = "~~~ZONEID";
+    public static final String MONTHS = "~~~MONTHS";
+    public static final String DAYS = "~~~DAYS";
+    public static final String DURATION_NANOS = "~~~NANOS";
+    public static final String BULK_TEMP_EDGE = "BULK_TEMP_EDGE";
 
     private Logger logger = LoggerFactory.getLogger(Topology.class.getName());
     private SqlgGraph sqlgGraph;
@@ -1340,7 +1352,7 @@ public class Topology {
                 }
             } else if (f instanceof GlobalUniqueIndex) {
                 GlobalUniqueIndex globalUniqueIndex = (GlobalUniqueIndex) f;
-                String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName();
+                String key = Schema.GLOBAL_UNIQUE_INDEX_SCHEMA + "." + VERTEX_PREFIX + globalUniqueIndex.getName();
                 Map<String, PropertyType> tmp = tbls.get(key);
                 if (tmp != null) {
                     result.put(key, tmp);
@@ -1365,6 +1377,10 @@ public class Topology {
         }
         return Collections.emptyMap();
     }
+
+//    public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
+//        return this.allTableCache.get(schemaTable.toString());
+//    }
 
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
         Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
@@ -1473,7 +1489,7 @@ public class Topology {
     void addToAllTables(String tableName, Map<String, PropertyType> propertyTypeMap) {
         this.allTableCache.put(tableName, propertyTypeMap);
         SchemaTable schemaTable = SchemaTable.from(this.sqlgGraph, tableName);
-        if (schemaTable.getTable().startsWith(SchemaManager.VERTEX_PREFIX) && !this.schemaTableForeignKeyCache.containsKey(schemaTable)) {
+        if (schemaTable.getTable().startsWith(VERTEX_PREFIX) && !this.schemaTableForeignKeyCache.containsKey(schemaTable)) {
             //This happens for VertexLabel that have no edges,
             //else the addOutForeignKeysToVertexLabel or addInForeignKeysToVertexLabel would have already added it to the cache.
             this.schemaTableForeignKeyCache.put(schemaTable, Pair.of(new HashSet<>(), new HashSet<>()));
@@ -1547,19 +1563,19 @@ public class Topology {
      * @param vertexLabel
      */
     void removeVertexLabel(VertexLabel vertexLabel) {
-        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), SchemaManager.VERTEX_PREFIX + vertexLabel.getLabel());
+        SchemaTable schemaTable = SchemaTable.of(vertexLabel.getSchema().getName(), VERTEX_PREFIX + vertexLabel.getLabel());
         this.schemaTableForeignKeyCache.remove(schemaTable);
         this.allTableCache.remove(schemaTable.toString());
         for (EdgeLabel lbl : vertexLabel.getOutEdgeLabels().values()) {
             removeFromEdgeForeignKeyCache(
                     lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                    vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.OUT_VERTEX_COLUMN_END);
+                    vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + OUT_VERTEX_COLUMN_END);
         }
         for (EdgeLabel lbl : vertexLabel.getInEdgeLabels().values()) {
             if (lbl.isValid()) {
                 removeFromEdgeForeignKeyCache(
                         lbl.getSchema().getName() + "." + EDGE_PREFIX + lbl.getLabel(),
-                        vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + SchemaManager.IN_VERTEX_COLUMN_END);
+                        vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + IN_VERTEX_COLUMN_END);
             }
         }
     }

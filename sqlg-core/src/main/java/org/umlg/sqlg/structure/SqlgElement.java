@@ -16,6 +16,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.umlg.sqlg.sql.parse.SchemaTableTree.ALIAS_SEPARATOR;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12
@@ -47,8 +49,8 @@ public abstract class SqlgElement implements Element {
     }
 
     public SqlgElement(SqlgGraph sqlgGraph, Long id, String schema, String table) {
-        if (table.startsWith(SchemaManager.VERTEX_PREFIX) || table.startsWith(SchemaManager.EDGE_PREFIX)) {
-            throw new IllegalStateException("SqlgElement.table may not be prefixed with " + SchemaManager.VERTEX_PREFIX + " or " + SchemaManager.EDGE_PREFIX);
+        if (table.startsWith(VERTEX_PREFIX) || table.startsWith(EDGE_PREFIX)) {
+            throw new IllegalStateException("SqlgElement.table may not be prefixed with " + VERTEX_PREFIX + " or " + EDGE_PREFIX);
         }
         this.sqlgGraph = sqlgGraph;
         this.schema = schema;
@@ -101,11 +103,11 @@ public abstract class SqlgElement implements Element {
     @Override
     public void remove() {
         StringBuilder sql = new StringBuilder("DELETE FROM ");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(this.schema));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
         sql.append(".");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes((this instanceof Vertex ? VERTEX_PREFIX : EDGE_PREFIX) + this.table));
         sql.append(" WHERE ");
-        sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("ID"));
+        sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("ID"));
         sql.append(" = ?");
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");
@@ -130,13 +132,13 @@ public abstract class SqlgElement implements Element {
             for (GlobalUniqueIndex globalUniqueIndex : propertyColumn.getGlobalUniqueIndices()) {
 
                 StringBuilder sql = new StringBuilder("DELETE FROM ");
-                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA));
                 sql.append(".");
-                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + globalUniqueIndex.getName()));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(VERTEX_PREFIX + globalUniqueIndex.getName()));
                 sql.append(" WHERE ");
-                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("recordId"));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("recordId"));
                 sql.append(" = ? AND ");
-                sql.append(this.sqlgGraph.getSchemaManager().getSqlDialect().maybeWrapInQoutes("property"));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes("property"));
                 sql.append(" = ?");
                 if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
@@ -266,7 +268,7 @@ public abstract class SqlgElement implements Element {
                 SqlgElement.updateGlobalUniqueIndex(this.sqlgGraph, globalUniqueIndex, this.recordId, propertyColumnObjectPair);
             }
 
-            String tableName = (this instanceof Vertex ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX) + this.table;
+            String tableName = (this instanceof Vertex ? VERTEX_PREFIX : EDGE_PREFIX) + this.table;
             StringBuilder sql = new StringBuilder("UPDATE ");
             sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.schema));
             sql.append(".");
@@ -369,7 +371,7 @@ public abstract class SqlgElement implements Element {
         //Check the propertyKeys parameter
         if (propertyKeys.length > 0) {
             for (String propertyKey : propertyKeys) {
-                if (!propertyKey.equals(SchemaManager.ID)) {
+                if (!propertyKey.equals(Topology.ID)) {
                     V propertyValue = (V) this.properties.get(propertyKey);
                     if (propertyValue != null) {
                         properties.put(propertyKey, instantiateProperty(propertyKey, propertyValue));
@@ -380,7 +382,7 @@ public abstract class SqlgElement implements Element {
             for (Map.Entry<String, Object> propertyEntry : this.properties.entrySet()) {
                 String key = propertyEntry.getKey();
                 V propertyValue = (V) propertyEntry.getValue();
-                if (key.equals(SchemaManager.ID) || propertyValue == null) {
+                if (key.equals(Topology.ID) || propertyValue == null) {
                     continue;
                 }
                 properties.put(key, instantiateProperty(key, propertyValue));
@@ -491,10 +493,10 @@ public abstract class SqlgElement implements Element {
     }
 
     public void loadProperty(ResultSet resultSet, String propertyName, int columnIndex, Map<String, String> columnNameAliasMap, int stepDepth, PropertyType propertyType) throws SQLException {
-        if (propertyName.endsWith(SchemaManager.ZONEID) ||
-                propertyName.endsWith(SchemaManager.MONTHS) ||
-                propertyName.endsWith(SchemaManager.DAYS) ||
-                propertyName.endsWith(SchemaManager.DURATION_NANOS)
+        if (propertyName.endsWith(Topology.ZONEID) ||
+                propertyName.endsWith(Topology.MONTHS) ||
+                propertyName.endsWith(Topology.DAYS) ||
+                propertyName.endsWith(Topology.DURATION_NANOS)
                 ) {
             return;
         }
@@ -834,10 +836,10 @@ public abstract class SqlgElement implements Element {
     }
 
     void loadProperty(ResultSet resultSet, String propertyName, int columnIndex) throws SQLException {
-        if (propertyName.endsWith(SchemaManager.ZONEID) ||
-                propertyName.endsWith(SchemaManager.MONTHS) ||
-                propertyName.endsWith(SchemaManager.DAYS) ||
-                propertyName.endsWith(SchemaManager.DURATION_NANOS)
+        if (propertyName.endsWith(Topology.ZONEID) ||
+                propertyName.endsWith(Topology.MONTHS) ||
+                propertyName.endsWith(Topology.DAYS) ||
+                propertyName.endsWith(Topology.DURATION_NANOS)
                 ) {
             return;
         }

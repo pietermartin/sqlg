@@ -296,8 +296,8 @@ public class TestIndex extends BaseTest {
         edgeLabel.ensureIndexExists(IndexType.UNIQUE, Collections.singletonList(edgeLabel.getProperty("name").get()));
         this.sqlgGraph.tx().commit();
 
-        assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), SchemaManager.EDGE_PREFIX, Collections.singletonList("name"))).get().getIndexType());
-        Assert.assertFalse(edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("B", "test"), SchemaManager.EDGE_PREFIX, Collections.singletonList("name"))).isPresent());
+        assertEquals(IndexType.UNIQUE, edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("A", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).get().getIndexType());
+        Assert.assertFalse(edgeLabel.getIndex(this.sqlgGraph.getSqlDialect().indexName(SchemaTable.of("B", "test"), Topology.EDGE_PREFIX, Collections.singletonList("name"))).isPresent());
 
         try {
             aa1.addEdge("test", bb1, "name", "ola");

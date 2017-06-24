@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.TestAddVertexViaMap;
+import org.umlg.sqlg.test.schema.TestMultiThread;
 
 /**
  * Date: 2014/07/16
@@ -11,7 +11,7 @@ import org.umlg.sqlg.test.TestAddVertexViaMap;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
 //        TestTraversalPerformance.class
-        TestAddVertexViaMap.class,
+        TestMultiThread.class,
 })
 public class AnyTest {
 }

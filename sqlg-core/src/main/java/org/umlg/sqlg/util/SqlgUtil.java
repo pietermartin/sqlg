@@ -32,6 +32,8 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12
@@ -146,7 +148,7 @@ public class SqlgUtil {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
             String unAliased = rootSchemaTableTree.getAliasColumnNameMap().get(columnLabel);
             String mapKey = unAliased != null ? unAliased : columnLabel;
-            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
+            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID)) {
                 lastElementIdCountMap.put(mapKey, columnCount);
             }
         }
@@ -182,10 +184,10 @@ public class SqlgUtil {
                 if (!resultSet.wasNull()) {
                     E sqlgElement;
                     if (schemaTableTree.getSchemaTable().isVertexTable()) {
-                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
                         sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     } else {
-                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.EDGE_PREFIX.length());
+                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
                         sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     schemaTableTree.loadProperty(resultSet, sqlgElement);
@@ -232,10 +234,10 @@ public class SqlgUtil {
         Long id = resultSet.getLong(columnCount);
         SqlgElement sqlgElement;
         if (schemaTable.isVertexTable()) {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+            String rawLabel = schemaTable.getTable().substring(VERTEX_PREFIX.length());
             sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         } else {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+            String rawLabel = schemaTable.getTable().substring(EDGE_PREFIX.length());
             sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         }
         leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
@@ -740,16 +742,16 @@ public class SqlgUtil {
     }
 
     public static String removeTrailingInId(String foreignKey) {
-        if (foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-            return foreignKey.substring(0, foreignKey.length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
+        if (foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+            return foreignKey.substring(0, foreignKey.length() - Topology.IN_VERTEX_COLUMN_END.length());
         } else {
             return foreignKey;
         }
     }
 
     public static String removeTrailingOutId(String foreignKey) {
-        if (foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-            return foreignKey.substring(0, foreignKey.length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
+        if (foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+            return foreignKey.substring(0, foreignKey.length() - Topology.OUT_VERTEX_COLUMN_END.length());
         } else {
             return foreignKey;
         }

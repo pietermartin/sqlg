@@ -2,7 +2,7 @@ package org.umlg.sqlg.test.mod;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 /**
@@ -17,8 +17,8 @@ public class TestEdgeCreation extends BaseTest {
         Vertex v2 = sqlgGraph.addVertex();
         v1.addEdge("label1", v2, "name", "marko");
         sqlgGraph.tx().commit();
-        assertDb(SchemaManager.EDGE_PREFIX +  "label1", 1);
-        assertDb(SchemaManager.VERTEX_PREFIX + "vertex", 2);
+        assertDb(Topology.EDGE_PREFIX +  "label1", 1);
+        assertDb(Topology.VERTEX_PREFIX + "vertex", 2);
     }
 
     @Test
@@ -27,7 +27,7 @@ public class TestEdgeCreation extends BaseTest {
         Vertex v2 = sqlgGraph.addVertex();
         v1.addEdge("label1", v2, "name", "marko");
         sqlgGraph.tx().commit();
-        assertDb(SchemaManager.EDGE_PREFIX  + "label1", 1);
-        assertDb(SchemaManager.VERTEX_PREFIX + "vertex", 2);
+        assertDb(Topology.EDGE_PREFIX  + "label1", 1);
+        assertDb(Topology.VERTEX_PREFIX + "vertex", 2);
     }
 }

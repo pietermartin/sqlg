@@ -13,8 +13,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_NAME;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_PROPERTY_TYPE;
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * Date: 2016/09/14
@@ -67,7 +66,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     public Index ensureIndexExists(final IndexType indexType, final List<PropertyColumn> properties) {
-        String prefix = this instanceof VertexLabel ? SchemaManager.VERTEX_PREFIX : SchemaManager.EDGE_PREFIX;
+        String prefix = this instanceof VertexLabel ? VERTEX_PREFIX : EDGE_PREFIX;
         SchemaTable schemaTable = SchemaTable.of(this.getSchema().getName(), this.getLabel());
         String indexName = this.sqlgGraph.getSqlDialect().indexName(schemaTable, prefix, properties.stream().map(PropertyColumn::getName).collect(Collectors.toList()));
 

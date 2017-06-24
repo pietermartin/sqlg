@@ -18,8 +18,8 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 import static org.umlg.sqlg.structure.Topology.*;
 
 /**
@@ -295,7 +295,7 @@ public class Schema implements TopologyInf {
     }
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
-        Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", SchemaManager.VERTEX_PREFIX);
+        Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", Topology.VERTEX_PREFIX);
         if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
         	return Optional.empty();
         }
@@ -335,7 +335,7 @@ public class Schema implements TopologyInf {
     }
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
-        Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(!edgeLabelName.startsWith(Topology.EDGE_PREFIX), "edge label may not start with \"%s\"", Topology.EDGE_PREFIX);
         if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
         	return Optional.empty();
         }
@@ -434,16 +434,16 @@ public class Schema implements TopologyInf {
     Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
-            result.put(this.getName() + "." + SchemaManager.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
         }
         for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
-            result.put(this.getName() + "." + SchemaManager.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
         }
         return result;
     }
 
     Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
             Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
             if (vertexLabelOptional.isPresent()) {
@@ -459,7 +459,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
             Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
             if (vertexLabelOptional.isPresent()) {
@@ -475,7 +475,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
             Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
             if (vertexLabelOptional.isPresent()) {

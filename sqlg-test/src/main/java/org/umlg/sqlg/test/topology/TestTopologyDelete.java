@@ -24,8 +24,8 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 import static org.umlg.sqlg.structure.Topology.*;
 
 /**
@@ -642,10 +642,10 @@ public class TestTopologyDelete extends BaseTest {
 
 
         assertTrue(tableExistsInSQL(schemaOut, EDGE_PREFIX + "E1"));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".A" + SchemaManager.OUT_VERTEX_COLUMN_END));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".B" + SchemaManager.OUT_VERTEX_COLUMN_END));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".A" + SchemaManager.IN_VERTEX_COLUMN_END));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".B" + SchemaManager.IN_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".A" + Topology.OUT_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".B" + Topology.OUT_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".A" + Topology.IN_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".B" + Topology.IN_VERTEX_COLUMN_END));
     }
 
     private void checkEdgeRoleExistenceAfterRoleDeletion(SqlgGraph g, String schemaOut, String schemaIn) throws Exception {
@@ -682,10 +682,10 @@ public class TestTopologyDelete extends BaseTest {
         assertEquals("A", outRoles.iterator().next().getVertexLabel().getName());
 
         assertTrue(tableExistsInSQL(schemaOut, EDGE_PREFIX + "E1"));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".A" + SchemaManager.OUT_VERTEX_COLUMN_END));
-        assertFalse(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".B" + SchemaManager.OUT_VERTEX_COLUMN_END));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".A" + SchemaManager.IN_VERTEX_COLUMN_END));
-        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".B" + SchemaManager.IN_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".A" + Topology.OUT_VERTEX_COLUMN_END));
+        assertFalse(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaOut + ".B" + Topology.OUT_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".A" + Topology.IN_VERTEX_COLUMN_END));
+        assertTrue(columnExistsInSQL(schemaOut, EDGE_PREFIX + "E1", schemaIn + ".B" + Topology.IN_VERTEX_COLUMN_END));
     }
 
 //    @Test
