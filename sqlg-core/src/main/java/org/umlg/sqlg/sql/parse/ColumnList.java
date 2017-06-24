@@ -110,13 +110,14 @@ public class ColumnList {
     public String toString() {
         String sep = "";
         StringBuilder sb = new StringBuilder();
-        for (Column c : columns.keySet()) {
-            String alias = columns.get(c);
+        for (Map.Entry<Column, String> columnEntry : this.columns.entrySet()) {
+            Column c = columnEntry.getKey();
+            String alias = columnEntry.getValue();
             sb.append(sep);
             sep = ",\n\t";
             c.toString(sb);
             sb.append(" AS ");
-            sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
+            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(alias));
         }
         return sb.toString();
     }
