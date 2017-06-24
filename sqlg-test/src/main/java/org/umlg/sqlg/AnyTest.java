@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.schema.TestMultiThread;
+import org.umlg.sqlg.test.gremlincompile.TestTraversalPerformance;
 
 /**
  * Date: 2014/07/16
@@ -10,8 +10,8 @@ import org.umlg.sqlg.test.schema.TestMultiThread;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//        TestTraversalPerformance.class
-        TestMultiThread.class,
+        TestTraversalPerformance.class
+//        TestMultiThread.class,
 })
 public class AnyTest {
 }
