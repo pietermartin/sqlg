@@ -1378,22 +1378,8 @@ public class Topology {
         return Collections.emptyMap();
     }
 
-//    public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-//        return this.allTableCache.get(schemaTable.toString());
-//    }
-
     public Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Optional<Schema> schemaOptional = getSchema(schemaTable.getSchema());
-        if (schemaOptional.isPresent()) {
-            return schemaOptional.get().getTableFor(schemaTable);
-        }
-        if (isWriteLockHeldByCurrentThread()) {
-            Map<String, PropertyType> temporaryPropertyMap = this.temporaryTables.get(schemaTable.getTable());
-            if (temporaryPropertyMap != null) {
-                return Collections.unmodifiableMap(temporaryPropertyMap);
-            }
-        }
-        return Collections.emptyMap();
+        return Collections.unmodifiableMap(getAllTables(true).get(schemaTable.toString()));
     }
 
     public Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getTableLabels() {
