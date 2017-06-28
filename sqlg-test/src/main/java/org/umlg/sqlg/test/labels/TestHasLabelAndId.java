@@ -26,6 +26,22 @@ import java.util.List;
 public class TestHasLabelAndId extends BaseTest {
 
     @Test
+    public void testHasLabelWithIDs() {
+        Vertex a = sqlgGraph.addVertex("A");
+        Vertex b = sqlgGraph.addVertex("B");
+
+        GraphTraversal<Vertex, Vertex> t = sqlgGraph.traversal().V(a, b).hasLabel("A");
+
+        Assert.assertTrue(t.hasNext());
+        Vertex v = t.next();
+        Assert.assertEquals(a, v);
+        boolean hasNext = t.hasNext();
+        if (hasNext) {
+            Assert.fail(t.next().toString());
+        }
+    }
+
+    @Test
     public void testConsecutiveIdCollectionAfterOut() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name", "a1");
         Vertex b1 = this.sqlgGraph.addVertex(T.label, "B", "name", "b1");

@@ -1,20 +1,39 @@
 package org.umlg.sqlg.test.labels;
 
 import org.apache.tinkerpop.gremlin.process.traversal.Path;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Assert;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Date: 2016/06/05
  * Time: 2:18 PM
  */
 public class TestMultipleLabels extends BaseTest {
+
+    @Test
+    public void testMultipleHasLabels() {
+        this.sqlgGraph.addVertex("A");
+        this.sqlgGraph.addVertex("B");
+
+        GraphTraversal<Vertex, Vertex> t = this.sqlgGraph.traversal().V().hasLabel("A").hasLabel("B");
+
+        String msg = null;
+        boolean hasNext = t.hasNext();
+        if (hasNext) {
+            msg = t.next().toString();
+            hasNext = t.hasNext();
+            if (hasNext) {
+                msg += ", " + t.next().toString();
+            }
+        }
+        Assert.assertNull(msg);
+    }
 
     @Test
     public void testMultipleLabels() {
@@ -29,7 +48,7 @@ public class TestMultipleLabels extends BaseTest {
         b1.addEdge("bc", c1);
         this.sqlgGraph.tx().commit();
         List<Vertex> vertices =  this.sqlgGraph.traversal().V(a1.id()).as("a").out("ab").as("a").out("bc").as("a").toList();
-        assertEquals(1, vertices.size());
+        Assert.assertEquals(1, vertices.size());
     }
 
     @Test
@@ -53,9 +72,6 @@ public class TestMultipleLabels extends BaseTest {
                 .out("bc")
                 .path()
                 .toList();
-        for (Path path : paths) {
-            System.out.println(path);
-        }
 
         List<Vertex> vertices = this.sqlgGraph.traversal()
                 .V(a1.id())
