@@ -26,6 +26,69 @@ import java.util.List;
 public class TestHasLabelAndId extends BaseTest {
 
     @Test
+    public void testNeqWithinManyIDs() {
+        Vertex a = sqlgGraph.addVertex("A");
+        Vertex b1 = sqlgGraph.addVertex("B");
+        Vertex b2 = sqlgGraph.addVertex("B");
+        Vertex b3 = sqlgGraph.addVertex("B");
+        Vertex b4 = sqlgGraph.addVertex("B");
+        Vertex b5 = sqlgGraph.addVertex("B");
+        Vertex b6 = sqlgGraph.addVertex("B");
+        Vertex c = sqlgGraph.addVertex("C");
+
+        a.addEdge("e_a", b1);
+        a.addEdge("e_a", b2);
+        a.addEdge("e_a", b3);
+        a.addEdge("e_a", b4);
+        a.addEdge("e_a", b5);
+        a.addEdge("e_a", b6);
+        a.addEdge("e_a", c);
+
+        //uses tmp table to join on
+        GraphTraversal<Vertex, Vertex> t = sqlgGraph.traversal().V(a).out().has(T.id, P.without(b1.id(), b2.id(), b3.id(), b4.id(), b5.id()));
+        List<Vertex> vertices = t.toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(b6));
+        Assert.assertTrue(vertices.contains(c));
+    }
+
+    @Test
+    public void testNeqWithinID() {
+        Vertex a = sqlgGraph.addVertex("A");
+        Vertex b1 = sqlgGraph.addVertex("B");
+        Vertex b2 = sqlgGraph.addVertex("B");
+        Vertex c = sqlgGraph.addVertex("C");
+
+        a.addEdge("e_a", b1);
+        a.addEdge("e_a", b2);
+        a.addEdge("e_a", c);
+
+        GraphTraversal<Vertex, Vertex> t = sqlgGraph.traversal().V(a).out().has(T.id, P.without(b1.id()));
+        List<Vertex> vertices = t.toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(b2));
+        Assert.assertTrue(vertices.contains(c));
+    }
+
+    @Test
+    public void testNeqWithID() {
+        Vertex a = sqlgGraph.addVertex("A");
+        Vertex b1 = sqlgGraph.addVertex("B");
+        Vertex b2 = sqlgGraph.addVertex("B");
+        Vertex c = sqlgGraph.addVertex("C");
+
+        a.addEdge("e_a", b1);
+        a.addEdge("e_a", b2);
+        a.addEdge("e_a", c);
+
+        GraphTraversal<Vertex, Vertex> t = sqlgGraph.traversal().V(a).out().has(T.id, P.neq(b1.id()));
+        List<Vertex> vertices = t.toList();
+        Assert.assertEquals(2, vertices.size());
+        Assert.assertTrue(vertices.contains(b2));
+        Assert.assertTrue(vertices.contains(c));
+    }
+
+    @Test
     public void testHasLabelWithIDs() {
         Vertex a = sqlgGraph.addVertex("A");
         Vertex b = sqlgGraph.addVertex("B");

@@ -661,7 +661,7 @@ public class ReplacedStep<S, E> {
             }
             if (hasContainer.getBiPredicate() == Contains.without) {
                 //The id's label needs to be added to previous labelHasContainers labels.
-                //without indicates that the label needs to be queried along with the rest, or logic rather than and.
+                //without indicates that the label needs to be queried along with the rest, 'or' logic rather than 'and'.
                 if (!this.labelHasContainers.isEmpty()) {
                     Object previousHasContainerLabels = this.labelHasContainers.get(this.labelHasContainers.size() - 1).getValue();
                     List<String> mergedLabels;
@@ -675,8 +675,6 @@ public class ReplacedStep<S, E> {
                     }
                     mergedLabels.addAll(idLabels);
                     this.labelHasContainers.set(this.labelHasContainers.size() - 1, new HasContainer(T.label.getAccessor(), P.within(mergedLabels)));
-                } else {
-                    this.labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.within(idLabels)));
                 }
             } else {
                 this.labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.within(idLabels)));
@@ -707,8 +705,6 @@ public class ReplacedStep<S, E> {
                     }
                     mergedLabels.add(recordId.getSchemaTable().toString());
                     this.labelHasContainers.set(this.labelHasContainers.size() - 1, new HasContainer(T.label.getAccessor(), P.within(mergedLabels)));
-                } else {
-                    this.labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(recordId.getSchemaTable().toString())));
                 }
             } else {
                 this.labelHasContainers.add(new HasContainer(T.label.getAccessor(), P.eq(recordId.getSchemaTable().toString())));

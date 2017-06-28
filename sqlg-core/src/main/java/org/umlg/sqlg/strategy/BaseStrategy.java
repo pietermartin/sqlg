@@ -72,6 +72,7 @@ public abstract class BaseStrategy {
     );
     public static final List<BiPredicate> SUPPORTED_ID_BI_PREDICATE = Arrays.asList(
             Compare.eq, Compare.neq, Contains.within, Contains.without
+//            Compare.eq, Contains.within
     );
 
     protected Traversal.Admin<?, ?> traversal;
