@@ -130,7 +130,7 @@ public class GlobalUniqueIndex implements TopologyInf {
     }
 
     Optional<JsonNode> toNotifyJson() {
-        Preconditions.checkState(this.topology.isWriteLockHeldByCurrentThread(), "GlobalUniqueIndex toNotifyJson() may only be called is the lock is held.");
+        Preconditions.checkState(this.topology.isSqlWriteLockHeldByCurrentThread(), "GlobalUniqueIndex toNotifyJson() may only be called is the lock is held.");
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
         for (PropertyColumn property : this.uncommittedProperties) {

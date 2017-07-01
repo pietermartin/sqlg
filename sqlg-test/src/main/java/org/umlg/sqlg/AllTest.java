@@ -23,6 +23,7 @@ import org.umlg.sqlg.test.io.TestIo;
 import org.umlg.sqlg.test.json.JsonTest;
 import org.umlg.sqlg.test.json.TestJsonUpdate;
 import org.umlg.sqlg.test.labels.TestHasLabelAndId;
+import org.umlg.sqlg.test.labels.TestLabelLength;
 import org.umlg.sqlg.test.labels.TestLabelsSchema;
 import org.umlg.sqlg.test.labels.TestMultipleLabels;
 import org.umlg.sqlg.test.localdate.LocalDateTest;
@@ -196,7 +197,8 @@ import org.umlg.sqlg.test.vertexout.TestVertexOutWithHas;
         TestIo.class,
         TestComplex.class,
         TestTopologyDeleteSpecific.class,
-        TestDeadLock.class
+        TestDeadLock.class,
+        TestLabelLength.class
 })
 public class AllTest {
 

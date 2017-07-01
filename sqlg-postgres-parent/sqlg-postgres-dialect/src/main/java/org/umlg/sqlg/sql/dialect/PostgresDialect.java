@@ -134,7 +134,7 @@ public class PostgresDialect extends BaseSqlDialect {
 
     public void assertTableName(String tableName) {
         if (!StringUtils.isEmpty(tableName) && tableName.length() > 63) {
-            throw new IllegalStateException(String.format("Postgres table names must be 63 characters or less! Given table name is %s", tableName));
+            throw SqlgExceptions.invalidTableName(String.format("Postgres table names must be 63 characters or less! Given table name is %s", tableName));
         }
     }
 

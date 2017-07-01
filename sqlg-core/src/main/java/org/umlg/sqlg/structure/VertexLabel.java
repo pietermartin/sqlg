@@ -88,7 +88,7 @@ public class VertexLabel extends AbstractLabel {
     public Map<String, EdgeLabel> getInEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         result.putAll(this.inEdgeLabels);
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedInEdgeLabels);
             for (String e:this.uncommittedRemovedInEdgeLabels.keySet()){
             	result.remove(e);
@@ -100,7 +100,7 @@ public class VertexLabel extends AbstractLabel {
     public Map<String, EdgeLabel> getOutEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         result.putAll(this.outEdgeLabels);
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (String e:this.uncommittedRemovedOutEdgeLabels.keySet()){
             	result.remove(e);
@@ -116,7 +116,7 @@ public class VertexLabel extends AbstractLabel {
         for (String k:this.inEdgeLabels.keySet()){
         	result.put(k,new EdgeRole(this,this.inEdgeLabels.get(k),Direction.IN,true));
         }
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
         	for (String k:this.uncommittedInEdgeLabels.keySet()){
             	result.put(k,new EdgeRole(this,this.uncommittedInEdgeLabels.get(k),Direction.IN,false));
             }
@@ -132,7 +132,7 @@ public class VertexLabel extends AbstractLabel {
          for (String k:this.outEdgeLabels.keySet()){
          	result.put(k,new EdgeRole(this,this.outEdgeLabels.get(k),Direction.OUT,true));
          }
-         if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+         if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
          	for (String k:this.uncommittedOutEdgeLabels.keySet()){
              	result.put(k,new EdgeRole(this,this.uncommittedOutEdgeLabels.get(k),Direction.OUT,false));
              }
@@ -167,7 +167,7 @@ public class VertexLabel extends AbstractLabel {
      * @return A map of uncommitted EdgeLabels. The map key is the EdgeLabels label.
      */
     Map<String, EdgeLabel> getUncommittedOutEdgeLabels() {
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             Map<String, EdgeLabel> result = new HashMap<>();
             result.putAll(this.uncommittedOutEdgeLabels);
             for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
@@ -183,7 +183,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     Optional<EdgeLabel> getUncommittedOutEdgeLabel(String edgeLabelName) {
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             EdgeLabel edgeLabel = this.getUncommittedOutEdgeLabels().get(edgeLabelName);
             if (edgeLabel != null) {
                 return Optional.of(edgeLabel);
@@ -324,7 +324,7 @@ public class VertexLabel extends AbstractLabel {
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
             outSchemaTables.add(SchemaTable.of(outEdgeLabel.getSchema().getName(), EDGE_PREFIX + outEdgeLabel.getLabel()));
         }
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (EdgeLabel inEdgeLabel : this.uncommittedInEdgeLabels.values()) {
                 inSchemaTables.add(SchemaTable.of(inEdgeLabel.getSchema().getName(), EDGE_PREFIX + inEdgeLabel.getLabel()));
             }
@@ -336,7 +336,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.schema.getTopology().isWriteLockHeldByCurrentThread(), "VertexLabel.afterCommit must hold the write lock");
+        Preconditions.checkState(this.schema.getTopology().isSqlWriteLockHeldByCurrentThread(), "VertexLabel.afterCommit must hold the write lock");
         super.afterCommit();
         Iterator<Map.Entry<String, EdgeLabel>> edgeLabelEntryIter = this.uncommittedOutEdgeLabels.entrySet().iterator();
         while (edgeLabelEntryIter.hasNext()) {
@@ -394,7 +394,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     void afterRollbackForInEdges() {
-        Preconditions.checkState(this.schema.getTopology().isWriteLockHeldByCurrentThread(), "VertexLabel.afterRollback must hold the write lock");
+        Preconditions.checkState(this.schema.getTopology().isSqlWriteLockHeldByCurrentThread(), "VertexLabel.afterRollback must hold the write lock");
         super.afterRollback();
         for (Iterator<EdgeLabel> it = this.uncommittedInEdgeLabels.values().iterator(); it.hasNext(); ) {
             EdgeLabel edgeLabel = it.next();
@@ -404,7 +404,7 @@ public class VertexLabel extends AbstractLabel {
     }
 
     void afterRollbackForOutEdges() {
-        Preconditions.checkState(this.schema.getTopology().isWriteLockHeldByCurrentThread(), "VertexLabel.afterRollback must hold the write lock");
+        Preconditions.checkState(this.schema.getTopology().isSqlWriteLockHeldByCurrentThread(), "VertexLabel.afterRollback must hold the write lock");
         super.afterRollback();
         for (Iterator<EdgeLabel> it = this.uncommittedOutEdgeLabels.values().iterator(); it.hasNext(); ) {
             EdgeLabel edgeLabel = it.next();
@@ -453,7 +453,7 @@ public class VertexLabel extends AbstractLabel {
         }
         vertexLabelNode.set("inEdgeLabels", inEdgeLabelsArrayNode);
 
-        if (this.schema.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.schema.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels.values()) {
                 outEdgeLabelsArrayNode.add(edgeLabel.toJson());
@@ -481,7 +481,7 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));
         }
 
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutEdgeLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedOutEdgeLabels.isEmpty()) {
             ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeLabel edgeLabel : this.uncommittedOutEdgeLabels.values()) {
                 Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
@@ -492,7 +492,7 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedOutEdgeLabels", outEdgeLabelsArrayNode);
         }
 
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedOutEdgeLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedOutEdgeLabels.isEmpty()) {
             ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String edgeLabel : this.uncommittedRemovedOutEdgeLabels.keySet()) {
             	ObjectNode edgeRemove = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -504,7 +504,7 @@ public class VertexLabel extends AbstractLabel {
         }
 
         
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInEdgeLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedInEdgeLabels.isEmpty()) {
             ArrayNode inEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (EdgeLabel edgeLabel : this.uncommittedInEdgeLabels.values()) {
                 Optional<JsonNode> jsonNodeOptional = edgeLabel.toNotifyJson();
@@ -515,7 +515,7 @@ public class VertexLabel extends AbstractLabel {
             vertexLabelNode.set("uncommittedInEdgeLabels", inEdgeLabelsArrayNode);
         }
 
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedInEdgeLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedInEdgeLabels.isEmpty()) {
             ArrayNode outEdgeLabelsArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (String edgeLabel : this.uncommittedRemovedInEdgeLabels.keySet()) {
             	ObjectNode edgeRemove = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
