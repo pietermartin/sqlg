@@ -52,7 +52,7 @@ public class PropertyColumn implements TopologyInf {
     public Set<GlobalUniqueIndex> getGlobalUniqueIndices() {
         HashSet<GlobalUniqueIndex> result = new HashSet<>();
         result.addAll(this.globalUniqueIndices);
-        if (this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedGlobalUniqueIndices);
         }
         return result;
@@ -69,7 +69,7 @@ public class PropertyColumn implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread(), "PropertyColumn.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "PropertyColumn.afterRollback must hold the write lock");
         this.uncommittedGlobalUniqueIndices.clear();
     }
 

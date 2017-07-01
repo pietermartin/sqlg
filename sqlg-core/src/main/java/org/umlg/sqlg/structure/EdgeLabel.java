@@ -75,7 +75,7 @@ public class EdgeLabel extends AbstractLabel {
         if (!this.outVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.outVertexLabels.iterator().next();
             return vertexLabel.getSchema();
-        } else if (this.topology.isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
+        } else if (this.topology.isSqlWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
             return vertexLabel.getSchema();
         } else {
@@ -188,7 +188,7 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "EdgeLabel.afterCommit must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "EdgeLabel.afterCommit must hold the write lock");
         super.afterCommit();
         for (Iterator<VertexLabel> it = this.uncommittedInVertexLabels.iterator(); it.hasNext(); ) {
             VertexLabel vertexLabel = it.next();
@@ -213,13 +213,13 @@ public class EdgeLabel extends AbstractLabel {
     }
 
     void afterRollbackInEdges(VertexLabel vertexLabel) {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
         super.afterRollback();
         this.uncommittedInVertexLabels.remove(vertexLabel);
     }
 
     void afterRollbackOutEdges(VertexLabel vertexLabel) {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "EdgeLabel.afterRollback must hold the write lock");
         super.afterRollback();
         this.uncommittedOutVertexLabels.remove(vertexLabel);
     }
@@ -244,7 +244,7 @@ public class EdgeLabel extends AbstractLabel {
             case BOTH:
                 throw new IllegalStateException("foreignKeysContains may not be called for Direction.BOTH");
         }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             switch (direction) {
                 case OUT:
                     if (this.uncommittedOutVertexLabels.contains(vertexLabel)) {
@@ -267,12 +267,12 @@ public class EdgeLabel extends AbstractLabel {
     Set<String> getAllEdgeForeignKeys() {
         Set<String> result = new HashSet<>();
         for (VertexLabel vertexLabel : this.getInVertexLabels()) {
-        	if (!this.getSchema().getTopology().isWriteLockHeldByCurrentThread() || !this.uncommittedRemovedInVertexLabels.contains(vertexLabel)){
+        	if (!this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() || !this.uncommittedRemovedInVertexLabels.contains(vertexLabel)){
         		result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END);
         	}
         }
         for (VertexLabel vertexLabel : this.getOutVertexLabels()) {
-        	if (!this.getSchema().getTopology().isWriteLockHeldByCurrentThread() || !this.uncommittedRemovedOutVertexLabels.contains(vertexLabel)){
+        	if (!this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() || !this.uncommittedRemovedOutVertexLabels.contains(vertexLabel)){
         		result.add(vertexLabel.getSchema().getName() + "." + vertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END);
         	}
         }
@@ -282,7 +282,7 @@ public class EdgeLabel extends AbstractLabel {
     Set<String> getUncommittedEdgeForeignKeys() {
         Set<String> result = new HashSet<>();
         //noinspection Duplicates
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedInVertexLabels) {
             	if (!this.uncommittedRemovedInVertexLabels.contains(vertexLabel)){
             		result.add(vertexLabel.getFullName() + Topology.IN_VERTEX_COLUMN_END);
@@ -304,7 +304,7 @@ public class EdgeLabel extends AbstractLabel {
     public Set<VertexLabel> getOutVertexLabels() {
         Set<VertexLabel> result = new HashSet<>();
         result.addAll(this.outVertexLabels);
-        if (isValid() && this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (isValid() && this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedOutVertexLabels);
            	result.removeAll(this.uncommittedRemovedOutVertexLabels);
         }
@@ -314,7 +314,7 @@ public class EdgeLabel extends AbstractLabel {
     public Set<VertexLabel> getInVertexLabels() {
         Set<VertexLabel> result = new HashSet<>();
         result.addAll(this.inVertexLabels);
-        if (isValid() && this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (isValid() && this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.addAll(this.uncommittedInVertexLabels);
         	result.removeAll(this.uncommittedRemovedInVertexLabels);
         }
@@ -329,7 +329,7 @@ public class EdgeLabel extends AbstractLabel {
         	}
         }
         
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl:this.uncommittedOutVertexLabels){
             	if (!this.uncommittedOutVertexLabels.contains(lbl)){
             		result.add(new EdgeRole(lbl,this,Direction.OUT,false));
@@ -347,7 +347,7 @@ public class EdgeLabel extends AbstractLabel {
         	}
         }
         
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel lbl:this.uncommittedInVertexLabels){
             	if (!this.uncommittedInVertexLabels.contains(lbl)){
             		result.add(new EdgeRole(lbl,this,Direction.IN,false));
@@ -490,7 +490,7 @@ public class EdgeLabel extends AbstractLabel {
         }
         EdgeLabel otherEdgeLabel = (EdgeLabel) other;
         if (isValid()){
-	        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
+	        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
 	            VertexLabel vertexLabel = this.uncommittedOutVertexLabels.iterator().next();
 	            VertexLabel otherVertexLabel = otherEdgeLabel.uncommittedOutVertexLabels.iterator().next();
 	            return vertexLabel.getSchema().equals(otherVertexLabel.getSchema()) && otherEdgeLabel.getLabel().equals(this.getLabel());
@@ -559,7 +559,7 @@ public class EdgeLabel extends AbstractLabel {
         }
         edgeLabelNode.set("inVertexLabels", inVertexLabelArrayNode);
 
-        if (isValid() && this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (isValid() && this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
                 ObjectNode outVertexLabelObjectNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
@@ -597,7 +597,7 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedRemovedIndexes", abstractLabelNode.get().get("uncommittedRemovedIndexes"));
           }
 
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedOutVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel outVertexLabel : this.uncommittedOutVertexLabels) {
@@ -608,7 +608,7 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedOutVertexLabels", outVertexLabelArrayNode);
         }
         
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedOutVertexLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedOutVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode outVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel outVertexLabel : this.uncommittedRemovedOutVertexLabels) {
@@ -619,7 +619,7 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedRemovedOutVertexLabels", outVertexLabelArrayNode);
         }
 
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedInVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel inVertexLabel : this.uncommittedInVertexLabels) {
@@ -630,7 +630,7 @@ public class EdgeLabel extends AbstractLabel {
             edgeLabelNode.set("uncommittedInVertexLabels", inVertexLabelArrayNode);
         }
         
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedInVertexLabels.isEmpty()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedInVertexLabels.isEmpty()) {
             foundSomething = true;
             ArrayNode inVertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel inVertexLabel : this.uncommittedRemovedInVertexLabels) {

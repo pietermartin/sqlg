@@ -114,7 +114,7 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, PropertyColumn> getProperties() {
         Map<String, PropertyColumn> result = new HashMap<>();
         result.putAll(this.properties);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedProperties);
             for (String s : this.uncommittedRemovedProperties) {
                 result.remove(s);
@@ -127,7 +127,7 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, PropertyColumn> getGlobalUniqueIndexProperties() {
         Map<String, PropertyColumn> result = new HashMap<>();
         result.putAll(this.globalUniqueIndexProperties);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedGlobalUniqueIndexProperties);
         }
         return result;
@@ -145,7 +145,7 @@ public abstract class AbstractLabel implements TopologyInf {
     public Map<String, Index> getIndexes() {
         Map<String, Index> result = new HashMap<>();
         result.putAll(this.indexes);
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedIndexes);
             for (String i : this.uncommittedRemovedIndexes) {
                 result.remove(i);
@@ -164,28 +164,11 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Map<String, PropertyType> getPropertyTypeMap() {
-//        if (this.propertyTypeMap == null) {
-//            this.propertyTypeMap = new HashMap<>();
-//            for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
-//                this.propertyTypeMap.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyType());
-//            }
-//            if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
-//                for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
-//                    this.propertyTypeMap.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyType());
-//                }
-//                for (String s : this.uncommittedRemovedProperties) {
-//                    this.propertyTypeMap.remove(s);
-//                }
-//            }
-//        }
-//        return this.propertyTypeMap;
-
-
         Map<String, PropertyType> result = new HashMap<>();
         for (Map.Entry<String, PropertyColumn> propertyEntry : this.properties.entrySet()) {
             result.put(propertyEntry.getKey(), propertyEntry.getValue().getPropertyType());
         }
-        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, PropertyColumn> uncommittedPropertyEntry : this.uncommittedProperties.entrySet()) {
                 result.put(uncommittedPropertyEntry.getKey(), uncommittedPropertyEntry.getValue().getPropertyType());
             }
@@ -197,7 +180,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Map<String, PropertyColumn> getUncommittedPropertyTypeMap() {
-        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             return this.uncommittedProperties;
         } else {
             return Collections.emptyMap();
@@ -205,7 +188,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     Set<String> getUncommittedRemovedProperties() {
-        if (getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             return this.uncommittedRemovedProperties;
         } else {
             return Collections.emptySet();
@@ -273,12 +256,13 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void addProperty(Vertex propertyVertex) {
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread());
         PropertyColumn property = new PropertyColumn(this, propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), PropertyType.valueOf(propertyVertex.value(SQLG_SCHEMA_PROPERTY_TYPE)));
         this.properties.put(propertyVertex.value(SQLG_SCHEMA_PROPERTY_NAME), property);
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "Abstract.afterCommit must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Abstract.afterCommit must hold the write lock");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             this.properties.put(entry.getKey(), entry.getValue());
@@ -323,7 +307,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getSchema().getTopology().isWriteLockHeldByCurrentThread(), "Abstract.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread(), "Abstract.afterRollback must hold the write lock");
         for (Iterator<Map.Entry<String, PropertyColumn>> it = this.uncommittedProperties.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, PropertyColumn> entry = it.next();
             entry.getValue().afterRollback();
@@ -356,7 +340,7 @@ public abstract class AbstractLabel implements TopologyInf {
     }
 
     protected Optional<JsonNode> toNotifyJson() {
-        if (this.getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
             ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
             ArrayNode propertyArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (PropertyColumn property : this.uncommittedProperties.values()) {

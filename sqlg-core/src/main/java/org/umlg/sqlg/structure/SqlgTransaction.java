@@ -19,7 +19,8 @@ import java.sql.SQLException;
  */
 public class SqlgTransaction extends AbstractThreadLocalTransaction {
 
-    public static final String BATCH_MODE_NOT_SUPPORTED = "Batch mode not supported!";
+    private static final String BATCH_MODE_NOT_SUPPORTED = "Batch mode not supported!";
+    @SuppressWarnings("WeakerAccess")
     public static final String QUERY_LAZY = "query.lazy";
     
     private SqlgGraph sqlgGraph;
@@ -29,17 +30,9 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
     private Logger logger = LoggerFactory.getLogger(SqlgTransaction.class.getName());
     private boolean cacheVertices = false;
 
-    private final ThreadLocal<TransactionCache> threadLocalTx = new ThreadLocal<TransactionCache>() {
-        protected TransactionCache initialValue() {
-            return null;
-        }
-    };
+    private final ThreadLocal<TransactionCache> threadLocalTx = ThreadLocal.withInitial(() -> null);
 
-    private final ThreadLocal<PreparedStatementCache> threadLocalPreparedStatementTx = new ThreadLocal<PreparedStatementCache>() {
-        protected PreparedStatementCache initialValue() {
-            return new PreparedStatementCache();
-        }
-    };
+    private final ThreadLocal<PreparedStatementCache> threadLocalPreparedStatementTx = ThreadLocal.withInitial(PreparedStatementCache::new);
 
     SqlgTransaction(Graph sqlgGraph, boolean cacheVertices) {
         super(sqlgGraph);
@@ -61,9 +54,6 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
                 // read default setting for laziness
                 boolean lazy=this.sqlgGraph.getConfiguration().getBoolean(QUERY_LAZY,true);
                 this.threadLocalTx.set(TransactionCache.of(this.cacheVertices, connection, new BatchManager(this.sqlgGraph, ((SqlBulkDialect)this.sqlgGraph.getSqlDialect())),lazy));
-                if (this.sqlgGraph.getTopology() != null) {
-                    this.sqlgGraph.getTopology().z_internalReadLock();
-                }
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -284,13 +274,14 @@ public class SqlgTransaction extends AbstractThreadLocalTransaction {
      * are we reading the SQL query results lazily?
      * @return true if we are processing the results lazily, false otherwise
      */
+    @SuppressWarnings("WeakerAccess")
     public boolean isLazyQueries(){
     	return this.threadLocalTx.get().isLazyQueries();
     }
     
     /**
      * set the laziness on query result reading
-     * @param lazy
+     * @param lazy boolean to set the query as lazy or not.
      */
     public void setLazyQueries(boolean lazy){
     	readWrite();

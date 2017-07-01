@@ -181,7 +181,7 @@ public class Index implements TopologyInf {
     }
 
     protected Optional<JsonNode> toNotifyJson() {
-        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
+        Preconditions.checkState(this.abstractLabel.getSchema().getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedProperties.isEmpty());
         ObjectNode result = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         result.put("name", this.name);
         result.set("indexType", this.uncommittedIndexType.toNotifyJson());
@@ -249,7 +249,7 @@ public class Index implements TopologyInf {
     
     public List<PropertyColumn> getProperties() {
     	List<PropertyColumn> props=new ArrayList<>(properties);
-    	if (this.getParentLabel().getSchema().getTopology().isWriteLockHeldByCurrentThread()) {
+    	if (this.getParentLabel().getSchema().getTopology().isSqlWriteLockHeldByCurrentThread()) {
     		props.addAll(uncommittedProperties);
     	}
 		return Collections.unmodifiableList(props);
