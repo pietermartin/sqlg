@@ -33,10 +33,10 @@ class SqlgStartupManager {
         this.sqlDialect = sqlgGraph.getSqlDialect();
     }
 
-    void loadSchema() {
+    void loadSqlgSchema() {
         try {
             if (logger.isDebugEnabled()) {
-                logger.debug("SchemaManager.loadSchema()...");
+                logger.debug("SchemaManager.loadSqlgSchema()...");
             }
             //check if the topology schema exists, if not createVertexLabel it
             boolean existSqlgSchema = existSqlgSchema();
@@ -72,7 +72,7 @@ class SqlgStartupManager {
                 stopWatch2.start();
                 loadSqlgSchemaFromInformationSchema();
                 stopWatch2.stop();
-                System.out.println("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
+                logger.debug("Time to upgrade sqlg from pre sqlg_schema: " + stopWatch2.toString());
                 logger.debug("Done upgrading sqlg from pre sqlg_schema version to sqlg_schema version");
             } else {
                 //make sure the property index column exist, this if for upgrading from 1.3.2 to 1.4.0
@@ -456,7 +456,7 @@ class SqlgStartupManager {
     private void createGuiSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
-            statement.execute("CREATE SCHEMA " + this.sqlDialect.maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + ";");
+            statement.execute(this.sqlDialect.sqlgGuiSchemaCreationScript());
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -480,7 +480,7 @@ class SqlgStartupManager {
         try {
             if (this.sqlDialect.supportSchemas()) {
                 DatabaseMetaData metadata = conn.getMetaData();
-                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, SQLG_SCHEMA);
+                return this.sqlDialect.schemaExists(metadata, null, SQLG_SCHEMA);
             } else {
                 throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
             }
@@ -494,7 +494,7 @@ class SqlgStartupManager {
         try {
             if (this.sqlDialect.supportSchemas()) {
                 DatabaseMetaData metadata = conn.getMetaData();
-                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, this.sqlDialect.getPublicSchema());
+                return this.sqlDialect.schemaExists(metadata, null, this.sqlDialect.getPublicSchema());
             } else {
                 throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
             }

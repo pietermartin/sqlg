@@ -11,7 +11,6 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.tools.MultiMap;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
 import org.postgresql.copy.CopyManager;
@@ -68,11 +67,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public String getPublicSchema() {
-        return "sqlgraphdb";
-    }
-
-    @Override
     public String sqlgSqlgSchemaCreationScript() {
         return "CREATE DATABASE " + this.maybeWrapInQoutes("sqlg_schema");
     }
@@ -94,8 +88,17 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public String createSchemaStatement() {
-        // if ever schema is created outside of sqlg while the graph is already instantiated
-        return "CREATE SCHEMA IF NOT EXISTS ";
+        return "CREATE DATABASE IF NOT EXISTS ";
+    }
+
+    @Override
+    public String dropSchemaStatement() {
+        return "DROP DATABASE IF EXISTS ";
+    }
+
+    @Override
+    public boolean supportsCascade() {
+        return false;
     }
 
     @Override
@@ -105,7 +108,7 @@ public class CockroachdbDialect extends BaseSqlDialect {
 
     @Override
     public Set<String> getInternalSchemas() {
-        return ImmutableSet.copyOf(Arrays.asList("pg_catalog", "information_schema", "tiger", "tiger_data", "topology"));
+        return ImmutableSet.copyOf(Arrays.asList("system", "crdb_internal","pg_catalog", "information_schema", "tiger", "tiger_data", "topology"));
     }
 
     @Override
@@ -2849,48 +2852,91 @@ public class CockroachdbDialect extends BaseSqlDialect {
                 "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
                 "\"name\" TEXT, " +
                 "CONSTRAINT propertyUniqueConstraint UNIQUE(name));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_schema_vertex_vertex__I_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.vertex__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_schema_vertex_schema__O_idx\" ON \"sqlg_schema\".\"E_schema_vertex\" (\"sqlg_schema.schema__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.vertex__I\" BIGINT, " +
+                "\"sqlg_schema.schema__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.vertex__I\"), " +
+                "INDEX (\"sqlg_schema.schema__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_in_edges_edge__I_ix\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.edge__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_in_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_in_edges\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.edge__I\"), " +
+                "INDEX (\"sqlg_schema.vertex__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_out_edges_edge__I_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.edge__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_out_edges_vertex__O_idx\" ON \"sqlg_schema\".\"E_out_edges\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.edge__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.edge__I\"), " +
+                "INDEX (\"sqlg_schema.vertex__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_property_property__I_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.property__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_property_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_property\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.property__I\"), " +
+                "INDEX (\"sqlg_schema.vertex__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_edge_property_property__I_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.property__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_edge_property_edge__O_idx\" ON \"sqlg_schema\".\"E_edge_property\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.property__I\"), " +
+                "INDEX (\"sqlg_schema.edge__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_index_index__I_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.index__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_vertex_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_vertex_index\" (\"sqlg_schema.vertex__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.vertex__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.index__I\"), " +
+                "INDEX (\"sqlg_schema.vertex__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_edge_index_index__I_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.index__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_edge_index_vertex__O_idx\" ON \"sqlg_schema\".\"E_edge_index\" (\"sqlg_schema.edge__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.index__I\" BIGINT, " +
+                "\"sqlg_schema.edge__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.index__I\"), " +
+                "INDEX (\"sqlg_schema.edge__O\"));");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_index_property_property__I_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.property__I\");");
-        result.add("CREATE INDEX IF NOT EXISTS \"E_index_property_index__O_idx\" ON \"sqlg_schema\".\"E_index_property\" (\"sqlg_schema.index__O\");");
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(" +
+                "\"ID\" SERIAL PRIMARY KEY, " +
+                "\"sqlg_schema.property__I\" BIGINT, " +
+                "\"sqlg_schema.index__O\" BIGINT, " +
+                "FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), " +
+                "FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), " +
+                "INDEX (\"sqlg_schema.property__I\"), " +
+                "INDEX (\"sqlg_schema.index__O\"));");
 
         result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_globalUniqueIndex_property\"(\"ID\" SERIAL PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.globalUniqueIndex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
-
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_log\"(\"ID\" SERIAL PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" JSONB);");
-
+        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_log\"(\"ID\" SERIAL PRIMARY KEY, \"timestamp\" TIMESTAMP, \"pid\" INTEGER, \"log\" TEXT);");
         return result;
     }
 
     @Override
     public String sqlgAddPropertyIndexTypeColumn() {
         return "ALTER TABLE \"sqlg_schema\".\"V_property\" ADD COLUMN \"index_type\" TEXT DEFAULT 'NONE';";
+    }
+
+    @Override
+    public boolean isIndexPartOfCreateTable() {
+        return true;
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
@@ -3249,92 +3295,6 @@ public class CockroachdbDialect extends BaseSqlDialect {
     }
 
     @Override
-    public Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException {
-        // copied and simplified from the postgres JDBC driver class (PgDatabaseMetaData)
-        String sql = "SELECT NULL AS TABLE_CAT, n.nspname AS TABLE_SCHEM, "
-                + "  ct.relname AS TABLE_NAME, NOT i.indisunique AS NON_UNIQUE, "
-                + "  NULL AS INDEX_QUALIFIER, ci.relname AS INDEX_NAME, "
-                + "  CASE i.indisclustered "
-                + "    WHEN true THEN " + DatabaseMetaData.tableIndexClustered
-                + "    ELSE CASE am.amname "
-                + "      WHEN 'hash' THEN " + DatabaseMetaData.tableIndexHashed
-                + "      ELSE " + DatabaseMetaData.tableIndexOther
-                + "    END "
-                + "  END AS TYPE, "
-                + "  (i.keys).n AS ORDINAL_POSITION, "
-                + "  trim(both '\"' from pg_catalog.pg_get_indexdef(ci.oid, (i.keys).n, false)) AS COLUMN_NAME "
-                + "FROM pg_catalog.pg_class ct "
-                + "  JOIN pg_catalog.pg_namespace n ON (ct.relnamespace = n.oid) "
-                + "  JOIN (SELECT i.indexrelid, i.indrelid, i.indoption, "
-                + "          i.indisunique, i.indisclustered, i.indpred, "
-                + "          i.indexprs, "
-                + "          information_schema._pg_expandarray(i.indkey) AS keys "
-                + "        FROM pg_catalog.pg_index i) i "
-                + "    ON (ct.oid = i.indrelid) "
-                + "  JOIN pg_catalog.pg_class ci ON (ci.oid = i.indexrelid) "
-                + "  JOIN pg_catalog.pg_am am ON (ci.relam = am.oid) "
-                + "WHERE true ";
-
-        if (schema != null && !"".equals(schema)) {
-            sql += " AND n.nspname = " + maybeWrapInQoutes(schema);
-        } else {
-            // exclude schemas we know we're not interested in
-            sql += " AND n.nspname <> 'pg_catalog' AND n.nspname <> 'pg_toast'  AND n.nspname <> '" + SQLG_SCHEMA + "'";
-        }
-        sql += " ORDER BY NON_UNIQUE, TYPE, INDEX_NAME, ORDINAL_POSITION ";
-        try (Statement s = conn.createStatement()) {
-            try (ResultSet indexRs = s.executeQuery(sql)) {
-                Map<String, Set<IndexRef>> ret = new HashMap<>();
-
-                String lastKey = null;
-                String lastIndexName = null;
-                IndexType lastIndexType = null;
-                List<String> lastColumns = new LinkedList<>();
-                while (indexRs.next()) {
-                    String cat = indexRs.getString("TABLE_CAT");
-                    String sch = indexRs.getString("TABLE_SCHEM");
-                    String tbl = indexRs.getString("TABLE_NAME");
-                    String key = cat + "." + sch + "." + tbl;
-                    String indexName = indexRs.getString("INDEX_NAME");
-                    boolean nonUnique = indexRs.getBoolean("NON_UNIQUE");
-
-                    if (lastIndexName == null) {
-                        lastIndexName = indexName;
-                        lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
-                        lastKey = key;
-                    } else if (!lastIndexName.equals(indexName)) {
-                        if (!lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
-                            if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                                //System.out.println(lastColumns);
-                                //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-                                //} else {
-                                MultiMap.put(ret, lastKey, new IndexRef(lastIndexName, lastIndexType, lastColumns));
-                            }
-                        }
-                        lastColumns.clear();
-                        lastIndexName = indexName;
-                        lastIndexType = nonUnique ? IndexType.NON_UNIQUE : IndexType.UNIQUE;
-                    }
-
-                    lastColumns.add(indexRs.getString("COLUMN_NAME"));
-                    lastKey = key;
-                }
-                if (lastIndexName != null && !lastIndexName.endsWith("_pkey") && !lastIndexName.endsWith("_idx")) {
-                    if (!Schema.GLOBAL_UNIQUE_INDEX_SCHEMA.equals(schema)) {
-                        //System.out.println(lastColumns);
-                        //TopologyManager.addGlobalUniqueIndex(sqlgGraph,lastIndexName,lastColumns);
-                        //} else {
-                        MultiMap.put(ret, lastKey, new IndexRef(lastIndexName, lastIndexType, lastColumns));
-                    }
-                }
-
-                return ret;
-            }
-        }
-
-    }
-
-    @Override
     public boolean isSystemIndex(String indexName) {
         return indexName.endsWith("_pkey") || indexName.endsWith("_idx");
     }
@@ -3362,5 +3322,159 @@ public class CockroachdbDialect extends BaseSqlDialect {
     @Override
     public <T> T getGis(SqlgGraph sqlgGraph) {
         throw new IllegalStateException("Cockroachdb does not support other types, this should not have happened!");
+    }
+
+    @Override
+    public String valueToString(PropertyType propertyType, Object value) {
+        String result;
+        if (value == null) {
+            result = getBatchNull();
+        } else {
+            switch (propertyType) {
+                case ZONEDDATETIME:
+                    ZonedDateTime zonedDateTime = (ZonedDateTime) value;
+                    LocalDateTime localDateTime = zonedDateTime.toLocalDateTime();
+                    TimeZone timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
+                    result = localDateTime.toString() + COPY_COMMAND_DELIMITER + timeZone.getID();
+                    break;
+                case PERIOD:
+                    Period period = (Period) value;
+                    result = period.getYears() + COPY_COMMAND_DELIMITER + period.getMonths() + COPY_COMMAND_DELIMITER + period.getDays();
+                    break;
+                case DURATION:
+                    Duration duration = (Duration) value;
+                    result = duration.getSeconds() + COPY_COMMAND_DELIMITER + duration.getNano();
+                    break;
+                case LOCALTIME:
+                    LocalTime lt = (LocalTime) value;
+                    result = shiftDST(lt).toString();
+                    break;
+                case ZONEDDATETIME_ARRAY:
+                    ZonedDateTime[] zonedDateTimes = (ZonedDateTime[]) value;
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("{");
+                    int length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        zonedDateTime = zonedDateTimes[i];
+                        localDateTime = zonedDateTime.toLocalDateTime();
+                        result = localDateTime.toString();
+                        sb.append(result);
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    sb.append(COPY_COMMAND_DELIMITER);
+                    sb.append("{");
+                    for (int i = 0; i < length; i++) {
+                        zonedDateTime = zonedDateTimes[i];
+                        timeZone = TimeZone.getTimeZone(zonedDateTime.getZone());
+                        result = timeZone.getID();
+                        sb.append(result);
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    return sb.toString();
+                case DURATION_ARRAY:
+                    Duration[] durations = (Duration[]) value;
+                    sb = new StringBuilder();
+                    sb.append("{");
+                    length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        duration = durations[i];
+                        sb.append(duration.getSeconds());
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    sb.append(COPY_COMMAND_DELIMITER);
+                    sb.append("{");
+                    for (int i = 0; i < length; i++) {
+                        duration = durations[i];
+                        sb.append(duration.getNano());
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    return sb.toString();
+                case PERIOD_ARRAY:
+                    Period[] periods = (Period[]) value;
+                    sb = new StringBuilder();
+                    sb.append("{");
+                    length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        period = periods[i];
+                        sb.append(period.getYears());
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    sb.append(COPY_COMMAND_DELIMITER);
+                    sb.append("{");
+                    for (int i = 0; i < length; i++) {
+                        period = periods[i];
+                        sb.append(period.getMonths());
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    sb.append(COPY_COMMAND_DELIMITER);
+                    sb.append("{");
+                    for (int i = 0; i < length; i++) {
+                        period = periods[i];
+                        sb.append(period.getDays());
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    return sb.toString();
+                case LOCALTIME_ARRAY:
+                    LocalTime[] localTimes = (LocalTime[]) value;
+                    sb = new StringBuilder();
+                    sb.append("{");
+                    length = java.lang.reflect.Array.getLength(value);
+                    for (int i = 0; i < length; i++) {
+                        LocalTime localTime = localTimes[i];
+                        result = shiftDST(localTime).toString();
+                        sb.append(result);
+                        if (i < length - 1) {
+                            sb.append(",");
+                        }
+                    }
+                    sb.append("}");
+                    return sb.toString();
+                case JSON_ARRAY:
+                    throw SqlgExceptions.invalidPropertyType(propertyType);
+                case BYTE_ARRAY:
+                    return PGbytea.toPGString((byte[]) SqlgUtil.convertByteArrayToPrimitiveArray((Byte[]) value));
+                case byte_ARRAY:
+                    return PGbytea.toPGString((byte[]) value);
+                default:
+                    if (value.getClass().isArray()) {
+                        sb = new StringBuilder();
+                        sb.append("{");
+                        length = java.lang.reflect.Array.getLength(value);
+                        for (int i = 0; i < length; i++) {
+                            String valueOfArray = java.lang.reflect.Array.get(value, i).toString();
+                            sb.append(escapeSpecialCharacters(valueOfArray));
+                            if (i < length - 1) {
+                                sb.append(",");
+                            }
+                        }
+                        sb.append("}");
+                        return sb.toString();
+//                        }
+                    }
+                    result = escapeSpecialCharacters(value.toString());
+            }
+        }
+        return result;
     }
 }

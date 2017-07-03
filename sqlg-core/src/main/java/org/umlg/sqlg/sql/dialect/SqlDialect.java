@@ -9,10 +9,7 @@ import org.apache.commons.lang3.Range;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.structure.IndexRef;
-import org.umlg.sqlg.structure.PropertyType;
-import org.umlg.sqlg.structure.SchemaTable;
-import org.umlg.sqlg.structure.SqlgGraph;
+import org.umlg.sqlg.structure.*;
 
 import java.sql.*;
 import java.util.*;
@@ -68,7 +65,6 @@ public interface SqlDialect {
 
     default String maybeWrapInQoutes(String field) {
         return getColumnEscapeKey() + field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey()) + getColumnEscapeKey();
-//        return getColumnEscapeKey() + field + getColumnEscapeKey();
     }
 
     default boolean supportsFloatValues() {
@@ -279,11 +275,19 @@ public interface SqlDialect {
         return "CREATE SCHEMA ";
     }
 
+    /**
+     * @return the statement head to drop a schema
+     */
+    default String dropSchemaStatement() {
+        return "DROP SCHEMA IF EXISTS ";
+    }
+
     default void prepareDB(Connection conn) {
     }
 
     /**
      * A getter to return the "public" schema for the database. For postgresql it is "public" and for HSQLDB it is "PUBLIC"
+     *
      * @return the database's public schema.
      */
     default String getPublicSchema() {
@@ -410,7 +414,11 @@ public interface SqlDialect {
     }
 
     default String sqlgSqlgSchemaCreationScript() {
-        return "CREATE SCHEMA " + this.maybeWrapInQoutes("sqlg_schema");
+        return this.createSchemaStatement() + this.maybeWrapInQoutes("sqlg_schema");
+    }
+
+    default String sqlgGuiSchemaCreationScript() {
+        return this.createSchemaStatement() + this.maybeWrapInQoutes(Schema.GLOBAL_UNIQUE_INDEX_SCHEMA) + (needsSemicolon() ? ";" : "");
     }
 
     List<String> sqlgTopologyCreationScripts();
@@ -437,32 +445,34 @@ public interface SqlDialect {
     default boolean requiredPreparedStatementDeallocate() {
         return false;
     }
-    
+
     /**
      * get the full text query for the given predicate and column
+     *
      * @param fullText
      * @param column
      * @return
      */
-    default String getFullTextQueryText(FullText fullText,String column){
-    	throw new UnsupportedOperationException("FullText search is not supported on this database");
+    default String getFullTextQueryText(FullText fullText, String column) {
+        throw new UnsupportedOperationException("FullText search is not supported on this database");
     }
 
     default boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
         ResultSet schemaRs = metadata.getSchemas(catalog, schema);
         return schemaRs.next();
     }
-    
+
     /**
      * extract all indices in one go
+     *
      * @param conn
      * @param catalog
      * @param schema
      * @return a map of indices references by key, the key being cat+schema+table
      * @throws SQLException
      */
-    default Map<String, Set<IndexRef>> extractIndices(Connection conn,String catalog,String schema) throws SQLException {
-    	return null;
+    default Map<String, Set<IndexRef>> extractIndices(Connection conn, String catalog, String schema) throws SQLException {
+        return null;
     }
 
     boolean isSystemIndex(String indexName);
@@ -472,7 +482,7 @@ public interface SqlDialect {
      * Instead the columns are hardcoded as "C1", "C2"
      *
      * @return true if the valueExpression is similar to Postgresql. i.e. <code>select * from values((1,1),(2,2)) as tmp("field1", "field2")</code>
-     *         H2 returns false and has some special code for it.
+     * H2 returns false and has some special code for it.
      */
     default boolean supportsFullValueExpression() {
         return true;
@@ -481,4 +491,14 @@ public interface SqlDialect {
     default boolean supportsDropSchemas() {
         return true;
     }
+
+    /**
+     * This is needed for Cockroachdb where the index needs to be specified as a part of the 'CREATE TABLE' statement.
+     * @return true if the indices must be specified together with the 'CREATE TABLE' sql, else false.
+     */
+    default boolean isIndexPartOfCreateTable() {
+        return false;
+    }
+
+    String valueToString(PropertyType propertyType, Object value);
 }

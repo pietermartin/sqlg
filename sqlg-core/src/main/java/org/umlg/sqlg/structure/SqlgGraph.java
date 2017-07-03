@@ -250,7 +250,7 @@ public class SqlgGraph implements Graph {
 
         SqlgGraph sqlgGraph = new SqlgGraph(configuration, dataSourceFactory);
         SqlgStartupManager sqlgStartupManager = new SqlgStartupManager(sqlgGraph);
-        sqlgStartupManager.loadSchema();
+        sqlgStartupManager.loadSqlgSchema();
         return (G) sqlgGraph;
     }
 
@@ -311,6 +311,7 @@ public class SqlgGraph implements Graph {
         }
         this.sqlgTransaction = new SqlgTransaction(this, this.configuration.getBoolean("cache.vertices", false));
         this.tx().readWrite();
+        //Instantiating Topology will create the 'public' schema if it does not exist.
         this.topology = new Topology(this);
         this.gremlinParser = new GremlinParser(this);
         if (!this.sqlDialect.supportSchemas() && !this.getTopology().getSchema(this.sqlDialect.getPublicSchema()).isPresent()) {
@@ -1143,7 +1144,7 @@ public class SqlgGraph implements Graph {
     }
 
     public boolean isImplementForeignKeys() {
-        return implementForeignKeys;
+        return this.implementForeignKeys;
     }
 
     private SqlgPlugin findSqlgPlugin(DatabaseMetaData metadata) throws SQLException {

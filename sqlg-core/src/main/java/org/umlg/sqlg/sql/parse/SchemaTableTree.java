@@ -13,7 +13,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComp
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.umlg.sqlg.predicate.FullText;
-import org.umlg.sqlg.sql.dialect.SqlBulkDialect;
 import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.SqlgComparatorHolder;
 import org.umlg.sqlg.strategy.SqlgRangeHolder;
@@ -22,9 +21,6 @@ import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.*;
 import org.umlg.sqlg.util.SqlgUtil;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.security.SecureRandom;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -371,35 +367,6 @@ public class SchemaTableTree {
             //If there are no duplicates in the path then one select statement will suffice.
             return constructSinglePathSql(this.sqlgGraph, false, innerJoinStack, null, null);
         }
-    }
-
-    /**
-     * @return A Triple. SchemaTableTree is the root of the tree that formed the sql statement.
-     * It is needed to set the values in the where clause.
-     * SchemaTable is the element being returned.
-     * String is the sql.
-     */
-    public List<Pair<LinkedList<SchemaTableTree>, String>> constructSql() {
-        Preconditions.checkState(this.parent == null, CONSTRUCT_SQL_MAY_ONLY_BE_CALLED_ON_THE_ROOT_OBJECT);
-
-        List<Pair<LinkedList<SchemaTableTree>, String>> result = new ArrayList<>();
-        List<LinkedList<SchemaTableTree>> distinctQueries = constructDistinctQueries();
-        for (LinkedList<SchemaTableTree> distinctQueryStack : distinctQueries) {
-
-            //If the same element occurs multiple times in the stack then the sql needs to be different.
-            //This is because the same element can not be joined on more than once in sql
-            //The way to overcome this is  to break up the path in select sections with no duplicates and then join them together.
-            if (duplicatesInStack(distinctQueryStack)) {
-                List<LinkedList<SchemaTableTree>> subQueryStacks = splitIntoSubStacks(distinctQueryStack);
-                String singlePathSql = constructDuplicatePathSql(this.sqlgGraph, subQueryStacks);
-                result.add(Pair.of(distinctQueryStack, singlePathSql));
-            } else {
-                //If there are no duplicates in the path then one select statement will suffice.
-                String singlePathSql = constructSinglePathSql(this.sqlgGraph, false, distinctQueryStack, null, null);
-                result.add(Pair.of(distinctQueryStack, singlePathSql));
-            }
-        }
-        return result;
     }
 
     public List<LinkedList<SchemaTableTree>> constructDistinctQueries() {
@@ -827,10 +794,11 @@ public class SchemaTableTree {
 
 
     private boolean hasBulkWithinOrOut(SqlgGraph sqlgGraph) {
-        return this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).findAny().isPresent();
+        return this.hasContainers.stream().anyMatch(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h));
     }
 
     private String bulkWithJoin(SqlgGraph sqlgGraph) {
+
 
         StringBuilder sb = new StringBuilder();
         List<HasContainer> bulkHasContainers = this.hasContainers.stream().filter(h -> SqlgUtil.isBulkWithinAndOut(sqlgGraph, h)).collect(Collectors.toList());
@@ -852,50 +820,91 @@ public class SchemaTableTree {
                 throw new UnsupportedOperationException("Only Contains.within and Contains.without is supported!");
             }
 
-            SecureRandom random = new SecureRandom();
-            byte bytes[] = new byte[6];
-            random.nextBytes(bytes);
-            String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
-            tmpTableIdentified = VERTEX_PREFIX + Topology.BULK_TEMP_EDGE + tmpTableIdentified;
-            sqlgGraph.getTopology().createTempTable(tmpTableIdentified, columns);
+//            SecureRandom random = new SecureRandom();
+//            byte bytes[] = new byte[6];
+//            random.nextBytes(bytes);
+//            String tmpTableIdentified = Base64.getEncoder().encodeToString(bytes);
+//            tmpTableIdentified = VERTEX_PREFIX + Topology.BULK_TEMP_EDGE + tmpTableIdentified;
+//            sqlgGraph.getTopology().createTempTable(tmpTableIdentified, columns);
+//
+//            Map<String, Object> withInOutMap = new HashMap<>();
+//            if (hasContainer.getBiPredicate() == Contains.within) {
+//                withInOutMap.put(WITHIN, "unused");
+//            } else {
+//                withInOutMap.put(WITHOUT, "unused");
+//            }
+//            String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(VERTEX_PREFIX.length())), withInOutMap.keySet());
+//            Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(this.sqlgGraph, copySql);
+//
+//            for (Object withInOutValue : withInOuts) {
+//                if (withInOutValue instanceof RecordId) {
+//                    withInOutValue = ((RecordId) withInOutValue).getId();
+//                }
+//                withInOutMap = new HashMap<>();
+//                if (hasContainer.getBiPredicate() == Contains.within) {
+//                    withInOutMap.put(WITHIN, withInOutValue);
+//                } else {
+//                    withInOutMap.put(WITHOUT, withInOutValue);
+//                }
+//                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, withInOutMap);
+//            }
+//            try {
+//                writer.close();
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
 
-            Map<String, Object> withInOutMap = new HashMap<>();
+
             if (hasContainer.getBiPredicate() == Contains.within) {
-                withInOutMap.put(WITHIN, "unused");
+                sb.append(" INNER JOIN\n\t");
             } else {
-                withInOutMap.put(WITHOUT, "unused");
+                //left join and in the where clause add a IS NULL, to find the values not in the right hand table
+                sb.append(" LEFT JOIN\n\t");
             }
-            String copySql = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).temporaryTableCopyCommandSqlVertex(sqlgGraph, SchemaTable.of("public", tmpTableIdentified.substring(VERTEX_PREFIX.length())), withInOutMap.keySet());
-            Writer writer = ((SqlBulkDialect) sqlgGraph.getSqlDialect()).streamSql(this.sqlgGraph, copySql);
-
+            sb.append("(VALUES ");
+            boolean first = true;
             for (Object withInOutValue : withInOuts) {
+                if (!first) {
+                    sb.append(", ");
+                }
+                first = false;
                 if (withInOutValue instanceof RecordId) {
                     withInOutValue = ((RecordId) withInOutValue).getId();
                 }
-                withInOutMap = new HashMap<>();
-                if (hasContainer.getBiPredicate() == Contains.within) {
-                    withInOutMap.put(WITHIN, withInOutValue);
-                } else {
-                    withInOutMap.put(WITHOUT, withInOutValue);
+                sb.append("(");
+                PropertyType propertyType = PropertyType.from(withInOutValue);
+                if ((propertyType != PropertyType.BYTE) &&
+                        (propertyType != PropertyType.BOOLEAN) &&
+                        (propertyType != PropertyType.SHORT) &&
+                        (propertyType != PropertyType.INTEGER) &&
+                        (propertyType != PropertyType.LONG) &&
+                        (propertyType != PropertyType.DOUBLE)) {
+                    sb.append("'");
                 }
-                ((SqlBulkDialect) sqlgGraph.getSqlDialect()).writeStreamingVertex(writer, withInOutMap);
+                sb.append(sqlgGraph.getSqlDialect().valueToString(propertyType, withInOutValue));
+                if ((propertyType != PropertyType.BYTE) &&
+                        (propertyType != PropertyType.BOOLEAN) &&
+                        (propertyType != PropertyType.SHORT) &&
+                        (propertyType != PropertyType.INTEGER) &&
+                        (propertyType != PropertyType.LONG) &&
+                        (propertyType != PropertyType.DOUBLE)) {
+                    sb.append("'");
+                }
+                sb.append(")");
             }
-            try {
-                writer.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            if (hasContainer.getBiPredicate() == Contains.within) {
-                sb.append("\nINNER JOIN ");
-            } else {
-                //left join and in the where clause add a IS NULL, to find the values not in the right hand table
-                sb.append("\nLEFT JOIN ");
-            }
-            sb.append(" ");
-            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tmpTableIdentified));
-            sb.append(" tmp");
+            sb.append(") as tmp");
             sb.append(this.rootSchemaTableTree().tmpTableAliasCounter);
-            sb.append(" on");
+            sb.append("(");
+            if (hasContainer.getBiPredicate() == Contains.within) {
+                sb.append(WITHIN);
+            } else {
+                sb.append(WITHOUT);
+            }
+            sb.append(") ");
+//            sb.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(tmpTableIdentified));
+//            sb.append(" tmp");
+//            sb.append(this.rootSchemaTableTree().tmpTableAliasCounter);
+            sb.append(" on ");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getSchema()));
             sb.append(".");
             sb.append(sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.getSchemaTable().getTable()));

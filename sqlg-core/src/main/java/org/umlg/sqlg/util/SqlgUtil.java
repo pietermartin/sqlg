@@ -809,7 +809,7 @@ public class SqlgUtil {
                 while (result.next()) {
                     String schema = result.getString(1);
                     if (!sqlDialect.getInternalSchemas().contains(schema)) {
-                        StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS ");
+                        StringBuilder sql = new StringBuilder(sqlDialect.dropSchemaStatement());
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));
                         if (sqlDialect.needsSchemaDropCascade()) {
                             sql.append(" CASCADE");

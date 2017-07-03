@@ -711,4 +711,9 @@ public class HsqldbDialect extends BaseSqlDialect {
     public boolean isSystemIndex(String indexName) {
         return indexName.startsWith("SYS_IDX_") || indexName.startsWith("SYS_PK") || indexName.endsWith("SYS_FK");
     }
+
+    @Override
+    public String valueToString(PropertyType propertyType, Object value) {
+        throw new RuntimeException("Hsqldb.valueToString should not be called.");
+    }
 }

@@ -1450,7 +1450,7 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     private void valueToStreamBytes(Writer outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
-        String s = valueToStreamString(propertyType, value);
+        String s = valueToString(propertyType, value);
         try {
             outputStream.write(s);
         } catch (IOException e) {
@@ -1458,25 +1458,8 @@ public class PostgresDialect extends BaseSqlDialect {
         }
     }
 
-//    private void valueToStreamBytes(OutputStream outputStream, PropertyType propertyType, Object value) throws UnsupportedEncodingException {
-//        String encoding = "UTF-8";
-//        String s = valueToStreamString(propertyType, value);
-//        try (StringReader stringReader = new StringReader(s)) {
-//            int data;
-//            try {
-//                data = stringReader.read();
-//                while (data != -1) {
-//                    //do something with data...
-//                    outputStream.write(data);
-//                    data = stringReader.read();
-//                }
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//    }
-
-    private String valueToStreamString(PropertyType propertyType, Object value) {
+    @Override
+    public String valueToString(PropertyType propertyType, Object value) {
         String result;
         if (value == null) {
             result = getBatchNull();
@@ -2003,7 +1986,7 @@ public class PostgresDialect extends BaseSqlDialect {
                             sb.append(valueOfArrayAsString);
                             break;
                         default:
-                            sb.append(valueToStreamString(propertyType, value));
+                            sb.append(valueToString(propertyType, value));
                     }
                 }
             } else {
@@ -2043,7 +2026,7 @@ public class PostgresDialect extends BaseSqlDialect {
                         sb.append(valueOfArrayAsString);
                         break;
                     default:
-                        sb.append(valueToStreamString(propertyType, value));
+                        sb.append(valueToString(propertyType, value));
                 }
                 if (countKeys < edgeCache.getLeft().size()) {
                     sb.append(COPY_COMMAND_DELIMITER);

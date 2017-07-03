@@ -26,6 +26,13 @@ import java.util.List;
 public class TestHasLabelAndId extends BaseTest {
 
     @Test
+    public void test1() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a");
+        Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name2", "a");
+        this.sqlgGraph.tx().commit();
+    }
+
+    @Test
     public void testNeqWithinManyIDs() {
         Vertex a = sqlgGraph.addVertex("A");
         Vertex b1 = sqlgGraph.addVertex("B");

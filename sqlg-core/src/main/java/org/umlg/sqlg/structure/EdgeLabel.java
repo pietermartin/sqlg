@@ -150,6 +150,14 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(" (");
             sql.append(sqlDialect.maybeWrapInQoutes("ID"));
             sql.append(")");
+            if (sqlDialect.needForeignKeyIndex() && sqlDialect.isIndexPartOfCreateTable()) {
+                //This is true for Cockroachdb
+                sql.append(", INDEX (");
+                sql.append(sqlDialect.maybeWrapInQoutes(inVertexLabel.getSchema().getName() + "." + inVertexLabel.getLabel() + Topology.IN_VERTEX_COLUMN_END));
+                sql.append("), INDEX (");
+                sql.append(sqlDialect.maybeWrapInQoutes(outVertexLabel.getSchema().getName() + "." + outVertexLabel.getLabel() + Topology.OUT_VERTEX_COLUMN_END));
+                sql.append(")");
+            }
         }
         //foreign key definition end
 
@@ -158,7 +166,7 @@ public class EdgeLabel extends AbstractLabel {
             sql.append(";");
         }
 
-        if (sqlDialect.needForeignKeyIndex()) {
+        if (sqlDialect.needForeignKeyIndex() && !sqlDialect.isIndexPartOfCreateTable()) {
             sql.append("\nCREATE INDEX ON ");
             sql.append(sqlDialect.maybeWrapInQoutes(schema));
             sql.append(".");
