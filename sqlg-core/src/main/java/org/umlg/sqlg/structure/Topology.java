@@ -244,10 +244,6 @@ public class Topology {
             SQLG_SCHEMA + "." + EDGE_PREFIX + SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_PROPERTY_EDGE
     );
 
-    public static final List<String> SQLG_SCHEMA_GLOBAL_UNIQUE_INDEX_SCHEMA = Arrays.asList(
-            Schema.GLOBAL_UNIQUE_INDEX_SCHEMA
-    );
-
     /**
      * Topology is a singleton created when the {@link SqlgGraph} is opened.
      * As the topology, i.e. sqlg_schema is created upfront the meta topology is pre-loaded.
@@ -366,8 +362,8 @@ public class Topology {
             }
         });
 
-        if (this.sqlgGraph.getSqlDialect().requiredPreparedStatementDeallocate()) {
-            registerListener((TopologyInf, String, TopologyChangeAction) -> deallocateAll());
+        if (this.sqlgGraph.getSqlDialect().isPostgresql()) {
+            registerListener((topologyInf, string, topologyChangeAction) -> deallocateAll());
         }
 
     }
@@ -824,13 +820,20 @@ public class Topology {
         }
     }
 
-    public void deallocateAll() {
+    /**
+     * This is only needed for Postgresql.
+     */
+    private void deallocateAll() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try (Statement statement = conn.createStatement()) {
             statement.execute("DEALLOCATE ALL");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+        //Soft reset the pool will leave active connections running.
+        //All connections in the pool will be closed.
+        //Running connections will be closed when they reenter the pool.
+        this.sqlgGraph.getSqlgDataSource().softResetPool();
     }
 
     void cacheTopology() {

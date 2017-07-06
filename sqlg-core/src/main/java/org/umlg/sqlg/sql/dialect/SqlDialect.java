@@ -434,10 +434,6 @@ public interface SqlDialect {
         return "LIMIT " + (r.getMaximum() - r.getMinimum()) + " OFFSET " + r.getMinimum();
     }
 
-    default boolean requiredPreparedStatementDeallocate() {
-        return false;
-    }
-    
     /**
      * get the full text query for the given predicate and column
      * @param fullText

@@ -3398,11 +3398,6 @@ public class PostgresDialect extends BaseSqlDialect {
     }
 
     @Override
-    public boolean requiredPreparedStatementDeallocate() {
-        return true;
-    }
-
-    @Override
     public String getFullTextQueryText(FullText fullText, String column) {
         String toQuery = fullText.isPlain() ? "plainto_tsquery" : "to_tsquery";
         // either we provided the query expression...

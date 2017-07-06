@@ -260,10 +260,10 @@ public class SqlgGraph implements Graph {
         Configuration configuration;
         try {
             configuration = new PropertiesConfiguration(pathToSqlgProperties);
+            return open(configuration, createDataSourceFactory(configuration));
         } catch (ConfigurationException e) {
             throw new RuntimeException(e);
         }
-        return open(configuration, createDataSourceFactory(configuration));
     }
 
     public static SqlgDataSourceFactory createDataSourceFactory(Configuration configuration) {
@@ -296,7 +296,6 @@ public class SqlgGraph implements Graph {
                 if (p == null) {
                     throw new IllegalStateException("Could not find suitable sqlg plugin for the JDBC URL: " + this.jdbcUrl);
                 }
-
                 this.sqlDialect = p.instantiateDialect();
                 this.sqlgDataSource = dataSourceFactory.setup(p.getDriverFor(jdbcUrl), this.configuration);
             }
@@ -1081,12 +1080,6 @@ public class SqlgGraph implements Graph {
         } finally {
             this.tx().rollback();
         }
-    }
-
-    //indexing
-    public void createUniqueConstraint(String label, String propertyKey) {
-        throw new IllegalStateException("Not yet implemented!");
-//        this.tx().readWrite();
     }
 
     public void createVertexLabeledIndex(String label, Object... dummykeyValues) {

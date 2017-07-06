@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.labels.TestLabelLength;
+import org.umlg.sqlg.test.preparedStatement.TestClosingPreparedStatement;
 
 /**
  * Date: 2014/07/16
@@ -13,7 +13,7 @@ import org.umlg.sqlg.test.labels.TestLabelLength;
 //        TestMultiThread.class,
 //        TestDeadLock.class
 //        TestBatch.class
-        TestLabelLength.class
+        TestClosingPreparedStatement.class
 })
 public class AnyTest {
 }
