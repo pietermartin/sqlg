@@ -26,4 +26,5 @@ public class PostgresPlugin implements SqlgPlugin {
     public SqlDialect instantiateDialect() {
         return new PostgresDialect();
     }
+
 }
