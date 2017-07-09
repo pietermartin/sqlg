@@ -166,6 +166,7 @@
         <module>sqlg-hsqldb-parent</module>
         <module>sqlg-h2-parent</module>
         <module>sqlg-cockroachdb-parent</module>
+        <module>sqlg-mariadb-parent</module>
         <module>sqlg-benchmark</module>
         <module>sqlg-benchmark-postgres</module>
         <module>sqlg-benchmark-hsqldb</module>
@@ -238,6 +239,16 @@
             <dependency>
                 <groupId>org.umlg</groupId>
                 <artifactId>sqlg-cockroachdb-dialect</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mariadb</artifactId>
+                <version>${sqlg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.umlg</groupId>
+                <artifactId>sqlg-mariadb-dialect</artifactId>
                 <version>${sqlg.version}</version>
             </dependency>
             <dependency>

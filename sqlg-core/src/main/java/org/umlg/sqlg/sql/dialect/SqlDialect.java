@@ -463,6 +463,28 @@ public interface SqlDialect {
     }
 
     /**
+     * Returns all schemas. For some RDBMSes, like Cockroachdb and MariaDb, this is the database/catalog.
+     * @return The list of schema names.
+     */
+    List<String> getSchemaNames(DatabaseMetaData metaData);
+
+    /**
+     * Get all the Vertex tables. i.e. all tables starting with 'V_'
+     *
+     * @param metaData JDBC meta data.
+     * @return A triple holding the catalog, thea schema and the table.
+     */
+    List<Triple<String, String, String>> getVertexTables(DatabaseMetaData metaData);
+
+    /**
+     * Get all the Edge tables. i.e. all tables starting with 'E_'
+     *
+     * @param metaData JDBC meta data.
+     * @return A triple holding the catalog, thea schema and the table.
+     */
+    List<Triple<String, String, String>> getEdgeTables(DatabaseMetaData metaData);
+
+    /**
      * extract all indices in one go
      *
      * @param conn
@@ -501,4 +523,8 @@ public interface SqlDialect {
     }
 
     String valueToString(PropertyType propertyType, Object value);
+
+    default String sqlInsertEmptyValues() {
+        return " DEFAULT VALUES";
+    }
 }

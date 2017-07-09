@@ -3,8 +3,6 @@ package org.umlg.sqlg.sql.dialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.hsqldb.jdbc.JDBCArrayBasic;
-import org.hsqldb.types.Type;
 import org.umlg.sqlg.structure.PropertyType;
 import org.umlg.sqlg.structure.SchemaTable;
 import org.umlg.sqlg.structure.SqlgGraph;
@@ -15,13 +13,97 @@ import java.time.*;
 import java.util.*;
 
 /**
- * Date: 2014/07/16
- * Time: 3:09 PM
+ * @author Pieter Martin (https://github.com/pietermartin)
+ *         Date: 2017/07/07
  */
-public class HsqldbDialect extends BaseSqlDialect {
+@SuppressWarnings("unused")
+public class MariadbDialect extends BaseSqlDialect {
 
-    public HsqldbDialect() {
-        super();
+    @Override
+    public String sqlInsertEmptyValues() {
+        return " VALUES ()";
+    }
+
+    @Override
+    public List<Triple<String, String, String>> getVertexTables(DatabaseMetaData metaData) {
+        List<Triple<String, String, String>> vertexTables = new ArrayList<>();
+        String[] types = new String[]{"TABLE"};
+        try {
+            //load the vertices
+            try (ResultSet vertexRs = metaData.getTables(null, null, "V_%", types)) {
+                while (vertexRs.next()) {
+                    //MariaDb does not support schemas.
+                    String tblCat = null;
+                    String schema = vertexRs.getString(1);
+                    String table = vertexRs.getString(3);
+
+                    //verify the table name matches our pattern
+                    if (!table.startsWith("V_")) {
+                        continue;
+                    }
+                    vertexTables.add(Triple.of(tblCat, schema, table));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return vertexTables;
+    }
+
+    @Override
+    public List<Triple<String, String, String>> getEdgeTables(DatabaseMetaData metaData) {
+        List<Triple<String, String, String>> edgeTables = new ArrayList<>();
+        String[] types = new String[]{"TABLE"};
+        try {
+            //load the edges without their properties
+            try (ResultSet edgeRs = metaData.getTables(null, null, "E_%", types)) {
+                while (edgeRs.next()) {
+                    String edgCat = null;
+                    String schema = edgeRs.getString(1);
+                    String table = edgeRs.getString(3);
+                    edgeTables.add(Triple.of(edgCat, schema, table));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return edgeTables;
+    }
+
+    @Override
+    public List<String> getSchemaNames(DatabaseMetaData metaData) {
+        List<String> schemaNames = new ArrayList<>();
+        try {
+            try (ResultSet schemaRs = metaData.getCatalogs()) {
+                while (schemaRs.next()) {
+                    String schema = schemaRs.getString(1);
+                    if (!this.getInternalSchemas().contains(schema)) {
+                        schemaNames.add(schema);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return schemaNames;
+    }
+
+    @Override
+    public boolean schemaExists(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
+        ResultSet schemaRs = metadata.getCatalogs();
+        while (schemaRs.next()) {
+            String db = schemaRs.getString(1);
+            if (db.equals(schema)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public String maybeWrapInQoutes(String field) {
+        return getColumnEscapeKey() + field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey()) + getColumnEscapeKey();
+//        return field.replace(getColumnEscapeKey(), "\"" + getColumnEscapeKey());
     }
 
     @Override
@@ -31,16 +113,21 @@ public class HsqldbDialect extends BaseSqlDialect {
 
     @Override
     public String dialectName() {
-        return "HsqldbDialect";
+        return "MariadbDialect";
     }
 
     @Override
     public Set<String> getInternalSchemas() {
-        return new HashSet<>(Arrays.asList("INFORMATION_SCHEMA", "SYSTEM_LOBS"));
+        return new HashSet<>(Arrays.asList("information_schema", "performance_schema", "mysql", "test"));
     }
 
     @Override
     public boolean supportsDropSchemas() {
+        return true;
+    }
+
+    @Override
+    public boolean supportsCascade() {
         return false;
     }
 
@@ -179,7 +266,7 @@ public class HsqldbDialect extends BaseSqlDialect {
 
     @Override
     public String getColumnEscapeKey() {
-        return "\"";
+        return "`";
     }
 
     @Override
@@ -189,7 +276,7 @@ public class HsqldbDialect extends BaseSqlDialect {
 
     @Override
     public String getAutoIncrementPrimaryKeyConstruct() {
-        return "BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY";
+        return "SERIAL PRIMARY KEY";
     }
 
     @Override
@@ -210,7 +297,7 @@ public class HsqldbDialect extends BaseSqlDialect {
             case LOCALDATE:
                 return new String[]{"DATE"};
             case LOCALDATETIME:
-                return new String[]{"TIMESTAMP WITH TIME ZONE"};
+                return new String[]{"DATETIME"};
             case ZONEDDATETIME:
                 return new String[]{"TIMESTAMP WITH TIME ZONE", "LONGVARCHAR"};
             case LOCALTIME:
@@ -220,9 +307,9 @@ public class HsqldbDialect extends BaseSqlDialect {
             case DURATION:
                 return new String[]{"BIGINT", "INTEGER"};
             case STRING:
-                return new String[]{"LONGVARCHAR"};
+                return new String[]{"LONGTEXT"};
             case JSON:
-                throw new IllegalStateException("HSQLDB does not support json types, use good ol string instead!");
+                return new String[]{"LONGTEXT"};
             case POINT:
                 throw new IllegalStateException("HSQLDB does not support gis types!");
             case POLYGON:
@@ -392,7 +479,7 @@ public class HsqldbDialect extends BaseSqlDialect {
 
     @Override
     public String getForeignKeyTypeDefinition() {
-        return "BIGINT";
+        return "BIGINT UNSIGNED";
     }
 
     @Override
@@ -449,23 +536,6 @@ public class HsqldbDialect extends BaseSqlDialect {
     @Override
     public String createTableStatement() {
         return "CREATE TABLE ";
-    }
-
-    @Override
-    public void prepareDB(Connection conn) {
-        StringBuilder sql = new StringBuilder("SET DATABASE TRANSACTION CONTROL MVCC;");
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        sql = new StringBuilder("SET DATABASE DEFAULT TABLE TYPE CACHED;");
-        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-            preparedStatement.executeUpdate();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
     }
 
     @Override
@@ -562,28 +632,91 @@ public class HsqldbDialect extends BaseSqlDialect {
     public List<String> sqlgTopologyCreationScripts() {
         List<String> result = new ArrayList<>();
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_schema\" (\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" LONGVARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_vertex\" (\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" LONGVARCHAR, \"schemaVertex\" LONGVARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_edge\" (\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" LONGVARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_property\" (\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" LONGVARCHAR, \"type\" LONGVARCHAR, \"index_type\" LONGVARCHAR DEFAULT 'NONE');");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_index\" (\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"createdOn\" TIMESTAMP WITH TIME ZONE, \"name\" LONGVARCHAR, \"index_type\" LONGVARCHAR);");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_globalUniqueIndex\" (" +
-                "\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, " +
-                "\"createdOn\" TIMESTAMP WITH TIME ZONE, " +
-                "\"name\" LONGVARCHAR);");
+        //SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_schema` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_vertex` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `schemaVertex` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_edge` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_property` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `type` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_index` (`ID` SERIAL PRIMARY KEY, `createdOn` DATETIME, `name` TEXT, `index_type` TEXT);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_globalUniqueIndex` (" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`createdOn` DATETIME, " +
+                "`name` TEXT);");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_schema_vertex\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.vertex__I\" BIGINT, \"sqlg_schema.schema__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.vertex__I\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.schema__O\") REFERENCES \"sqlg_schema\".\"V_schema\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_in_edges\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_out_edges\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.edge__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.edge__I\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_property\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_property\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_vertex_index\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.vertex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.vertex__O\") REFERENCES \"sqlg_schema\".\"V_vertex\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_edge_index\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.index__I\" BIGINT, \"sqlg_schema.edge__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.index__I\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.edge__O\") REFERENCES \"sqlg_schema\".\"V_edge\" (\"ID\"));");
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_index_property\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.index__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.index__O\") REFERENCES \"sqlg_schema\".\"V_index\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_schema_vertex`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.vertex__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.schema__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.vertex__I`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.schema__O`) REFERENCES `sqlg_schema`.`V_schema` (`ID`)" +
+                ");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"V_log\" (\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"timestamp\" TIMESTAMP WITH TIME ZONE, \"pid\" INTEGER, \"log\" LONGVARCHAR);");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_in_edges`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.edge__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.edge__I`) REFERENCES `sqlg_schema`.`V_edge` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`)" +
+                ");");
 
-        result.add("CREATE TABLE IF NOT EXISTS \"sqlg_schema\".\"E_globalUniqueIndex_property\"(\"ID\" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, \"sqlg_schema.property__I\" BIGINT, \"sqlg_schema.globalUniqueIndex__O\" BIGINT, FOREIGN KEY (\"sqlg_schema.property__I\") REFERENCES \"sqlg_schema\".\"V_property\" (\"ID\"), FOREIGN KEY (\"sqlg_schema.globalUniqueIndex__O\") REFERENCES \"sqlg_schema\".\"V_globalUniqueIndex\" (\"ID\"));");
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_out_edges`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.edge__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.edge__I`) REFERENCES `sqlg_schema`.`V_edge` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_property`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_property`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_vertex_index`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.index__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.vertex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.index__I`) REFERENCES `sqlg_schema`.`V_index` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.vertex__O`) REFERENCES `sqlg_schema`.`V_vertex` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_edge_index`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.index__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.edge__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.index__I`) REFERENCES `sqlg_schema`.`V_index` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.edge__O`) REFERENCES `sqlg_schema`.`V_edge` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_index_property`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.index__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.index__O`) REFERENCES `sqlg_schema`.`V_index` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`E_globalUniqueIndex_property`(" +
+                "`ID` SERIAL PRIMARY KEY, " +
+                "`sqlg_schema.property__I` BIGINT UNSIGNED, " +
+                "`sqlg_schema.globalUniqueIndex__O` BIGINT UNSIGNED, " +
+                "FOREIGN KEY (`sqlg_schema.property__I`) REFERENCES `sqlg_schema`.`V_property` (`ID`), " +
+                "FOREIGN KEY (`sqlg_schema.globalUniqueIndex__O`) REFERENCES `sqlg_schema`.`V_globalUniqueIndex` (`ID`)" +
+                ");");
+
+        result.add("CREATE TABLE IF NOT EXISTS `sqlg_schema`.`V_log`(`ID` SERIAL PRIMARY KEY, `timestamp` DATETIME, `pid` INTEGER, `log` TEXT);");
+
         return result;
     }
 
@@ -598,63 +731,41 @@ public class HsqldbDialect extends BaseSqlDialect {
     }
 
     private Array createArrayOf(Connection conn, PropertyType propertyType, Object[] data) {
-        org.hsqldb.types.Type type;
-        switch (propertyType) {
-            case STRING_ARRAY:
-                type = Type.SQL_VARCHAR;
-                break;
-            case long_ARRAY:
-                type = Type.SQL_BIGINT;
-                break;
-            case LONG_ARRAY:
-                type = Type.SQL_BIGINT;
-                break;
-            case int_ARRAY:
-                type = Type.SQL_INTEGER;
-                break;
-            case INTEGER_ARRAY:
-                type = Type.SQL_INTEGER;
-                break;
-            case SHORT_ARRAY:
-                type = Type.SQL_SMALLINT;
-                break;
-            case short_ARRAY:
-                type = Type.SQL_SMALLINT;
-                break;
-            case FLOAT_ARRAY:
-                type = Type.SQL_DOUBLE;
-                break;
-            case float_ARRAY:
-                type = Type.SQL_DOUBLE;
-                break;
-            case DOUBLE_ARRAY:
-                type = Type.SQL_DOUBLE;
-                break;
-            case double_ARRAY:
-                type = Type.SQL_DOUBLE;
-                break;
-            case BOOLEAN_ARRAY:
-                type = Type.SQL_BIT;
-                break;
-            case boolean_ARRAY:
-                type = Type.SQL_BIT;
-                break;
-            case LOCALDATETIME_ARRAY:
-                type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
-                break;
-            case LOCALDATE_ARRAY:
-                type = Type.SQL_DATE;
-                break;
-            case LOCALTIME_ARRAY:
-                type = Type.SQL_TIME;
-                break;
-            case ZONEDDATETIME_ARRAY:
-                type = Type.SQL_TIMESTAMP_WITH_TIME_ZONE;
-                break;
-            default:
-                throw new IllegalStateException("Unhandled array type " + propertyType.name());
+        try {
+            switch (propertyType) {
+                case LOCALTIME_ARRAY:
+//                    // shit DST for local time
+//                    if (data != null) {
+//                        int a = 0;
+//                        for (Object o : data) {
+//                            data[a++] = shiftDST(((Time) o).toLocalTime());
+//                        }
+//                    }
+                    // fall through
+                case STRING_ARRAY:
+                case long_ARRAY:
+                case LONG_ARRAY:
+                case int_ARRAY:
+                case INTEGER_ARRAY:
+                case short_ARRAY:
+                case SHORT_ARRAY:
+                case float_ARRAY:
+                case FLOAT_ARRAY:
+                case double_ARRAY:
+                case DOUBLE_ARRAY:
+                case boolean_ARRAY:
+                case BOOLEAN_ARRAY:
+                case LOCALDATETIME_ARRAY:
+                case LOCALDATE_ARRAY:
+                case ZONEDDATETIME_ARRAY:
+                case JSON_ARRAY:
+                    return conn.createArrayOf(getArrayDriverType(propertyType), data);
+                default:
+                    throw new IllegalStateException("Unhandled array type " + propertyType.name());
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        return new JDBCArrayBasic(data, type);
     }
 
     @Override

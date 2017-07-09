@@ -803,11 +803,8 @@ public class SqlgUtil {
         try {
             DatabaseMetaData metadata = conn.getMetaData();
             if (sqlDialect.supportsDropSchemas()) {
-                String catalog = null;
-                String schemaPattern = null;
-                ResultSet result = metadata.getSchemas(catalog, schemaPattern);
-                while (result.next()) {
-                    String schema = result.getString(1);
+                List<String> schemas = sqlDialect.getSchemaNames(metadata);
+                for (String schema : schemas) {
                     if (!sqlDialect.getInternalSchemas().contains(schema)) {
                         StringBuilder sql = new StringBuilder(sqlDialect.dropSchemaStatement());
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));

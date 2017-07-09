@@ -29,7 +29,9 @@ public class TestHasLabelAndId extends BaseTest {
     public void test1() {
         Vertex a1 = this.sqlgGraph.addVertex(T.label, "A", "name1", "a");
         Vertex a2 = this.sqlgGraph.addVertex(T.label, "A", "name2", "a");
+        Vertex a3 = this.sqlgGraph.addVertex(T.label, "A");
         this.sqlgGraph.tx().commit();
+        System.out.println(this.sqlgGraph.traversal().V().hasLabel("A").count().next());
     }
 
     @Test

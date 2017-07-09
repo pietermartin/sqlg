@@ -322,7 +322,7 @@ public class SqlgVertex extends SqlgElement implements Vertex {
             writeColumnParameters(propertyColumnValueMap, sql);
             sql.append(")");
         } else {
-            sql.append(" DEFAULT VALUES");
+            sql.append(this.sqlgGraph.getSqlDialect().sqlInsertEmptyValues());
         }
         if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
             sql.append(";");

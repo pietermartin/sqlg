@@ -661,4 +661,9 @@ public class H2Dialect extends BaseSqlDialect {
     public boolean supportsDropSchemas() {
         return false;
     }
+    
+    @Override
+    public String valueToString(PropertyType propertyType, Object value) {
+        throw new RuntimeException("Hsqldb.valueToString should not be called.");
+    }
 }
