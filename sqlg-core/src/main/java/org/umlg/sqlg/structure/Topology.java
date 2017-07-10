@@ -89,7 +89,7 @@ public class Topology {
     private List<TopologyValidationError> validationErrors = new ArrayList<>();
     private List<TopologyListener> topologyListeners = new ArrayList<>();
 
-    private static final int LOCK_TIMEOUT = 100;
+    private static final int LOCK_TIMEOUT = 2;
 
     @SuppressWarnings("WeakerAccess")
     public static final String CREATED_ON = "createdOn";
@@ -423,7 +423,7 @@ public class Topology {
     private void z_internalSqlWriteLock() {
         Preconditions.checkState(!isSqlWriteLockHeldByCurrentThread());
         try {
-            if (!this.topologySqlWriteLock.tryLock(LOCK_TIMEOUT, TimeUnit.SECONDS)) {
+            if (!this.topologySqlWriteLock.tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES)) {
                 throw new RuntimeException("Timeout lapsed to acquire write lock for notification.");
             }
         } catch (InterruptedException e) {
@@ -441,7 +441,11 @@ public class Topology {
     }
 
     private void z_internalTopologyMapReadLock() {
-        this.topologyMapLock.readLock().lock();
+        try {
+            this.topologyMapLock.readLock().tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void z_internalTopologyMapReadUnLock() {
@@ -453,7 +457,11 @@ public class Topology {
      * These two methods are the only places where the topology maps are updated and therefore write locked.
      */
     private void z_internalTopologyMapWriteLock() {
-        this.topologyMapLock.writeLock().lock();
+        try {
+            this.topologyMapLock.writeLock().tryLock(LOCK_TIMEOUT, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
