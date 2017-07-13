@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.preparedStatement.TestClosingPreparedStatement;
+import org.umlg.sqlg.test.batch.TestBatchTemporaryVertex;
 
 /**
  * Date: 2014/07/16
@@ -13,7 +13,7 @@ import org.umlg.sqlg.test.preparedStatement.TestClosingPreparedStatement;
 //        TestMultiThread.class,
 //        TestDeadLock.class
 //        TestBatch.class
-        TestClosingPreparedStatement.class
+        TestBatchTemporaryVertex.class
 })
 public class AnyTest {
 }

@@ -20,7 +20,6 @@ import org.umlg.sqlg.sql.dialect.SqlSchemaChangeDialect;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -76,8 +75,8 @@ public class Topology {
 
     public static final String SQLG_NOTIFICATION_CHANNEL = "SQLG_NOTIFY";
 
-    //temporary tables
-    private Map<String, Map<String, PropertyType>> temporaryTables = new ConcurrentHashMap<>();
+    //temporary table map. it is in a thread local as temporary tables are only valid per session/connection.
+    private final ThreadLocal<Map<String, Map<String, PropertyType>>> threadLocalTemporaryTables = ThreadLocal.withInitial(HashMap::new);
 
     //ownPids are the pids to ignore as it is what the graph sent a notification for.
     private Set<ImmutablePair<Integer, LocalDateTime>> ownPids = Collections.synchronizedSet(new HashSet<>());
@@ -590,10 +589,10 @@ public class Topology {
         Objects.requireNonNull(schema, "Given schema may not be null");
         Objects.requireNonNull(table, "Given table may not be null");
         final String prefixedTable = VERTEX_PREFIX + table;
-        if (!this.temporaryTables.containsKey(prefixedTable)) {
+        if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
             lock();
-            if (!this.temporaryTables.containsKey(prefixedTable)) {
-                this.temporaryTables.put(prefixedTable, columns);
+            if (!this.threadLocalTemporaryTables.get().containsKey(prefixedTable)) {
+                this.threadLocalTemporaryTables.get().put(prefixedTable, columns);
                 createTempTable(prefixedTable, columns);
             }
         }
@@ -759,7 +758,7 @@ public class Topology {
     }
 
     private void afterCommit() {
-        this.temporaryTables.clear();
+        this.threadLocalTemporaryTables.remove();
         if (this.isSqlWriteLockHeldByCurrentThread()) {
             z_internalTopologyMapWriteLock();
             try {
@@ -813,7 +812,7 @@ public class Topology {
     }
 
     private void afterRollback() {
-        this.temporaryTables.clear();
+        this.threadLocalTemporaryTables.remove();
         if (this.isSqlWriteLockHeldByCurrentThread()) {
             for (Iterator<Map.Entry<String, Schema>> it = this.uncommittedSchemas.entrySet().iterator(); it.hasNext(); ) {
                 Map.Entry<String, Schema> entry = it.next();
@@ -1456,7 +1455,7 @@ public class Topology {
             return Collections.unmodifiableMap(result);
         }
         if (isSqlWriteLockHeldByCurrentThread()) {
-            Map<String, PropertyType> temporaryPropertyMap = this.temporaryTables.get(schemaTable.getTable());
+            Map<String, PropertyType> temporaryPropertyMap = this.threadLocalTemporaryTables.get().get(schemaTable.getTable());
             if (temporaryPropertyMap != null) {
                 return Collections.unmodifiableMap(temporaryPropertyMap);
             }
