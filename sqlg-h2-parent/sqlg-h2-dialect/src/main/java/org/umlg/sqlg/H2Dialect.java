@@ -30,6 +30,11 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
+    public boolean isPrimaryKeyForeignKey(String lastIndexName) {
+        return lastIndexName.startsWith("PRIMARY_KEY") || lastIndexName.startsWith("CONSTRAINT_") || lastIndexName.contains("_fkey_");
+    }
+
+    @Override
     public String dialectName() {
         return "H2Dialect";
     }
@@ -40,8 +45,8 @@ public class H2Dialect extends BaseSqlDialect {
     }
 
     @Override
-    public Set<String> getDefaultSchemas() {
-        return ImmutableSet.of("PUBLIC", "INFORMATION_SCHEMA");
+    public Set<String> getInternalSchemas() {
+        return ImmutableSet.of("INFORMATION_SCHEMA");
     }
 
     @Override
@@ -645,5 +650,15 @@ public class H2Dialect extends BaseSqlDialect {
     @Override
     public boolean isSystemIndex(String indexName) {
         return indexName.startsWith("PRIMARY_KEY_") || indexName.startsWith("CONSTRAINT_INDEX_");
+    }
+
+    @Override
+    public boolean supportsFullValueExpression() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsDropSchemas() {
+        return false;
     }
 }

@@ -37,7 +37,10 @@ public class TestRepeatStepVertexOut extends BaseTest {
         this.sqlgGraph.tx().commit();
 
         DefaultGraphTraversal<Vertex, Vertex> traversal = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
-                .V(a1.id()).repeat(__.out()).until(__.hasLabel("C"));
+                .V(a1.id())
+                .repeat(
+                        __.out()
+                ).until(__.hasLabel("C"));
         Assert.assertEquals(2, traversal.getSteps().size());
         List<Vertex> t = traversal.toList();
         Assert.assertEquals(2, traversal.getSteps().size());
@@ -48,7 +51,8 @@ public class TestRepeatStepVertexOut extends BaseTest {
         Assert.assertTrue(t.isEmpty());
 
         DefaultGraphTraversal<Vertex, Vertex> traversal1 = (DefaultGraphTraversal<Vertex, Vertex>) this.sqlgGraph.traversal()
-                .V(a1.id()).until(__.hasLabel("C")).repeat(__.out());
+                .V(a1.id())
+                .until(__.hasLabel("C")).repeat(__.out());
         Assert.assertEquals(2, traversal1.getSteps().size());
         t = traversal1.toList();
         Assert.assertEquals(2, traversal1.getSteps().size());
@@ -101,7 +105,7 @@ public class TestRepeatStepVertexOut extends BaseTest {
                 .V(a1).repeat(__.groupCount("m").by("name").out()).times(2).<Map<String, Long>>cap("m");
         Assert.assertEquals(3, traversal.getSteps().size());
         List<Map<String, Long>> t = traversal.toList();
-        Assert.assertEquals(7, traversal.getSteps().size());
+        Assert.assertEquals(3, traversal.getSteps().size());
         Assert.assertEquals(1, t.size());
         Assert.assertEquals(4, t.get(0).size());
         Assert.assertTrue(t.get(0).containsKey("a1"));
@@ -113,7 +117,7 @@ public class TestRepeatStepVertexOut extends BaseTest {
                 .V(a1.id()).repeat(__.groupCount("m").by("name").out()).times(2).<Map<String, Long>>cap("m");
         Assert.assertEquals(3, traversal1.getSteps().size());
         t = traversal1.toList();
-        Assert.assertEquals(7, traversal1.getSteps().size());
+        Assert.assertEquals(3, traversal1.getSteps().size());
         Assert.assertEquals(1, t.size());
         Assert.assertEquals(4, t.get(0).size());
         Assert.assertTrue(t.get(0).containsKey("a1"));

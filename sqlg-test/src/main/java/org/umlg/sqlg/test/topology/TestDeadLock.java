@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.test.BaseTest;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -15,6 +16,46 @@ import java.util.concurrent.atomic.AtomicInteger;
  *         Date: 2017/06/19
  */
 public class TestDeadLock extends BaseTest {
+
+    @Test
+    public void testDeadLock2() throws InterruptedException {
+
+        this.sqlgGraph.addVertex(T.label, "A");
+        this.sqlgGraph.tx().commit();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread thread1 = new Thread(() -> {
+            //#1 open a transaction.
+            this.sqlgGraph.traversal().V().hasLabel("A").next();
+            try {
+                System.out.println("await");
+                latch.await();
+                //sleep for a bit to let Thread2 first take the topology lock
+                Thread.sleep(1000);
+                System.out.println("thread1 wakeup");
+                //This will try to take a read lock that will dead lock
+                this.sqlgGraph.traversal().V().hasLabel("A").next();
+                System.out.println("thread1 complete");
+                this.sqlgGraph.tx().commit();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }, "thread1");
+        Thread thread2 = new Thread(() -> {
+            //#2 take the topology lock, adding a name field will lock the topology.
+            //this will not be able to complete while Thread1's transaction is still in progress.
+            //It locks in postgres.
+            latch.countDown();
+            this.sqlgGraph.addVertex(T.label, "A", "name", "a");
+            this.sqlgGraph.tx().commit();
+            System.out.println("thread2 fini");
+        }, "thread2");
+        thread1.start();
+        Thread.sleep(1000);
+        thread2.start();
+        thread1.join();
+        thread2.join();
+    }
 
     /**
      * this deadlocks!

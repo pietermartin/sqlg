@@ -1,6 +1,8 @@
 package org.umlg.sqlg.test.schema;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -18,14 +20,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 /**
  * Date: 2014/08/13
  * Time: 10:49 AM
  */
 public class TestSchema extends BaseTest {
+
+    @Test
+    public void testEscapingEscapeCharacterInNames() {
+        String schemaName = "TestDeleteDataSchema\";commit;drop database \"TestSQLInjection";
+        this.sqlgGraph.getTopology().ensureSchemaExist(schemaName);
+        this.sqlgGraph.tx().commit();
+        String tableName = "A\"A";
+        this.sqlgGraph.addVertex(T.label, schemaName + "." + tableName);
+        this.sqlgGraph.tx().commit();
+        Assert.assertEquals(1, this.sqlgGraph.traversal().V().hasLabel(schemaName + "." + tableName).count().next(), 0);
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema(schemaName).isPresent());
+        Assert.assertTrue(this.sqlgGraph.getTopology().getSchema(schemaName).get().getVertexLabel(tableName).isPresent());
+    }
 
     @Test
     public void testEdgeAcrossSchemaCreatesPropertyInAll() {
@@ -37,11 +49,11 @@ public class TestSchema extends BaseTest {
         this.sqlgGraph.tx().commit();
         ab1.property("test", "halo");
         this.sqlgGraph.tx().commit();
-        assertTrue(this.sqlgGraph.traversal().E(ab1.id()).next().property("test").isPresent());
-        assertFalse(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
+        Assert.assertTrue(this.sqlgGraph.traversal().E(ab1.id()).next().property("test").isPresent());
+        Assert.assertFalse(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
         bc1.property("test", "halo");
         this.sqlgGraph.tx().commit();
-        assertTrue(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
+        Assert.assertTrue(this.sqlgGraph.traversal().E(bc1.id()).next().property("test").isPresent());
     }
 
     @Test
@@ -132,13 +144,13 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", address);
         this.sqlgGraph.tx().commit();
 
-        assertTrue(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"))!=null);
+        Assert.assertTrue(this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person")) != null);
 
         Pair<Set<SchemaTable>, Set<SchemaTable>> labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
-        assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
+        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
         Map<String, Set<String>> edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys();
-        assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         Vertex car = this.sqlgGraph.addVertex(T.label, "Car");
         person.addEdge("drives", car);
@@ -147,10 +159,10 @@ public class TestSchema extends BaseTest {
         person.addEdge("person_address", pet);
 
         labels = this.sqlgGraph.getTopology().getTableLabels(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "V_Person"));
-        assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
+        Assert.assertTrue(labels.getRight().contains(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address")));
 
         edgeForeignKeys = this.sqlgGraph.getTopology().getAllEdgeForeignKeys();
-        assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
+        Assert.assertTrue(edgeForeignKeys.containsKey(SchemaTable.of(this.sqlgGraph.getSqlDialect().getPublicSchema(), "E_person_address").toString()));
 
         this.sqlgGraph.tx().rollback();
     }
@@ -162,11 +174,11 @@ public class TestSchema extends BaseTest {
         this.sqlgGraph.addVertex(T.label, "A", "TRX Group ID", 1234);
         this.sqlgGraph.tx().commit();
 
-        List<Vertex> vertices =  this.sqlgGraph.traversal().V().hasLabel("A").toList();
+        List<Vertex> vertices = this.sqlgGraph.traversal().V().hasLabel("A").toList();
         Assert.assertEquals(3, vertices.size());
-        assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
-        assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
-        assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
+        Assert.assertTrue(vertices.get(0).property("TRX Group ID").isPresent());
+        Assert.assertTrue(vertices.get(1).property("TRX Group ID").isPresent());
+        Assert.assertTrue(vertices.get(2).property("TRX Group ID").isPresent());
     }
 
     @Test
@@ -182,37 +194,50 @@ public class TestSchema extends BaseTest {
     }
 
     @Test
-    public void testEnsureSchema(){
-    	Topology mgr=this.sqlgGraph.getTopology();
-    	this.sqlgGraph.addVertex(T.label, "A.A");
-    	this.sqlgGraph.tx().commit();
-
-    	assertTrue(mgr.getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()).isPresent());
-    	assertTrue(mgr.getSchema("A").isPresent());
-    	Assert.assertNotNull(mgr.ensureSchemaExist("A"));
-
-    	assertFalse(mgr.getSchema("B").isPresent());
-    	Assert.assertNotNull(mgr.ensureSchemaExist("B"));
-    	assertTrue(mgr.getSchema("B").isPresent());
-    	this.sqlgGraph.tx().commit();
-    	assertTrue(mgr.getSchema("B").isPresent());
+    public void testUnprefixedEdgeLabelWithin() {
+        Vertex a1 = this.sqlgGraph.addVertex(T.label, "A.A");
+        Vertex b1 = this.sqlgGraph.addVertex(T.label, "B.B");
+        Edge eee = a1.addEdge("eee", b1);
+        Edge fff = a1.addEdge("fff", b1);
+        this.sqlgGraph.tx().commit();
+        GraphTraversal<Edge, Edge> traversal = this.sqlgGraph.traversal().E().has(T.label, P.within("eee", "fff"));
+        List<Edge> edges = traversal.toList();
+        Assert.assertEquals(2, edges.size());
+        Assert.assertTrue(edges.contains(eee) && edges.contains(fff));
     }
 
     @Test
-    public void testExistingSchema() throws SQLException{
-		Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsTransactionalSchema());
-    	String schema="A";
-    	Connection c=this.sqlgGraph.tx().getConnection();
-    	try (Statement ps=c.createStatement();){
-    		ps.executeUpdate("create schema "+this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
-    	}
-    	c.commit();
-    	Topology mgr=this.sqlgGraph.getTopology();
-    	
-    	assertFalse(mgr.getSchema("A").isPresent());
-    	
-    	this.sqlgGraph.addVertex(T.label, schema+".A");
-    	this.sqlgGraph.tx().commit();
-    	assertTrue(mgr.getSchema("A").isPresent());
+    public void testEnsureSchema() {
+        Topology mgr = this.sqlgGraph.getTopology();
+        this.sqlgGraph.addVertex(T.label, "A.A");
+        this.sqlgGraph.tx().commit();
+
+        Assert.assertTrue(mgr.getSchema(this.sqlgGraph.getSqlDialect().getPublicSchema()).isPresent());
+        Assert.assertTrue(mgr.getSchema("A").isPresent());
+        Assert.assertNotNull(mgr.ensureSchemaExist("A"));
+
+        Assert.assertFalse(mgr.getSchema("B").isPresent());
+        Assert.assertNotNull(mgr.ensureSchemaExist("B"));
+        Assert.assertTrue(mgr.getSchema("B").isPresent());
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(mgr.getSchema("B").isPresent());
+    }
+
+    @Test
+    public void testExistingSchema() throws SQLException {
+        Assume.assumeTrue(this.sqlgGraph.getSqlDialect().supportsTransactionalSchema());
+        String schema = "A";
+        Connection c = this.sqlgGraph.tx().getConnection();
+        try (Statement ps = c.createStatement();) {
+            ps.executeUpdate("create schema " + this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(schema));
+        }
+        c.commit();
+        Topology mgr = this.sqlgGraph.getTopology();
+
+        Assert.assertFalse(mgr.getSchema("A").isPresent());
+
+        this.sqlgGraph.addVertex(T.label, schema + ".A");
+        this.sqlgGraph.tx().commit();
+        Assert.assertTrue(mgr.getSchema("A").isPresent());
     }
 }

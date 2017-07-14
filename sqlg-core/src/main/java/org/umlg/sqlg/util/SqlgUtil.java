@@ -12,9 +12,12 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.umlg.sqlg.sql.dialect.SqlDialect;
 import org.umlg.sqlg.sql.parse.SchemaTableTree;
 import org.umlg.sqlg.sql.parse.WhereClause;
+import org.umlg.sqlg.strategy.BaseStrategy;
 import org.umlg.sqlg.strategy.Emit;
 import org.umlg.sqlg.strategy.TopologyStrategy;
 import org.umlg.sqlg.structure.*;
@@ -29,6 +32,8 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.structure.T.label;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 
 /**
  * Date: 2014/07/12
@@ -36,12 +41,27 @@ import static org.apache.tinkerpop.gremlin.structure.T.label;
  */
 public class SqlgUtil {
 
+    private static Logger logger = LoggerFactory.getLogger(SqlgUtil.class.getName());
+
     //This is the default count to indicate whether to use in statement or join onto a temp table.
     //As it happens postgres join to temp is always faster except for count = 1 when in is not used but '='
     private final static int BULK_WITHIN_COUNT = 1;
     private static final String PROPERTY_ARRAY_VALUE_ELEMENTS_MAY_NOT_BE_NULL = "Property array value elements may not be null.";
 
     private SqlgUtil() {
+    }
+
+    public static List<Emit<SqlgElement>> loadResultSetIntoResultIterator(
+            SqlgGraph sqlgGraph,
+            ResultSetMetaData resultSetMetaData,
+            ResultSet resultSet,
+            SchemaTableTree rootSchemaTableTree,
+            List<LinkedList<SchemaTableTree>> subQueryStacks,
+            boolean first,
+            Map<String, Integer> lastElementIdCountMap
+
+    ) throws SQLException {
+        return loadResultSetIntoResultIterator(sqlgGraph, resultSetMetaData, resultSet, rootSchemaTableTree, subQueryStacks, first, lastElementIdCountMap, false);
     }
 
     /**
@@ -52,6 +72,7 @@ public class SqlgUtil {
      * @param subQueryStacks
      * @param first
      * @param lastElementIdCountMap
+     * @param forParent             Indicates that the gremlin query is for SqlgVertexStep. It is in the context of an incoming traverser, the parent.
      * @return A list of @{@link Emit}s that represent a single @{@link org.apache.tinkerpop.gremlin.process.traversal.Path}
      * @throws SQLException
      */
@@ -62,7 +83,8 @@ public class SqlgUtil {
             SchemaTableTree rootSchemaTableTree,
             List<LinkedList<SchemaTableTree>> subQueryStacks,
             boolean first,
-            Map<String, Integer> lastElementIdCountMap
+            Map<String, Integer> lastElementIdCountMap,
+            boolean forParent
     ) throws SQLException {
 
         List<Emit<SqlgElement>> result = new ArrayList<>();
@@ -70,7 +92,7 @@ public class SqlgUtil {
             if (first) {
                 for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
                     for (SchemaTableTree schemaTableTree : subQueryStack) {
-                        schemaTableTree.clearColumnNamePropertNameMap();
+                        schemaTableTree.clearColumnNamePropertyNameMap();
                     }
                 }
                 populateIdCountMap(resultSetMetaData, rootSchemaTableTree, lastElementIdCountMap);
@@ -79,7 +101,12 @@ public class SqlgUtil {
             for (LinkedList<SchemaTableTree> subQueryStack : subQueryStacks) {
 
                 List<Emit<SqlgElement>> labeledElements = SqlgUtil.loadLabeledElements(
-                        sqlgGraph, resultSet, subQueryStack, subQueryDepth == subQueryStacks.size(), lastElementIdCountMap
+                        sqlgGraph,
+                        resultSet,
+                        subQueryStack,
+                        subQueryDepth == subQueryStacks.size(),
+                        lastElementIdCountMap,
+                        forParent
                 );
                 result.addAll(labeledElements);
                 if (subQueryDepth == subQueryStacks.size()) {
@@ -88,7 +115,12 @@ public class SqlgUtil {
                         SqlgElement e = SqlgUtil.loadElement(
                                 sqlgGraph, lastElementIdCountMap, resultSet, lastSchemaTableTree
                         );
-                        Emit<SqlgElement> emit = new Emit<>(e, Collections.emptySet());
+                        Emit<SqlgElement> emit;
+                        if (!forParent) {
+                            emit = new Emit<>(e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+                        } else {
+                            emit = new Emit<>(resultSet.getLong(1), e, Collections.emptySet(), lastSchemaTableTree.getStepDepth(), lastSchemaTableTree.getSqlgComparatorHolder());
+                        }
                         if (lastSchemaTableTree.isLocalStep() && lastSchemaTableTree.isOptionalLeftJoin()) {
                             emit.setIncomingOnlyLocalOptionalStep(true);
                         }
@@ -116,7 +148,7 @@ public class SqlgUtil {
             String columnLabel = resultSetMetaData.getColumnLabel(columnCount);
             String unAliased = rootSchemaTableTree.getAliasColumnNameMap().get(columnLabel);
             String mapKey = unAliased != null ? unAliased : columnLabel;
-            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + SchemaManager.ID)) {
+            if (mapKey.endsWith(SchemaTableTree.ALIAS_SEPARATOR + Topology.ID)) {
                 lastElementIdCountMap.put(mapKey, columnCount);
             }
         }
@@ -138,7 +170,9 @@ public class SqlgUtil {
             final ResultSet resultSet,
             LinkedList<SchemaTableTree> subQueryStack,
             boolean lastQueryStack,
-            Map<String, Integer> lastElementIdCountMap) throws SQLException {
+            Map<String, Integer> lastElementIdCountMap,
+            boolean forParent
+    ) throws SQLException {
 
         List<Emit<E>> result = new ArrayList<>();
         int count = 1;
@@ -148,13 +182,13 @@ public class SqlgUtil {
                 Integer columnCount = lastElementIdCountMap.get(idProperty);
                 Long id = resultSet.getLong(columnCount);
                 if (!resultSet.wasNull()) {
-                    SqlgElement sqlgElement;
+                    E sqlgElement;
                     if (schemaTableTree.getSchemaTable().isVertexTable()) {
-                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.VERTEX_PREFIX.length());
-                        sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(VERTEX_PREFIX.length());
+                        sqlgElement = (E) SqlgVertex.of(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     } else {
-                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(SchemaManager.EDGE_PREFIX.length());
-                        sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
+                        String rawLabel = schemaTableTree.getSchemaTable().getTable().substring(EDGE_PREFIX.length());
+                        sqlgElement = (E) new SqlgEdge(sqlgGraph, id, schemaTableTree.getSchemaTable().getSchema(), rawLabel);
                     }
                     schemaTableTree.loadProperty(resultSet, sqlgElement);
 
@@ -163,11 +197,23 @@ public class SqlgUtil {
                     //Only the last node in the subQueryStacks' subQueryStack must get the labels as the label only apply to the exiting element that gets emitted.
                     //Elements that come before the last element in the path must not get the labels.
                     if (schemaTableTree.isEmit() && !lastQueryStack) {
-                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet()));
+                        if (forParent) {
+                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        } else {
+                            result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        }
                     } else if (schemaTableTree.isEmit() && lastQueryStack && (count != subQueryStack.size())) {
-                        result.add(new Emit<>((E) sqlgElement, Collections.emptySet()));
+                        if (forParent) {
+                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        } else {
+                            result.add(new Emit<>(sqlgElement, Collections.emptySet(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        }
                     } else {
-                        result.add(new Emit<>((E) sqlgElement, schemaTableTree.getRealLabels()));
+                        if (forParent) {
+                            result.add(new Emit<>(resultSet.getLong(1), sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        } else {
+                            result.add(new Emit<>(sqlgElement, schemaTableTree.getRealLabels(), schemaTableTree.getStepDepth(), schemaTableTree.getSqlgComparatorHolder()));
+                        }
                     }
                 }
             }
@@ -188,10 +234,10 @@ public class SqlgUtil {
         Long id = resultSet.getLong(columnCount);
         SqlgElement sqlgElement;
         if (schemaTable.isVertexTable()) {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.VERTEX_PREFIX.length());
+            String rawLabel = schemaTable.getTable().substring(VERTEX_PREFIX.length());
             sqlgElement = SqlgVertex.of(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         } else {
-            String rawLabel = schemaTable.getTable().substring(SchemaManager.EDGE_PREFIX.length());
+            String rawLabel = schemaTable.getTable().substring(EDGE_PREFIX.length());
             sqlgElement = new SqlgEdge(sqlgGraph, id, schemaTable.getSchema(), rawLabel);
         }
         leafSchemaTableTree.loadProperty(resultSet, sqlgElement);
@@ -208,7 +254,7 @@ public class SqlgUtil {
         return p == Contains.within && ((Collection) hasContainer.getPredicate().getValue()).size() > sqlgGraph.configuration().getInt("bulk.within.count", BULK_WITHIN_COUNT);
     }
 
-    public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, Connection conn, PreparedStatement preparedStatement, int parameterIndex) throws SQLException {
+    public static void setParametersOnStatement(SqlgGraph sqlgGraph, LinkedList<SchemaTableTree> schemaTableTreeStack, PreparedStatement preparedStatement, int parameterIndex) throws SQLException {
         Multimap<String, Object> keyValueMap = LinkedListMultimap.create();
         for (SchemaTableTree schemaTableTree : schemaTableTreeStack) {
             for (HasContainer hasContainer : schemaTableTree.getHasContainers()) {
@@ -623,17 +669,17 @@ public class SqlgUtil {
             }
             // we transform id in ID
             if (key.equals(T.id.getAccessor()) || "ID".equals(key)) {
-            	if (value instanceof Long){
-            		 result.add(ImmutablePair.of(PropertyType.LONG, (Long)value));
-            	} else {
-	                RecordId id;
-	                if (!(value instanceof RecordId)) {
-	                    id = RecordId.from(value);
-	                } else {
-	                    id = (RecordId) value;
-	                }
-	                result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
-            	}
+                if (value instanceof Long) {
+                    result.add(ImmutablePair.of(PropertyType.LONG, (Long) value));
+                } else {
+                    RecordId id;
+                    if (!(value instanceof RecordId)) {
+                        id = RecordId.from(value);
+                    } else {
+                        id = (RecordId) value;
+                    }
+                    result.add(ImmutablePair.of(PropertyType.LONG, id.getId()));
+                }
             } else {
                 result.add(ImmutablePair.of(PropertyType.from(value), value));
             }
@@ -696,16 +742,16 @@ public class SqlgUtil {
     }
 
     public static String removeTrailingInId(String foreignKey) {
-        if (foreignKey.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
-            return foreignKey.substring(0, foreignKey.length() - SchemaManager.IN_VERTEX_COLUMN_END.length());
+        if (foreignKey.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
+            return foreignKey.substring(0, foreignKey.length() - Topology.IN_VERTEX_COLUMN_END.length());
         } else {
             return foreignKey;
         }
     }
 
     public static String removeTrailingOutId(String foreignKey) {
-        if (foreignKey.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
-            return foreignKey.substring(0, foreignKey.length() - SchemaManager.OUT_VERTEX_COLUMN_END.length());
+        if (foreignKey.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
+            return foreignKey.substring(0, foreignKey.length() - Topology.OUT_VERTEX_COLUMN_END.length());
         } else {
             return foreignKey;
         }
@@ -716,10 +762,10 @@ public class SqlgUtil {
      *
      * @param topology
      * @param hasContainers
-     * @param withSqlgSchema    do we want the sqlg schema tables too?
+     * @param withSqlgSchema do we want the sqlg schema tables too?
      * @return
      */
-    public static Map<String, Map<String, PropertyType>> filterHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
+    public static Map<String, Map<String, PropertyType>> filterSqlgSchemaHasContainers(Topology topology, List<HasContainer> hasContainers, boolean withSqlgSchema) {
         HasContainer fromHasContainer = null;
         HasContainer withoutHasContainer = null;
 
@@ -753,14 +799,37 @@ public class SqlgUtil {
         withoutHasContainer.ifPresent(hasContainers::remove);
     }
 
-    public static void dropDb(SqlgGraph sqlgGraph) {
+    public static void dropDb(SqlDialect sqlDialect, Connection conn) {
         try {
-            SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
-            Connection conn = sqlgGraph.tx().getConnection();
             DatabaseMetaData metadata = conn.getMetaData();
-            if (sqlDialect.supportsCascade()) {
+            if (sqlDialect.supportsDropSchemas()) {
                 String catalog = null;
                 String schemaPattern = null;
+                ResultSet result = metadata.getSchemas(catalog, schemaPattern);
+                while (result.next()) {
+                    String schema = result.getString(1);
+                    if (!sqlDialect.getInternalSchemas().contains(schema)) {
+                        StringBuilder sql = new StringBuilder("DROP SCHEMA IF EXISTS ");
+                        sql.append(sqlDialect.maybeWrapInQoutes(schema));
+                        if (sqlDialect.needsSchemaDropCascade()) {
+                            sql.append(" CASCADE");
+                        }
+                        if (sqlDialect.needsSemicolon()) {
+                            sql.append(";");
+                        }
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
+                        }
+                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
+                            preparedStatement.executeUpdate();
+                        }
+                    }
+                }
+            } else {
+                //Drop tables one by one and then the schemas.
+                //HSQLDB dead locks when trying to drop the 'PUBLIC' schema, so alas drop tables first.
+                String catalog = null;
+                String schemaPattern = sqlDialect.getPublicSchema();
                 String tableNamePattern = "%";
                 String[] types = {"TABLE"};
                 ResultSet result = metadata.getTables(catalog, schemaPattern, tableNamePattern, types);
@@ -778,6 +847,9 @@ public class SqlgUtil {
                     if (sqlDialect.needsSemicolon()) {
                         sql.append(";");
                     }
+                    if (logger.isDebugEnabled()) {
+                        logger.debug(sql.toString());
+                    }
                     try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                         preparedStatement.executeUpdate();
                     }
@@ -787,7 +859,7 @@ public class SqlgUtil {
                 result = metadata.getSchemas(catalog, schemaPattern);
                 while (result.next()) {
                     String schema = result.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(schema)) {
+                    if (!sqlDialect.getInternalSchemas().contains(schema) && !sqlDialect.getPublicSchema().equals(schema)) {
                         StringBuilder sql = new StringBuilder("DROP SCHEMA ");
                         sql.append(sqlDialect.maybeWrapInQoutes(schema));
                         if (sqlDialect.needsSchemaDropCascade()) {
@@ -796,20 +868,8 @@ public class SqlgUtil {
                         if (sqlDialect.needsSemicolon()) {
                             sql.append(";");
                         }
-                        try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
-                            preparedStatement.executeUpdate();
-                        }
-                    }
-                }
-            } else if (!sqlDialect.supportSchemas()) {
-                ResultSet result = metadata.getCatalogs();
-                while (result.next()) {
-                    StringBuilder sql = new StringBuilder("DROP DATABASE ");
-                    String database = result.getString(1);
-                    if (!sqlDialect.getDefaultSchemas().contains(database)) {
-                        sql.append(sqlDialect.maybeWrapInQoutes(database));
-                        if (sqlDialect.needsSemicolon()) {
-                            sql.append(";");
+                        if (logger.isDebugEnabled()) {
+                            logger.debug(sql.toString());
                         }
                         try (PreparedStatement preparedStatement = conn.prepareStatement(sql.toString())) {
                             preparedStatement.executeUpdate();
@@ -820,6 +880,12 @@ public class SqlgUtil {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static void dropDb(SqlgGraph sqlgGraph) {
+        SqlDialect sqlDialect = sqlgGraph.getSqlDialect();
+        Connection conn = sqlgGraph.tx().getConnection();
+        dropDb(sqlDialect, conn);
     }
 
     public static Byte[] convertPrimitiveByteArrayToByteArray(byte[] value) {
@@ -1056,6 +1122,18 @@ public class SqlgUtil {
             Array.set(target, i, ((Time) value[i]).toLocalTime());
         }
         return target;
+    }
+
+    public static String originalLabel(String label) {
+        int indexOfLabel = label.indexOf(BaseStrategy.PATH_LABEL_SUFFIX);
+        if (indexOfLabel != -1) {
+            return label.substring(indexOfLabel + BaseStrategy.PATH_LABEL_SUFFIX.length());
+        }
+        indexOfLabel = label.indexOf(BaseStrategy.EMIT_LABEL_SUFFIX);
+        if (indexOfLabel != -1) {
+            return label.substring(indexOfLabel + BaseStrategy.EMIT_LABEL_SUFFIX.length());
+        }
+        throw new IllegalStateException("originalLabel must only be called on labels with Sqlg's path prepended to it");
     }
 
 }

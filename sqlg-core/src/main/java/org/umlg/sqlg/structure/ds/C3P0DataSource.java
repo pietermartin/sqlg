@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Date: 2014/07/12
  * Time: 7:00 AM
  */
-public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
+public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource {
 
     private static Logger logger = LoggerFactory.getLogger(C3P0DataSource.class.getName());
 
@@ -33,19 +33,31 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
 
     @Override
     public void close() {
-        if (! closed.compareAndSet(false, true)) {
+        if (!this.closed.compareAndSet(false, true)) {
             return;
         }
-
         try {
             int numBusyConnections = dss.getNumBusyConnections();
             if (numBusyConnections > 0) {
                 logger.debug("Open connection on calling close. " + numBusyConnections);
             }
         } catch (SQLException e) {
-            throw new IllegalStateException("Could not close connection " +jdbcUrl, e);
+            throw new IllegalStateException("Could not close connection " + jdbcUrl, e);
         } finally {
             dss.close();
+        }
+    }
+
+    /**
+     * This is only invoked for Postgresql on ddl statements.
+     * It will force the pool to close all connections which in turn will deallocate server side prepared statements.
+     */
+    @Override
+    public void softResetPool() {
+        try {
+            this.dss.softResetAllUsers();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -54,25 +66,25 @@ public class C3P0DataSource implements SqlgDataSourceFactory.SqlgDataSource{
         try {
             StringBuilder json = new StringBuilder();
             json.append("[");
-                json.append("{\"jdbcUrl\":\"").append(jdbcUrl).append("\",");
+            json.append("{\"jdbcUrl\":\"").append(jdbcUrl).append("\",");
 
-                json.append("\"jndi\": false,");
-                json.append("\"numConnections\":\"")
-                        .append(String.valueOf(dss.getNumConnections())).append("\",");
-                json.append("\"numBusyConnections\":\"")
-                        .append(String.valueOf(dss.getNumConnections())).append("\",");
-                json.append("\"numIdleConnections\":\"")
-                        .append(String.valueOf(dss.getNumConnections())).append("\",");
-                json.append("\"numUnclosedOrphanedConnections\":\"")
-                        .append(String.valueOf(dss.getNumConnections())).append("\",");
-                json.append("\"numMinPoolSize\":\"").append(String.valueOf(dss.getMinPoolSize()))
-                        .append("\",");
-                json.append("\"numMaxPoolSize\":\"").append(String.valueOf(dss.getMaxPoolSize()))
-                        .append("\",");
-                json.append("\"numMaxIdleTime\":\"").append(String.valueOf(dss.getMaxIdleTime()))
-                        .append("\"");
+            json.append("\"jndi\": false,");
+            json.append("\"numConnections\":\"")
+                    .append(String.valueOf(dss.getNumConnections())).append("\",");
+            json.append("\"numBusyConnections\":\"")
+                    .append(String.valueOf(dss.getNumConnections())).append("\",");
+            json.append("\"numIdleConnections\":\"")
+                    .append(String.valueOf(dss.getNumConnections())).append("\",");
+            json.append("\"numUnclosedOrphanedConnections\":\"")
+                    .append(String.valueOf(dss.getNumConnections())).append("\",");
+            json.append("\"numMinPoolSize\":\"").append(String.valueOf(dss.getMinPoolSize()))
+                    .append("\",");
+            json.append("\"numMaxPoolSize\":\"").append(String.valueOf(dss.getMaxPoolSize()))
+                    .append("\",");
+            json.append("\"numMaxIdleTime\":\"").append(String.valueOf(dss.getMaxIdleTime()))
+                    .append("\"");
 
-                json.append("}");
+            json.append("}");
 
             json.append("]");
             return json.toString();

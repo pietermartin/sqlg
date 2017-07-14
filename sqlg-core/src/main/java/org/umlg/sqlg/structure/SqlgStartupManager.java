@@ -14,9 +14,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA;
-import static org.umlg.sqlg.structure.Topology.SQLG_SCHEMA_SCHEMA;
+import static org.umlg.sqlg.structure.Topology.*;
 
 /**
  * This class contains the logic to ensure all is well on startup.
@@ -53,6 +51,11 @@ class SqlgStartupManager {
             }
             if (!existSqlgSchema) {
                 createSqlgSchemaTablesAndIndexes();
+            }
+            //The default schema is generally called 'public' and is created upfront by the db.
+            //But what if its been deleted, so check.
+            if (!existDefaultSchema()) {
+                createDefaultSchema();
             }
             //committing here will ensure that sqlg creates the tables.
             this.sqlgGraph.tx().commit();
@@ -133,8 +136,8 @@ class SqlgStartupManager {
             try (ResultSet schemaRs = metadata.getSchemas()) {
                 while (schemaRs.next()) {
                     String schema = schemaRs.getString(1);
-                    if (schema.equals(SQLG_SCHEMA) ||
-                            this.sqlDialect.getDefaultSchemas().contains(schema) ||
+                    if (schema.equals(SQLG_SCHEMA) || schema.equals(this.sqlDialect.getPublicSchema()) ||
+                            this.sqlDialect.getInternalSchemas().contains(schema) ||
                             this.sqlDialect.getGisSchemas().contains(schema)) {
                         continue;
                     }
@@ -156,8 +159,7 @@ class SqlgStartupManager {
                     }
 
                     //check if is internal, if so ignore.
-                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
-                    schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
+                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
                     if (schema.equals(SQLG_SCHEMA) ||
                             schemasToIgnore.contains(schema) ||
                             this.sqlDialect.getGisSchemas().contains(schema)) {
@@ -187,11 +189,11 @@ class SqlgStartupManager {
                         String columnName = tripple.getLeft();
                         int columnType = tripple.getMiddle();
                         String typeName = tripple.getRight();
-                        if (!columnName.equals(SchemaManager.ID)) {
+                        if (!columnName.equals(Topology.ID)) {
                             extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                         }
                     }
-                    String label = table.substring(SchemaManager.VERTEX_PREFIX.length());
+                    String label = table.substring(Topology.VERTEX_PREFIX.length());
                     TopologyManager.addVertexLabel(this.sqlgGraph, schema, label, columns);
                     if (indices != null) {
                         String key = tblCat + "." + schema + "." + table;
@@ -219,8 +221,7 @@ class SqlgStartupManager {
                     }
 
                     //check if is internal, if so ignore.
-                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
-                    schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
+                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
                     if (schema.equals(SQLG_SCHEMA) ||
                             schemasToIgnore.contains(schema) ||
                             this.sqlDialect.getGisSchemas().contains(schema)) {
@@ -238,13 +239,13 @@ class SqlgStartupManager {
                     boolean edgeAdded = false;
                     while (columnsRs.next()) {
                         String column = columnsRs.getString(4);
-                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END) || column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END))) {
+                        if (table.startsWith(EDGE_PREFIX) && (column.endsWith(Topology.IN_VERTEX_COLUMN_END) || column.endsWith(Topology.OUT_VERTEX_COLUMN_END))) {
                             String[] split = column.split("\\.");
                             SchemaTable foreignKey = SchemaTable.of(split[0], split[1]);
-                            if (column.endsWith(SchemaManager.IN_VERTEX_COLUMN_END)) {
+                            if (column.endsWith(Topology.IN_VERTEX_COLUMN_END)) {
                                 SchemaTable schemaTable = SchemaTable.of(
                                         split[0],
-                                        split[1].substring(0, split[1].length() - SchemaManager.IN_VERTEX_COLUMN_END.length())
+                                        split[1].substring(0, split[1].length() - Topology.IN_VERTEX_COLUMN_END.length())
                                 );
                                 if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
                                     MutablePair<SchemaTable, SchemaTable> inSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
@@ -256,10 +257,10 @@ class SqlgStartupManager {
                                 } else {
                                     inOutSchemaTableMap.put(edgeSchemaTable, MutablePair.of(schemaTable, null));
                                 }
-                            } else if (column.endsWith(SchemaManager.OUT_VERTEX_COLUMN_END)) {
+                            } else if (column.endsWith(Topology.OUT_VERTEX_COLUMN_END)) {
                                 SchemaTable schemaTable = SchemaTable.of(
                                         split[0],
-                                        split[1].substring(0, split[1].length() - SchemaManager.OUT_VERTEX_COLUMN_END.length())
+                                        split[1].substring(0, split[1].length() - Topology.OUT_VERTEX_COLUMN_END.length())
                                 );
                                 if (inOutSchemaTableMap.containsKey(edgeSchemaTable)) {
                                     MutablePair<SchemaTable, SchemaTable> outSchemaTable = inOutSchemaTableMap.get(edgeSchemaTable);
@@ -294,8 +295,7 @@ class SqlgStartupManager {
                     }
 
                     //check if is internal, if so ignore.
-                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getDefaultSchemas());
-                    schemasToIgnore.remove(this.sqlDialect.getPublicSchema());
+                    Set<String> schemasToIgnore = new HashSet<>(this.sqlDialect.getInternalSchemas());
                     if (schema.equals(SQLG_SCHEMA) ||
                             schemasToIgnore.contains(schema) ||
                             this.sqlDialect.getGisSchemas().contains(schema)) {
@@ -325,12 +325,12 @@ class SqlgStartupManager {
                         String columnName = tripple.getLeft();
                         String typeName = tripple.getRight();
                         int columnType = tripple.getMiddle();
-                        if (!columnName.equals(SchemaManager.ID)) {
+                        if (!columnName.equals(Topology.ID)) {
                             extractProperty(schema, table, columnName, columnType, typeName, columns, metaDataIter);
                         }
                     }
                     TopologyManager.addEdgeColumn(this.sqlgGraph, schema, table, columns);
-                    String label = table.substring(SchemaManager.EDGE_PREFIX.length());
+                    String label = table.substring(Topology.EDGE_PREFIX.length());
                     if (indices != null) {
                         String key = edgCat + "." + schema + "." + table;
                         Set<IndexRef> idxs = indices.get(key);
@@ -489,6 +489,20 @@ class SqlgStartupManager {
         }
     }
 
+    private boolean existDefaultSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try {
+            if (this.sqlDialect.supportSchemas()) {
+                DatabaseMetaData metadata = conn.getMetaData();
+                return this.sqlDialect.schemaExists(metadata, null /*catalog*/, this.sqlDialect.getPublicSchema());
+            } else {
+                throw new IllegalStateException("schemas not supported not supported, i.e. probably MariaDB not supported.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private boolean existGuiSchema() {
         Connection conn = this.sqlgGraph.tx().getConnection();
         try {
@@ -508,6 +522,15 @@ class SqlgStartupManager {
         try (Statement statement = conn.createStatement()) {
             String creationScript = this.sqlDialect.sqlgSqlgSchemaCreationScript();
             statement.execute(creationScript);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createDefaultSchema() {
+        Connection conn = this.sqlgGraph.tx().getConnection();
+        try (Statement statement = conn.createStatement()) {
+            statement.execute("CREATE SCHEMA IF NOT EXISTS " + this.sqlDialect.maybeWrapInQoutes(this.sqlDialect.getPublicSchema()) + ";");
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

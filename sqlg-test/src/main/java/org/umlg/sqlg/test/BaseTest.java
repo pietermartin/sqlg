@@ -5,6 +5,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
+import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -20,6 +21,10 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.umlg.sqlg.sql.parse.ReplacedStep;
+import org.umlg.sqlg.step.SqlgGraphStep;
+import org.umlg.sqlg.step.SqlgStep;
+import org.umlg.sqlg.step.SqlgVertexStep;
 import org.umlg.sqlg.structure.SqlgGraph;
 import org.umlg.sqlg.util.SqlgUtil;
 
@@ -31,10 +36,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -108,7 +110,7 @@ public abstract class BaseTest {
         try {
             this.sqlgGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
             this.sqlgGraph.close();
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
         try {
@@ -116,7 +118,7 @@ public abstract class BaseTest {
                 this.sqlgGraph1.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
                 this.sqlgGraph1.close();
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
     }
@@ -493,5 +495,74 @@ public abstract class BaseTest {
             }
         }
         return true;
+    }
+
+    protected void assertStep(Step<?, ?> step, boolean isGraph, boolean isEagerLoad, boolean isForMultipleQueries, boolean comparatorsNotOnDb, boolean rangeOnDb) {
+        if (isGraph) {
+            Assert.assertTrue("Expected SqlgGraphStep, found " + step.getClass().getName(), step instanceof SqlgGraphStep);
+        } else {
+            Assert.assertTrue("Expected SqlgVertexStep, found " + step.getClass().getName(), step instanceof SqlgVertexStep);
+        }
+        SqlgStep sqlgStep = (SqlgStep) step;
+        Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());
+        Assert.assertEquals("isForMultipleQueries should be " + isForMultipleQueries, isForMultipleQueries, sqlgStep.isForMultipleQueries());
+        Assert.assertEquals("comparatorsNotOnDb should be " + comparatorsNotOnDb, comparatorsNotOnDb, sqlgStep.getReplacedSteps().stream().allMatch(r -> r.getDbComparators().isEmpty()));
+        if (!rangeOnDb) {
+            Assert.assertEquals("rangeOnDb should be " + rangeOnDb, rangeOnDb, sqlgStep.getReplacedSteps().get(sqlgStep.getReplacedSteps().size() - 1).getSqlgRangeHolder().isApplyOnDb());
+        } else {
+            //rangeOnDb is true even if there is no range
+            ReplacedStep<?, ?> replacedStep = sqlgStep.getReplacedSteps().get(sqlgStep.getReplacedSteps().size() - 1);
+            if (replacedStep.getSqlgRangeHolder() != null) {
+                Assert.assertEquals("rangeOnDb should be " + rangeOnDb, rangeOnDb, replacedStep.getSqlgRangeHolder().isApplyOnDb());
+            }
+        }
+    }
+
+    protected void assertStep(Step<?, ?> step, boolean isGraph, boolean isEagerLoad, boolean isForMultipleQueries, boolean comparatorsNotOnDb) {
+        if (isGraph) {
+            Assert.assertTrue("Expected SqlgGraphStep, found " + step.getClass().getName(), step instanceof SqlgGraphStep);
+        } else {
+            Assert.assertTrue("Expected SqlgVertexStep, found " + step.getClass().getName(), step instanceof SqlgVertexStep);
+        }
+        SqlgStep sqlgStep = (SqlgStep) step;
+        Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());
+        Assert.assertEquals("isForMultipleQueries should be " + isForMultipleQueries, isForMultipleQueries, sqlgStep.isForMultipleQueries());
+        Assert.assertEquals("comparatorsNotOnDb should be " + comparatorsNotOnDb, comparatorsNotOnDb, sqlgStep.getReplacedSteps().stream().allMatch(r -> r.getDbComparators().isEmpty()));
+    }
+
+    protected void assertStep(Step<?, ?> step, boolean isGraph, boolean isEagerLoad, boolean comparatorsNotOnDb) {
+        if (isGraph) {
+            Assert.assertTrue("Expected SqlgGraphStep, found " + step.getClass().getName(), step instanceof SqlgGraphStep);
+        } else {
+            Assert.assertTrue("Expected SqlgVertexStep, found " + step.getClass().getName(), step instanceof SqlgVertexStep);
+        }
+        SqlgStep sqlgStep = (SqlgStep) step;
+        Assert.assertEquals("isEagerLoad should be " + isEagerLoad, isEagerLoad, sqlgStep.isEargerLoad());
+        Assert.assertEquals("comparatorsNotOnDb should be " + comparatorsNotOnDb, comparatorsNotOnDb, sqlgStep.getReplacedSteps().stream().allMatch(r -> r.getDbComparators().isEmpty()));
+    }
+
+    public static <T> void checkOrderedResults(final List<T> expectedResults, final Traversal<?, T> traversal) {
+        final List<T> results = traversal.toList();
+        Assert.assertFalse(traversal.hasNext());
+        if (expectedResults.size() != results.size()) {
+            logger.error("Expected results: " + expectedResults);
+            logger.error("Actual results:   " + results);
+            assertEquals("Checking result size", expectedResults.size(), results.size());
+        }
+        for (int i = 0; i < expectedResults.size(); i++) {
+            assertEquals(expectedResults.get(i), results.get(i));
+        }
+    }
+
+    public <A, B> List<Map<A, B>> makeMapList(final int size, final Object... keyValues) {
+        final List<Map<A, B>> mapList = new ArrayList<>();
+        for (int i = 0; i < keyValues.length; i = i + (2 * size)) {
+            final Map<A, B> map = new HashMap<>();
+            for (int j = 0; j < (2 * size); j = j + 2) {
+                map.put((A) keyValues[i + j], (B) keyValues[i + j + 1]);
+            }
+            mapList.add(map);
+        }
+        return mapList;
     }
 }

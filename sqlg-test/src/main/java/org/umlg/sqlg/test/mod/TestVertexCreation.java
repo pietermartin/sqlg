@@ -4,7 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assume;
 import org.junit.Test;
-import org.umlg.sqlg.structure.SchemaManager;
+import org.umlg.sqlg.structure.Topology;
 import org.umlg.sqlg.test.BaseTest;
 
 import java.sql.Connection;
@@ -29,7 +29,7 @@ public class TestVertexCreation extends BaseTest {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
                 sql.append(".");
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "vertex"));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + "vertex"));
                 if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }
@@ -72,7 +72,7 @@ public class TestVertexCreation extends BaseTest {
                 StringBuilder sql = new StringBuilder("SELECT * FROM ");
                 sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(this.sqlgGraph.getSqlDialect().getPublicSchema()));
                 sql.append(".");
-                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(SchemaManager.VERTEX_PREFIX + "Person"));
+                sql.append(this.sqlgGraph.getSqlDialect().maybeWrapInQoutes(Topology.VERTEX_PREFIX + "Person"));
                 if (this.sqlgGraph.getSqlDialect().needsSemicolon()) {
                     sql.append(";");
                 }

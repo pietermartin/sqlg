@@ -9,6 +9,9 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.*;
 
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
+
 /**
  * Date: 2014/09/12
  * Time: 5:08 PM
@@ -117,8 +120,8 @@ public class BatchManager {
             }
             if (this.isInStreamingModeWithLock() && this.batchCount == 0) {
                 //lock the table,
-                this.sqlDialect.lockTable(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
-                this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, schemaTable, SchemaManager.VERTEX_PREFIX);
+                this.sqlDialect.lockTable(sqlgGraph, schemaTable, VERTEX_PREFIX);
+                this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, schemaTable, VERTEX_PREFIX);
             }
             if (this.isInStreamingModeWithLock()) {
                 sqlgVertex.setInternalPrimaryKey(RecordId.from(schemaTable, ++this.batchIndex));
@@ -161,8 +164,8 @@ public class BatchManager {
             }
             if (this.isInStreamingModeWithLock() && this.batchCount == 0) {
                 //lock the table,
-                this.sqlDialect.lockTable(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
-                this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, outSchemaTable, SchemaManager.EDGE_PREFIX);
+                this.sqlDialect.lockTable(sqlgGraph, outSchemaTable, EDGE_PREFIX);
+                this.batchIndex = this.sqlDialect.nextSequenceVal(sqlgGraph, outSchemaTable, EDGE_PREFIX);
             }
             if (this.isInStreamingModeWithLock()) {
                 sqlgEdge.setInternalPrimaryKey(RecordId.from(outSchemaTable, ++this.batchIndex));

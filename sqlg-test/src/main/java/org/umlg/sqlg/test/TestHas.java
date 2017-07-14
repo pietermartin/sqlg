@@ -2,6 +2,7 @@ package org.umlg.sqlg.test;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -22,6 +23,14 @@ import java.util.List;
  * Time: 6:36 PM
  */
 public class TestHas extends BaseTest {
+
+    @Test
+    public void g_V_hasXblahX() {
+        loadModern();
+        final Traversal<Vertex, Vertex> traversal =  this.sqlgGraph.traversal().V().has("blah");
+        printTraversalForm(traversal);
+        Assert.assertFalse(traversal.hasNext());
+    }
 
     @Test
     public void g_V_in_hasIdXneqX1XX() {
@@ -80,7 +89,7 @@ public class TestHas extends BaseTest {
         Assert.assertEquals(1, vertices.size());
         Assert.assertEquals(a1, vertices.get(0));
     }
-    
+
 	@Test
 	public void testHasIDDifferentLabels() {
 		Vertex a1 = this.sqlgGraph.addVertex(T.label, "A");
@@ -94,29 +103,29 @@ public class TestHas extends BaseTest {
 				.toList();
 		Assert.assertEquals(1, edges.size());
 		Assert.assertEquals(e1, edges.get(0));
-		
+
 		edges = this.sqlgGraph.traversal().V(a1.id()).outE("ab").as("e").inV().hasId(a1.id(),b1.id()).select("e")
 				.toList();
 		Assert.assertEquals(1, edges.size());
 		Assert.assertEquals(e1, edges.get(0));
-		
+
 		edges = this.sqlgGraph.traversal().V(a1.id()).outE("ab").as("e").inV().hasId(P.within(b1.id())).select("e")
 				.toList();
 		Assert.assertEquals(1, edges.size());
 		Assert.assertEquals(e1, edges.get(0));
-		
+
 		edges = this.sqlgGraph.traversal().V(a1.id()).outE("ab").as("e").inV().hasId(c1.id()).select("e")
 				.toList();
 		Assert.assertEquals(0, edges.size());
-		
+
 		edges = this.sqlgGraph.traversal().V(a1.id()).outE("ab").as("e").inV().hasId(P.within(c1.id())).select("e")
 				.toList();
 		Assert.assertEquals(0, edges.size());
-		
+
 		edges = this.sqlgGraph.traversal().V(a1.id()).outE("ab").as("e").inV().hasId(P.within(a1.id(),c1.id())).select("e")
 				.toList();
 		Assert.assertEquals(0, edges.size());
-		
+
 		edges = this.sqlgGraph.traversal().V(a1.id()).outE("ab").as("e").inV().hasId(P.within(a1.id(),b2.id())).select("e")
 				.toList();
 		Assert.assertEquals(0, edges.size());

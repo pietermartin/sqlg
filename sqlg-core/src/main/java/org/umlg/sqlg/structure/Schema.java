@@ -18,8 +18,8 @@ import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static org.umlg.sqlg.structure.SchemaManager.EDGE_PREFIX;
-import static org.umlg.sqlg.structure.SchemaManager.VERTEX_PREFIX;
+import static org.umlg.sqlg.structure.Topology.EDGE_PREFIX;
+import static org.umlg.sqlg.structure.Topology.VERTEX_PREFIX;
 import static org.umlg.sqlg.structure.Topology.*;
 
 /**
@@ -193,7 +193,7 @@ public class Schema implements TopologyInf {
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
     private EdgeLabel createEdgeLabel(final String edgeLabelName, final VertexLabel outVertexLabel, final VertexLabel inVertexLabel, final Map<String, PropertyType> columns) {
-        Preconditions.checkArgument(this.topology.isWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
+        Preconditions.checkArgument(this.topology.isSqlWriteLockHeldByCurrentThread(), "Lock must be held by the thread to call createEdgeLabel");
         Preconditions.checkArgument(!edgeLabelName.startsWith(EDGE_PREFIX), "edgeLabelName may not start with " + EDGE_PREFIX);
         Preconditions.checkState(!this.isSqlgSchema(), "createEdgeLabel may not be called for \"%s\"", SQLG_SCHEMA);
 
@@ -295,12 +295,12 @@ public class Schema implements TopologyInf {
     }
 
     public Optional<VertexLabel> getVertexLabel(String vertexLabelName) {
-        Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", SchemaManager.VERTEX_PREFIX);
-        if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
+        Preconditions.checkArgument(!vertexLabelName.startsWith(VERTEX_PREFIX), "vertex label may not start with \"%s\"", Topology.VERTEX_PREFIX);
+        if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedVertexLabels.contains(this.name + "." + VERTEX_PREFIX + vertexLabelName)){
         	return Optional.empty();
         }
         VertexLabel result = this.vertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
-        if (result == null && this.topology.isWriteLockHeldByCurrentThread()) {
+        if (result == null && this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result = this.uncommittedVertexLabels.get(this.name + "." + VERTEX_PREFIX + vertexLabelName);
         }
         return Optional.ofNullable(result);
@@ -309,7 +309,7 @@ public class Schema implements TopologyInf {
     Map<String, EdgeLabel> getEdgeLabels() {
         Map<String, EdgeLabel> result = new HashMap<>();
         result.putAll(this.outEdgeLabels);
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedOutEdgeLabels);
             for (String e:uncommittedRemovedEdgeLabels){
             	result.remove(e);
@@ -323,7 +323,7 @@ public class Schema implements TopologyInf {
         for (VertexLabel vertexLabel : this.vertexLabels.values()) {
             result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
         }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             for (VertexLabel vertexLabel : this.uncommittedVertexLabels.values()) {
                 result.putAll(vertexLabel.getUncommittedOutEdgeLabels());
             }
@@ -335,15 +335,15 @@ public class Schema implements TopologyInf {
     }
 
     public Optional<EdgeLabel> getEdgeLabel(String edgeLabelName) {
-        Preconditions.checkArgument(!edgeLabelName.startsWith(SchemaManager.EDGE_PREFIX), "edge label may not start with \"%s\"", SchemaManager.EDGE_PREFIX);
-        if (this.topology.isWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
+        Preconditions.checkArgument(!edgeLabelName.startsWith(Topology.EDGE_PREFIX), "edge label may not start with \"%s\"", Topology.EDGE_PREFIX);
+        if (this.topology.isSqlWriteLockHeldByCurrentThread() && this.uncommittedRemovedEdgeLabels.contains(this.name + "." + EDGE_PREFIX + edgeLabelName)){
         	return Optional.empty();
         }
         EdgeLabel edgeLabel = this.outEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
         if (edgeLabel != null) {
             return Optional.of(edgeLabel);
         }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             edgeLabel = this.uncommittedOutEdgeLabels.get(this.name + "." + EDGE_PREFIX + edgeLabelName);
             if (edgeLabel != null) {
                 return Optional.of(edgeLabel);
@@ -359,7 +359,7 @@ public class Schema implements TopologyInf {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
             result.put(vertexQualifiedName, vertexLabelEntry.getValue().getPropertyTypeMap());
         }
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 String vertexQualifiedName = vertexLabelEntry.getKey();
                 VertexLabel vertexLabel = vertexLabelEntry.getValue();
@@ -380,7 +380,7 @@ public class Schema implements TopologyInf {
     public Map<String, VertexLabel> getVertexLabels() {
         Map<String, VertexLabel> result = new HashMap<>();
         result.putAll(this.vertexLabels);
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedVertexLabels);
             for (String e:uncommittedRemovedVertexLabels){
             	result.remove(e);
@@ -390,7 +390,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, AbstractLabel> getUncommittedLabels() {
-        Preconditions.checkState(getTopology().isWriteLockHeldByCurrentThread(), "Schema.getUncommittedAllTables must be called with the lock held");
+        Preconditions.checkState(getTopology().isSqlWriteLockHeldByCurrentThread(), "Schema.getUncommittedAllTables must be called with the lock held");
         Map<String, AbstractLabel> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -412,7 +412,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> getUncommittedSchemaTableForeignKeys() {
-        Preconditions.checkState(getTopology().isWriteLockHeldByCurrentThread(), "Schema.getUncommittedSchemaTableForeignKeys must be called with the lock held");
+        Preconditions.checkState(getTopology().isSqlWriteLockHeldByCurrentThread(), "Schema.getUncommittedSchemaTableForeignKeys must be called with the lock held");
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> result = new HashMap<>();
         for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.vertexLabels.entrySet()) {
             String vertexQualifiedName = this.name + "." + VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -434,16 +434,16 @@ public class Schema implements TopologyInf {
     Map<String, Set<String>> getUncommittedEdgeForeignKeys() {
         Map<String, Set<String>> result = new HashMap<>();
         for (EdgeLabel outEdgeLabel : this.outEdgeLabels.values()) {
-            result.put(this.getName() + "." + SchemaManager.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
         }
         for (EdgeLabel outEdgeLabel : this.uncommittedOutEdgeLabels.values()) {
-            result.put(this.getName() + "." + SchemaManager.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
+            result.put(this.getName() + "." + Topology.EDGE_PREFIX + outEdgeLabel.getLabel(), outEdgeLabel.getUncommittedEdgeForeignKeys());
         }
         return result;
     }
 
     Map<String, PropertyColumn> getPropertiesFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", Topology.VERTEX_PREFIX, Topology.EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
             Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
             if (vertexLabelOptional.isPresent()) {
@@ -459,7 +459,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, PropertyColumn> getPropertiesWithGlobalUniqueIndexFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
             Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
             if (vertexLabelOptional.isPresent()) {
@@ -475,7 +475,7 @@ public class Schema implements TopologyInf {
     }
 
     Map<String, PropertyType> getTableFor(SchemaTable schemaTable) {
-        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", SchemaManager.VERTEX_PREFIX, SchemaManager.EDGE_PREFIX);
+        Preconditions.checkArgument(schemaTable.getTable().startsWith(VERTEX_PREFIX) || schemaTable.getTable().startsWith(EDGE_PREFIX), "label must start with \"%s\" or \"%s\"", VERTEX_PREFIX, EDGE_PREFIX);
         if (schemaTable.isVertexTable()) {
             Optional<VertexLabel> vertexLabelOptional = getVertexLabel(schemaTable.withOutPrefix().getTable());
             if (vertexLabelOptional.isPresent()) {
@@ -499,7 +499,7 @@ public class Schema implements TopologyInf {
             result.put(schemaTable, vertexLabelEntry.getValue().getTableLabels());
         }
         Map<SchemaTable, Pair<Set<SchemaTable>, Set<SchemaTable>>> uncommittedResult = new HashMap<>();
-        if (this.topology.isWriteLockHeldByCurrentThread()) {
+        if (this.topology.isSqlWriteLockHeldByCurrentThread()) {
             for (Map.Entry<String, VertexLabel> vertexLabelEntry : this.uncommittedVertexLabels.entrySet()) {
                 Preconditions.checkState(!vertexLabelEntry.getValue().getLabel().startsWith(VERTEX_PREFIX), "vertexLabel may not start with " + VERTEX_PREFIX);
                 String prefixedVertexName = VERTEX_PREFIX + vertexLabelEntry.getValue().getLabel();
@@ -561,7 +561,7 @@ public class Schema implements TopologyInf {
     public Map<String, GlobalUniqueIndex> getGlobalUniqueIndexes() {
         Map<String, GlobalUniqueIndex> result = new HashMap<>();
         result.putAll(this.globalUniqueIndexes);
-        if (this.getTopology().isWriteLockHeldByCurrentThread()) {
+        if (this.getTopology().isSqlWriteLockHeldByCurrentThread()) {
             result.putAll(this.uncommittedGlobalUniqueIndexes);
             for (String s:this.uncommittedRemovedGlobalUniqueIndexes){
             	result.remove(s);
@@ -571,7 +571,7 @@ public class Schema implements TopologyInf {
     }
 
     void afterCommit() {
-        Preconditions.checkState(this.getTopology().isWriteLockHeldByCurrentThread(), "Schema.afterCommit must hold the write lock");
+        Preconditions.checkState(this.getTopology().isSqlWriteLockHeldByCurrentThread(), "Schema.afterCommit must hold the write lock");
         for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, VertexLabel> entry = it.next();
             this.vertexLabels.put(entry.getKey(), entry.getValue());
@@ -616,7 +616,7 @@ public class Schema implements TopologyInf {
     }
 
     void afterRollback() {
-        Preconditions.checkState(this.getTopology().isWriteLockHeldByCurrentThread(), "Schema.afterRollback must hold the write lock");
+        Preconditions.checkState(this.getTopology().isSqlWriteLockHeldByCurrentThread(), "Schema.afterRollback must hold the write lock");
         for (Iterator<Map.Entry<String, VertexLabel>> it = this.uncommittedVertexLabels.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<String, VertexLabel> entry = it.next();
             entry.getValue().afterRollbackForInEdges();
@@ -1013,7 +1013,7 @@ public class Schema implements TopologyInf {
         boolean foundVertexLabels = false;
         ObjectNode schemaNode = new ObjectNode(Topology.OBJECT_MAPPER.getNodeFactory());
         schemaNode.put("name", this.getName());
-        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.getUncommittedVertexLabels().isEmpty()) {
+        if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.getUncommittedVertexLabels().isEmpty()) {
             ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for (VertexLabel vertexLabel : this.getUncommittedVertexLabels().values()) {
                 //VertexLabel toNotifyJson always returns something even though its an Optional.
@@ -1025,7 +1025,7 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedVertexLabels", vertexLabelArrayNode);
             foundVertexLabels = true;
         }
-        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
+        if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedVertexLabels.isEmpty()) {
         	 ArrayNode vertexLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
              for(String s:this.uncommittedRemovedVertexLabels){
             	 vertexLabelArrayNode.add(s);
@@ -1033,7 +1033,7 @@ public class Schema implements TopologyInf {
              schemaNode.set("uncommittedRemovedVertexLabels", vertexLabelArrayNode);
              foundVertexLabels = true;
         }
-        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedEdgeLabels.isEmpty()) {
+        if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedEdgeLabels.isEmpty()) {
        	 	ArrayNode edgeLabelArrayNode = new ArrayNode(Topology.OBJECT_MAPPER.getNodeFactory());
             for(String s:this.uncommittedRemovedEdgeLabels){
            	 edgeLabelArrayNode.add(s);
@@ -1041,7 +1041,7 @@ public class Schema implements TopologyInf {
             schemaNode.set("uncommittedRemovedEdgeLabels", edgeLabelArrayNode);
             foundVertexLabels = true;
        }
-        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedGlobalUniqueIndexes.isEmpty()) {
+        if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedGlobalUniqueIndexes.isEmpty()) {
         	ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (GlobalUniqueIndex globalUniqueIndex : this.uncommittedGlobalUniqueIndexes.values()) {
 
@@ -1053,7 +1053,7 @@ public class Schema implements TopologyInf {
             }
             schemaNode.set("uncommittedGlobalUniqueIndexes", unCommittedGlobalUniqueIndexesArrayNode);
         }
-        if (this.getTopology().isWriteLockHeldByCurrentThread() && !this.uncommittedRemovedGlobalUniqueIndexes.isEmpty()) {
+        if (this.getTopology().isSqlWriteLockHeldByCurrentThread() && !this.uncommittedRemovedGlobalUniqueIndexes.isEmpty()) {
         	ArrayNode unCommittedGlobalUniqueIndexesArrayNode = new ArrayNode(OBJECT_MAPPER.getNodeFactory());
             for (String globalUniqueIndex : this.uncommittedRemovedGlobalUniqueIndexes) {
             		unCommittedGlobalUniqueIndexesArrayNode.add(globalUniqueIndex);

@@ -2,7 +2,7 @@ package org.umlg.sqlg;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.umlg.sqlg.test.topology.TestDeadLock;
+import org.umlg.sqlg.test.batch.TestBatchTemporaryVertex;
 
 /**
  * Date: 2014/07/16
@@ -10,7 +10,10 @@ import org.umlg.sqlg.test.topology.TestDeadLock;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        TestDeadLock.class
+//        TestMultiThread.class,
+//        TestDeadLock.class
+//        TestBatch.class
+        TestBatchTemporaryVertex.class
 })
 public class AnyTest {
 }

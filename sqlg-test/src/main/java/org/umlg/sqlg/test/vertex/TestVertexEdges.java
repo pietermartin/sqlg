@@ -5,6 +5,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.umlg.sqlg.test.BaseTest;
 
@@ -17,6 +19,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class TestVertexEdges extends BaseTest {
 
+    @BeforeClass
+    public static void beforeClass() {
+        //This test only works on postgres.
+        //it makes assumptions about iteration and query excution order.
+//        HSQLDB behaves differently.
+        Assume.assumeTrue(configuration.getString("jdbc.url").contains("postgresql"));
+    }
 
     @Test
     public void testVertexEdgesEager() {
