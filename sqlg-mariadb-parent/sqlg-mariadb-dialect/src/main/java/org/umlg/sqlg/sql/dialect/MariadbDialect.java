@@ -123,7 +123,7 @@ public class MariadbDialect extends BaseSqlDialect {
 
     @Override
     public boolean supportsDropSchemas() {
-        return true;
+        return false;
     }
 
     @Override
@@ -297,11 +297,12 @@ public class MariadbDialect extends BaseSqlDialect {
             case LOCALDATE:
                 return new String[]{"DATE"};
             case LOCALDATETIME:
-                return new String[]{"DATETIME"};
+                //3 microseconds maps nicely to java's LocalDateTIme
+                return new String[]{"DATETIME(3)"};
             case ZONEDDATETIME:
-                return new String[]{"TIMESTAMP WITH TIME ZONE", "LONGVARCHAR"};
+                return new String[]{"DATETIME(3)", "TINYTEXT"};
             case LOCALTIME:
-                return new String[]{"TIME WITH TIME ZONE"};
+                return new String[]{"TIME"};
             case PERIOD:
                 return new String[]{"INTEGER", "INTEGER", "INTEGER"};
             case DURATION:
@@ -311,53 +312,19 @@ public class MariadbDialect extends BaseSqlDialect {
             case JSON:
                 return new String[]{"LONGTEXT"};
             case POINT:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException("MariaDb does not support gis types!");
             case POLYGON:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException("MariaDb does not support gis types!");
             case GEOGRAPHY_POINT:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException("MariaDb does not support gis types!");
             case GEOGRAPHY_POLYGON:
-                throw new IllegalStateException("HSQLDB does not support gis types!");
+                throw new IllegalStateException("MariaDb does not support gis types!");
             case BYTE_ARRAY:
-                return new String[]{"LONGVARBINARY"};
+                return new String[]{"BLOB"};
             case byte_ARRAY:
-                return new String[]{"LONGVARBINARY"};
+                return new String[]{"BLOB"};
             case boolean_ARRAY:
                 return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
-            case BOOLEAN_ARRAY:
-                return new String[]{"BOOLEAN ARRAY DEFAULT ARRAY[]"};
-            case SHORT_ARRAY:
-                return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
-            case short_ARRAY:
-                return new String[]{"SMALLINT ARRAY DEFAULT ARRAY[]"};
-            case int_ARRAY:
-                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
-            case INTEGER_ARRAY:
-                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]"};
-            case LONG_ARRAY:
-                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
-            case long_ARRAY:
-                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]"};
-            case float_ARRAY:
-                return new String[]{"REAL ARRAY DEFAULT ARRAY[]"};
-            case DOUBLE_ARRAY:
-                return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
-            case double_ARRAY:
-                return new String[]{"DOUBLE ARRAY DEFAULT ARRAY[]"};
-            case STRING_ARRAY:
-                return new String[]{"LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
-            case LOCALDATETIME_ARRAY:
-                return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
-            case LOCALDATE_ARRAY:
-                return new String[]{"DATE ARRAY DEFAULT ARRAY[]"};
-            case LOCALTIME_ARRAY:
-                return new String[]{"TIME WITH TIME ZONE ARRAY DEFAULT ARRAY[]"};
-            case ZONEDDATETIME_ARRAY:
-                return new String[]{"TIMESTAMP WITH TIME ZONE ARRAY DEFAULT ARRAY[]", "LONGVARCHAR ARRAY DEFAULT ARRAY[]"};
-            case DURATION_ARRAY:
-                return new String[]{"BIGINT ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
-            case PERIOD_ARRAY:
-                return new String[]{"INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]", "INTEGER ARRAY DEFAULT ARRAY[]"};
             default:
                 throw new IllegalStateException("Unknown propertyType " + propertyType.name());
         }
@@ -480,21 +447,6 @@ public class MariadbDialect extends BaseSqlDialect {
     @Override
     public String getForeignKeyTypeDefinition() {
         return "BIGINT UNSIGNED";
-    }
-
-    @Override
-    public boolean supportsFloatValues() {
-        return false;
-    }
-
-    @Override
-    public boolean supportsByteValues() {
-        return true;
-    }
-
-    @Override
-    public boolean supportsFloatArrayValues() {
-        return false;
     }
 
     @Override
@@ -825,5 +777,75 @@ public class MariadbDialect extends BaseSqlDialect {
     @Override
     public String valueToString(PropertyType propertyType, Object value) {
         throw new RuntimeException("Hsqldb.valueToString should not be called.");
+    }
+
+    @Override
+    public  boolean supportsBooleanArrayValues() {
+        return false;
+    }
+
+    @Override
+    public  boolean supportsDoubleArrayValues() {
+        return false;
+    }
+
+    @Override
+    public  boolean supportsFloatArrayValues() {
+        return false;
+    }
+
+    @Override
+    public  boolean supportsIntegerArrayValues() {
+        return false;
+    }
+
+    @Override
+    public  boolean supportsShortArrayValues() {
+        return false;
+    }
+
+    @Override
+    public  boolean supportsLongArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsStringArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsFloatValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsByteValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsLocalDateArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean supportsZonedDateTimeArrayValues() {
+        return false;
+    }
+
+    @Override
+    public boolean requiresIndexLengthLimit() {
+        return true;
     }
 }
